@@ -86,9 +86,12 @@ const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 const sshOptions = ["-o", "BatchMode=yes", "-o", "ClearAllForwardings=yes", "-o", "ForwardAgent=no", "-o", "ForwardX11=no", "-T"];
 const TOOLS = ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"];
 
-export function claudeMcpConfiguration(options, stageDir, environment) {
+export function claudeMcpConfiguration(options, stageDir, environment, workId) {
+  if (typeof workId !== "string" || workId.length === 0) fail("JOURNAL_CLAUDE_OPTION_INVALID");
+  // The server is scoped to this run's item, so a call naming another item reads and marks nothing of it.
   const args = [path.join(options.checkout, "src/cli/journal-work-mcp.mjs"),
-    "--config", options.configPath, "--principal", "claude-hardest", "--tier", "hardest", "--stage-dir", stageDir];
+    "--config", options.configPath, "--principal", "claude-hardest", "--tier", "hardest", "--stage-dir", stageDir,
+    "--work-id", workId];
   return { mcpServers: { journal: options.remote
     ? { command: options.sshBin, args: [...sshOptions, options.remote, [options.remoteNode, ...args].map(quote).join(" ")] }
     : { command: process.execPath, args,
@@ -109,7 +112,7 @@ export function claudePrintArgs({ record, mcpConfig, sessionId }) {
 
 export function claudeResultReader(record, expectedPacketLength = null, expectedSession = null) {
   const state = { bad: null, initialized: false, reachedModel: false, claudeCodeVersion: null,
-    resultSeen: false, session: null, sessionMismatch: false, model: null,
+    resultSeen: false, session: null, sessionMismatch: false, abort: false, model: null,
     packetFetched: false, packetBeforeFirstSubmit: false, submitSeen: false, hookCount: 0,
     servers: [], tools: [], skillCount: 0, slashCount: 0, pluginCount: 0, agentCount: 0,
     usage: { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 },
@@ -202,7 +205,8 @@ export function claudeResultReader(record, expectedPacketLength = null, expected
       const name = use.name;
       const workId = use.input?.work_id;
       if (!TOOLS.includes(name)) { state.bad = "ISOLATION"; continue; }
-      if (workId !== record.work_id) { state.bad ??= "WORK_ID_MISMATCH"; continue; }
+      // A call naming another item ends the run at once (its server is scoped to this item and refuses it anyway).
+      if (workId !== record.work_id) { state.bad ??= "WORK_ID_MISMATCH"; state.abort = true; continue; }
       // A fetch counts only once its successful tool_result arrives (below); a submit issued in the same
       // assistant event as the fetch, before the model could see the packet, is not packet-backed.
       if (name === TOOLS[0] && workId === record.work_id && typeof use.id === "string") packetCalls.add(use.id);
@@ -669,7 +673,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       runDir = await fs.mkdtemp(path.join(parent, "run-"));
       await fs.chmod(runDir, 0o700);
       const mcpConfig = path.join(runDir, "mcp.json");
-      await fs.writeFile(mcpConfig, JSON.stringify(claudeMcpConfiguration(options, stageDir, environment)), { flag: "wx", mode: 0o600 });
+      await fs.writeFile(mcpConfig, JSON.stringify(claudeMcpConfiguration(options, stageDir, environment, record.work_id)), { flag: "wx", mode: 0o600 });
       // A fresh session, reserved on the host before Claude starts, so it can back no other item; every event of
       // the run must report it. Claude Code honours --session-id with --no-session-persistence.
       const sessionId = randomUUID();
@@ -696,6 +700,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         timeoutMs: options.timeoutMs, onLine: async (line, kill) => {
           reader.accept(line);
           if (reader.state.bad === "ISOLATION") { isolationRefused = true; kill(); }
+          // The group is killed at once; model reach is still recorded below before the run stops being read.
+          if (reader.state.abort) kill();
           if (!reachedModel && reader.state.reachedModel) {
             reachedModel = true;
             // Await the durable mark while stdout is paused, before accepting
@@ -703,7 +709,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
             try { await host("attempt-mark", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); }
             catch (error) { markFailed = true; throw error; }
           }
-          if (isolationRefused) return false;
+          if (isolationRefused || reader.state.abort) return false;
         }, activeGroups
       }); } finally {
         // This finally runs before admission/promotion, even when the child failed. The whole process group
@@ -768,6 +774,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         else if (result.timedOut) outcome = "timeout";
         else if (result.problem) outcome = `rejected:${result.problem}`;
         else if (!reader.state.initialized) outcome = "rejected:ISOLATION";
+        else if (reader.state.abort) outcome = `rejected:${reader.state.bad}`; // the worker ended the run itself
         else if (result.code !== 0) outcome = "rejected:EXIT_NONZERO";
         else if (reader.state.bad) outcome = `rejected:${reader.state.bad}`;
         else if (!reader.state.session) outcome = "rejected:RESULT_MISSING";

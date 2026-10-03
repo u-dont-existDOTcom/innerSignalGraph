@@ -228,20 +228,26 @@ if (limitScenarios.includes(scenario)) {
 if (${JSON.stringify(scenario)} === "timeout") setInterval(() => {}, 1000);
 else {
   const server = config.mcpServers.journal;
+  // "other_item" names the other open item's work_id, which the run's scoped server must refuse.
+  const requestId = scenario === "other_item"
+    ? JSON.parse(fs.readFileSync(${JSON.stringify(path.join(laptop, "work-ids.json"))}, "utf8")).find((id) => id !== workId) : workId;
   const names = scenario === "packet_free" ? ["submit_journal_work_result"]
     : scenario === "submit_before_fetch" ? ["submit_journal_work_result", "get_journal_work_packet"]
     : scenario === "nothing_staged" ? ["get_journal_work_packet"]
     : ["get_journal_work_packet", "submit_journal_work_result"];
   const requests = names.map((name, index) => ({ jsonrpc: "2.0", id: index + 1, method: "tools/call",
     params: { name, arguments: name === "submit_journal_work_result"
-      ? { work_id: workId, output: ${JSON.stringify(ANSWER)} } : { work_id: workId } } }));
+      ? { work_id: workId, output: ${JSON.stringify(ANSWER)} } : { work_id: requestId } } }));
   const result = spawnSync(server.command, server.args, { encoding: "utf8",
     input: requests.map(JSON.stringify).join("\\n") + "\\n", env: process.env });
   if (result.status !== 0) process.exit(32);
   const replies = result.stdout.trim().split("\\n").map(JSON.parse);
+  if (scenario === "other_item") fs.writeFileSync(${JSON.stringify(path.join(laptop, "other-item-reply"))},
+    String(replies[0].result.structuredContent?.code));
   for (const [index, name] of (scenario === "nothing_staged" ? [...names, "submit_journal_work_result"] : names).entries()) {
     console.log(JSON.stringify({ type: "assistant", message: { model: "claude-opus-5-5", content: [
-      { type: "tool_use", id: "tool-" + index, name: "mcp__journal__" + name, input: { work_id: workId } }] } }));
+      { type: "tool_use", id: "tool-" + index, name: "mcp__journal__" + name,
+        input: { work_id: name === "get_journal_work_packet" ? requestId : workId } }] } }));
     if (replies[index]) {
       const content = name === "get_journal_work_packet" && scenario === "packet_truncated"
         ? "SYNTHETIC_PREVIEW" : replies[index].result.content;
@@ -328,7 +334,9 @@ test("Claude arguments map only the pinned hardest profile and remote MCP holds 
     "--remote-node", "/host/node"]), { code: "JOURNAL_CLAUDE_OPTION_INVALID" });
   const options = parseJournalClaudeWorkerArgs([...remoteArgs, "--remote-node", "/host/node-journal"]);
   assert.equal(options.limitBackoffMs, 30 * 60_000);
-  const mcp = JSON.stringify(claudeMcpConfiguration(options, "/host/stage", {}));
+  assert.throws(() => claudeMcpConfiguration(options, "/host/stage", {}), { code: "JOURNAL_CLAUDE_OPTION_INVALID" });
+  const mcp = JSON.stringify(claudeMcpConfiguration(options, "/host/stage", {}, "job:synthetic-scoped"));
+  assert.ok(mcp.includes("'--work-id' 'job:synthetic-scoped'"), "the work server is scoped to the run's item");
   assert.ok(mcp.includes("'/host/node-journal' '/host/repo/src/cli/journal-work-mcp.mjs'"));
   assert.ok(mcp.includes("BatchMode=yes") && mcp.includes("ClearAllForwardings=yes")
     && mcp.includes("ForwardAgent=no") && mcp.includes("ForwardX11=no"));
@@ -581,6 +589,26 @@ test("a project folder Claude creates under a work dir with a character outside 
   assert.deepEqual(logs.map((item) => item.outcome), ["rejected:LOCAL_PERSISTENCE"]);
   assert.notEqual((await f.port.getCompletion(operationKey)).status, "completed");
   for (const bytes of await scanFiles(f.laptop)) assert.ok(!bytes.includes(Buffer.from(SENTINEL)));
+});
+
+test("a run that names another item is stopped, and its scoped server reads nothing of that item", async (t) => {
+  const f = await fixture(t, "other_item");
+  for (const operationKey of ["job:synthetic-own-item", "job:synthetic-other-open-item"]) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  const records = await f.exchange.listDispatch();
+  await fs.writeFile(path.join(f.laptop, "work-ids.json"), JSON.stringify(records.map((record) => record.work_id)));
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:WORK_ID_MISMATCH"]);
+  assert.equal(logs[0].model_reached, true);
+  assert.equal(await fs.readFile(path.join(f.laptop, "other-item-reply"), "utf8"), "JOURNAL_WORK_SCOPE_MISMATCH");
+  // The other item was never fetched: no attempt marker exists for it, and it stays open.
+  const other = records.find((record) => record.work_id !== logs[0].work_id);
+  let status = "";
+  await runJournalWork(["attempt-status", "--work-id", other.work_id], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
+    stdout: { write: (value) => { status += value; } } });
+  assert.equal(JSON.parse(status).status, "none");
 });
 
 test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {

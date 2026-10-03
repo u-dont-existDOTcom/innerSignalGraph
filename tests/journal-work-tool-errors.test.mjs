@@ -85,3 +85,21 @@ test("hardest complete packet boundary is 450,000 characters, below the 500,000 
     else assert.equal(JSON.stringify(result.value).length, MAX_HARDEST_PACKET_CHARS);
   }
 });
+
+test("a server scoped to one item neither serves, marks nor accepts another item", async () => {
+  const other = "job:synthetic-other-item";
+  let reads = 0, marks = 0, stores = 0;
+  const tools = createJournalWorkTools({ caseId: "synthetic-case", tier: "hardest", stageDir: "/synthetic-stage", workId,
+    authorizeCase: async () => ({ principalId: "synthetic" }),
+    markAttemptPacketFetched: async () => { marks += 1; },
+    exchange: { readWork: async () => { reads += 1; return null; }, isExpired: () => false, hasResult: async () => false,
+      submitResult: async () => { stores += 1; }, stageResult: async () => { stores += 1; },
+      markPacketFetched: async () => { marks += 1; }, listDispatch: async () => [] } });
+  for (const name of ["get_journal_work_packet", "submit_journal_work_result"]) {
+    const result = await tools.call(name, { work_id: other, output: {} });
+    assert.equal(result.toolError.code, "JOURNAL_WORK_SCOPE_MISMATCH");
+  }
+  assert.deepEqual({ reads, marks, stores }, { reads: 0, marks: 0, stores: 0 });
+  assert.throws(() => createJournalWorkTools({ caseId: "synthetic-case", workId: "bad id", authorizeCase: async () => ({}),
+    exchange: { readWork: async () => null, submitResult: async () => {} } }), TypeError);
+});

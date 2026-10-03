@@ -3,7 +3,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
-import { assertJournalWorkExchangeRoot, createJournalWorkExchange,
+import { assertJournalWorkExchangeRoot, createJournalWorkExchange, JOURNAL_WORK_ID_PATTERN,
   journalWorkExchangeSecret, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
 import { createJournalWorkTools, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../server/journal-work-tools.mjs";
 
@@ -21,13 +21,16 @@ export function parseJournalWorkMcpArgs(argv) {
   const principal = option(argv, "--principal");
   const tier = option(argv, "--tier");
   const stageDir = option(argv, "--stage-dir");
+  const workId = option(argv, "--work-id");
   if (!configPath || !path.isAbsolute(configPath) || !PRINCIPAL.test(principal ?? "")
     || (tier !== null && !["standard", "hardest"].includes(tier))
     || (argv.includes("--stage-dir") && (stageDir === null || !path.isAbsolute(stageDir)
-      || argv.filter((value) => value === "--stage-dir").length !== 1))) {
-    throw new Error("Usage: journal:work:mcp -- --config <absolute private run config> --principal <name> [--tier hardest]");
+      || argv.filter((value) => value === "--stage-dir").length !== 1))
+    || (argv.includes("--work-id") && (!JOURNAL_WORK_ID_PATTERN.test(workId ?? "")
+      || argv.filter((value) => value === "--work-id").length !== 1))) {
+    throw new Error("Usage: journal:work:mcp -- --config <absolute private run config> --principal <name> [--tier hardest] [--work-id <id>]");
   }
-  return { configPath: path.normalize(configPath), principal, tier, stageDir };
+  return { configPath: path.normalize(configPath), principal, tier, stageDir, workId };
 }
 
 function response(id, result) { return { jsonrpc: "2.0", id, result }; }
@@ -54,7 +57,7 @@ export async function runJournalWorkMcp(argv, {
   await assertJournalWorkExchangeRoot(root);
   const exchange = createJournalWorkExchange({ root, secret });
   await exchange.removeStaleTemporaries();
-  const tools = createJournalWorkTools({ exchange, caseId, tier: args.tier, stageDir: args.stageDir,
+  const tools = createJournalWorkTools({ exchange, caseId, tier: args.tier, stageDir: args.stageDir, workId: args.workId,
     authorizeCase: async () => ({ principalId: `local:${args.principal}` }) });
   const send = (message) => stdout.write(`${JSON.stringify(message)}\n`);
   const lines = readline.createInterface({ input: stdin, crlfDelay: Infinity, terminal: false });
