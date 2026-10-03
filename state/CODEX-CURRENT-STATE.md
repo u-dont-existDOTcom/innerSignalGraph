@@ -891,6 +891,9 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
     - Measured with Claude Code 2.1.286: with `--session-id` and `--no-session-persistence`, all ten events of a probe run reported the requested session, and no project folder was created. A reused ID is not refused by Claude Code itself, so the host reservation enforces uniqueness. This replaces the earlier post-run reservation of reported sessions (and its pending-session files), which left a window between a packet being seen and the session being recorded.
     - A release that fails after a non-limit failure before the model is queued, as after a provider outage. It is not counted as a spent attempt, and pending releases are retried once more before the worker stops at its item limit.
     - A failed release is kept in `<work-dir>/pending-releases/` with its claim, so a worker that exits paused or for sign-in doesn't strand the reservation. The next worker releases it, and an entry past the time its reservation becomes reclaimable is dropped. If the claim can't be saved either, the worker neither exits (except on a stop signal) nor takes new work until it is saved or released.
+  - **Foreign sessions and unrecorded holds (Codex review):**
+    - An event reporting a session other than the reserved one is now an isolation failure. The run is killed at once, before it can be served the packet, and held for the operator like any refusal before the model (exit 78). A missing session is still `SESSION_INVALID`. The content-free log carries `session_mismatch`.
+    - If the host's `attempt-refuse` fails for an isolation refusal before the model, the hold is kept in `<work-dir>/pending-refusals/`. The next start applies it (or drops it once the host marker is gone or already held) and stops with 78 before running any item, so nothing runs under the refused setup until an operator acts.
 
 
 ## Journal fidelity recovery (2026-10-02, working-tree candidate)
