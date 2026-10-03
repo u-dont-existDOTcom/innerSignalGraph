@@ -79,9 +79,10 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
         continue;
       }
       failing = false;
-      if (peek.status === "completed") {
+      // An answer, valid or not, is a spent call: it holds its place until the sequential run uses its key.
+      if (peek.status === "completed" || peek.status === "invalid_output") {
         if (!used.has(request.operationKey)) held.add(request.operationKey);
-        return peek.output;
+        return peek.status === "completed" ? peek.output : null;
       }
       if (peek.status !== "pending") return null;
       await pause();

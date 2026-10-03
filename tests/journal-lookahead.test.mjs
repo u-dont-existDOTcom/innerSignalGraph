@@ -509,6 +509,14 @@ test("answers the sequential run hasn't used yet count against the lookahead bou
   await until(() => h.work.size === 3);
   for (let index = 0; index < 20; index += 1) await tick();
   assert.equal(h.work.size, 3, "using one answer frees exactly one place");
+  // An answer that fails the schema was a spent call too, and holds its place the same way.
+  const third = journalExchangeWorkId(descriptors[2].direct.operationKey);
+  h.answerWork(third, { synthetic: "not a reference result" });
+  for (let index = 0; index < 20; index += 1) await tick();
+  assert.deepEqual(await h.port.peek(descriptors[2].direct.operationKey), { status: "invalid_output" });
+  assert.equal(h.work.size, 3, "an invalid answer still holds its place");
+  lookahead.markUsed(descriptors[2].direct.operationKey);
+  await until(() => h.work.size === 4);
 });
 
 test("a published lookahead item keeps its slot while reading the exchange fails", async (t) => {
