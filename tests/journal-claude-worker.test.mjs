@@ -69,6 +69,15 @@ const failFirst = (name, count, code) => {
 };
 if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).includes("'session-reserve'")) failFirst("session-reserve", 1, 39);
 if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'attempt-refuse'")) failFirst("attempt-refuse", 1, 42);
+if (${JSON.stringify(scenario)} === "refuse_unsaved" && args.at(-1).includes("'attempt-refuse'")) {
+  // The first failed refusal also leaves the laptop unable to save the hold; the second restores that.
+  const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
+  const marker = path.join(${JSON.stringify(laptop)}, "refuse-unsaved-count");
+  const seen = fs.existsSync(marker) ? Number(fs.readFileSync(marker, "utf8")) : 0;
+  fs.writeFileSync(marker, String(seen + 1));
+  if (seen === 0) { fs.renameSync(pending, moved); fs.writeFileSync(pending, ""); process.exit(42); }
+  if (seen === 1) { fs.rmSync(pending); fs.renameSync(moved, pending); process.exit(42); }
+}
 if (${JSON.stringify(scenario)} === "slow_preflight" && /'(?:stage-create|session-reserve)'/.test(args.at(-1))) {
   await new Promise((resolve) => setTimeout(resolve, 1500)); // each within the host-call timeout, together past the preflight limit
 }
@@ -165,7 +174,7 @@ if (scenario === "ui_invalidate") console.log(JSON.stringify({ type: "system", s
 if (scenario === "init_missing") { console.log(JSON.stringify({ type: "result", is_error: false, subtype: "success" })); process.exit(0); }
 if (scenario === "server_extra") init.mcp_servers.push({ name: "other", status: "connected" });
 if (scenario === "server_disconnected") init.mcp_servers[0].status = "disconnected";
-if (["tools_extra", "refuse_failure"].includes(scenario)) init.tools.push("Bash");
+if (["tools_extra", "refuse_failure", "refuse_unsaved"].includes(scenario)) init.tools.push("Bash");
 if (scenario === "skills_present") init.skills.push("synthetic");
 if (scenario === "slashes_present") init.slash_commands.push("synthetic");
 console.log(JSON.stringify(init));
@@ -193,7 +202,7 @@ if (scenario === "reach_then_hang") {
 if (scenario === "hook_event") console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
 // Give the parent a chance to kill the process group before any packet tool call.
 if (["server_extra", "server_disconnected", "tools_extra", "skills_present", "slashes_present", "hook_event", "foreign_session",
-  "refuse_failure"].includes(scenario)) {
+  "refuse_failure", "refuse_unsaved"].includes(scenario)) {
   await new Promise(resolve => setTimeout(resolve, 250));
   fs.writeFileSync(${JSON.stringify(path.join(laptop, "packet-called-after-refusal"))}, "bad");
 }
@@ -521,6 +530,24 @@ test("an isolation hold the host didn't record is applied by the next start befo
   await runJournalWork(["attempt-status", "--work-id", held], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
     stdout: { write: (value) => { status += value; } } });
   assert.equal(JSON.parse(status).status, "isolation_refused");
+});
+
+test("a hold that neither the host nor the disk took is retried before the worker stops", async (t) => {
+  const f = await fixture(t, "refuse_unsaved");
+  for (const operationKey of ["job:synthetic-refuse-unsaved-first", "job:synthetic-refuse-unsaved-second"]) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  const pending = path.join(f.workDir, "pending-refusals");
+  // The refusal fails and the hold can't be saved; the worker retries both and saves it before stopping.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.equal((await fs.readdir(pending)).length, 1);
+  // The next start records it on the host and stops without starting Claude for any item.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.deepEqual(await fs.readdir(pending), []);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x");
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome),
+    ["attempt_refuse_failed", "isolation_refusal_unsaved", "isolation_refused", "isolation_refusal_pending"]);
 });
 
 test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {
