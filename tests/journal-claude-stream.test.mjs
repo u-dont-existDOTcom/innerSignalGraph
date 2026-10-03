@@ -350,7 +350,7 @@ test("startup recovery fails closed on a markerless run whose worker lock is not
   await fs.access(runDir);
 });
 
-test("with a reserved session, an event reporting another session or none refuses the run", () => {
+test("with a reserved session, init without it or any event reporting another value refuses the run", () => {
   const record = { model: "claude-opus-5-5", work_id: "job:synthetic" };
   const expected = "0f8fad5b-d9cb-469f-a165-70867728950e";
   const init = { type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }],
@@ -361,12 +361,15 @@ test("with a reserved session, an event reporting another session or none refuse
   accepted.accept(JSON.stringify({ ...result, session_id: expected }));
   assert.equal(accepted.state.bad, null);
   assert.equal(accepted.state.session, expected);
-  // A foreign session is an isolation failure (the worker kills the run at once); a missing one is invalid.
+  // Init without the session, or any event carrying a different, null or malformed one, is an isolation failure
+  // (the worker kills the run at once); a result that omits it is invalid.
   for (const [events, bad, mismatch] of [
     [[{ ...init, session_id: "12345678" }, { ...result, session_id: expected }], "ISOLATION", true],
+    [[{ ...init }, { type: "assistant", message: { content: [] }, session_id: expected }], "ISOLATION", true],
     [[{ ...init, session_id: expected }, { ...result, session_id: "12345678" }], "ISOLATION", true],
     [[{ ...init, session_id: expected }, { type: "system", subtype: "status", session_id: null }, { ...result, session_id: expected }],
-      "SESSION_INVALID", false],
+      "ISOLATION", true],
+    [[{ ...init, session_id: expected }, { type: "system", subtype: "status", session_id: 7 }], "ISOLATION", true],
     [[{ ...init, session_id: expected }, { ...result }], "SESSION_INVALID", false]]) {
     const reader = claudeResultReader(record, null, expected);
     for (const event of events) reader.accept(JSON.stringify(event));

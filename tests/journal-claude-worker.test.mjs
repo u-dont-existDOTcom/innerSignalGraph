@@ -173,7 +173,7 @@ if (["no_init_then_success", "no_init_release_failure"].includes(scenario)) {
 const init = { type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }],
   tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"],
   skills: [], slash_commands: [], plugins: [{ name: "synthetic" }], agents: [{ name: "synthetic" }],
-  claude_code_version: "2.1.287", session_id: sessionId };
+  claude_code_version: "2.1.287", ...(scenario === "init_without_session" ? {} : { session_id: sessionId }) };
 if (scenario === "ui_invalidate") console.log(JSON.stringify({ type: "system", subtype: "ui_invalidate" }));
 if (scenario === "init_missing") { console.log(JSON.stringify({ type: "result", is_error: false, subtype: "success" })); process.exit(0); }
 if (scenario === "server_extra") init.mcp_servers.push({ name: "other", status: "connected" });
@@ -206,7 +206,7 @@ if (scenario === "reach_then_hang") {
 if (scenario === "hook_event") console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
 // Give the parent a chance to kill the process group before any packet tool call.
 if (["server_extra", "server_disconnected", "tools_extra", "skills_present", "slashes_present", "hook_event", "foreign_session",
-  "refuse_failure", "refuse_unsaved"].includes(scenario)) {
+  "init_without_session", "refuse_failure", "refuse_unsaved"].includes(scenario)) {
   await new Promise(resolve => setTimeout(resolve, 250));
   fs.writeFileSync(${JSON.stringify(path.join(laptop, "packet-called-after-refusal"))}, "bad");
 }
@@ -265,7 +265,7 @@ else {
   if (scenario === "zero_output") usage["claude-opus-5-5"].outputTokens = 0;
   if (scenario === "helper_zero") usage["helper-model"] = { outputTokens: 0 };
   console.log(JSON.stringify({ type: "result", is_error: scenario === "is_error",
-    subtype: "success", session_id: scenario === "missing_session" ? null : sessionId,
+    subtype: "success", ...(scenario === "missing_session" ? {} : { session_id: sessionId }),
     modelUsage: usage, total_cost_usd: 0.25, result: scenario === "reply_limit_words" ? "usage limit rate limit 429"
       : ["SYNTHETIC", "CLAUDE", "PRIVATE", "SENTINEL", "DO", "NOT", "LOG"].join("_") }));
 }
@@ -456,7 +456,7 @@ test("packet-free and failed Claude admissions never promote staged answers", as
     init_missing: "rejected:ISOLATION", server_extra: "isolation_refused",
     server_disconnected: "isolation_refused", tools_extra: "isolation_refused",
     skills_present: "isolation_refused", slashes_present: "isolation_refused", hook_event: "isolation_refused",
-    foreign_session: "isolation_refused",
+    foreign_session: "isolation_refused", init_without_session: "isolation_refused",
     project_file: "rejected:LOCAL_PERSISTENCE", fallback_cache: "rejected:LOCAL_PERSISTENCE" };
   for (const [scenario, expected] of Object.entries(outcomes)) {
     await t.test(scenario, async (child) => {

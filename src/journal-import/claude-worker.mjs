@@ -134,12 +134,12 @@ export function claudeResultReader(record, expectedPacketLength = null, expected
     let event;
     try { event = JSON.parse(line); } catch { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_JSON_INVALID"; return; }
     if (!event || typeof event !== "object" || Array.isArray(event)) { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_INVALID"; return; }
-    // The worker chose and reserved this run's session before starting Claude; every event must report it. A
-    // foreign session is an isolation failure, so the run is killed before it can be served the packet.
-    if (expectedSession !== null && typeof event.session_id === "string" && event.session_id !== expectedSession) {
+    // The worker chose and reserved this run's session before starting Claude. Init must report it, and so must any
+    // event that carries a session_id at all: a missing, null, malformed or foreign value is an isolation failure, so
+    // the run is killed before it can be served the packet (init precedes every assistant event).
+    if (expectedSession !== null && event.session_id !== expectedSession
+      && (Object.hasOwn(event, "session_id") || (event.type === "system" && event.subtype === "init"))) {
       state.sessionMismatch = true; state.bad = "ISOLATION";
-    } else if (expectedSession !== null && Object.hasOwn(event, "session_id") && event.session_id !== expectedSession) {
-      state.bad ??= "SESSION_INVALID";
     }
     const synthetic = event.message?.model === "<synthetic>";
     const model = event.message?.model ?? event.model;
