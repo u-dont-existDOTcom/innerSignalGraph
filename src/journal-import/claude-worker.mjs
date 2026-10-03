@@ -17,6 +17,11 @@ const PENDING_NAME = /^[0-9a-f-]{36}\.json$/u;
 const HOST = /^(?:[A-Za-z0-9_][A-Za-z0-9_.-]*@)?[A-Za-z0-9_][A-Za-z0-9_.-]*$/u;
 const BIN = /^[A-Za-z0-9_./-]+$/u;
 const MAX_LIMIT_RETRIES = 12;
+// Host commands are small; a slow one is cut off rather than allowed to hold the run's reservation.
+const HOST_CALL_TIMEOUT_MS = 120_000;
+// A sibling may reclaim an unspent reservation after twice the run timeout plus ten minutes, so a run whose
+// preflight took longer than this gives up before starting Claude.
+const PREFLIGHT_LIMIT_MS = 5 * 60_000;
 // Three copies of a serialized packet appear in a stream line. Its JSON quotes
 // and escapes can double on embedding; UTF-8 costs up to 3 bytes per code unit.
 export const MAX_CLAUDE_LINE_BYTES = 3 * 4 * MAX_HARDEST_PACKET_CHARS + 1024 * 1024;
@@ -554,7 +559,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       env: options.remote ? processEnv : { ...processEnv,
         INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT,
         INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE },
-      timeoutMs: options.timeoutMs, onLine: (line) => { if (line.trim()) lines.push(line); }, activeGroups });
+      timeoutMs: Math.min(options.timeoutMs, HOST_CALL_TIMEOUT_MS), onLine: (line) => { if (line.trim()) lines.push(line); }, activeGroups });
     if (result.code !== 0 || result.problem || result.timedOut) {
       // A host call killed by a stop signal is a stop, not a host outage.
       fail(stopping ? "JOURNAL_CLAUDE_STOPPED" : "JOURNAL_CLAUDE_HOST_UNAVAILABLE");
@@ -616,6 +621,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         return outcome;
       }
       claimed = true;
+      const reservedAt = Date.now();
       const packetCheck = (await host("packet-check", ["--work-id", record.work_id]))[0];
       if (packetCheck?.allowed !== true) {
         outcome = packetCheck?.reason === "too_large" ? "rejected:PACKET_TOO_LARGE" : "rejected:PACKET_UNAVAILABLE";
@@ -640,6 +646,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       observed = reader.state;
       // A stop requested after the last host call must not start Claude: its group could not be signalled.
       if (stopping) { outcome = "stopped"; return outcome; }
+      // Nor may a run whose preflight was slow enough that a sibling could soon reclaim its reservation.
+      if (Date.now() - reservedAt >= Math.min(PREFLIGHT_LIMIT_MS, options.timeoutMs)) { outcome = "preflight_expired"; return outcome; }
       let result;
       try { result = await runProcess(options.claudeBin, claudePrintArgs({ record, mcpConfig, sessionId }), {
         cwd: runDir, env: { ...processEnv, XDG_CACHE_HOME: path.join(runDir, "cache") },

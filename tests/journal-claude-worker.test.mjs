@@ -69,6 +69,9 @@ const failFirst = (name, count, code) => {
 };
 if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).includes("'session-reserve'")) failFirst("session-reserve", 1, 39);
 if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'attempt-refuse'")) failFirst("attempt-refuse", 1, 42);
+if (${JSON.stringify(scenario)} === "slow_preflight" && /'(?:stage-create|session-reserve)'/.test(args.at(-1))) {
+  await new Promise((resolve) => setTimeout(resolve, 1500)); // each within the host-call timeout, together past the preflight limit
+}
 if (${JSON.stringify(scenario)} === "session_stolen" && args.at(-1).includes("'promote'")) {
   // Another item takes this run's session reservation between Claude's run and promotion.
   const directory = path.join(${JSON.stringify(root)}, "claude-sessions");
@@ -518,6 +521,20 @@ test("an isolation hold the host didn't record is applied by the next start befo
   await runJournalWork(["attempt-status", "--work-id", held], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
     stdout: { write: (value) => { status += value; } } });
   assert.equal(JSON.parse(status).status, "isolation_refused");
+});
+
+test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {
+  const f = await fixture(t, "slow_preflight");
+  const operationKey = "job:synthetic-slow-preflight";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  // The fixture's 2.5 s run timeout bounds the preflight; two 1.5 s host calls exceed it every attempt.
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["preflight_expired", "preflight_expired", "preflight_expired"]);
+  assert.ok(logs.every((item) => item.model_reached === false));
+  await assert.rejects(fs.access(path.join(f.laptop, "claude-starts")), "Claude never started");
+  assert.equal((await f.port.getCompletion(operationKey)).status, "unknown");
+  await assertWorkDirClean(f.workDir);
 });
 
 test("a failed session reservation stops the item before Claude starts", async (t) => {
