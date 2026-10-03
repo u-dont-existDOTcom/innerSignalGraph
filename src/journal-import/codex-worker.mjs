@@ -428,6 +428,21 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
     }).catch(() => {}).finally(() => { importRun = null; if (importPending && !stopping) { importPending = false; startImport(); } });
   }
   const running = new Map(), attempts = new Map(), limits = new Map(), seenThreads = new Set();
+  // Answers seen in the dispatch list, and those this worker stored itself. An answer stored by another worker
+  // (the Claude lane's hardest items) also needs an import run, or it waits for this worker's next answer.
+  const answersSeen = new Set(), ownAnswers = new Set();
+  let answersScanned = false;
+  const noticeForeignAnswers = (records) => {
+    let foreign = false;
+    for (const record of records) {
+      if (!record.answered || answersSeen.has(record.work_id)) continue;
+      answersSeen.add(record.work_id);
+      if (answersScanned && !ownAnswers.has(record.work_id)) foreign = true;
+    }
+    // Answers already present at start are covered by the import run the worker starts with.
+    answersScanned = true;
+    if (foreign) startImport();
+  };
   let completed = 0, limitedUntil = 0;
   let initial = null;
 
@@ -473,6 +488,7 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
           execution: { profile_evidence: "codex_exec_request_pinned", effective_model_profile: record.model,
             effective_effort: record.effort, request_context_id: `codex-thread:${events.state.threads[0]}` } });
         outcome = stored.already ? "already_answered" : "answered";
+        ownAnswers.add(record.work_id);
         if (outcome === "answered") startImport();
       }
     } catch { outcome = stopping ? "stopped" : "error"; }
@@ -491,6 +507,8 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
     for (;;) {
       if (stopping) break;
       const now = Date.now();
+      // Checked on every poll, also while usage limits hold back new runs.
+      if (options.importCommand && !options.once) noticeForeignAnswers(await dispatch.listDispatch());
       if (now >= limitedUntil && completed < options.maxItems) {
         const records = await dispatch.listDispatch();
         for (const record of records) {

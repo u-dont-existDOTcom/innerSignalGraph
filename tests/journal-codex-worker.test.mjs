@@ -59,11 +59,13 @@ async function setup(t) {
     INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: root, INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: secretFile };
   const args = (fake, extra = []) => ["--config", configPath, "--codex-home", home, "--work-dir", workDir, "--codex-bin", fake,
     "--log", log, "--poll-ms", "10", ...extra];
-  async function publish(workId, role = "reference_reader") {
-    const entry = manualWork(workId, role);
+  async function publish(workId, role = "reference_reader", tier = "standard") {
+    const entry = { ...manualWork(workId, role), tier };
     await exchange.publishWork(entry);
-    await exchange.publishDispatch({ schema_version: 1, work_id: workId, role, tier: "standard",
-      output_schema_name: entry.output_schema_name, model: "gpt-6-sol", effort: "medium", route_ref: "route:codex",
+    await exchange.publishDispatch({ schema_version: 1, work_id: workId, role, tier,
+      ...(tier === "hardest" ? { attempt_identity: "a".repeat(48) } : {}),
+      output_schema_name: entry.output_schema_name, model: tier === "hardest" ? "claude-opus-5-5" : "gpt-6-sol",
+      effort: tier === "hardest" ? "max" : "medium", route_ref: "route:codex",
       issued_at: entry.issued_at, expires_at: entry.expires_at });
   }
   async function fake(scenario = "ok") {
@@ -611,6 +613,26 @@ test("import command runs without a shell and records only exit code and duratio
     assert.equal(typeof item.duration_ms, "number");
     assert.deepEqual(Object.keys(item).sort(), ["at", "duration_ms", "exit_code", "kind"]);
   }
+});
+
+test("an answer stored by another worker starts one import run", async (t) => {
+  const f = await setup(t);
+  // A hardest item: the Claude lane answers it, never this worker.
+  await f.publish("job:synthetic-foreign-answer", "reference_reader", "hardest");
+  const fake = await f.fake();
+  const marker = path.join(f.base, "import-count");
+  const command = [process.execPath, "-e", "require('node:fs').appendFileSync(process.argv[1], 'x')", marker];
+  const running = spawnWorker(f, fake, ["--import-command-json", JSON.stringify(command)]);
+  t.after(() => { if (running.child.exitCode === null) running.child.kill("SIGKILL"); });
+  const imports = async () => fs.readFile(marker, "utf8").catch(() => "");
+  await until(async () => (await imports()) === "x");
+  await f.exchange.submitResult({ workId: "job:synthetic-foreign-answer", output: { ok: true }, subject: "synthetic" });
+  await until(async () => (await imports()) === "xx");
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(await imports(), "xx", "one run per new answer, not one per poll");
+  assert.equal(await f.exchange.readResult("job:synthetic-foreign-answer") !== null, true);
+  running.child.kill("SIGTERM");
+  assert.equal(await running.closed, 143);
 });
 
 test("usage limit parses Codex's local reset messages and does not consume item attempts", async (t) => {
