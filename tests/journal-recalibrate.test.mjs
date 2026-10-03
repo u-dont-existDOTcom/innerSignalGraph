@@ -580,7 +580,8 @@ for (const outcome of ["resolves", "fails", "refused", "rejected"]) {
           seen.add(record.work_id);
           tiers.push([record.role, record.tier]);
           if (record.tier === "hardest") {
-            assert.equal(await runJournalClaudeWorker(workerArgs, { environment: laptopEnvironment }), 0);
+            // An isolation violation, here a Bash call after model reach, closes the item and stops the worker (78).
+            assert.equal(await runJournalClaudeWorker(workerArgs, { environment: laptopEnvironment }), refused ? 78 : 0);
             if (refused || rejected) refusedAt = Date.now();
           } else {
             const entry = await exchange.readWork(record.work_id);
