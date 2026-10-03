@@ -46,10 +46,10 @@ async function fixture(t, { pages = 1, visual = false } = {}) {
   const service = { verifyCaseAccess: async () => ({}) };
   const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==", "base64");
   return { config, configPath, service, parser, image,
-    open: (port, resumed = false, environment = process.env) => openJournalExecutionRuntime({ config, configPath, service, environment,
+    open: (port, resumed = false, environment = process.env, now = undefined) => openJournalExecutionRuntime({ config, configPath, service, environment,
       sourceParser: resumed ? () => assert.fail("source must not be reparsed") : parser,
       renderVisualPage: resumed ? () => assert.fail("visual page must not be reread") : async () => image,
-      inferencePort: port }) };
+      inferencePort: port, ...(now ? { now } : {}) }) };
 }
 
 function invalidReferenceItems(packet) {
@@ -59,16 +59,16 @@ function invalidReferenceItems(packet) {
     importance_reason: "Synthetic calibration failure.", critical: false }];
 }
 
-function mockPort({ fail = false, failReference = false, calls, extractor, omission, fidelity, reference }) {
+function mockPort({ fail = false, failReference = false, calls, extractor, omission, fidelity, reference, visual }) {
   const review = (role, packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation,
     review_role: role, assessments: [], proposed_repairs: [], unassessed_ids: [],
     status: "sufficient_for_stated_scope" });
   const handlers = {
-    visual_reader: (packet) => ({ schema_version: "1.0", source_page_id: packet.assigned_core_ids[0],
+    visual_reader: visual ?? ((packet) => ({ schema_version: "1.0", source_page_id: packet.assigned_core_ids[0],
       regions: [{ region_id: "region:synthetic", bbox: [0, 0, 1, 1], kind: "text",
         transcription: "Synthetic image text.", non_graphic_description: null,
         interpretation_status: "readable", speaker_or_document_label: null, table_cells: [] }],
-      page_complete: true, missing_or_uncertain_regions: [] }),
+      page_complete: true, missing_or_uncertain_regions: [] })),
     reference_reader: reference ?? (packet => ({ schema_version: "1.0", source_only_first_pass: true,
       reference_items: failReference ? invalidReferenceItems(packet) : [], questions: [], unassessed_unit_ids: [] })),
     extractor: extractor ?? ((packet) => ({ schema_version: "1.0", status: fail ? "incomplete" : "complete",
@@ -679,8 +679,14 @@ test("failed calibration retries with fresh answers and continues without reread
   assert.equal(failed.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
   assert.equal(failed.completed_visual_pages, 1);
   const before = await checkpoint(f.config);
+  // Both calibration units (the native window and the visual page) are tried before the gate closes.
   const firstCount = failedCalls.filter((call) => call.role === "extractor").length;
-  assert.equal(firstCount, 3);
+  assert.equal(firstCount, 6);
+  assert.deepEqual([failed.calibration_failure.failed_units, failed.calibration_failure.completed_calibration_units,
+    failed.calibration_failure.calibration_units], [2, 2, 2]);
+  assert.deepEqual(failed.calibration_failure.failures.map((item) => item.reason),
+    ["CALIBRATION_EXTRACTION_UNRESOLVED", "CALIBRATION_EXTRACTION_UNRESOLVED"]);
+  assert.equal(failed.calibration_failure.failures[0].unit_id, failed.calibration_failure.unit_id);
   const reset = await runtime.execute("recalibrate");
   assert.equal(reset.calibration, "not_run");
   assert.equal(reset.calibration_epoch, 1);
@@ -694,7 +700,8 @@ test("failed calibration retries with fresh answers and continues without reread
   assert.deepEqual(after.completed_visual_pages, before.completed_visual_pages);
   assert.deepEqual(after.calibration_history[0].previous_failure,
     { status: "CALIBRATION_REPAIR_REQUIRED", reason: "CALIBRATION_EXTRACTION_UNRESOLVED",
-      diagnostics: before.calibration_failure.diagnostics });
+      diagnostics: before.calibration_failure.diagnostics, failed_units: 2, completed_calibration_units: 2,
+      calibration_units: 2, failures: before.calibration_failure.failures });
   assert.deepEqual(reset.previous_failure.diagnostics, before.calibration_failure.diagnostics);
   runtime = await f.open(mockPort({ calls: [] }), true);
   try { assert.deepEqual((await runtime.execute("status")).previous_failure.diagnostics,
@@ -875,7 +882,9 @@ for (const outcome of ["resolves", "fails", "refused", "rejected"]) {
       assert.equal(completed, true, "synthetic exchange run timed out");
       if (failure) throw failure;
       assert.equal(tiers.filter(([role, tier]) => role === "extractor" && tier === "standard").length, 3);
-      assert.equal(tiers.filter(([role, tier]) => role === "extractor" && tier === "hardest").length, 1);
+      // An unresolved hardest answer gets one repair at the same tier; a refused one does not.
+      assert.equal(tiers.filter(([role, tier]) => role === "extractor" && tier === "hardest").length,
+        outcome === "fails" ? 2 : 1);
       assert.equal(summary.calibration, resolves ? "pass" : "failed");
       assert.equal(summary.calibration_failure?.reason, resolves ? undefined : "CALIBRATION_EXTRACTION_UNRESOLVED");
       assert.ok(summary.hardest_lane.sent >= 1);
@@ -905,7 +914,10 @@ test("a second failed calibration can advance to epoch two, and readers use curr
       const failed = await runtime.execute("run");
       assert.equal(failed.calibration, "failed");
       assert.equal(failed.calibration_epoch, epoch);
-      assert.equal(calls.filter((call) => call.role === "extractor").length, 3);
+      // Three of the twelve calibration units fail (three extractions each), which reaches the default limit.
+      assert.equal(calls.filter((call) => call.role === "extractor").length, 9);
+      assert.deepEqual([failed.calibration_failure.failed_units, failed.calibration_failure.completed_calibration_units,
+        failed.calibration_failure.calibration_units], [3, 3, 12]);
       attempts.push(calls);
       assert.equal((await runtime.execute("recalibrate")).calibration_epoch, epoch + 1);
     } finally { await runtime.close(); }
@@ -1030,4 +1042,261 @@ test("recalibrate refuses other states and bad configs before env-file loading o
   assert.equal(dispatched, "recalibrate");
   assert.equal(closed, true);
   assert.equal(JSON.parse(output).calibration_epoch, 1);
+});
+
+const noAssertions = (packet, status, reason = "Synthetic.", requested = []) => ({ schema_version: "1.0", status,
+  assertions: [], entities: [], episodes: [],
+  coverage: packet.core_units.map((unit) => ({ unit_id: unit.unit_id,
+    disposition: status === "complete" ? "no_assertion" : "pending", assertion_local_ids: [], reason })),
+  requested_context: requested });
+const pageUnit = (plan, page) => plan.units.find((unit) => !unit.visual && unit.text.startsWith(`Synthetic page ${page} `));
+const noAnswer = { supplied: 0, unavailable: 0, already_answered: 0 };
+
+test("a request for the earlier text is answered with a wider window and the next pass completes", async t => {
+  const f = await fixture(t, { pages: 3 });
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls, extractor: (packet) => {
+    const unit = packet.core_units[0];
+    return unit.text.startsWith("Synthetic page 3 ") && !packet.repair_request
+      ? noAssertions(packet, "needs_context", "Synthetic.", [{ unit_id: unit.unit_id, direction: "before", reason: "Synthetic earlier entry." }])
+      : noAssertions(packet, "complete");
+  } }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const plan = await readPlan(f.config);
+    const [first, second, third] = [1, 2, 3].map((page) => pageUnit(plan, page));
+    const extractions = calls.filter((call) => call.role === "extractor" && call.packet.assigned_core_ids[0] === third.unit_id)
+      .map((call) => call.packet);
+    assert.equal(extractions.length, 2);
+    assert.equal(extractions[0].adjacent_context.by_unit[0].before, second.text);
+    assert.equal(extractions[1].adjacent_context.by_unit[0].before, `${first.text}\n\n${second.text}`);
+    assert.equal(extractions[1].adjacent_context.by_unit[0].after, extractions[0].adjacent_context.by_unit[0].after);
+    assert.deepEqual(extractions[1].repair_request.context_response,
+      [{ unit_id: third.unit_id, direction: "before", status: "supplied" }]);
+    assert.equal(extractions[1].repair_request.cycle, 1);
+    assert.equal(extractions[1].repair_request.omission_review, null);
+    // The review sees the same wider window the extractor used.
+    const review = calls.find((call) => call.role === "omission_checker" && call.packet.assigned_core_ids[0] === third.unit_id);
+    assert.deepEqual(review.packet.adjacent_context, extractions[1].adjacent_context);
+    const record = await withStore(f.config, (store) => store.readJsonObject({ objectId: `unit:graph:${third.unit_id}` }));
+    assert.equal(record.source_only_unresolved, false);
+    assert.deepEqual(record.diagnostics.cycles.map((cycle) => cycle.context_answer ?? null),
+      [{ ...noAnswer, supplied: 1 }, null]);
+    assert.deepEqual(record.diagnostics.cycles[0].extraction.requested_context_by_direction,
+      { before: 1, after: 0, visual: 0, whole_entry: 0 });
+    assert.equal(JSON.stringify(record.diagnostics).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+test("context that does not exist is answered as unavailable, then as already answered, with no extra pass", async t => {
+  const f = await fixture(t);
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls, extractor: (packet) => noAssertions(packet, "needs_context", "Synthetic.",
+    ["before", "visual", "before"].map((direction) => ({ unit_id: packet.core_units[0].unit_id, direction, reason: "Synthetic." }))) }));
+  try {
+    const failed = await runtime.execute("run");
+    assert.equal(failed.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
+    const unitId = failed.calibration_failure.unit_id;
+    const responses = calls.filter((call) => call.role === "extractor")
+      .map((call) => call.packet.repair_request?.context_response ?? null);
+    assert.deepEqual(responses, [null,
+      [{ unit_id: unitId, direction: "before", status: "unavailable" }, { unit_id: unitId, direction: "visual", status: "unavailable" }],
+      [{ unit_id: unitId, direction: "before", status: "already_answered" }, { unit_id: unitId, direction: "visual", status: "already_answered" }]]);
+    assert.deepEqual(failed.calibration_failure.diagnostics.cycles.map((cycle) => cycle.context_answer),
+      [{ ...noAnswer, unavailable: 2 }, { ...noAnswer, already_answered: 2 }, { ...noAnswer, already_answered: 2 }]);
+    assert.deepEqual(failed.calibration_failure.diagnostics.cycles[0].extraction.requested_context_by_direction,
+      { before: 2, after: 0, visual: 1, whole_entry: 0 });
+  } finally { await runtime.close(); }
+});
+
+test("a visual request adds the neighbouring pages' transcriptions that exist", async t => {
+  const f = await fixture(t, { pages: 2, visual: true });
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls, extractor: (packet) => {
+    const unit = packet.core_units[0];
+    return unit.text.startsWith("Synthetic page 2 ") && !packet.repair_request
+      ? noAssertions(packet, "needs_context", "Synthetic.", [{ unit_id: unit.unit_id, direction: "visual", reason: "Synthetic drawing." }])
+      : noAssertions(packet, "complete");
+  } }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const plan = await readPlan(f.config);
+    const second = pageUnit(plan, 2);
+    const extractions = calls.filter((call) => call.role === "extractor" && call.packet.assigned_core_ids[0] === second.unit_id)
+      .map((call) => call.packet);
+    assert.deepEqual(extractions.map((packet) => packet.visual_transcriptions.map((item) => item.source_page_id)), [[], ["page:1"]]);
+    assert.deepEqual(extractions[1].repair_request.context_response,
+      [{ unit_id: second.unit_id, direction: "visual", status: "supplied" }]);
+  } finally { await runtime.close(); }
+});
+
+test("a visual answer that would push the packet over its bound is refused and reported unavailable", async t => {
+  const f = await fixture(t, { pages: 3 });
+  f.config.visual_hazard_pages = [1, 3];
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls,
+    visual: (packet) => ({ schema_version: "1.0", source_page_id: packet.assigned_core_ids[0],
+      regions: [{ region_id: "region:synthetic", bbox: [0, 0, 1, 1], kind: "text",
+        transcription: `Synthetic long transcription.\n${"Synthetic line of handwriting.\n".repeat(3_000)}`,
+        non_graphic_description: null, interpretation_status: "readable", speaker_or_document_label: null, table_cells: [] }],
+      page_complete: true, missing_or_uncertain_regions: [] }),
+    extractor: (packet) => {
+      const unit = packet.core_units[0];
+      return unit.text.startsWith("Synthetic page 2 ") && !packet.repair_request
+        ? noAssertions(packet, "needs_context", "Synthetic.", [{ unit_id: unit.unit_id, direction: "visual", reason: "Synthetic drawing." }])
+        : noAssertions(packet, "complete");
+    } }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const second = pageUnit(await readPlan(f.config), 2);
+    const extractions = calls.filter((call) => call.role === "extractor" && call.packet.assigned_core_ids[0] === second.unit_id)
+      .map((call) => call.packet);
+    assert.equal(extractions.length, 2);
+    assert.deepEqual(extractions[1].visual_transcriptions, []);
+    assert.deepEqual(extractions[1].repair_request.context_response,
+      [{ unit_id: second.unit_id, direction: "visual", status: "unavailable" }]);
+  } finally { await runtime.close(); }
+});
+
+test("a batch of several units that names the context it needs is answered instead of split", async t => {
+  const f = await fixture(t, { pages: 3 });
+  f.config.semantic_batching = { calibration_maximum_units: 2, maximum_units: 2 };
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls, extractor: (packet) => packet.core_units.length === 2 && !packet.repair_request
+    ? noAssertions(packet, "needs_context", "Synthetic.", [{ unit_id: packet.core_units[0].unit_id, direction: "whole_entry", reason: "Synthetic." }])
+    : noAssertions(packet, "complete") }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const plan = await readPlan(f.config);
+    const [first, second, third] = [1, 2, 3].map((page) => pageUnit(plan, page));
+    const batch = calls.filter((call) => call.role === "extractor" && call.packet.assigned_core_ids.length === 2).map((call) => call.packet);
+    assert.equal(batch.length, 2);
+    assert.equal(calls.filter((call) => call.role === "extractor" && [first.unit_id, second.unit_id]
+      .includes(call.packet.assigned_core_ids[0]) && call.packet.assigned_core_ids.length === 1).length, 0, "no split");
+    assert.equal(batch[1].adjacent_context.by_unit[0].after, `${second.text}\n\n${third.text}`);
+    assert.equal(batch[1].adjacent_context.by_unit[0].before, "");
+    assert.deepEqual(batch[1].repair_request.context_response,
+      [{ unit_id: first.unit_id, direction: "whole_entry", status: "supplied" }]);
+    assert.deepEqual(batch[1].adjacent_context.by_unit[1], batch[0].adjacent_context.by_unit[1]);
+  } finally { await runtime.close(); }
+});
+
+test("an unresolved hardest extraction gets one repair at the same tier, which resolves the unit", async t => {
+  const f = await fixture(t);
+  f.config.hardest_lane = { enabled: true };
+  const calls = [];
+  let tier = "standard";
+  const base = mockPort({ calls,
+    extractor: (packet) => tier !== "hardest" ? noAssertions(packet, "incomplete", "Synthetic standard.")
+      : noAssertions(packet, "complete", packet.repair_request?.cycle === "hardest-repair" ? "Synthetic hardest repair." : "Synthetic hardest."),
+    omission: (packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation, review_role: "omission_checker",
+      ...(packet.candidate_extraction.coverage[0].reason === "Synthetic hardest."
+        ? { status: "repair_required", proposed_repairs: [{ target_id: "synthetic-target", repair: "Synthetic.", evidence_ids: [] }],
+          assessments: [{ target_id: "synthetic-target", outcome: "distorted", critical: false, finding_type: "wrong_mode",
+            explanation: "Synthetic.", evidence_ids: [] }] }
+        : { status: "sufficient_for_stated_scope", assessments: [], proposed_repairs: [] }), unassessed_ids: [] }) });
+  const port = { ...base, invoke(input) { tier = input.tier ?? "standard"; return base.invoke(input); } };
+  const runtime = await f.open(port);
+  try {
+    const summary = await runtime.execute("run");
+    assert.equal(summary.calibration, "pass");
+    assert.deepEqual([summary.residuals.hardest_attempted, summary.residuals.hardest_resolved], [1, 1]);
+    assert.equal(summary.hardest_lane.sent, 4);
+    assert.deepEqual(calls.filter((call) => call.tier === "hardest").map((call) => call.role),
+      ["extractor", "omission_checker", "extractor", "omission_checker"]);
+    const repair = calls.filter((call) => call.tier === "hardest" && call.role === "extractor")[1].packet.repair_request;
+    assert.equal(repair.cycle, "hardest-repair");
+    assert.equal(repair.previous_extraction.coverage[0].reason, "Synthetic hardest.");
+    assert.equal(repair.omission_review.status, "repair_required");
+    assert.equal(repair.mechanical_failure, null);
+    assert.equal(Object.hasOwn(repair, "context_response"), false);
+    const record = await calibrationRecord(f.config);
+    assert.equal(record.source_only_unresolved, false);
+    assert.equal(record.diagnostics.hardest.omission.status, "repair_required");
+    assert.equal(record.diagnostics.hardest.repair.omission.status, "sufficient_for_stated_scope");
+    assert.equal(record.diagnostics.hardest.repair.extraction_changed, true);
+    const count = calls.length;
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    assert.equal(calls.length, count, "the hardest repair is replayed without a second send");
+  } finally { await runtime.close(); }
+});
+
+test("a calibration failure limit of one stops at the first failing unit, and an invalid limit is refused", async t => {
+  const f = await fixture(t, { pages: 3 });
+  f.config.calibration_failure_limit = 1;
+  const calls = [];
+  const runtime = await f.open(mockPort({ fail: true, calls }));
+  try {
+    const failed = await runtime.execute("run");
+    assert.deepEqual([failed.calibration_failure.failed_units, failed.calibration_failure.completed_calibration_units,
+      failed.calibration_failure.calibration_units], [1, 1, 3]);
+    assert.equal(calls.filter((call) => call.role === "extractor").length, 3);
+  } finally { await runtime.close(); }
+  const g = await fixture(t);
+  g.config.calibration_failure_limit = 0;
+  const refused = await g.open(mockPort({ calls: [] }));
+  try { await assert.rejects(refused.execute("run"), { code: "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID" }); }
+  finally { await refused.close(); }
+});
+
+test("failures recorded before a pause count toward the limit after the restart", async t => {
+  const f = await fixture(t, { pages: 3 });
+  f.config.hardest_lane = { enabled: true, daily_limit: 2 };
+  f.config.calibration_failure_limit = 2;
+  let day = "2026-10-03T12:00:00Z";
+  const now = () => new Date(day);
+  const calls = [];
+  let runtime = await f.open(mockPort({ fail: true, calls }), false, process.env, now);
+  try {
+    const paused = await runtime.execute("run");
+    assert.equal(paused.blocker, "HARDEST_DAILY_LIMIT");
+    assert.equal(paused.calibration, "not_run");
+    assert.equal(paused.completed_units, 1);
+    // The round's failure so far is visible in the checkpoint while the run is paused.
+    const midRound = (await checkpoint(f.config)).calibration_round_failures;
+    assert.deepEqual(midRound.map((item) => [item.status, item.reason]),
+      [["CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_EXTRACTION_UNRESOLVED"]]);
+    assert.equal(midRound[0].diagnostics.hardest.repair.extraction.status, "incomplete");
+  } finally { await runtime.close(); }
+  day = "2026-10-04T12:00:00Z";
+  runtime = await f.open(mockPort({ fail: true, calls }), true, process.env, now);
+  try {
+    const failed = await runtime.execute("run");
+    assert.equal(failed.calibration, "failed");
+    assert.deepEqual([failed.calibration_failure.failed_units, failed.calibration_failure.completed_calibration_units,
+      failed.calibration_failure.calibration_units], [2, 2, 3]);
+    const third = pageUnit(await readPlan(f.config), 3);
+    assert.equal(calls.some((call) => call.packet.assigned_core_ids?.[0] === third.unit_id && call.role === "extractor"), false);
+    assert.deepEqual(failed.calibration_failure.failures.map((item) => Object.hasOwn(item.diagnostics.hardest, "repair")), [true, true]);
+    assert.equal(Object.hasOwn(await checkpoint(f.config), "calibration_round_failures"), false);
+  } finally { await runtime.close(); }
+});
+
+test("a later chunk of a long page transcription gets the earlier chunks of the same page first", async t => {
+  const f = await fixture(t, { pages: 2, visual: true });
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls,
+    visual: (packet) => ({ schema_version: "1.0", source_page_id: packet.assigned_core_ids[0],
+      regions: [{ region_id: "region:synthetic", bbox: [0, 0, 1, 1], kind: "text",
+        transcription: "Synthetic line of handwriting.\n".repeat(1_400),
+        non_graphic_description: null, interpretation_status: "readable", speaker_or_document_label: null, table_cells: [] }],
+      page_complete: true, missing_or_uncertain_regions: [] }),
+    extractor: (packet) => {
+      const unit = packet.core_units[0], locator = packet.source_locators[0];
+      return locator.representation_id.startsWith("visual:") && locator.start_byte > 0 && !packet.repair_request
+        ? noAssertions(packet, "needs_context", "Synthetic.", [{ unit_id: unit.unit_id, direction: "before", reason: "Synthetic." }])
+        : noAssertions(packet, "complete");
+    } }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const chunks = (await readPlan(f.config)).units.filter((unit) => unit.visual);
+    assert.ok(chunks.length >= 3);
+    const packets = calls.filter((call) => call.role === "extractor" && call.packet.assigned_core_ids[0] === chunks[1].unit_id)
+      .map((call) => call.packet);
+    assert.equal(packets.length, 2);
+    assert.equal(packets[0].adjacent_context.by_unit[0].before, chunks[1].context.before);
+    assert.equal(packets[1].adjacent_context.by_unit[0].before, chunks[0].text);
+    assert.deepEqual(packets[1].repair_request.context_response,
+      [{ unit_id: chunks[1].unit_id, direction: "before", status: "supplied" }]);
+  } finally { await runtime.close(); }
 });

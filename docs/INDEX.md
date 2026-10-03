@@ -44,6 +44,7 @@ The transition report names the fully gated private candidate, the public visibi
 - `superpowers/plans/2026-10-01-journal-recalibrate.md`: explicit calibration retry with epoch-scoped identities and append-only unit records
 - `superpowers/plans/2026-10-02-journal-calibration-diagnostics.md`: content-free extraction failure counts across repair cycles and hardest attempt
 - `superpowers/plans/2026-10-02-journal-fidelity-repair.md`: audit-only retry, bounded hardest fidelity repair and content-free recovery diagnostics
+- `superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`: answered extractor context requests, one hardest self-repair and calibration rounds that run to the end
 - `superpowers/specs/`: accepted design specifications
 
 ## Obsidian graph authoring
