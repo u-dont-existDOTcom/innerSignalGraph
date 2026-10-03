@@ -20,6 +20,7 @@ export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
   "inventory",
   "stage",
   "run",
+  "recalibrate",
   "visual-only",
   "status",
   "verify",

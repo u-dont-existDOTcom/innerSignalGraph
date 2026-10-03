@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.NONPUNITIVE_REVIEW
 status: owner-approved
 domain: inner-child
-base_record_sha256: 76c1f604eea4d0a8fd83eb5773cf8e7e82e1823af074873893e6f870353ab25c
-source_file_sha256: c47a275840e39cb00b2c09b76872a9d031bb4d30e6b459e7dcc21e578efb49c3
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+base_record_sha256: 81cb3dbe489a4a353b3f438c50916384661d797b480ef23743b02ab91e64afc1
+source_file_sha256: ef5a0b3c85a8cdab853ea710b5f3d9a3e76d5d8c8238ddedc329c73fbb03f0d4
+projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
 ---
 
 # AMEND.IC.NONPUNITIVE_REVIEW
@@ -17,13 +17,13 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
 
 ```json
 {
-  "approvedAt": "2026-09-26",
+  "approvedAt": "2026-10-03",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.NONPUNITIVE_REVIEW",
     "status": "owner-approved",
     "text": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established."
   },
-  "version": "2026-09-26-nonpunitive-review-r1"
+  "version": "2026-10-03-state-dependent-transfer-r1"
 }
 ```

@@ -10,7 +10,7 @@ Use only controller-supplied IDs and exact quotes. Do not compute SHA-256, byte 
 
 ## Role task
 
-Receive exact core sources plus candidate extraction for the same units and necessary neighbors. This role is NOT blind: you see the candidate. Audit source→candidate for omitted meaning and candidate→source for distortion. Check rare events, strengths, negation, changing subjects, temporal qualifiers, reported purpose versus action and actual effects. A citation does not prove the paraphrase.
+Receive exact core sources plus candidate extraction for the same units and necessary neighbors, and, when present, the authorized visual transcriptions the extractor received. This role is NOT blind: you see the candidate. Audit source→candidate for omitted meaning and candidate→source for distortion. Check rare events, strengths, negation, changing subjects, temporal qualifiers, reported purpose versus action and actual effects. A citation does not prove the paraphrase.
 
 Return review_role omission_checker, target_generation supplied by controller, assessments and proposed_repairs. Each source requirement gets preserved/omitted/distorted/unassessed. Use supplied candidate IDs or unit IDs for omitted items, with exact supplied evidence IDs where available. Explain proposed repairs in non-graphic prose; an extractor repair call, not the engineering worker, emits the typed replacement. Do not auto-rewrite the source or quietly add new asserted facts.
 

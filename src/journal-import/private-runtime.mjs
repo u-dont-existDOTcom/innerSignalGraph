@@ -14,6 +14,7 @@ import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs"
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { createJournalLookahead } from "./lookahead.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket, journalRoleInstruction } from "./provider-port.mjs";
+import { hardestJournalRequestFits } from "./packet-bounds.mjs";
 import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
@@ -27,9 +28,20 @@ import { createAuditScopeIndex, createReconciledAuditScope, summarizeFidelityCov
 import { publishJournalGenerationFromStaging } from "./publication.mjs";
 import { runJournalPatternPass } from "./pattern-stage.mjs";
 import { createJournalSemanticBatches, journalSemanticUnitCost, splitBatchExtractionByUnit } from "./semantic-batches.mjs";
+import { contextAnswerCounts, extractionCycleDiagnostics, fidelityCycleDiagnostics, unresolvedExtractionDiagnostics, diagnosticBlockerCode } from "./calibration-diagnostics.mjs";
 
 const hash = (v) => createHash("sha256").update(v).digest("hex");
+// Compare model outputs only in memory; diagnostics retain neither content nor a content hash.
+const canonicalJson = (value) => JSON.stringify(value, (_key, item) =>
+  item && typeof item === "object" && !Array.isArray(item)
+    ? Object.fromEntries(Object.keys(item).sort().map((key) => [key, item[key]])) : item);
+const extractionChanged = (previous, repaired) => previous && repaired
+  ? canonicalJson(previous) !== canonicalJson(repaired) : null;
 const invariant = (v, code) => { if (!v) throw new ValidationError(code, { code }); };
+// One semantic packet's source material (core units, adjacent context and visual transcriptions) stays below
+// this many bytes; an answered context request widens a unit's window to at most EXPANDED_CONTEXT_BYTES a side.
+const SEMANTIC_PACKET_BYTES = 180_000;
+const EXPANDED_CONTEXT_BYTES = 32_000;
 // Calibration windows over native-text units. A scanned or image-only source has none at intake;
 // its visual units get windows once the page reader has produced them, so none is a valid start.
 const nativeCalibration = (units) => units.length ? selectCalibrationWindows(units) : [];
@@ -196,7 +208,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const stateFile = path.join(root, "state.json");
     let state = await existingJson(stateFile);
     if (!state) {
-      state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", blocker: null };
+      state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
       await privateJson(stateFile, state);
     }
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
@@ -288,9 +300,43 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const writeOnce = async (id, value) => {
       const prior = await readIfPresent(id);
       const canonical = (v) => JSON.stringify(v, (k, x) => k === "replay" ? undefined : x);
-      if (prior) { invariant(canonical(prior) === canonical(value), "JOURNAL_IMMUTABLE_RESULT_CONFLICT"); return prior; }
+      if (prior) {
+        let legacyDiagnosticsOnly = false;
+        if (id.startsWith("unit:graph:") && !Object.hasOwn(prior, "diagnostics")
+          && Object.hasOwn(value, "diagnostics")) {
+          const withoutDiagnostics = { ...value };
+          delete withoutDiagnostics.diagnostics;
+          legacyDiagnosticsOnly = canonical(prior) === canonical(withoutDiagnostics);
+        }
+        invariant(canonical(prior) === canonical(value) || legacyDiagnosticsOnly, "JOURNAL_IMMUTABLE_RESULT_CONFLICT");
+        return prior;
+      }
       await store.writeJsonObject({ objectId: id, value }); return value;
     };
+    const calibrationEpoch = () => state.calibration_epoch ?? 0;
+    const epochId = (id, calibration) => calibration && calibrationEpoch() > 0
+      ? `${id}:epoch:${calibrationEpoch()}` : id;
+    // Attempt and hardest identities must also end in the epoch suffix.
+    const derivedId = (id, derivation) => {
+      const suffix = `:epoch:${calibrationEpoch()}`;
+      return calibrationEpoch() > 0 && id.endsWith(suffix)
+        ? `${id.slice(0, -suffix.length)}:${derivation}${suffix}` : `${id}:${derivation}`;
+    };
+    let unitRecordPlanRef = null;
+    let calibrationRecordIds = null;
+    const unitRecordId = async (unitId) => {
+      if (calibrationEpoch() === 0) return `unit:graph:${unitId}`;
+      const ref = state.visual_plan_ref ?? state.parsed_ref;
+      invariant(ref, "JOURNAL_SOURCE_NOT_STAGED");
+      if (ref !== unitRecordPlanRef) {
+        const plan = await readLarge(ref);
+        calibrationRecordIds = new Set(plan.calibration.map((item) => item.unit_id));
+        unitRecordPlanRef = ref;
+      }
+      return epochId(`unit:graph:${unitId}`, calibrationRecordIds.has(unitId));
+    };
+    const readUnitRecord = async (unitId) => readIfPresent(await unitRecordId(unitId));
+    const writeUnitRecord = async (unitId, value) => writeOnce(await unitRecordId(unitId), value);
     const hardestStatus = () => {
       applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit, newlySent: false });
       return state.hardest_lane;
@@ -310,6 +356,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         unused: sent.size - used, errors: lookaheadErrors + (lookahead?.summary().errors ?? 0) };
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
+      calibration_epoch: calibrationEpoch(), calibration_history_length: state.calibration_history?.length ?? 0,
+      ...(state.calibration_history?.length ? { previous_failure:
+        structuredClone(state.calibration_history.at(-1).previous_failure) } : {}),
       ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
       semantic_disposition: state.semantic_disposition ?? null,
       completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length,
@@ -472,13 +521,23 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           });
           return { snapshot, resolvePacketInput: resolveWorkPacketInput };
         } }) : null;
+    // Set with workExhausted when the job's primary item had already completed, so a refusal that came
+    // from a dependent item (for example, its packet grew too large) still counts the primary call.
+    let workPrimaryCompleted = false;
+    let incompleteWorkResults = null;
     async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, tier = "standard",
       identityPacketInput = packetInput, dependencies = [], acceptReviewFindings = false }) {
       workExhausted = false;
+      workPrimaryCompleted = false;
+      incompleteWorkResults = null;
       await authorize();
-      const { jobId, assignedCoreIds, sourceLocators, identity } = journalWorkPlan({
+      const { jobId, scopeUnits, assignedCoreIds, sourceLocators, identity } = journalWorkPlan({
         id, role, stage: workStage, unit, units, packetInput, identityPacketInput, dependencies, tier
       });
+      if (tier === "hardest" && !hardestJournalRequestFits({ role, units: scopeUnits, packetInput }, state.generation, grant.purpose)) {
+        state.stage = workStage; state.blocker = "JOURNAL_WORK_PACKET_TOO_LARGE";
+        workExhausted = true; await save(); return null;
+      }
       id = jobId;
       if (workStage === "REFERENCE_AUDIT") {
         const resultId = `reference:result:${id}`;
@@ -494,12 +553,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // An earlier run left this call open. Ask the port before blocking: a connector answer may
         // have arrived since, and a call that is definitely unanswered is sent again under a new key.
         for (let resend = 1; await readIfPresent(`reference:completion-unknown:${operationKey}`); resend += 1) {
-          const completion = await port.getCompletion(operationKey);
+          const completion = await port.getCompletion(operationKey, { tier });
           if (completion.status === "completed") {
             const recovered = { output: completion.output, receipt: completion.receipt };
             await writeOnce(resultId, recovered);
             state.blocker = null; await save();
             return [recovered];
+          }
+          if (completion.status === "exhausted") {
+            state.stage = workStage; state.blocker = completion.code;
+            workExhausted = true; await save(); return null;
           }
           if (completion.status === "invalid_output") {
             const attempt = firstFailure ? 2 : 1;
@@ -524,12 +587,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (tier === "hardest") {
             // A crash may leave the durable intent without this direct path's result marker. Recover
             // or resume that intent before charging a slot; only a confirmed-new send consumes one.
-            const completion = await port.getCompletion(operationKey);
+            const completion = await port.getCompletion(operationKey, { tier });
             if (completion.status === "completed") {
               const recovered = { output: completion.output, receipt: completion.receipt };
               await writeOnce(resultId, recovered);
               state.blocker = null; await save();
               return [recovered];
+            }
+            if (completion.status === "exhausted") {
+              state.stage = workStage; state.blocker = completion.code;
+              workExhausted = true; await save(); return null;
             }
             try { if (completion.status === "not_submitted") await beforeHardestSend(); }
             catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
@@ -538,6 +605,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant,
           ...(tier === "hardest" ? { tier } : {}) });
         } catch (error) {
+          if (error.submissionStatus === "exhausted") {
+            state.stage = workStage; state.blocker = error.code;
+            workExhausted = true; await save(); return null;
+          }
           if (error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid") {
             const attempt = firstFailure ? 2 : 1;
             await writeOnce(`reference:failure:${id}:${attempt}`, { status: "invalid_output", operation_key: operationKey, attempt });
@@ -581,8 +652,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const [primary] = entry.snapshot.work_items;
         const parked = acceptReviewFindings && primary?.status === "needs_context" && primary.output && primary.receipt;
         if (unfinished && !parked && !(acceptReviewFindings && entry.snapshot.work_items.every(item => item.output && item.receipt))) {
+          incompleteWorkResults = entry.snapshot.work_items.map((item) => ({ output: item.output ?? null, receipt: item.receipt ?? null }));
           state.stage = unfinished.stage; state.blocker = entry.snapshot.checkpoint.blocked_reason ?? "OUTPUT_INCOMPLETE";
-          workExhausted = unfinished.status === "blocked_authority" && state.blocker === "INVALID_STRUCTURED_OUTPUT";
+          workExhausted = unfinished.status === "blocked_authority"
+            && ["INVALID_STRUCTURED_OUTPUT", "JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED"].includes(state.blocker);
+          workPrimaryCompleted = primary?.status === "completed";
           await save();
           return null;
         }
@@ -614,7 +688,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     async function checkedWork(request, check = () => {}) {
       let failure = null;
       for (let attempt = 1; attempt <= CHECKED_ATTEMPTS; attempt += 1) {
-        const result = await work({ ...request, id: attempt === 1 ? request.id : `${request.id}:attempt:${attempt}` });
+        const result = await work({ ...request, id: attempt === 1 ? request.id : derivedId(request.id, `attempt:${attempt}`) });
         if (!result) {
           // A job that can never answer is a failed attempt. Any other stop (quota, an unknown
           // completion, revocation, a first invalid answer the job will retry) pauses the run.
@@ -631,13 +705,17 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (port.capabilities?.().hardest_roles?.[request.role]?.available === false) {
         return { failure, hardest: "not_attempted" };
       }
-      const result = await work({ ...request, id: `${request.id}:hardest`, tier: "hardest" });
+      if (!hardestJournalRequestFits(request, state.generation, grant.purpose)) {
+        return { failure: "JOURNAL_WORK_PACKET_TOO_LARGE", hardest: "not_attempted" };
+      }
+      const result = await work({ ...request, id: derivedId(request.id, "hardest"), tier: "hardest" });
       if (!result) {
         if (!workExhausted) return { blocked: true };
+        const terminal = state.blocker ?? failure;
         await recordHardestOutcome(request.id, "failed");
         state.blocker = null;
         await save();
-        return { failure, hardest: "failed" };
+        return { failure: terminal, hardest: "failed" };
       }
       const hardestFailure = checkFailure(check, result);
       await recordHardestOutcome(request.id, hardestFailure ? "failed" : "resolved");
@@ -706,34 +784,58 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         invariant(unit, "JOURNAL_SEMANTIC_BATCH_PLAN_MISMATCH");
         return unit;
       });
-      const bounded = (text, side) => {
+      const bounded = (text, side, limit = 8000) => {
         const characters = [...text];
         let size = 0;
         const result = [];
         for (const character of side === "before" ? characters.reverse() : characters) {
           const bytes = Buffer.byteLength(character);
-          if (size + bytes > 8000) break;
+          if (size + bytes > limit) break;
           size += bytes;
           result.push(character);
         }
         return (side === "before" ? result.reverse() : result).join("");
       };
+      const nativeIndexFor = (unit) => unit.visual
+        ? nativeUnits.findIndex((item) => item.page_number >= unit.page_number)
+        : nativeUnits.indexOf(unit);
       const neighborsFor = (unit) => {
-        const index = unit.visual
-          ? nativeUnits.findIndex((item) => item.page_number >= unit.page_number)
-          : nativeUnits.indexOf(unit);
+        const index = nativeIndexFor(unit);
         const before = bounded(nativeUnits[(index < 0 ? nativeUnits.length : index) - 1]?.text ?? "", "before");
         const after = bounded(nativeUnits[unit.visual ? index : index + 1]?.text ?? "", "after");
         return { unit_id: unit.unit_id, before: unit.context.before || before, after: unit.context.after || after };
       };
-      const visualContextFor = async (units) => {
-        const pages = [...new Set(units.map((unit) => unit.page_number).filter(Number.isSafeInteger))];
-        const output = [];
-        for (const pageNumber of pages) {
-          const visual = await readIfPresent(`visual:result:${pageNumber}`);
-          if (visual?.output) output.push(visual.output);
+      // The source text beside a unit in reading order, up to a bound: first the rest of its own representation (a
+      // visual unit's other transcription chunks), then native units across unit and page boundaries. Units of one
+      // representation join exactly and a change of representation is a blank line. It is context only: anchors
+      // still come from core units.
+      const expandedWindow = (unit, side, limit) => {
+        const own = unit.visual ? plan.units.filter((item) => item.representation_id === unit.representation_id) : [];
+        const position = own.indexOf(unit);
+        const index = nativeIndexFor(unit);
+        const start = index < 0 ? nativeUnits.length : index;
+        const sequence = side === "before"
+          ? [...own.slice(0, Math.max(position, 0)).reverse(), ...nativeUnits.slice(0, start).reverse()]
+          : [...own.slice(position + 1), ...nativeUnits.slice(unit.visual ? start : index + 1)];
+        const parts = [];
+        let size = 0, previous = null;
+        for (const item of sequence) {
+          if (size >= limit) break;
+          const gap = previous && previous.representation_id !== item.representation_id ? "\n\n" : "";
+          parts.push(side === "before" ? `${item.text}${gap}` : `${gap}${item.text}`);
+          size += Buffer.byteLength(item.text) + gap.length;
+          previous = item;
         }
-        return output;
+        if (side === "before") parts.reverse();
+        return bounded(parts.join(""), side, limit);
+      };
+      const visualEntriesFor = async (pageNumbers) => {
+        const entries = [];
+        for (const pageNumber of new Set(pageNumbers.filter((page) => Number.isSafeInteger(page) && page >= 1))) {
+          const visual = await readIfPresent(`visual:result:${pageNumber}`);
+          if (visual?.output) entries.push({ page_number: pageNumber, output: visual.output });
+        }
+        return entries;
       };
       const batchKey = (units) => hash(units.map((unit) => unit.unit_id).join("\0")).slice(0, 40);
       // This composite identity names a packet; locators bind its original ranges.
@@ -749,32 +851,44 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         start_byte: unit.start_byte,
         end_byte: unit.end_byte
       }));
-      const extractionRequestFor = ({ units, keyId, core, adjacentContext, visualContext,
-        cycle = 0, repairRequest = null }) => ({
-        id: `extract:batch:${keyId}:cycle:${cycle}`,
+      // One extraction request (the extractor with its omission check), shared by processBatch and the
+      // lookahead so both compute the same request and job ID.
+      const extractionRequestFor = ({ id, units, core, adjacentContext, visualContext, repairRequest = null,
+        tier = "standard" }) => ({
+        id, ...(tier === "hardest" ? { tier } : {}),
         role: "extractor", stage: "EXTRACT", units,
         packetInput: {
-          core_units: core, adjacent_context: adjacentContext,
+          core_units: core,
+          adjacent_context: adjacentContext,
           visual_transcriptions: visualContext,
           ...(repairRequest ? { repair_request: repairRequest } : {})
         },
         dependencies: [{
-          key: "omission", stage: "OMISSION_CHECK", role: "omission_checker",
-          identity: identityFor(units), assigned_core_ids: units.map(unit => unit.unit_id),
+          key: "omission",
+          stage: "OMISSION_CHECK",
+          role: "omission_checker",
+          identity: identityFor(units),
+          assigned_core_ids: units.map((unit) => unit.unit_id),
           source_locators: locatorsFor(units),
-          packet_input: { core_units: core, adjacent_context: adjacentContext,
-            candidate_extraction: { $work_output: "extractor" }, target_generation: state.generation }
+          packet_input: {
+            core_units: core,
+            adjacent_context: adjacentContext,
+            // The review sees the visual transcriptions the extractor saw, including supplied neighbours.
+            ...(visualContext.length ? { visual_transcriptions: visualContext } : {}),
+            candidate_extraction: { $work_output: "extractor" },
+            target_generation: state.generation
+          }
         }],
         acceptReviewFindings: true
       });
       const initialExtractionDescriptor = async (ids) => {
         const units = frozenUnits(ids);
-        const core = units.map(unit => ({ unit_id: unit.unit_id, text: unit.text }));
+        const core = units.map((unit) => ({ unit_id: unit.unit_id, text: unit.text }));
         const adjacentContext = { by_unit: units.map(neighborsFor) };
-        const visualContext = await visualContextFor(units);
+        const visualContext = (await visualEntriesFor(units.map((unit) => unit.page_number))).map((entry) => entry.output);
         if (Buffer.byteLength(JSON.stringify({ core_units: core, adjacent_context: adjacentContext,
-          visual_transcriptions: visualContext })) > 180_000) return null;
-        const request = extractionRequestFor({ units, keyId: batchKey(units), core,
+          visual_transcriptions: visualContext })) > SEMANTIC_PACKET_BYTES) return null;
+        const request = extractionRequestFor({ id: `extract:batch:${batchKey(units)}:cycle:0`, units, core,
           adjacentContext, visualContext });
         return { jobId: journalJobId(request), request };
       };
@@ -819,69 +933,90 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         validateJournalGraph(graph, { [unit.representation_id]: representation.text });
         return graph;
       };
-      const recordSourceOnly = async (unit, reason, detail = null) => {
+      const recordSourceOnly = async (unit, reason, detail = null, diagnostics = unresolvedExtractionDiagnostics([])) => {
         const sourceOnlyExtraction = { schema_version: "1.0", status: "incomplete", assertions: [], entities: [], episodes: [],
           coverage: [{ unit_id: unit.unit_id, disposition: "needs_review", assertion_local_ids: [],
             reason: `Semantic processing ended for this unit (${reason}); the archived source remains available.` }],
           requested_context: [] };
         const graph = bindUnitExtraction(unit, sourceOnlyExtraction, { receipt_id: `mechanical:source-only:${unit.unit_id}` });
-        await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: null, omission: null,
+        await writeUnitRecord(unit.unit_id, { graph, extraction: null, omission: null,
           source_only_unresolved: true, source_only_reason: reason,
+          diagnostics,
           ...(detail === null ? {} : { source_only_detail: detail }) });
         if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
         state.stage = "EXTRACT"; state.blocker = null; await save();
         return true;
       };
-      const setCalibrationStop = async (unitId, status, reason) => {
+      const setCalibrationStop = async (unitId, status, reason, diagnostics, details = {}) => {
         state.calibration = "failed";
-        state.calibration_failure = { unit_id: unitId, status, reason };
+        state.calibration_failure = { unit_id: unitId, status, reason,
+          ...(diagnostics ? { diagnostics } : {}), ...details };
+        delete state.calibration_round_failures;
         state.stage = "REFERENCE_AUDIT";
         state.blocker = status;
         await save();
         return false;
       };
-      const stopCalibration = async (unit, status, reason) => {
-        await recordSourceOnly(unit, status, reason);
-        return setCalibrationStop(unit.unit_id, status, reason);
+      // A failed calibration unit is kept as source-only with its reason and counts, and calibration goes on to
+      // the next unit. One round therefore shows every failing unit, up to the failure limit, and the gate closes
+      // when the round ends.
+      const failureLimit = config.calibration_failure_limit ?? 3;
+      invariant(Number.isSafeInteger(failureLimit) && failureLimit >= 1, "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID");
+      let calibrationFailures = 0;
+      const failCalibrationUnit = async (unit, status, reason, diagnostics = unresolvedExtractionDiagnostics([])) => {
+        // Visible in the checkpoint while the round continues. The gate's record is rebuilt from the unit
+        // records when the round ends.
+        state.calibration_round_failures = [...(state.calibration_round_failures ?? [])
+          .filter((item) => item.unit_id !== unit.unit_id), { unit_id: unit.unit_id, status, reason, diagnostics }];
+        await recordSourceOnly(unit, status, reason, diagnostics);
+        calibrationFailures += 1;
+        return true;
       };
       const processBatch = async (incoming, calibration = false) => {
         // Reuse the frozen scope even when a crash occurred between writing two
         // unit records. The completed job and its receipt keep the same identity.
         const units = incoming;
         if (units.every((unit) => state.completed_units.includes(unit.unit_id))) return true;
+        // At the failure limit the round ends: this batch, or the rest of a split one, waits for the next round.
+        if (calibration && calibrationFailures >= failureLimit) return true;
+        const cycles = [];
+        let hardestDiagnostics = null;
+        let reauditDiagnostics = null, hardestFidelityDiagnostics = null;
+        const fidelityCycles = [];
+        const diagnostics = () => unresolvedExtractionDiagnostics(cycles, hardestDiagnostics, fidelityCycles,
+          reauditDiagnostics, hardestFidelityDiagnostics);
+        const halves = async () => {
+          const middle = Math.ceil(units.length / 2);
+          return await processBatch(units.slice(0, middle), calibration)
+            && await processBatch(units.slice(middle), calibration);
+        };
         const finishExhausted = async (reason) => {
           if (!workExhausted) return false;
-          if (units.length > 1) {
-            const middle = Math.ceil(units.length / 2);
-            return await processBatch(units.slice(0, middle), calibration)
-              && await processBatch(units.slice(middle), calibration);
-          }
+          if (units.length > 1) return halves();
           return calibration
-            ? stopCalibration(units[0], reason.startsWith("CALIBRATION_")
-              ? reason : "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", reason)
-            : recordSourceOnly(units[0], reason);
+            ? failCalibrationUnit(units[0], reason.startsWith("CALIBRATION_")
+              ? reason : "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", reason, diagnostics())
+            : recordSourceOnly(units[0], reason, null, diagnostics());
         };
         const keyId = batchKey(units);
         const core = units.map((unit) => ({ unit_id: unit.unit_id, text: unit.text }));
-        const adjacentContext = { by_unit: units.map(neighborsFor) };
-        const visualContext = await visualContextFor(units);
-        const sourcePacketBytes = Buffer.byteLength(JSON.stringify({
+        let adjacentContext = { by_unit: units.map(neighborsFor) };
+        const visualEntries = await visualEntriesFor(units.map((unit) => unit.page_number));
+        let visualContext = visualEntries.map((entry) => entry.output);
+        let visualPages = new Set(visualEntries.map((entry) => entry.page_number));
+        const packetBytes = () => Buffer.byteLength(JSON.stringify({
           core_units: core, adjacent_context: adjacentContext, visual_transcriptions: visualContext
         }));
-        if (sourcePacketBytes > 180_000) {
-          if (units.length > 1) {
-            const middle = Math.ceil(units.length / 2);
-            return await processBatch(units.slice(0, middle), calibration)
-              && await processBatch(units.slice(middle), calibration);
-          }
+        if (packetBytes() > SEMANTIC_PACKET_BYTES) {
+          if (units.length > 1) return halves();
           return calibration
-            ? stopCalibration(units[0], "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_PACKET_OVERSIZE")
+            ? failCalibrationUnit(units[0], "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_PACKET_OVERSIZE")
             : recordSourceOnly(units[0], "SEMANTIC_PACKET_OVERSIZE");
         }
         let reference = null;
         if (calibration) {
           const frozen = await checkedWork({
-            id: `reference:calibration:batch:${keyId}`,
+            id: epochId(`reference:calibration:batch:${keyId}`, true),
             role: "reference_reader",
             stage: "REFERENCE_AUDIT",
             units,
@@ -897,110 +1032,181 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           });
           if (frozen.blocked) return false;
           // A reference that never quotes its source exactly: smaller batches are read again, and a
-          // single unit stops calibration with its own blocker, since calibration is the gate that
+          // single unit fails calibration with its own reason, since calibration is the gate that
           // decides whether the run goes on at all.
-          if (frozen.failure && units.length > 1) {
-            const middle = Math.ceil(units.length / 2);
-            return await processBatch(units.slice(0, middle), calibration)
-              && await processBatch(units.slice(middle), calibration);
-          }
+          if (frozen.failure && units.length > 1) return halves();
           if (frozen.failure) {
-            return stopCalibration(units[0], "CALIBRATION_REFERENCE_UNRESOLVED", frozen.failure);
+            return failCalibrationUnit(units[0], "CALIBRATION_REFERENCE_UNRESOLVED", frozen.failure);
           }
           reference = frozen.result[0];
         }
-        let results, repairRequest, split, graphsByUnit, bindingFailure;
-        for (let cycle = 0; cycle <= 2; cycle += 1) {
-          results = await work(extractionRequestFor({ units, keyId, core, adjacentContext,
-            visualContext, cycle, repairRequest }));
-          if (!results) return finishExhausted("EXTRACTION_ATTEMPTS_EXHAUSTED");
-          // The extractor asked for smaller windows or more context: split a batch of several units
-          // at once instead of asking again for the same window.
-          if (["incomplete", "needs_context"].includes(results[0].output?.status) && units.length > 1) {
-            const middle = Math.ceil(units.length / 2);
-            return await processBatch(units.slice(0, middle), calibration)
-              && await processBatch(units.slice(middle), calibration);
-          }
-          bindingFailure = null;
-          try {
-            split = splitBatchExtractionByUnit({ extraction: results[0].output, unitIds: units.map((unit) => unit.unit_id) });
-            graphsByUnit = new Map(units.map((unit) => [
-              unit.unit_id,
-              bindUnitExtraction(unit, split.get(unit.unit_id), results[0].receipt)
-            ]));
-          } catch (error) {
-            if (!(error instanceof ValidationError)) throw error;
-            split = null;
-            graphsByUnit = null;
-            bindingFailure = { code: error.code, details: error.details ?? null };
-          }
-          const review = results[1]?.output;
-          if (!bindingFailure && results[0].output.status === "complete"
-            && review?.status === "sufficient_for_stated_scope"
-            && !review.assessments.some((assessment) => assessment.outcome !== "preserved"
-              || assessment.finding_type !== "none")
-            && review.unassessed_ids.length === 0) break;
-          repairRequest = {
-            previous_extraction: results[0].output,
-            omission_review: review,
-            mechanical_failure: bindingFailure,
-            cycle: cycle + 1
-          };
-        }
-        let review = results?.[1]?.output;
-        let unresolved = Boolean(bindingFailure)
-          || results?.[0]?.output?.status !== "complete"
-          || review?.status !== "sufficient_for_stated_scope"
+        // The current widened context is read at each call.
+        const extract = (id, repairRequest, tier = "standard") => work(extractionRequestFor({
+          id, units, core, adjacentContext, visualContext, repairRequest, tier }));
+        const reviewHasFindings = (review) => review?.status !== "sufficient_for_stated_scope"
           || review.assessments.some((assessment) => assessment.outcome !== "preserved"
             || assessment.finding_type !== "none")
           || review.unassessed_ids.length > 0;
-        // A single extraction unit gets the same final repair request once through the hardest
-        // lane before it is admitted as source-only needs_review.
-        if (unresolved && units.length === 1 && hardestLane.enabled) {
-          const identity = identityFor(units);
-          const hardest = await work({
-            id: `extract:batch:${keyId}:hardest`, tier: "hardest",
-            role: "extractor", stage: "EXTRACT", units,
-            packetInput: { core_units: core, adjacent_context: adjacentContext,
-              visual_transcriptions: visualContext, repair_request: repairRequest },
-            dependencies: [{ key: "omission", stage: "OMISSION_CHECK", role: "omission_checker",
-              identity, assigned_core_ids: units.map((item) => item.unit_id), source_locators: locatorsFor(units),
-              packet_input: { core_units: core, adjacent_context: adjacentContext,
-                candidate_extraction: { $work_output: "extractor" }, target_generation: state.generation } }],
-            acceptReviewFindings: true
-          });
-          const outcomeId = `extract:batch:${keyId}`;
-          if (!hardest) {
-            if (!workExhausted) return false;
+        const unresolvedOutcome = (outcome, failure) => Boolean(failure)
+          || outcome?.[0]?.output?.status !== "complete" || reviewHasFindings(outcome?.[1]?.output);
+        const bind = (outcome) => {
+          try {
+            const parts = splitBatchExtractionByUnit({ extraction: outcome[0].output, unitIds: units.map((unit) => unit.unit_id) });
+            return { split: parts, failure: null, graphs: new Map(units.map((unit) => [unit.unit_id,
+              bindUnitExtraction(unit, parts.get(unit.unit_id), outcome[0].receipt)])) };
+          } catch (error) {
+            if (!(error instanceof ValidationError)) throw error;
+            return { split: null, graphs: null, failure: { code: error.code, details: error.details ?? null } };
+          }
+        };
+        // The extractor's context requests are answered once per unit and direction: a wider window of the source
+        // text (before, after, or both for a whole entry) or the neighbouring pages' visual transcriptions. The
+        // answer says what was supplied and what can't be, so the next pass completes rather than asking again.
+        // The status each unit and direction last got, so a repeated request reads `already_answered` only after
+        // something was supplied, and `unavailable` while nothing ever could be.
+        const answeredContext = new Map();
+        const answerContext = async (output) => {
+          const response = [];
+          let supplied = false, overBound = false;
+          for (const request of output?.requested_context ?? []) {
+            const key = `${request.unit_id}\0${request.direction}`;
+            if (response.some((item) => `${item.unit_id}\0${item.direction}` === key)) continue;
+            const index = units.findIndex((unit) => unit.unit_id === request.unit_id);
+            const prior = { adjacentContext, visualContext, visualPages: new Set(visualPages) };
+            let added = false;
+            if (index >= 0) {
+              const unit = units[index];
+              for (const side of ["before", "after"]) {
+                if (request.direction !== side && request.direction !== "whole_entry") continue;
+                const wider = expandedWindow(unit, side, EXPANDED_CONTEXT_BYTES);
+                if (Buffer.byteLength(wider) <= Buffer.byteLength(adjacentContext.by_unit[index][side])) continue;
+                adjacentContext = { by_unit: adjacentContext.by_unit.map((item, at) =>
+                  at === index ? { ...item, [side]: wider } : item) };
+                added = true;
+              }
+              if (request.direction === "visual" && Number.isSafeInteger(unit.page_number)) {
+                for (const entry of await visualEntriesFor([unit.page_number - 1, unit.page_number, unit.page_number + 1])) {
+                  if (visualPages.has(entry.page_number)) continue;
+                  visualContext = [...visualContext, entry.output];
+                  visualPages.add(entry.page_number);
+                  added = true;
+                }
+              }
+            }
+            if (added && packetBytes() > SEMANTIC_PACKET_BYTES) {
+              ({ adjacentContext, visualContext, visualPages } = prior);
+              added = false;
+              overBound = true;
+            }
+            const earlier = answeredContext.get(key);
+            const status = added ? "supplied"
+              : earlier === "supplied" || earlier === "already_answered" ? "already_answered" : "unavailable";
+            response.push({ unit_id: request.unit_id, direction: request.direction, status });
+            answeredContext.set(key, status);
+            supplied ||= added;
+          }
+          return { response, supplied, overBound };
+        };
+        // One repair of a hardest answer at the same tier, with its own review, any binding failure and an answer
+        // to any context it asked for. A pause comes back as paused; a refused or exhausted repair leaves the
+        // first answer in place.
+        const repairHardest = async (id, outcome, failure, extraRequest, cycle) => {
+          const answer = await answerContext(outcome[0].output);
+          const counts = answer.response.length ? contextAnswerCounts(answer.response) : null;
+          const repaired = await extract(derivedId(id, "repair"), {
+            previous_extraction: outcome[0].output,
+            omission_review: outcome[1]?.output ?? null,
+            ...extraRequest,
+            mechanical_failure: failure,
+            cycle,
+            ...(answer.response.length ? { context_response: answer.response } : {})
+          }, "hardest");
+          if (!repaired) {
+            const snapshot = { ...extractionCycleDiagnostics(incompleteWorkResults),
+              blocker_code: diagnosticBlockerCode(state.blocker) };
+            if (!workExhausted) return { paused: true };
             state.blocker = null;
-            await recordHardestOutcome(outcomeId, "failed");
+            return { snapshot, counts, outcome: null };
+          }
+          const bound = bind(repaired);
+          return { snapshot: { ...extractionCycleDiagnostics(repaired, bound.failure?.code ?? null),
+            extraction_changed: extractionChanged(outcome[0].output, repaired[0].output), blocker_code: null },
+          counts, outcome: repaired, bound };
+        };
+        let results, repairRequest, split, graphsByUnit, bindingFailure, hardestRefusal = null, hardestDependentRefusal = null;
+        // A pass that received context it asked for earns one more pass, so supplying context never uses up a
+        // repair attempt.
+        let lastCycle = 2, contextSupplied = false;
+        for (let cycle = 0; cycle <= lastCycle; cycle += 1) {
+          results = await extract(epochId(`extract:batch:${keyId}:cycle:${cycle}`, calibration), repairRequest);
+          if (!results) {
+            cycles.push({ cycle, ...extractionCycleDiagnostics(incompleteWorkResults),
+              blocker_code: diagnosticBlockerCode(state.blocker) });
+            return finishExhausted("EXTRACTION_ATTEMPTS_EXHAUSTED");
+          }
+          const extraction = results[0].output;
+          // Several units that ask for smaller windows, or for context without naming it, are split rather than
+          // sent the same window again.
+          if (units.length > 1 && (extraction?.status === "incomplete"
+            || (extraction?.status === "needs_context" && !extraction.requested_context.length))) return halves();
+          ({ split, graphs: graphsByUnit, failure: bindingFailure } = bind(results));
+          const review = results[1]?.output;
+          const snapshot = { cycle, ...extractionCycleDiagnostics(results, bindingFailure?.code ?? null), blocker_code: null };
+          cycles.push(snapshot);
+          if (!unresolvedOutcome(results, bindingFailure)) break;
+          const answer = await answerContext(extraction);
+          if (answer.response.length) snapshot.context_answer = contextAnswerCounts(answer.response);
+          if (units.length > 1 && extraction?.status === "needs_context" && !answer.supplied) return halves();
+          if (answer.supplied && !contextSupplied) { contextSupplied = true; lastCycle += 1; }
+          repairRequest = {
+            previous_extraction: extraction,
+            omission_review: review,
+            mechanical_failure: bindingFailure,
+            cycle: cycle + 1,
+            ...(answer.response.length ? { context_response: answer.response } : {})
+          };
+        }
+        let unresolved = unresolvedOutcome(results, bindingFailure);
+        // A single extraction unit gets the same final repair request once through the hardest lane and, when
+        // that answer's own review or binding leaves it unresolved, one repair of it at the same tier, before it
+        // is admitted as source-only needs_review.
+        if (unresolved && units.length === 1 && hardestLane.enabled) {
+          const hardestId = epochId(`extract:batch:${keyId}:hardest`, calibration);
+          const hardest = await extract(hardestId, repairRequest, "hardest");
+          const outcomeId = epochId(`extract:batch:${keyId}`, calibration);
+          if (!hardest) {
+            hardestDiagnostics = { ...extractionCycleDiagnostics(incompleteWorkResults),
+              blocker_code: diagnosticBlockerCode(state.blocker) };
+            if (!workExhausted) return false;
+            // A size refusal before the hardest extractor ran leaves the attempt unspent; one from the
+            // dependent omission packet after the extractor completed consumed it and counts as failed.
+            const sizeRefusal = state.blocker === "JOURNAL_WORK_PACKET_TOO_LARGE";
+            hardestRefusal = sizeRefusal && !workPrimaryCompleted ? state.blocker : null;
+            hardestDependentRefusal = sizeRefusal && workPrimaryCompleted ? state.blocker : null;
+            state.blocker = null;
+            if (!hardestRefusal) await recordHardestOutcome(outcomeId, "failed");
           } else {
             results = hardest;
-            bindingFailure = null;
-            try {
-              split = splitBatchExtractionByUnit({ extraction: results[0].output, unitIds: units.map((item) => item.unit_id) });
-              graphsByUnit = new Map(units.map((item) => [item.unit_id,
-                bindUnitExtraction(item, split.get(item.unit_id), results[0].receipt)]));
-            } catch (error) {
-              if (!(error instanceof ValidationError)) throw error;
-              bindingFailure = { code: error.code, details: error.details ?? null };
+            ({ split, graphs: graphsByUnit, failure: bindingFailure } = bind(hardest));
+            hardestDiagnostics = { ...extractionCycleDiagnostics(hardest, bindingFailure?.code ?? null), blocker_code: null };
+            unresolved = unresolvedOutcome(hardest, bindingFailure);
+            if (unresolved) {
+              const repair = await repairHardest(hardestId, hardest, bindingFailure, {}, "hardest-repair");
+              if (repair.paused) return false;
+              if (repair.counts) hardestDiagnostics.context_answer = repair.counts;
+              hardestDiagnostics.repair = repair.snapshot;
+              if (repair.outcome) {
+                results = repair.outcome;
+                ({ split, graphs: graphsByUnit, failure: bindingFailure } = repair.bound);
+                unresolved = unresolvedOutcome(results, bindingFailure);
+              }
             }
-            review = results?.[1]?.output;
-            unresolved = Boolean(bindingFailure) || results?.[0]?.output?.status !== "complete"
-              || review?.status !== "sufficient_for_stated_scope"
-              || review.assessments.some((assessment) => assessment.outcome !== "preserved"
-                || assessment.finding_type !== "none")
-              || review.unassessed_ids.length > 0;
             await recordHardestOutcome(outcomeId, unresolved ? "failed" : "resolved");
           }
         }
-        if (unresolved && units.length > 1) {
-          const middle = Math.ceil(units.length / 2);
-          return await processBatch(units.slice(0, middle), calibration)
-            && await processBatch(units.slice(middle), calibration);
-        }
+        if (unresolved && units.length > 1) return halves();
         if (unresolved && calibration) {
-          return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_EXTRACTION_UNRESOLVED");
+          return failCalibrationUnit(units[0], "CALIBRATION_REPAIR_REQUIRED", hardestRefusal ?? "CALIBRATION_EXTRACTION_UNRESOLVED", diagnostics());
         }
         if (unresolved) {
           const unit = units[0];
@@ -1015,8 +1221,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             requested_context: []
           };
           const graph = bindUnitExtraction(unit, admitted, results[0].receipt);
-          await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true,
-            ...(hardestLane.enabled ? { hardest: "failed" } : {}) });
+          await writeUnitRecord(unit.unit_id, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true,
+            diagnostics: diagnostics(),
+            ...(hardestLane.enabled ? { hardest: hardestRefusal ? "not_attempted" : "failed" } : {}),
+            ...((hardestRefusal ?? hardestDependentRefusal) ? { unresolved_reason: hardestRefusal ?? hardestDependentRefusal } : {}) });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
           state.stage = "EXTRACT";
           state.blocker = null;
@@ -1027,7 +1235,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const combined = mergeGraphs([...graphsByUnit.values()]);
           let score;
           const initialFidelity = await checkedWork({
-            id: `fidelity:calibration:batch:${keyId}`,
+            id: epochId(`fidelity:calibration:batch:${keyId}`, true),
             role: "fidelity_auditor",
             stage: "REFERENCE_AUDIT",
             units,
@@ -1045,87 +1253,144 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             candidateIds: combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
           if (initialFidelity.blocked) return false;
           if (initialFidelity.failure) {
-            if (units.length > 1) {
-              const middle = Math.ceil(units.length / 2);
-              return await processBatch(units.slice(0, middle), true)
-                && await processBatch(units.slice(middle), true);
-            }
-            return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", initialFidelity.failure);
+            fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), blocker_code: null, fidelity: null });
+            if (units.length > 1) return halves();
+            return failCalibrationUnit(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", initialFidelity.failure, diagnostics());
           }
           let fidelity = initialFidelity.result;
-          await writeOnce(`calibration:review:batch:${keyId}`, { reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id) });
-          let calibrationPass = fidelity[0].output.status === "sufficient_for_stated_scope"
-            && score.critical_miss_count === 0
-            && score.qualifier_error_count === 0
-            && score.reference_counts.unassessed === 0
-            && (score.reference_total === 0 || score.provisional_target_met);
-          if (!calibrationPass && units.length > 1) {
-            const middle = Math.ceil(units.length / 2);
-            return await processBatch(units.slice(0, middle), true)
-              && await processBatch(units.slice(middle), true);
-          }
-          for (let auditCycle = 1; !calibrationPass && auditCycle <= 2; auditCycle += 1) {
-            const identity = identityFor(units);
-            const repaired = await work({
-              id: `extract:calibration-repair:batch:${keyId}:cycle:${auditCycle}`,
-              role: "extractor",
-              stage: "EXTRACT",
-              units,
-              packetInput: {
-                core_units: core,
-                adjacent_context: adjacentContext,
-                visual_transcriptions: visualContext,
-                repair_request: {
-                  previous_extraction: results[0].output,
-                  omission_review: results[1].output,
-                  fidelity_review: fidelity[0].output,
-                  cycle: `fidelity-${auditCycle}`
-                }
-              },
-              dependencies: [{
-                key: "omission",
-                stage: "OMISSION_CHECK",
-                role: "omission_checker",
-                identity,
-                assigned_core_ids: units.map((unit) => unit.unit_id),
-                source_locators: locatorsFor(units),
-                packet_input: {
-                  core_units: core,
-                  adjacent_context: adjacentContext,
-                  candidate_extraction: { $work_output: "extractor" },
-                  target_generation: state.generation
-                }
-              }],
-              acceptReviewFindings: true
+          await writeOnce(epochId(`calibration:review:batch:${keyId}`, true), { reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id) });
+          const auditPasses = (output, value) => output.status === "sufficient_for_stated_scope"
+            && value.critical_miss_count === 0
+            && value.qualifier_error_count === 0
+            && value.reference_counts.unassessed === 0
+            && (value.reference_total === 0 || value.provisional_target_met);
+          // Left references unassessed without a single finding: repairing the extraction can't help.
+          const unassessedOnly = (output, value) => (output.status === "incomplete" || value.reference_counts.unassessed > 0)
+            && value.reference_counts.omitted === 0 && value.reference_counts.distorted === 0
+            && value.critical_miss_count === 0 && value.qualifier_error_count === 0
+            && !output.assessments.some((item) => item.outcome === "omitted"
+              || item.outcome === "distorted" || item.finding_type !== "none");
+          let calibrationPass = auditPasses(fidelity[0].output, score);
+          fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), blocker_code: null,
+            fidelity: fidelityCycleDiagnostics(fidelity[0].output, score, calibrationPass) });
+          // The first audit of this batch, initial or after a repair, that leaves references unassessed without any
+          // finding gets one fresh audit of the same extraction. Its distinct identity never consumes an extraction-
+          // repair cycle, and the batch gets at most one.
+          let reauditUsed = false;
+          const reauditOnce = async (graph, cycle) => {
+            reauditUsed = true;
+            reauditDiagnostics = { ...(cycle ? { cycle } : {}), ...extractionCycleDiagnostics(results), blocker_code: null, fidelity: null };
+            const suffix = cycle ? `:cycle:${cycle}` : "";
+            let reauditScore;
+            const attempt = await checkedWork({
+              id: epochId(`fidelity:calibration-reaudit:batch:${keyId}${suffix}`, true),
+              role: "fidelity_auditor", stage: "REFERENCE_AUDIT", units,
+              packetInput: { frozen_reference: reference.output, supporting_passages: core,
+                imported_generation: { generation: state.generation,
+                  assertions: graph.nodes.filter((node) => node.kind === "assertion"),
+                  entities: graph.nodes.filter((node) => node.kind === "entity") } }
+            }, ([saved]) => { reauditScore = scoreReferenceReview({ referenceResult: reference.output,
+              reviewResult: saved.output,
+              candidateIds: graph.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
+            if (attempt.failure) reauditDiagnostics.blocker_code = diagnosticBlockerCode(attempt.failure);
+            if (attempt.blocked || attempt.failure) return attempt;
+            fidelity = attempt.result;
+            score = reauditScore;
+            await writeOnce(epochId(`calibration:reaudit-review:batch:${keyId}${suffix}`, true), {
+              reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id)
             });
-            if (!repaired) return finishExhausted("CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED");
+            calibrationPass = auditPasses(fidelity[0].output, score);
+            reauditDiagnostics.fidelity = fidelityCycleDiagnostics(fidelity[0].output, score, calibrationPass);
+            return attempt;
+          };
+          if (!calibrationPass && unassessedOnly(fidelity[0].output, score)) {
+            const reaudit = await reauditOnce(combined, 0);
+            if (reaudit.blocked) return false;
+            if (reaudit.failure) {
+              // Like a failed initial audit: a batch of several units is split and each half retried.
+              if (units.length > 1) return halves();
+              return failCalibrationUnit(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", reaudit.failure, diagnostics());
+            }
+          }
+          if (!calibrationPass && units.length > 1) return halves();
+          // Context a repair asks for is answered in the next repair request, and a first supplied answer earns
+          // one more standard repair, as in the extraction passes.
+          let contextResponse = null, bindingFeedback = null, standardRepairs = 2, repairContextSupplied = false;
+          for (let auditCycle = 1; !calibrationPass && auditCycle <= standardRepairs + (hardestLane.enabled ? 1 : 0);
+            auditCycle += 1) {
+            const hardestRepair = auditCycle > standardRepairs;
+            const repairId = epochId(hardestRepair ? `extract:calibration-repair:batch:${keyId}:hardest`
+              : `extract:calibration-repair:batch:${keyId}:cycle:${auditCycle}`, true);
+            const previousExtraction = results[0].output;
+            const fidelityReview = fidelity[0].output;
+            let repaired = await extract(repairId, {
+              previous_extraction: results[0].output,
+              omission_review: results[1].output,
+              fidelity_review: fidelityReview,
+              cycle: hardestRepair ? "fidelity-hardest" : `fidelity-${auditCycle}`,
+              ...(bindingFeedback ? { mechanical_failure: bindingFeedback } : {}),
+              ...(contextResponse ? { context_response: contextResponse } : {})
+            }, hardestRepair ? "hardest" : "standard");
+            contextResponse = null;
+            bindingFeedback = null;
+            if (!repaired) {
+              const snapshot = { ...extractionCycleDiagnostics(incompleteWorkResults),
+                extraction_changed: extractionChanged(previousExtraction, incompleteWorkResults?.[0]?.output),
+                blocker_code: diagnosticBlockerCode(state.blocker), fidelity: null };
+              if (hardestRepair) {
+                hardestFidelityDiagnostics = snapshot;
+                if (!workExhausted) return false;
+                const sizeRefusal = state.blocker === "JOURNAL_WORK_PACKET_TOO_LARGE";
+                hardestRefusal = sizeRefusal && !workPrimaryCompleted ? state.blocker : null;
+                hardestDependentRefusal = sizeRefusal && workPrimaryCompleted ? state.blocker : null;
+                state.blocker = null;
+                if (!hardestRefusal) await recordHardestOutcome(repairId, "failed");
+                break;
+              }
+              fidelityCycles.push({ cycle: auditCycle, ...snapshot });
+              return finishExhausted("CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED");
+            }
+            let bound = bind(repaired);
+            const repairSnapshot = { ...(hardestRepair ? {} : { cycle: auditCycle }),
+              ...extractionCycleDiagnostics(repaired, bound.failure?.code ?? null),
+              extraction_changed: extractionChanged(previousExtraction, repaired[0].output),
+              blocker_code: null, fidelity: null };
+            if (hardestRepair) hardestFidelityDiagnostics = repairSnapshot;
+            else fidelityCycles.push(repairSnapshot);
+            if (hardestRepair && unresolvedOutcome(repaired, bound.failure)) {
+              const repair = await repairHardest(repairId, repaired, bound.failure,
+                { fidelity_review: fidelityReview }, "fidelity-hardest-repair");
+              if (repair.paused) return false;
+              if (repair.counts) repairSnapshot.context_answer = repair.counts;
+              repairSnapshot.repair = repair.snapshot;
+              if (repair.outcome) {
+                repaired = repair.outcome;
+                bound = repair.bound;
+              }
+            }
             results = repaired;
-            const repairedReview = repaired[1]?.output;
-            let repairedSplit, repairedGraphs;
-            try {
-              repairedSplit = splitBatchExtractionByUnit({
-                extraction: repaired[0].output,
-                unitIds: units.map((unit) => unit.unit_id)
-              });
-              repairedGraphs = new Map(units.map((unit) => [
-                unit.unit_id,
-                bindUnitExtraction(unit, repairedSplit.get(unit.unit_id), repaired[0].receipt)
-              ]));
-            } catch (error) {
-              if (!(error instanceof ValidationError)) throw error;
+            // An unresolved standard repair passes its binding failure and an answer to its context request to the
+            // next repair.
+            if (unresolvedOutcome(repaired, bound.failure)) {
+              if (hardestRepair) await recordHardestOutcome(repairId, "failed");
+              else {
+                bindingFeedback = bound.failure;
+                const answer = await answerContext(repaired[0].output);
+                if (answer.response.length) {
+                  repairSnapshot.context_answer = contextAnswerCounts(answer.response);
+                  contextResponse = answer.response;
+                }
+                if (answer.supplied && !repairContextSupplied) { repairContextSupplied = true; standardRepairs += 1; }
+              }
               continue;
             }
-            if (repaired[0].output.status !== "complete"
-              || repairedReview?.status !== "sufficient_for_stated_scope"
-              || repairedReview.assessments.some((assessment) => assessment.outcome !== "preserved"
-                || assessment.finding_type !== "none")
-              || repairedReview.unassessed_ids.length > 0) continue;
-            split = repairedSplit;
-            graphsByUnit = repairedGraphs;
+            split = bound.split;
+            graphsByUnit = bound.graphs;
             const repairedCombined = mergeGraphs([...graphsByUnit.values()]);
             let repairedScore;
             const repairedFidelityAttempt = await checkedWork({
-              id: `fidelity:calibration-repair:batch:${keyId}:cycle:${auditCycle}`,
+              id: epochId(hardestRepair ? `fidelity:calibration-repair:batch:${keyId}:hardest`
+                : `fidelity:calibration-repair:batch:${keyId}:cycle:${auditCycle}`, true),
               role: "fidelity_auditor",
               stage: "REFERENCE_AUDIT",
               units,
@@ -1142,32 +1407,48 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               reviewResult: saved.output,
               candidateIds: repairedCombined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
             if (repairedFidelityAttempt.blocked) return false;
-            if (repairedFidelityAttempt.failure)
-              return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", repairedFidelityAttempt.failure);
+            if (repairedFidelityAttempt.failure) {
+              if (hardestRepair) {
+                repairSnapshot.blocker_code = diagnosticBlockerCode(repairedFidelityAttempt.failure);
+                await recordHardestOutcome(repairId, "failed");
+                break;
+              }
+              return failCalibrationUnit(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", repairedFidelityAttempt.failure, diagnostics());
+            }
             const repairedFidelity = repairedFidelityAttempt.result;
-            await writeOnce(`calibration:repair-review:batch:${keyId}:cycle:${auditCycle}`, {
+            await writeOnce(epochId(hardestRepair ? `calibration:repair-review:batch:${keyId}:hardest`
+              : `calibration:repair-review:batch:${keyId}:cycle:${auditCycle}`, true), {
               reference, fidelity: repairedFidelity[0], score: repairedScore,
               unit_ids: units.map((unit) => unit.unit_id)
             });
             fidelity = repairedFidelity;
             score = repairedScore;
-            calibrationPass = fidelity[0].output.status === "sufficient_for_stated_scope"
-              && score.critical_miss_count === 0
-              && score.qualifier_error_count === 0
-              && score.reference_counts.unassessed === 0
-              && (score.reference_total === 0 || score.provisional_target_met);
+            calibrationPass = auditPasses(fidelity[0].output, score);
+            repairSnapshot.fidelity = fidelityCycleDiagnostics(fidelity[0].output, score, calibrationPass);
+            if (!calibrationPass && !reauditUsed && unassessedOnly(fidelity[0].output, score)) {
+              const reaudit = await reauditOnce(repairedCombined, auditCycle);
+              if (reaudit.blocked) return false;
+              if (reaudit.failure) {
+                if (hardestRepair) { await recordHardestOutcome(repairId, "failed"); break; }
+                return failCalibrationUnit(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", reaudit.failure, diagnostics());
+              }
+            }
+            if (hardestRepair) await recordHardestOutcome(repairId, calibrationPass ? "resolved" : "failed");
           }
           if (!calibrationPass) {
-            return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+            return failCalibrationUnit(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", diagnostics());
           }
         }
+        const contextAnswered = [...cycles, ...fidelityCycles].some((cycle) => cycle.context_answer);
         for (const unit of units) {
-          await writeOnce(`unit:graph:${unit.unit_id}`, {
+          await writeUnitRecord(unit.unit_id, {
             graph: graphsByUnit.get(unit.unit_id),
             extraction: results[0],
             unit_extraction: split.get(unit.unit_id),
             omission: results[1],
-            source_only_unresolved: false
+            source_only_unresolved: false,
+            ...((reauditDiagnostics || hardestFidelityDiagnostics || hardestDiagnostics || contextAnswered)
+              ? { diagnostics: diagnostics() } : {})
           });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
         }
@@ -1177,23 +1458,43 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         return true;
       };
 
-      for (const unit of oversizedUnits.filter(item => calibrationIds.has(item.unit_id))) {
-        await stopCalibration(unit, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
-        return summary();
+      // Calibration runs every calibration unit, stopping early only at the failure limit, then closes the gate if
+      // any unit failed. Regular batches start only once every calibration unit has passed.
+      const calibrationOrder = [...calibrationIds];
+      const calibrationFailureRecords = async () => {
+        const failures = [];
+        for (const unitId of calibrationOrder) {
+          if (!state.completed_units.includes(unitId)) continue;
+          const record = await readUnitRecord(unitId);
+          if (!record?.source_only_unresolved) continue;
+          failures.push({ unit_id: unitId, status: calibrationStopStatus(record.source_only_reason),
+            reason: record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED",
+            ...(record.diagnostics ? { diagnostics: record.diagnostics } : {}) });
+        }
+        return failures;
+      };
+      calibrationFailures = (await calibrationFailureRecords()).length;
+      for (const unit of oversizedUnits.filter((item) => calibrationIds.has(item.unit_id)
+        && !state.completed_units.includes(item.unit_id))) {
+        if (calibrationFailures >= failureLimit) break;
+        await failCalibrationUnit(unit, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
       }
       for (const ids of frozenPlan.calibration_batches) {
+        if (calibrationFailures >= failureLimit) break;
         if (!(await processBatch(frozenUnits(ids), true))) return summary();
       }
-      if ([...calibrationIds].every((id) => state.completed_units.includes(id))) {
-        const calibrationRecords = await Promise.all([...calibrationIds].map(id => readIfPresent(`unit:graph:${id}`)));
-        const failedIndex = calibrationRecords.findIndex(record => record?.source_only_unresolved);
-        if (failedIndex >= 0) {
-          const record = calibrationRecords[failedIndex];
-          const status = calibrationStopStatus(record.source_only_reason);
-          await setCalibrationStop([...calibrationIds][failedIndex], status,
-            record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED");
-          return summary();
-        }
+      const calibrationFailed = await calibrationFailureRecords();
+      if (calibrationFailed.length) {
+        const [first] = calibrationFailed;
+        await setCalibrationStop(first.unit_id, first.status, first.reason, first.diagnostics, {
+          failed_units: calibrationFailed.length,
+          completed_calibration_units: calibrationOrder.filter((id) => state.completed_units.includes(id)).length,
+          calibration_units: calibrationOrder.length,
+          failures: calibrationFailed });
+        return summary();
+      }
+      if (calibrationOrder.every((id) => state.completed_units.includes(id))) {
+        const calibrationRecords = await Promise.all(calibrationOrder.map(readUnitRecord));
         invariant(calibrationRecords.every(Boolean), "CALIBRATION_UNIT_UNRESOLVED");
         state.calibration = "pass";
         state.blocker = null;
@@ -1213,7 +1514,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
 
       const nodes = new Map(), edges = new Map();
       for (const unit of plan.units) {
-        const result = await store.readJsonObject({ objectId: `unit:graph:${unit.unit_id}` });
+        const result = await readUnitRecord(unit.unit_id);
+        invariant(result, "JOURNAL_EXTRACTION_INCOMPLETE");
         for (const node of result.graph.nodes) {
           if (nodes.has(node.id)) invariant(JSON.stringify(nodes.get(node.id)) === JSON.stringify(node), "GRAPH_ASSEMBLY_ID_COLLISION");
           nodes.set(node.id, node);
@@ -1262,6 +1564,34 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return summary();
     }
 
+    async function recalibrate() {
+      invariant(state.calibration === "failed", "JOURNAL_RECALIBRATE_NOT_FAILED");
+      // An older checkpoint could close a partial calibration after its graph already existed. A
+      // retry there would reopen a gate that later stages assume passed, so it is refused.
+      invariant(!state.graph_ref && !state.reconciled_ref && !state.persisted, "JOURNAL_RECALIBRATE_AFTER_GRAPH");
+      invariant(Number.isSafeInteger(calibrationEpoch()) && calibrationEpoch() >= 0
+        && calibrationEpoch() < Number.MAX_SAFE_INTEGER, "JOURNAL_CALIBRATION_EPOCH_INVALID");
+      const failure = state.calibration_failure;
+      invariant(failure?.status && failure?.reason, "JOURNAL_CALIBRATION_FAILURE_MISSING");
+      const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
+      const calibrationIds = new Set(plan.calibration.map((item) => item.unit_id));
+      state.calibration_epoch = calibrationEpoch() + 1;
+      state.calibration_history ??= [];
+      state.calibration_history.push({ epoch: state.calibration_epoch, at: now().toISOString(),
+        previous_failure: { status: failure.status, reason: failure.reason,
+          ...(failure.diagnostics ? { diagnostics: failure.diagnostics } : {}),
+          ...(failure.failures ? { failed_units: failure.failed_units,
+            completed_calibration_units: failure.completed_calibration_units,
+            calibration_units: failure.calibration_units, failures: failure.failures } : {}) } });
+      state.calibration = "not_run";
+      delete state.calibration_failure;
+      delete state.calibration_round_failures;
+      state.blocker = null;
+      state.completed_units = state.completed_units.filter((id) => !calibrationIds.has(id));
+      await save();
+      return summary();
+    }
+
     async function run({ visualOnly = false } = {}) {
       if (state.calibration === "failed") return summary();
       // Older checkpoints could finish calibration as partial and then continue. Preserve their
@@ -1270,12 +1600,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const savedPlan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
         let failedUnit = null, reason = "CALIBRATION_UNIT_UNRESOLVED";
         for (const item of savedPlan.calibration) {
-          const record = await readIfPresent(`unit:graph:${item.unit_id}`);
+          const record = await readUnitRecord(item.unit_id);
           if (record?.source_only_unresolved) {
             failedUnit = item.unit_id;
             reason = record.source_only_reason ?? reason;
             state.calibration_failure = { unit_id: failedUnit, status: calibrationStopStatus(reason),
-              reason: record.source_only_detail ?? reason };
+              reason: record.source_only_detail ?? reason,
+              ...(record.diagnostics ? { diagnostics: record.diagnostics } : {}) };
             break;
           }
         }
@@ -1420,7 +1751,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const unitGraphs = new Map(), aliases = new Map();
       const unitIndex = new Map(plan.units.map((unit, index) => [unit.unit_id, index]));
       for (const unit of plan.units) {
-        const record = await readIfPresent('unit:graph:' + unit.unit_id);
+        const record = await readUnitRecord(unit.unit_id);
         invariant(record, 'JOURNAL_EXTRACTION_INCOMPLETE');
         unitGraphs.set(unit.unit_id, record);
         for (const node of record.graph.nodes) if (node.kind === 'entity') {
@@ -1711,7 +2042,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         let report = await readIfPresent(`audit:result:${graphRevision}:${unit.unit_id}`);
         if (!report) {
-          const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
+          const imported = await readUnitRecord(unit.unit_id);
           if (imported.source_only_unresolved) {
             const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
             const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
@@ -1841,7 +2172,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const visual = page && !state.excluded_visual_pages?.includes(page.page_number)
           ? await readIfPresent(`visual:result:${page.page_number}`) : null;
         if (visual?.output?.page_complete === true) continue;
-        const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
+        const imported = await readUnitRecord(unit.unit_id);
         invariant(imported, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
         for (const node of imported.graph.nodes) if (["entity", "episode", "assertion"].includes(node.kind))
           untrusted.add(node.id);
@@ -1853,7 +2184,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // judged from its report when the patterns stage runs.
         if (Object.hasOwn(report, "unassessed") || report.certification?.semantically_audited !== "pass"
           || report.coverage?.complete !== true || report.coverage?.repair_required === true) {
-          const imported = await readIfPresent(`unit:graph:${report.unit_id}`);
+          const imported = await readUnitRecord(report.unit_id);
           invariant(imported, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
           const reconciliation = await readIfPresent(`reconcile:result:${report.unit_id}`);
           const scope = createReconciledAuditScope({ graph: reconciledGraph, unitGraph: imported.graph,
@@ -1874,7 +2205,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const units = [];
       const unitGraphs = [];
       for (const unit of plan.units) {
-        const record = await readIfPresent(`unit:graph:${unit.unit_id}`);
+        const record = await readUnitRecord(unit.unit_id);
         invariant(record, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
         if (record.source_only_unresolved) continue;
         units.push(unit);
@@ -1970,6 +2301,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     return Object.freeze({
       async execute(command) {
         if (["inventory", "stage"].includes(command)) return stage();
+        if (command === "recalibrate") return recalibrate();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();

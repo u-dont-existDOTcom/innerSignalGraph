@@ -83,7 +83,9 @@ export function codexExecArgs({ record, runDir, configPath, root, secretFile }) 
     "-c", 'service_tier="default"', "-c", 'approval_policy="never"',
     "-c", "project_doc_max_bytes=0", "-c", "project_root_markers=[]",
     "-c", `mcp_servers.journal.command=${stringArg(process.execPath)}`,
-    "-c", `mcp_servers.journal.args=${stringArg([mcpCli, "--config", configPath, "--principal", "codex-standard", "--tier", "standard", "--stage-dir", path.join(runDir, "stage")])}`,
+    // The work server is scoped to this run's item, so a call naming another item reads and marks nothing of it.
+    "-c", `mcp_servers.journal.args=${stringArg([mcpCli, "--config", configPath, "--principal", "codex-standard", "--tier", "standard",
+      "--stage-dir", path.join(runDir, "stage"), "--work-id", record.work_id])}`,
     "-c", `mcp_servers.journal.env={INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT=${stringArg(root)},INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE=${stringArg(secretFile)}}`,
     "-c", 'mcp_servers.journal.default_tools_approval_mode="approve"',
     ...CODEX_DISABLED_FEATURES.flatMap((feature) => ["--disable", feature]), instruction];
@@ -202,54 +204,113 @@ async function checkCodexHome(home) {
   });
 }
 
-function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups }) {
+export function boundedLineReader({ onLine, maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM }) {
+  let fragments = [], lineBytes = 0, total = 0, refused = false;
+  const state = { problem: null };
+  const reject = code => { state.problem = code; refused = true; fragments = []; return false; };
+  return { state, async accept(chunk) {
+    if (refused) return false;
+    total += Buffer.byteLength(chunk);
+    if (total > maxStreamBytes) return reject("EVENT_STREAM_TOO_LARGE");
+    // Scan only the new chunk, and join each completed line exactly once.
+    let start = 0;
+    while (start < chunk.length) {
+      const at = chunk.indexOf("\n", start);
+      const part = chunk.slice(start, at < 0 ? chunk.length : at);
+      lineBytes += Buffer.byteLength(part);
+      if (lineBytes > maxLineBytes) return reject("EVENT_LINE_TOO_LARGE");
+      fragments.push(part);
+      if (at < 0) break;
+      const next = fragments.join(""); fragments = []; lineBytes = 0;
+      if (await onLine(next) === false) { refused = true; return false; }
+      start = at + 1;
+    }
+    return true;
+  }, async finish() {
+    if (!refused && fragments.length) await onLine(fragments.join(""));
+    fragments = [];
+  } };
+}
+
+// With gate, the command starts only after onSpawn has finished. A small Node process leads the new process group,
+// waits for one line on stdin, and only then starts the command as its child in the same group, with the same
+// environment and stdout/stderr, and exits with its status. If the parent dies or onSpawn fails first, the gate
+// reads end-of-file or is killed, and the command never runs. No shell is involved: the command and its arguments
+// are passed as argv.
+const GATE_SOURCE = [
+  'const { spawn } = require("node:child_process");',
+  'let line = "", started = false;',
+  'process.stdin.setEncoding("utf8");',
+  'process.stdin.on("data", (chunk) => { line += chunk; if (!started && line.includes("\\n")) start(); });',
+  'process.stdin.on("end", () => { if (!started) process.exit(97); });',
+  'function start() {',
+  '  started = true; process.stdin.destroy();',
+  '  const child = spawn(process.argv[1], process.argv.slice(2), { stdio: ["ignore", "inherit", "inherit"] });',
+  '  child.once("error", () => process.exit(127));',
+  '  child.once("exit", (code, signal) => process.exit(code ?? (signal ? 128 : 1)));',
+  '}'
+].join("\n");
+
+export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups,
+  maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false, onSpawn = null, gate = false }) {
   return new Promise((resolve) => {
     const started = Date.now();
     let child;
-    try { child = spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false }); }
+    try {
+      child = gate
+        ? spawn(process.execPath, ["-e", GATE_SOURCE, command, ...args], { cwd, env, detached: true, stdio: ["pipe", "pipe", "pipe"], shell: false })
+        : spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false });
+    }
     catch { resolve({ code: null, timedOut: false, problem: "SPAWN_FAILED", durationMs: Date.now() - started }); return; }
-    let line = "", total = 0, problem = null, timedOut = false;
+    let problem = null, timedOut = false, refused = false;
+    let processing = Promise.resolve();
     const killGroup = () => { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { child.kill("SIGKILL"); } };
+    if (gate) child.stdin?.on("error", () => {}); // a shell killed before release closes the pipe
+    if (onSpawn && child.pid) processing = Promise.resolve().then(() => onSpawn(child.pid))
+      .then(() => { if (gate && !refused) child.stdin.end("\n"); })
+      .catch(() => { problem = "PROCESS_RECORD_FAILED"; refused = true; killGroup(); });
+    else if (gate) child.stdin?.end("\n");
+    const reader = boundedLineReader({ onLine: line => onLine(line, killGroup), maxLineBytes, maxStreamBytes });
     activeGroups?.add(killGroup);
     const timer = timeoutMs === null ? null : setTimeout(() => { timedOut = true; killGroup(); }, timeoutMs);
     child.once("error", () => { problem = "SPAWN_FAILED"; });
     child.stdout?.setEncoding("utf8");
     child.stdout?.on("data", (chunk) => {
-      total += Buffer.byteLength(chunk);
-      if (total > MAX_STREAM) { problem = "EVENT_STREAM_TOO_LARGE"; killGroup(); return; }
-      line += chunk;
-      for (;;) {
-        const at = line.indexOf("\n");
-        if (at < 0) break;
-        const next = line.slice(0, at); line = line.slice(at + 1);
-        if (Buffer.byteLength(next) > MAX_LINE) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); return; }
-        onLine(next);
-      }
-      if (Buffer.byteLength(line) > MAX_LINE) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); }
+      if (refused) return;
+      child.stdout.pause();
+      processing = processing.then(async () => {
+        if (refused) return;
+        if (await reader.accept(chunk) === false) { problem = reader.state.problem; refused = true; killGroup(); }
+      }).catch(() => { problem = "EVENT_HANDLER_FAILED"; refused = true; killGroup(); })
+        .finally(() => { child.stdout.resume(); });
     });
     let stderrTail = "";
     child.stderr?.setEncoding("utf8");
     child.stderr?.on("data", (chunk) => {
       stderrTail = (stderrTail + chunk).slice(-512);
     }); // Only transiently inspect for a limit; never retain or print packet or answer text.
-    child.once("close", (code) => { if (timer) clearTimeout(timer); activeGroups?.delete(killGroup);
-      if (line.length) onLine(line);
+    child.once("close", async (code) => { if (timer) clearTimeout(timer);
+      if (killOnClose) killGroup();
+      await processing;
+      try { await reader.finish(); } catch { problem = "EVENT_HANDLER_FAILED"; }
+      activeGroups?.delete(killGroup);
       resolve({ code, timedOut, problem, stderrLast: stderrTail.trim().split("\n").at(-1) ?? "",
         durationMs: Date.now() - started }); });
   });
 }
 
-async function privateDirectory(directory, code) {
+export async function privateDirectory(directory, code) {
   const info = await fs.lstat(directory);
   if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
     || (process.getuid && info.uid !== process.getuid())) throw failure(code);
   return fs.realpath(directory);
 }
 
-async function removeStaleRuns(workDir) {
+export async function removeStaleRuns(workDir, prefix = "inner-signal-codex-", { keep = new Set() } = {}) {
   const before = Date.now() - 3_600_000;
   for (const name of await fs.readdir(workDir)) {
-    if (!/^inner-signal-codex-[A-Za-z0-9]+$/u.test(name)) continue;
+    if (!name.startsWith(prefix) || !/^[A-Za-z0-9]+$/u.test(name.slice(prefix.length))) continue;
+    if (keep.has(name)) continue;
     const target = path.join(workDir, name);
     const info = await fs.lstat(target).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
     if (info?.isDirectory() && info.mtimeMs < before && (process.getuid === undefined || info.uid === process.getuid())) {
@@ -266,7 +327,7 @@ async function removeStaleRuns(workDir) {
   }
 }
 
-async function lockWorkerDirectory(directory) {
+export async function lockWorkerDirectory(directory) {
   const lock = path.join(directory, "worker.lock");
   const handle = await fs.open(lock, "wx", 0o600);
   await handle.close();
@@ -298,6 +359,15 @@ async function lockWorkerDirectory(directory) {
 
 export async function runJournalCodexWorker(argv, { environment = process.env, stderr = process.stderr,
 } = {}) {
+  if (argv.includes("--agent")) {
+    const index = argv.indexOf("--agent");
+    if (argv[index + 1] === "claude") {
+      const { runJournalClaudeWorker } = await import("./claude-worker.mjs");
+      return runJournalClaudeWorker(argv, { environment, stderr });
+    }
+    if (argv[index + 1] !== "codex") throw failure("JOURNAL_WORK_AGENT_INVALID");
+    argv = [...argv.slice(0, index), ...argv.slice(index + 2)];
+  }
   const options = parseJournalCodexWorkerArgs(argv);
   await checkCodexHome(options.codexHome);
   const workDir = await privateDirectory(options.workDir, "JOURNAL_CODEX_WORK_DIR_INSECURE");

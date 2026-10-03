@@ -96,11 +96,14 @@ test("legacy batch extraction and dependent omission keys remain stable", async 
       reason: "Synthetic." })), requested_context: [] };
   const omission = await planJournalOperation({ work: snapshot.work_items[1], snapshot,
     grant: batchGrant });
-  assert.equal(batchJobId, "job:a322510098969a78d935f25b938e8514e9ce2b9fcb730620748ba0f4b227fee8");
+  // These values moved once, when the extractor and omission checker instructions (part of every job
+  // ID) changed in #121; with those instructions as they were before, the shared plan reproduces the
+  // earlier values exactly.
+  assert.equal(batchJobId, "job:ffa099f34eb5d0c0f8ae6c859cbb7133fcd240403b16b9628cc9928f363116cb");
   assert.equal(primary.operationKey,
-    "journal:a6537c8f6ae5fc39c11452a6fab8e732481559db:3130670f60d22fb4870e54e5383479b9");
+    "journal:4affefc729b17d2cf81b4d5117a0aff5801b09bc:78d064b11dc0fc7e109ad600c462dd45");
   assert.equal(omission.operationKey,
-    "journal:5a185b081d25908596466b980bc3dd0fecbd8b2c:300793fcc35ee1927f34600295916fef");
+    "journal:cf2d3045dcbf53a9b70b9261f1fe8dedc0256c4d:4e69ed1d71bf12a33b1fabd70e866afe");
 });
 
 test("prefetch publishes once, peek is read only, and invoke consumes the same item", async () => {

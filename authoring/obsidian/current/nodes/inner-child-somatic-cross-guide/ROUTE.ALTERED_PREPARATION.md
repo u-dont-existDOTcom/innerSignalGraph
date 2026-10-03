@@ -17,10 +17,12 @@ graph_tags:
   - closure
 source_refs:
   - ALT.PREPARATION
-regression_refs: []
-base_record_sha256: 8a071e808cccf40617f6391167665a7b5195a7b385460db49fed104cf2f12c70
-base_graph_sha256: 527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+  - AMEND.CROSS.STATE_DEPENDENT_TRANSFER
+regression_refs:
+  - G048
+base_record_sha256: c86d2d6552ea03210dc24eda0ab469ec561c0c37467bf0498fa642f7835f4fa5
+base_graph_sha256: 09fcd58a61e13de924524b56a428337b92056447695e679b980b90dca2a35d55
+projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
 ---
 
 # Give planned altered-state work a beginning, support plan, and ending
@@ -67,7 +69,9 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
   "recommendations": [
     "Plan rest and timing, physical safety, environment, support, and what would require outside help before the session begins.",
     "Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.",
-    "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended."
+    "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended.",
+    "Familiarize the person soberly with any relevant inner-child, guard, Nurturer, Protector, or Guide map and practice at least one small adult function, so newly accessible material has somewhere to land without requiring belief in advance.",
+    "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough."
   ],
   "successSignals": [
     "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."
@@ -79,3 +83,5 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
 ## Source navigation
 
 [[current/sources/altered-states-map-source/ALT.PREPARATION]]
+
+[[current/governance/amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER]]
