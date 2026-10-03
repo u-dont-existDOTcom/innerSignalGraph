@@ -1127,6 +1127,12 @@ test("a visual request adds the neighbouring pages' transcriptions that exist", 
     assert.deepEqual(extractions.map((packet) => packet.visual_transcriptions.map((item) => item.source_page_id)), [[], ["page:1"]]);
     assert.deepEqual(extractions[1].repair_request.context_response,
       [{ unit_id: second.unit_id, direction: "visual", status: "supplied" }]);
+    // The omission check sees the transcriptions the extractor saw; a unit without any gets no such field.
+    const reviewOf = (unitId) => calls.find((call) => call.role === "omission_checker"
+      && call.packet.assigned_core_ids[0] === unitId).packet;
+    assert.deepEqual(reviewOf(second.unit_id).visual_transcriptions, extractions[1].visual_transcriptions);
+    const first = pageUnit(plan, 1);
+    assert.deepEqual(reviewOf(first.unit_id).visual_transcriptions.map((item) => item.source_page_id), ["page:1"]);
   } finally { await runtime.close(); }
 });
 
@@ -1237,6 +1243,24 @@ test("a calibration failure limit of one stops at the first failing unit, and an
   const refused = await g.open(mockPort({ calls: [] }));
   try { await assert.rejects(refused.execute("run"), { code: "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID" }); }
   finally { await refused.close(); }
+});
+
+test("the failure limit also stops the rest of a split calibration batch", async t => {
+  const f = await fixture(t, { pages: 3 });
+  f.config.semantic_batching = { calibration_maximum_units: 3, maximum_units: 3 };
+  f.config.calibration_failure_limit = 1;
+  const calls = [];
+  const runtime = await f.open(mockPort({ fail: true, calls }));
+  try {
+    const failed = await runtime.execute("run");
+    assert.deepEqual([failed.calibration_failure.failed_units, failed.calibration_failure.completed_calibration_units,
+      failed.calibration_failure.calibration_units], [1, 1, 3]);
+    // One pass of the whole batch, one of its first half, then three passes of the first unit; nothing after it.
+    assert.deepEqual(calls.filter((call) => call.role === "extractor").map((call) => call.packet.assigned_core_ids.length),
+      [3, 2, 1, 1, 1]);
+    assert.equal(new Set(calls.filter((call) => call.role === "extractor" && call.packet.assigned_core_ids.length === 1)
+      .map((call) => call.packet.assigned_core_ids[0])).size, 1);
+  } finally { await runtime.close(); }
 });
 
 test("failures recorded before a pause count toward the limit after the restart", async t => {

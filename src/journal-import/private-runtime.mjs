@@ -852,6 +852,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // A failed calibration unit is kept as source-only with its reason and counts, and calibration goes on to
       // the next unit. One round therefore shows every failing unit, up to the failure limit, and the gate closes
       // when the round ends.
+      const failureLimit = config.calibration_failure_limit ?? 3;
+      invariant(Number.isSafeInteger(failureLimit) && failureLimit >= 1, "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID");
       let calibrationFailures = 0;
       const failCalibrationUnit = async (unit, status, reason, diagnostics = unresolvedExtractionDiagnostics([])) => {
         // Visible in the checkpoint while the round continues. The gate's record is rebuilt from the unit
@@ -867,6 +869,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // unit records. The completed job and its receipt keep the same identity.
         const units = incoming;
         if (units.every((unit) => state.completed_units.includes(unit.unit_id))) return true;
+        // At the failure limit the round ends: this batch, or the rest of a split one, waits for the next round.
+        if (calibration && calibrationFailures >= failureLimit) return true;
         const cycles = [];
         let hardestDiagnostics = null;
         let reauditDiagnostics = null, hardestFidelityDiagnostics = null;
@@ -944,6 +948,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           packet_input: {
             core_units: core,
             adjacent_context: adjacentContext,
+            // The review sees the visual transcriptions the extractor saw, including supplied neighbours.
+            ...(visualContext.length ? { visual_transcriptions: visualContext } : {}),
             candidate_extraction: { $work_output: "extractor" },
             target_generation: state.generation
           }
@@ -1361,8 +1367,6 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // Calibration runs every calibration unit, stopping early only at the failure limit, then closes the gate if
       // any unit failed. Regular batches start only once every calibration unit has passed.
       const calibrationOrder = [...calibrationIds];
-      const failureLimit = config.calibration_failure_limit ?? 3;
-      invariant(Number.isSafeInteger(failureLimit) && failureLimit >= 1, "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID");
       const calibrationFailureRecords = async () => {
         const failures = [];
         for (const unitId of calibrationOrder) {
@@ -1378,6 +1382,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       calibrationFailures = (await calibrationFailureRecords()).length;
       for (const unit of oversizedUnits.filter((item) => calibrationIds.has(item.unit_id)
         && !state.completed_units.includes(item.unit_id))) {
+        if (calibrationFailures >= failureLimit) break;
         await failCalibrationUnit(unit, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
       }
       for (const ids of frozenPlan.calibration_batches) {

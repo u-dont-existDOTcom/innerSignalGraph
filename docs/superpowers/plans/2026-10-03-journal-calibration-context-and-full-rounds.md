@@ -25,7 +25,9 @@ no journal text leaked, and fix the process so that a supervisor review is not n
    its own transcription); `whole_entry` widens both sides; `visual` adds the transcriptions of the
    unit's page and its two neighbours that exist. The next repair request carries
    `context_response` with `supplied`, `unavailable` or `already_answered` for each item, and the
-   omission check sees the same widened packet. A first supplied answer earns one extra pass so it
+   omission check sees the same widened packet. The omission checker's contract now also admits
+   `visual_transcriptions`, so it reviews against the transcriptions the extractor saw (the field is
+   sent only when there are any, so packets without visual context keep their identity). A first supplied answer earns one extra pass so it
    never consumes a repair attempt. An answer that would push the packet over the existing 180 KB
    source bound is withdrawn and reported `unavailable`. A batch of several units that names its
    needed context is answered instead of split; one that asks for smaller windows, names nothing,
@@ -37,7 +39,7 @@ no journal text leaked, and fix the process so that a supervisor review is not n
 3. **Calibration rounds run to the end.** A failing calibration unit is recorded as source-only
    with its reason and diagnostics, and calibration continues with the next unit. The gate closes
    after the round, or earlier once `calibration_failure_limit` units have failed (default 3, so a
-   systematic fault costs at most three units). `calibration_failure` keeps the first failure's
+   systematic fault costs at most three units); the limit also stops the rest of a split batch. `calibration_failure` keeps the first failure's
    fields and adds `failed_units`, `completed_calibration_units`, `calibration_units` and
    `failures`; `recalibrate` keeps them in the history. Regular batches still start only after
    every calibration unit passes, and the pass predicate and recall target are unchanged.
