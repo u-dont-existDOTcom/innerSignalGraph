@@ -3,6 +3,17 @@
 Updated: 2026-10-03
 
 
+## Public plugin storage: design spec (2026-10-03)
+
+- **Owner outcome:** "ok i approve the storage recommendation" (2026-10-03): the public plugin saves conversations (every turn), journal entries, settings and handoffs on InnerSignal's server for every user, with write tools, per-user encryption, the user's consent and a legal review before launch. This replaces the 2026-09-26 "Free users store locally" requirement.
+- **Done (documents only):** `docs/superpowers/specs/2026-10-03-public-plugin-storage-design.md` (current state, platform and legal facts with sources, data model, tools, key hierarchy, consent, retention, threat model, migration, costs, legal checklist, phases, verification, six owner questions); `docs/INDEX.md` entry with its SHA-256 binding in `scripts/audit-repository.mjs`.
+- **Key finding:** OpenAI's plugin guidelines ("must not pull, reconstruct, or infer the full chat log") and Anthropic's directory policy ("must not collect extraneous conversation data") conflict with automatic every-turn saving in a listed plugin; owner question 1 offers user-requested saves, an unlisted connector, or asking both platforms first.
+- **Not done:** no code, deployment, Keycloak change, data access, cross-family check or legal review.
+- **Evidence:** `npm run audit:repository` and `node --test tests/repository-compliance.test.mjs` on this branch; the complete package gate runs in CI.
+- **Next:** owner answers the six questions; then an implementation plan for phase 1 (invented data only).
+- **Lesson closeout:** project-specific design. Lesson candidate, not promoted to Universal: check host platforms' listing rules before designing data collection through a plugin.
+
+
 ## Journal calibration: answered context, hardest self-repair and full rounds (2026-10-03)
 
 - **Owner outcome:** Import the journal as a committed generation with nothing lost and no journal text leaked, and fix the process so a supervisor review is not needed. Plan: `docs/superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`.

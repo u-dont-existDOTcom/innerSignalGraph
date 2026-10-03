@@ -15,3 +15,5 @@
 2026-10-03: 2026-09-30-claim-integrity-checks.md — DEFER. The item is an owner-requested served-protocol/prompt-policy change already represented by PR #96 and requires exact wording review before adoption. It is independent of the current state-dependent altered-state transfer map work, so this branch does not rebase, merge, or rewrite it. Trigger: the next dedicated claim-integrity prompt-policy review.
 
 2026-10-03 (journal calibration branch): Read the live lane from a fresh clone of the Universal default branch (`e1f1ba7`). It holds only `2026-09-30-claim-integrity-checks.md`, already recorded above. This branch changes the journal importer only and adds no new disposition.
+
+2026-10-03 (public plugin storage spec branch): Read the live lane on the Universal default branch (`e1f1ba7`). It holds only `2026-09-30-claim-integrity-checks.md`, already recorded above. This branch adds a storage design spec and no new disposition.

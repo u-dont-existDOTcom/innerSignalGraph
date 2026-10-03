@@ -46,6 +46,7 @@ The transition report names the fully gated private candidate, the public visibi
 - `superpowers/plans/2026-10-02-journal-fidelity-repair.md`: audit-only retry, bounded hardest fidelity repair and content-free recovery diagnostics
 - `superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`: answered extractor context requests, one hardest self-repair and calibration rounds that run to the end
 - `superpowers/specs/`: accepted design specifications
+- `superpowers/specs/2026-10-03-public-plugin-storage-design.md`: proposed server storage for public plugin users' conversations, journal entries, settings and handoffs, with accounts, write tools, per-user encryption, consent, retention, migration, costs, a legal-review checklist and owner questions; not implemented
 
 ## Obsidian graph authoring
 
