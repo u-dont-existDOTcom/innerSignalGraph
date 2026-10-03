@@ -72,6 +72,17 @@ if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'a
 if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'attempt-mark'")) failFirst("attempt-mark", 2, 43);
 if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
 if (${JSON.stringify(scenario)} === "unstaged_close_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
+if (${JSON.stringify(scenario)} === "refuse_unsaved_slow" && args.at(-1).includes("'attempt-refuse'")) {
+  // Three refusals fail, slowly after the first; the first also makes the hold unsavable and the third restores that.
+  const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
+  const marker = path.join(${JSON.stringify(laptop)}, "refuse-slow-count");
+  const seen = fs.existsSync(marker) ? Number(fs.readFileSync(marker, "utf8")) : 0;
+  fs.writeFileSync(marker, String(seen + 1));
+  if (seen > 0 && seen < 3) await new Promise((resolve) => setTimeout(resolve, 700));
+  if (seen === 0) { fs.renameSync(pending, moved); fs.writeFileSync(pending, ""); }
+  if (seen === 2) { fs.rmSync(pending); fs.renameSync(moved, pending); }
+  if (seen < 3) process.exit(42);
+}
 if (${JSON.stringify(scenario)} === "refuse_unsaved" && args.at(-1).includes("'attempt-refuse'")) {
   // The first failed refusal also leaves the laptop unable to save the hold; the second restores that.
   const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
@@ -178,7 +189,7 @@ if (scenario === "ui_invalidate") console.log(JSON.stringify({ type: "system", s
 if (scenario === "init_missing") { console.log(JSON.stringify({ type: "result", is_error: false, subtype: "success" })); process.exit(0); }
 if (scenario === "server_extra") init.mcp_servers.push({ name: "other", status: "connected" });
 if (scenario === "server_disconnected") init.mcp_servers[0].status = "disconnected";
-if (["tools_extra", "refuse_failure", "refuse_unsaved"].includes(scenario)) init.tools.push("Bash");
+if (["tools_extra", "refuse_failure", "refuse_unsaved", "refuse_unsaved_slow"].includes(scenario)) init.tools.push("Bash");
 if (scenario === "skills_present") init.skills.push("synthetic");
 if (scenario === "slashes_present") init.slash_commands.push("synthetic");
 console.log(JSON.stringify(init));
@@ -206,7 +217,7 @@ if (scenario === "reach_then_hang") {
 if (scenario === "hook_event") console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
 // Give the parent a chance to kill the process group before any packet tool call.
 if (["server_extra", "server_disconnected", "tools_extra", "skills_present", "slashes_present", "hook_event", "foreign_session",
-  "init_without_session", "refuse_failure", "refuse_unsaved"].includes(scenario)) {
+  "init_without_session", "refuse_failure", "refuse_unsaved", "refuse_unsaved_slow"].includes(scenario)) {
   await new Promise(resolve => setTimeout(resolve, 250));
   fs.writeFileSync(${JSON.stringify(path.join(laptop, "packet-called-after-refusal"))}, "bad");
 }
@@ -639,6 +650,20 @@ test("a failed close of a spent item is retried before the worker takes another 
   assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:STAGE_MISSING"]);
   assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted", "the retried close wrote the tombstone");
   await assertWorkDirClean(f.workDir);
+});
+
+test("a graceful stop waits until an unsaved hold is saved", async (t) => {
+  const f = await fixture(t, "refuse_unsaved_slow");
+  await assert.rejects(f.port.invoke({ ...call("job:synthetic-stop-unsaved"), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const running = runJournalClaudeWorker(f.args, { environment: f.environment });
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline && !(await fs.readFile(f.log, "utf8").catch(() => "")).includes("isolation_refusal_unsaved")) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  process.emit("SIGINT");
+  assert.equal(await running, 130);
+  // The stop didn't drop the hold: the worker kept retrying until the disk took it.
+  assert.equal((await fs.readdir(path.join(f.workDir, "pending-refusals"))).length, 1);
 });
 
 test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {

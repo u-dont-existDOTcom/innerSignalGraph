@@ -625,9 +625,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     }
   }
   // A hold that neither the host nor the disk took is retried, on both, until one succeeds. Until then the worker
-  // neither stops nor takes another item, except on a stop signal.
+  // neither takes another item nor exits; a graceful stop waits here too (only a forced kill can lose it).
   async function settleUnrecordedHolds() {
-    while (unrecordedHolds.length > 0 && !stopping) {
+    while (unrecordedHolds.length > 0) {
       for (const entry of [...unrecordedHolds]) {
         let settled = false;
         try { settled = await applyHold(entry.kind, entry.hold); } catch { settled = false; }
@@ -637,7 +637,22 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         }
         if (settled) unrecordedHolds.splice(unrecordedHolds.indexOf(entry), 1);
       }
-      if (unrecordedHolds.length > 0 && !stopping) await wait(options.pollMs);
+      if (unrecordedHolds.length > 0) await wait(options.pollMs);
+    }
+  }
+  // Before the worker exits, a stop signal included, a release whose claim is neither saved nor released is retried
+  // until one of them succeeds, so its reservation isn't stranded.
+  async function drainUnsavedReleases() {
+    const unsaved = () => [...pendingReleases.values()].some((entry) => !entry.saved);
+    while (unsaved()) {
+      for (const [workId, entry] of pendingReleases) {
+        if (entry.saved) continue;
+        try {
+          await host("attempt-release", ["--work-id", workId, "--attempt-identity", entry.identity, "--claim", entry.claim]);
+          await releaseSettled(workId, entry.claim);
+        } catch { await persistRelease(workId, entry); }
+      }
+      if (unsaved()) await wait(options.pollMs);
     }
   }
   async function releaseSettled(workId, claim) {
@@ -1026,6 +1041,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         }
       }
     }
+    await settleUnrecordedHolds();
+    await drainUnsavedReleases();
     // 77 is the content-free sign-in-required exit status for the operator.
     // 74 is the content-free status for a run directory the worker could not remove.
     return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : cleanupFailed ? CLAUDE_CLEANUP_FAILED_EXIT_CODE
@@ -1034,6 +1051,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       : options.once && (Date.now() < limitedUntil || holdsPending) ? CLAUDE_PAUSED_EXIT_CODE : 0;
   } catch (error) {
     if (error?.code !== "JOURNAL_CLAUDE_STOPPED") throw error;
+    await settleUnrecordedHolds();
+    await drainUnsavedReleases();
     return stopSignal === "SIGINT" ? 130 : 143;
   } finally {
     stop();
