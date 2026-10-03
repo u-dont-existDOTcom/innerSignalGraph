@@ -30,11 +30,11 @@ function call(operationKey) {
       adjacent_context: { by_unit: [] }, visual_context: [], neutral_reading_instructions: [] } };
 }
 
-async function fixture(t, scenario = "ok") {
+async function fixture(t, scenario = "ok", { workName = "work" } = {}) {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-claude-test-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const host = path.join(base, "host"), laptop = path.join(base, "laptop");
-  const root = path.join(host, "exchange"), workDir = path.join(laptop, "work");
+  const root = path.join(host, "exchange"), workDir = path.join(laptop, workName);
   await fs.mkdir(root, { recursive: true, mode: 0o700 });
   await fs.mkdir(workDir, { recursive: true, mode: 0o700 });
   const secret = randomBytes(32).toString("base64");
@@ -570,6 +570,17 @@ test("a model reach the host didn't record is kept and recorded before any furth
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
   assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:EVENT_HANDLER_FAILED"]);
   assert.equal(logs[1].model_reached, true);
+});
+
+test("a project folder Claude creates under a work dir with a character outside the BMP is still found", async (t) => {
+  const f = await fixture(t, "project_file", { workName: "work-\u{1F600}" });
+  const operationKey = "job:synthetic-emoji-work-dir";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:LOCAL_PERSISTENCE"]);
+  assert.notEqual((await f.port.getCompletion(operationKey)).status, "completed");
+  for (const bytes of await scanFiles(f.laptop)) assert.ok(!bytes.includes(Buffer.from(SENTINEL)));
 });
 
 test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {
@@ -1161,7 +1172,7 @@ test("a fresh isolation refusal before the model stops the worker and leaves the
 
 test("leftover project and fallback cache files for this worker prefix are swept", async (t) => {
   const f = await fixture(t);
-  const slug = path.join(f.workDir, "inner-signal-claude-AAAAAA", "run-BBBBBB").replace(/[^A-Za-z0-9]/gu, "-");
+  const slug = path.join(f.workDir, "inner-signal-claude-AAAAAA", "run-BBBBBB").replace(/[^A-Za-z0-9]/g, "-");
   for (const root of [path.join(f.laptop, ".claude", "projects"), path.join(f.laptop, ".cache", "claude-cli-nodejs")]) {
     await fs.mkdir(path.join(root, slug), { recursive: true });
     await fs.writeFile(path.join(root, slug, "synthetic.txt"), SENTINEL);

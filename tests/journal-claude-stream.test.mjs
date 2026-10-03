@@ -130,6 +130,8 @@ test("attempt identity survives expired-item successors, and Claude slugs match 
   assert.equal(journalAttemptMarkerKey(journalExchangeAttemptIdentity("synthetic-operation")),
     journalWorkFileKey(journalExchangeWorkId("synthetic-operation")));
   assert.equal(claudeRunSlug("/tmp/tmp.AbC"), "-tmp-tmp-AbC");
+  // Like Claude Code, a character outside the BMP is two UTF-16 code units and so two dashes.
+  assert.equal(claudeRunSlug("/tmp/a\u{1F600}b"), "-tmp-a--b");
 });
 
 test("exclusive attempt writes expose only complete JSON and leave no temporary file", async (t) => {

@@ -268,7 +268,10 @@ export function claudeResultReader(record, expectedPacketLength = null, expected
   return { state, accept };
 }
 
-export const claudeRunSlug = (directory) => path.resolve(directory).replace(/[^A-Za-z0-9]/gu, "-");
+// Claude Code names a project folder by replacing every non-alphanumeric UTF-16 code unit of the cwd with "-", so a
+// character outside the BMP (a surrogate pair) becomes two dashes. This must match it exactly; no "u" flag here.
+// eslint-disable-next-line require-unicode-regexp
+export const claudeRunSlug = (directory) => path.resolve(directory).replace(/[^A-Za-z0-9]/g, "-");
 function persistenceRoots(home) {
   return [path.join(home, ".claude", "projects"), path.join(home, ".cache", "claude-cli-nodejs")];
 }
@@ -810,8 +813,16 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" });
         }
       }
-      // The model was reached but the host never recorded it: keep that, so the attempt can't be reclaimed as unspent.
-      if (claimed && markFailed) await keepHold("spend", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
+      // The model was reached but the host may not have recorded it (the mark failed or was cut off by a stop): unless
+      // the host confirms model reach, keep that, so the attempt can't be reclaimed as unspent.
+      if (claimed && markFailed) {
+        let recorded = false;
+        try {
+          recorded = (await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0]
+            ?.model_reached === true;
+        } catch { recorded = false; }
+        if (!recorded) await keepHold("spend", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
+      }
       if (runDir && !groupAlive) {
         if (!persistenceChecked) {
           try { if (await cleanClaudePersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
