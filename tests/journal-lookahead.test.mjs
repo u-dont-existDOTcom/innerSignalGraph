@@ -97,14 +97,15 @@ test("legacy batch extraction and dependent omission keys remain stable", async 
       reason: "Synthetic." })), requested_context: [] };
   const omission = await planJournalOperation({ work: snapshot.work_items[1], snapshot,
     grant: batchGrant });
-  // These values moved once, when the extractor and omission checker instructions (part of every job
-  // ID) changed in #121; with those instructions as they were before, the shared plan reproduces the
-  // earlier values exactly.
-  assert.equal(batchJobId, "job:ffa099f34eb5d0c0f8ae6c859cbb7133fcd240403b16b9628cc9928f363116cb");
+  // These values move only when an instruction that is part of every job ID changes: the extractor and
+  // omission checker instructions in #121, then the extractor's repair paragraph (return unflagged items
+  // unchanged, with the same local ID). With the instructions as they were before each change, the shared
+  // plan reproduces the earlier values exactly.
+  assert.equal(batchJobId, "job:008a31955dd66eea8debb633460fc5513c8cb68a4b77299519e6538ba786f138");
   assert.equal(primary.operationKey,
-    "journal:4affefc729b17d2cf81b4d5117a0aff5801b09bc:78d064b11dc0fc7e109ad600c462dd45");
+    "journal:f87e7ebb95889af1a4ef40ca2192755b16a8f8a3:0ae6e825b85c9fd15111e006e509c6a2");
   assert.equal(omission.operationKey,
-    "journal:cf2d3045dcbf53a9b70b9261f1fe8dedc0256c4d:4e69ed1d71bf12a33b1fabd70e866afe");
+    "journal:f4b57df03fb6a860701e76b1cb8554a2e7f7e77d:300ab3cc5508db9f0fa3cc54623e8970");
 });
 
 test("prefetch publishes once, peek is read only, and invoke consumes the same item", async () => {

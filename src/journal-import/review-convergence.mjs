@@ -50,14 +50,17 @@ export function extractionItemChanges(previous, current) {
           previousId: item.local_id, previousUnitIds: anchorUnitIds(prior) });
       } else pending.push(item);
     }
+    // Content matches are settled before any ID is treated as rewritten in place, so the result doesn't depend
+    // on the order the extractor listed its items in.
+    const rewritten = [];
     for (const item of pending) {
       const match = (byContent.get(contentKey(item)) ?? []).find((id) => !used.has(id));
-      if (match !== undefined) {
-        used.add(match);
-        items.push({ kind, localId: item.local_id, unitIds: anchorUnitIds(item), changed: false,
-          previousId: match, previousUnitIds: anchorUnitIds(byId.get(match)) });
-        continue;
-      }
+      if (match === undefined) { rewritten.push(item); continue; }
+      used.add(match);
+      items.push({ kind, localId: item.local_id, unitIds: anchorUnitIds(item), changed: false,
+        previousId: match, previousUnitIds: anchorUnitIds(byId.get(match)) });
+    }
+    for (const item of rewritten) {
       const replaced = byId.has(item.local_id) && !used.has(item.local_id);
       if (replaced) used.add(item.local_id);
       items.push({ kind, localId: item.local_id, unitIds: anchorUnitIds(item), changed: true,
@@ -66,6 +69,33 @@ export function extractionItemChanges(previous, current) {
     }
     for (const item of before) {
       if (!used.has(item.local_id)) removed.push({ kind, localId: item.local_id, unitIds: anchorUnitIds(item) });
+    }
+  }
+  // An item that changed or went away also changes what points at it: an assertion through its speaker,
+  // subjects, episode or time evidence, and an episode through its time evidence. Those count as changed too,
+  // until nothing more changes.
+  const changedIds = { assertion: new Set(), entity: new Set(), episode: new Set() };
+  for (const item of items) if (item.changed) changedIds[item.kind].add(item.localId);
+  const goneIds = new Set(removed.map((item) => item.localId));
+  const touched = (id) => goneIds.has(id) || changedIds.assertion.has(id) || changedIds.entity.has(id)
+    || changedIds.episode.has(id);
+  const entityTouched = (id) => goneIds.has(id) || changedIds.entity.has(id);
+  const timeIds = (item) => [...(item.authored_time?.evidence_ids ?? []), ...(item.event_time?.evidence_ids ?? [])];
+  const sources = { assertion: new Map((current?.assertions ?? []).map((item) => [item.local_id, item])),
+    episode: new Map((current?.episodes ?? []).map((item) => [item.local_id, item])) };
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const record of items) {
+      if (record.changed || record.kind === "entity") continue;
+      const source = sources[record.kind].get(record.localId);
+      const depends = timeIds(source).some(touched) || (record.kind === "assertion"
+        && (entityTouched(source.speaker_local_id) || source.subject_local_ids.some(entityTouched)
+          || (source.episode_local_id !== null && (goneIds.has(source.episode_local_id)
+            || changedIds.episode.has(source.episode_local_id)))));
+      if (!depends) continue;
+      record.changed = true;
+      changedIds[record.kind].add(record.localId);
+      grew = true;
     }
   }
   return { items, removed };
@@ -84,7 +114,10 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   const { items, removed } = extractionItemChanges(previousExtraction, extraction);
   const earlier = reviewFindingTargets(previousReview);
   const units = new Set(unitIds);
-  const unitsWithRemovals = new Set(removed.flatMap((item) => item.unitIds));
+  // A unit lost an item when one anchored in it was removed, or rewritten so that it no longer is.
+  const unitsWithRemovals = new Set([...removed.flatMap((item) => item.unitIds),
+    ...items.filter((item) => item.changed).flatMap((item) => item.previousUnitIds
+      .filter((unitId) => !item.unitIds.includes(unitId)))]);
   const byTarget = new Map();
   for (const item of items) {
     const target = targetOf(item.kind, item.localId, item.unitIds);
@@ -151,16 +184,20 @@ export function withholdFlaggedItems({ extraction, reviews, unitIds }) {
   for (const { review, targetOf = localTarget } of reviews) {
     if (!review) continue;
     if (review.status === "incomplete" && review.unassessed_ids.length === 0) return null;
+    // Local IDs need only be unique within one kind, so a target can name several items; each is withheld.
     const located = new Map();
     for (const [field, kind] of ITEM_FIELDS) {
-      for (const item of extraction[field]) located.set(targetOf(kind, item.local_id, anchorUnitIds(item)), { field, item });
+      for (const item of extraction[field]) {
+        const target = targetOf(kind, item.local_id, anchorUnitIds(item));
+        located.set(target, [...(located.get(target) ?? []), { field, item }]);
+      }
     }
     const targets = [...review.assessments.filter(assessmentIsFinding).map((assessment) => assessment.target_id),
       ...review.unassessed_ids];
     unassessed += review.unassessed_ids.length;
     for (const target of new Set(targets)) {
       const found = located.get(target);
-      if (found) withheld[found.field].add(found.item.local_id);
+      if (found) for (const { field, item } of found) withheld[field].add(item.local_id);
       else if (units.has(target)) addGap(target);
       else if (unitIds.length === 1) addGap(unitIds[0]);
       else unlocated += 1;
@@ -188,8 +225,11 @@ export function withholdFlaggedItems({ extraction, reviews, unitIds }) {
     withheld_episodes: 0, omission_gaps: gaps.get(unitId) ?? 0 }]));
   for (const [field] of ITEM_FIELDS) {
     for (const item of extraction[field]) {
-      const counts = residualsByUnit.get(anchorUnitIds(item)[0]);
-      if (withheld[field].has(item.local_id) && counts) counts[`withheld_${field}`] += 1;
+      if (!withheld[field].has(item.local_id)) continue;
+      for (const unitId of anchorUnitIds(item)) {
+        const counts = residualsByUnit.get(unitId);
+        if (counts) counts[`withheld_${field}`] += 1;
+      }
     }
   }
   const withheldByUnit = new Map([...residualsByUnit].map(([unitId, counts]) => [unitId, counts.withheld_assertions]));

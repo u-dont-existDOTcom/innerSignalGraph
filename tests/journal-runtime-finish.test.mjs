@@ -77,6 +77,20 @@ async function environment(t, entries = TEXTS) {
 const unknownTime = { raw: null, from: null, to: null, precision: "unknown", timezone: null, basis: "unresolved", evidence_ids: [] };
 const review = (role, packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation, review_role: role,
   assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" });
+// A frozen reference with one critical item on the packet's first unit. The default reader returns no reference
+// items, which meets pooled recall without any evidence, so a calibration test that must stop the round needs an
+// item the unit can miss.
+const criticalReference = (packet) => ({ schema_version: "1.0", source_only_first_pass: true,
+  reference_items: [{ id: "reference:critical", statement: "Synthetic critical proposition.", required_qualifiers: [],
+    anchors: [{ unit_id: packet.source_windows[0].unit_id, quote: packet.source_windows[0].text, occurrence: null }],
+    importance_reason: "Synthetic critical item.", critical: true }],
+  questions: [], unassessed_unit_ids: [] });
+// A calibration fidelity answer that keeps, or misses, every frozen reference item.
+const referenceAudit = (packet, kept) => ({ ...review("fidelity_auditor", packet),
+  assessments: (packet.frozen_reference?.reference_items ?? []).map(({ id, critical }) => ({ target_id: id,
+    outcome: kept ? "preserved" : "omitted", critical, finding_type: kept ? "none" : "missing_evidence",
+    explanation: kept ? "Synthetic check preserved it." : "Synthetic check found it missing.", evidence_ids: [] })),
+  status: kept ? "sufficient_for_stated_scope" : "repair_required" });
 
 function scannedParser(f, pages) {
   return async () => ({ source: { sha256: f.config.source.sha256,
@@ -828,7 +842,10 @@ test("a hardest extraction whose omission packet grows too large still counts as
       pages: [...parsed.pages, { page_number: parsed.pages.length + 1, representation_id: "synthetic:page:sunday", disposition: "readable", warnings: [], image_inventory: [] }],
       representations: [...parsed.representations, { representation_id: "synthetic:page:sunday", text, utf8_byte_length: Buffer.byteLength(text) }] };
   };
-  const standard = createMockJournalInferencePort({ handlers: handlers({ extractor: unresolvedSunday }) });
+  // The Sunday unit's frozen reference has a critical item, so its source-only failure stops the calibration round.
+  const standard = createMockJournalInferencePort({ handlers: handlers({ extractor: unresolvedSunday,
+    reference_reader: (packet) => packet.source_windows[0].text.includes("Synthetic Sunday")
+      ? criticalReference(packet) : normal.reference_reader(packet) }) });
   // The hardest extractor completes, but its long (schema-valid) output makes the omission packet exceed the bound.
   const hardest = createMockJournalInferencePort({ handlers: handlers({ extractor: (packet) => ({
     ...normal.extractor(packet),
@@ -846,6 +863,7 @@ test("a hardest extraction whose omission packet grows too large still counts as
     // The unit is a calibration unit: calibration stops as unresolved (not as an unspent size refusal),
     // and the consumed hardest call is counted.
     assert.equal(summary.calibration, "failed");
+    assert.equal(summary.calibration_failure.status, "CALIBRATION_REPAIR_REQUIRED");
     assert.equal(summary.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
     assert.equal(summary.residuals.hardest_attempted, 1);
     assert.equal(summary.residuals.hardest_resolved, 0);
@@ -1337,7 +1355,9 @@ test("duplicate calibration assessments exhaust bounded attempts and stop on res
   let fidelityCalls = 0;
   const calls = [];
   const baseline = handlers();
+  // A source-only failure keeps none of the unit's reference items, so the critical one stops calibration.
   const port = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     fidelity_auditor: packet => {
       fidelityCalls += 1;
       calls.push("fidelity_auditor");
@@ -1364,7 +1384,9 @@ test("duplicate assessments during calibration repair stop calibration", async t
   let fidelityCalls = 0;
   const calls = [];
   const baseline = handlers();
+  // A source-only failure keeps none of the unit's reference items, so the critical one stops calibration.
   const port = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     fidelity_auditor: packet => {
       fidelityCalls += 1;
       calls.push("fidelity_auditor");
@@ -1389,18 +1411,23 @@ test("a calibration review still requiring repair after bounded cycles stops the
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
   const calls = [];
-  const baseline = handlers();
+  // Every audit finds the unit's critical reference item missing. When the bounded repair cycles end, the unit
+  // keeps its best audited attempt, which still misses that item, so it fails its own reference check and the
+  // critical miss stops the round.
   const port = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     fidelity_auditor: packet => {
       calls.push("fidelity_auditor");
-      return { ...baseline.fidelity_auditor(packet), status: "repair_required" };
+      return referenceAudit(packet, false);
     }
   }) });
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
   try {
-    await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+    const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
     assert.equal(calls.length, 3, "initial review plus two repair cycles");
+    assert.deepEqual(stopped.calibration_failure.failures.map((item) => item.reference), [{ reference_total: 1,
+      preserved: 0, omitted: 1, distorted: 0, unassessed: 0, critical_miss_count: 1, qualifier_error_count: 0 }]);
   } finally { await runtime.close(); }
 });
 
@@ -1411,7 +1438,11 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
     f.config.hardest_lane = { enabled };
     const baseline = handlers();
     const calls = [];
+    // The hardest fidelity repair runs only while the reference score fails, so every audit misses the unit's
+    // critical reference item until the hardest repair's answer (when it `passes`) keeps it. A unit that still
+    // misses it keeps its best attempt and fails its own reference check.
     const base = createMockJournalInferencePort({ handlers: handlers({
+      reference_reader: criticalReference,
       extractor: packet => {
         const output = baseline.extractor(packet);
         if (packet.repair_request?.cycle === "fidelity-hardest") {
@@ -1422,10 +1453,8 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
         }
         return output;
       },
-      fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet),
-        status: passes && packet.imported_generation.assertions.some(node =>
-          node.data.statement === "Synthetic hardest repaired report.")
-          ? "sufficient_for_stated_scope" : "repair_required" })
+      fidelity_auditor: packet => referenceAudit(packet, passes && packet.imported_generation.assertions.some(node =>
+        node.data.statement === "Synthetic hardest repaired report."))
     }) });
     const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
       invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
@@ -1434,7 +1463,7 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
     const runtime = await openJournalExecutionRuntime(options);
     try {
       const result = enabled && passes ? await runtime.execute("run")
-        : await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+        : await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
       assert.equal(result.calibration, enabled && passes ? "pass" : "failed");
       assert.equal(result.residuals.hardest_attempted ?? 0, enabled ? 1 : 0);
       assert.equal(result.residuals.hardest_resolved ?? 0, enabled && passes ? 1 : 0);
@@ -1466,6 +1495,50 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
   });
 }
 
+test("a calibration unit whose reference items pass skips the hardest fidelity repair and withholds what review flags", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  f.config.hardest_lane = { enabled: true };
+  const calls = [];
+  // Every audit keeps the critical reference item and flags the unit's one assertion.
+  const base = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
+    fidelity_auditor: packet => {
+      const kept = referenceAudit(packet, true);
+      return { ...kept, status: "repair_required", assessments: [...kept.assessments,
+        ...packet.imported_generation.assertions.map(node => ({ target_id: node.id, outcome: "distorted", critical: false,
+          finding_type: "unsupported_claim", explanation: "Synthetic finding.", evidence_ids: [] }))] };
+    }
+  }) });
+  const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
+    invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.calibration, "pass");
+    assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3, "initial audit and two standard repairs");
+    assert.deepEqual(calls.filter(call => call.tier === "hardest"), [], "the scarce tier is kept for reference items that fail");
+    assert.equal(run.residuals.hardest_attempted ?? 0, 0);
+    assert.equal(run.calibration_gate.calibration_pass, true);
+    assert.equal(run.calibration_gate.withheld_assertions, 1);
+    const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+    const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+      corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+    let record;
+    try { record = await store.readJsonObject({ objectId: `unit:graph:${state.completed_units[0]}` }); }
+    finally { await store.close(); }
+    assert.equal(record.source_only_unresolved, false);
+    assert.equal(record.diagnostics.hardest_fidelity, null);
+    assert.deepEqual(record.review_residuals, { withheld_assertions: 1, withheld_entities: 0, withheld_episodes: 0, omission_gaps: 0 });
+    const { batch, ...calibration } = record.calibration;
+    assert.equal(typeof batch, "string");
+    assert.deepEqual(calibration, { reference_total: 1, preserved: 1, omitted: 0, distorted: 0, unassessed: 0,
+      critical_miss_count: 0, qualifier_error_count: 0, outcome: "pass" });
+    assert.equal(record.graph.nodes.some(node => node.kind === "assertion"), false);
+  } finally { await runtime.close(); }
+});
+
 test("the Codex-route hardest fidelity repair pauses at its dependent daily limit and resumes", async t => {
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
@@ -1473,15 +1546,16 @@ test("the Codex-route hardest fidelity repair pauses at its dependent daily limi
   const baseline = handlers();
   let day = "2026-10-02T12:00:00Z";
   const calls = [];
+  // Only the hardest repair's answer keeps the critical reference item, so the hardest fidelity repair is needed.
   const base = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     extractor: packet => {
       const output = baseline.extractor(packet);
       if (packet.repair_request?.cycle === "fidelity-hardest")
         output.assertions[0].statement = "Synthetic hardest repaired report.";
       return output;
-    }, fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet),
-      status: packet.imported_generation.assertions.some(node => node.data.statement === "Synthetic hardest repaired report.")
-        ? "sufficient_for_stated_scope" : "repair_required" })
+    }, fidelity_auditor: packet => referenceAudit(packet,
+      packet.imported_generation.assertions.some(node => node.data.statement === "Synthetic hardest repaired report."))
   }) });
   const port = { capabilities: () => ({ ...base.capabilities(), transport: "codex_exec_exchange",
       hardest_fresh_context_per_generate: true, hardest_authenticated_execution_profile_per_generate: true }),
@@ -1517,7 +1591,11 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
     f.config.hardest_lane = { enabled: true };
     const baseline = handlers();
     const calls = [];
+    // Every audit misses the unit's critical reference item, so the hardest fidelity repair runs (it is skipped
+    // once the reference score passes), and the unit, keeping its best audited attempt, fails its own
+    // reference check.
     const base = createMockJournalInferencePort({ handlers: handlers({
+      reference_reader: criticalReference,
       extractor: packet => {
         const output = baseline.extractor(packet);
         if (failure === "packet-before-extractor" && packet.repair_request?.cycle === "fidelity-2")
@@ -1525,14 +1603,20 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
         if (packet.repair_request?.cycle === "fidelity-hardest") {
           if (failure === "packet-after-extractor") output.coverage[0].reason = "PRIVATE_SYNTHETIC_SENTINEL".repeat(24_000);
           if (failure === "binding") output.assertions[0].anchors[0].quote = "PRIVATE_SYNTHETIC_SENTINEL_ABSENT";
-          if (failure === "omission") output.coverage[0].reason = "hardest";
+          // The hardest answer rewrites an assertion, so its own review counts for that assertion.
+          if (failure === "omission") {
+            output.coverage[0].reason = "hardest";
+            output.assertions[0].statement = "Synthetic hardest rewritten report.";
+          }
         }
         return output;
       },
-      omission_checker: packet => ({ ...baseline.omission_checker(packet),
-        status: failure === "omission" && packet.candidate_extraction.coverage[0].reason === "hardest"
-          ? "repair_required" : "sufficient_for_stated_scope" }),
-      fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet), status: "repair_required" })
+      omission_checker: packet => failure === "omission" && packet.candidate_extraction.coverage[0].reason === "hardest"
+        ? { ...baseline.omission_checker(packet), status: "repair_required",
+          assessments: [{ target_id: packet.candidate_extraction.assertions[0].local_id, outcome: "distorted",
+            critical: false, finding_type: "unsupported_claim", explanation: "Synthetic finding.", evidence_ids: [] }] }
+        : baseline.omission_checker(packet),
+      fidelity_auditor: packet => referenceAudit(packet, false)
     }) });
     const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
       invoke(input) {
@@ -1545,26 +1629,33 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
     const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
       sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
     try {
-      const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+      const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
       assert.equal(stopped.residuals.hardest_attempted ?? 0, failure === "packet-before-extractor" ? 0 : 1);
       assert.equal(stopped.residuals.hardest_resolved ?? 0, 0);
-      // A hardest repair that its own binding or review leaves unresolved is repaired once more at the same
-      // tier; here that repair passes its review and gets the fourth audit.
-      const repairedAgain = ["binding", "omission"].includes(failure);
-      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, repairedAgain ? 4 : 3);
+      // A hardest answer that didn't bind is repaired once more at the same tier; here that repair passes its
+      // review and gets the fourth audit. Review findings don't earn that repair: a hardest answer that binds is
+      // audited as it is (the fourth audit), and what its review still flags is withheld when the repairs end.
+      const repairedAgain = failure === "binding";
+      const audited = ["binding", "omission"].includes(failure);
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, audited ? 4 : 3);
       const snapshot = stopped.calibration_failure.diagnostics.hardest_fidelity;
       if (repairedAgain) {
         assert.equal(snapshot.repair.binding_failure_code, null);
         assert.equal(snapshot.repair.omission.status, "sufficient_for_stated_scope");
         assert.equal(snapshot.repair.extraction_changed, true);
-        assert.equal(snapshot.fidelity.calibration_pass, false);
         assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
           ["extractor", "omission_checker", "extractor", "omission_checker"]);
       } else assert.equal(Object.hasOwn(snapshot, "repair"), false);
+      if (audited) assert.equal(snapshot.fidelity.calibration_pass, false);
       if (failure.startsWith("packet-")) assert.equal(snapshot.blocker_code, "JOURNAL_WORK_PACKET_TOO_LARGE");
       if (failure === "spent") assert.equal(snapshot.blocker_code, "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED");
       if (failure === "binding") assert.equal(snapshot.binding_failure_code, "QUOTE_NOT_FOUND");
-      if (failure === "omission") assert.equal(snapshot.omission.status, "repair_required");
+      if (failure === "omission") {
+        assert.equal(snapshot.omission.status, "repair_required");
+        assert.deepEqual(snapshot.review_scope, { carried: 0, changed: 1, removed: 0, earlier_findings: 0 });
+        assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
+          ["extractor", "omission_checker"]);
+      }
       assert.equal(snapshot.extraction_changed, failure === "packet-before-extractor" || failure === "spent" ? null : true);
       assert.equal(JSON.stringify(stopped).includes("PRIVATE_SYNTHETIC_SENTINEL"), false);
     } finally { await runtime.close(); }
@@ -1974,4 +2065,198 @@ for (const [label, count, field] of [
     }
     assert.equal((await runtime.execute("commit")).completion.profile_committed, "pass");
   } finally { await runtime.close(); }
+});
+
+// How repeated omission reviews of one regular unit settle. Thirteen one-page units: calibration takes twelve
+// windows by source position, which leaves unit 06 as the only regular unit; every other unit answers cleanly.
+const CONVERGENCE_ENTRIES = Array.from({ length: 13 }, (_, index) =>
+  `Synthetic convergence unit ${String(index).padStart(2, "0")} has unique text.`);
+const isRegularUnit = (packet) => packet.core_units?.length === 1 && packet.core_units[0].text === CONVERGENCE_ENTRIES[6];
+const FLAWED_X = "Synthetic report X, before its repair.";
+const REPAIRED_X = "Synthetic report X, repaired.";
+const REPORT_Y = "Synthetic report Y.";
+const unitAnchors = (unit) => [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }];
+const diarist = (unit) => ({ local_id: "self", label: "Synthetic diarist", entity_kind: "person", anchors: unitAnchors(unit) });
+const proposal = (unit, localId, statement, extra = {}) => ({ local_id: localId, statement, assertion_kind: "direct_report",
+  narrative_mode: "waking", speaker_local_id: "self", subject_local_ids: ["self"], episode_local_id: null,
+  polarity: "affirmed", qualifiers: [], authored_time: unknownTime, event_time: unknownTime, anchors: unitAnchors(unit),
+  importance_reasons: ["synthetic"], extraction_confidence: "high", ...extra });
+const unitExtraction = (unit, assertions, { entities = [diarist(unit)], status = "complete", requestedContext = [] } = {}) => ({
+  schema_version: "1.0", status, entities, episodes: [], assertions,
+  coverage: [{ unit_id: unit.unit_id, disposition: "extracted", assertion_local_ids: assertions.map((item) => item.local_id), reason: null }],
+  requested_context: requestedContext });
+// A unit keeps its cycle diagnostics on its record only when something else happened to it (here an answered
+// context request); the answer widens the source window and leaves the review scope alone.
+const contextRequest = (unit) => [{ unit_id: unit.unit_id, direction: "after", reason: "Synthetic context request." }];
+// The regular unit's omission review: a finding on each flagged target (a target, or a target and its finding
+// type), and the candidate's other assertions kept.
+const flaggingReview = (packet, flagged) => {
+  const findings = flagged.map((entry) => Array.isArray(entry) ? entry : [entry, "unsupported_claim"]);
+  const targets = new Set(findings.map(([target]) => target));
+  return { ...review("omission_checker", packet),
+    assessments: [...findings.map(([target, findingType]) => ({ target_id: target, outcome: "distorted", critical: false,
+      finding_type: findingType, explanation: "Synthetic finding.", evidence_ids: [] })),
+    ...packet.candidate_extraction.assertions.filter((item) => !targets.has(item.local_id)).map((item) => ({
+      target_id: item.local_id, outcome: "preserved", critical: false, finding_type: "none",
+      explanation: "Synthetic check preserved it.", evidence_ids: [] }))],
+    status: findings.length ? "repair_required" : "sufficient_for_stated_scope" };
+};
+// `omission(candidate, call)` names what the regular unit's review flags; `call` counts that unit's reviews.
+const regularHandlers = ({ extractor, omission }) => {
+  let reviews = 0;
+  return handlers({
+    extractor: (packet) => isRegularUnit(packet) ? extractor(packet.core_units[0], packet) : handlers().extractor(packet),
+    omission_checker: (packet) => isRegularUnit(packet)
+      ? flaggingReview(packet, omission(packet.candidate_extraction, reviews++)) : review("omission_checker", packet)
+  });
+};
+const assertionStatements = (graph) => graph.nodes.filter((node) => node.kind === "assertion")
+  .map((node) => node.data.statement).sort();
+
+async function runRegularUnit(t, roleHandlers, configure = () => {}) {
+  const f = await environment(t, CONVERGENCE_ENTRIES);
+  configure(f.config);
+  const calls = [];
+  const base = createMockJournalInferencePort({ handlers: roleHandlers });
+  const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
+    invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  let run;
+  try { run = await runtime.execute("run"); } finally { await runtime.close(); }
+  const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+  const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+    corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+  try {
+    const bytes = await store.reassembleOriginal(state.visual_plan_ref ?? state.parsed_ref);
+    let plan;
+    try { plan = JSON.parse(bytes.toString("utf8")); } finally { bytes.fill(0); }
+    const unit = plan.units.find((item) => item.text === CONVERGENCE_ENTRIES[6]);
+    assert.equal(state.calibration, "pass");
+    assert.ok(!plan.calibration.some((item) => item.unit_id === unit.unit_id), "unit 06 is a regular unit");
+    return { f, run, calls, unit, record: await store.readJsonObject({ objectId: `unit:graph:${unit.unit_id}` }) };
+  } finally { await store.close(); }
+}
+
+test("after a repair, review counts only for what the repair changed: a finding on an unchanged assertion carries forward", async t => {
+  const cycles = [];
+  const { run, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit, packet) => {
+      const cycle = packet.repair_request?.cycle ?? 0;
+      cycles.push(cycle);
+      // The repair fixes X and returns Y exactly as it was, under the same local ID.
+      return unitExtraction(unit, [proposal(unit, "x", cycle === 0 ? FLAWED_X : REPAIRED_X), proposal(unit, "y", REPORT_Y)],
+        cycle === 0 ? { requestedContext: contextRequest(unit) } : {});
+    },
+    // The first review flags X; the repair's review flags only the unchanged Y.
+    omission: (candidate) => [candidate.assertions.some((item) => item.statement === REPAIRED_X) ? "y" : "x"]
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(run.completion.graph_built, "pass");
+  assert.deepEqual(cycles, [0, 1], "the unit resolves at cycle 1");
+  assert.equal(record.source_only_unresolved, false);
+  assert.equal(Object.hasOwn(record, "review_residuals"), false);
+  assert.deepEqual(assertionStatements(record.graph), [REPAIRED_X, REPORT_Y].sort());
+  // The repair's own review still flagged Y, which the repair couldn't have affected, so that verdict didn't count.
+  assert.deepEqual(record.omission.output.assessments.filter((item) => item.outcome !== "preserved")
+    .map((item) => item.target_id), ["y"]);
+  assert.deepEqual(record.diagnostics.cycles.map((cycle) => cycle.cycle), [0, 1]);
+  assert.deepEqual(record.diagnostics.cycles[1].review_scope, { carried: 1, changed: 1, removed: 0, earlier_findings: 1 });
+  assert.equal(record.diagnostics.cycles[1].omission.status, "sufficient_for_stated_scope");
+  assert.equal(record.diagnostics.cycles[1].omission.findings, 0);
+});
+
+test("after a repair, a finding from the earlier review stays in scope when the repair leaves its assertion unchanged", async t => {
+  const repairRequests = [];
+  const { run, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit, packet) => {
+      const cycle = packet.repair_request?.cycle ?? 0;
+      repairRequests.push([cycle, packet.repair_request ?? null]);
+      // The first repair returns the flagged X unchanged; the second fixes it.
+      return unitExtraction(unit, [proposal(unit, "x", cycle < 2 ? FLAWED_X : REPAIRED_X), proposal(unit, "y", REPORT_Y)],
+        cycle === 0 ? { requestedContext: contextRequest(unit) } : {});
+    },
+    // The repair's review flags X again, with a finding of its own.
+    omission: (candidate, call) => candidate.assertions.some((item) => item.statement === FLAWED_X)
+      ? [["x", call === 0 ? "unsupported_claim" : "lost_qualifier"]] : []
+  }));
+  assert.equal(run.blocker, null);
+  assert.deepEqual(repairRequests.map(([cycle]) => cycle), [0, 1, 2], "cycle 1 leaves the unit unresolved");
+  // The next repair is asked to fix what cycle 1's counted review still flags: X, checked again since it was
+  // flagged before, so cycle 1's own verdict counts rather than the earlier one carried forward.
+  const counted = repairRequests[2][1].omission_review;
+  assert.equal(counted.status, "repair_required");
+  assert.deepEqual(counted.assessments.filter((item) => item.outcome !== "preserved")
+    .map((item) => [item.target_id, item.finding_type]), [["x", "lost_qualifier"]]);
+  assert.deepEqual(record.diagnostics.cycles[1].review_scope, { carried: 0, changed: 0, removed: 0, earlier_findings: 1 });
+  assert.equal(record.diagnostics.cycles[1].omission.findings, 1);
+  assert.deepEqual(record.diagnostics.cycles[2].review_scope, { carried: 0, changed: 1, removed: 0, earlier_findings: 1 });
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(assertionStatements(record.graph), [REPAIRED_X, REPORT_Y].sort());
+});
+
+test("a unit still flagged after every cycle and the hardest lane withholds the flagged assertion and keeps the rest", async t => {
+  const { f, run, calls, unit, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit) => unitExtraction(unit, [proposal(unit, "x", FLAWED_X), proposal(unit, "y", REPORT_Y)]),
+    omission: () => ["x"]
+  }), (config) => { config.hardest_lane = { enabled: true }; });
+  assert.equal(run.blocker, null);
+  assert.equal(run.completion.graph_built, "pass");
+  assert.equal(run.residuals.source_only_units, 0);
+  // Every cycle, the hardest answer and its one repair at that tier all left X flagged.
+  assert.deepEqual(calls.filter((call) => call.tier === "hardest").map((call) => call.role),
+    ["extractor", "omission_checker", "extractor", "omission_checker"]);
+  assert.equal(run.residuals.hardest_attempted, 1);
+  assert.equal(run.residuals.hardest_resolved, 0);
+  assert.deepEqual(record.diagnostics.cycles.map((cycle) => cycle.omission.findings), [1, 1, 1]);
+  assert.equal(record.diagnostics.hardest.omission.status, "repair_required");
+  assert.equal(record.diagnostics.hardest.repair.omission.status, "repair_required");
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(record.review_residuals, { withheld_assertions: 1, withheld_entities: 0, withheld_episodes: 0, omission_gaps: 0 });
+  assert.deepEqual(assertionStatements(record.graph), [REPORT_Y]);
+  assert.deepEqual(record.unit_extraction.coverage, [{ unit_id: unit.unit_id, disposition: "needs_review",
+    assertion_local_ids: ["y"], reason: "After the repair attempts, review still flagged 1 assertion(s), which were withheld, and found 0 possible omission(s); the archived source keeps this unit's full text." }]);
+  const graph = await readStoredReport(f, "graph_ref");
+  assert.ok(graph.nodes.some((node) => node.kind === "assertion" && node.data.statement === REPORT_Y));
+  assert.ok(!graph.nodes.some((node) => node.kind === "assertion" && node.data.statement === FLAWED_X));
+  assert.equal(JSON.stringify([record.diagnostics, record.review_residuals]).includes("Synthetic"), false);
+});
+
+test("a withheld entity withholds every assertion it speaks or is the subject of, and the rest still bind", async t => {
+  const { run, unit, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit) => unitExtraction(unit, [
+      // Its event time cites the flagged entity, so it binds only once that evidence points at the unit instead.
+      proposal(unit, "own", "Synthetic report about the diarist.", { event_time: { ...unknownTime, evidence_ids: ["friend"] } }),
+      proposal(unit, "about", "Synthetic report about the friend.", { subject_local_ids: ["self", "friend"] }),
+      proposal(unit, "quoted", "Synthetic advice the friend gave.", { assertion_kind: "quoted_other",
+        narrative_mode: "quoted", speaker_local_id: "friend" })
+    ], { entities: [diarist(unit), { local_id: "friend", label: "Synthetic friend", entity_kind: "person", anchors: unitAnchors(unit) }] }),
+    omission: () => ["friend"]
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(run.residuals.source_only_units, 0);
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(record.review_residuals, { withheld_assertions: 2, withheld_entities: 1, withheld_episodes: 0, omission_gaps: 0 });
+  assert.deepEqual(assertionStatements(record.graph), ["Synthetic report about the diarist."]);
+  assert.deepEqual(record.graph.nodes.filter((node) => node.kind === "entity").map((node) => node.data.label), ["Synthetic diarist"]);
+  const kept = record.graph.nodes.find((node) => node.kind === "assertion");
+  assert.deepEqual(kept.data.event_time.evidence_ids,
+    record.graph.nodes.filter((node) => node.kind === "passage" && node.data.unit_id === unit.unit_id).map((node) => node.id));
+  assert.deepEqual(record.unit_extraction.coverage.map((item) => [item.disposition, item.assertion_local_ids]),
+    [["needs_review", ["own"]]]);
+});
+
+test("a final extraction that is incomplete can't be withheld from: the unit stays source-only", async t => {
+  const { run, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit, packet) => unitExtraction(unit, [proposal(unit, "x", FLAWED_X), proposal(unit, "y", REPORT_Y)],
+      { status: (packet.repair_request?.cycle ?? 0) === 2 ? "incomplete" : "complete" }),
+    omission: () => ["x"]
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(run.completion.graph_built, "partial");
+  assert.equal(run.residuals.source_only_units, 1);
+  assert.deepEqual(record.diagnostics.cycles.map((cycle) => cycle.extraction.status), ["complete", "complete", "incomplete"]);
+  assert.equal(record.source_only_unresolved, true);
+  assert.equal(Object.hasOwn(record, "review_residuals"), false);
+  assert.deepEqual(assertionStatements(record.graph), []);
 });

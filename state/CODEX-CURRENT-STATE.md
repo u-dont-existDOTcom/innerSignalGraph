@@ -3,6 +3,16 @@
 Updated: 2026-10-03
 
 
+## Journal reviews that settle: scoped re-review, withholding, pooled calibration gate (2026-10-03)
+
+- **Owner decision:** "i approve your rec" (19:58 UTC) for options A, B and D after round 4. Plan: `docs/superpowers/plans/2026-10-03-journal-review-convergence.md`.
+- **Implemented:** (A) after a repair, the omission review and the calibration fidelity review count only for the earlier findings, the items the repair added, changed or moved, and units that lost an item; other verdicts carry forward. (B) A single regular unit unresolved after its passes and the hardest lane keeps everything except what review still flags; withheld counts go in `review_residuals`, and the unit is `needs_review`. Calibration units go on to their reference audit with review findings open, the hardest fidelity repair is skipped when the reference score passes, and each unit keeps its best attempt after withholding. (D) Calibration passes on pooled recall at the unchanged 0.95 target with no critical miss and every unit scored; a critical miss or an unscored unit ends the round; `calibration_failure_limit` is an optional cap with no default.
+- **Preserved:** recall target, critical-miss rule, reference roles, packet bounds, hardest-lane accounting and daily limit, multi-unit splitting, the diagnostics allowlist (new keys are counts), and the privacy boundary.
+- **Evidence:** Synthetic tests only: 110 unit tests for the pure rules and new runtime tests for each behaviour; existing calibration tests adapted where the intended behaviour changed (scenarios that failed only through review findings now need a critical reference item they can't keep; extractor job IDs changed with the extractor instruction).
+- **Supervisor review (Claude Opus, independent):** one blocking issue (hardest fidelity repair skipped on the pre-withholding score) and four to fix (later failures discarding audited work, an unfinished hardest answer replacing a finished pass, scoping that missed dependents and pre-context verdicts, withholding invisible in the graph status); all fixed with regression tests. Pacing risk noted: the hardest tier's 20-a-day limit.
+- **Next:** Deploy to the import host, `journal-recalibrate.sh` for round 5 (a new epoch), and report content-free counts.
+
+
 ## Journal calibration round 4 stopped; owner decision pending (2026-10-03)
 
 - **Outcome:** Round 4 ran on the reviewed #121 code (the #110 lookahead from 11:00 UTC). It checked 4 of 162 calibration units: 1 passed (the unit that failed rounds 2 and 3) and 3 failed (`CALIBRATION_REPAIR_CYCLES_EXHAUSTED` once, `CALIBRATION_EXTRACTION_UNRESOLVED` twice). It stopped at the failure limit at 12:53 UTC, with 17 hardest calls used that day.

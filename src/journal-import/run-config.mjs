@@ -10,10 +10,9 @@ export function journalSemanticConcurrency(config) {
   return value;
 }
 
-// How many failed units end a calibration round early. Checked when a run opens and by doctor, before
-// any import step or inference.
 // An optional cap on failed calibration units per round. Unset, a round runs every unit and is judged on its
-// pooled totals; it still stops early once a critical reference item is missed, since the round can't pass.
+// pooled totals; it still stops early once a critical reference item is missed or a unit can't be scored, since
+// the round can't pass. Checked when a run opens and by doctor, before any import step or inference.
 export function journalCalibrationFailureLimit(config) {
   if (config.calibration_failure_limit === undefined || config.calibration_failure_limit === null) return null;
   const value = config.calibration_failure_limit;

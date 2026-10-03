@@ -127,6 +127,14 @@ function syntheticFidelity(packet, outcome, findingType = "none", status = null)
       repair: fidelitySentinel, evidence_ids: [fidelitySentinel] }] : [],
     unassessed_ids: outcome === "unassessed" ? [fidelitySentinel] : [] };
 }
+// The synthetic reference with its one item critical. The calibration gate pools recall across units, so a reference
+// with no items, or a unit that misses only non-critical items, can still pass; a unit that must fail calibration on
+// its own gets a critical item it can't keep.
+function criticalReference(packet) {
+  const reference = syntheticReference(packet);
+  reference.reference_items[0].critical = true;
+  return reference;
+}
 async function calibrationRecord(config, epoch = 0) {
   const plan = await readPlan(config);
   return withStore(config, (store) => store.readJsonObject({
@@ -245,10 +253,15 @@ test("a still-unassessed re-audit spends no repair cycle and comparisons use can
     }, fidelity: packet => syntheticFidelity(packet, "unassessed") }));
   try {
     const result = await runtime.execute("run");
-    assert.equal(result.calibration_failure.reason, "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+    // The unit is kept with its own reference check failed (its one item never assessed). No critical item was
+    // missed, so the round is judged on its pooled recall, and the unit's failure carries its diagnostics.
+    const failure = result.calibration_failure;
+    assert.deepEqual([failure.unit_id, failure.reason], [null, "CALIBRATION_RECALL_BELOW_TARGET"]);
+    const [unitFailure] = failure.failures;
+    assert.deepEqual([unitFailure.reason, unitFailure.reference.unassessed], ["CALIBRATION_REFERENCE_MISSED", 1]);
     assert.equal(calls.filter(call => call.role === "extractor").length, 3);
     assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 4);
-    const diagnostics = result.calibration_failure.diagnostics;
+    const diagnostics = unitFailure.diagnostics;
     assert.equal(diagnostics.reaudit.fidelity.unassessed, 1);
     assert.deepEqual(diagnostics.fidelity_cycles.slice(1).map(cycle => cycle.extraction_changed), [false, true]);
     assert.equal(diagnostics.hardest_fidelity, null);
@@ -271,10 +284,20 @@ for (const finding of ["omitted", "distorted", "critical_miss", "qualifier_error
         finding === "qualifier_error" ? "lost_qualifier" : "none", "incomplete") }));
     try {
       const result = await runtime.execute("run");
-      assert.equal(result.calibration_failure.reason, "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+      const failure = result.calibration_failure;
+      const [unitFailure] = failure.failures;
+      if (finding === "critical_miss") {
+        // A critical reference item still missed after the repairs ends the round on this unit.
+        assert.deepEqual([failure.unit_id, failure.reason], [unitFailure.unit_id, "CALIBRATION_REFERENCE_MISSED"]);
+      } else {
+        // An incomplete audit that names nothing it left can't be withheld from, so the unit stays source-only;
+        // with no critical item missed, the round is judged on its pooled recall.
+        assert.deepEqual([failure.unit_id, failure.reason], [null, "CALIBRATION_RECALL_BELOW_TARGET"]);
+        assert.equal(unitFailure.reason, "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+      }
       assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3);
       assert.equal(calls.filter(call => call.role === "extractor").length, 3);
-      assert.equal(result.calibration_failure.diagnostics.reaudit, null);
+      assert.equal(unitFailure.diagnostics.reaudit, null);
     } finally { await runtime.close(); }
   });
 }
@@ -391,7 +414,11 @@ test("failed calibration retains three content-free cycle snapshots in state, su
   let reviewCycle = 0;
   const outcomes = ["omitted", "distorted", "preserved"];
   const findingTypes = ["missing_evidence", "wrong_time", "lost_qualifier"];
-  const port = mockPort({ calls: [],
+  const calls = [];
+  // The omission review never settles, so the unit goes on to its reference audit, where the extraction can't
+  // keep the critical reference item: calibration fails on this unit, with its cycle snapshots.
+  const port = mockPort({ calls, reference: criticalReference,
+    fidelity: (packet) => syntheticFidelity(packet, "omitted", "missing_evidence"),
     extractor: (packet) => {
       const unit = packet.core_units[0];
       const anchor = { unit_id: unit.unit_id, quote: unit.text, occurrence: null };
@@ -409,7 +436,8 @@ test("failed calibration retains three content-free cycle snapshots in state, su
         requested_context: [{ unit_id: unit.unit_id, direction: "before", reason: sentinel }] };
     },
     omission: (packet) => {
-      const cycle = reviewCycle++;
+      // The two reference repairs get the last cycle's review again.
+      const cycle = Math.min(reviewCycle++, 2);
       return { schema_version: "1.0", target_generation: packet.expected_generation,
         review_role: "omission_checker", status: "repair_required",
         assessments: [{ target_id: sentinel, outcome: outcomes[cycle], critical: true,
@@ -426,8 +454,11 @@ test("failed calibration retains three content-free cycle snapshots in state, su
     const unitId = plan.calibration[0].unit_id;
     const record = await withStore(f.config, (store) => store.readJsonObject({ objectId: `unit:graph:${unitId}` }));
     const diagnostics = record.diagnostics;
-    assert.equal(record.extraction, null);
-    assert.equal(record.omission, null);
+    // The unit is kept, without what review still flags, and its own reference check failed.
+    assert.equal(record.source_only_unresolved, false);
+    assert.deepEqual([record.calibration.outcome, record.calibration.critical_miss_count], ["fail", 1]);
+    assert.deepEqual([state.calibration_failure.unit_id, state.calibration_failure.status],
+      [unitId, "CALIBRATION_REFERENCE_MISSED"]);
     assert.deepEqual(diagnostics.cycles.map((item) => item.cycle), [0, 1, 2]);
     assert.deepEqual(diagnostics.findings_per_cycle, [2, 1, 2]);
     assert.equal(diagnostics.hardest, null);
@@ -445,7 +476,10 @@ test("failed calibration retains three content-free cycle snapshots in state, su
     assert.deepEqual(status.calibration_failure.diagnostics, diagnostics);
     for (const value of [diagnostics, state, summary, status])
       assert.equal(JSON.stringify(value).includes(sentinel), false);
-    assert.equal(reviewCycle, 3);
+    // Three extraction cycles, then the two standard reference repairs, each with its own omission review.
+    assert.deepEqual(calls.filter((call) => call.role === "extractor")
+      .map((call) => call.packet.repair_request?.cycle ?? null), [null, 1, 2, "fidelity-1", "fidelity-2"]);
+    assert.equal(reviewCycle, 5);
   } finally { await runtime.close(); }
   assert.throws(() => validateCalibrationDiagnostics({ status: sentinel }), { code: "JOURNAL_DIAGNOSTICS_STRING_UNSAFE" });
   assert.throws(() => validateCalibrationDiagnostics({ [sentinel]: 1 }), { code: "JOURNAL_DIAGNOSTICS_STRING_UNSAFE" });
@@ -477,10 +511,12 @@ test("failed calibration retains three content-free cycle snapshots in state, su
 test("failed hardest extraction has its own count snapshot", async (t) => {
   const f = await fixture(t);
   f.config.hardest_lane = { enabled: true };
-  const runtime = await f.open(mockPort({ fail: true, calls: [] }));
+  // The unit never completes, so it keeps none of its reference items; the critical one ends the round on it.
+  const runtime = await f.open(mockPort({ fail: true, reference: criticalReference, calls: [] }));
   try {
     const failed = await runtime.execute("run");
     const diagnostics = failed.calibration_failure.diagnostics;
+    assert.equal(failed.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
     assert.deepEqual(diagnostics.cycles.map((item) => item.cycle), [0, 1, 2]);
     assert.equal(diagnostics.hardest.extraction.status, "incomplete");
     assert.equal(diagnostics.hardest.extraction.coverage_by_disposition.pending, 1);
@@ -492,7 +528,8 @@ test("failed hardest extraction has its own count snapshot", async (t) => {
 
 test("mechanical binding failure is recorded as an allowlisted code", async (t) => {
   const f = await fixture(t);
-  const port = mockPort({ calls: [], extractor: (packet) => ({
+  // The extraction never binds, so the unit keeps none of its reference items; the critical one ends the round on it.
+  const port = mockPort({ calls: [], reference: criticalReference, extractor: (packet) => ({
     schema_version: "1.0", status: "complete", assertions: [], episodes: [],
     entities: [{ local_id: "self", label: "Synthetic self", entity_kind: "person",
       anchors: [{ unit_id: packet.core_units[0].unit_id, quote: "Synthetic quote absent from source.", occurrence: null }] }],
@@ -502,6 +539,7 @@ test("mechanical binding failure is recorded as an allowlisted code", async (t) 
   const runtime = await f.open(port);
   try {
     const failed = await runtime.execute("run");
+    assert.equal(failed.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
     assert.deepEqual(failed.calibration_failure.diagnostics.cycles.map((cycle) => cycle.binding_failure_code),
       ["QUOTE_NOT_FOUND", "QUOTE_NOT_FOUND", "QUOTE_NOT_FOUND"]);
     assert.deepEqual(failed.calibration_failure.diagnostics.findings_per_cycle, [null, null, null]);
@@ -521,15 +559,16 @@ test("fidelity repairs retain every extraction, review and audit snapshot", asyn
         coverage: [{ unit_id: unit.unit_id, disposition: "no_assertion", assertion_local_ids: [], reason: sentinel }],
         requested_context: [] };
     },
-    fidelity: (packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation,
-      review_role: "fidelity_auditor", assessments: [], proposed_repairs: [], unassessed_ids: [],
-      status: "repair_required" }) });
+    // Every audit finds the critical reference item omitted. A review with no finding can't hold a repair open
+    // once it counts only for what the repair changed, so the audit names the item it misses.
+    reference: criticalReference,
+    fidelity: (packet) => syntheticFidelity(packet, "omitted", "missing_evidence") });
   const runtime = await f.open(port);
   try {
     const summary = await runtime.execute("run");
     const state = await checkpoint(f.config);
     const diagnostics = summary.calibration_failure.diagnostics;
-    assert.equal(summary.calibration_failure.reason, "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+    assert.equal(summary.calibration_failure.reason, "CALIBRATION_REFERENCE_MISSED");
     assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.cycle), [0, 1, 2]);
     assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.extraction.entities), [0, 1, 0]);
     assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.omission.findings), [0, 0, 0]);
@@ -537,12 +576,12 @@ test("fidelity repairs retain every extraction, review and audit snapshot", asyn
     assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.fidelity?.calibration_pass ?? null),
       [false, null, false]);
     assert.deepEqual(diagnostics.fidelity_cycles.filter((cycle) => cycle.fidelity).map((cycle) =>
-      [cycle.fidelity.reference_total, cycle.fidelity.recall_target_met]), [[0, null], [0, null]]);
+      [cycle.fidelity.reference_total, cycle.fidelity.recall_target_met]), [[1, false], [1, false]]);
     assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.blocker_code), [null, null, null]);
     assert.deepEqual(diagnostics.fidelity_cycles.filter((cycle) => cycle.fidelity).map((cycle) =>
       [cycle.fidelity.status, cycle.fidelity.critical_miss_count,
         cycle.fidelity.qualifier_error_count, cycle.fidelity.unassessed]),
-    [["repair_required", 0, 0, 0], ["repair_required", 0, 0, 0]]);
+    [["repair_required", 1, 0, 0], ["repair_required", 1, 0, 0]]);
     assert.deepEqual(diagnostics.findings_per_cycle, [0]);
     for (const value of [diagnostics, state, summary, await runtime.execute("status")])
       assert.equal(JSON.stringify(value).includes(sentinel), false);
@@ -554,7 +593,8 @@ test("model IDs, time strings and quoted anchors do not enter diagnostics", asyn
   const sentinel = "PRIVATE_SENTINEL_DO_NOT_RECORD_7";
   const badTime = { raw: sentinel, from: sentinel, to: sentinel, timezone: sentinel,
     precision: "interval", basis: "explicit", evidence_ids: [sentinel] };
-  const runtime = await f.open(mockPort({ calls: [], extractor: (packet) => {
+  // The extraction never binds, so the unit keeps none of its reference items; the critical one ends the round on it.
+  const runtime = await f.open(mockPort({ calls: [], reference: criticalReference, extractor: (packet) => {
     const unit = packet.core_units[0];
     const anchor = { unit_id: unit.unit_id, quote: unit.text, occurrence: null };
     return { schema_version: "1.0", status: "complete", assertions: [], entities: [],
@@ -567,6 +607,7 @@ test("model IDs, time strings and quoted anchors do not enter diagnostics", asyn
     const summary = await runtime.execute("run");
     const state = await checkpoint(f.config);
     assert.equal(summary.calibration, "failed");
+    assert.ok(state.calibration_failure.diagnostics.cycles.length > 0);
     for (const value of [state.calibration_failure.diagnostics, state, summary, await runtime.execute("status")])
       assert.equal(JSON.stringify(value).includes(sentinel), false);
   } finally { await runtime.close(); }
@@ -574,7 +615,9 @@ test("model IDs, time strings and quoted anchors do not enter diagnostics", asyn
 
 test("a legacy unit record without diagnostics survives a resumed write", async (t) => {
   const f = await fixture(t);
-  let runtime = await f.open(mockPort({ fail: true, calls: [] }));
+  // The unit never completes, so it keeps none of its reference items; the critical one fails calibration.
+  const failingPort = () => mockPort({ fail: true, reference: criticalReference, calls: [] });
+  let runtime = await f.open(failingPort());
   try {
     assert.equal((await runtime.execute("run")).calibration, "failed");
     await runtime.execute("recalibrate");
@@ -586,7 +629,7 @@ test("a legacy unit record without diagnostics survives a resumed write", async 
     delete old.diagnostics;
     await store.writeJsonObject({ objectId: `unit:graph:${unitId}:epoch:1`, value: old });
   });
-  runtime = await f.open(mockPort({ fail: true, calls: [] }), true);
+  runtime = await f.open(failingPort(), true);
   try {
     assert.equal((await runtime.execute("run")).calibration, "failed");
   } finally { await runtime.close(); }
@@ -598,7 +641,7 @@ test("a legacy unit record without diagnostics survives a resumed write", async 
   legacyState.calibration = "partial";
   delete legacyState.calibration_failure;
   await fs.writeFile(path.join(f.config.execution_root, "state.json"), JSON.stringify(legacyState));
-  runtime = await f.open(mockPort({ fail: true, calls: [] }), true);
+  runtime = await f.open(failingPort(), true);
   try {
     const recovered = await runtime.execute("run");
     assert.equal(recovered.calibration, "failed");
@@ -634,9 +677,12 @@ test("an exhausted regular unit records a fixed blocker and no invented review f
 
 test("an unavailable omission review keeps its completed extraction counts", async (t) => {
   const f = await fixture(t);
-  const runtime = await f.open(mockPort({ calls: [], omission: () => ({}) }));
+  // The extraction's attempts run out, so the unit keeps none of its reference items; the critical one ends the
+  // round on it.
+  const runtime = await f.open(mockPort({ calls: [], reference: criticalReference, omission: () => ({}) }));
   try {
     const summary = await runtime.execute("run");
+    assert.equal(summary.calibration_failure.status, "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED");
     const diagnostics = summary.calibration_failure.diagnostics;
     assert.deepEqual(diagnostics.findings_per_cycle, [null]);
     assert.equal(diagnostics.cycles[0].extraction.status, "complete");
@@ -673,7 +719,16 @@ test("binding diagnostics cover every mechanical code emitted by the binding pat
 test("failed calibration retries with fresh answers and continues without rereading visual pages", async (t) => {
   const f = await fixture(t, { visual: true });
   const failedCalls = [];
-  let runtime = await f.open(mockPort({ fail: true, calls: failedCalls }));
+  // Each calibration unit's frozen reference has one item quoting its own text. The native window's item isn't
+  // critical, so its failure lets the round go on; the visual page's is, so its failure ends the round.
+  const reference = (packet) => {
+    const [window] = packet.source_windows;
+    return { schema_version: "1.0", source_only_first_pass: true, questions: [], unassessed_unit_ids: [],
+      reference_items: [{ id: "reference:synthetic", statement: "Synthetic reference item.", required_qualifiers: [],
+        anchors: [{ unit_id: window.unit_id, quote: window.text, occurrence: null }],
+        importance_reason: "Synthetic.", critical: !window.text.startsWith("Synthetic page ") }] };
+  };
+  let runtime = await f.open(mockPort({ fail: true, calls: failedCalls, reference }));
   const failed = await runtime.execute("run");
   assert.equal(failed.calibration, "failed");
   assert.equal(failed.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
@@ -686,7 +741,13 @@ test("failed calibration retries with fresh answers and continues without reread
     failed.calibration_failure.calibration_units], [2, 2, 2]);
   assert.deepEqual(failed.calibration_failure.failures.map((item) => item.reason),
     ["CALIBRATION_EXTRACTION_UNRESOLVED", "CALIBRATION_EXTRACTION_UNRESOLVED"]);
-  assert.equal(failed.calibration_failure.failures[0].unit_id, failed.calibration_failure.unit_id);
+  assert.deepEqual(failed.calibration_failure.failures.map((item) => item.reference.critical_miss_count), [0, 1]);
+  // The stop names the first unit with a critical miss: the visual page.
+  assert.equal(failed.calibration_failure.failures[1].unit_id, failed.calibration_failure.unit_id);
+  const { gate } = failed.calibration_failure;
+  assert.deepEqual([gate.failed_units, gate.critical_miss_count, gate.reference_total, gate.calibration_pass],
+    [2, 1, 2, false]);
+  assert.deepEqual(failed.calibration_gate, gate);
   const reset = await runtime.execute("recalibrate");
   assert.equal(reset.calibration, "not_run");
   assert.equal(reset.calibration_epoch, 1);
@@ -701,7 +762,7 @@ test("failed calibration retries with fresh answers and continues without reread
   assert.deepEqual(after.calibration_history[0].previous_failure,
     { status: "CALIBRATION_REPAIR_REQUIRED", reason: "CALIBRATION_EXTRACTION_UNRESOLVED",
       diagnostics: before.calibration_failure.diagnostics, failed_units: 2, completed_calibration_units: 2,
-      calibration_units: 2, failures: before.calibration_failure.failures });
+      calibration_units: 2, failures: before.calibration_failure.failures, gate: before.calibration_failure.gate });
   assert.deepEqual(reset.previous_failure.diagnostics, before.calibration_failure.diagnostics);
   runtime = await f.open(mockPort({ calls: [] }), true);
   try { assert.deepEqual((await runtime.execute("status")).previous_failure.diagnostics,
@@ -749,7 +810,10 @@ for (const role of ["reference_reader", "extractor"]) {
     const f = await fixture(t);
     f.config.hardest_lane = { enabled: true, daily_limit: 20 };
     const calls = [];
-    const base = mockPort({ fail: role === "extractor", failReference: role === "reference_reader", calls });
+    // A reference that never quotes its source leaves the unit unscored. An extraction that never completes keeps
+    // none of its reference items, and the critical one fails calibration.
+    const base = mockPort({ fail: role === "extractor", failReference: role === "reference_reader", calls,
+      ...(role === "extractor" ? { reference: criticalReference } : {}) });
     const port = { ...base, isAuthoritativeCompletion: async () => true,
       async getCompletion(key, options) {
         if (options?.tier === "hardest") return { status: "exhausted", code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED" };
@@ -872,7 +936,11 @@ for (const outcome of ["resolves", "fails", "refused", "rejected"]) {
             if (refused || rejected) refusedAt = Date.now();
           } else {
             const entry = await exchange.readWork(record.work_id);
-            await exchange.submitResult({ workId: record.work_id, output: exchangeAnswer(entry), subject: "local:synthetic-codex",
+            const output = exchangeAnswer(entry);
+            // A unit that never resolves keeps none of its reference items, and a critical one fails calibration.
+            if (entry.role === "reference_reader" && !resolves)
+              output.reference_items = criticalReference(entry.packet).reference_items;
+            await exchange.submitResult({ workId: record.work_id, output, subject: "local:synthetic-codex",
               execution: { profile_evidence: "codex_exec_request_pinned", effective_model_profile: record.model,
                 effective_effort: record.effort, request_context_id: `codex-thread:synthetic${seen.size}00000000` } });
           }
@@ -906,6 +974,7 @@ for (const outcome of ["resolves", "fails", "refused", "rejected"]) {
 
 test("a second failed calibration can advance to epoch two, and readers use current calibration records", async (t) => {
   const f = await fixture(t, { pages: 16 });
+  f.config.calibration_failure_limit = 3;
   const attempts = [];
   for (let epoch = 0; epoch < 2; epoch += 1) {
     const calls = [];
@@ -914,7 +983,8 @@ test("a second failed calibration can advance to epoch two, and readers use curr
       const failed = await runtime.execute("run");
       assert.equal(failed.calibration, "failed");
       assert.equal(failed.calibration_epoch, epoch);
-      // Three of the twelve calibration units fail (three extractions each), which reaches the default limit.
+      // Three of the twelve calibration units fail (three extractions each), which reaches the configured limit
+      // and ends the round with nine units still waiting.
       assert.equal(calls.filter((call) => call.role === "extractor").length, 9);
       assert.deepEqual([failed.calibration_failure.failed_units, failed.calibration_failure.completed_calibration_units,
         failed.calibration_failure.calibration_units], [3, 3, 12]);
@@ -997,7 +1067,8 @@ test("epoch zero preserves the existing job, operation and object identities", a
 
 test("recalibrate is refused once a graph exists, so a gate later stages assume passed is never reopened", async (t) => {
   const f = await fixture(t);
-  let runtime = await f.open(mockPort({ fail: true, calls: [] }));
+  // The unit never completes, so it keeps none of its reference items; the critical one fails calibration.
+  let runtime = await f.open(mockPort({ fail: true, reference: criticalReference, calls: [] }));
   try { assert.equal((await runtime.execute("run")).calibration, "failed"); }
   finally { await runtime.close(); }
   // An older checkpoint could carry a built graph alongside a calibration that was closed afterwards.
@@ -1091,8 +1162,11 @@ test("a request for the earlier text is answered with a wider window and the nex
 test("context that does not exist stays unavailable when asked again, with no extra pass", async t => {
   const f = await fixture(t);
   const calls = [];
-  const runtime = await f.open(mockPort({ calls, extractor: (packet) => noAssertions(packet, "needs_context", "Synthetic.",
-    ["before", "visual", "before"].map((direction) => ({ unit_id: packet.core_units[0].unit_id, direction, reason: "Synthetic." }))) }));
+  // The extraction never completes, so the unit keeps none of its reference items; the critical one ends the round
+  // on it.
+  const runtime = await f.open(mockPort({ calls, reference: criticalReference,
+    extractor: (packet) => noAssertions(packet, "needs_context", "Synthetic.",
+      ["before", "visual", "before"].map((direction) => ({ unit_id: packet.core_units[0].unit_id, direction, reason: "Synthetic." }))) }));
   try {
     const failed = await runtime.execute("run");
     assert.equal(failed.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
@@ -1349,11 +1423,16 @@ test("context supplied to a fidelity repair earns one more standard repair that 
         coverage: [{ unit_id: unit.unit_id, disposition: "extracted", assertion_local_ids: ["a0"], reason: null }],
         requested_context: [] };
     },
-    fidelity: (packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation, review_role: "fidelity_auditor",
-      assessments: [], proposed_repairs: [], unassessed_ids: [],
-      status: !packet.supporting_passages[0].text.startsWith("Synthetic page 3 ")
-        || packet.imported_generation.assertions.some((node) => node.data.statement === "Synthetic context repair.")
-        ? "sufficient_for_stated_scope" : "repair_required" }) }));
+    // Only page 3's frozen reference has an item, and its audit finds it omitted until the context repair adds the
+    // assertion. A review with no finding can't hold a repair open once it counts only for what the repair changed,
+    // so the audit names the item it misses.
+    reference: (packet) => packet.source_windows[0].text.startsWith("Synthetic page 3 ") ? syntheticReference(packet)
+      : { schema_version: "1.0", source_only_first_pass: true, reference_items: [], questions: [], unassessed_unit_ids: [] },
+    fidelity: (packet) => !packet.supporting_passages[0].text.startsWith("Synthetic page 3 ")
+      ? { schema_version: "1.0", target_generation: packet.expected_generation, review_role: "fidelity_auditor",
+        assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" }
+      : syntheticFidelity(packet, packet.imported_generation.assertions
+        .some((node) => node.data.statement === "Synthetic context repair.") ? "preserved" : "omitted") }));
   try {
     assert.equal((await runtime.execute("run")).calibration, "pass");
     const plan = await readPlan(f.config);
@@ -1368,9 +1447,195 @@ test("context supplied to a fidelity repair earns one more standard repair that 
     assert.equal(calls.some((call) => call.tier === "hardest"), false);
     const record = await withStore(f.config, (store) => store.readJsonObject({ objectId: `unit:graph:${third.unit_id}` }));
     assert.equal(record.source_only_unresolved, false);
+    assert.deepEqual([record.calibration.outcome, record.calibration.preserved], ["pass", 1]);
     assert.deepEqual(record.diagnostics.fidelity_cycles.map((cycle) => cycle.cycle), [0, 1, 2, 3]);
     assert.deepEqual(record.diagnostics.fidelity_cycles[2].context_answer, { ...noAnswer, supplied: 1 });
     assert.equal(record.diagnostics.fidelity_cycles[2].binding_failure_code, "QUOTE_NOT_FOUND");
     assert.equal(record.diagnostics.fidelity_cycles[3].fidelity.calibration_pass, true);
+  } finally { await runtime.close(); }
+});
+
+// The pooled calibration gate. Each page is its own calibration unit. `itemsByPage[page]` lists whether each of that
+// page's frozen reference items is critical, and `omittedByPage[page]` how many of them (the first ones) every audit
+// of that page finds omitted; the auditor finds the rest preserved.
+const syntheticPage = (text) => Number(/^Synthetic page (\d+) /.exec(text)?.[1] ?? 0);
+function gateReference(itemsByPage) {
+  return (packet) => {
+    const [window] = packet.source_windows;
+    return { schema_version: "1.0", source_only_first_pass: true, questions: [], unassessed_unit_ids: [],
+      reference_items: (itemsByPage[syntheticPage(window.text)] ?? []).map((critical, index) => ({
+        id: `reference:synthetic:${index}`, statement: fidelitySentinel, required_qualifiers: [], critical,
+        anchors: [{ unit_id: window.unit_id, quote: fidelitySentinel, occurrence: null }],
+        importance_reason: fidelitySentinel })) };
+  };
+}
+function gateFidelity(omittedByPage) {
+  return (packet) => {
+    const omitted = omittedByPage[syntheticPage(packet.supporting_passages[0].text)] ?? 0;
+    const assessments = packet.frozen_reference.reference_items.map((item, index) => ({ target_id: item.id,
+      outcome: index < omitted ? "omitted" : "preserved", critical: item.critical,
+      finding_type: index < omitted ? "missing_evidence" : "none", explanation: fidelitySentinel, evidence_ids: [] }));
+    return { schema_version: "1.0", target_generation: packet.expected_generation, review_role: "fidelity_auditor",
+      assessments, proposed_repairs: [], unassessed_ids: [],
+      status: assessments.some((item) => item.outcome !== "preserved") ? "repair_required" : "sufficient_for_stated_scope" };
+  };
+}
+const pageRecords = async (config, pages) => {
+  const plan = await readPlan(config);
+  return withStore(config, (store) => Promise.all(pages.map((page) =>
+    store.readJsonObject({ objectId: `unit:graph:${pageUnit(plan, page).unit_id}` }))));
+};
+// How many calls each page's unit got from a role.
+const callsByPage = async (config, calls, role, pages) => {
+  const plan = await readPlan(config);
+  return pages.map((page) => calls.filter((call) => call.role === role
+    && call.packet.assigned_core_ids?.includes(pageUnit(plan, page).unit_id)).length);
+};
+const missedOne = { reference_total: 1, preserved: 0, omitted: 1, distorted: 0, unassessed: 0,
+  critical_miss_count: 0, qualifier_error_count: 0 };
+
+test("a unit that fails its own reference check without a critical miss still lets the round pass on pooled recall", async t => {
+  const f = await fixture(t, { pages: 2 });
+  const calls = [];
+  // Page 1 keeps none of its one item; page 2 keeps all 39 of its items. Pooled recall is 39 of 40.
+  const runtime = await f.open(mockPort({ calls, reference: gateReference({ 1: [false], 2: Array(39).fill(false) }),
+    fidelity: gateFidelity({ 1: 1 }) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "pass");
+    assert.equal(result.completion.graph_built, "pass");
+    assert.equal(Object.hasOwn(result, "calibration_failure"), false);
+    assert.deepEqual(result.calibration_gate, { scored_batches: 2, reference_total: 40, preserved: 39, omitted: 1,
+      distorted: 0, unassessed: 0, critical_miss_count: 0, qualifier_error_count: 0, recall_target_met: true,
+      calibration_pass: true, failed_units: 1, unscored_units: 0, withheld_assertions: 0, omission_gaps: 1,
+      completed_calibration_units: 2, calibration_units: 2 });
+    const plan = await readPlan(f.config);
+    const [failed, passed] = await pageRecords(f.config, [1, 2]);
+    assert.equal(failed.source_only_unresolved, false);
+    assert.deepEqual(failed.calibration,
+      { batch: sha(pageUnit(plan, 1).unit_id).slice(0, 40), ...missedOne, outcome: "fail" });
+    // The missed reference item can't be placed on an extracted item, so it is the unit's omission gap.
+    assert.deepEqual(failed.review_residuals, { withheld_assertions: 0, withheld_entities: 0, withheld_episodes: 0,
+      omission_gaps: 1 });
+    assert.equal(failed.unit_extraction.coverage[0].disposition, "needs_review");
+    assert.deepEqual([passed.calibration.outcome, passed.calibration.preserved, passed.source_only_unresolved],
+      ["pass", 39, false]);
+    // Page 1 failed first, after its two reference repairs, and the round went on to page 2.
+    assert.deepEqual(await callsByPage(f.config, calls, "extractor", [1, 2]), [3, 1]);
+    assert.deepEqual((await runtime.execute("status")).calibration_gate, result.calibration_gate);
+    for (const value of [await checkpoint(f.config), result])
+      assert.equal(JSON.stringify(value).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+test("pooled recall below the target, with no critical miss, fails the round without naming a unit", async t => {
+  const f = await fixture(t, { pages: 2 });
+  const calls = [];
+  // Page 1 keeps none of its one item and page 2 keeps its one item: pooled recall is one of two.
+  const runtime = await f.open(mockPort({ calls, reference: gateReference({ 1: [false], 2: [false] }),
+    fidelity: gateFidelity({ 1: 1 }) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "failed");
+    const failure = result.calibration_failure;
+    assert.deepEqual([failure.unit_id, failure.status, failure.reason, result.blocker],
+      [null, "CALIBRATION_RECALL_BELOW_TARGET", "CALIBRATION_RECALL_BELOW_TARGET", "CALIBRATION_RECALL_BELOW_TARGET"]);
+    assert.equal(Object.hasOwn(failure, "diagnostics"), false);
+    assert.deepEqual([failure.failed_units, failure.completed_calibration_units, failure.calibration_units], [1, 2, 2]);
+    const plan = await readPlan(f.config);
+    assert.deepEqual(failure.failures.map((item) => [item.unit_id, item.status, item.reason, item.reference]),
+      [[pageUnit(plan, 1).unit_id, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", missedOne]]);
+    const [failedRecord] = await pageRecords(f.config, [1]);
+    assert.deepEqual(failure.failures[0].diagnostics, failedRecord.diagnostics);
+    assert.deepEqual(failure.gate, { scored_batches: 2, reference_total: 2, preserved: 1, omitted: 1, distorted: 0,
+      unassessed: 0, critical_miss_count: 0, qualifier_error_count: 0, recall_target_met: false, calibration_pass: false,
+      failed_units: 1, unscored_units: 0, withheld_assertions: 0, omission_gaps: 1, completed_calibration_units: 2,
+      calibration_units: 2 });
+    assert.deepEqual(result.calibration_gate, failure.gate);
+    // A failed unit without a critical miss didn't end the round: page 2 ran after page 1 failed.
+    assert.deepEqual(await callsByPage(f.config, calls, "extractor", [1, 2]), [3, 1]);
+    for (const value of [await checkpoint(f.config), result, await runtime.execute("status")])
+      assert.equal(JSON.stringify(value).includes(fidelitySentinel), false);
+    // Recalibration keeps the gate in the history and clears it from the live summary.
+    const reset = await runtime.execute("recalibrate");
+    assert.deepEqual(reset.previous_failure.gate, failure.gate);
+    assert.equal(Object.hasOwn(reset, "calibration_gate"), false);
+  } finally { await runtime.close(); }
+});
+
+test("a critical reference item missed after the repairs ends the round before later units are read", async t => {
+  const f = await fixture(t, { pages: 3 });
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls, reference: gateReference({ 1: [true] }), fidelity: gateFidelity({ 1: 1 }) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "failed");
+    const plan = await readPlan(f.config);
+    const first = pageUnit(plan, 1).unit_id;
+    const failure = result.calibration_failure;
+    assert.deepEqual([failure.unit_id, failure.status, failure.reason],
+      [first, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED"]);
+    assert.deepEqual([failure.failed_units, failure.completed_calibration_units, failure.calibration_units], [1, 1, 3]);
+    assert.deepEqual(failure.failures[0].reference, { ...missedOne, critical_miss_count: 1 });
+    const [record] = await pageRecords(f.config, [1]);
+    assert.deepEqual([record.source_only_unresolved, record.calibration.outcome], [false, "fail"]);
+    assert.deepEqual(failure.diagnostics, record.diagnostics);
+    assert.deepEqual([failure.gate.critical_miss_count, failure.gate.calibration_pass], [1, false]);
+    // Page 1 had its first extraction and two reference repairs; pages 2 and 3 were never read or extracted.
+    assert.deepEqual(calls.filter((call) => call.role === "extractor")
+      .map((call) => call.packet.repair_request?.cycle ?? null), [null, "fidelity-1", "fidelity-2"]);
+    for (const role of ["reference_reader", "extractor"])
+      assert.deepEqual(await callsByPage(f.config, calls, role, [1, 2, 3]), [role === "extractor" ? 3 : 1, 0, 0]);
+    assert.deepEqual((await checkpoint(f.config)).completed_units, [first]);
+  } finally { await runtime.close(); }
+});
+
+test("a reference that never quotes its source leaves its unit unscored and ends the round with its own status", async t => {
+  const f = await fixture(t, { pages: 3 });
+  const calls = [];
+  const items = gateReference({});
+  const runtime = await f.open(mockPort({ calls, reference: (packet) => syntheticPage(packet.source_windows[0].text) === 2
+    ? { ...items(packet), reference_items: invalidReferenceItems(packet) } : items(packet) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "failed");
+    const plan = await readPlan(f.config);
+    const second = pageUnit(plan, 2).unit_id;
+    const failure = result.calibration_failure;
+    assert.deepEqual([failure.unit_id, failure.status, failure.reason],
+      [second, "CALIBRATION_REFERENCE_UNRESOLVED", "QUOTE_NOT_FOUND"]);
+    assert.deepEqual([failure.failed_units, failure.completed_calibration_units, failure.calibration_units], [1, 2, 3]);
+    assert.equal(Object.hasOwn(failure.failures[0], "reference"), false);
+    assert.deepEqual([failure.gate.unscored_units, failure.gate.scored_batches, failure.gate.critical_miss_count,
+      failure.gate.calibration_pass], [1, 1, 0, false]);
+    const [passed, unscored] = await pageRecords(f.config, [1, 2]);
+    assert.equal(passed.calibration.outcome, "pass");
+    assert.deepEqual([unscored.source_only_unresolved, Object.hasOwn(unscored, "calibration")], [true, false]);
+    // Page 2's reference was read once per checked attempt and its unit never extracted; page 3 waits.
+    assert.deepEqual(await callsByPage(f.config, calls, "reference_reader", [1, 2, 3]), [1, 3, 0]);
+    assert.deepEqual(await callsByPage(f.config, calls, "extractor", [1, 2, 3]), [1, 0, 0]);
+  } finally { await runtime.close(); }
+});
+
+test("an optional failure limit of one ends the round after the first unit that fails its reference check", async t => {
+  const f = await fixture(t, { pages: 2 });
+  f.config.calibration_failure_limit = 1;
+  const calls = [];
+  // The same round that passes on pooled recall without a limit, above.
+  const runtime = await f.open(mockPort({ calls, reference: gateReference({ 1: [false], 2: Array(39).fill(false) }),
+    fidelity: gateFidelity({ 1: 1 }) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "failed");
+    const plan = await readPlan(f.config);
+    const failure = result.calibration_failure;
+    assert.deepEqual([failure.unit_id, failure.status, failure.reason],
+      [pageUnit(plan, 1).unit_id, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED"]);
+    const [record] = await pageRecords(f.config, [1]);
+    assert.deepEqual(failure.diagnostics, record.diagnostics);
+    assert.deepEqual([failure.failed_units, failure.completed_calibration_units, failure.calibration_units], [1, 1, 2]);
+    assert.deepEqual([failure.gate.critical_miss_count, failure.gate.unscored_units, failure.gate.failed_units], [0, 0, 1]);
+    assert.deepEqual(await callsByPage(f.config, calls, "extractor", [1, 2]), [3, 0]);
+    assert.deepEqual(await callsByPage(f.config, calls, "reference_reader", [1, 2]), [1, 0]);
   } finally { await runtime.close(); }
 });

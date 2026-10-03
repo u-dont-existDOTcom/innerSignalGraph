@@ -1187,7 +1187,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             return { snapshot, counts, outcome: null };
           }
           const bound = bind(repaired);
-          const scoped = scopedOmission(repaired, { extraction: outcome[0].output, review });
+          // Newly supplied context can change what the review sees, so then the repair's review counts whole.
+          const scoped = scopedOmission(repaired, answer.supplied ? null : { extraction: outcome[0].output, review });
           return { snapshot: { ...extractionCycleDiagnostics(repaired, bound.failure?.code ?? null, scoped.review),
             extraction_changed: extractionChanged(outcome[0].output, repaired[0].output), blocker_code: null,
             ...(scoped.scope ? { review_scope: scoped.scope } : {}) },
@@ -1231,9 +1232,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             cycle: cycle + 1,
             ...(answer.response.length ? { context_response: answer.response } : {})
           };
-          repairPrior = { extraction, review: omissionReview };
+          // Newly supplied context can change what the review sees, so the next review counts whole.
+          repairPrior = answer.supplied ? null : { extraction, review: omissionReview };
         }
         let unresolved = unresolvedOutcome(results, bindingFailure, omissionReview);
+        // The last pass, kept in case the hardest tier can't finish or bind where that pass did.
+        const lastPass = { results, split, graphsByUnit, bindingFailure, omissionReview };
         // A single extraction unit gets the same final repair request once through the hardest lane and, when
         // that answer's own review or binding leaves it unresolved, one repair of it at the same tier, before it
         // is admitted as source-only needs_review.
@@ -1274,6 +1278,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               }
             }
             await recordHardestOutcome(outcomeId, unresolved ? "failed" : "resolved");
+          }
+          // A hardest answer that didn't finish or didn't bind never replaces a last pass that did; that pass's
+          // remaining findings are withheld below.
+          if (unresolved && mechanicallyUnresolved(results, bindingFailure)
+            && !mechanicallyUnresolved(lastPass.results, lastPass.bindingFailure)) {
+            ({ results, split, graphsByUnit, bindingFailure, omissionReview } = lastPass);
           }
         }
         if (unresolved && units.length > 1) return halves();
@@ -1403,29 +1413,56 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             if (scope) reauditDiagnostics.fidelity_scope = scope;
             return attempt;
           };
+          // What an audited attempt keeps once what its counted reviews still flag is withheld, and how its
+          // reference items then score. Null when nothing can be withheld that way.
+          const keptOutcome = (attempt) => {
+            const kept = withholdFlaggedItems({ extraction: attempt.results[0].output, unitIds, reviews: [
+              { review: attempt.omissionReview }, { review: attempt.fidelityReview, targetOf: nodeTarget }] });
+            if (!kept) return null;
+            const rebound = bind([{ ...attempt.results[0], output: kept.extraction }]);
+            if (rebound.failure) return null;
+            const withheldTargets = new Set(kept.withheldItems.map((item) => nodeTarget(item.kind, item.localId, item.unitIds)));
+            // Entities count as carriers too, so an item the auditor tied only to a withheld entity is lost with it.
+            const candidateTargets = new Set(mergeGraphs([...attempt.graphsByUnit.values()]).nodes
+              .filter((node) => node.kind === "assertion" || node.kind === "entity").map((node) => node.id));
+            const keptScore = scoreReferenceReview({ referenceResult: reference.output,
+              reviewResult: reviewAfterWithholding({ review: attempt.fidelityReview, withheldTargets, candidateTargets }),
+              candidateIds: assertionIds(mergeGraphs([...rebound.graphs.values()])) });
+            return { kept, rebound, keptScore };
+          };
+          // A single unit whose re-audit or repairs run out keeps its best audited attempt; only one with no audit
+          // at all fails source-only.
+          let repairsEnded = false;
           if (!calibrationPass && unassessedOnly(fidelityReview, score)) {
             const reaudit = await reauditOnce(combined, 0);
             if (reaudit.blocked) return false;
             if (reaudit.failure) {
               // Like a failed initial audit: a batch of several units is split and each half retried.
               if (units.length > 1) return halves();
-              return failCalibrationUnit(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", reaudit.failure, diagnostics(), sourceOnlyCounts());
+              repairsEnded = true;
             }
           }
           if (!calibrationPass && units.length > 1) return halves();
           // Context a repair asks for is answered in the next repair request, and a first supplied answer earns
-          // one more standard repair, as in the extraction passes.
+          // one more standard repair, as in the extraction passes; the repair after newly supplied context has
+          // its omission review counted whole.
           let contextResponse = null, bindingFeedback = null, standardRepairs = 2, repairContextSupplied = false;
-          for (let auditCycle = 1; !calibrationPass && auditCycle <= standardRepairs + (hardestLane.enabled ? 1 : 0);
-            auditCycle += 1) {
+          let omissionPriorWhole = false;
+          for (let auditCycle = 1; !calibrationPass && !repairsEnded
+            && auditCycle <= standardRepairs + (hardestLane.enabled ? 1 : 0); auditCycle += 1) {
             const hardestRepair = auditCycle > standardRepairs;
-            // When the reference items already pass, only review findings remain, and those are withheld below;
-            // the scarce hardest tier is kept for reference items that fail.
-            if (hardestRepair && referenceScorePasses(score)) break;
+            // When an attempt already passes once what review still flags is withheld, only those findings
+            // remain; the scarce hardest tier is kept for reference items that fail.
+            if (hardestRepair && attempts.some((attempt) => {
+              const outcome = keptOutcome(attempt);
+              return outcome && referenceScorePasses(outcome.keptScore);
+            })) break;
             const repairId = epochId(hardestRepair ? `extract:calibration-repair:batch:${keyId}:hardest`
               : `extract:calibration-repair:batch:${keyId}:cycle:${auditCycle}`, true);
             const previousExtraction = results[0].output;
             const previousOmission = omissionReview;
+            const omissionPrior = omissionPriorWhole ? null : { extraction: previousExtraction, review: previousOmission };
+            omissionPriorWhole = false;
             let repaired = await extract(repairId, {
               previous_extraction: previousExtraction,
               omission_review: previousOmission,
@@ -1440,9 +1477,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               const snapshot = { ...extractionCycleDiagnostics(incompleteWorkResults),
                 extraction_changed: extractionChanged(previousExtraction, incompleteWorkResults?.[0]?.output),
                 blocker_code: diagnosticBlockerCode(state.blocker), fidelity: null };
+              if (!workExhausted) {
+                if (hardestRepair) hardestFidelityDiagnostics = snapshot;
+                else fidelityCycles.push({ cycle: auditCycle, ...snapshot });
+                return false;
+              }
               if (hardestRepair) {
                 hardestFidelityDiagnostics = snapshot;
-                if (!workExhausted) return false;
                 const sizeRefusal = state.blocker === "JOURNAL_WORK_PACKET_TOO_LARGE";
                 hardestRefusal = sizeRefusal && !workPrimaryCompleted ? state.blocker : null;
                 hardestDependentRefusal = sizeRefusal && workPrimaryCompleted ? state.blocker : null;
@@ -1451,10 +1492,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 break;
               }
               fidelityCycles.push({ cycle: auditCycle, ...snapshot });
-              return finishExhausted("CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED");
+              state.blocker = null;
+              break;
             }
             let bound = bind(repaired);
-            let scoped = scopedOmission(repaired, { extraction: previousExtraction, review: previousOmission });
+            let scoped = scopedOmission(repaired, omissionPrior);
             const repairSnapshot = { ...(hardestRepair ? {} : { cycle: auditCycle }),
               ...extractionCycleDiagnostics(repaired, bound.failure?.code ?? null, scoped.review),
               extraction_changed: extractionChanged(previousExtraction, repaired[0].output),
@@ -1488,6 +1530,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                   repairSnapshot.context_answer = contextAnswerCounts(answer.response);
                   contextResponse = answer.response;
                 }
+                if (answer.supplied) omissionPriorWhole = true;
                 if (answer.supplied && !repairContextSupplied) { repairContextSupplied = true; standardRepairs += 1; }
               }
               continue;
@@ -1505,13 +1548,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }, checkScores(repairedCombined));
             if (repairedFidelityAttempt.blocked) return false;
             if (repairedFidelityAttempt.failure) {
-              if (hardestRepair) {
-                repairSnapshot.blocker_code = diagnosticBlockerCode(repairedFidelityAttempt.failure);
-                await recordHardestOutcome(repairId, "failed");
-                break;
-              }
-              return failCalibrationUnit(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", repairedFidelityAttempt.failure,
-                diagnostics(), sourceOnlyCounts());
+              repairSnapshot.blocker_code = diagnosticBlockerCode(repairedFidelityAttempt.failure);
+              if (hardestRepair) await recordHardestOutcome(repairId, "failed");
+              break;
             }
             const fidelityScope = countFidelity(repairedFidelityAttempt.result[0].output, repairedCombined, repaired[0].output);
             await writeOnce(epochId(hardestRepair ? `calibration:repair-review:batch:${keyId}:hardest`
@@ -1525,9 +1564,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               const reaudit = await reauditOnce(repairedCombined, auditCycle);
               if (reaudit.blocked) return false;
               if (reaudit.failure) {
-                if (hardestRepair) { await recordHardestOutcome(repairId, "failed"); break; }
-                return failCalibrationUnit(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", reaudit.failure,
-                  diagnostics(), sourceOnlyCounts());
+                if (hardestRepair) await recordHardestOutcome(repairId, "failed");
+                break;
               }
             }
             if (hardestRepair) await recordHardestOutcome(repairId, calibrationPass ? "resolved" : "failed");
@@ -1541,23 +1579,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           };
           let chosen = null;
           for (const [index, attempt] of attempts.entries()) {
-            const kept = withholdFlaggedItems({ extraction: attempt.results[0].output, unitIds, reviews: [
-              { review: attempt.omissionReview }, { review: attempt.fidelityReview, targetOf: nodeTarget }] });
-            if (!kept) continue;
-            const rebound = bind([{ ...attempt.results[0], output: kept.extraction }]);
-            if (rebound.failure) continue;
-            const withheldTargets = new Set(kept.withheldItems.map((item) => nodeTarget(item.kind, item.localId, item.unitIds)));
-            const candidateTargets = new Set(assertionIds(mergeGraphs([...attempt.graphsByUnit.values()])));
-            const keptScore = scoreReferenceReview({ referenceResult: reference.output,
-              reviewResult: reviewAfterWithholding({ review: attempt.fidelityReview, withheldTargets, candidateTargets }),
-              candidateIds: assertionIds(mergeGraphs([...rebound.graphs.values()])) });
+            const outcome = keptOutcome(attempt);
+            if (!outcome) continue;
+            const { kept, keptScore } = outcome;
             const rank = [keptScore.critical_miss_count, -keptScore.reference_counts.preserved,
               keptScore.qualifier_error_count, keptScore.reference_counts.unassessed, kept.residuals.withheld_assertions, -index];
-            if (!chosen || rankBefore(rank, chosen.rank)) chosen = { attempt, kept, rebound, keptScore, rank };
+            if (!chosen || rankBefore(rank, chosen.rank)) chosen = { attempt, ...outcome, rank };
           }
           if (!chosen) {
-            return failCalibrationUnit(units[0], "CALIBRATION_REPAIR_REQUIRED",
-              hardestRefusal ?? "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", diagnostics(), sourceOnlyCounts());
+            return failCalibrationUnit(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED",
+              diagnostics(), sourceOnlyCounts());
           }
           results = chosen.attempt.results;
           omissionReview = chosen.attempt.omissionReview;
@@ -1565,7 +1596,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           residualsByUnit = chosen.kept.residualsByUnit;
           const unitPasses = referenceScorePasses(chosen.keptScore);
           calibrationRecord = { batch: keyId, ...calibrationScoreCounts(chosen.keptScore), outcome: unitPasses ? "pass" : "fail" };
-          if (!unitPasses) calibrationFailures += 1;
+          if (!unitPasses) calibrationFailures += units.length;
           calibrationCriticalMisses += chosen.keptScore.critical_miss_count;
         }
         const contextAnswered = [...cycles, ...fidelityCycles].some((cycle) => cycle.context_answer);
@@ -1605,12 +1636,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // reason, and each scored batch's reference result counted once.
       const calibrationRecords = async () => {
         const failures = [], batches = new Map();
-        let unscored = 0, withheld = 0, gaps = 0;
+        let unscored = 0, legacyPassed = 0, withheld = 0, gaps = 0;
         for (const unitId of completedCalibration()) {
           const record = await readUnitRecord(unitId);
           if (!record) continue;
           const { batch, outcome, ...reference } = record.calibration ?? {};
           if (record.calibration) batches.set(batch, reference);
+          // A unit admitted before calibration recorded its counts passed the stricter per-unit audit (no
+          // critical miss, recall at the target), so a resumed round goes on without counting it.
+          else if (!record.source_only_unresolved) legacyPassed += 1;
           else unscored += 1;
           withheld += record.review_residuals?.withheld_assertions ?? 0;
           gaps += record.review_residuals?.omission_gaps ?? 0;
@@ -1625,7 +1659,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         const pooled = pooledCalibration([...batches.values()], JOURNAL_GRAPH_CONTRACT.audit_defaults.reference_set_recall_target);
         return { failures, gate: { ...pooled, calibration_pass: pooled.calibration_pass && unscored === 0,
-          failed_units: failures.length, unscored_units: unscored, withheld_assertions: withheld, omission_gaps: gaps,
+          failed_units: failures.length, unscored_units: unscored,
+          ...(legacyPassed ? { legacy_passed_units: legacyPassed } : {}), withheld_assertions: withheld, omission_gaps: gaps,
           completed_calibration_units: completedCalibration().length, calibration_units: calibrationOrder.length } };
       };
       if (state.calibration !== "pass") {
@@ -1675,6 +1710,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const records = await Promise.all(calibrationOrder.map(readUnitRecord));
         invariant(records.every(Boolean), "CALIBRATION_UNIT_UNRESOLVED");
         state.calibration = "pass";
+        delete state.calibration_round_failures;
         state.blocker = null;
         await save();
       }
@@ -2141,14 +2177,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       state.graph_ref = state.reconciled_ref;
       // The graph is built once every unit has been through reconciliation. What reconciliation could
       // not settle from its bounded view (needs_context), or could not propose at all, stays
-      // unresolved and is counted, as the reconciler's contract intends. Only a unit whose extraction
-      // stayed unresolved leaves the graph itself partial.
-      const sourceOnlyUnits = [...unitGraphs.values()].filter(record => record.source_only_unresolved).length;
-      state.completion.graph_built = sourceOnlyUnits > 0 ? 'partial' : 'pass';
+      // unresolved and is counted, as the reconciler's contract intends. A unit whose extraction stayed
+      // unresolved, or that kept its extraction with flagged items withheld, leaves the graph partial.
+      const unitRecords = [...unitGraphs.values()];
+      const sourceOnlyUnits = unitRecords.filter(record => record.source_only_unresolved).length;
+      const residualUnits = unitRecords.filter(record => !record.source_only_unresolved && record.review_residuals);
+      state.completion.graph_built = sourceOnlyUnits > 0 || residualUnits.length > 0 ? 'partial' : 'pass';
       const reconciliationBatches = new Map();
       for (const report of reports) reconciliationBatches.set(report.batch_ref, report);
+      const residualTotal = (field) => residualUnits.reduce((sum, record) => sum + (record.review_residuals[field] ?? 0), 0);
       state.residuals = { ...(state.residuals ?? {}),
         source_only_units: sourceOnlyUnits,
+        review_withheld_units: residualUnits.length,
+        review_withheld_assertions: residualTotal('withheld_assertions'),
+        review_omission_gaps: residualTotal('omission_gaps'),
         reconciliation_needs_context_units: reports.filter(report => report.status === 'needs_context').length,
         reconciliation_unresolved_units: reports.filter(report => report.status === 'unresolved').length,
         reconciliation_unresolved_ids: new Set([...reconciliationBatches.values()]
