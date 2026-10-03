@@ -232,18 +232,31 @@ export function boundedLineReader({ onLine, maxLineBytes = MAX_LINE, maxStreamBy
   } };
 }
 
+// With gate, the command starts only after onSpawn has finished: a shell that leads the new process group waits for
+// one line on stdin and then execs it (same PID, group and start time). If the parent dies or onSpawn fails first,
+// the shell reads end-of-file or is killed, and the command never runs. env drops what the shell itself exports, so
+// the command's environment is exactly the one given.
+const GATE_SCRIPT = 'IFS= read -r _ || exit 97; exec /usr/bin/env -u PWD -u OLDPWD -u SHLVL -u _ "$0" "$@"';
+
 export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups,
-  maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false, onSpawn = null }) {
+  maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false, onSpawn = null, gate = false }) {
   return new Promise((resolve) => {
     const started = Date.now();
     let child;
-    try { child = spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false }); }
+    try {
+      child = gate
+        ? spawn("/bin/sh", ["-c", GATE_SCRIPT, command, ...args], { cwd, env, detached: true, stdio: ["pipe", "pipe", "pipe"], shell: false })
+        : spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false });
+    }
     catch { resolve({ code: null, timedOut: false, problem: "SPAWN_FAILED", durationMs: Date.now() - started }); return; }
     let problem = null, timedOut = false, refused = false;
     let processing = Promise.resolve();
     const killGroup = () => { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { child.kill("SIGKILL"); } };
+    if (gate) child.stdin?.on("error", () => {}); // a shell killed before release closes the pipe
     if (onSpawn && child.pid) processing = Promise.resolve().then(() => onSpawn(child.pid))
+      .then(() => { if (gate && !refused) child.stdin.end("\n"); })
       .catch(() => { problem = "PROCESS_RECORD_FAILED"; refused = true; killGroup(); });
+    else if (gate) child.stdin?.end("\n");
     const reader = boundedLineReader({ onLine: line => onLine(line, killGroup), maxLineBytes, maxStreamBytes });
     activeGroups?.add(killGroup);
     const timer = timeoutMs === null ? null : setTimeout(() => { timedOut = true; killGroup(); }, timeoutMs);

@@ -374,3 +374,45 @@ test("with a reserved session, an event reporting another session or none refuse
     assert.equal(reader.state.sessionMismatch, mismatch);
   }
 });
+
+test("a gated command starts only after onSpawn, and never if onSpawn fails", async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "journal-gate-"));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const marker = path.join(dir, "started");
+  const command = ["-e", `require("fs").writeFileSync(${JSON.stringify(marker)}, "x")`];
+  let startedBeforeRelease = null;
+  const released = await runProcess(process.execPath, command, { cwd: dir, env: { PATH: process.env.PATH }, timeoutMs: 10_000,
+    onLine: () => {}, gate: true, onSpawn: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      startedBeforeRelease = await fs.access(marker).then(() => true, () => false);
+    } });
+  assert.equal(startedBeforeRelease, false);
+  assert.equal(released.code, 0);
+  await fs.access(marker);
+  await fs.rm(marker);
+  const refused = await runProcess(process.execPath, command, { cwd: dir, env: { PATH: process.env.PATH }, timeoutMs: 10_000,
+    onLine: () => {}, gate: true, onSpawn: async () => { throw new Error("record failed"); } });
+  assert.equal(refused.problem, "PROCESS_RECORD_FAILED");
+  await assert.rejects(fs.access(marker), "the command never ran");
+});
+
+test("a gated command never starts if its parent dies before release", async (t) => {
+  const { spawn } = await import("node:child_process");
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "journal-gate-death-"));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const marker = path.join(dir, "started");
+  const workerModule = new URL("../src/journal-import/codex-worker.mjs", import.meta.url).href;
+  // The parent records the gate shell's group, then is killed inside onSpawn, before it can release the gate.
+  const script = `import { runProcess } from ${JSON.stringify(workerModule)};
+import fs from "node:fs";
+await runProcess(process.execPath, ["-e", ${JSON.stringify(`require("fs").writeFileSync(${JSON.stringify(marker)}, "x")`)}],
+  { cwd: ${JSON.stringify(dir)}, env: { PATH: process.env.PATH }, timeoutMs: 10000, onLine: () => {}, gate: true,
+    onSpawn: (pid) => { fs.writeFileSync(${JSON.stringify(path.join(dir, "group"))}, String(pid)); process.kill(process.pid, "SIGKILL"); } });`;
+  const parent = spawn(process.execPath, ["--input-type=module", "-e", script], { stdio: "ignore" });
+  await new Promise((resolve) => parent.once("close", resolve));
+  const group = Number(await fs.readFile(path.join(dir, "group"), "utf8"));
+  const deadline = Date.now() + 5_000;
+  while (await processGroupHasLiveMember(group) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(await processGroupHasLiveMember(group), false, "the gate shell exits when its parent dies");
+  await assert.rejects(fs.access(marker), "the command never ran");
+});

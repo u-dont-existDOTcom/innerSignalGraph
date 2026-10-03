@@ -472,9 +472,10 @@ export async function sweepClaudeProcessGroups(workDir, home) {
         });
       } catch (error) {
         if (error?.code !== "ENOENT") throw error;
-        // No process record: the worker may have died between starting Claude and writing it. A live
-        // worker's run (lock held) is left alone. Otherwise kill any process still working in the run
-        // directory and confirm its group gone; if that can't be confirmed, keep the run and fail closed.
+        // No process record: Claude is started only after its record is written (runProcess gate), so it never
+        // ran here; at most the waiting gate shell is left. A live worker's run (lock held) is left alone.
+        // Otherwise any process still working in the run directory is killed and its group confirmed gone; if
+        // that can't be confirmed, the run is kept and startup fails closed.
         const held = await workerLockHeld(directory);
         if (held === null) { unresolved.add(parent); continue; }
         if (held) continue;
@@ -689,7 +690,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       let result;
       try { result = await runProcess(options.claudeBin, claudePrintArgs({ record, mcpConfig, sessionId }), {
         cwd: runDir, env: { ...processEnv, XDG_CACHE_HOME: path.join(runDir, "cache") },
-        maxLineBytes: MAX_CLAUDE_LINE_BYTES, maxStreamBytes: 4 * MAX_CLAUDE_LINE_BYTES, killOnClose: true,
+        // Claude starts only once its process record is on disk, so a run without one never started Claude.
+        maxLineBytes: MAX_CLAUDE_LINE_BYTES, maxStreamBytes: 4 * MAX_CLAUDE_LINE_BYTES, killOnClose: true, gate: true,
         onSpawn: async pid => {
           // Retain the group first, so a failure below still leads to the confirmed-group-gone path.
           childGroup = pid;
