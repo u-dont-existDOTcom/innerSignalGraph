@@ -63,6 +63,9 @@ const permittedKeys = new Set([
   "critical_assessments", "proposed_repairs", "unassessed", "findings",
   "critical_miss_count", "qualifier_error_count", "reference_total", "reference_counts",
   "preserved", "omitted", "distorted", "recall_target_met", "calibration_pass",
+  // How a repaired attempt's review was scoped: findings carried forward, items changed or removed, and the
+  // earlier findings checked again.
+  "review_scope", "fidelity_scope", "carried", "changed", "removed", "earlier_findings",
   ...coverageDispositions, ...outcomes, ...findingTypes
 ]);
 
@@ -94,9 +97,11 @@ const countBy = (items, field, values) => Object.fromEntries(values.map((value) 
 const assessmentCounts = (review) => Object.fromEntries(outcomes.map((outcome) => [outcome,
   countBy(review.assessments.filter((item) => item.outcome === outcome), "finding_type", findingTypes)]));
 
-export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
+// `countedReview`, when given, is the omission review that counted for this attempt (scoped after a repair);
+// otherwise the attempt's own review is counted.
+export function extractionCycleDiagnostics(results, bindingFailureCode = null, countedReview = undefined) {
   const extraction = results?.[0]?.output ?? null;
-  const review = results?.[1]?.output ?? null;
+  const review = countedReview === undefined ? results?.[1]?.output ?? null : countedReview;
   return {
     extraction: extraction ? {
       status: extraction.status,

@@ -22,10 +22,15 @@ export function lexicalTerms(value) {
   return [...new Set(value.normalize("NFKC").toLocaleLowerCase("und").match(/[\p{L}\p{N}]+/gu) ?? [])];
 }
 
+// The graph ID a local extraction ID binds to, as adaptExtractionToGraph computes it.
+export function journalLocalNodeId({ caseId, corpusId, generation, localIdNamespace = "", kind, localId }) {
+  return `${kind}:${sha256(Buffer.from(`${caseId}\0${corpusId}\0${generation}\0${localIdNamespace ? `${localIdNamespace}\0` : ""}${localId}`, "utf8")).slice(0, 32)}`;
+}
+
 export function adaptExtractionToGraph({ caseId, corpusId, generation, source, units, extraction, producerRef = "mock-extractor", localIdNamespace = "" }) {
   const checked = validateExtractionReferences(extraction, units.map(({ unit_id: unitId }) => unitId));
   invariant(source && typeof source === "object" && typeof source.id === "string", "GRAPH_SOURCE_INVALID");
-  const prefix = (kind, localId) => `${kind}:${sha256(Buffer.from(`${caseId}\0${corpusId}\0${generation}\0${localIdNamespace ? `${localIdNamespace}\0` : ""}${localId}`, "utf8")).slice(0, 32)}`;
+  const prefix = (kind, localId) => journalLocalNodeId({ caseId, corpusId, generation, localIdNamespace, kind, localId });
   const common = (id, kind) => ({ id, case_id: caseId, corpus_id: corpusId, version: 1, lifecycle: "active", kind });
   const passageNodes = new Map();
   const passageIdsByUnit = new Map();
