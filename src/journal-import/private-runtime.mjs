@@ -1223,10 +1223,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
           }
           if (!calibrationPass && units.length > 1) return halves();
-          // Context a repair asks for is answered in the next repair request.
-          let contextResponse = null;
-          for (let auditCycle = 1; !calibrationPass && auditCycle <= (hardestLane.enabled ? 3 : 2); auditCycle += 1) {
-            const hardestRepair = auditCycle === 3;
+          // Context a repair asks for is answered in the next repair request, and a first supplied answer earns
+          // one more standard repair, as in the extraction passes.
+          let contextResponse = null, standardRepairs = 2, repairContextSupplied = false;
+          for (let auditCycle = 1; !calibrationPass && auditCycle <= standardRepairs + (hardestLane.enabled ? 1 : 0);
+            auditCycle += 1) {
+            const hardestRepair = auditCycle > standardRepairs;
             const repairId = epochId(hardestRepair ? `extract:calibration-repair:batch:${keyId}:hardest`
               : `extract:calibration-repair:batch:${keyId}:cycle:${auditCycle}`, true);
             const previousExtraction = results[0].output;
@@ -1287,6 +1289,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                   repairSnapshot.context_answer = contextAnswerCounts(answer.response);
                   contextResponse = answer.response;
                 }
+                if (answer.supplied && !repairContextSupplied) { repairContextSupplied = true; standardRepairs += 1; }
               }
               continue;
             }
@@ -1345,7 +1348,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             return failCalibrationUnit(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", diagnostics());
           }
         }
-        const contextAnswered = cycles.some((cycle) => cycle.context_answer);
+        const contextAnswered = [...cycles, ...fidelityCycles].some((cycle) => cycle.context_answer);
         for (const unit of units) {
           await writeUnitRecord(unit.unit_id, {
             graph: graphsByUnit.get(unit.unit_id),

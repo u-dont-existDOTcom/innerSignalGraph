@@ -1324,3 +1324,46 @@ test("a later chunk of a long page transcription gets the earlier chunks of the 
       [{ unit_id: chunks[1].unit_id, direction: "before", status: "supplied" }]);
   } finally { await runtime.close(); }
 });
+
+test("context supplied to a fidelity repair earns one more standard repair that receives it", async t => {
+  const f = await fixture(t, { pages: 3 });
+  const calls = [];
+  const unknown = { raw: null, from: null, to: null, precision: "unknown", timezone: null, basis: "unresolved", evidence_ids: [] };
+  const runtime = await f.open(mockPort({ calls,
+    extractor: (packet) => {
+      const unit = packet.core_units[0];
+      if (packet.repair_request?.cycle === "fidelity-2")
+        return noAssertions(packet, "needs_context", "Synthetic.", [{ unit_id: unit.unit_id, direction: "before", reason: "Synthetic." }]);
+      if (packet.repair_request?.cycle !== "fidelity-3") return noAssertions(packet, "complete");
+      const anchor = { unit_id: unit.unit_id, quote: unit.text, occurrence: null };
+      return { schema_version: "1.0", status: "complete",
+        entities: [{ local_id: "self", label: "Synthetic diarist", entity_kind: "person", anchors: [anchor] }], episodes: [],
+        assertions: [{ local_id: "a0", statement: "Synthetic context repair.", assertion_kind: "direct_report",
+          narrative_mode: "waking", speaker_local_id: "self", subject_local_ids: ["self"], episode_local_id: null,
+          polarity: "affirmed", qualifiers: [], authored_time: unknown, event_time: unknown, anchors: [anchor],
+          importance_reasons: ["synthetic"], extraction_confidence: "high" }],
+        coverage: [{ unit_id: unit.unit_id, disposition: "extracted", assertion_local_ids: ["a0"], reason: null }],
+        requested_context: [] };
+    },
+    fidelity: (packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation, review_role: "fidelity_auditor",
+      assessments: [], proposed_repairs: [], unassessed_ids: [],
+      status: !packet.supporting_passages[0].text.startsWith("Synthetic page 3 ")
+        || packet.imported_generation.assertions.some((node) => node.data.statement === "Synthetic context repair.")
+        ? "sufficient_for_stated_scope" : "repair_required" }) }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const plan = await readPlan(f.config);
+    const [first, second, third] = [1, 2, 3].map((page) => pageUnit(plan, page));
+    const repairs = calls.filter((call) => call.role === "extractor" && call.packet.assigned_core_ids[0] === third.unit_id
+      && call.packet.repair_request).map((call) => call.packet);
+    assert.deepEqual(repairs.map((packet) => packet.repair_request.cycle), ["fidelity-1", "fidelity-2", "fidelity-3"]);
+    assert.deepEqual(repairs[2].repair_request.context_response, [{ unit_id: third.unit_id, direction: "before", status: "supplied" }]);
+    assert.equal(repairs[2].adjacent_context.by_unit[0].before, `${first.text}\n\n${second.text}`);
+    assert.equal(calls.some((call) => call.tier === "hardest"), false);
+    const record = await withStore(f.config, (store) => store.readJsonObject({ objectId: `unit:graph:${third.unit_id}` }));
+    assert.equal(record.source_only_unresolved, false);
+    assert.deepEqual(record.diagnostics.fidelity_cycles.map((cycle) => cycle.cycle), [0, 1, 2, 3]);
+    assert.deepEqual(record.diagnostics.fidelity_cycles[2].context_answer, { ...noAnswer, supplied: 1 });
+    assert.equal(record.diagnostics.fidelity_cycles[3].fidelity.calibration_pass, true);
+  } finally { await runtime.close(); }
+});
