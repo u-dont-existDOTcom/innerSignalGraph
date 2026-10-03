@@ -272,7 +272,7 @@ test("exact Codex arguments disable all forbidden features and pass only secret 
     "-c", 'model_reasoning_effort="high"', "-c", 'web_search="disabled"', "-c", 'service_tier="default"',
     "-c", 'approval_policy="never"', "-c", "project_doc_max_bytes=0", "-c", "project_root_markers=[]",
     "-c", `mcp_servers.journal.command=${JSON.stringify(process.execPath)}`,
-    "-c", `mcp_servers.journal.args=${JSON.stringify([mcpCli, "--config", "/tmp/config", "--principal", "codex-standard", "--tier", "standard", "--stage-dir", "/tmp/run/stage"])}`,
+    "-c", `mcp_servers.journal.args=${JSON.stringify([mcpCli, "--config", "/tmp/config", "--principal", "codex-standard", "--tier", "standard", "--stage-dir", "/tmp/run/stage", "--work-id", "job:synthetic-codex"])}`,
     "-c", 'mcp_servers.journal.env={INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT="/tmp/exchange",INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE="/tmp/secret"}',
     "-c", 'mcp_servers.journal.default_tools_approval_mode="approve"',
     ...CODEX_DISABLED_FEATURES.flatMap((feature) => ["--disable", feature]),

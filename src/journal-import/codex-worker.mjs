@@ -83,7 +83,9 @@ export function codexExecArgs({ record, runDir, configPath, root, secretFile }) 
     "-c", 'service_tier="default"', "-c", 'approval_policy="never"',
     "-c", "project_doc_max_bytes=0", "-c", "project_root_markers=[]",
     "-c", `mcp_servers.journal.command=${stringArg(process.execPath)}`,
-    "-c", `mcp_servers.journal.args=${stringArg([mcpCli, "--config", configPath, "--principal", "codex-standard", "--tier", "standard", "--stage-dir", path.join(runDir, "stage")])}`,
+    // The work server is scoped to this run's item, so a call naming another item reads and marks nothing of it.
+    "-c", `mcp_servers.journal.args=${stringArg([mcpCli, "--config", configPath, "--principal", "codex-standard", "--tier", "standard",
+      "--stage-dir", path.join(runDir, "stage"), "--work-id", record.work_id])}`,
     "-c", `mcp_servers.journal.env={INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT=${stringArg(root)},INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE=${stringArg(secretFile)}}`,
     "-c", 'mcp_servers.journal.default_tools_approval_mode="approve"',
     ...CODEX_DISABLED_FEATURES.flatMap((feature) => ["--disable", feature]), instruction];
