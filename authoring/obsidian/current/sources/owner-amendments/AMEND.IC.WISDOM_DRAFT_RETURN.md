@@ -12,7 +12,7 @@ section_hash: 811477ff1691cce979628d2562d885ddf7a3e539f5f5096f85a78e3f413e53fa
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DRAFT_RETURN_TO_CARE
-projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # AMEND.IC.WISDOM_DRAFT_RETURN

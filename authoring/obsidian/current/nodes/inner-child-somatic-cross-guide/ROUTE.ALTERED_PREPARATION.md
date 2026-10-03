@@ -22,9 +22,9 @@ source_refs:
 regression_refs:
   - G048
   - G058
-base_record_sha256: babc18992ccee78e469741a6e26d85edbd528e71c24a91985ce5cc95b891f7b3
-base_graph_sha256: 56b6c779e5768764339d46718e808a66c206c9c9dc0ae3ffdc42e8c1717c4883
-projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
+base_record_sha256: a5e3cee863d0d87f8aabbfb4d7fe4db8be24af9f47bf6ebc512091cd3d22c535
+base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # Give planned altered-state work a beginning, support plan, and ending
@@ -70,7 +70,8 @@ projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362
     "forbiddenOverclaims": [
       "Do not claim that a different psychoactive is automatically safe merely because the prior severe reaction involved another substance.",
       "Do not imply that repeated psychotic-type reactions are required before a prior episode matters for retest planning.",
-      "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on."
+      "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on.",
+      "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction."
     ],
     "requiredNuance": [
       "Psychoactive risk is informed by both substance-specific history and person-level vulnerability; the response remains proportional rather than universally prohibitive.",

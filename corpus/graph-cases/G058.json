@@ -26,7 +26,8 @@
     "forbiddenOverclaimPatterns": [
       "different psychoactive is automatically safe",
       "repeated psychotic-type reactions are required",
-      "abrupt discontinuation"
+      "abrupt discontinuation",
+      "apparent stabilization"
     ]
   }
 }

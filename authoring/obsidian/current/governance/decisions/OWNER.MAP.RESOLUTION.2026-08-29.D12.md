@@ -7,7 +7,7 @@ decision_id: OWNER.MAP.RESOLUTION.2026-08-29.D12
 status: retired-with-clarification
 future_guide_proposal_required: false
 base_record_sha256: 193783e5651182d7e33120ceba0c4c5d93b95348c678b8d0a5686717ee05dba2
-projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # OWNER.MAP.RESOLUTION.2026-08-29.D12
