@@ -633,9 +633,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const ledger = createCorpusJournalJobLedger({ corpusStore: store, jobId: id });
       const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: key, grant,
         promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic",
-        beforeInvoke: async ({ work: pendingWork }) => {
+        beforeInvoke: async ({ work: pendingWork, resumed = false }) => {
           await authorize();
-          if (pendingWork.tier === "hardest") await beforeHardestSend();
+          // A resumed call was charged its hardest slot before its intent was recorded.
+          if (pendingWork.tier === "hardest" && !resumed) await beforeHardestSend();
         },
         resolvePacketInput: resolveWorkPacketInput });
       try {

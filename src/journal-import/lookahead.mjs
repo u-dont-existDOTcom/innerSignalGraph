@@ -41,9 +41,20 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
       sent.add(request.operationKey);
       errors += 1;
     }
+    // The item is published, so its slot stays occupied until it resolves or the lookahead closes, also
+    // while reading the exchange fails.
+    let readFailing = false;
     for (;;) {
       if (closed) return null;
-      const peek = await port.peek(request.operationKey);
+      let peek;
+      try { peek = await port.peek(request.operationKey); }
+      catch {
+        if (!readFailing) errors += 1;
+        readFailing = true;
+        await pause();
+        continue;
+      }
+      readFailing = false;
       if (peek.status === "completed") return peek.output;
       if (peek.status !== "pending") return null;
       await pause();

@@ -228,7 +228,8 @@ export function createJournalImportController({
   resolvePacketInput = async (packetInput) => packetInput,
   afterInvokeBeforeCheckpoint = null,
   // Runs before an intent is recorded. A failure here, such as an expired authorization, stops the
-  // step with nothing persisted: no attempt is spent and no call is left in an unknown state.
+  // step with nothing persisted: no attempt is spent and no call is left in an unknown state. It runs
+  // again, with `resumed: true`, before an interrupted call is resumed through an authoritative port.
   beforeInvoke = null
 }) {
   invariant(ledger && typeof ledger.load === "function" && typeof ledger.append === "function", "JOURNAL_LEDGER_INVALID");
@@ -304,12 +305,39 @@ export function createJournalImportController({
     return persist(next, entry.revision, { state: "blocked_authority", stage: target.stage, next_action: `inspect blocked semantic work ${target.work_id}`, blocked_reason: code, responsible_actor: "owner" });
   };
 
+  const invokeAndComplete = async (entry, work, packet, operationKey) => {
+    let result;
+    try {
+      result = await inferencePort.invoke({ role: work.role, packet, outputSchema: work.output_schema_id, operationKey, grant, tier: work.tier ?? "standard" });
+    } catch (error) {
+      return recordFailure(entry, work, error);
+    }
+    if (afterInvokeBeforeCheckpoint) await afterInvokeBeforeCheckpoint({ work: clone(work), result: clone(result) });
+    return completeWork(entry, work, result);
+  };
+
+  const completionIsAuthoritative = async (operationKey) => typeof inferencePort.isAuthoritativeCompletion === "function"
+    ? (await inferencePort.isAuthoritativeCompletion(operationKey)) === true
+    : inferencePort.capabilities?.()?.authoritative_completion === true;
+
   const step = async () => {
     let entry = await ledger.load();
     invariant(entry, "JOURNAL_JOB_NOT_INITIALIZED");
     let work = entry.snapshot.work_items.find(({ status }) => status !== "completed");
     if (!work) return entry;
     if (["needs_context", "paused_quota", "revoked", "blocked_authority"].includes(work.status)) return entry;
+    // A call interrupted after its intent was recorded is resumed through an authoritative port (the connector
+    // exchange) by invoking the same operation again. The port waits on the item already sent, including one the
+    // lookahead sent under this key before the intent was recorded, and sends the call only if nothing went out.
+    // Asking for its completion instead could read "not submitted" and retry under a new key while that item can
+    // still complete.
+    if (work.status === "intent_persisted" && await completionIsAuthoritative(work.operation_key)) {
+      const { packet, operationKey } = await planJournalOperation({
+        work, snapshot: entry.snapshot, grant, resolvePacketInput
+      });
+      if (beforeInvoke) await beforeInvoke({ work: clone(work), operationKey, resumed: true });
+      return invokeAndComplete(entry, work, packet, operationKey);
+    }
     if (["intent_persisted", "completion_unknown"].includes(work.status)) {
       const completion = await inferencePort.getCompletion(work.operation_key);
       if (completion.status === "completed") return completeWork(entry, work, completion);
@@ -360,14 +388,7 @@ export function createJournalImportController({
     intentWork.operation_key = operationKey;
     entry = await persist(intentSnapshot, entry.revision, { state: "running", stage: work.stage, next_action: `await transport result for ${operationKey}`, blocked_reason: null, responsible_actor: "reasoning_role" });
     work = entry.snapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
-    let result;
-    try {
-      result = await inferencePort.invoke({ role: work.role, packet, outputSchema: work.output_schema_id, operationKey, grant, tier: work.tier ?? "standard" });
-    } catch (error) {
-      return recordFailure(entry, work, error);
-    }
-    if (afterInvokeBeforeCheckpoint) await afterInvokeBeforeCheckpoint({ work: clone(work), result: clone(result) });
-    return completeWork(entry, work, result);
+    return invokeAndComplete(entry, work, packet, operationKey);
   };
 
   const provideContext = async (workId, packetPatch) => {

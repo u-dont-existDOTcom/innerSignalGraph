@@ -9,6 +9,7 @@ import { buildJournalJobSnapshot, createCorpusJournalJobLedger,
   createJournalImportController, createMemoryJournalJobLedger,
   planJournalOperation } from "../src/journal-import/controller.mjs";
 import { journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
+import { createDurableJournalInferencePort } from "../src/journal-import/durable-inference.mjs";
 import { exchangeHarness } from "./fixtures/journal-lookahead-exchange.mjs";
 import { createJournalLookahead } from "../src/journal-import/lookahead.mjs";
 import { journalJobId, journalWorkPlan } from "../src/journal-import/private-runtime.mjs";
@@ -281,6 +282,46 @@ test("a sequential call that loses the publish race to a speculative item adopts
   restarted.close(); h.port.close();
 });
 
+test("a sequential call interrupted after its intent resumes on the speculative item", async (t) => {
+  const h = exchangeHarness({ waitMs: 0 });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  await h.port.prefetch({ role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant });
+  const id = journalExchangeWorkId(operationKey);
+  h.answerWork(id);
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "synthetic-resume-corpus-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const corpus = createPrivateJournalCorpusStore({ rootDir: root, caseId: "synthetic-case",
+    corpusId: "synthetic-corpus", corpusKey: Buffer.alloc(32, 19) });
+  t.after(() => corpus.close());
+  const durable = createDurableJournalInferencePort({ port: h.port, corpusStore: corpus });
+  const ledger = createMemoryJournalJobLedger();
+  const definitions = [{ key: request.role, stage: request.stage, role: request.role,
+    identity: journalWorkPlan(request).identity, assigned_core_ids: [unit.unit_id],
+    source_locators: journalWorkPlan(request).sourceLocators, packet_input: packetInput }];
+  // The first run records its intent, then stops before its call reaches the exchange.
+  const interrupted = createJournalImportController({ ledger, controllerSecret: secret, grant,
+    promptVersion: snapshot.prompt_version, modelProfile: "synthetic",
+    inferencePort: { ...durable, invoke: () => new Promise(() => {}) } });
+  await interrupted.initialize({ jobId, caseId: "synthetic-case", corpusId: "synthetic-corpus",
+    generation: "generation:synthetic", workDefinitions: definitions });
+  interrupted.runUntilBlocked();
+  await until(async () => (await ledger.load()).snapshot.work_items[0].status === "intent_persisted");
+  const resumed = [];
+  const controller = createJournalImportController({ ledger, inferencePort: durable, controllerSecret: secret,
+    grant, promptVersion: snapshot.prompt_version, modelProfile: "synthetic",
+    beforeInvoke: async (call) => { resumed.push(call.resumed === true); } });
+  const result = await controller.runUntilBlocked();
+  const [work] = result.snapshot.work_items;
+  assert.equal(work.status, "completed");
+  assert.equal(work.attempts, 1);
+  assert.equal(work.operation_key, operationKey);
+  assert.deepEqual(resumed, [true], "the access check runs again before the resumed call");
+  assert.equal(h.adopted.has(id), true);
+  assert.equal(h.published.length, 1, "no second item is published for the interrupted call");
+  controller.close(); h.port.close();
+});
+
 test("controller consumes expired or changed lookahead work on its first attempt", async () => {
   for (const variant of ["expired", "changed-grant"]) {
     let time = Date.parse("2026-10-01T00:00:00.000Z");
@@ -418,6 +459,31 @@ test("a work item keeps its lookahead slot when dispatch publication fails", asy
   assert.equal(h.work.size, 1);
   assert.equal(lookahead.summary().sent, 1);
   assert.equal(lookahead.summary().errors, 1);
+  await lookahead.close();
+  h.port.close();
+});
+
+test("a published lookahead item keeps its slot while reading the exchange fails", async () => {
+  const h = exchangeHarness();
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const direct = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+  let readFails = true;
+  const port = { ...h.port, peek: async (key) => {
+    if (readFails) throw new Error("synthetic exchange read failure");
+    return h.port.peek(key);
+  } };
+  const lookahead = createJournalLookahead({ limit: 2, port, grant, authorize: async () => {}, pollMs: 1,
+    prepare: async descriptor => ({ direct: descriptor.direct }) });
+  lookahead.ahead([{ jobId: "first", direct },
+    { jobId: "second", direct: { ...direct, operationKey: `${operationKey}:second` } }]);
+  await until(() => h.work.size === 1);
+  for (let index = 0; index < 20; index += 1) await tick();
+  assert.equal(h.work.size, 1, "the unanswered item still holds the only slot");
+  assert.equal(lookahead.summary().errors, 1, "one failing stretch counts once");
+  readFails = false;
+  h.answerWork(journalExchangeWorkId(operationKey));
+  await until(() => h.work.size === 2);
   await lookahead.close();
   h.port.close();
 });

@@ -33,6 +33,8 @@ Two new methods on `createExchangeJournalInferencePort`:
 
 `invoke` already resumes an item that exists with the same digest, so the sequential run's call to an item the lookahead published waits on that item instead of publishing another. Keep it that way, and test it (section 5).
 
+The controller records its intent before `invoke` adopts such an item. A run interrupted between the two (added 2026-10-03, after review) resumes an `intent_persisted` item through an authoritative port by invoking the same operation key again, after the access check (`beforeInvoke` with `resumed: true`, which charges no second hardest slot). The port adopts the item the lookahead sent, or sends the call once if nothing went out. Asking only for the completion would read "not submitted" from the durable layer, which never recorded its own intent, and retry under a new key while the speculative item could still complete.
+
 ## 3. Shared request builders
 
 The lookahead must compute the same packet and the same operation key as the sequential run. Do that by sharing code, not by copying it:
@@ -49,7 +51,7 @@ The lookahead must compute the same packet and the same operation key as the seq
   - For a controller job, it builds the job snapshot (`buildJournalJobSnapshot`, or the existing ledger read-only), then walks its items in order. An item already completed in the ledger supplies its output. A `planned` item gets its packet and key from `planJournalOperation`, then `authorize()`, `prefetch`, and `peek` every `poll_ms` until it is no longer pending. A completed answer must pass the schema and the controller's own completeness rule (`outputComplete`) before the walk continues to a dependent item, which reads it through the same `$work_output` materialization. Any other status ends the walk.
   - For a `REFERENCE_AUDIT` request, which the runtime sends without a controller, it skips the request if a cached result, a failure marker or a completion-unknown marker exists. Otherwise the operation key is the job ID, as in `work()`.
   - A chain continues past an answer only when the loop's own check on that answer passes (section 4, per loop). Otherwise it stops; the sequential run will retry under a different job ID.
-- A task ends when its chain ends, when `peek` reports `retired` (the sequential run took the answer), on any error, or when the run closes. Errors are counted, never thrown, and never logged with content.
+- A task ends when its chain ends, when `peek` reports `retired` (the sequential run took the answer), on any error, or when the run closes. Errors are counted, never thrown, and never logged with content. Once its item is published, a failing exchange read doesn't end the task: it keeps its slot and polls again, counting the failing stretch once.
 - At most `limit - 1` lookahead items are outstanding (published and unanswered) at once.
 
 ### Loops covered
