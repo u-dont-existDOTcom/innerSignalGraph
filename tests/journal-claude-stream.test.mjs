@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, processGroupHasLiveMember, processGroupsWorkingIn, sweepClaudeProcessGroups, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
+import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, processGroupHasLiveMember, processGroupsWorkingIn, recordedOwnerAlive, sweepClaudeProcessGroups, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
 import { lockWorkerDirectory, runProcess } from "../src/journal-import/codex-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
@@ -415,4 +415,12 @@ await runProcess(process.execPath, ["-e", ${JSON.stringify(`require("fs").writeF
   while (await processGroupHasLiveMember(group) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(await processGroupHasLiveMember(group), false, "the gate shell exits when its parent dies");
   await assert.rejects(fs.access(marker), "the command never ran");
+});
+
+test("a recorded owner counts as alive only while running with the recorded start time", () => {
+  const record = { owner: { pid: 4242, start: "777" } };
+  for (const state of ["R", "S", "D", "T"]) assert.equal(recordedOwnerAlive({ pid: 4242, start: "777", state }, record), true);
+  for (const state of ["Z", "X", "x"]) assert.equal(recordedOwnerAlive({ pid: 4242, start: "777", state }, record), false, state);
+  assert.equal(recordedOwnerAlive({ pid: 4242, start: "778", state: "S" }, record), false, "a reused PID");
+  assert.equal(recordedOwnerAlive(null, record), false);
 });

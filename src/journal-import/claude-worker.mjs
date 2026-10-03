@@ -13,6 +13,8 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const MODEL = "claude-opus-5-5";
 const SESSION = /^[0-9A-Za-z-]{8,64}$/u;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+// Process states (from /proc/<pid>/stat) of a process that has exited: zombie, or dead while being reaped.
+const DEAD_STATES = Object.freeze(["Z", "X", "x"]);
 const PENDING_NAME = /^[0-9a-f-]{36}\.json$/u;
 const HOST = /^(?:[A-Za-z0-9_][A-Za-z0-9_.-]*@)?[A-Za-z0-9_][A-Za-z0-9_.-]*$/u;
 const BIN = /^[A-Za-z0-9_./-]+$/u;
@@ -324,6 +326,10 @@ export async function sweepClaudePersistence(home, workDir) {
   }
 }
 
+// Whether the worker that recorded a run is still running: same PID and start time, and not exited.
+export const recordedOwnerAlive = (owner, record) =>
+  owner !== null && owner?.start === record?.owner?.start && !DEAD_STATES.includes(owner.state);
+
 async function linuxProcessIdentity(pid) {
   if (!Number.isSafeInteger(pid) || pid < 1) return null;
   try {
@@ -346,7 +352,7 @@ export async function processGroupHasLiveMember(pgid, procRoot = "/proc") {
     let stat;
     try { stat = await fs.readFile(path.join(procRoot, name, "stat"), "utf8"); } catch { continue; }
     const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/u);
-    if (Number(fields[2]) === pgid && !["Z", "X", "x"].includes(fields[0])) return true;
+    if (Number(fields[2]) === pgid && !DEAD_STATES.includes(fields[0])) return true;
   }
   return false;
 }
@@ -393,7 +399,7 @@ export async function processGroupsWorkingIn(directory, procRoot = "/proc") {
     } catch { continue; }
     if (cwd !== directory && !cwd.startsWith(directory + path.sep)) continue;
     const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/u);
-    if (!["Z", "X", "x"].includes(fields[0])) groups.add(Number(fields[2]));
+    if (!DEAD_STATES.includes(fields[0])) groups.add(Number(fields[2]));
   }
   return groups;
 }
@@ -489,7 +495,7 @@ export async function sweepClaudeProcessGroups(workDir, home) {
         continue;
       }
       const owner = await linuxProcessIdentity(record.owner?.pid);
-      if (owner?.start === record.owner?.start && owner.state !== "Z") continue;
+      if (recordedOwnerAlive(owner, record)) continue;
       const child = await linuxProcessIdentity(record.child?.pid);
       // Linux start time prevents a stale record from killing a reused PID. If the leader is gone, the
       // recorded PGID can only still exist as the original group (a PID isn't reused while its group has
