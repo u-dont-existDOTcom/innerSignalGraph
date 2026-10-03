@@ -1097,10 +1097,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // The current widened context is read at each call.
         const extract = (id, repairRequest, tier = "standard") => work(extractionRequestFor({
           id, units, core, adjacentContext, visualContext, repairRequest, tier }));
+        // A review leaves work open with any finding, unassessed ID or proposed repair, whatever status it gives.
         const reviewHasFindings = (review) => review?.status !== "sufficient_for_stated_scope"
           || review.assessments.some((assessment) => assessment.outcome !== "preserved"
             || assessment.finding_type !== "none")
-          || review.unassessed_ids.length > 0;
+          || review.unassessed_ids.length > 0
+          || review.proposed_repairs.length > 0;
         // An outcome the extractor didn't finish, or that didn't bind to the source.
         const mechanicallyUnresolved = (outcome, failure) => Boolean(failure) || outcome?.[0]?.output?.status !== "complete";
         // `review` is the omission review that counts for the outcome: the whole review of a first extraction,
@@ -1572,7 +1574,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           // The unit keeps the audited attempt that fares best on its reference items once what its reviews still
           // flag is withheld: fewest critical misses, then most items kept, fewest lost qualifiers, fewest left
-          // unassessed, fewest assertions withheld, then the latest.
+          // unassessed, fewest items withheld of any kind, then the latest.
           const rankBefore = (left, right) => {
             for (let index = 0; index < left.length; index += 1) if (left[index] !== right[index]) return left[index] < right[index];
             return false;
@@ -1583,7 +1585,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             if (!outcome) continue;
             const { kept, keptScore } = outcome;
             const rank = [keptScore.critical_miss_count, -keptScore.reference_counts.preserved,
-              keptScore.qualifier_error_count, keptScore.reference_counts.unassessed, kept.residuals.withheld_assertions, -index];
+              keptScore.qualifier_error_count, keptScore.reference_counts.unassessed,
+              kept.residuals.withheld_assertions + kept.residuals.withheld_entities + kept.residuals.withheld_episodes, -index];
             if (!chosen || rankBefore(rank, chosen.rank)) chosen = { attempt, ...outcome, rank };
           }
           if (!chosen) {

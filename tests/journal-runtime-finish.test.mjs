@@ -2089,10 +2089,10 @@ const unitExtraction = (unit, assertions, { entities = [diarist(unit)], status =
   schema_version: "1.0", status, entities, episodes: [], assertions,
   coverage: [{ unit_id: unit.unit_id, disposition: "extracted", assertion_local_ids: assertions.map((item) => item.local_id), reason: null }],
   requested_context: requestedContext });
-// A unit keeps its cycle diagnostics on its record only when something else happened to it (here an answered
-// context request); the answer widens the source window and leaves the review scope alone.
-// Visual context for a native-text unit can never be supplied, so it is answered `unavailable`: the pass records
-// its diagnostics, and the next review stays scoped (newly supplied context would make it count whole).
+// A unit keeps its cycle diagnostics on its record only when something else happened to it, here an answered
+// context request. Visual context for a native-text unit can never be supplied, so it is answered `unavailable`:
+// the pass records its diagnostics, and the next review stays scoped (newly supplied context would make it count
+// whole).
 const contextRequest = (unit) => [{ unit_id: unit.unit_id, direction: "visual", reason: "Synthetic context request." }];
 // The regular unit's omission review: a finding on each flagged target (a target, or a target and its finding
 // type), and the candidate's other assertions kept.
@@ -2268,4 +2268,22 @@ test("a final extraction that is incomplete can't be withheld from: the unit sta
   assert.equal(record.source_only_unresolved, true);
   assert.equal(Object.hasOwn(record, "review_residuals"), false);
   assert.deepEqual(assertionStatements(record.graph), []);
+});
+
+test("a review that calls itself sufficient but still proposes a repair leaves the item flagged until it is withheld", async t => {
+  const { run, record } = await runRegularUnit(t, handlers({
+    extractor: (packet) => isRegularUnit(packet)
+      ? unitExtraction(packet.core_units[0], [proposal(packet.core_units[0], "x", FLAWED_X), proposal(packet.core_units[0], "y", REPORT_Y)])
+      : handlers().extractor(packet),
+    omission_checker: (packet) => isRegularUnit(packet)
+      ? { ...review("omission_checker", packet), status: "sufficient_for_stated_scope",
+        assessments: packet.candidate_extraction.assertions.map((item) => ({ target_id: item.local_id, outcome: "preserved",
+          critical: false, finding_type: "none", explanation: "Synthetic check preserved it.", evidence_ids: [] })),
+        proposed_repairs: [{ target_id: "x", repair: "Synthetic repair request.", evidence_ids: [] }] }
+      : review("omission_checker", packet)
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(assertionStatements(record.graph), [REPORT_Y]);
+  assert.deepEqual(record.review_residuals, { withheld_assertions: 1, withheld_entities: 0, withheld_episodes: 0, omission_gaps: 0 });
 });
