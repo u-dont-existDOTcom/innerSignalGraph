@@ -1,0 +1,38 @@
+{
+  "id": "G051",
+  "title": "protective anxiety is heard without becoming a truth oracle",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "witness_capacity": "present",
+    "coherent_child_state": "present",
+    "body_capacity": "adequate",
+    "current_intent": "conversation",
+    "protective_response": "present",
+    "urge_to_escape": "absent",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "attention_loop": "absent",
+    "inward_attention_effect": "helps"
+  },
+  "expected": {
+    "primary": "ROUTE.GO_INWARD",
+    "requiredNuancePatterns": [
+      "Protective intent and predictive accuracy",
+      "Consent, immediate safety"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "protective alarm proves the feared conclusion"
+    ],
+    "selectedIncludes": [
+      "IC.MEET_GUARD"
+    ]
+  }
+}

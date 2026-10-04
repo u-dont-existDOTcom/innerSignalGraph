@@ -18,12 +18,17 @@ graph_tags:
 source_refs:
   - AMEND.CROSS.RELATIONAL_REALITY_CHECK
   - AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
+  - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
+  - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
 regression_refs:
   - G013
   - G014
-base_record_sha256: 0ec3e82befd7d66b02d01ec4ce6d2c63bd069bdad72cb31ba2893f8442074e51
-base_graph_sha256: 09fcd58a61e13de924524b56a428337b92056447695e679b980b90dca2a35d55
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+  - G050
+  - G056
+  - G061
+base_record_sha256: b7eb28446e5f846502da7446f6626afdca72c7092e674bb4af8c9db272dabfe6
+base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # Keep ordinary social influence answerable to practical protection
@@ -46,17 +51,21 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
   },
   "avoid": [
     "Do not use love, forgiveness, compassion, spiritual aspiration, or the wish not to hate as a substitute for physical or social safety.",
-    "Do not advise the person to approach, tolerate, remain with, or reopen access to danger in order to prove love."
+    "Do not advise the person to approach, tolerate, remain with, or reopen access to danger in order to prove love.",
+    "Do not dismiss or steer genuine attraction, sexual orientation, or gender identity because it is unwanted, stigmatized, confusing, or conflicts with expectations."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [
-      "Do not say or imply that sufficient love makes practical protection, boundaries, distance, refusal, or outside help unnecessary."
+      "Do not say or imply that sufficient love makes practical protection, boundaries, distance, refusal, or outside help unnecessary.",
+      "Do not claim that genuine attraction, sexual orientation, or gender identity is merely intrusive or unreal because it is unwanted, stigmatized, confusing, or conflicts with personal or community expectations.",
+      "Do not steer the person toward or away from any sexual orientation or gender identity."
     ],
     "requiredNuance": [
-      "Remaining loving or refusing hatred under unavoidable harm is a spiritual aspiration, not ordinary safety advice and not a reason to accept preventable exposure."
+      "Remaining loving or refusing hatred under unavoidable harm is a spiritual aspiration, not ordinary safety advice and not a reason to accept preventable exposure.",
+      "Ordinary protection and relational reality checking must remain neutral about sexual orientation and gender identity; distress or stigma is not evidence that an identity is intrusive or unreal."
     ]
   },
   "recommendations": [
@@ -77,3 +86,7 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_REALITY_CHECK]]
 
 [[current/governance/amendments/AMEND.CROSS.INFLUENCE_PROTECTION_LOVE]]
+
+[[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]
+
+[[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]

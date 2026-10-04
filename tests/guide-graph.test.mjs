@@ -13,7 +13,7 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.stats.graphCount, 3);
   assert.equal(bundle.stats.nodeCount, 74);
   assert.equal(bundle.stats.edgeCount, 103);
-  assert.equal(bundle.stats.ownerAmendmentCount, 40);
+  assert.equal(bundle.stats.ownerAmendmentCount, 45);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "altered-states-map-source"));
@@ -29,7 +29,7 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 32);
+  assert.equal(result.count, 45);
 });
 
 test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {

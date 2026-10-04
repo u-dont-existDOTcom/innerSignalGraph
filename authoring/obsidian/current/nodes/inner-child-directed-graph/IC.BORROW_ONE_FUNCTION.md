@@ -38,9 +38,12 @@ regression_refs:
   - G033
   - G036
   - G047
+  - G050
+  - G051
+  - G052
 base_record_sha256: 01393a748f7fe114ae4bfe3accd95804c2f58c095c44333a4557bc667ad6dda4
-base_graph_sha256: 779b3f5d7b6098cdfa10243aa5d32caac60d988fa8394a0e35917a1ee289c369
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # Borrow one bounded adult function
