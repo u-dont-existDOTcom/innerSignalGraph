@@ -23,7 +23,6 @@
     "primary": "ROUTE.ACT_OUTWARD",
     "selectedIncludes": [
       "IC.COMMUNITY_SUPPORT",
-      "IC.PROTECTOR_ACTION",
       "ROUTE.GO_INWARD"
     ],
     "requiredNuancePatterns": [
