@@ -1,7 +1,7 @@
 # Public plugin storage
 
 Date: 2026-10-03
-Status: PROPOSED DESIGN for a direction the owner approved on 2026-10-03 (quoted below). Nothing here is implemented, deployed, or connected to real data. It grants no deployment, installation, release, `stable`, therapy-policy or product-policy authority. The owner answered the storage questions on 2026-10-04 (below); where the records are kept is open again after the hosting vendors' data-processing terms were read.
+Status: PROPOSED DESIGN for a direction the owner approved on 2026-10-03 (quoted below). Nothing here is implemented, deployed, or connected to real data. It grants no deployment, installation, release, `stable`, therapy-policy or product-policy authority. The owner answered every storage question on 2026-10-04 (below), including where the records are kept, after the hosting vendors' data-processing terms were read.
 Classification: public design; contains no private data.
 
 ## In plain words
@@ -29,10 +29,10 @@ Background, in his words: ChatGPT reported it "can't write anything via the inne
 
 ## Owner decisions (2026-10-04)
 
-The owner answered at 01:55 UTC. Question numbers are this design's; his owner page numbered them 3 to 8.
+The owner answered at 01:55 UTC, and answered question 2 again at 05:39 UTC after the vendors' terms were read. Question numbers are this design's; his owner page numbered them 3 to 8, with question 2 as page question 4.
 
 1. **Saving inside ChatGPT and Claude: B.** His words: "B sounds fine just remind people on each turn 'tell me save to save this turn, only the web app can auto-save' (and link to the web app) that's fine a little friction for free users is ok." Saves in the plugin follow the person's request; the web app saves every turn. The reminder: OpenAI's plugin guidelines say "Do not insert unrelated content, attempt to redirect the interaction, or collect data beyond what is reasonably necessary", and Anthropic's directory policy says "When possible, users should be given options to exclude unnecessary text in the response." Neither forbids a reminder about the app's own saving, but a link in every reply is what a reviewer could call redirecting. So the default is the reminder with the link in the first reply of each conversation and right after anything worth saving, switched off when the person asks, with no prices or upgrade wording; every reply only if the owner says "3: every turn". Since no letter to the platforms is planned under B, the age question below needs its own letter to OpenAI.
-2. **Where the server runs: open again.** His words: "not sure, i guess A. you didn't explain why you don't rec C. check the data-processing terms tho." The terms were read (see "Hosting vendors' data-processing terms") and change the recommendation; see owner question 2 below.
+2. **Where the records are kept: A.** His first answer: "not sure, i guess A. you didn't explain why you don't rec C. check the data-processing terms tho." The terms were read (see "Hosting vendors' data-processing terms") and the question was put again with A recommended; he answered "4a" at 05:39 UTC. So: build and test on Railway with invented data only. Before any real person's records go in, ask Railway in writing to add health data and EU-only processing, logs included, to its DPA; an agent drafts the letter and the owner sends it from the Railway account. If Railway declines, the records move to Supabase in Frankfurt; the code is the same Postgres either way. The privacy consultant checks the result.
 3. **Retention: B.** Until deleted, or 24 months after the last sign-in, with warnings at 23 months and 30 days before.
 4. **Legal review: C.** A privacy consultant first (impact assessment, policies, records), with a lawyer reviewing only the consent text and the privacy policy.
 5. **Legal entity:** "Mayan Roots, LLC. that's my LLC in USA. or if it would create less legal burden can be me in Senegal idk." So Mayan Roots, LLC is the controller unless the consultant finds the owner as an individual in Senegal simpler; the consultant gets that question.
@@ -574,16 +574,7 @@ Each phase ships as its own pull request with tests and a review, and needs owne
 
 ## Owner questions
 
-Answered on 2026-10-04 except question 2, which the vendors' terms reopened (see "Owner decisions (2026-10-04)").
-
-### 2. Where are the records kept?
-
-The owner asked why option C (Supabase) wasn't recommended: it is a second company holding the records, so one more contract, one more place a breach can happen and one more subprocessor list to disclose, for about $10–25 a month more, while the connector still runs on Railway. The vendors' terms, read since, change the picture (see above).
-
-- **A (recommended). Build and test on Railway with invented data only.** Before any real person's records go in, ask Railway in writing to add health data and EU-only processing, logs included, to its DPA; an agent drafts the letter and the owner sends it from the Railway account. If Railway declines, the records move to Supabase in Frankfurt; the code is the same Postgres either way. The privacy consultant checks the result.
-- **B. Records on Supabase in Frankfurt from the start.** Its terms already cover health data and regional storage. About $10–25 a month more; Railway still has to cover the connector, which handles records while it answers.
-
-Default if unanswered: A.
+None open. All were answered on 2026-10-04; see "Owner decisions (2026-10-04)".
 
 ## Owner tasks (no decision needed)
 
