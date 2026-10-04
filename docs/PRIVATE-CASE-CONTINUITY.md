@@ -131,6 +131,8 @@ The ordinary local app activates the encrypted automatic controller when these p
 - `INNER_SIGNAL_PRIVATE_RUNTIME_CREDENTIALS=/absolute/outside-repository/credentials.json`; and
 - `INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN`, supplied through the process environment rather than a URL, request body, or Git-tracked file.
 
+While it runs, the app holds the vault's writer lock, so a one-shot operator write or a journal publication is refused until it stops (see `docs/PRIVATE-CASE-OPERATOR.md`).
+
 Hosted app mode uses `INNER_SIGNAL_PRIVATE_RUNTIME_MODE=hosted` plus the managed private-root/OAuth/ACL/key settings below. Each request supplies its bearer token. Both modes compose the same authorization-first access service; the key provider is never consulted before case/scope authorization. The runtime needs `case:read`, `case:write`, and `case:audit`. This does not add mutation scopes or tools to the read-only MCP.
 
 For hosted mode, configure the deployment platform's secret manager rather than a repository `.env` file:

@@ -1,9 +1,11 @@
 import path from "node:path";
+import { isOutside } from "../core/private-path.mjs";
 import { fileURLToPath } from "node:url";
 import { createLocalJWKSet, createRemoteJWKSet, jwtVerify } from "jose";
 import { ValidationError } from "../core/errors.mjs";
 import {
   PRIVATE_CASE_SCOPES,
+  PRIVATE_JOURNAL_PURPOSES,
   PrivateCaseAccessDeniedError,
   PrivateCaseKeyUnavailableError
 } from "./private-case-access.mjs";
@@ -12,10 +14,8 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const HTTPS = /^https:\/\/[^\s/]+/i;
 
-const isWithin = (parent, candidate) => {
-  const relative = path.relative(parent, candidate);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-};
+// Judged on real locations: a link back into the checkout is inside, and so is a name like "..private".
+const isWithin = (parent, candidate) => !isOutside(parent, candidate);
 
 function requiredText(value, name, maximum = 4_000) {
   if (typeof value !== "string" || !value.trim() || value.length > maximum) throw new ValidationError(`${name} must be bounded non-empty text.`);
@@ -41,7 +41,16 @@ function normalizeGrants(value) {
     if (!Array.isArray(grant.scopes) || grant.scopes.length === 0 || grant.scopes.some((scope) => !Object.values(PRIVATE_CASE_SCOPES).includes(scope))) {
       throw new ValidationError(`Hosted ACL grant ${index} scopes is invalid.`);
     }
-    return Object.freeze({ subject, caseIds: Object.freeze([...new Set(grant.case_ids)]), scopes: Object.freeze([...new Set(grant.scopes)]) });
+    const purposes = grant.purposes ?? [];
+    if (!Array.isArray(purposes) || purposes.some((purpose) => !Object.values(PRIVATE_JOURNAL_PURPOSES).includes(purpose))) {
+      throw new ValidationError(`Hosted ACL grant ${index} purposes is invalid.`);
+    }
+    return Object.freeze({
+      subject,
+      caseIds: Object.freeze([...new Set(grant.case_ids)]),
+      scopes: Object.freeze([...new Set(grant.scopes)]),
+      purposes: Object.freeze([...new Set(purposes)])
+    });
   });
 }
 
@@ -131,17 +140,19 @@ export function createJwtPrivateCaseAuthorizationProvider({
         scopes: Object.freeze([...tokenScopeSet])
       });
     },
-    async authorize({ caseId, authContext, requiredScope }) {
+    async authorize({ caseId, authContext, requiredScope, requiredPurpose = null }) {
       if (!CASE_ID.test(caseId) || !Object.values(PRIVATE_CASE_SCOPES).includes(requiredScope)) {
         throw new PrivateCaseAccessDeniedError();
       }
       const { subject, tokenScopeSet, payload } = await verifyToken(authContext?.bearerToken);
       const grant = normalizedGrants.find((entry) => entry.subject === subject && entry.caseIds.includes(caseId));
-      if (!grant || !grant.scopes.includes(requiredScope) || !tokenScopeSet.has(requiredScope)) throw new PrivateCaseAccessDeniedError();
+      if (!grant || !grant.scopes.includes(requiredScope) || !tokenScopeSet.has(requiredScope)
+          || (requiredPurpose != null && !grant.purposes.includes(requiredPurpose))) throw new PrivateCaseAccessDeniedError();
       return Object.freeze({
         allowed: true,
         principalId: subject,
         scopes: Object.freeze(grant.scopes.filter((scope) => tokenScopeSet.has(scope))),
+        purposes: grant.purposes,
         tokenId: typeof payload.jti === "string" ? payload.jti : null,
         authorizationProvider: "oauth-jwt-case-acl"
       });
@@ -177,28 +188,53 @@ export function createManagedSecretCaseKeyProvider({ caseKeys, providerName = "m
   });
 }
 
-export function loadHostedPrivateCaseProvidersFromEnvironment(environment = process.env) {
+function loadHostedProvidersFromEnvironment(environment, {
+  aclEnvironmentKey,
+  kind,
+  scopesSupported,
+  localJwksEnvironmentKey = null
+}) {
   const rootDir = path.resolve(requiredText(environment.INNER_SIGNAL_PRIVATE_ROOT, "INNER_SIGNAL_PRIVATE_ROOT"));
   if (isWithin(repositoryRoot, rootDir)) throw new ValidationError("Hosted private storage root must be outside the public repository.");
   const issuer = requiredText(environment.INNER_SIGNAL_OAUTH_ISSUER, "INNER_SIGNAL_OAUTH_ISSUER").replace(/\/$/u, "");
   const audience = requiredText(environment.INNER_SIGNAL_OAUTH_AUDIENCE, "INNER_SIGNAL_OAUTH_AUDIENCE");
-  const jwksUri = requiredText(environment.INNER_SIGNAL_OAUTH_JWKS_URI, "INNER_SIGNAL_OAUTH_JWKS_URI");
-  for (const [value, name] of [[issuer, "INNER_SIGNAL_OAUTH_ISSUER"], [audience, "INNER_SIGNAL_OAUTH_AUDIENCE"], [jwksUri, "INNER_SIGNAL_OAUTH_JWKS_URI"]]) {
+  const localJwks = localJwksEnvironmentKey == null ? null : parseJson(environment[localJwksEnvironmentKey], localJwksEnvironmentKey);
+  const jwksUri = localJwks == null ? requiredText(environment.INNER_SIGNAL_OAUTH_JWKS_URI, "INNER_SIGNAL_OAUTH_JWKS_URI") : null;
+  for (const [value, name] of [[issuer, "INNER_SIGNAL_OAUTH_ISSUER"], [audience, "INNER_SIGNAL_OAUTH_AUDIENCE"], ...(jwksUri ? [[jwksUri, "INNER_SIGNAL_OAUTH_JWKS_URI"]] : [])]) {
     if (!HTTPS.test(value)) throw new ValidationError(`${name} must use HTTPS in hosted mode.`);
   }
-  const grantsValue = parseJson(environment.INNER_SIGNAL_CASE_ACL_JSON, "INNER_SIGNAL_CASE_ACL_JSON");
+  const grantsValue = parseJson(environment[aclEnvironmentKey], aclEnvironmentKey);
   const grants = Array.isArray(grantsValue) ? grantsValue : grantsValue.grants;
   const caseKeys = parseJson(environment.INNER_SIGNAL_CASE_KEYS_JSON, "INNER_SIGNAL_CASE_KEYS_JSON");
-  const authorizationProvider = createJwtPrivateCaseAuthorizationProvider({ issuer, audience, jwksUri, grants });
+  const authorizationProvider = createJwtPrivateCaseAuthorizationProvider({ issuer, audience, jwksUri, jwks: localJwks, grants });
   const keyProvider = createManagedSecretCaseKeyProvider({ caseKeys });
   if (environment === process.env) delete process.env.INNER_SIGNAL_CASE_KEYS_JSON;
   return Object.freeze({
-    kind: "hosted-oauth-managed-secret-provider",
+    kind,
     productionReady: true,
+    journalEnabled: grants.some((grant) => Array.isArray(grant.purposes) && grant.purposes.length > 0),
     rootDir,
-    oauth: Object.freeze({ issuer, audience, jwksUri, scopesSupported: Object.freeze([PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]) }),
+    oauth: Object.freeze({ issuer, audience, jwksUri, scopesSupported: Object.freeze(scopesSupported) }),
     authorizationProvider,
     keyProvider,
     close() { keyProvider.close(); }
+  });
+}
+
+export function loadHostedPrivateCaseProvidersFromEnvironment(environment = process.env) {
+  return loadHostedProvidersFromEnvironment(environment, {
+    aclEnvironmentKey: "INNER_SIGNAL_CASE_ACL_JSON",
+    kind: "hosted-oauth-managed-secret-provider",
+    scopesSupported: [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT],
+    localJwksEnvironmentKey: null
+  });
+}
+
+export function loadHostedPrivateCaseOperatorProvidersFromEnvironment(environment = process.env) {
+  return loadHostedProvidersFromEnvironment(environment, {
+    aclEnvironmentKey: "INNER_SIGNAL_OPERATOR_CASE_ACL_JSON",
+    kind: "hosted-oauth-managed-secret-operator-provider",
+    scopesSupported: [PRIVATE_CASE_SCOPES.WRITE, PRIVATE_CASE_SCOPES.AUDIT],
+    localJwksEnvironmentKey: "INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON"
   });
 }

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
 status: owner-approved
 domain: somatic
-base_record_sha256: eecf43b1148c48854a60a2cd8e3d0e7488d8b8c97cd9d318045f4c662bdca713
-source_file_sha256: c47a275840e39cb00b2c09b76872a9d031bb4d30e6b459e7dcc21e578efb49c3
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+base_record_sha256: 94de8f4fd3ec588b9fa2d137566d0a2e82eeb615ffc3503ce6c5ed2b7807a170
+source_file_sha256: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
@@ -17,13 +17,13 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
 
 ```json
 {
-  "approvedAt": "2026-09-26",
+  "approvedAt": "2026-10-03",
   "item": {
     "domain": "somatic",
     "id": "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
     "status": "owner-approved",
     "text": "For diffuse developmental or relational trauma, EMDR may fit better after some basic inner-child reparenting and access to Nurturer/Protector capacity. This is not universal: a stable person with one discrete traumatic event may be ready earlier."
   },
-  "version": "2026-09-26-nonpunitive-review-r1"
+  "version": "2026-10-03-certainty-authenticity-r3"
 }
 ```

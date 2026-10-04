@@ -117,6 +117,26 @@ export function deriveJournalWorkExchangeKeys(secret) {
   }
 }
 
+export async function journalWorkExchangeSecret(environment) {
+  const inline = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64;
+  const file = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE;
+  if (inline !== undefined && file !== undefined) fail("JOURNAL_WORK_EXCHANGE_SECRET_CONFLICT");
+  if (inline) return inline;
+  if (typeof file !== "string" || !path.isAbsolute(file)) fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INVALID");
+  try {
+    return await withOpenedRegularFile(file, async (handle, info) => {
+      if ((info.mode & 0o077) !== 0 || (currentUser() !== null && info.uid !== currentUser())) {
+        fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INSECURE");
+      }
+      if (info.size > 4096) fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INVALID");
+      return (await handle.readFile("utf8")).trim();
+    });
+  } catch (error) {
+    if (["ELOOP", "ERR_NOT_REGULAR_FILE"].includes(error?.code)) fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INVALID");
+    throw error;
+  }
+}
+
 // Public on purpose: a watcher without keys can check for an answer by file name.
 export function journalWorkFileKey(workId) {
   return sha256(`inner-signal:journal-work:${assertJournalWorkId(workId)}`);
@@ -180,6 +200,7 @@ function validateWorkEntry(entry) {
   assertJournalWorkId(entry.work_id);
   if (typeof entry.case_id !== "string" || !CASE_ID_PATTERN.test(entry.case_id)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.role !== "string" || !ROLE_PATTERN.test(entry.role)) fail("JOURNAL_WORK_ENTRY_INVALID");
+  if (entry.tier !== undefined && !["standard", "hardest"].includes(entry.tier)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.instruction !== "string" || entry.instruction.length === 0
     || Buffer.byteLength(entry.instruction, "utf8") > MAX_INSTRUCTION_BYTES) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (!isPlainObject(entry.packet) || !isPlainObject(entry.output_schema)) fail("JOURNAL_WORK_ENTRY_INVALID");
@@ -189,6 +210,92 @@ function validateWorkEntry(entry) {
     fail("JOURNAL_WORK_ENTRY_INVALID");
   }
   return entry;
+}
+
+const MAX_DISPATCH_BYTES = 4096;
+const LABEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._:+-]{0,79}$/u;
+
+function validateDispatchRecord(record) {
+  if (!isPlainObject(record) || record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  const allowed = new Set(["schema_version", "work_id", "attempt_identity", "role", "tier", "output_schema_name", "model", "effort", "route_ref", "issued_at", "expires_at"]);
+  if (Object.keys(record).some((key) => !allowed.has(key))) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  assertJournalWorkId(record.work_id);
+  if (typeof record.role !== "string" || !ROLE_PATTERN.test(record.role)) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  if (record.tier !== undefined && !["standard", "hardest"].includes(record.tier)) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  record.tier ??= "standard";
+  if ((record.attempt_identity !== undefined || record.tier === "hardest")
+    && !/^[0-9a-f]{48}$/u.test(record.attempt_identity ?? "")) fail("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
+  for (const field of ["output_schema_name", "model", "effort", "route_ref"]) {
+    if (typeof record[field] !== "string" || !LABEL_PATTERN.test(record[field])) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  }
+  if (!isoTime(record.issued_at) || !isoTime(record.expires_at) || Date.parse(record.expires_at) <= Date.parse(record.issued_at)) {
+    fail("JOURNAL_WORK_DISPATCH_INVALID");
+  }
+  return record;
+}
+
+// Mission Control needs only the content-free dispatch queue, never the exchange secret. Keep that
+// reader separate from the encrypted work/result API while applying the same root, queue and opened-
+// file checks as the connector-facing exchange.
+export function createJournalWorkDispatchReader({ root, owner = currentUser() } = {}) {
+  if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
+  const dispatchDirectory = path.join(root, "dispatch");
+
+  async function directoryExists() {
+    let info;
+    try {
+      info = await fs.lstat(dispatchDirectory);
+    } catch (error) {
+      if (error?.code === "ENOENT") return false;
+      throw error;
+    }
+    if (!info.isDirectory()) fail("JOURNAL_WORK_EXCHANGE_QUEUE_INVALID");
+    return true;
+  }
+
+  async function answered(workId) {
+    try {
+      await fs.lstat(path.join(root, "inbox", `${journalWorkFileKey(workId)}.json`));
+      return true;
+    } catch (error) {
+      if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return false;
+      throw error;
+    }
+  }
+
+  let invalidRecords = 0;
+  return Object.freeze({
+    // Content-free cumulative count; a malformed record cannot halt either lane.
+    invalidRecordCount: () => invalidRecords,
+    async listDispatch() {
+      await assertJournalWorkExchangeRoot(root, { owner });
+      if (!(await directoryExists())) return [];
+      const records = [];
+      for (const name of await fs.readdir(dispatchDirectory)) {
+        const match = /^([0-9a-f]{64})\.json$/u.exec(name);
+        if (!match) continue;
+        let bytes;
+        try {
+          bytes = await withOpenedRegularFile(path.join(dispatchDirectory, name), async (handle, info) => {
+            if (info.size > MAX_DISPATCH_BYTES) fail("JOURNAL_WORK_DISPATCH_INVALID");
+            return handle.readFile();
+          });
+        } catch (error) {
+          if (error?.code === "ENOENT") continue;
+          if (["ELOOP", "ERR_NOT_REGULAR_FILE", "JOURNAL_WORK_DISPATCH_INVALID"].includes(error?.code)) {
+            invalidRecords += 1; continue;
+          }
+          throw error;
+        }
+        let value;
+        try { value = validateDispatchRecord(JSON.parse(bytes.toString("utf8"))); }
+        catch { invalidRecords += 1; continue; }
+        if (journalWorkFileKey(value.work_id) !== match[1]) { invalidRecords += 1; continue; }
+        records.push(Object.freeze({ ...value, answered: await answered(value.work_id) }));
+      }
+      return records.sort((left, right) => Date.parse(left.issued_at) - Date.parse(right.issued_at) || left.work_id.localeCompare(right.work_id));
+    }
+  });
 }
 
 export function createJournalWorkExchange({
@@ -203,8 +310,39 @@ export function createJournalWorkExchange({
   if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
   const derived = keys ?? deriveJournalWorkExchangeKeys(secret);
   if (!Buffer.isBuffer(derived?.encryption) || !Buffer.isBuffer(derived?.receipt)) fail("JOURNAL_WORK_EXCHANGE_SECRET_INVALID");
-  const directory = (kind) => path.join(root, kind === "work" ? "outbox" : "inbox");
+  const QUEUES = Object.freeze({ work: "outbox", result: "inbox", dispatch: "dispatch" });
+  const dispatchReader = createJournalWorkDispatchReader({ root, owner });
+  const directory = (kind) => path.join(root, QUEUES[kind]);
   const fileFor = (kind, fileKey) => path.join(directory(kind), `${fileKey}.json`);
+
+  async function stagePath(stageDir, workId) {
+    if (typeof stageDir !== "string" || !path.isAbsolute(stageDir)) fail("JOURNAL_WORK_STAGE_DIR_INVALID");
+    let info;
+    try { info = await fs.lstat(stageDir); }
+    catch { fail("JOURNAL_WORK_STAGE_DIR_INVALID"); }
+    if (!info.isDirectory() || (info.mode & 0o777) !== 0o700 || (owner !== null && info.uid !== owner)
+      || await fs.realpath(stageDir) !== stageDir) fail("JOURNAL_WORK_STAGE_DIR_INSECURE");
+    return path.join(stageDir, `${journalWorkFileKey(workId)}.json`);
+  }
+
+  async function fetchMarkerPath(stageDir, workId) {
+    await stagePath(stageDir, workId);
+    return path.join(stageDir, `${journalWorkFileKey(workId)}.fetched`);
+  }
+
+  async function requireFetchMarker(stageDir, workId) {
+    const marker = await fetchMarkerPath(stageDir, workId);
+    try {
+      await withOpenedRegularFile(marker, async (_handle, info) => {
+        if ((info.mode & 0o777) !== 0o600 || (owner !== null && info.uid !== owner)
+          || info.size === 0 || info.size > 256) fail("JOURNAL_WORK_PACKET_NOT_FETCHED");
+      });
+    } catch (error) {
+      if (error?.code === "JOURNAL_WORK_PACKET_NOT_FETCHED") throw error;
+      fail("JOURNAL_WORK_PACKET_NOT_FETCHED");
+    }
+    return marker;
+  }
 
   async function syncPath(dir) {
     const handle = await fs.open(dir, "r");
@@ -299,6 +437,28 @@ export function createJournalWorkExchange({
     }
   }
 
+  async function hasResult(workId) {
+    try {
+      await fs.lstat(fileFor("result", journalWorkFileKey(workId)));
+      return true;
+    } catch (error) {
+      if (error?.code === "ENOENT") return false;
+      throw error;
+    }
+  }
+
+  async function removeDispatch(workId) {
+    const fileKey = journalWorkFileKey(workId);
+    if (!(await queueExists("dispatch"))) return;
+    try {
+      await fs.unlink(fileFor("dispatch", fileKey));
+    } catch (error) {
+      if (error?.code === "ENOENT") return;
+      throw error;
+    }
+    await syncDirectory("dispatch");
+  }
+
   return Object.freeze({
     root,
 
@@ -326,24 +486,22 @@ export function createJournalWorkExchange({
       return Date.parse(entry.expires_at) <= now().getTime();
     },
 
-    async hasResult(workId) {
-      try {
-        await fs.lstat(fileFor("result", journalWorkFileKey(workId)));
-        return true;
-      } catch (error) {
-        if (error?.code === "ENOENT") return false;
-        throw error;
-      }
-    },
+    hasResult,
 
     // Connector side: store a validated answer with a receipt the runtime can authenticate.
     // The subject is hashed; the output is never logged or returned.
-    async submitResult({ workId, output, subject }) {
+    async submitResult({ workId, output, subject, execution }) {
       const fileKey = journalWorkFileKey(workId);
       if (!isPlainObject(output)) fail("JOURNAL_WORK_OUTPUT_INVALID");
       const serialized = JSON.stringify(output);
       if (Buffer.byteLength(serialized, "utf8") > MAX_JOURNAL_RESULT_BYTES) fail("JOURNAL_WORK_OUTPUT_TOO_LARGE");
       if (typeof subject !== "string" || subject.length === 0) fail("JOURNAL_WORK_SUBJECT_REQUIRED");
+      if (execution !== undefined && (!isPlainObject(execution)
+        || Object.keys(execution).length !== 4
+        || ["profile_evidence", "effective_model_profile", "effective_effort", "request_context_id"].some((field) =>
+          typeof execution[field] !== "string" || !/^[\x20-\x7e]{1,128}$/u.test(execution[field])))) {
+        fail("JOURNAL_WORK_EXECUTION_INVALID");
+      }
       const fields = {
         receipt_id: `journal-work-receipt:${randomUUID()}`,
         transport: JOURNAL_WORK_TRANSPORT,
@@ -351,7 +509,8 @@ export function createJournalWorkExchange({
         work_file_key: fileKey,
         output_sha256: sha256(serialized),
         subject_sha256: sha256(`subject:${subject}`),
-        received_at: now().toISOString()
+        received_at: now().toISOString(),
+        ...(execution ?? {})
       };
       const receipt = { ...fields, tag: receiptTag(derived.receipt, fields) };
       const stored = await publish("result", fileKey, seal(derived.encryption, "result", fileKey, {
@@ -365,6 +524,85 @@ export function createJournalWorkExchange({
         : { stored: true, already: true });
     },
 
+    async markPacketFetched({ stageDir, workId }) {
+      const marker = await fetchMarkerPath(stageDir, workId);
+      const temporary = path.join(stageDir, `${TEMPORARY_PREFIX}${randomUUID()}`);
+      const handle = await fs.open(temporary, "wx", 0o600);
+      try { await handle.writeFile(JSON.stringify({ nonce: randomUUID(), at: now().toISOString() })); await handle.sync(); }
+      catch (error) { await handle.close(); await fs.unlink(temporary).catch(() => {}); throw error; }
+      await handle.close();
+      try { await fs.link(temporary, marker); }
+      catch (error) { if (error?.code !== "EEXIST") throw error; }
+      finally { await fs.unlink(temporary).catch(() => {}); await syncPath(stageDir); }
+      await requireFetchMarker(stageDir, workId);
+    },
+
+    async stageResult({ stageDir, workId, output }) {
+      const destination = await stagePath(stageDir, workId);
+      await requireFetchMarker(stageDir, workId);
+      if (!isPlainObject(output)) fail("JOURNAL_WORK_OUTPUT_INVALID");
+      const serialized = JSON.stringify(output);
+      if (Buffer.byteLength(serialized, "utf8") > MAX_JOURNAL_RESULT_BYTES) fail("JOURNAL_WORK_OUTPUT_TOO_LARGE");
+      const fileKey = journalWorkFileKey(workId);
+      const temporary = path.join(stageDir, `${TEMPORARY_PREFIX}${randomUUID()}`);
+      const handle = await fs.open(temporary, "wx", 0o600);
+      try {
+        await handle.writeFile(seal(derived.encryption, "stage", fileKey, { work_id: workId, output }));
+        await handle.sync();
+      } catch (error) {
+        await handle.close();
+        await fs.unlink(temporary).catch(() => {});
+        throw error;
+      }
+      await handle.close();
+      try {
+        await fs.link(temporary, destination);
+        return Object.freeze({ stored: true, already: false });
+      } catch (error) {
+        if (error?.code === "EEXIST") return Object.freeze({ stored: true, already: true });
+        throw error;
+      } finally {
+        await fs.unlink(temporary).catch(() => {});
+        await syncPath(stageDir);
+      }
+    },
+
+    async promoteStaged({ stageDir, workId, subject, execution }) {
+      const filename = await stagePath(stageDir, workId);
+      const marker = await requireFetchMarker(stageDir, workId);
+      const bytes = await withOpenedRegularFile(filename, async (handle, info) => {
+        if (info.size > MAX_WORK_BYTES || (info.mode & 0o077) !== 0) fail("JOURNAL_WORK_STAGE_INVALID");
+        return handle.readFile();
+      });
+      const staged = open(derived.encryption, "stage", journalWorkFileKey(workId), bytes);
+      if (!isPlainObject(staged) || staged.work_id !== workId || !isPlainObject(staged.output)) fail("JOURNAL_WORK_STAGE_INVALID");
+      const result = await this.submitResult({ workId, output: staged.output, subject, execution });
+      await fs.unlink(filename);
+      await fs.unlink(marker);
+      await syncPath(stageDir);
+      return result;
+    },
+
+    async stagedStatus({ stageDir, workId }) {
+      const filename = await stagePath(stageDir, workId);
+      let fetched = true, staged = true;
+      try { await requireFetchMarker(stageDir, workId); }
+      catch (error) {
+        if (error?.code !== "JOURNAL_WORK_PACKET_NOT_FETCHED") throw error;
+        fetched = false;
+      }
+      try {
+        await withOpenedRegularFile(filename, async (_handle, info) => {
+          if (info.size === 0 || info.size > MAX_WORK_BYTES || (info.mode & 0o777) !== 0o600
+            || (owner !== null && info.uid !== owner)) fail("JOURNAL_WORK_STAGE_INVALID");
+        });
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+        staged = false;
+      }
+      return { staged, packet_fetched: fetched };
+    },
+
     // Runtime side: read an answer and authenticate its connector receipt. Null when none arrived;
     // { retired: true } once the runtime has consumed the answer and retired the item.
     async readResult(workId) {
@@ -375,7 +613,10 @@ export function createJournalWorkExchange({
       if (!isPlainObject(record) || record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION || record.work_id !== workId) {
         fail("JOURNAL_WORK_RESULT_INVALID");
       }
-      if (record.retired === true) return Object.freeze({ retired: true, retired_at: record.retired_at });
+      if (record.retired === true) {
+        return Object.freeze({ retired: true, retired_at: record.retired_at, unanswered: record.unanswered === true,
+          ...(record.exhausted === true ? { exhausted: true } : {}) });
+      }
       const { tag, ...fields } = record.receipt ?? {};
       if (typeof tag !== "string" || fields.work_file_key !== fileKey || fields.transport !== JOURNAL_WORK_TRANSPORT
         || fields.completion_status !== "completed") fail("JOURNAL_WORK_RESULT_INVALID");
@@ -412,7 +653,52 @@ export function createJournalWorkExchange({
         if (error?.code !== "ENOENT") throw error;
       });
       await syncDirectory("work");
+      await removeDispatch(workId);
     },
+
+    // Runtime side, for an item that expired unanswered: closes it with an encrypted tombstone, but
+    // only if no answer arrived first. The tombstone is linked into place like an answer, so an answer
+    // and the closing can never both win. Returns { closed: false } when an answer (or an earlier
+    // tombstone) already holds the name; the caller then reads it.
+    async closeUnanswered(workId, { exhausted = false } = {}) {
+      const fileKey = journalWorkFileKey(workId);
+      await ensureDirectory("work");
+      const closed = await publish("result", fileKey, seal(derived.encryption, "result", fileKey, {
+        schema_version: JOURNAL_WORK_EXCHANGE_VERSION,
+        work_id: workId,
+        retired: true,
+        unanswered: true,
+        ...(exhausted ? { exhausted: true } : {}),
+        retired_at: now().toISOString()
+      }));
+      if (!closed) return Object.freeze({ closed: false });
+      await fs.unlink(fileFor("work", fileKey)).catch((error) => {
+        if (error?.code !== "ENOENT") throw error;
+      });
+      await syncDirectory("work");
+      await removeDispatch(workId);
+      return Object.freeze({ closed: true });
+    },
+
+    // Dispatch records tell Mission Control which items to hand to ChatGPT. They are plain JSON and
+    // content-free (an opaque work ID, the role and the route's model and effort), so a dispatcher can
+    // read them without any key. Publication is first-write-wins like every other entry.
+    async publishDispatch(record) {
+      const value = validateDispatchRecord(structuredClone(record));
+      await ensureDirectory("dispatch");
+      const created = await publish("dispatch", journalWorkFileKey(value.work_id), Buffer.from(`${JSON.stringify(value)}\n`, "utf8"));
+      return Object.freeze({ created });
+    },
+
+    // Outstanding dispatch records, oldest first, each with whether an answer (or a tombstone) is
+    // already stored, so a dispatcher can tell what still needs a chat.
+    async listDispatch() {
+      return dispatchReader.listDispatch();
+    },
+
+    invalidDispatchCount: () => dispatchReader.invalidRecordCount(),
+
+    removeDispatch,
 
     // Removes temporary files that a process stopped mid-write (for example, killed) left behind.
     // Only files older than `olderThanMs` go, so a write still in progress elsewhere is never touched.
@@ -422,7 +708,7 @@ export function createJournalWorkExchange({
       await assertJournalWorkExchangeRoot(root, { owner });
       const cutoff = Date.now() - olderThanMs;
       let removed = 0;
-      for (const kind of ["work", "result"]) {
+      for (const kind of ["work", "result", "dispatch"]) {
         if (!(await queueExists(kind))) continue;
         let removedHere = 0;
         for (const name of await fs.readdir(directory(kind))) {

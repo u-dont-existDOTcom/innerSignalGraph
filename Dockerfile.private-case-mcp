@@ -13,6 +13,8 @@ COPY package.json package-lock.json ./
 COPY src ./src
 # The served therapy protocol (load_therapy_protocol) is read from the packaged skill.
 COPY plugins/inner-signal-therapy ./plugins/inner-signal-therapy
+# The journal import contracts are read at runtime.
+COPY schemas ./schemas
 
 USER node
 EXPOSE 8787

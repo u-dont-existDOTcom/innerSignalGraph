@@ -1,6 +1,6 @@
 # Journal work exchange: connector tools for the private journal import
 
-Date: 2026-09-27. Status: connector side implemented on `claude/journal-work-exchange-20260927`; runtime and Mission Control sides are the next changes. Classification: public design; no private data.
+Date: 2026-09-27. Status: connector tools merged (#92); hardening in PR #93; importer moved into this repository in PR #94; runtime provider on `claude/journal-exchange-provider-20260927`; the Mission Control side is next. Classification: public design; no private data.
 
 ## Why
 
@@ -47,11 +47,40 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 
 > Private InnerSignal journal work item `<work_id>`. Call get_journal_work_packet with this work_id, follow its instruction using only its packet, then submit your JSON answer with submit_journal_work_result. If it lists schema problems, fix them and submit again. Reply only: done.
 
+## Runtime provider (`src/journal-import/exchange-port.mjs`)
+
+The importer reaches ChatGPT through the exchange when its route is:
+
+```json
+{
+  "schema_version": 1,
+  "provider": "chatgpt_connector_exchange",
+  "route_ref": "<route name>",
+  "model": "GPT-5.6 Sol",
+  "effort": "Pro",
+  "max_external_spend_usd": 0,
+  "allowance_evidence": { "authorization_ref": "<allowance name>", "maximum_incremental_cost_usd": 0 },
+  "timeout_ms": 2700000,
+  "exchange": { "poll_ms": 5000, "ttl_ms": 86400000 }
+}
+```
+
+The runtime reads that route from `INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON`, together with the existing receipt key and the connector's two exchange settings: `INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT` and `INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64`. The runtime still requires GPT-5.6 Sol at Pro effort and zero spend, as it did for the desktop route. At startup it checks the root the same way the connector does and removes stale temporary files.
+
+- **One item per call.** A role call becomes one work item with a work ID derived from the call's operation key. The item carries the role instruction, the packet, the output schema, the expected generation and a digest of the input. The same key always names the same item, and a different input under the same key is refused. Alongside the item goes a plain **dispatch record**: the work ID, `attempt_identity` (the 48-hex base-operation digest shared by resend/successor items), role, tier, schema name, model, effort, route, and issue and expiry times. Mission Control reads these records to know what to hand to a chat. `answered` in `listDispatch()` tells it whether an answer is already stored. Invalid records are skipped with a content-free count. External Mission Control readers must tolerate `attempt_identity`; this repository contains the worker readers, but no Mission Control dispatch consumer.
+- **Waiting and resuming.** `invoke()` waits up to `timeout_ms`, polling every `poll_ms`. If no answer comes, the call ends as "completion unknown" and the item stays open. Because the port declares `authoritative_completion`, the durable layer resumes an open call through the port on the next run: it keeps waiting on the same item instead of sending it again. The controller's completion check reads an answer that arrived between runs.
+- **Expiry.** An item that expires unanswered is closed with a tombstone that can't overwrite an answer, and the connector then refuses it. The durable layer records it as not submitted, so the controller's normal retry applies. The retry goes out as a successor under the same operation key (`…:r1`, up to eight).
+- **Terminal hardest failure.** A worker closes an unretryable item with an encrypted, content-free exhausted unanswered tombstone, without overwriting an answer. The port reports exhausted immediately. New hardest resends whose host attempt identity is already consumed are refused before publication or daily-slot charging.
+- **Release.** Once the durable store holds an answer, the item is retired and its dispatch record removed.
+- **Receipts.** Each receipt is authenticated with the runtime's receipt key (`isAuthenticatedTransportReceipt`). The transport is `chatgpt_connector_tool` and the cost is 0. The request and context IDs come from the connector's own receipt, since every item gets a fresh chat. The receipt also keeps the connector receipt's work ID, times and hashes.
+- **Reference audit.** The source-first reference and fidelity calls used to keep a permanent "completion unknown" marker, so the run stopped after every such call and a later run could not recover the answer. Now the next run asks the port first. A stored answer is taken, and a call that is definitely unanswered is sent again under a fresh key (`…:resend:1`, up to two).
+- **Not yet.** `visual_reader` isn't offered: page images reach ChatGPT only as attachments, which the connector can't deliver yet. The current import finished its visual pages before calibration, so it doesn't need that role.
+
 ## Next changes
 
-1. **Runtime.** Move the importer from its private work branch into this repository (owner approved public, 2026-09-27; the export was checked for the run's case ID and source hash). Add a provider that publishes work items and waits for `inbox/`, and have the port's `getCompletion` read `inbox/` so a restart recovers answers instead of reporting "completion unknown". On a zero-spend route, an unknown completion re-sends the item. The REFERENCE_AUDIT branch's permanent completion-unknown marker must consult the exchange before blocking.
-2. **Mission Control.** A job type that opens a fresh chat on the chosen account, model and effort with the InnerSignal app enabled, sends the instruction above, and treats an `inbox/` file as done. It keeps the heartbeat ladder: continue, then Retry, then a fresh chat. ChatGPT occasionally asks the user to confirm an app's write (the owner reports this is rare). If ChatGPT offers "always allow" for the app, that is set once. Otherwise the heartbeat approves a waiting confirmation only for `submit_journal_work_result` and sends any other confirmation to the owner.
-3. **Parallel calls.** The controller runs one call at a time today. Several in-flight work items need per-item state, not one `state.json` read-modify-write per process.
+1. **Mission Control.** A job type that reads `dispatch/`. For each record it opens a fresh chat on an account that offers the record's model and effort, with the InnerSignal app enabled, and sends the instruction above. It counts the item done once `answered` is true. It keeps the heartbeat ladder: continue, then Retry, then a fresh chat with the same work ID, until the item is answered or expires. ChatGPT occasionally asks the user to confirm an app's write (the owner reports this is rare). If ChatGPT offers "always allow" for the app, that is set once. Otherwise the heartbeat approves a waiting confirmation only for `submit_journal_work_result` and sends any other confirmation to the owner. Mission Control also starts an import run when an answer lands, so no run waits on a timer.
+2. **Parallel calls.** The controller runs one call at a time. At the Pro allowance (about 170 GPT-5.6 Sol Pro calls a day) and roughly ten minutes a call, that is close to the allowance anyway. Several in-flight items would need per-item state, not one `state.json` read-modify-write per process.
+3. **Page images.** Serving a page image from `get_journal_work_packet` as MCP image content, once a pilot shows ChatGPT passes it to the model.
 
 ## Deployment (owner-gated)
 
@@ -63,4 +92,4 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 
 ## Tests
 
-`tests/journal-work-exchange.test.mjs` covers the round trip, first-write-wins, private file names and modes, and tamper, move and wrong-key refusals. It also covers the required private root and concurrent first uses, root canonicalization, queues and entries that are symbolic links, cleanup after failed writes and of stale temporary files, foreign receipt keys and the input limits. `tests/journal-work-cli.test.mjs` starts the connector: it refuses a missing or reachable root and removes stale temporary files at startup. `tests/journal-work-tools.test.mjs` covers advertisement and scopes, authorization, outstanding-only serving, other cases, expiry, schema feedback, and the first-answer rule over MCP. The full suite passes on Node 24.18.0.
+`tests/journal-work-exchange.test.mjs` covers the round trip, first-write-wins, private file names and modes, and tamper, move and wrong-key refusals. It also covers the required private root and concurrent first uses, root canonicalization, queues and entries that are symbolic links, cleanup after failed writes and of stale temporary files, foreign receipt keys and the input limits. `tests/journal-work-cli.test.mjs` starts the connector: it refuses a missing or reachable root and removes stale temporary files at startup. `tests/journal-work-tools.test.mjs` covers advertisement and scopes, authorization, outstanding-only serving, other cases, expiry, schema feedback, and the first-answer rule over MCP. `tests/journal-exchange-port.test.mjs` covers the provider through the real exchange and connector tools: an authenticated round trip, resuming an open call after a restart without a second send, answers that arrive between runs, expiry and successors, key conflicts, invalid stored answers, the unsupported image role, content-free dispatch records, and loading and checking the route. `tests/journal-exchange-runtime.test.mjs` runs the whole importer through the connector, including a run that gives up waiting and the next run picking up the answer. The full suite passes on Node 24.18.0.

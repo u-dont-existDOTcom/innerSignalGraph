@@ -1,0 +1,71 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "question_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "answer": {
+      "type": "string"
+    },
+    "answerability": {
+      "enum": [
+        "supported",
+        "partially_supported",
+        "not_found",
+        "false_premise",
+        "insufficient_context"
+      ]
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      }
+    },
+    "qualifier_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      }
+    },
+    "snapshot_generation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "coverage_note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "more_available": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "question_id",
+    "answer",
+    "answerability",
+    "evidence_ids",
+    "qualifier_ids",
+    "snapshot_generation",
+    "coverage_note",
+    "more_available"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:answer:1.0"
+}

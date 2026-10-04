@@ -1,0 +1,96 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "target_generation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "enum": [
+              "link",
+              "possible_identity",
+              "group_retelling",
+              "revise_time",
+              "leave_unresolved"
+            ]
+          },
+          "subject_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            }
+          },
+          "relation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            }
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "automatic_retirement_allowed": {
+            "const": false
+          }
+        },
+        "required": [
+          "operation",
+          "subject_ids",
+          "relation",
+          "evidence_ids",
+          "explanation",
+          "automatic_retirement_allowed"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unresolved_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      }
+    },
+    "status": {
+      "enum": [
+        "proposals_complete",
+        "needs_context"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "target_generation",
+    "proposals",
+    "unresolved_ids",
+    "status"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:reconciliation:1.0"
+}

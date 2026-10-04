@@ -12,7 +12,15 @@
     "private-case:mcp": "node src/cli/private-case-mcp.mjs",
     "private-case:mcp:hosted": "node src/cli/private-case-mcp.mjs --hosted-env",
     "private-case:operations": "node src/cli/private-case-operations.mjs",
-    "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs tests/private-case-orchestration.test.mjs tests/private-therapy-runtime.test.mjs tests/private-runtime-environment.test.mjs tests/private-therapy-model-runtime.test.mjs tests/therapy-ledger-privacy.test.mjs",
+    "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs tests/private-case-operator-cli.test.mjs tests/private-case-orchestration.test.mjs tests/private-therapy-runtime.test.mjs tests/private-runtime-environment.test.mjs tests/private-therapy-model-runtime.test.mjs tests/therapy-ledger-privacy.test.mjs",
+    "journal:import": "node src/cli/journal-import.mjs",
+    "journal:work:mcp": "node src/cli/journal-work-mcp.mjs",
+    "journal:work:codex": "node src/cli/journal-codex-worker.mjs",
+    "journal:work:claude": "node src/cli/journal-codex-worker.mjs --agent claude",
+    "journal:work": "node src/cli/journal-work.mjs",
+    "journal:test": "node --test tests/journal-*.test.mjs",
+    "journal:ui:build": "vite build --config apps/journal-web/vite.config.ts",
+    "journal:ui:test": "vitest run --config apps/journal-web/vite.config.ts",
     "constitution-context:preflight": "node scripts/constitution-context-preflight.mjs",
     "constitution-context:acceptance": "node scripts/constitution-context-acceptance.mjs",
     "authoring:task:preflight": "node scripts/authoring-task-preflight.mjs",
@@ -67,6 +75,21 @@
   "dependencies": {
     "ajv": "8.20.0",
     "jose": "6.2.12",
+    "pdfjs-dist": "6.3.289",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/node": "24.13.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "jsdom": "30.1.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.0",
+    "vitest": "5.0.1"
   }
 }

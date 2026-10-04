@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-latest-humanized-2026-09-25",
-      "file": "inner-child-guide-2026-09-25.txt",
-      "sha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1",
+      "version": "owner-latest-humanized-2026-10-03-r3",
+      "file": "inner-child-guide-2026-10-03-r3.txt",
+      "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb",
       "role": "primary-framework",
       "format": "text"
     },
@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-09-26-nonpunitive-review-r1",
+      "version": "2026-10-03-certainty-authenticity-r3",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article is the owner-supplied 2026-09-25 Substack editor capture, preserved verbatim at guides/source-captures/inner-child-guide-2026-09-25.substack.html (SHA-256 20073058fef619d8a8f5aa7fef8337face5ed50cf89d17c8142138effdb125b6). The operational text projection preserves visible author text and is bound above by its own SHA-256; earlier source snapshots remain retained. This source synchronization does not itself approve graph semantic changes, install a Guide Packet, or change stable. The somatic and altered-states source notes and safety boundaries remain unchanged.",
+  "notes": "The active inner-child article is the owner-supplied 2026-10-03 Substack editor capture plus the owner-authorized 2026-10-03 certainty/authenticity refinement after two independent Opus safety reviews. The exact unedited owner capture remains preserved at guides/source-captures/inner-child-guide-2026-10-03.substack.html (SHA-256 3a61bb2aa6aa9ff1ec35efbce8077430a2432e1908f16a8e55153454b56ec867). The active edited archival source is guides/source-captures/inner-child-guide-2026-10-03-r3.substack.html (SHA-256 c8138b47ff38de516d73545c7696642e28adc841a79a8fe2842e1407c9fbd6b6); its visible-text projection is guides/inner-child-guide-2026-10-03-r3.txt. Earlier source snapshots, including the rejected r2 review candidate, remain retained. Source synchronization and development-main graph changes do not themselves install a Guide Packet or promote stable.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -71,6 +71,24 @@
       "version": "owner-current-2026-09-07-e01-e12",
       "file": "inner-child-guide-2026-09-07.txt",
       "sha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-09-25",
+      "file": "inner-child-guide-2026-09-25.txt",
+      "sha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-supplied-2026-10-03-before-current-edit",
+      "file": "inner-child-guide-2026-10-03.txt",
+      "sha256": "925b056aeb7a9adc882952608388587c420c6eb09418722f676505dc35f25e90"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-10-03-r2",
+      "file": "inner-child-guide-2026-10-03-r2.txt",
+      "sha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b"
     }
   ]
 }

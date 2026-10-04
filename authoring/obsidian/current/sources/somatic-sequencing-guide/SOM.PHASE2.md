@@ -11,7 +11,7 @@ source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
 section_hash: b76702aebe9ce4fd05d27be21352c488e15bf3ff6859f52320fa5ccc67ce7758
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # Phase 2: Daily Regulation and Discharge — Keep the Pressure Low

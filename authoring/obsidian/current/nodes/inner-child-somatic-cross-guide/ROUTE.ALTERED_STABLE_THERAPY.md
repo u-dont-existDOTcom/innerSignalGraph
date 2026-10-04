@@ -19,10 +19,11 @@ source_refs:
   - ALT.CAPACITY
   - ALT.EPISTEMICS
   - IC.ALTERED_STATES
+  - AMEND.CROSS.STATE_DEPENDENT_TRANSFER
 regression_refs: []
-base_record_sha256: 0e87c4e77127b12c7c64b75cbf0009a3bda1720d10d7a634166981b46bfd2031
-base_graph_sha256: 527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+base_record_sha256: e98d1a5107e7ec1f7bcca2fa64260001e89418ba9b7bac10f6e3af13d3d13936
+base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # Continue substantive therapy when altered-state capacity remains coherent and safe
@@ -87,13 +88,15 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
       "Do not equate articulate writing with full medical stability or intact judgment in every domain."
     ],
     "requiredNuance": [
-      "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement."
+      "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement.",
+      "Experiential credibility and external factual certainty are different. Epistemic caution should protect consequential claims without needlessly nullifying a live private therapeutic experience."
     ]
   },
   "recommendations": [
     "Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.",
     "Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.",
-    "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate."
+    "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate.",
+    "When something becomes newly emotionally real or credible—such as the younger self, innocence, grief, care, protection, or meaning—stay with the live therapeutic task and preserve the exact change for later sober transfer rather than repeatedly interrupting private processing with factual caveats."
   ],
   "successSignals": [
     "The person can engage meaningfully, retain choice, stop voluntarily, and return toward ordinary functioning without escalating intensity to keep therapy working."
@@ -109,3 +112,5 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
 [[current/sources/altered-states-map-source/ALT.EPISTEMICS]]
 
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
+
+[[current/governance/amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER]]

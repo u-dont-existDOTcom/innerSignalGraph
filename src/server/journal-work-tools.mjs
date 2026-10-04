@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import Ajv2020 from "ajv/dist/2020.js";
 import { PRIVATE_CASE_SCOPES } from "../storage/private-case-access.mjs";
 import { JOURNAL_WORK_ID_PATTERN, MAX_JOURNAL_RESULT_BYTES } from "../journal-import/work-exchange.mjs";
+import { journalWorkPacketValue, MAX_HARDEST_PACKET_CHARS } from "../journal-import/packet-bounds.mjs";
+import { markJournalAttemptPacketFetched } from "../journal-import/attempt-markers.mjs";
+export { journalWorkPacketValue, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../journal-import/packet-bounds.mjs";
 
 // Two connector tools for the private journal import. ChatGPT fetches one work item (instruction,
 // packet, output schema), does the role's work in a fresh chat, and submits its JSON answer. The
@@ -12,6 +15,18 @@ import { JOURNAL_WORK_ID_PATTERN, MAX_JOURNAL_RESULT_BYTES } from "../journal-im
 const WORK_ID_SCHEMA = Object.freeze({ type: "string", pattern: JOURNAL_WORK_ID_PATTERN.source });
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const MAX_REPORTED_SCHEMA_ERRORS = 25;
+
+// Retain array indices only; property segments are fixed tokens, never supplied key names.
+function schemaErrorPath(instancePath, output) {
+  let current = output;
+  return instancePath ? instancePath.split("/").map((part, index) => {
+    if (index === 0) return "";
+    const key = part.replaceAll("~1", "/").replaceAll("~0", "~");
+    const safe = Array.isArray(current) && /^(?:0|[1-9][0-9]*)$/u.test(key) ? key : "property";
+    current = current?.[key];
+    return safe;
+  }).join("/") : "/";
+}
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
@@ -52,12 +67,15 @@ export const JOURNAL_WORK_INSTRUCTIONS = "For a private InnerSignal journal work
 const toolError = (code, message, details = undefined) => ({ toolError: { code, message, ...(details ? { details } : {}) } });
 const value = (result) => ({ value: result });
 
-export function createJournalWorkTools({ exchange, caseId, authorizeCase } = {}) {
+export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null, stageDir = null, workId: assignedWorkId = null,
+  markAttemptPacketFetched = markJournalAttemptPacketFetched } = {}) {
   if (!exchange || typeof exchange.readWork !== "function" || typeof exchange.submitResult !== "function") {
     throw new TypeError("A journal work exchange is required.");
   }
   if (typeof caseId !== "string" || !CASE_ID.test(caseId)) throw new TypeError("A valid journal work case ID is required.");
   if (typeof authorizeCase !== "function") throw new TypeError("authorizeCase is required.");
+  if (tier !== null && !["standard", "hardest"].includes(tier)) throw new TypeError("tier is invalid.");
+  if (assignedWorkId !== null && !JOURNAL_WORK_ID_PATTERN.test(assignedWorkId)) throw new TypeError("workId is invalid.");
 
   // One compiled validator per distinct schema. Each gets its own Ajv instance, so two schema
   // versions that share an $id never collide.
@@ -75,7 +93,7 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase } = {})
 
   async function outstanding(workId) {
     const entry = await exchange.readWork(workId);
-    if (!entry || entry.case_id !== caseId) {
+    if (!entry || entry.case_id !== caseId || (tier !== null && (entry.tier ?? "standard") !== tier)) {
       return toolError("JOURNAL_WORK_NOT_FOUND", "This journal work item doesn't exist or is already finished. Stop here.");
     }
     if (exchange.isExpired(entry)) return toolError("JOURNAL_WORK_EXPIRED", "This journal work item has expired. Stop here.");
@@ -90,17 +108,20 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase } = {})
       return value({ work_id: workId, status: "already_submitted", message: "An answer for this item is already stored. Stop here." });
     }
     const { entry } = found;
-    return value({
-      work_id: workId,
-      status: "ready",
-      role: entry.role,
-      instruction: entry.instruction,
-      packet: entry.packet,
-      output_schema: entry.output_schema,
-      expected_generation: entry.expected_generation,
-      expires_at: entry.expires_at,
-      submit_with: "submit_journal_work_result"
-    });
+    const packet = journalWorkPacketValue(entry);
+    if ((entry.tier ?? tier) === "hardest" && JSON.stringify(packet).length > MAX_HARDEST_PACKET_CHARS) {
+      return toolError("JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_WORK_PACKET_TOO_LARGE");
+    }
+    // A hardest packet is served only after its attempt marker records the fetch, so a dispatch record
+    // with a valid attempt identity must exist first; otherwise refuse with a content-free tool error.
+    const record = entry.tier === "hardest"
+      ? (await exchange.listDispatch()).find(item => item.work_id === workId) : null;
+    if (entry.tier === "hardest" && !/^[0-9a-f]{48}$/u.test(record?.attempt_identity ?? "")) {
+      return toolError("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED", "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
+    }
+    if (stageDir) await exchange.markPacketFetched({ stageDir, workId });
+    if (record) await markAttemptPacketFetched(exchange.root, record);
+    return value(packet);
   }
 
   async function submit(workId, output, authContext) {
@@ -113,18 +134,26 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase } = {})
     }
     const validate = validatorFor(found.entry.output_schema);
     if (!validate(output)) {
-      const errors = (validate.errors ?? []).slice(0, MAX_REPORTED_SCHEMA_ERRORS).map(({ instancePath, keyword, message, params }) => ({
-        instance_path: instancePath || "/",
-        keyword,
-        message,
-        params
+      const errors = (validate.errors ?? []).slice(0, MAX_REPORTED_SCHEMA_ERRORS).map(({ instancePath, keyword }) => ({
+        instance_path: schemaErrorPath(instancePath, output),
+        keyword
       }));
       return toolError("JOURNAL_OUTPUT_SCHEMA_INVALID", "The answer does not satisfy output_schema. Fix these problems and submit again.", {
         errors,
         total_errors: validate.errors?.length ?? errors.length
       });
     }
-    const stored = await exchange.submitResult({ workId, output, subject: authorization.principalId });
+    let stored;
+    try {
+      stored = stageDir
+        ? await exchange.stageResult({ stageDir, workId, output })
+        : await exchange.submitResult({ workId, output, subject: authorization.principalId });
+    } catch (error) {
+      if (error?.code === "JOURNAL_WORK_PACKET_NOT_FETCHED") {
+        return toolError(error.code, "Fetch this work item's packet before submitting its answer.");
+      }
+      throw error;
+    }
     return value({
       work_id: workId,
       ...stored,
@@ -144,9 +173,14 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase } = {})
       if (typeof workId !== "string" || !JOURNAL_WORK_ID_PATTERN.test(workId)) {
         return toolError("JOURNAL_WORK_ID_INVALID", "work_id is missing or malformed. Use the exact work_id you were given.");
       }
+      // A server started for one item serves and accepts only that item: nothing of another item is read,
+      // served or marked as fetched.
+      if (assignedWorkId !== null && workId !== assignedWorkId) {
+        return toolError("JOURNAL_WORK_SCOPE_MISMATCH", "This server handles only the work_id you were given. Stop here.");
+      }
       if (name === "get_journal_work_packet") return getPacket(workId, authContext);
       if (name === "submit_journal_work_result") return submit(workId, args?.output, authContext);
-      return toolError("MCP_TOOL_NOT_FOUND", `Unknown journal work tool ${name}.`);
+      return toolError("MCP_TOOL_NOT_FOUND", "Unknown journal work tool.");
     }
   });
 }

@@ -33,9 +33,21 @@ regression_refs:
   - G016
   - G018
   - G033
+  - G049
+  - G050
+  - G051
+  - G052
+  - G054
+  - G055
+  - G056
+  - G057
+  - G058
+  - G059
+  - G060
+  - G061
 base_record_sha256: 3d196d52c0dce8edef13b2006d5ce50103396b946f775778eed6e8eb8e233d77
-base_graph_sha256: 5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
 # Gentle regulation and embodiment

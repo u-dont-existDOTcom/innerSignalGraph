@@ -391,6 +391,66 @@
       "excerpt": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established.",
       "status": "owner-approved",
       "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+      "heading": "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "4d961182586685374399ddb00e1442dcf02cfbcac88fc98618aae6b5aecc1f60",
+      "excerpt": "Treat state-dependent therapeutic access as a transfer problem, not automatically as evidence that the altered experience was false or that another altered state is required. Some people can understand an inner-child, compassion, grief, spiritual, or trauma-related insight soberly yet experience it as emotionally real or credible only in an altered state; after the state ends, ordinary cognition may dismiss it or lose access to the position from which it felt true. Before planned altered-state work, familiarize the person with the relevant Nurturer, Protector, Guide, guard, safety, and closure map so newly accessible material has somewhere to land; preparation does not demand a particular revelation. During a coherent and physically stable altered state, follow the live therapeutic task and preserve what becomes accessible without repeatedly interrupting private meaning-making with forensic caveats. When an accusation, confrontation, public disclosure, medical or legal action, or another consequential external claim depends on historical or ontological certainty, preserve ordinary evidence and sober review. Afterward, distinguish an experience that occurred once from state-bound access, fading access, partial sober transfer, and integrated sober access. Record what changed and translate a small part into sober relationship, protection, practice, or action. Before another altered-state session, distinguish genuinely new exploration from mainly trying to recover a known state, conviction, love, or relationship. Repetition alone does not prove avoidance, dependence, or failed integration. When the main function is restoring access, work on the transfer failure first and define what sober carryover would count as progress rather than reflexively escalating or recreating the state. This framework does not claim that preparation or integration can replace altered-state methods for every person, or that it will reduce the number of sessions any individual needs.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+      "heading": "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "e1a22ccb5657d767904dcb775d1e4f63da317f521f13c2de09ce127904e4e9f0",
+      "excerpt": "Thoughts, images, urges, attraction, aversion and bodily sensations are data about current experience, not self-interpreting proof of identity, intention, endorsement, love, danger, morality or required action. Distinguish experience from interpretation from chosen action. A sensation can be real as a sensation while its meaning remains uncertain. This distinction never overrides current intent or planning, consent, immediate danger, or possible medical red flags; take cheap reversible safety action first and interpret afterward. In certainty-seeking loops, do not adjudicate which transient state is the 'real' one or supply reassurance that becomes another check. Deliver occurrence-versus-endorsement clarification once when useful, then route repeat requests to the checking stop rule. Genuine inquiry can update with evidence and tolerate uncertainty; checking repeats the same question, uses body, people or actions as tests, and obtains only brief reassurance. Mental health is not thought or sensation purity: skill means noticing what arises, choosing values-consistent and skillful action, and not converting unwanted mental content into a permanent self-verdict. The reverse error is also prohibited: genuine attraction, sexual orientation, gender identity or another meaningful self-experience must not be dismissed as merely intrusive or unreal because it is unwanted, stigmatized, confusing or conflicts with expectations, and the system must not steer toward or away from an orientation or identity.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
+      "heading": "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "d022371461f796f2ed8513ae42a6d99d9c9ec5b9bd48fafd0ecde8c0dcb7a58d",
+      "excerpt": "Social practice or exposure should serve reciprocal contact, skill, ordinary life and chosen values rather than proving normality, attractiveness, orientation, lovability, intimacy capacity or certainty. Another person is not a diagnostic instrument or reassurance machine; healthy support and mutual co-regulation remain available, and crisis support can take priority. When an action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation; clinician-guided ERP and useful exposure remain compatible. Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless the repetitive certainty-seeking pattern is actually present. Calibrate closeness and disclosure to demonstrated trust: privacy is not fakery and total disclosure is not required; where disclosure is unsafe, protection comes first. Relationship depth that depends on maintaining a false normal, happy or perfect persona should become more honest at a safe pace or be reduced. Acceptance or nonjudgment can bring powerful relief without proving romantic love, compatibility or earned trust. Exposure and anti-avoidance never override consent, require continuing touch or sex after a no, require remaining in concrete danger, or justify skipping evaluation of a possible medical red flag.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
+      "heading": "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "b61b4b2e52461fbf0607ec4c7d69ba8ff1b611cb26f1fb4bfcfeefc898712bf2",
+      "excerpt": "Anxiety or another protective alarm is information about expected danger, overload, humiliation, uncertainty or boundary threat, not an oracle or command. In ordinary-life decisions, hear what it is trying to protect and test the prediction against evidence, present capacity and later outcomes. This does not authorize pushing past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex. Consent, immediate safety and possible medical red flags take precedence; use a cheap reversible precaution first. Protective intent, predictive accuracy and actual effectiveness are separate.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD",
+      "heading": "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "0071931874187a2ab57e1370d995895a7979128ff98f24dd80cb0b5d94ed460e",
+      "excerpt": "A person's adverse response history to psychoactive substances changes risk. One episode of voices, paranoia, major loss of reality testing or a perceptual disturbance persisting beyond expected intoxication is enough reason not to retest that substance without professional assessment, even after apparent stabilization, and that history should inform consideration of other psychoactives capable of disturbing reality testing. Repeated milder confusion or dissociation also matters. Severe or risky symptoms warrant prompt professional help; persistence or recurrence while sober strengthens that need. Do not generalize this into a blanket anti-drug rule, and do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on; appropriate medical guidance may be needed for stopping safely. The one-episode threshold applies to psychotic-type or persisting perceptual reactions; repeated episodes are not required. Severe, current, risky or safety-uncertain symptoms call for prompt professional or emergency assessment.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
+      "heading": "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "eb1054d5f88dd952cd6b43cde8f7e5a2b07967ff26dc9e2a7a3e541fcb17ad47",
+      "excerpt": "Match treatment and causal claims to the observed horizon. Brief relief followed by recurrence is evidence of brief relief or temporal association, not resolution, durable improvement or proof of mechanism. Review onset, duration, recurrence and later functioning in a brief bounded way; tracking must not become another checking ritual. Apply this to ordinary actions and somatic methods, not only one named technique.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
     }
   ]
 }

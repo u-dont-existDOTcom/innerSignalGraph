@@ -5,7 +5,7 @@ projection_mode: current
 generated: true
 graph_id: somatic-directed-graph
 node_id: SOM.GENTLE_SHAKING
-title: Gentle shaking or qigong as regulation or discharge
+title: Use gentle shaking for regulation and judge benefit by carryover
 kind: decision-node
 tier: 4
 priority: 82
@@ -18,16 +18,20 @@ source_refs:
   - SOM.GENTLE_SHAKING
   - SOM.SHAKING_QIGONG
   - AMEND.SOM.PREP_MODALITIES
+  - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
 regression_refs:
   - G015
   - G016
   - G018
-base_record_sha256: 362d523fb3bdb6c7f8786345f6a2169a33ff07dc6bda641a578109fe15f1be5e
-base_graph_sha256: 5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+  - G053
+  - G058
+  - G060
+base_record_sha256: 9abd685a7a54c9265c03891516135ff34ba0fcbe17e24b3ed3bcea7eb54283d0
+base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
+projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
 ---
 
-# Gentle shaking or qigong as regulation or discharge
+# Use gentle shaking for regulation and judge benefit by carryover
 
 > [!warning] Generated current-state projection — do not edit. Create a proposal from this node.
 
@@ -71,18 +75,24 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
     ]
   },
   "avoid": [
-    "Do not chase catharsis, let unsupported neck whipping continue, or treat shaking as the primary treatment for severe PTSD."
+    "Do not chase catharsis, let unsupported neck whipping continue, or treat shaking as the primary treatment for severe PTSD.",
+    "Do not escalate shaking merely because it produced brief relief, and do not use repeated symptom checks to force certainty about whether it worked."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
-    "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "forbiddenOverclaims": [
+      "Do not claim that shaking ended an episode, produced durable improvement, treated its underlying cause, or established a mechanism when symptoms returned shortly afterward."
+    ],
+    "requiredNuance": [
+      "Match the claim to the observed horizon: short-lived relief followed by recurrence is evidence of short-lived relief or association, not durable resolution."
+    ]
   },
   "recommendations": [
     "Use short, playful movement that can stop easily; increase dose only when the person can orient and settle afterward.",
-    "Follow stronger discharge with settling rather than walking away raw."
+    "Follow stronger discharge with settling rather than walking away raw.",
+    "Use a brief bounded check of onset, duration, recurrence and later functioning when evaluating benefit; brief relief can be worth noting without inflating it into resolution or turning tracking into another monitoring ritual."
   ],
   "successSignals": [
     "The person finishes more regulated rather than blasted open."
@@ -98,3 +108,5 @@ projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e
 [[current/sources/somatic-sequencing-guide/SOM.SHAKING_QIGONG]]
 
 [[current/governance/amendments/AMEND.SOM.PREP_MODALITIES]]
+
+[[current/governance/amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION]]

@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { listenPrivateCaseMcp } from "../server/private-case-mcp.mjs";
-import { assertJournalWorkExchangeRoot, createJournalWorkExchange, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
+import { assertJournalWorkExchangeRoot, createJournalWorkExchange, journalWorkExchangeSecret, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
+import { createJournalPrivateApi } from "../journal-import/http.mjs";
 import { createJournalWorkTools } from "../server/journal-work-tools.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -36,9 +37,13 @@ const resource = hosted ? process.env.INNER_SIGNAL_MCP_RESOURCE : null;
 if (hosted && !resource) throw new Error("INNER_SIGNAL_MCP_RESOURCE is required in hosted mode.");
 
 // Optional private journal work exchange (two connector tools). All three settings, or none.
+const journalWorkSecretEnvironment = {
+  INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64,
+  INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE
+};
 const journalWorkSettings = [
   process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT,
-  process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64,
+  process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64 || process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE,
   process.env.INNER_SIGNAL_JOURNAL_WORK_CASE_ID
 ].map((value) => value || null);
 delete process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64;
@@ -48,7 +53,8 @@ if (configuredJournalWork !== 0 && configuredJournalWork !== 3) {
 }
 let journalWork = null;
 if (configuredJournalWork === 3) {
-  const [exchangeRoot, exchangeSecret, journalCaseId] = journalWorkSettings;
+  const [exchangeRoot, , journalCaseId] = journalWorkSettings;
+  const exchangeSecret = await journalWorkExchangeSecret(journalWorkSecretEnvironment);
   if (!path.isAbsolute(exchangeRoot)) throw new Error("INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT must be an absolute path.");
   // Canonical, so a symbolic link cannot place the exchange inside the public checkout.
   const canonicalRoot = await resolveJournalWorkExchangeRoot(exchangeRoot, { outside: repositoryRoot });
@@ -75,6 +81,7 @@ if (configuredJournalWork === 3) {
 
 const listener = await listenPrivateCaseMcp({
   caseAccessService: service,
+  journalApi: providers.journalEnabled ? createJournalPrivateApi({ caseAccessService: service }) : null,
   port,
   host: hosted ? "0.0.0.0" : "127.0.0.1",
   productionAuthReady: providers.productionReady,
@@ -91,6 +98,7 @@ const ready = {
   mcpUrl: hosted ? new URL("/mcp", `${resource}/`).toString() : listener.url,
   provider: providers.kind,
   productionReady: providers.productionReady,
+  journalEnabled: providers.journalEnabled === true,
   journalWork: Boolean(journalWork)
 };
 const readyFile = valueAfter("--ready-file");

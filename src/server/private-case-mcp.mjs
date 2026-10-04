@@ -2,6 +2,7 @@ import http from "node:http";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
 import { TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolManifest, therapyProtocolPayload } from "../protocol/therapy-protocol.mjs";
+import { JOURNAL_READ_ONLY_MCP_TOOLS } from "../journal-import/http.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
@@ -258,8 +259,12 @@ const toolScopes = (name, journalWork = null) => {
     : [PRIVATE_CASE_SCOPES.READ];
 };
 
-function advertisedTools(oauthEnabled, journalWork = null) {
-  const privateTools = [...TOOL_DEFINITIONS, ...(journalWork ? journalWork.definitions : [])];
+function advertisedTools(oauthEnabled, journalWork = null, journalApi = null) {
+  const privateTools = [
+    ...TOOL_DEFINITIONS,
+    ...(journalApi ? JOURNAL_READ_ONLY_MCP_TOOLS : []),
+    ...(journalWork ? journalWork.definitions : [])
+  ];
   if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...privateTools];
   const protocolTools = PROTOCOL_TOOL_DEFINITIONS.map((tool) => Object.freeze({
     ...tool,
@@ -404,13 +409,17 @@ function caseNotAuthorizedResult() {
   };
 }
 
-async function callTool(service, name, args, authContext) {
-  if (name === "load_handoff") return service.loadHandoff(args.handoff_id, authContext, { requireContinuationSafe: true });
+async function callTool(service, name, args, authContext, journalApi = null) {
+  if (name === "load_handoff") return service.loadHandoff(args.handoff_id, authContext, {
+    requireContinuationSafe: true,
+    journalContinuitySupported: Boolean(journalApi)
+  });
   if (name === "load_case_context") {
     return service.loadCaseContext(args.case_id, authContext, {
       candidateId: args.candidate_id ?? "current_pending",
       requireContinuationSafe: true,
       requireAuditScope: true,
+      journalContinuitySupported: Boolean(journalApi),
       episodePolicy: { requireCompleteEpisode: true }
     });
   }
@@ -461,17 +470,59 @@ async function callTool(service, name, args, authContext) {
     if (!artifact) throw Object.assign(new Error("Exact source artifact was not found."), { code: "PRIVATE_SOURCE_ARTIFACT_NOT_FOUND" });
     return artifact;
   }
+  if (name === "search_journal_graph" && journalApi) {
+    return journalApi.search({
+      caseId: args.case_id,
+      corpusId: args.corpus_id,
+      query: args.query,
+      purpose: args.purpose,
+      graphEnabled: args.graph_enabled,
+      filters: args.filters,
+      pageSize: args.page_size,
+      cursor: args.cursor
+    }, authContext);
+  }
+  if (name === "get_journal_subgraph" && journalApi) {
+    return journalApi.getSubgraph({
+      caseId: args.case_id,
+      corpusId: args.corpus_id,
+      seedIds: args.seed_ids,
+      purpose: args.purpose,
+      nodeLimit: args.node_limit
+    }, authContext);
+  }
+  if (name === "resolve_journal_evidence" && journalApi) {
+    return journalApi.resolveEvidence({
+      caseId: args.case_id,
+      corpusId: args.corpus_id,
+      evidenceIds: args.evidence_ids,
+      purpose: args.purpose
+    }, authContext);
+  }
+  if (name === "get_journal_timeline" && journalApi) {
+    return journalApi.timeline({
+      caseId: args.case_id,
+      corpusId: args.corpus_id,
+      purpose: args.purpose,
+      from: args.from,
+      to: args.to,
+      includeUnknown: args.include_unknown,
+      pageSize: args.page_size,
+      cursor: args.cursor
+    }, authContext);
+  }
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }
 
-export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new TypeError("caseAccessService is required.");
   if (journalWork !== null && (typeof journalWork?.call !== "function" || !(journalWork.names instanceof Set))) {
     throw new TypeError("journalWork must come from createJournalWorkTools.");
   }
   const normalizedOauth = normalizeOauth(oauth);
+  if (journalApi != null && typeof journalApi.search !== "function") throw new TypeError("journalApi is invalid.");
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
-  const tools = advertisedTools(Boolean(normalizedOauth), journalWork);
+  const tools = advertisedTools(Boolean(normalizedOauth), journalWork, journalApi);
   const instructions = serverInstructions(journalWork);
   const serveRoot = !normalizedOauth || new URL(normalizedOauth.resource).pathname === "/";
   // Loaded once per process: a redeploy is what changes the served protocol.
@@ -529,7 +580,7 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
         const outcome = await journalWork.call(name, args, { bearerToken: token });
         return send(res, 200, success(request.id, outcome.toolError ? journalWorkToolError(outcome.toolError) : toolResult(outcome.value)));
       }
-      const value = await callTool(caseAccessService, name, args, { bearerToken: token });
+      const value = await callTool(caseAccessService, name, args, { bearerToken: token }, journalApi);
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
@@ -551,8 +602,8 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
   });
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady, therapyProtocol, journalWork });
+export async function listenPrivateCaseMcp({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, journalApi, oauth, productionAuthReady, therapyProtocol, journalWork });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);
