@@ -27,6 +27,8 @@ export const CODEX_DISABLED_FEATURES = Object.freeze([
 
 function failure(code) { return Object.assign(new Error(code), { code }); }
 function stringArg(value) { return JSON.stringify(value); }
+// A poll interval that never keeps the process alive on its own.
+function delay(ms) { return new Promise((resolve) => { setTimeout(resolve, ms).unref?.(); }); }
 function numberOption(argv, flag, fallback, min, max) {
   const at = argv.indexOf(flag);
   if (at < 0) return fallback;
@@ -37,7 +39,8 @@ function numberOption(argv, flag, fallback, min, max) {
 
 export function parseJournalCodexWorkerArgs(argv) {
   const known = new Set(["--config", "--codex-home", "--work-dir", "--codex-bin", "--concurrency", "--timeout-ms", "--poll-ms",
-    "--limit-backoff-ms", "--log", "--once", "--max-items", "--import-command-json", "--import-env-names", "--import-timeout-ms"]);
+    "--limit-backoff-ms", "--log", "--once", "--max-items", "--import-command-json", "--import-env-names", "--import-timeout-ms",
+    "--import-interval-ms"]);
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
@@ -62,6 +65,10 @@ export function parseJournalCodexWorkerArgs(argv) {
   }
   const importEnvNames = options["--import-env-names"] === undefined ? [] : options["--import-env-names"].split(",");
   if (importEnvNames.some((name) => !/^[A-Za-z_][A-Za-z0-9_]*$/u.test(name))) throw failure("JOURNAL_CODEX_OPTION_INVALID");
+  // A periodic import run belongs to a long-running worker that has an import command.
+  if (options["--import-interval-ms"] !== undefined && (!importCommand || options["--once"])) {
+    throw failure("JOURNAL_CODEX_OPTION_INVALID");
+  }
   return Object.freeze({ configPath: options["--config"], codexHome: options["--codex-home"],
     workDir: options["--work-dir"], codexBin,
     concurrency: numberOption(argv, "--concurrency", 2, 1, 8),
@@ -71,6 +78,8 @@ export function parseJournalCodexWorkerArgs(argv) {
     maxItems: numberOption(argv, "--max-items", Number.MAX_SAFE_INTEGER, 1, Number.MAX_SAFE_INTEGER),
     importTimeoutMs: options["--import-timeout-ms"] === undefined ? null
       : numberOption(argv, "--import-timeout-ms", null, 1, 86_400_000),
+    importIntervalMs: options["--import-interval-ms"] === undefined ? null
+      : numberOption(argv, "--import-interval-ms", null, 1, 86_400_000),
     importEnvNames: [...new Set(importEnvNames)],
     log: options["--log"] ?? null, once: Boolean(options["--once"]), importCommand });
 }
@@ -357,6 +366,31 @@ export async function lockWorkerDirectory(directory) {
   };
 }
 
+// An answer another worker stored (the Claude lane's hardest items) needs an import run too, or it waits
+// for this worker's next answer. The baseline is read before the worker's startup import, which covers
+// it; every answer that appears after it starts a run, including one stored before the first poll,
+// unless this worker already started the run for it.
+export function trackForeignAnswers(baseline, onForeign) {
+  const seen = new Set(baseline.filter((record) => record.answered).map((record) => record.work_id));
+  return Object.freeze({
+    // Marks an answer this worker will start the run for; true when a poll already started one.
+    handled(workId) {
+      const noticed = seen.has(workId);
+      seen.add(workId);
+      return noticed;
+    },
+    notice(records) {
+      let foreign = false;
+      for (const record of records) {
+        if (!record.answered || seen.has(record.work_id)) continue;
+        seen.add(record.work_id);
+        foreign = true;
+      }
+      if (foreign) onForeign();
+    }
+  });
+}
+
 export async function runJournalCodexWorker(argv, { environment = process.env, stderr = process.stderr,
 } = {}) {
   if (argv.includes("--agent")) {
@@ -413,7 +447,7 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
   const onInt = () => stop("SIGINT");
   process.on("SIGTERM", onTerm);
   process.on("SIGINT", onInt);
-  let importRun = null, importPending = false;
+  let importRun = null, importPending = false, importEndedAt = 0;
   function startImport() {
     if (!options.importCommand || stopping) return;
     if (importRun) { importPending = true; return; }
@@ -425,9 +459,14 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
       timeoutMs: options.importTimeoutMs, onLine: () => {}, activeGroups
     }).then(async ({ code }) => {
       await log({ at: new Date().toISOString(), kind: "import", exit_code: code, duration_ms: Date.now() - started });
-    }).catch(() => {}).finally(() => { importRun = null; if (importPending && !stopping) { importPending = false; startImport(); } });
+    }).catch(() => {}).finally(() => {
+      importRun = null;
+      importEndedAt = Date.now();
+      if (importPending && !stopping) { importPending = false; startImport(); }
+    });
   }
   const running = new Map(), attempts = new Map(), limits = new Map(), seenThreads = new Set();
+  let answers = null;
   let completed = 0, limitedUntil = 0;
   let initial = null;
 
@@ -473,7 +512,10 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
           execution: { profile_evidence: "codex_exec_request_pinned", effective_model_profile: record.model,
             effective_effort: record.effort, request_context_id: `codex-thread:${events.state.threads[0]}` } });
         outcome = stored.already ? "already_answered" : "answered";
-        if (outcome === "answered") startImport();
+        // Start the import run either way: a worker that stored the answer first may have no import
+        // command, or may have stopped after publishing it. A poll that already noticed the answer
+        // started that run.
+        if (!answers?.handled(record.work_id)) startImport();
       }
     } catch { outcome = stopping ? "stopped" : "error"; }
     finally {
@@ -487,10 +529,16 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
   try {
     await removeStaleRuns(workDir);
     initial = options.once ? new Set((await dispatch.listDispatch()).map((record) => record.work_id)) : null;
+    if (options.importCommand && !options.once) answers = trackForeignAnswers(await dispatch.listDispatch(), startImport);
     startImport();
     for (;;) {
       if (stopping) break;
       const now = Date.now();
+      // Checked on every poll, also while usage limits hold back new runs.
+      if (answers) answers.notice(await dispatch.listDispatch());
+      // A periodic run resumes an import that stopped on a condition that clears with time, such as the
+      // hardest lane's daily limit, when no new answer would start one.
+      if (options.importIntervalMs && !importRun && Date.now() - importEndedAt >= options.importIntervalMs) startImport();
       if (now >= limitedUntil && completed < options.maxItems) {
         const records = await dispatch.listDispatch();
         for (const record of records) {
@@ -514,7 +562,12 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
         }
       }
       if (stopping || completed >= options.maxItems) { if (!running.size) break; await Promise.race(running.values()); continue; }
-      if (running.size) { await Promise.race(running.values()); continue; }
+      if (running.size) {
+        // A worker that watches for other workers' answers, and for its periodic import, keeps polling while
+        // its own runs are in flight, instead of waiting for one of them to end.
+        await Promise.race(answers ? [...running.values(), delay(options.pollMs)] : running.values());
+        continue;
+      }
       if (options.once) {
         const records = await dispatch.listDispatch();
         const remaining = records.some((record) => initial.has(record.work_id) && !record.answered
@@ -523,7 +576,9 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
           && (attempts.get(record.work_id) ?? 0) < 3 && (limits.get(record.work_id) ?? 0) < MAX_LIMIT_RETRIES);
         if (!remaining) break;
       }
-      await wait(Math.max(options.pollMs, limitedUntil - Date.now(), 1));
+      // A worker that watches for other workers' answers keeps polling through a usage limit; it only stops
+      // starting new runs until the limit resets.
+      await wait(answers ? options.pollMs : Math.max(options.pollMs, limitedUntil - Date.now(), 1));
     }
     while (importRun) await importRun;
     return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : 0;

@@ -143,7 +143,9 @@ export function createExchangeJournalInferencePort({
     for (let successor = 0; successor <= MAX_SUCCESSORS; successor += 1) {
       const workId = journalExchangeWorkId(operationKey, successor);
       const stored = await store.readResult(workId);
-      if (stored?.retired && stored.unanswered && !stored.exhausted) continue;
+      // Skip an item closed unanswered (unless its hardest attempt is exhausted, which ends the chain) or a
+      // speculative answer superseded on the same key.
+      if (stored?.retired && ((stored.unanswered && !stored.exhausted) || stored.superseded)) continue;
       return { store, workId, successor, entry: await store.readWork(workId), stored };
     }
     throw new JournalInferencePortError("JOURNAL_EXCHANGE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
@@ -221,6 +223,7 @@ export function createExchangeJournalInferencePort({
   // Only the runtime removes dispatch records (when it retires or closes an item), so one successful
   // publication per item and process is enough; the exchange keeps the first record anyway.
   const dispatched = new Set();
+  const adopted = new Set();
   async function ensureDispatch(store, entry, operationKey) {
     if (dispatched.has(entry.work_id)) return;
     await store.publishDispatch({
@@ -276,12 +279,13 @@ export function createExchangeJournalInferencePort({
     return { status: "pending", workId };
   }
 
-  const invoke = async ({ role, packet, outputSchema, operationKey, grant, tier = "standard" }) => {
+  const checkedInput = ({ role, packet, outputSchema, operationKey, grant, tier = "standard" }, prefetch = false) => {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
-    if (UNSUPPORTED_ROLES.has(role)) {
+    if (UNSUPPORTED_ROLES.has(role))
       throw new JournalInferencePortError("JOURNAL_EXCHANGE_ROLE_UNSUPPORTED", { submissionStatus: "not_submitted" });
-    }
+    if (prefetch && tier === "hardest")
+      throw new JournalInferencePortError("JOURNAL_PREFETCH_TIER_UNSUPPORTED", { submissionStatus: "not_submitted" });
     const checkedPacket = buildJournalRolePacket(role, packet);
     assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
@@ -289,10 +293,46 @@ export function createExchangeJournalInferencePort({
     if (tier === "hardest" && !hardestJournalPacketFits(role, checkedPacket)) {
       throw new JournalInferencePortError("JOURNAL_WORK_PACKET_TOO_LARGE", { submissionStatus: "not_submitted" });
     }
-    const digest = inputDigest(role, checkedPacket, outputSchema, grant);
+    return { role, packet: checkedPacket, outputSchema, operationKey, grant, tier,
+      digest: inputDigest(role, checkedPacket, outputSchema, grant) };
+  };
 
-    const { store, workId, entry: existing, stored } = await current(operationKey);
+  async function publish(input, { dispatchNew = false } = {}) {
+    const { role, packet, outputSchema, operationKey, grant, tier, digest } = input;
+    let selected = await current(operationKey);
+    // A speculative item carries no durable caller intent. Replace it on the same operation key
+    // before the sequential caller creates an intent or spends a controller attempt.
+    for (let replacements = 0; !dispatchNew && selected.entry?.origin === "lookahead"
+      && (selected.entry.input_sha256 !== digest
+        || (!selected.stored && Date.parse(selected.entry.expires_at) <= now().getTime())); replacements += 1) {
+      // A consumed answer can leave its work file behind if retirement stopped after writing the
+      // tombstone. It is no longer speculative, even though the old work file says it was.
+      if (selected.stored?.retired && !selected.stored.unanswered && !selected.stored.superseded)
+        invariant(false, "OPERATION_KEY_CONFLICT");
+      if (adopted.has(selected.workId) || await selected.store.isAdopted?.(selected.workId)) break;
+      if (replacements >= MAX_SUCCESSORS)
+        throw new JournalInferencePortError("JOURNAL_EXCHANGE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
+      if (selected.stored?.output) {
+        // The answer belongs to the old grant/input and has no durable caller intent.
+        await selected.store.retireWork(selected.workId, { superseded: true });
+      } else {
+        // If an answer wins the close race, the next iteration retires that stale answer.
+        await selected.store.closeUnanswered(selected.workId);
+      }
+      selected = await current(operationKey);
+    }
+    const { store, workId, successor, entry: existing, stored } = selected;
+    if (dispatchNew && successor > 0)
+      throw new JournalInferencePortError("JOURNAL_PREFETCH_RETRY_UNSUPPORTED", { submissionStatus: "not_submitted" });
     if (existing) invariant(existing.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
+    // A consumed and retired answer without a work file behaves as on main: no new item is
+    // published, and observe() reports the completion as unknown to the caller.
+    // The first sequential invoke with the same input adopts a speculative item. Persist that
+    // fact in the exchange so a resumed invoke cannot replace it on a changed grant or expiry.
+    if (!dispatchNew && existing?.origin === "lookahead") {
+      await store.markAdopted?.(workId);
+      adopted.add(workId);
+    }
     if (!existing && !stored) {
       // Host-side preflight is authoritative even for new reference resends.
       // No publication, Claude run, or daily slot is due for a consumed identity.
@@ -302,35 +342,86 @@ export function createExchangeJournalInferencePort({
       }
       const issuedAt = now();
       const entry = {
-        schema_version: 1,
-        work_id: workId,
-        case_id: caseId,
-        role,
-        tier,
-        instruction: journalRoleInstruction(role),
-        packet: checkedPacket,
-        output_schema_name: outputSchema,
-        output_schema: journalSchema(outputSchema),
-        expected_generation: checkedPacket.expected_generation ?? null,
+        schema_version: 1, work_id: workId, case_id: caseId, role, tier,
+        instruction: journalRoleInstruction(role), packet,
+        output_schema_name: outputSchema, output_schema: journalSchema(outputSchema),
+        expected_generation: packet.expected_generation ?? null,
         issued_at: issuedAt.toISOString(),
         expires_at: new Date(issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs)).toISOString(),
-        input_sha256: digest,
-        grant_id: grant.grant_id,
-        grant_purpose: grant.purpose,
-        route_ref: routeRef
+        input_sha256: digest, grant_id: grant.grant_id, grant_purpose: grant.purpose, route_ref: routeRef,
+        ...(dispatchNew ? { origin: "lookahead" } : {})
       };
       try {
         const { created } = await store.publishWork(entry);
-        // Another process published this item first; it must be the same input.
         if (!created) {
           const winner = await store.readWork(workId);
           if (winner) invariant(winner.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
+          // A sequential call that lost the publish race to a speculative item adopts it, as it would have
+          // had it seen the item first, so a later expiry or restart can't replace it with a second call.
+          if (!dispatchNew && winner?.origin === "lookahead") {
+            await store.markAdopted?.(workId);
+            adopted.add(workId);
+          }
         }
+        if (dispatchNew) {
+          const publishedEntry = created ? entry : await store.readWork(workId);
+          try { await ensureDispatch(store, publishedEntry, operationKey); }
+          catch (cause) {
+            // The work item is already published. Keep its lookahead slot occupied until its
+            // answer, retirement, expiry or runtime close resolves it.
+            const error = new JournalInferencePortError("JOURNAL_EXCHANGE_UNAVAILABLE",
+              { submissionStatus: "unknown", cause });
+            error.workPublished = publishedEntry?.origin === "lookahead";
+            throw error;
+          }
+        }
+        return { published: created, workId };
       } catch (cause) {
-        if (cause instanceof ValidationError) throw cause;
+        if (cause instanceof ValidationError || cause.workPublished) throw cause;
         throw new JournalInferencePortError("JOURNAL_EXCHANGE_UNAVAILABLE", { submissionStatus: "not_submitted", cause });
       }
     }
+    // An open speculative item whose dispatch record failed to publish gets it on the next prefetch, so a
+    // worker can see it. Publishing a dispatch record is idempotent.
+    if (dispatchNew && existing?.origin === "lookahead" && !stored
+      && Date.parse(existing.expires_at) > now().getTime()) {
+      try { await ensureDispatch(store, existing, operationKey); }
+      catch (cause) {
+        const error = new JournalInferencePortError("JOURNAL_EXCHANGE_UNAVAILABLE", { submissionStatus: "unknown", cause });
+        error.workPublished = true;
+        throw error;
+      }
+    }
+    return { published: false, workId };
+  }
+
+  async function peek(operationKey) {
+    const { store, workId, entry, stored } = await current(operationKey);
+    if (stored?.retired && !stored.unanswered) return { status: "retired" };
+    if (stored?.output) {
+      invariant(entry, "JOURNAL_EXCHANGE_ENTRY_MISSING");
+      let output;
+      try { output = validateJournalSchema(entry.output_schema_name, stored.output); }
+      catch { return { status: "invalid_output" }; }
+      const dispatch = (await store.listDispatch()).find(record => record.work_id === workId);
+      invariant(dispatch, "JOURNAL_EXCHANGE_DISPATCH_MISSING");
+      try {
+        receiptFor(operationKey, entry, stored, dispatch);
+      } catch (cause) {
+        if (cause.code === "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED")
+          return { status: "invalid_output" };
+        throw cause;
+      }
+      return { status: "completed", output };
+    }
+    if (stored?.retired) return { status: "retired" };
+    if (entry && Date.parse(entry.expires_at) <= now().getTime()) return { status: "expired" };
+    return { status: entry ? "pending" : "not_submitted" };
+  }
+
+  const invoke = async (request) => {
+    const { operationKey, tier = "standard" } = request;
+    await publish(checkedInput(request));
 
     const deadline = Date.now() + waitMs;
     for (;;) {
@@ -356,7 +447,10 @@ export function createExchangeJournalInferencePort({
 
   return Object.freeze({
     capabilities,
+    pollMs,
     invoke,
+    async prefetch(request) { return publish(checkedInput(request, true), { dispatchNew: true }); },
+    peek,
     // "completed" with the output and receipt; "not_submitted" when no item exists or the newest one
     // expired unanswered (the caller may send it again); "invalid_output" when the stored answer
     // fails the importer's schema or lacks verified execution profile; "unknown" while open.
