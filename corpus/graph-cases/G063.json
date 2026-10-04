@@ -1,0 +1,38 @@
+{
+  "id": "G063",
+  "title": "inward destabilization reduces depth while preserving reparenting reactivation",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "deep_dialogue",
+    "deep_work_readiness": "yes",
+    "unresolved_inner_material": "present",
+    "actionable_problem": "absent",
+    "attention_loop": "present",
+    "inward_attention_effect": "worsens",
+    "thinking_yield": "mixed"
+  },
+  "expected": {
+    "primary": "ROUTE.EXTERNAL_EMBODIMENT",
+    "selectedIncludes": [
+      "IC.CONTINUITY_TITRATION"
+    ],
+    "selectedExcludes": [
+      "ROUTE.GO_INWARD",
+      "IC.DEEP_CHILD_DIALOGUE"
+    ],
+    "requiredNuancePatterns": [
+      "depth/pacing adjustment",
+      "observable reactivation condition"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "permanently abandoned"
+    ]
+  }
+}
