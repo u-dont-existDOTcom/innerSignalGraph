@@ -48,6 +48,18 @@ Updated: 2026-10-04
 - **Next:** Review; merge after #121.
 
 
+## Public plugin storage: design spec (2026-10-03)
+
+- **Owner outcome:** "ok i approve the storage recommendation" (2026-10-03): the public plugin saves conversations (every turn), journal entries, settings and handoffs on InnerSignal's server for every user, with write tools, per-user encryption, the user's consent and a legal review before launch. This replaces the 2026-09-26 "Free users store locally" requirement.
+- **Done (documents only):** `docs/superpowers/specs/2026-10-03-public-plugin-storage-design.md` (current state, platform and legal facts with sources, data model, tools, key hierarchy, consent, retention, threat model, migration, costs, legal checklist, phases, verification, six owner questions); `docs/INDEX.md` entry with its SHA-256 binding in `scripts/audit-repository.mjs`.
+- **Key finding:** OpenAI's plugin guidelines ("must not pull, reconstruct, or infer the full chat log") and Anthropic's directory policy ("must not collect extraneous conversation data") conflict with automatic every-turn saving in a listed plugin; owner question 1 offers user-requested saves, an unlisted connector, or asking both platforms first.
+- **Not done:** no code, deployment, Keycloak change, data access, cross-family check or legal review.
+- **Evidence:** `npm run audit:repository` and `node --test tests/repository-compliance.test.mjs` on this branch; the complete package gate runs in CI.
+- **Owner answers (2026-10-04):** saving B (saves when the person asks; a reminder with the web-app link in every reply, which the person can switch off); records on Railway with invented data first (A), with Railway's written DPA amendment before any real data. Because the connector handles decrypted records on Railway under either storage option, moving only the database to Supabase is not enough: if Railway declines, the owner chooses where the connector runs before any real record is processed; retention B; legal review C; Mayan Roots, LLC as controller unless the consultant finds otherwise; 18 and over. The spec's "Owner decisions (2026-10-04)" quotes each answer, and no owner question is open.
+- **Next:** an implementation plan for phase 1 (invented data only) when the owner asks for it. No real record goes into the new store before the hosting agreement, including the connector's host, is settled (phase 1 gate), and no one else's record before the legal review is signed off (phase 2 gate).
+- **Lesson closeout:** project-specific design. Lesson candidate, not promoted to Universal: check host platforms' listing rules before designing data collection through a plugin.
+
+
 ## Journal calibration: answered context, hardest self-repair and full rounds (2026-10-03)
 
 - **Owner outcome:** Import the journal as a committed generation with nothing lost and no journal text leaked, and fix the process so a supervisor review is not needed. Plan: `docs/superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`.
