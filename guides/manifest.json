@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-latest-humanized-2026-10-03-r3",
-      "file": "inner-child-guide-2026-10-03-r3.txt",
-      "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb",
+      "version": "owner-approved-continuity-scaffolding-2026-10-04-r1",
+      "file": "inner-child-guide-2026-10-04-r1.txt",
+      "sha256": "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac",
       "role": "primary-framework",
       "format": "text"
     },
@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-10-03-certainty-authenticity-r3",
+      "version": "2026-10-04-continuity-scaffolding-r1",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article is the owner-supplied 2026-10-03 Substack editor capture plus the owner-authorized 2026-10-03 certainty/authenticity refinement after two independent Opus safety reviews. The exact unedited owner capture remains preserved at guides/source-captures/inner-child-guide-2026-10-03.substack.html (SHA-256 3a61bb2aa6aa9ff1ec35efbce8077430a2432e1908f16a8e55153454b56ec867). The active edited archival source is guides/source-captures/inner-child-guide-2026-10-03-r3.substack.html (SHA-256 c8138b47ff38de516d73545c7696642e28adc841a79a8fe2842e1407c9fbd6b6); its visible-text projection is guides/inner-child-guide-2026-10-03-r3.txt. Earlier source snapshots, including the rejected r2 review candidate, remain retained. Source synchronization and development-main graph changes do not themselves install a Guide Packet or promote stable.",
+  "notes": "The active inner-child canonical text is the 2026-10-03 r3 owner-approved guide plus the owner-authorized 2026-10-04 continuity/scaffolding/community additions. The exact 2026-10-03 owner-supplied Substack capture and edited r3 HTML remain preserved unchanged as provenance; the 2026-10-04 development source is a minimal text-level canonical amendment derived from r3, not a claim that the public Substack HTML has already been updated. Source synchronization and development-main graph changes do not themselves install a Guide Packet or promote stable.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -89,6 +89,12 @@
       "version": "owner-latest-humanized-2026-10-03-r2",
       "file": "inner-child-guide-2026-10-03-r2.txt",
       "sha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-10-03-r3",
+      "file": "inner-child-guide-2026-10-03-r3.txt",
+      "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb"
     }
   ]
 }
