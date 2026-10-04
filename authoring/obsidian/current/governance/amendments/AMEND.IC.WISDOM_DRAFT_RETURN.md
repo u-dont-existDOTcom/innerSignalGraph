@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_DRAFT_RETURN
 status: owner-approved
 domain: inner-child
-base_record_sha256: 626bf1c5a403f3264d5e25de9ec4cc97ad2c0dd03e157e3bbee7a5d9e487a1d8
-source_file_sha256: 1e66de8978fae366e0b1a95e444cb9cfcc020570355175caa38bfae66df7529b
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+base_record_sha256: f67815081587920555bc999bd123033aaf06831b90004c4f0dd81d2a65e49757
+source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # AMEND.IC.WISDOM_DRAFT_RETURN
@@ -24,6 +24,6 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
     "status": "owner-approved",
     "text": "The return to the original draft is a distinct issue-bound therapeutic purpose, not an automatically scheduled message or an instruction to contact the other person. After the outward decision or response is actually reported, attend to what its writer was experiencing and what understanding, protection, reassurance, responsibility or practical help is now needed. Use the existing Nurturer/Protector/Guide and credibility/guard routes when supported. Do not infer a child-state, hidden memory or cause. Adult care is shown through a feasible action before demanding that a part feel reassured. An outward response completed is not inward care completed. A user may defer or decline this return without losing care; do not force an assignment or carry task authority across a changed issue."
   },
-  "version": "2026-10-04-continuity-scaffolding-r1"
+  "version": "2026-10-04-continuity-scaffolding-r2"
 }
 ```

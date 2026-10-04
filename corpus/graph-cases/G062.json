@@ -17,7 +17,11 @@
     "inward_attention_effect": "neutral",
     "thinking_yield": "new_information_or_action",
     "deep_work_readiness": "yes",
-    "practice_challenge": "workable"
+    "practice_challenge": "workable",
+    "practice_challenge_domain": "inner_child",
+    "practice_reapproach_willingness": "yes",
+    "ic_status": "active",
+    "ic_titration_needed": "no"
   },
   "expected": {
     "primary": "ROUTE.GO_INWARD",
@@ -28,8 +32,8 @@
       "ROUTE.EXTERNAL_EMBODIMENT"
     ],
     "requiredNuancePatterns": [
-      "Workable challenge and overload are different states",
-      "Distress and harm are not synonyms"
+      "Distress and harm are not synonyms",
+      "workable challenge requires willingness plus intact capacity and recovery"
     ],
     "forbiddenOverclaimPatterns": [
       "disturbing dreams reveal hidden historical truth"

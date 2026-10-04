@@ -21,15 +21,14 @@ source_refs:
   - IC.THREE_FUNCTIONS
   - IC.SESSION_CLOSURE
 regression_refs:
-  - G014
-  - G025
-  - G031
-  - G032
-  - G035
   - G063
-base_record_sha256: 39d2155c134f7508a67ad2838d2f57766bb85744b6296bd20a7d9b4c63141d97
-base_graph_sha256: e9856521bef7b4cdc99119361292128385607971644ed075fd48d520522cfc3d
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+  - G066
+  - G069
+  - G070
+  - G087
+base_record_sha256: e0e1b69f725d2e11e736a8d02f06869c2ac9d5297fed86920382b49bf90411a5
+base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # Preserve the inner relationship while reducing depth
@@ -42,42 +41,52 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
 ```json
 {
   "activation": {
-    "any": [
+    "all": [
       {
-        "field": "deep_work_readiness",
-        "op": "eq",
-        "value": "no"
+        "field": "ic_status",
+        "op": "in",
+        "value": [
+          "active",
+          "stepped_down"
+        ]
       },
       {
-        "field": "inward_attention_effect",
+        "field": "ic_titration_needed",
         "op": "eq",
-        "value": "worsens"
+        "value": "yes"
+      }
+    ],
+    "none": [
+      {
+        "field": "present_safety",
+        "op": "eq",
+        "value": "unsafe"
       },
       {
-        "field": "ability_to_stop",
+        "field": "medical_urgency",
         "op": "eq",
-        "value": "no"
+        "value": "urgent"
       },
       {
-        "field": "ability_to_return",
-        "op": "eq",
-        "value": "no"
+        "field": "suicidal_state",
+        "op": "in",
+        "value": [
+          "intent",
+          "imminent"
+        ]
       },
       {
-        "field": "orientation",
+        "field": "dissociation",
         "op": "eq",
-        "value": "disoriented"
-      },
-      {
-        "field": "practice_challenge",
-        "op": "eq",
-        "value": "overwhelming"
+        "value": "high"
       }
     ]
   },
   "avoid": [
-    "Do not convert a temporary safety or pacing decision into a permanent conclusion that inner-child work is contraindicated.",
-    "Do not force child-facing imagery, dialogue, or symbolism during acute danger, disorientation, inability to stop, or after the person declines it."
+    "Do not treat a person's refusal of inner-child framing as a tolerance problem, a pause, or something to reactivate.",
+    "Do not trial imagery, witnessing, or symbolic contact when the capacity currently failing is inward attention, orientation, stopping, or return.",
+    "Do not turn a temporary external-orientation decision into a permanent ban on reparenting when the person still wants the framework.",
+    "Do not use witnessing, imagery, symbolic contact, or other child-facing contact while status remains paused_tolerance or paused_safety."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -86,22 +95,24 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
       "IC.DEEP_CHILD_DIALOGUE"
     ],
     "forbiddenOverclaims": [
-      "Do not claim that needing less depth means the person has failed reparenting or that InnerSignal should be permanently abandoned."
+      "Do not claim that needing less depth means the person has failed reparenting or that InnerSignal should be permanently abandoned.",
+      "Do not label unrelated practical work as reparenting after the person has declined the frame."
     ],
     "requiredNuance": [
-      "Inner-child reparenting is a continuing relationship whose depth and representation can change. The user may always decline inner-child framing.",
-      "A pause is scope-limited and revisitable; reactivation conditions must be observable enough to use rather than a vague instruction to return when fully healed."
+      "A refusal is not a pause: when inner-child framing is declined, stop using that framing and do not create a reactivation condition.",
+      "For tolerance or safety pauses, continuity state is preserved without being surfaced during acute safety work; re-entry requires agreement and begins at or below the last tolerated level."
     ]
   },
   "recommendations": [
-    "Reduce depth before abandoning the relationship: step from immersive dialogue toward present-focused Nurturer/Protector/Guide contact, witnessing, borrowed care, indirect or symbolic contact, or an ordinary adult action on the younger self's behalf.",
-    "When practical safety, human support, or an external task temporarily becomes primary, connect it back to the adult function it genuinely serves instead of treating outward action as the end of InnerSignal.",
-    "Use a full pause only when the person declines the modality or even minimal inner contact is currently worsening safety, orientation, stopping/return capacity, or ordinary functioning.",
-    "Whenever a full pause is needed, name a concrete reactivation condition and return first at the gentlest workable level rather than jumping back to the prior depth."
+    "If stopping, return, or orientation is currently compromised, stop the inner exercise and orient outward first. Do not trial another inward technique until those capacities recover.",
+    "If inward attention itself is worsening things, step outward first: an ordinary adult action, real human support, or a brief eyes-open acknowledgment may preserve care without demanding more inward attention.",
+    "When the person still wants inner-child work but depth is too much, reduce depth rather than abandoning the relationship. A full tolerance pause is last-resort; a safety gate may require a pause regardless.",
+    "Record the pause reason, last tolerated level, and an observable reactivation condition that includes the person's agreement. Do not surface continuity language during an acute safety turn.",
+    "When status is paused_tolerance or paused_safety, do not run a child-facing titration ladder. Preserve the pause until the separate reactivation gate clears."
   ],
   "successSignals": [
-    "The person retains a believable relationship of care, protection, or guidance with the younger self at a depth they can currently hold, or has a clear condition for re-entering it after a necessary pause.",
-    "Reduced depth improves choice and functioning without redefining avoidance of all difficult material as safety."
+    "The person retains choice and ordinary functioning while care/protection continues at a tolerable level or a safety/tolerance pause is clearly bounded.",
+    "Any later re-entry is consensual and begins at or below the last tolerated level."
   ]
 }
 ```

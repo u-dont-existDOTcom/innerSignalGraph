@@ -22,9 +22,15 @@ source_refs:
   - IC.SESSION_CLOSURE
 regression_refs:
   - G062
-base_record_sha256: 189727472f5cfd353740612ae4ad720265b49d63b06faf0148912df131a6cf14
-base_graph_sha256: e9856521bef7b4cdc99119361292128385607971644ed075fd48d520522cfc3d
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+  - G066
+  - G069
+  - G070
+  - G079
+  - G087
+  - G088
+base_record_sha256: 1ecb8c30862c45cb361f6f35312de3ad57fd48a02e2bb7450c8702a49eff88ac
+base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # Titrate difficult material instead of equating distress with harm
@@ -42,6 +48,16 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
         "field": "practice_challenge",
         "op": "eq",
         "value": "workable"
+      },
+      {
+        "field": "practice_challenge_domain",
+        "op": "eq",
+        "value": "inner_child"
+      },
+      {
+        "field": "practice_reapproach_willingness",
+        "op": "eq",
+        "value": "yes"
       },
       {
         "field": "current_intent",
@@ -84,13 +100,18 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
         "field": "inward_attention_effect",
         "op": "eq",
         "value": "worsens"
+      },
+      {
+        "field": "ic_status",
+        "op": "eq",
+        "value": "declined"
       }
     ]
   },
   "avoid": [
     "Do not protect the person from every unpleasant emotion or dream merely because it is distressing.",
-    "Do not push through disorientation, loss of stopping capacity, prolonged functional decline, or the person's refusal in the name of growth, exposure, toughness, or catharsis.",
-    "Do not treat intensity, suffering, vividness, or endurance as proof that the exercise is working."
+    "Do not push through disorientation, loss of stopping/return capacity, functional decline, delayed deterioration, or unwillingness in the name of growth.",
+    "Do not treat intensity, suffering, vividness, endurance, or dream content as proof that the exercise is working or historically true."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -100,15 +121,15 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
       "Do not claim that adversity necessarily causes growth or that disturbing dreams reveal hidden historical truth."
     ],
     "requiredNuance": [
-      "Distress and harm are not synonyms; the relevant distinction is workable challenge versus overload, judged over time and with the person's own appraisal.",
-      "Growth can occur through difficulty, but difficulty is never a reason to manufacture or intensify suffering."
+      "Distress and harm are not synonyms; workable challenge requires willingness plus intact capacity and recovery, not capacity alone.",
+      "If distress is climbing, several challenge dimensions may be reduced at once; 'one at a time' is a calibration preference, not a rigidity."
     ]
   },
   "recommendations": [
-    "Treat difficulty as information to calibrate, not as automatic evidence of either harm or progress. Ask how the person experiences the challenge and what happens to orientation, choice, recovery, later functioning, useful information, and willingness to re-engage.",
-    "Pendulate between challenge and resource. Adjust one dimension at a time—duration, depth, timing, imagery intensity, eyes-closed immersion, isolation, or amount of support—so the person can learn at the edge of current capacity rather than only inside comfort or beyond capacity.",
-    "A difficult dream, tears, grief, fear, vivid material, or temporary activation can be explored for the need or conflict it reveals without treating the content as historical fact and without assuming the practice caused harm.",
-    "If the challenge becomes too much, step down and recover; when capacity returns, reconsider a bounded re-entry rather than treating the first reduction as permanent."
+    "Treat difficult material as calibration information, not automatic evidence of harm or progress. Workable requires intact orientation/stopping/return, willingness to re-approach, a non-aversive appraisal, and recovery/later functioning that have not meaningfully deteriorated.",
+    "Pendulate between challenge and resource. Adjust one dimension at a time when calibrating, or several at once if distress is climbing: duration, depth, timing, imagery intensity, representation, eyes-open/external anchoring, isolation, and support.",
+    "Re-approach only when the person wants to and both their appraisal and observed recovery/functioning support it.",
+    "Dreams and imagery may be explored for present meaning, feelings, needs, or capacities; they are not evidence of historical events and must not be used to confirm or reconstruct memories."
   ],
   "successSignals": [
     "The person can approach and leave difficult material voluntarily while remaining oriented and recovering afterward.",

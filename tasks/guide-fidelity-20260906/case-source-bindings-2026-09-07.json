@@ -1,8 +1,8 @@
 {
-  "version": 5,
-  "sourceFile": "guides/inner-child-guide-2026-10-04-r1.txt",
-  "sourceSha256": "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac",
-  "purpose": "Bind the unchanged synthetic fidelity cases to the exact active 2026-10-04 r1 inner-child article while preserving their existing source refs, user turns, required functions and calibration controls. The October 3 r3 source remains pinned separately as source history.",
+  "version": 6,
+  "sourceFile": "guides/inner-child-guide-2026-10-04-r2.txt",
+  "sourceSha256": "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5",
+  "purpose": "Bind the unchanged synthetic fidelity cases to the exact active 2026-10-04 r2 inner-child article after the consent/re-entry/scaffolding semantic repair, while preserving their existing source refs, user turns, required functions and calibration controls. October 3 r3 and October 4 r1 remain pinned separately as source history.",
   "additionalSourceRefs": {
     "GF01": [
       "IC.CHECKING_LOOP"

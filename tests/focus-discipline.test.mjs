@@ -136,13 +136,13 @@ test("focus rules reach each reasoning consumer exactly once and gate the protec
   assert.match(longitudinalClinicalRules, /It is not automatically the agenda\. When confirming or disconfirming it could change what is done next for the current focus, test it concretely/);
   assert.match(longitudinalClinicalRules, /otherwise park that question rather than investigating the symptom's function merely because it is available/);
   assert.match(focusDisciplineRules, /strongest expressed suffering or functional impact/);
-  assert.match(focusDisciplineRules, /Novelty, strangeness, diagnostic salience/);
+  assert.match(focusDisciplineRules, /Novelty, strangeness, diagnostic curiosity or labeling/);
   assert.match(focusDisciplineRules, /baseline\/prior-assessment discriminator/);
   assert.match(focusDisciplineAuditRules, /salience hijacking/);
   assert.match(caseExtractionPrompt(context).system, /A difficult dream, grief, tears, fear, activation, or vivid inner material does not by itself make inward_attention_effect worsens/);
-  assert.match(caseExtractionPrompt(context).system, /new or different from their baseline/);
-  assert.match(longitudinalClinicalRules, /distinguish reducing depth from abandoning the relationship/);
-  assert.match(longitudinalClinicalRules, /Real human support can itself be Nurturer\/Protector\/Guide action/);
+  assert.match(caseExtractionPrompt(context).system, /new\/different from baseline/);
+  assert.match(longitudinalClinicalRules, /separate refusal from tolerance\/safety titration/);
+  assert.match(longitudinalClinicalRules, /Real human support can supply care, protection and guidance/);
   assert.match(realizationPrompt(context, {}, "synthetic").system, /InnerSignal continuity is broader than any one child-facing exercise/);
 });
 

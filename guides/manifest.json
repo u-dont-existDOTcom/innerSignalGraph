@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-approved-continuity-scaffolding-2026-10-04-r1",
-      "file": "inner-child-guide-2026-10-04-r1.txt",
-      "sha256": "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac",
+      "version": "owner-approved-continuity-scaffolding-2026-10-04-r2",
+      "file": "inner-child-guide-2026-10-04-r2.txt",
+      "sha256": "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5",
       "role": "primary-framework",
       "format": "text"
     },
@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-10-04-continuity-scaffolding-r1",
+      "version": "2026-10-04-continuity-scaffolding-r2",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child canonical text is the 2026-10-03 r3 owner-approved guide plus the owner-authorized 2026-10-04 continuity/scaffolding/community additions. The exact 2026-10-03 owner-supplied Substack capture and edited r3 HTML remain preserved unchanged as provenance; the 2026-10-04 development source is a minimal text-level canonical amendment derived from r3, not a claim that the public Substack HTML has already been updated. Source synchronization and development-main graph changes do not themselves install a Guide Packet or promote stable.",
+  "notes": "The active inner-child canonical text is the 2026-10-03 r3 owner-approved guide plus the owner-authorized 2026-10-04 continuity/scaffolding/community additions, revised after independent semantic review to separate refusal from tolerance pauses, make re-entry stateful, calibrate challenge from willingness/recovery, and gate reparenting labels. Earlier Oct 3 and Oct 4 r1 sources remain preserved as history. This development-main source change does not install a Guide Packet or promote stable.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -95,6 +95,14 @@
       "version": "owner-latest-humanized-2026-10-03-r3",
       "file": "inner-child-guide-2026-10-03-r3.txt",
       "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-approved-continuity-scaffolding-2026-10-04-r1",
+      "file": "inner-child-guide-2026-10-04-r1.txt",
+      "sha256": "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac",
+      "role": "primary-framework",
+      "format": "text"
     }
   ]
 }

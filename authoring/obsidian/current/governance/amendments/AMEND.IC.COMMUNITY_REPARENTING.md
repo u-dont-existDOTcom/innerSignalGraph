@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.COMMUNITY_REPARENTING
 status: owner-approved
 domain: inner-child
-base_record_sha256: 1bcd625d8b68bc834702eef51cc82850d8f089c7ff784a595a7dd002934249b4
-source_file_sha256: 1e66de8978fae366e0b1a95e444cb9cfcc020570355175caa38bfae66df7529b
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+base_record_sha256: 05684d2616b5d602110ca2d1b5784109be10cd1768225cf75f8abeb6e1a397ea
+source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # AMEND.IC.COMMUNITY_REPARENTING
@@ -22,8 +22,8 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
     "domain": "inner-child",
     "id": "AMEND.IC.COMMUNITY_REPARENTING",
     "status": "owner-approved",
-    "text": "Real human connection can itself embody reparenting. Calling a trusted friend, asking to spend time with safe people, contacting a social worker, joining a peer-support group, spiritual community, interest group, class, club, volunteer activity, or another recurring community can be a Nurturer, Protector, or Guide move when it meets the actual need. Prefer a portfolio of reciprocal supports with genuine commonality over making one partner, friend, therapist, group, or spiritual authority the single point of emotional survival. Explore fit and practical barriers; preserve the person's spirituality without assuming religion, and treat needing people as compatible with adult capacity rather than failed independence."
+    "text": "Real human connection can embody care, protection, and guidance, and—when the person already welcomes an inner-child frame—can sometimes be named as reparenting in action. Calling a trusted friend, asking to spend time with safe people, contacting a social worker, joining a peer-support group, spiritual community, interest group, class, club, volunteer activity, or another recurring community can serve Nurturer, Protector, or Guide functions when it meets the actual need. Prefer a diversified mix: reciprocal relationships where possible, plus peer, professional, spiritual, and practical services. Build additional routes alongside existing safe supports rather than telling the person to withdraw from one merely to diversify. Do not make one partner, friend, therapist, group, spiritual authority, service, or this app the single point of emotional survival. Explore fit and practical barriers; preserve the person's spirituality without assuming religion; screen high-control groups, exploitative authorities, and unsafe or abusive relationships rather than reinforcing them as support; and treat needing people as compatible with adult capacity rather than failed independence. Use reparenting labels sparingly, only when the person already uses or welcomes that frame, never after they decline it, and never as a substitute for inner contact they are actually asking for."
   },
-  "version": "2026-10-04-continuity-scaffolding-r1"
+  "version": "2026-10-04-continuity-scaffolding-r2"
 }
 ```

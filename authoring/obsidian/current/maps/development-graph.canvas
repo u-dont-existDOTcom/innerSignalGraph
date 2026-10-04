@@ -79,6 +79,12 @@
       "toNode": "ee08be5c74513aaf90d3752dba119ed4e1a2ebe0efc102c658e964f3f00757d8"
     },
     {
+      "fromNode": "4271513964de09128359e569e9f2203771cc77b24b4fee2d2ab85eeefd44b2a3",
+      "id": "1881a7806d6da2ad71e350a55361f431bba6d40138477515989343037f76575f",
+      "label": "may-support",
+      "toNode": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2"
+    },
+    {
       "fromNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41",
       "id": "1908fe10a903af07a8828370b2bd0193303593d38b5fee58d54913496ed0e8d3",
       "label": "enables",
@@ -89,6 +95,12 @@
       "id": "19c7e4f510c1bed6c637243873f8fa1ad226edd4c23f6d47b4fc4db5fe18fa03",
       "label": "builds-nurturer-protector-guide",
       "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "11ca2d3306f1f4a7c1cff30f816b018246951081828372f4777b95227d3097ef",
+      "id": "1a73d4263c0cbb8a0f58af4c138e8e6a4c35d70becb9e1abd8b6f7c091866262",
+      "label": "precedes",
+      "toNode": "8baf31acaf8d336737862a0829a413ed5fbb8c1301ef4d142cdabbbc96543dc2"
     },
     {
       "fromNode": "9e8508abe48d12733d0ead0118cf1dbffc617269fbd96f0b4949d26b0a5c89f8",
@@ -199,16 +211,16 @@
       "toNode": "3747f0a7fbc9e17ff177c95840b96f58ba18dc0af5524d5af39f5613c112fcc3"
     },
     {
+      "fromNode": "4d844b3917f6f12f0aaf8b897b7da6b2138ef833353cacc8a3ce5df6656ef0a1",
+      "id": "356ce96f4d37fde35531c5585aa5dcb8f7910bdd0b0506591a162f274de9a730",
+      "label": "calibrates",
+      "toNode": "8033444f6b7e0bb186a2ac550ba71308f95857366f09e83c4aa646e08b23cfc4"
+    },
+    {
       "fromNode": "0b91e582b6ce736b73684b167fce07c2cf0aa838abef94d580f41111fca249f5",
       "id": "379a3403a875b6e57fa1724c15c4a501c3f05cb6fe990ec42b2cd6f2c4947e91",
       "label": "enables",
       "toNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c"
-    },
-    {
-      "fromNode": "918b621bcb55542ae0dfe1c8954c03a2129d9cf8ce2cfa0f64767895bff34b1d",
-      "id": "38eb3367566da018f24710cc796154b771b5b2b57e1e5905de1e9cb7e120a9c2",
-      "label": "may-support",
-      "toNode": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2"
     },
     {
       "fromNode": "065a374a67c57d69f994c510bf64c2ec1800d4108a5a95816ebf904402fa7722",
@@ -221,6 +233,12 @@
       "id": "3ca16b953ccf5107710444dc6f2c6f93f9cc798af89cc872501333f94beb116a",
       "label": "does-not-certify-authority",
       "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
+    },
+    {
+      "fromNode": "8baf31acaf8d336737862a0829a413ed5fbb8c1301ef4d142cdabbbc96543dc2",
+      "id": "3d216f309b888978092712501732358bbc173b22a5ad55a941c687bbb427b56c",
+      "label": "calibrates",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
     },
     {
       "fromNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
@@ -349,6 +367,12 @@
       "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
     },
     {
+      "fromNode": "905aabc9790d6ee0ea6e636344916e62f0c14c87f881aec958afae783db3225c",
+      "id": "738b80c1e51f97cfce6ede7f65427bbe6dad6f79344a02bee35c220a5064d82a",
+      "label": "precedes",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
       "fromNode": "4f4b62be51adda4c573d5fb9d5cb24803b9a31cd4f8baafec660a0550cac4611",
       "id": "74c88e1dc7f74f3ec2c0758485d296203acc4efae48530f3507d4bb54bafcc05",
       "label": "requires-aftercare-and-integration",
@@ -383,6 +407,12 @@
       "id": "84d33992287c942100392870dc515e509f0e55e953350d5b7999be5ae2341793",
       "label": "organizes-through",
       "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
+    },
+    {
+      "fromNode": "4271513964de09128359e569e9f2203771cc77b24b4fee2d2ab85eeefd44b2a3",
+      "id": "85047a8f79e43b9ab26c9b2e1483583c7447f2b96bfa2ebae9a0cd5eca74d43a",
+      "label": "may-support",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
       "fromNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019",
@@ -526,12 +556,6 @@
       "fromNode": "a7544fa40f30aa4a52437359f14b02a5723e0360d56036d7f247f64683921fdd",
       "id": "c9321b0ae44d2b42f76ca70df3f741b13db5da8d33fac8994b9893e7e3f0fd4f",
       "label": "requires-evidence",
-      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
-    },
-    {
-      "fromNode": "918b621bcb55542ae0dfe1c8954c03a2129d9cf8ce2cfa0f64767895bff34b1d",
-      "id": "caf059941afd09eb2bdd764e95edd03e5b182dbd8a6f9821c059f4d3b781cdde",
-      "label": "embodies-through",
       "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
@@ -810,7 +834,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 880
+      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
@@ -828,7 +852,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1100
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
@@ -887,6 +911,15 @@
       "y": 1760
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.COMMUNITY_SUPPORT.md",
+      "height": 140,
+      "id": "4271513964de09128359e569e9f2203771cc77b24b4fee2d2ab85eeefd44b2a3",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 2640
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.IDENTITY_FORMATION.md",
       "height": 140,
       "id": "45058a21b6c292a0222a259cd019ddd4bb7a7e10768f1478254cd291f271432e",
@@ -921,6 +954,15 @@
       "width": 300,
       "x": 5080,
       "y": 2420
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.CHALLENGE_CHECK_IN.md",
+      "height": 140,
+      "id": "4d844b3917f6f12f0aaf8b897b7da6b2138ef833353cacc8a3ce5df6656ef0a1",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 220
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.AQUATIC_BODYWORK.md",
@@ -1080,6 +1122,15 @@
       "y": 880
     },
     {
+      "file": "current/nodes/inner-child-directed-graph/IC.REACTIVATION.md",
+      "height": 140,
+      "id": "8baf31acaf8d336737862a0829a413ed5fbb8c1301ef4d142cdabbbc96543dc2",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 440
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.COMMON_HUMANITY.md",
       "height": 140,
       "id": "8c867086a5b4754139d4e93679430b02676ab0e416e807efb70dfb505a338faa",
@@ -1098,13 +1149,13 @@
       "y": 0
     },
     {
-      "file": "current/nodes/inner-child-directed-graph/IC.COMMUNITY_SUPPORT.md",
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.MEDICAL_RED_FLAG.md",
       "height": 140,
-      "id": "918b621bcb55542ae0dfe1c8954c03a2129d9cf8ce2cfa0f64767895bff34b1d",
+      "id": "905aabc9790d6ee0ea6e636344916e62f0c14c87f881aec958afae783db3225c",
       "type": "file",
       "width": 300,
-      "x": 880,
-      "y": 1540
+      "x": 4200,
+      "y": 220
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_INTERNAL.md",
@@ -1113,7 +1164,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2640
+      "y": 2860
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.RESOURCE_BRAINSPOTTING.md",
@@ -1167,7 +1218,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 220
+      "y": 660
     },
     {
       "color": "3",
@@ -1186,7 +1237,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1320
+      "y": 1760
     },
     {
       "color": "3",
@@ -1223,7 +1274,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2860
+      "y": 3080
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.ADULT_APPRENTICE.md",
@@ -1315,7 +1366,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 660
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
@@ -1342,7 +1393,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1760
+      "y": 1980
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
@@ -1452,7 +1503,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 440
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",

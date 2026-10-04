@@ -28,37 +28,44 @@ test("October 3 r3 source remains exact and pinned after the October 4 successor
   assert.equal(result.semanticStatus, "owner-approved-certainty-authenticity-refinement-r3");
 });
 
-test("October 4 active source is an exact authorized insertion-only delta over October 3 r3", async () => {
-  const prior = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-03-r3.txt", import.meta.url), "utf8");
-  const current = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r1.txt", import.meta.url), "utf8");
-  assert.equal(hash(current), "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac");
+test("October 4 r2 is the active authorized successor while October 3 r3 remains losslessly present", async () => {
+  const r3 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-03-r3.txt", import.meta.url), "utf8");
+  const r1 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r1.txt", import.meta.url), "utf8");
+  const current = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r2.txt", import.meta.url), "utf8");
+  assert.equal(hash(r1), "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac");
+  assert.equal(hash(current), "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5");
 
-  const priorLines = prior.split("\n");
+  const priorLines = r3.split("\n");
   let priorIndex = 0;
   for (const line of current.split("\n")) {
     if (priorIndex < priorLines.length && line === priorLines[priorIndex]) priorIndex += 1;
   }
-  assert.equal(priorIndex, priorLines.length, "October 4 may add authorized material but must preserve every October 3 r3 line in order");
+  assert.equal(priorIndex, priorLines.length, "October 4 r2 may amend the new additions but must preserve every October 3 r3 line in order");
 
   for (const marker of [
-    "You do not graduate into inner-not-signal",
-    "This is not throwing yourself into a cauldron to toughen up",
-    "If isolation itself is part of the wound, reaching toward people can be reparenting in action",
-    "A difficult dream is not automatically evidence that the practice helped"
+    "A no to the frame is not a pacing problem to solve",
+    "If those answers are not known yet, do not rush to classify the experience as healing or harmful",
+    "If inner-child language already feels natural to you, you might call that reparenting in action",
+    "do not treat it as proof of a recovered historical event"
   ]) {
     assert.equal(current.split(marker).length - 1, 1, marker);
-    assert.equal(prior.includes(marker), false, marker);
+    assert.equal(r3.includes(marker), false, marker);
   }
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-continuity-scaffolding-2026-10-04-r1");
-  assert.equal(active.file, "inner-child-guide-2026-10-04-r1.txt");
-  assert.equal(active.sha256, "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac");
+  assert.equal(active.version, "owner-approved-continuity-scaffolding-2026-10-04-r2");
+  assert.equal(active.file, "inner-child-guide-2026-10-04-r2.txt");
+  assert.equal(active.sha256, "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5");
   assert.ok(manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide"
     && item.version === "owner-latest-humanized-2026-10-03-r3"
     && item.sha256 === "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb"
+  ));
+  assert.ok(manifest.sourceHistory.some(item =>
+    item.id === "inner-child-guide"
+    && item.version === "owner-approved-continuity-scaffolding-2026-10-04-r1"
+    && item.sha256 === "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac"
   ));
 });
 

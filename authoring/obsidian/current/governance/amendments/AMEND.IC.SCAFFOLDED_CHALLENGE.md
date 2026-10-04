@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SCAFFOLDED_CHALLENGE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 5f75635a7450051dee73233d812adcc441e245222698242f4c7273418ae208ac
-source_file_sha256: 1e66de8978fae366e0b1a95e444cb9cfcc020570355175caa38bfae66df7529b
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+base_record_sha256: da4293a49f6f0644c25303d9720c5119722e07ef8f99b6aad3aac7343678f7a3
+source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # AMEND.IC.SCAFFOLDED_CHALLENGE
@@ -22,8 +22,8 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
     "domain": "inner-child",
     "id": "AMEND.IC.SCAFFOLDED_CHALLENGE",
     "status": "owner-approved",
-    "text": "Distress is not identical to harm. Difficult dreams, grief, fear, tears, activation, or emotionally challenging material can be workable and informative, but intensity does not prove progress, truth, or correct depth. Calibrate challenge from the person's own appraisal, orientation, voluntary stopping and return, recovery and later functioning, usable information or agency gained, and willingness to re-engage. Scaffold and pendulate: reduce one dimension at a time—duration, depth, timing, imagery intensity, eyes-closed immersion, isolation, or amount of support—then re-approach when capacity returns. Do not protect a person from every difficult experience, and do not push them into overwhelm as a character-building test."
+    "text": "Distress is not identical to harm. Difficult dreams, grief, fear, tears, activation, or emotionally challenging material can be workable and informative about present feelings, needs, and capacities, but intensity does not prove progress, historical truth, or correct depth. Call challenge workable only when orientation and voluntary stopping/return remain intact, the person is willing to re-approach, their own appraisal is not that the experience was too much or unwanted, and recovery/later functioning have not meaningfully deteriorated. If difficult material appeared but appraisal, willingness, or recovery is still unknown, ask how it landed and how they have been since before deciding whether to re-approach or step down. Scaffold and pendulate: when calibrating, adjust one dimension at a time when possible, or several at once if distress is climbing—shorter duration, less depth or imagery intensity, better timing, more symbolic or indirect representation, eyes open or more external anchors, less isolation, and more support. Re-approach by restoring challenge gradually when both the person's appraisal and observed functioning support it and they want to continue. Do not protect a person from every difficult experience, and do not push them into overwhelm as a character-building test. A request to stop or not return is honored rather than treated as avoidance. Dream and imagery content is not evidence of historical events; do not confirm, suggest, or reconstruct memories from it—work with its present meaning and needs."
   },
-  "version": "2026-10-04-continuity-scaffolding-r1"
+  "version": "2026-10-04-continuity-scaffolding-r2"
 }
 ```

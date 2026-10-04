@@ -26,9 +26,9 @@ regression_refs:
   - G032
   - G062
   - G063
-base_record_sha256: 334e45e60b9c2538f8b2763ad6005b3448b2340f7191be6e068f3ce1d95c65d6
-base_graph_sha256: 4215d3017d07c259c83dbf53cc440124af89e204119c6068e6b0a9dd6bbb6f53
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+base_record_sha256: ec80b7d2873da67f7eb19d3319036bd703881ca1d40e1e9cb2f862f2c538bb01
+base_graph_sha256: f1bea04c4bb68ab1421a367d01dcc78009bcd00e338e401deba09c8a9319550b
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # Shift from inward monitoring to external embodiment
@@ -94,15 +94,14 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
     ],
     "requiredNuance": [
       "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other.",
-      "External orientation is a depth/pacing adjustment, not an identity change from InnerSignal to 'inner-not-signal'; the person may still decline the modality, and safety gates still control re-entry."
+      "External orientation is a depth/pacing adjustment only when inner-child work was already in play and still wanted; refusal is a separate hard boundary."
     ]
   },
   "recommendations": [
     "Prefer eyes-open orientation and ordinary embodied activity that requires contact with the environment: walking, gym, sport, swimming, cycling, chores, social contact, or another tolerable activity.",
     "Treat this as embodiment without symptom-scanning: attention can be in movement, coordination, effort, surroundings, and ordinary life rather than repeatedly checking the internal state.",
     "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work.",
-    "Reduce the destabilizing form of inward attention without discarding the inner relationship. When permitted, keep the smallest present-focused Nurturer/Protector/Guide stance or let an ordinary adult action carry that function while attention returns outward.",
-    "If even minimal inner contact must pause, preserve an observable reactivation condition and retry first at a gentler level once orientation, stopping/return capacity, or functioning has recovered."
+    "If inner-child work is already active and still wanted, external orientation reduces depth rather than erasing the relationship. If even minimal contact must pause, record a bounded safety/tolerance pause and an observable reactivation condition; do not surface that continuity message during an acute safety turn."
   ],
   "successSignals": [
     "Derealization, panic, or hypermonitoring is no longer being amplified by repeated inward checking.",

@@ -7,23 +7,23 @@ source_id: IC.THREE_FUNCTIONS
 guide_id: inner-child-guide
 heading: The Three Adult Functions
 source_role: primary-framework
-source_hash: 08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac
+source_hash: d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5
 section_hash: d8d3048a1540ca60516bcc01d8b7f05fbd009dfc36ae2ec5ed0ebadd340a53d5
 locator_kind: text-lines
 cited_by_node_ids:
-  - IC.COMMUNITY_SUPPORT
   - IC.CONTINUITY_TITRATION
   - IC.GUIDE_LATER
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+  - ROUTE.COMMUNITY_SUPPORT
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # The Three Adult Functions
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-04-r1.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r2.txt`
 
-Locator: Lines 295–324
+Locator: Lines 307–336
 
 ```text
 The Three Adult Functions

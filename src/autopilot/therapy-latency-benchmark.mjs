@@ -24,12 +24,12 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  revision: "certainty-authenticity-2026-10-03",
+  revision: "continuity-scaffolding-2026-10-04-r2",
   fast: Object.freeze({
     semanticHash: "e9624348b7e508b2caf1af3736f8aa232c725bd7fb841e253932c60c33ef32e9"
   }),
   reviewed: Object.freeze({
-    semanticHash: "2db25ce86e4d3dd995fc75286eefea5036b349fd9548f7f4aee7bd504f99d11b"
+    semanticHash: "8777b60461c53b0d9e6484e471a6b5d34ba0c8e765abcde8237e0e8d726cd2a4"
   })
 });
 
@@ -49,6 +49,15 @@ const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
   "attention_loop",
   "thinking_yield",
   "inward_attention_effect",
+  "social_connection_need",
+  "practice_challenge",
+  "practice_challenge_domain",
+  "practice_reapproach_willingness",
+  "ic_status",
+  "ic_last_tolerated_level",
+  "ic_reactivation_ready",
+  "ic_titration_needed",
+  "medical_urgency",
   "other_person_central",
   "relational_capacity_evidence",
   "emotional_takeover_pressure",

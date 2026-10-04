@@ -29,9 +29,11 @@ regression_refs:
   - G033
   - G060
   - G064
-base_record_sha256: 4b93745024524b11e37d2ec4a114d77e6ccda5443e9d346b0680dffbff6f4d0b
-base_graph_sha256: 4215d3017d07c259c83dbf53cc440124af89e204119c6068e6b0a9dd6bbb6f53
-projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
+  - G066
+  - G070
+base_record_sha256: decb951fb693a2ee2922ef7f5af4d5ae418994911841fb1411a00ad392929d23
+base_graph_sha256: f1bea04c4bb68ab1421a367d01dcc78009bcd00e338e401deba09c8a9319550b
+projection_input_sha256: b73eec161aed331960bb463afaf71dfd1c7509fa1ee8e2656f12d0de4385a3eb
 ---
 
 # Act on the concrete problem
@@ -96,7 +98,7 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
       "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
       "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
       "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
-      "Outward action and inner reparenting can be the same move when the adult action meets the younger self's actual need; acting outward does not automatically close the inner therapeutic task."
+      "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn."
     ]
   },
   "questionPolicy": {
@@ -111,7 +113,7 @@ projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917
     "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion.",
     "For deliberate social or relationship practice, name the life-serving purpose first—connection, curiosity, communication, skill, play or another chosen value. If the action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation.",
     "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
-    "When the outward step genuinely supplies care, protection, guidance, or connection, name that adult function when useful: asking a friend for company, contacting a service, joining a community, eating, securing belongings, or handling logistics can be reparenting in action rather than a departure from inner work."
+    "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",

@@ -11,8 +11,8 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.contractVersion, "guide-graph-v1");
   assert.equal(bundle.version, "inner-child-somatic-pilot-2026-08-09-r5");
   assert.equal(bundle.stats.graphCount, 3);
-  assert.equal(bundle.stats.nodeCount, 77);
-  assert.equal(bundle.stats.edgeCount, 108);
+  assert.equal(bundle.stats.nodeCount, 80);
+  assert.equal(bundle.stats.edgeCount, 112);
   assert.equal(bundle.stats.ownerAmendmentCount, 49);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
@@ -29,7 +29,7 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 49);
+  assert.equal(result.count, 58);
 });
 
 test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {
@@ -333,7 +333,9 @@ test("difficult but workable inner-child material preserves challenge calibratio
     variables: {
       present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
       suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
-      current_intent: "gentle_practice", practice_challenge: "workable", unresolved_inner_material: "present", actionable_problem: "absent",
+      current_intent: "gentle_practice", practice_challenge: "workable", practice_challenge_domain: "inner_child",
+      practice_reapproach_willingness: "yes", ic_status: "active", ic_titration_needed: "no",
+      unresolved_inner_material: "present", actionable_problem: "absent",
       attention_loop: "absent", inward_attention_effect: "neutral", thinking_yield: "new_information_or_action",
       deep_work_readiness: "yes"
     }
@@ -341,27 +343,29 @@ test("difficult but workable inner-child material preserves challenge calibratio
   assert.equal(plan.primaryJob.id, "ROUTE.GO_INWARD");
   assert.ok(plan.selectedNodes.some((item) => item.id === "IC.SCAFFOLDED_CHALLENGE"));
   assert.ok(!plan.selectedNodes.some((item) => item.id === "ROUTE.EXTERNAL_EMBODIMENT"));
-  assert.ok(plan.requiredNuance.some((item) => /Distress and harm are not synonyms/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /workable challenge requires willingness plus intact capacity and recovery/i.test(item)));
 });
 
-test("genuine inward worsening de-escalates depth without abandoning InnerSignal", async () => {
+test("genuine inward worsening de-escalates depth without abandoning wanted InnerSignal work", async () => {
   bundle ??= await compileGuideGraphs({ write: false });
   const plan = planFromGraphs({
     graphs: bundle.graphs,
     variables: {
       present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
       suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
-      current_intent: "deep_dialogue", practice_challenge: "overwhelming", deep_work_readiness: "yes", unresolved_inner_material: "present",
+      current_intent: "deep_dialogue", practice_challenge: "overwhelming", practice_challenge_domain: "inner_child",
+      practice_reapproach_willingness: "unknown", ic_status: "active", ic_titration_needed: "yes",
+      deep_work_readiness: "yes", unresolved_inner_material: "present",
       actionable_problem: "absent", attention_loop: "present", inward_attention_effect: "worsens", thinking_yield: "mixed"
     }
   });
   assert.equal(plan.primaryJob.id, "ROUTE.EXTERNAL_EMBODIMENT");
   assert.ok(plan.selectedNodes.some((item) => item.id === "IC.CONTINUITY_TITRATION"));
   assert.ok(plan.deferredNodes.some((item) => item.id === "IC.DEEP_CHILD_DIALOGUE"));
-  assert.ok(plan.requiredNuance.some((item) => /reactivation condition/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /re-entry requires agreement and begins at or below the last tolerated level/i.test(item)));
 });
 
-test("social connection need can be Protector action and remains broader than one support", async () => {
+test("social connection need can support Protector action without requiring a reparenting label", async () => {
   bundle ??= await compileGuideGraphs({ write: false });
   const plan = planFromGraphs({
     graphs: bundle.graphs,
@@ -370,11 +374,29 @@ test("social connection need can be Protector action and remains broader than on
       suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
       current_intent: "conversation", actionable_problem: "present", unresolved_inner_material: "present",
       attention_loop: "absent", inward_attention_effect: "neutral", inner_adult_access: "partial",
-      support_available: "absent", social_connection_need: "present"
+      support_available: "absent", social_connection_need: "present", ic_status: "active"
     }
   });
   assert.equal(plan.primaryJob.id, "ROUTE.ACT_OUTWARD");
-  assert.ok(plan.selectedNodes.some((item) => item.id === "IC.COMMUNITY_SUPPORT"));
+  assert.ok(plan.selectedNodes.some((item) => item.id === "ROUTE.COMMUNITY_SUPPORT"));
   assert.ok(plan.trace.some((item) => item.id === "IC.PROTECTOR_ACTION"));
-  assert.ok(plan.requiredNuance.some((item) => /portfolio of imperfect supports/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /Diversification is additive/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /without being labeled as reparenting/i.test(item)));
+});
+
+test("declining inner-child framing removes non-safety IC nodes from planner output", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      current_intent: "deep_dialogue", deep_work_readiness: "no", actionable_problem: "present",
+      unresolved_inner_material: "present", ic_status: "declined", ic_titration_needed: "yes"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.ACT_OUTWARD");
+  assert.equal(plan.trace.some((item) => item.id.startsWith("IC.") && item.id !== "IC.SAFETY_ORIENTATION"), false);
+  assert.equal(plan.selectedNodes.some((item) => item.id === "IC.CONTINUITY_TITRATION"), false);
+  assert.equal(plan.selectedNodes.some((item) => item.id === "IC.REACTIVATION"), false);
 });

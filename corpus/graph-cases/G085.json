@@ -1,0 +1,30 @@
+{
+  "id": "G085",
+  "title": "sole-app support need diversifies additively without requiring reparenting labels",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent",
+    "social_connection_need": "present",
+    "support_available": "absent",
+    "ic_status": "not_in_play"
+  },
+  "expected": {
+    "primary": "ROUTE.COMMUNITY_SUPPORT",
+    "requiredNuancePatterns": [
+      "Diversification is additive",
+      "Human beings can need both inner adult capacity and real reciprocal attachment"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "needing people proves dependency"
+    ]
+  }
+}

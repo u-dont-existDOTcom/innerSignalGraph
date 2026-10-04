@@ -169,9 +169,20 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   };
   const nodes = graphs.flatMap((graph) => graph.nodes ?? []);
   const edges = graphs.flatMap((graph) => (graph.edges ?? []).map((edge) => ({ ...edge, graphId: graph.graphId })));
-  const matched = nodes
+  let matched = nodes
     .filter((node) => activationMatches(node.activation, variables))
     .sort((a, b) => a.tier - b.tier || b.priority - a.priority || a.id.localeCompare(b.id));
+
+  // Declining inner-child framing is a hard execution boundary, not a pacing state.
+  // Keep only the ordinary safety-orientation node from the IC namespace so the
+  // planner cannot reintroduce child/younger-self language through generic helpers.
+  if (variables.ic_status === "declined") {
+    matched = matched.filter((node) => !node.id.startsWith("IC.") || node.id === "IC.SAFETY_ORIENTATION");
+  }
+  if (["paused_tolerance", "paused_safety"].includes(variables.ic_status)) {
+    const allowedPausedIcNodes = new Set(["IC.SAFETY_ORIENTATION", "IC.CHALLENGE_CHECK_IN", "IC.REACTIVATION"]);
+    matched = matched.filter((node) => !node.id.startsWith("IC.") || allowedPausedIcNodes.has(node.id));
+  }
 
   const matchedIds = new Set(matched.map((node) => node.id));
   const deferredIds = new Set(matched.flatMap(deferTargets));

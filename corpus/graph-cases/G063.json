@@ -17,7 +17,11 @@
     "attention_loop": "present",
     "inward_attention_effect": "worsens",
     "thinking_yield": "mixed",
-    "practice_challenge": "overwhelming"
+    "practice_challenge": "overwhelming",
+    "practice_challenge_domain": "inner_child",
+    "practice_reapproach_willingness": "unknown",
+    "ic_status": "active",
+    "ic_titration_needed": "yes"
   },
   "expected": {
     "primary": "ROUTE.EXTERNAL_EMBODIMENT",
@@ -29,8 +33,7 @@
       "IC.DEEP_CHILD_DIALOGUE"
     ],
     "requiredNuancePatterns": [
-      "depth/pacing adjustment",
-      "reactivation conditions must be observable"
+      "re-entry requires agreement and begins at or below the last tolerated level"
     ],
     "forbiddenOverclaimPatterns": [
       "permanently abandoned"

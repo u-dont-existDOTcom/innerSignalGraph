@@ -17,20 +17,19 @@
     "inward_attention_effect": "neutral",
     "inner_adult_access": "partial",
     "support_available": "absent",
-    "social_connection_need": "present"
+    "social_connection_need": "present",
+    "ic_status": "active"
   },
   "expected": {
     "primary": "ROUTE.ACT_OUTWARD",
     "selectedIncludes": [
-      "IC.COMMUNITY_SUPPORT",
+      "ROUTE.COMMUNITY_SUPPORT",
       "ROUTE.GO_INWARD"
     ],
     "requiredNuancePatterns": [
-      "outward action and inner reparenting can be the same move",
-      "portfolio of imperfect supports"
+      "Outward action can embody inner care without being labeled as reparenting",
+      "Diversification is additive"
     ],
-    "forbiddenOverclaimPatterns": [
-      "joining a group will cure loneliness"
-    ]
+    "forbiddenOverclaimPatterns": []
   }
 }

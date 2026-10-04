@@ -17,12 +17,13 @@
     "inward_attention_effect": "neutral",
     "inner_adult_access": "available",
     "support_available": "present",
-    "social_connection_need": "present"
+    "social_connection_need": "present",
+    "ic_status": "not_in_play"
   },
   "expected": {
-    "primary": "IC.COMMUNITY_SUPPORT",
+    "primary": "ROUTE.COMMUNITY_SUPPORT",
     "requiredNuancePatterns": [
-      "portfolio of imperfect supports",
+      "Diversification is additive",
       "Human beings can need both inner adult capacity and real reciprocal attachment"
     ],
     "forbiddenOverclaimPatterns": [
