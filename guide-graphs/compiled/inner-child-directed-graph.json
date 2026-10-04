@@ -3201,6 +3201,243 @@
         ]
       },
       "defaultQuestion": ""
+    },
+    {
+      "id": "IC.CONTINUITY_TITRATION",
+      "title": "Preserve the inner relationship while reducing depth",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 99,
+      "activation": {
+        "any": [
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "inward_attention_effect",
+            "op": "eq",
+            "value": "worsens"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "practice_challenge",
+            "op": "eq",
+            "value": "overwhelming"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.CONTINUITY_TITRATION",
+        "IC.BEFORE_DEEP",
+        "IC.THREE_FUNCTIONS",
+        "IC.SESSION_CLOSURE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Reduce depth before abandoning the relationship: step from immersive dialogue toward present-focused Nurturer/Protector/Guide contact, witnessing, borrowed care, indirect or symbolic contact, or an ordinary adult action on the younger self's behalf.",
+        "When practical safety, human support, or an external task temporarily becomes primary, connect it back to the adult function it genuinely serves instead of treating outward action as the end of InnerSignal.",
+        "Use a full pause only when the person declines the modality or even minimal inner contact is currently worsening safety, orientation, stopping/return capacity, or ordinary functioning.",
+        "Whenever a full pause is needed, name a concrete reactivation condition and return first at the gentlest workable level rather than jumping back to the prior depth."
+      ],
+      "avoid": [
+        "Do not convert a temporary safety or pacing decision into a permanent conclusion that inner-child work is contraindicated.",
+        "Do not force child-facing imagery, dialogue, or symbolism during acute danger, disorientation, inability to stop, or after the person declines it."
+      ],
+      "successSignals": [
+        "The person retains a believable relationship of care, protection, or guidance with the younger self at a depth they can currently hold, or has a clear condition for re-entering it after a necessary pause.",
+        "Reduced depth improves choice and functioning without redefining avoidance of all difficult material as safety."
+      ],
+      "tags": [
+        "inner-signal-continuity",
+        "titration",
+        "reparenting",
+        "reactivation"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that needing less depth means the person has failed reparenting or that InnerSignal should be permanently abandoned."
+        ],
+        "requiredNuance": [
+          "Inner-child reparenting is a continuing relationship whose depth and representation can change. The user may always decline inner-child framing.",
+          "A pause is scope-limited and revisitable; reactivation conditions must be observable enough to use rather than a vague instruction to return when fully healed."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.SCAFFOLDED_CHALLENGE",
+      "title": "Titrate difficult material instead of equating distress with harm",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 89,
+      "activation": {
+        "all": [
+          {
+            "field": "practice_challenge",
+            "op": "eq",
+            "value": "workable"
+          },
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "deep_dialogue",
+              "memory_processing",
+              "hypnosis"
+            ]
+          },
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "safe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "oriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "inward_attention_effect",
+            "op": "eq",
+            "value": "worsens"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SCAFFOLDED_CHALLENGE",
+        "IC.REGULATION_BEFORE_DIALOGUE",
+        "IC.SESSION_CLOSURE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Treat difficulty as information to calibrate, not as automatic evidence of either harm or progress. Ask how the person experiences the challenge and what happens to orientation, choice, recovery, later functioning, useful information, and willingness to re-engage.",
+        "Pendulate between challenge and resource. Adjust one dimension at a time—duration, depth, timing, imagery intensity, eyes-closed immersion, isolation, or amount of support—so the person can learn at the edge of current capacity rather than only inside comfort or beyond capacity.",
+        "A difficult dream, tears, grief, fear, vivid material, or temporary activation can be explored for the need or conflict it reveals without treating the content as historical fact and without assuming the practice caused harm.",
+        "If the challenge becomes too much, step down and recover; when capacity returns, reconsider a bounded re-entry rather than treating the first reduction as permanent."
+      ],
+      "avoid": [
+        "Do not protect the person from every unpleasant emotion or dream merely because it is distressing.",
+        "Do not push through disorientation, loss of stopping capacity, prolonged functional decline, or the person's refusal in the name of growth, exposure, toughness, or catharsis.",
+        "Do not treat intensity, suffering, vividness, or endurance as proof that the exercise is working."
+      ],
+      "successSignals": [
+        "The person can approach and leave difficult material voluntarily while remaining oriented and recovering afterward.",
+        "Challenge produces usable emotional information, agency, skill, connection, or ordinary-life movement without requiring escalating intensity."
+      ],
+      "tags": [
+        "scaffolding",
+        "pendulation",
+        "challenge",
+        "titration",
+        "dreams"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not claim that adversity necessarily causes growth or that disturbing dreams reveal hidden historical truth."
+        ],
+        "requiredNuance": [
+          "Distress and harm are not synonyms; the relevant distinction is workable challenge versus overload, judged over time and with the person's own appraisal.",
+          "Growth can occur through difficulty, but difficulty is never a reason to manufacture or intensify suffering."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.COMMUNITY_SUPPORT",
+      "title": "Build a diversified human support ecology as reparenting",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 91,
+      "activation": {
+        "all": [
+          {
+            "field": "social_connection_need",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.COMMUNITY_REPARENTING",
+        "IC.THREE_FUNCTIONS",
+        "IC.RELATIONSHIP"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Treat reaching toward safe human connection as possible Nurturer, Protector, or Guide behavior rather than as failure to self-regulate.",
+        "Explore several realistic sources of recurring contact with genuine commonality: trusted people already known, peer-support groups, spiritual communities that fit the person's own beliefs, interest or activity groups, classes, clubs, volunteering, or practical community services.",
+        "Use parallel options when possible so emotional survival does not depend on one partner, friend, invitation, therapist, group, or institution saying yes.",
+        "Match the next step to logistics and fit—transport, cost, accessibility, trust, schedule, social energy, and whether the community actually feels reciprocal and safe."
+      ],
+      "avoid": [
+        "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
+        "Do not assume a religion, prescribe a spiritual group because the person is spiritual, or let any community become unquestionable authority.",
+        "Do not give a long directory of groups when one or two plausible next contacts would be more usable."
+      ],
+      "successSignals": [
+        "At least one realistic path toward recurring, reciprocal human contact becomes available, with alternatives if the first path does not work.",
+        "Outside connection supports rather than replaces the person's growing judgment, agency, and inner Nurturer/Protector/Guide capacities."
+      ],
+      "tags": [
+        "community",
+        "social-support",
+        "reparenting",
+        "nurturer",
+        "protector",
+        "guide"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency."
+        ],
+        "requiredNuance": [
+          "Human beings can need both inner adult capacity and real reciprocal attachment; these are complementary rather than competing goals.",
+          "A portfolio of imperfect supports is more resilient than making one person or institution the sole route to safety, belonging, or regulation."
+        ]
+      },
+      "defaultQuestion": "What kinds of people or communities would actually feel like your people—and what is the smallest realistic way to try one without making it your only hope?"
     }
   ],
   "edges": [
@@ -3418,6 +3655,31 @@
       "from": "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
       "to": "IC.SAFETY_ORIENTATION",
       "relation": "escalates-if-orientation-lost"
+    },
+    {
+      "from": "IC.SAFETY_ORIENTATION",
+      "relation": "precedes",
+      "to": "IC.CONTINUITY_TITRATION"
+    },
+    {
+      "from": "IC.CONTINUITY_TITRATION",
+      "relation": "calibrates",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "IC.SCAFFOLDED_CHALLENGE",
+      "relation": "supports-calibration",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "IC.COMMUNITY_SUPPORT",
+      "relation": "may-support",
+      "to": "IC.ADULT_APPRENTICE"
+    },
+    {
+      "from": "IC.COMMUNITY_SUPPORT",
+      "relation": "embodies-through",
+      "to": "IC.PROTECTOR_ACTION"
     }
   ],
   "taskPolicyVersion": 1,

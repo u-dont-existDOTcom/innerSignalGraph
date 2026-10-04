@@ -451,6 +451,46 @@
       "excerpt": "Match treatment and causal claims to the observed horizon. Brief relief followed by recurrence is evidence of brief relief or temporal association, not resolution, durable improvement or proof of mechanism. Review onset, duration, recurrence and later functioning in a brief bounded way; tracking must not become another checking ritual. Apply this to ordinary actions and somatic methods, not only one named technique.",
       "status": "owner-approved",
       "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.IC.CONTINUITY_TITRATION",
+      "heading": "AMEND.IC.CONTINUITY_TITRATION",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "dd8b370856aad62d6c879fa95429f5878e5356920146a1f787e4c65cc0e4f5bd",
+      "excerpt": "Inner-child reparenting is a continuing relationship, not a finite module that is silently abandoned when a deeper exercise is a poor fit. When depth must decrease, first step down through gentler present-focused contact: Nurturer/Protector/Guide language, witnessing, borrowed care, symbolic or indirect contact, or an ordinary adult action on the younger self's behalf. A full pause is a last-resort scope reduction when the person declines the modality or even minimal contact is currently worsening safety, orientation, stopping/return capacity, or ordinary functioning. Any full pause must preserve a concrete reactivation condition and return at the gentlest workable level rather than jumping immediately back to prior depth. Immediate safety can temporarily outrank child-facing work without treating the inner relationship as discarded; the person may always choose not to use inner-child framing.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.SCAFFOLDED_CHALLENGE",
+      "heading": "AMEND.IC.SCAFFOLDED_CHALLENGE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "8d3a7cd4f9983d2ff10012fbf13e481444ddab6ffacefa48dae9cc912e898aad",
+      "excerpt": "Distress is not identical to harm. Difficult dreams, grief, fear, tears, activation, or emotionally challenging material can be workable and informative, but intensity does not prove progress, truth, or correct depth. Calibrate challenge from the person's own appraisal, orientation, voluntary stopping and return, recovery and later functioning, usable information or agency gained, and willingness to re-engage. Scaffold and pendulate: reduce one dimension at a time—duration, depth, timing, imagery intensity, eyes-closed immersion, isolation, or amount of support—then re-approach when capacity returns. Do not protect a person from every difficult experience, and do not push them into overwhelm as a character-building test.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.COMMUNITY_REPARENTING",
+      "heading": "AMEND.IC.COMMUNITY_REPARENTING",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "96d3138350b3c7ea28972e1cd4668bb3cd9f487fa4d110aee94c16602a52c43c",
+      "excerpt": "Real human connection can itself embody reparenting. Calling a trusted friend, asking to spend time with safe people, contacting a social worker, joining a peer-support group, spiritual community, interest group, class, club, volunteer activity, or another recurring community can be a Nurturer, Protector, or Guide move when it meets the actual need. Prefer a portfolio of reciprocal supports with genuine commonality over making one partner, friend, therapist, group, or spiritual authority the single point of emotional survival. Explore fit and practical barriers; preserve the person's spirituality without assuming religion, and treat needing people as compatible with adult capacity rather than failed independence.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
+      "heading": "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "e8017d409ca05672cf2507062c7699474169ab846ee3bcc942b0cdcfab364ec3",
+      "excerpt": "Choose the current therapeutic focus from the client's stated goal, strongest expressed suffering and functional impact, repetition or emphasis, and causal relevance to what should happen next—not from novelty, strangeness, diagnostic salience, or therapist curiosity. Safety or medical side issues override only when the answer could materially change immediate safety or the next step. For a non-urgent possible medical clue, first establish whether it is new or different from baseline, part of a known condition, already assessed or under current care, and whether the person wants help with it; do not imply prior care is absent. Otherwise keep it load-bearing or parked and return to the primary therapeutic job.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
     }
   ]
 }
