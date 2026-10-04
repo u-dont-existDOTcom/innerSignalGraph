@@ -1328,7 +1328,7 @@ test("scopeReviewAfterRepair: an earlier finding goes with an item the repair re
   assert.equal(result.review.status, "sufficient_for_stated_scope");
 });
 
-test("scopeReviewAfterRepair: an earlier unit-level omission closes unless the review names the unit again", () => {
+test("scopeReviewAfterRepair: an earlier unit-level omission closes when the repair adds content there, unless the review names the unit again", () => {
   const earlier = review({ assessments: [flag(U2, "earlier")] });
   const repaired = story(added(storyItems(), "assertions", assertion("a5", U2, "The ferry boat was late.", { subjects: ["e-boat"] })));
   const result = scope({ review: review({ assessments: [ok("a5", "later")] }), previousReview: earlier, extraction: repaired });
@@ -1556,4 +1556,23 @@ test("scopeReviewAfterRepair: open work on a local ID two items shared stays on 
   const afterGap = scope({ review: review({ assessments: [] }), previousReview: gap, previousExtraction: shared("x"),
     extraction: shared("x2") });
   assert.deepEqual([...afterGap.review.unassessed_ids].sort(), ["x", "x2"]);
+});
+
+test("scopeReviewAfterRepair: an earlier unit-level omission stays open while the repair adds nothing there", () => {
+  const earlier = review({ assessments: [flag(U2, "earlier")], unassessed: [U1], repairs: [repairFor(U2)], status: "incomplete" });
+  const result = scope({ review: review({ assessments: [ok("a1", "later")] }), previousReview: earlier, extraction: story() });
+  assert.equal(verdictOn(result, U2).explanation, "earlier verdict on u2.");
+  assert.deepEqual(result.review.unassessed_ids, [U1]);
+  assert.deepEqual(result.review.proposed_repairs.map((repair) => repair.target_id), [U2]);
+  assert.equal(result.review.status, "repair_required");
+  // A rewrite elsewhere doesn't answer an omission in u2.
+  const elsewhere = story(edited(storyItems(), "assertions", "a1", { statement: "Maren walked out to Pell Point at dawn." }));
+  assert.equal(verdictOn(scope({ review: review({ assessments: [] }), previousReview: earlier, extraction: elsewhere }), U2)
+    .explanation, "earlier verdict on u2.");
+});
+
+test("validateExtractionReferences: a local ID may not equal an assigned unit ID", () => {
+  assert.throws(() => story(renamed(storyItems(), "episodes", "ep-storm", U2)), /LOCAL_ID_IS_UNIT_ID/);
+  assert.throws(() => story(renamed(storyItems(), "assertions", "a4", U1)), /LOCAL_ID_IS_UNIT_ID/);
+  assert.doesNotThrow(() => story(renamed(storyItems(), "episodes", "ep-storm", U3)), "only assigned units count");
 });

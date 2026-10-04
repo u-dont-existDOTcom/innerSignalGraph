@@ -193,16 +193,26 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   });
   // An earlier open finding on an item that is still there stays open until the new review reassesses that item: a
   // review that leaves a flagged item out hasn't shown the defect is gone. A finding on an item the repair removed
-  // goes with the item. A finding on a unit or on a target that isn't an item is different: a repair answers an
-  // omission with new items, which the review assesses under their own IDs, so it stays open only if the review
-  // names that target again. (The fidelity score already counts a reference item the review leaves out as
-  // unassessed.)
+  // goes with the item. A finding on a unit stays open too, unless the repair added or rewrote content anchored in
+  // that unit: a repair answers an omission with new items, which the review assesses under their own IDs. A
+  // finding on a target that is neither (such as a frozen reference item) stays open only if the review names it
+  // again; the fidelity score already counts a reference item the review leaves out as unassessed.
   const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids,
     ...review.proposed_repairs.map((repair) => repair.target_id)]);
   const counted = new Set(assessments.map((assessment) => assessment.target_id));
+  const unitsWithNewContent = new Set();
+  for (const [field] of ITEM_FIELDS) {
+    const earlierContent = new Set((previousExtraction[field] ?? []).map(contentKey));
+    for (const item of extraction[field] ?? []) {
+      if (!earlierContent.has(contentKey(item))) for (const unitId of anchorUnitIds(item)) unitsWithNewContent.add(unitId);
+    }
+  }
+  // Where earlier open work on a target now applies: the items it became, or the unit itself while the repair has
+  // added nothing there.
+  const openOn = (target) => units.has(target) ? (unitsWithNewContent.has(target) ? [] : [target]) : successors.get(target) ?? [];
   // An earlier target that two items shared keeps its open work on each of them.
   for (const prior of previousReview.assessments.filter(assessmentIsFinding)) {
-    for (const target of successors.get(prior.target_id) ?? []) {
+    for (const target of openOn(prior.target_id)) {
       if (mentioned.has(target) || counted.has(target)) continue;
       assessments.push(rekey(prior, target));
       counted.add(target);
@@ -232,7 +242,7 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
     }
   }
   for (const id of previousReview.unassessed_ids) {
-    for (const target of successors.get(id) ?? []) {
+    for (const target of openOn(id)) {
       if (mentioned.has(target) || unassessed.includes(target)) continue;
       unassessed.push(target);
     }
@@ -241,7 +251,7 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   // A repair the earlier review asked for on an item that is still there stays asked for until the new review
   // reassesses that item, like its findings.
   for (const prior of previousReview.proposed_repairs) {
-    for (const target of successors.get(prior.target_id) ?? []) {
+    for (const target of openOn(prior.target_id)) {
       if (mentioned.has(target) || proposedRepairs.some((repair) => repair.target_id === target)) continue;
       proposedRepairs.push({ ...prior, target_id: target, evidence_ids: rekeyEvidence(prior.evidence_ids) });
     }
