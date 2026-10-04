@@ -201,6 +201,7 @@ function validateWorkEntry(entry) {
   if (typeof entry.case_id !== "string" || !CASE_ID_PATTERN.test(entry.case_id)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.role !== "string" || !ROLE_PATTERN.test(entry.role)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (entry.tier !== undefined && !["standard", "hardest"].includes(entry.tier)) fail("JOURNAL_WORK_ENTRY_INVALID");
+  if (entry.origin !== undefined && entry.origin !== "lookahead") fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.instruction !== "string" || entry.instruction.length === 0
     || Buffer.byteLength(entry.instruction, "utf8") > MAX_INSTRUCTION_BYTES) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (!isPlainObject(entry.packet) || !isPlainObject(entry.output_schema)) fail("JOURNAL_WORK_ENTRY_INVALID");
@@ -310,7 +311,7 @@ export function createJournalWorkExchange({
   if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
   const derived = keys ?? deriveJournalWorkExchangeKeys(secret);
   if (!Buffer.isBuffer(derived?.encryption) || !Buffer.isBuffer(derived?.receipt)) fail("JOURNAL_WORK_EXCHANGE_SECRET_INVALID");
-  const QUEUES = Object.freeze({ work: "outbox", result: "inbox", dispatch: "dispatch" });
+  const QUEUES = Object.freeze({ work: "outbox", result: "inbox", dispatch: "dispatch", adopted: "adopted" });
   const dispatchReader = createJournalWorkDispatchReader({ root, owner });
   const directory = (kind) => path.join(root, QUEUES[kind]);
   const fileFor = (kind, fileKey) => path.join(directory(kind), `${fileKey}.json`);
@@ -460,6 +461,23 @@ export function createJournalWorkExchange({
   }
 
   return Object.freeze({
+    // A content-free durable marker distinguishes an adopted speculative item from one that the
+    // sequential caller has never resumed. First-write-wins keeps adoption across restarts.
+    async markAdopted(workId) {
+      const fileKey = journalWorkFileKey(workId);
+      await publish("adopted", fileKey, seal(derived.encryption, "adopted", fileKey, {
+        schema_version: JOURNAL_WORK_EXCHANGE_VERSION, work_id: workId, adopted: true
+      }));
+    },
+    async isAdopted(workId) {
+      const fileKey = journalWorkFileKey(workId);
+      const bytes = await readRegular("adopted", fileKey, MAX_DISPATCH_BYTES);
+      if (!bytes) return false;
+      const record = open(derived.encryption, "adopted", fileKey, bytes);
+      if (record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION || record.work_id !== workId || record.adopted !== true)
+        fail("JOURNAL_WORK_ENTRY_INVALID");
+      return true;
+    },
     root,
 
     // Runtime side: publish one role call. Re-publishing the same work ID keeps the first entry.
@@ -614,7 +632,9 @@ export function createJournalWorkExchange({
         fail("JOURNAL_WORK_RESULT_INVALID");
       }
       if (record.retired === true) {
-        return Object.freeze({ retired: true, retired_at: record.retired_at, unanswered: record.unanswered === true,
+        return Object.freeze({ retired: true, retired_at: record.retired_at,
+          unanswered: record.unanswered === true,
+          ...(record.superseded === true ? { superseded: true } : {}),
           ...(record.exhausted === true ? { exhausted: true } : {}) });
       }
       const { tag, ...fields } = record.receipt ?? {};
@@ -631,7 +651,7 @@ export function createJournalWorkExchange({
     // by an encrypted tombstone in one rename, so its name never goes missing: a duplicate submission
     // still in flight finds the name taken and cannot leave a late answer behind. The tombstone holds
     // no answer text. Then the work item is removed, so the connector stops serving it.
-    async retireWork(workId) {
+    async retireWork(workId, { superseded = false } = {}) {
       const fileKey = journalWorkFileKey(workId);
       await ensureDirectory("result");
       await ensureDirectory("work");
@@ -639,6 +659,7 @@ export function createJournalWorkExchange({
         schema_version: JOURNAL_WORK_EXCHANGE_VERSION,
         work_id: workId,
         retired: true,
+        ...(superseded ? { superseded: true } : {}),
         retired_at: now().toISOString()
       });
       const temporary = await writeTemporary("result", tombstone);
@@ -708,7 +729,7 @@ export function createJournalWorkExchange({
       await assertJournalWorkExchangeRoot(root, { owner });
       const cutoff = Date.now() - olderThanMs;
       let removed = 0;
-      for (const kind of ["work", "result", "dispatch"]) {
+      for (const kind of ["work", "result", "dispatch", "adopted"]) {
         if (!(await queueExists(kind))) continue;
         let removedHere = 0;
         for (const name of await fs.readdir(directory(kind))) {

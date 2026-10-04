@@ -104,7 +104,7 @@ function materialize(value, workByKey) {
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, materialize(item, workByKey)]));
 }
 
-function outputComplete(role, output) {
+export function outputComplete(role, output) {
   if (role === "extractor") return output.status === "complete";
   if (role === "omission_checker") return output.status === "sufficient_for_stated_scope";
   if (role === "reconciler") return output.status === "proposals_complete";
@@ -141,6 +141,83 @@ function checkpointFor(snapshot, override = {}) {
   return validateJournalSchema("checkpoint", checkpoint);
 }
 
+// Pure plan construction is also used by lookahead. It must never append a ledger entry.
+export function buildJournalJobSnapshot({ jobId, caseId, corpusId, generation, workDefinitions,
+  completion = {}, controllerSecret, grant, promptVersion = "1.0", modelProfile = "mock-deterministic" }) {
+  invariant(typeof jobId === "string" && /^[A-Za-z0-9:_-]{1,160}$/.test(jobId), "JOB_ID_INVALID");
+  invariant(Array.isArray(workDefinitions) && workDefinitions.length > 0, "WORK_PLAN_EMPTY");
+  let previousRank = -1;
+  const keys = new Set();
+  const workItems = workDefinitions.map((definition) => {
+    invariant(typeof definition.key === "string" && !keys.has(definition.key), "WORK_KEY_INVALID_OR_DUPLICATE");
+    keys.add(definition.key);
+    const rank = stageRank(definition.stage);
+    invariant(rank >= previousRank, "WORK_STAGE_ORDER_INVALID");
+    previousRank = rank;
+    const roleDefinition = JOURNAL_ROLE_DEFINITIONS[definition.role];
+    invariant(roleDefinition, "JOURNAL_ROLE_UNKNOWN");
+    journalRoleInstruction(definition.role);
+    invariant(definition.identity && typeof definition.identity === "object", "WORK_IDENTITY_INCOMPLETE");
+    const identity = {
+      case_id: caseId,
+      corpus_id: corpusId,
+      source_representation: definition.identity.source_representation,
+      core_range: clone(definition.identity.core_range),
+      role: definition.role,
+      prompt_version: promptVersion,
+      model_profile: modelProfile,
+      grant_purpose: grant.purpose
+    };
+    const tier = definition.tier ?? "standard";
+    invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+    if (tier === "hardest") identity.tier = tier;
+    return {
+      key: definition.key,
+      work_id: computeJournalWorkId(identity, controllerSecret),
+      stage: definition.stage,
+      role: definition.role,
+      output_schema_id: roleDefinition.outputSchema,
+      identity,
+      tier,
+      assigned_core_ids: clone(definition.assigned_core_ids ?? []),
+      source_locators: clone(definition.source_locators ?? []),
+      packet_input: clone(definition.packet_input ?? {}),
+      status: "planned", attempts: 0, retry_epoch: 0, operation_key: null,
+      output: null, receipt: null, prior_outputs: []
+    };
+  });
+  return {
+    schema_version: "1.0", job_id: jobId, case_id: caseId, corpus_id: corpusId, generation,
+    prompt_version: promptVersion, model_profile: modelProfile,
+    plan_sha256: sha256(Buffer.from(JSON.stringify(workItems.map(({ packet_input: packetInput, ...item }) => ({
+      ...item, packet_input_sha256: sha256(Buffer.from(JSON.stringify(packetInput), "utf8"))
+    }))), "utf8")),
+    completion: { ...emptyCompletion(), ...completion }, work_items: workItems, checkpoint: null
+  };
+}
+
+export async function planJournalOperation({ work, snapshot, grant,
+  resolvePacketInput = async (input) => input }) {
+  const workByKey = new Map(snapshot.work_items.map((item) => [item.key, item]));
+  const roleInput = await resolvePacketInput(materialize(work.packet_input, workByKey), { work: clone(work) });
+  for (const field of ["protocol_version", "output_schema_id", "assigned_core_ids", "source_locators", "expected_generation", "controller_provenance_tag", "grant_purpose"])
+    invariant(!Object.hasOwn(roleInput, field), "CONTROLLER_PACKET_FIELD_OVERRIDE");
+  const packet = buildJournalRolePacket(work.role, {
+    protocol_version: "1.0", output_schema_id: work.output_schema_id,
+    assigned_core_ids: work.assigned_core_ids, source_locators: work.source_locators,
+    expected_generation: snapshot.generation, controller_provenance_tag: work.work_id,
+    grant_purpose: grant.purpose, ...roleInput
+  });
+  const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
+  const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
+  const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
+  const reserializationKey = `${baseOperationKey}:reserialize${retryEpoch === 0 ? "" : `:${retryEpoch}`}`;
+  const operationKey = work.status === "invalid_output" ? reserializationKey
+    : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
+      : (work.operation_key ?? baseOperationKey);
+  return { packet, operationKey };
+}
+
 export function createJournalImportController({
   ledger,
   inferencePort,
@@ -151,7 +228,8 @@ export function createJournalImportController({
   resolvePacketInput = async (packetInput) => packetInput,
   afterInvokeBeforeCheckpoint = null,
   // Runs before an intent is recorded. A failure here, such as an expired authorization, stops the
-  // step with nothing persisted: no attempt is spent and no call is left in an unknown state.
+  // step with nothing persisted: no attempt is spent and no call is left in an unknown state. It runs
+  // again, with `resumed: true`, before an interrupted call is resumed through an authoritative port.
   beforeInvoke = null
 }) {
   invariant(ledger && typeof ledger.load === "function" && typeof ledger.append === "function", "JOURNAL_LEDGER_INVALID");
@@ -167,72 +245,9 @@ export function createJournalImportController({
     return ledger.append(next, expectedRevision);
   };
 
-  const initialize = async ({ jobId, caseId, corpusId, generation, workDefinitions, completion = {} }) => {
+  const initialize = async (input) => {
     invariant((await ledger.load()) === null, "JOURNAL_JOB_ALREADY_EXISTS");
-    invariant(typeof jobId === "string" && /^[A-Za-z0-9:_-]{1,160}$/.test(jobId), "JOB_ID_INVALID");
-    invariant(Array.isArray(workDefinitions) && workDefinitions.length > 0, "WORK_PLAN_EMPTY");
-    let previousRank = -1;
-    const keys = new Set();
-    const workItems = workDefinitions.map((definition) => {
-      invariant(typeof definition.key === "string" && !keys.has(definition.key), "WORK_KEY_INVALID_OR_DUPLICATE");
-      keys.add(definition.key);
-      const rank = stageRank(definition.stage);
-      invariant(rank >= previousRank, "WORK_STAGE_ORDER_INVALID");
-      previousRank = rank;
-      const roleDefinition = JOURNAL_ROLE_DEFINITIONS[definition.role];
-      invariant(roleDefinition, "JOURNAL_ROLE_UNKNOWN");
-      journalRoleInstruction(definition.role);
-      invariant(definition.identity && typeof definition.identity === "object", "WORK_IDENTITY_INCOMPLETE");
-      const identity = {
-        case_id: caseId,
-        corpus_id: corpusId,
-        source_representation: definition.identity.source_representation,
-        core_range: clone(definition.identity.core_range),
-        role: definition.role,
-        prompt_version: promptVersion,
-        model_profile: modelProfile,
-        grant_purpose: grant.purpose
-      };
-      const tier = definition.tier ?? "standard";
-      invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
-      if (tier === "hardest") identity.tier = tier;
-      return {
-        key: definition.key,
-        work_id: computeJournalWorkId(identity, secret),
-        stage: definition.stage,
-        role: definition.role,
-        output_schema_id: roleDefinition.outputSchema,
-        identity,
-        tier,
-        assigned_core_ids: clone(definition.assigned_core_ids ?? []),
-        source_locators: clone(definition.source_locators ?? []),
-        packet_input: clone(definition.packet_input ?? {}),
-        status: "planned",
-        attempts: 0,
-        retry_epoch: 0,
-        operation_key: null,
-        output: null,
-        receipt: null,
-        prior_outputs: []
-      };
-    });
-    const snapshot = {
-      schema_version: "1.0",
-      job_id: jobId,
-      case_id: caseId,
-      corpus_id: corpusId,
-      generation,
-      prompt_version: promptVersion,
-      model_profile: modelProfile,
-      plan_sha256: sha256(Buffer.from(JSON.stringify(workItems.map(({ packet_input: packetInput, ...item }) => ({
-        ...item,
-        packet_input_sha256: sha256(Buffer.from(JSON.stringify(packetInput), "utf8"))
-      }))), "utf8")),
-      completion: { ...emptyCompletion(), ...completion },
-      work_items: workItems,
-      checkpoint: null
-    };
-    return persist(snapshot, -1);
+    return persist(buildJournalJobSnapshot({ ...input, controllerSecret: secret, grant, promptVersion, modelProfile }), -1);
   };
 
   const completeWork = async (entry, work, result) => {
@@ -290,12 +305,39 @@ export function createJournalImportController({
     return persist(next, entry.revision, { state: "blocked_authority", stage: target.stage, next_action: `inspect blocked semantic work ${target.work_id}`, blocked_reason: code, responsible_actor: "owner" });
   };
 
+  const invokeAndComplete = async (entry, work, packet, operationKey) => {
+    let result;
+    try {
+      result = await inferencePort.invoke({ role: work.role, packet, outputSchema: work.output_schema_id, operationKey, grant, tier: work.tier ?? "standard" });
+    } catch (error) {
+      return recordFailure(entry, work, error);
+    }
+    if (afterInvokeBeforeCheckpoint) await afterInvokeBeforeCheckpoint({ work: clone(work), result: clone(result) });
+    return completeWork(entry, work, result);
+  };
+
+  const completionIsAuthoritative = async (operationKey) => typeof inferencePort.isAuthoritativeCompletion === "function"
+    ? (await inferencePort.isAuthoritativeCompletion(operationKey)) === true
+    : inferencePort.capabilities?.()?.authoritative_completion === true;
+
   const step = async () => {
     let entry = await ledger.load();
     invariant(entry, "JOURNAL_JOB_NOT_INITIALIZED");
     let work = entry.snapshot.work_items.find(({ status }) => status !== "completed");
     if (!work) return entry;
     if (["needs_context", "paused_quota", "revoked", "blocked_authority"].includes(work.status)) return entry;
+    // A call interrupted after its intent was recorded is resumed through an authoritative port (the connector
+    // exchange) by invoking the same operation again. The port waits on the item already sent, including one the
+    // lookahead sent under this key before the intent was recorded, and sends the call only if nothing went out.
+    // Asking for its completion instead could read "not submitted" and retry under a new key while that item can
+    // still complete.
+    if (work.status === "intent_persisted" && await completionIsAuthoritative(work.operation_key)) {
+      const { packet, operationKey } = await planJournalOperation({
+        work, snapshot: entry.snapshot, grant, resolvePacketInput
+      });
+      if (beforeInvoke) await beforeInvoke({ work: clone(work), operationKey, resumed: true });
+      return invokeAndComplete(entry, work, packet, operationKey);
+    }
     if (["intent_persisted", "completion_unknown"].includes(work.status)) {
       const completion = await inferencePort.getCompletion(work.operation_key);
       if (completion.status === "completed") return completeWork(entry, work, completion);
@@ -321,20 +363,8 @@ export function createJournalImportController({
     }
     invariant(["planned", "retryable_error", "invalid_output"].includes(work.status), "WORK_STATE_INVALID");
     invariant(work.attempts < 2, "WORK_RETRY_LIMIT_EXCEEDED");
-    const workByKey = new Map(entry.snapshot.work_items.map((item) => [item.key, item]));
-    const roleInput = await resolvePacketInput(materialize(work.packet_input, workByKey), { work: clone(work) });
-    for (const field of ["protocol_version", "output_schema_id", "assigned_core_ids", "source_locators", "expected_generation", "controller_provenance_tag", "grant_purpose"]) {
-      invariant(!Object.hasOwn(roleInput, field), "CONTROLLER_PACKET_FIELD_OVERRIDE");
-    }
-    const packet = buildJournalRolePacket(work.role, {
-      protocol_version: "1.0",
-      output_schema_id: work.output_schema_id,
-      assigned_core_ids: work.assigned_core_ids,
-      source_locators: work.source_locators,
-      expected_generation: entry.snapshot.generation,
-      controller_provenance_tag: work.work_id,
-      grant_purpose: grant.purpose,
-      ...roleInput
+    const { packet, operationKey } = await planJournalOperation({
+      work, snapshot: entry.snapshot, grant, resolvePacketInput
     });
     if (work.tier === "hardest" && !hardestJournalPacketFits(work.role, packet)) {
       const next = clone(entry.snapshot);
@@ -343,13 +373,6 @@ export function createJournalImportController({
         next_action: "record unresolved packet bound", blocked_reason: "JOURNAL_WORK_PACKET_TOO_LARGE",
         responsible_actor: "controller" });
     }
-    const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
-    const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
-    const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
-    const reserializationKey = `${baseOperationKey}:reserialize${retryEpoch === 0 ? "" : `:${retryEpoch}`}`;
-    const operationKey = work.status === "invalid_output" ? reserializationKey
-      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
-        : (work.operation_key ?? baseOperationKey);
     if (work.tier === "hardest") {
       const completion = await inferencePort.getCompletion(operationKey, { tier: "hardest" });
       if (completion.status === "completed") return completeWork(entry, work, completion);
@@ -365,14 +388,7 @@ export function createJournalImportController({
     intentWork.operation_key = operationKey;
     entry = await persist(intentSnapshot, entry.revision, { state: "running", stage: work.stage, next_action: `await transport result for ${operationKey}`, blocked_reason: null, responsible_actor: "reasoning_role" });
     work = entry.snapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
-    let result;
-    try {
-      result = await inferencePort.invoke({ role: work.role, packet, outputSchema: work.output_schema_id, operationKey, grant, tier: work.tier ?? "standard" });
-    } catch (error) {
-      return recordFailure(entry, work, error);
-    }
-    if (afterInvokeBeforeCheckpoint) await afterInvokeBeforeCheckpoint({ work: clone(work), result: clone(result) });
-    return completeWork(entry, work, result);
+    return invokeAndComplete(entry, work, packet, operationKey);
   };
 
   const provideContext = async (workId, packetPatch) => {

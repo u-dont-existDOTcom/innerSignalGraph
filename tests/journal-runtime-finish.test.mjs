@@ -10,6 +10,10 @@ import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { createMockJournalInferencePort, JournalInferencePortError } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
+import { exchangeHarness } from "./fixtures/journal-lookahead-exchange.mjs";
+import { createJournalLookahead } from "../src/journal-import/lookahead.mjs";
+import { journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
+import { createDeterministicAuditSample } from "../src/journal-import/audit.mjs";
 
 // A synthetic import driven from intake to a committed generation through the operator commands,
 // with every role answered by a mock. Each test makes one role answer the way a real journal
@@ -19,18 +23,31 @@ const CASE_ID = "synthetic-case";
 const WRITER = "synthetic-operator-token";
 const READER = "synthetic-reader-token";
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const randomObjectRef = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gu;
+async function corpusObjectIds(executionRoot) {
+  const root = path.join(executionRoot, ".journal-corpora");
+  let files;
+  try { files = (await fs.readdir(root, { recursive: true })).filter(name => name.endsWith(".journal-object.json")); }
+  catch (error) { if (error.code === "ENOENT") return []; throw error; }
+  return (await Promise.all(files.map(async name => JSON.parse(await fs.readFile(path.join(root, name), "utf8")).object_id))).sort();
+}
+function assertSameCorpusObjects(actual, expected) {
+  assert.equal(actual.length, expected.length, "lookahead changed the corpus object count");
+  const stable = ids => ids.map(id => id.replace(randomObjectRef, "<random-ref>")).sort();
+  assert.deepEqual(stable(actual), stable(expected), "lookahead changed the corpus object IDs");
+}
 const TEXTS = [
   "Synthetic Monday: I walked by the river and felt calm.",
   "Synthetic Wednesday: I walked by the river again and felt calm.",
   "Synthetic Friday: I stayed home and wrote a letter."
 ];
 
-async function environment(t) {
+async function environment(t, entries = TEXTS) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "journal-finish-synthetic-"));
   await fs.chmod(root, 0o700);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, "private"), { mode: 0o700 });
-  const text = TEXTS.join("\n");
+  const text = entries.join("\n");
   await fs.writeFile(path.join(root, "private", "source.txt"), text, { mode: 0o600 });
   const credentialsPath = path.join(root, "credentials.json");
   await fs.writeFile(credentialsPath, `${JSON.stringify({ schema_version: 1, root_dir: path.join(root, "vaults"), grants: [
@@ -51,8 +68,8 @@ async function environment(t) {
   // One page per entry, so each is its own unit.
   const sourceParser = async () => ({
     source: { sha256: config.source.sha256, byte_length: config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-finish" },
-    pages: TEXTS.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
-    representations: TEXTS.map((entry, index) => ({ representation_id: `synthetic:page:${index}`, text: entry, utf8_byte_length: Buffer.byteLength(entry) }))
+    pages: entries.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
+    representations: entries.map((entry, index) => ({ representation_id: `synthetic:page:${index}`, text: entry, utf8_byte_length: Buffer.byteLength(entry) }))
   });
   return { root, config, configPath, service, sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER } };
 }
@@ -149,6 +166,379 @@ async function drive(f, roleHandlers, calls = [], portOptions = {}, runtimeOptio
     return summaries;
   } finally { await runtime.close(); }
 }
+
+test("unsupported inference ports report sequential fallback at requested concurrency", async (t) => {
+  const f = await environment(t);
+  f.config.semantic_concurrency = 4;
+  const result = await drive(f, handlers());
+  assert.equal(result.run.lookahead, "unsupported_port");
+  assert.equal(result.commit.completion.profile_committed, "pass");
+  await assert.rejects(openJournalExecutionRuntime({ config: { ...f.config, semantic_concurrency: 9 },
+    configPath: f.configPath, service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers() }), environment: f.environment }),
+  { code: "JOURNAL_SEMANTIC_CONCURRENCY_INVALID" });
+});
+
+test("exchange lookahead preserves the synthetic import and sequential identities", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) =>
+    `Synthetic journal entry ${index}: I walked by the river and observed a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  const stagePort = createMockJournalInferencePort({ handlers: handlers() });
+  const staged = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, inferencePort: stagePort, sourceParser: f.sourceParser,
+    environment: f.environment });
+  try { await staged.execute("stage"); } finally { await staged.close(); }
+  const executionRoots = [path.join(f.root, "sequential"), path.join(f.root, "parallel")];
+  for (const executionRoot of executionRoots)
+    await fs.cp(f.config.execution_root, executionRoot, { recursive: true });
+  const runCase = async (semanticConcurrency, executionRoot) => {
+    let maxOutstanding = 0;
+    const h = exchangeHarness({ waitMs: 30_000,
+      onDispatch: ({ dispatch, results }) => {
+        maxOutstanding = Math.max(maxOutstanding,
+          [...dispatch.keys()].filter(id => !results.has(id)).length);
+      } });
+    const roleHandlers = handlers();
+    const invoked = [], prefetched = [];
+    const port = { ...h.port,
+      async invoke(input) { invoked.push({ role: input.role, key: input.operationKey });
+        return h.port.invoke(input); },
+      async prefetch(input) { prefetched.push({ role: input.role, key: input.operationKey,
+        tier: input.tier });
+        return h.port.prefetch(input); } };
+    let stopped = false, rounds = 0, seed = 17;
+    const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
+    const answering = (async () => {
+      while (!stopped) {
+        let pending = [...h.dispatch.keys()].filter(id => !h.results.has(id));
+        if (pending.length) {
+          // One fake transport round collects concurrent dispatches before answering them.
+          await new Promise(resolve => setTimeout(resolve, 12));
+          pending = [...h.dispatch.keys()].filter(id => !h.results.has(id))
+            .sort(() => random() - 0.5);
+          rounds += 1;
+          await Promise.all(pending.map(async id => {
+            await new Promise(resolve => setTimeout(resolve, 20 + Math.floor(random() * 12)));
+            const item = h.work.get(id);
+            if (item && h.dispatch.has(id) && !h.results.has(id))
+              h.answerWork(id, roleHandlers[item.role](item.packet));
+          }));
+        } else await new Promise(resolve => setTimeout(resolve, 15));
+      }
+    })();
+    let runtime;
+    try {
+      runtime = await openJournalExecutionRuntime({ config: { ...f.config,
+        semantic_concurrency: semanticConcurrency, execution_root: executionRoot },
+      configPath: f.configPath, service: f.service, inferencePort: port,
+      sourceParser: f.sourceParser, environment: f.environment });
+      const run = await runtime.execute("run");
+      const prefetchedInRun = prefetched.map((call) => call.role);
+      // Both copies audit the same sampled units, even when the sample omits units.
+      const beforeAudit = JSON.parse(await fs.readFile(path.join(executionRoot, "state.json"), "utf8"));
+      const corpus = createPrivateJournalCorpusStore({ rootDir: executionRoot, caseId: CASE_ID,
+        corpusId: beforeAudit.corpus_id,
+        corpusKey: await fs.readFile(path.join(executionRoot, "staging.key")) });
+      try {
+        const bytes = await corpus.reassembleOriginal(beforeAudit.visual_plan_ref ?? beforeAudit.parsed_ref);
+        let plan;
+        try { plan = JSON.parse(bytes.toString("utf8")); } finally { bytes.fill(0); }
+        const units = plan.units.map(unit => ({ ...unit,
+          duplicate_group_id: `duplicate:${sha256(unit.text)}` }));
+        const sample = createDeterministicAuditSample({ units, seed: "synthetic-fixed-audit-seed" });
+        beforeAudit.audit_sample_ref = await corpus.writeChunkedOriginal({
+          objectId: "audit:sample:fixed-lookahead", bytes: Buffer.from(JSON.stringify(sample)) });
+      } finally { await corpus.close(); }
+      await fs.writeFile(path.join(executionRoot, "state.json"), JSON.stringify(beforeAudit), { mode: 0o600 });
+      const audit = await runtime.execute("audit");
+      const patterns = await runtime.execute("patterns");
+      const commit = await runtime.execute("commit");
+      const state = JSON.parse(await fs.readFile(path.join(executionRoot, "state.json"), "utf8"));
+      const graph = await readStoredReport({ ...f, config: { ...f.config,
+        execution_root: executionRoot } }, "reviewed_graph_ref");
+      const auditReport = await readStoredReport({ ...f, config: { ...f.config,
+        execution_root: executionRoot } }, "audit_report_ref");
+      const objectIds = await corpusObjectIds(executionRoot);
+      return { run, audit, patterns, commit, state, graph, auditReport,
+        objectIds, invoked, prefetched, prefetchedInRun, rounds,
+        maxOutstanding,
+        duplicatePublishes: [...h.successful.values()].filter(count => count > 1).length };
+    } finally { stopped = true; await runtime?.close(); await answering; }
+  };
+  const sequential = await runCase(1, executionRoots[0]);
+  const parallel = await runCase(4, executionRoots[1]);
+  assert.equal(sequential.run.completion.graph_built, "pass");
+  assert.equal(parallel.run.completion.graph_built, "pass");
+  assert.deepEqual(parallel.graph, sequential.graph);
+  assert.equal(parallel.commit.completion.profile_committed, "pass");
+  assert.equal(sequential.commit.completion.profile_committed, "pass");
+  assert.equal(parallel.state.reviewed_persisted.manifest.graph_sha256,
+    sequential.state.reviewed_persisted.manifest.graph_sha256);
+  assert.deepEqual(parallel.auditReport.probability_unweighted,
+    sequential.auditReport.probability_unweighted);
+  assert.deepEqual(parallel.auditReport.probability_weighted,
+    sequential.auditReport.probability_weighted);
+  assert.equal(parallel.auditReport.unassessed_unit_count,
+    sequential.auditReport.unassessed_unit_count);
+  assert.deepEqual(parallel.audit.residuals, sequential.audit.residuals);
+  assert.deepEqual(parallel.patterns.residuals, sequential.patterns.residuals);
+  assert.deepEqual(parallel.invoked, sequential.invoked);
+  assertSameCorpusObjects(parallel.objectIds, sequential.objectIds);
+  assert.equal(sequential.prefetched.length, 0);
+  assert.ok(parallel.prefetched.length > 0);
+  assert.ok(parallel.prefetched.every(call => call.tier === "standard"));
+  // During the run only calibration sends reference readings, so these are calibration units sent ahead.
+  assert.ok(parallel.prefetchedInRun.includes("reference_reader"), "calibration reference readings are sent ahead");
+  assert.ok(parallel.prefetchedInRun.includes("extractor"));
+  assert.ok(parallel.maxOutstanding <= 4);
+  assert.equal(parallel.duplicatePublishes, 0);
+  assert.ok(parallel.run.lookahead.sent > 0);
+  assert.ok(parallel.run.lookahead.used > 0);
+  assert.equal(parallel.run.lookahead.unused, 0);
+  const invokedKeys = new Set(parallel.invoked.map(call => call.key));
+  assert.ok(parallel.prefetched.every(call => invokedKeys.has(call.key)),
+    "every prefetched operation must be invoked by the sequential run");
+  assert.ok(parallel.run.lookahead.concurrency === 4);
+  assert.ok(parallel.audit.lookahead.sent >= parallel.run.lookahead.sent);
+  assert.ok(parallel.audit.lookahead.used >= parallel.run.lookahead.used);
+  assert.ok(parallel.rounds < sequential.rounds,
+    `expected parallel dispatch rounds ${parallel.rounds} < ${sequential.rounds}`);
+});
+
+test("audit lookahead reads the current epoch's record of a recalibrated unit", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) =>
+    `Synthetic recalibrated entry ${index}: I walked by the river and observed a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  f.config.calibration_failure_limit = 1;
+  const baseline = handlers();
+  // Round 0: the third calibration unit fails extraction, so its epoch-zero record is source-only.
+  const failingText = entries[3];
+  const failing = createMockJournalInferencePort({ handlers: handlers({ extractor: (packet) =>
+    packet.core_units.some((unit) => unit.text === failingText)
+      ? { ...baseline.extractor(packet), status: "incomplete" } : baseline.extractor(packet) }) });
+  let runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: failing, environment: f.environment });
+  try {
+    const failed = await runtime.execute("run");
+    assert.equal(failed.calibration, "failed");
+    assert.equal(failed.calibration_failure.failed_units, 1);
+    assert.equal((await runtime.execute("recalibrate")).calibration_epoch, 1);
+  } finally { await runtime.close(); }
+  // Round 1 passes through the exchange with lookahead, then the audit runs with lookahead too.
+  const h = exchangeHarness({ waitMs: 30_000 });
+  const prefetched = [];
+  const port = { ...h.port, async prefetch(input) {
+    prefetched.push({ role: input.role, unit_id: input.packet.assigned_core_ids[0] });
+    return h.port.prefetch(input);
+  } };
+  let stopped = false;
+  const answering = (async () => {
+    while (!stopped) {
+      for (const id of [...h.dispatch.keys()].filter((key) => !h.results.has(key))) {
+        const item = h.work.get(id);
+        if (item) h.answerWork(id, baseline[item.role](item.packet));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+  })();
+  try {
+    runtime = await openJournalExecutionRuntime({ config: { ...f.config, semantic_concurrency: 4 }, configPath: f.configPath,
+      service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const auditStart = prefetched.length;
+    const audit = await runtime.execute("audit");
+    const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+    const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+      corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+    let recalibrated;
+    try {
+      const bytes = await store.reassembleOriginal(state.visual_plan_ref ?? state.parsed_ref);
+      try { recalibrated = JSON.parse(bytes.toString("utf8")).units.find((unit) => unit.text === failingText); }
+      finally { bytes.fill(0); }
+    } finally { await store.close(); }
+    // The epoch-zero record of this unit is source-only; the audit reads its current, passing record, and so
+    // does the lookahead, which therefore sends its reference reading ahead and leaves nothing unused.
+    assert.ok(prefetched.slice(auditStart).some((call) => call.role === "reference_reader"
+      && call.unit_id === recalibrated.unit_id));
+    assert.equal(audit.lookahead.unused, 0);
+  } finally { stopped = true; await runtime?.close(); await answering; }
+});
+
+test("corpus parity detects a prepare that writes an object", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "synthetic-lookahead-mutation-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const corpus = createPrivateJournalCorpusStore({ rootDir: root, caseId: CASE_ID,
+    corpusId: "synthetic-corpus", corpusKey: Buffer.alloc(32, 19) });
+  t.after(() => corpus.close());
+  const before = await corpusObjectIds(root);
+  const lookahead = createJournalLookahead({ limit: 2, port: { prefetch() {} },
+    authorize: async () => {}, grant: {}, prepare: async () => {
+      await corpus.writeJsonObject({ objectId: "synthetic:unexpected-lookahead-write", value: { synthetic: true } });
+      return null;
+  } });
+  lookahead.ahead([{ jobId: "synthetic-mutation" }]);
+  for (let attempts = 0; attempts < 100 && (await corpusObjectIds(root)).length === 0; attempts += 1)
+    await new Promise(resolve => setTimeout(resolve, 2));
+  await lookahead.close();
+  const after = await corpusObjectIds(root);
+  assert.throws(() => assertSameCorpusObjects(after, before), /lookahead changed the corpus object count/u);
+});
+
+test("reference audit replaces expired or changed speculative work on its original job key", async (t) => {
+  for (const variant of ["expired", "changed-grant", "answered-changed-grant"]) {
+    const f = await environment(t);
+    let time = Date.parse("2026-10-01T00:00:00.000Z");
+    let replaced = false;
+    let staleId = null;
+    const roleHandlers = handlers();
+    let h;
+    h = exchangeHarness({ now: () => new Date(time), ttlMs: 10_000,
+      onDispatch: ({ work, dispatch, results }) => {
+        for (const id of dispatch.keys()) if (!results.has(id) && id !== staleId
+          && work.get(id).origin !== "lookahead") {
+          const item = work.get(id);
+          h.answerWork(id, roleHandlers[item.role](item.packet));
+        }
+      } });
+    const port = { ...h.port, async invoke(input) {
+      if (!replaced && input.role === "reference_reader") {
+        replaced = true;
+        await h.port.prefetch({ ...input, grant: variant !== "expired"
+          ? { ...input.grant, grant_id: "synthetic:previous-grant" } : input.grant });
+        staleId = [...h.work.keys()].at(-1);
+        if (variant === "expired") time += 10_001;
+        if (variant === "answered-changed-grant") h.answerWork(staleId);
+      }
+      return h.port.invoke(input);
+    } };
+    const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+      service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+      environment: f.environment });
+    try {
+      const run = await runtime.execute("run");
+      assert.equal(run.blocker, null, variant);
+      assert.equal(run.completion.graph_built, "pass", variant);
+      assert.equal(h.results.get(staleId).retired, true, variant);
+      assert.equal(h.successful.get(`${staleId}:r1`), 1, variant);
+    } finally { await runtime.close(); }
+  }
+});
+
+test("real lookahead prepare checks access and writes no corpus objects", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic access entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  let revoked = false;
+  let h;
+  const roleHandlers = handlers();
+  h = exchangeHarness({ onDispatch: ({ work, dispatch, results }) => {
+    for (const id of dispatch.keys()) if (!results.has(id) && work.get(id).origin !== "lookahead")
+      h.answerWork(id, roleHandlers[work.get(id).role](work.get(id).packet));
+  } });
+  const objectCount = async () => {
+    const root = path.join(f.config.execution_root, ".journal-corpora");
+    try { return (await fs.readdir(root, { recursive: true })).filter(name => name.endsWith(".journal-object.json")).length; }
+    catch (error) { if (error.code === "ENOENT") return 0; throw error; }
+  };
+  const counts = [];
+  const port = { ...h.port,
+    async invoke(input) { await new Promise(resolve => setTimeout(resolve, 150)); return h.port.invoke(input); },
+    async prefetch(input) {
+      const before = await objectCount();
+      const result = await h.port.prefetch(input);
+      counts.push([before, await objectCount()]);
+      revoked = true;
+      return result;
+    } };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+    environment: f.environment, authContextProvider: async () => ({ bearerToken: revoked ? "revoked-synthetic" : WRITER }) });
+  try {
+    // The first send ahead is now a calibration reference reading. A denial during a reference call is
+    // recorded as unsent and stops the run with that blocker; one during a controller job throws. Either
+    // way nothing further is sent.
+    const outcome = await runtime.execute("run").then((summary) => summary.blocker, (error) => error.code);
+    assert.equal(outcome, "PRIVATE_CASE_ACCESS_DENIED");
+  } finally { await runtime.close(); }
+  assert.equal(counts.length, 1);
+  assert.equal(counts[0][1], counts[0][0]);
+  assert.equal([...h.work.values()].filter(item => item.origin === "lookahead").length, 1);
+});
+
+test("hardest lane run never prefetches a hardest work item", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic hardest entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  f.config.hardest_lane = { enabled: true, daily_limit: 8 };
+  const normal = handlers();
+  let h;
+  h = exchangeHarness({ onDispatch: ({ work, dispatch, results }) => {
+    for (const id of dispatch.keys()) if (!results.has(id)) {
+      const item = work.get(id);
+      let output = normal[item.role](item.packet);
+      if (item.role === "extractor" && item.tier !== "hardest"
+        && item.packet.core_units.some(unit => unit.text === entries[2]))
+        output = { ...output, status: "needs_context", requested_context: [{
+          unit_id: item.packet.core_units[0].unit_id, direction: "after", reason: "Synthetic context." }] };
+      h.answerWork(id, output);
+    }
+  } });
+  const port = { ...h.port,
+    async invoke(input) { await new Promise(resolve => setTimeout(resolve, 150)); return h.port.invoke(input); } };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+    environment: f.environment });
+  try { await runtime.execute("run"); } finally { await runtime.close(); }
+  assert.ok(h.published.some(item => item.tier === "hardest"));
+  assert.ok(h.published.some(item => item.origin === "lookahead"));
+  assert.ok(h.published.every(item => item.origin !== "lookahead" || item.tier !== "hardest"));
+});
+
+test("runtime close and reopen reuses each published work item", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic restart entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  let hold = false, resumed = false;
+  const roleHandlers = handlers();
+  let h;
+  h = exchangeHarness({ waitMs: 30, onDispatch: ({ work, dispatch, results }) => {
+    if ([...work.values()].some(item => item.origin === "lookahead")) hold = true;
+    if (hold && !resumed) return;
+    for (const id of dispatch.keys()) if (!results.has(id))
+      h.answerWork(id, roleHandlers[work.get(id).role](work.get(id).packet));
+  } });
+  const options = { config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, environment: f.environment };
+  const logicalKeys = new Set();
+  const delayed = base => ({ ...base,
+    async invoke(input) { logicalKeys.add(input.operationKey);
+      await new Promise(resolve => setTimeout(resolve, 150)); return base.invoke(input); },
+    async prefetch(input) { logicalKeys.add(input.operationKey); return base.prefetch(input); } });
+  let runtime = await openJournalExecutionRuntime({ ...options, inferencePort: delayed(h.port) });
+  let firstSummary;
+  try { firstSummary = await runtime.execute("run"); } finally { await runtime.close(); }
+  assert.ok(hold, "the first runtime must close with speculative work pending");
+  assert.equal(firstSummary.blocker, "COMPLETION_UNKNOWN");
+  resumed = true;
+  for (const id of h.dispatch.keys()) if (!h.results.has(id))
+    h.answerWork(id, roleHandlers[h.work.get(id).role](h.work.get(id).packet));
+  runtime = await openJournalExecutionRuntime({ ...options, inferencePort: delayed(h.makePort()) });
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.completion.graph_built, "pass");
+  } finally { await runtime.close(); }
+  assert.ok([...h.successful.values()].every(count => count === 1));
+  for (const key of logicalKeys) {
+    const baseId = journalExchangeWorkId(key);
+    assert.equal([...h.successful].filter(([id]) => id === baseId || id.startsWith(`${baseId}:r`))
+      .reduce((total, [, count]) => total + count, 0), 1, key);
+  }
+});
 
 async function searchPublishedAssertions(f) {
   const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
@@ -1513,6 +1903,38 @@ test("a calibration unit above its configured semantic batch bound stops the run
     await assert.rejects(runtime.execute("commit"), { code: "JOURNAL_REVIEWED_GENERATION_NOT_READY" });
     const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
     assert.equal(published.journal_corpora?.length ?? 0, 0);
+  } finally { await runtime.close(); }
+});
+
+test("an oversized calibration unit fails in source order, after the calibration units before it", async t => {
+  const f = await environment(t);
+  f.config.semantic_batching = { maximum_bytes: 4096, calibration_maximum_bytes: 4096 };
+  f.config.calibration_failure_limit = 1;
+  const short = "Synthetic short entry: I walked by the river and observed a blue cup.";
+  const long = "Synthetic long unit. ".repeat(350);
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-ordered-units" },
+    pages: [
+      { page_number: 1, representation_id: "synthetic:short", disposition: "readable", warnings: [], image_inventory: [] },
+      { page_number: 2, representation_id: "synthetic:long", disposition: "readable", warnings: [], image_inventory: [] }],
+    representations: [
+      { representation_id: "synthetic:short", text: short, utf8_byte_length: Buffer.byteLength(short) },
+      { representation_id: "synthetic:long", text: long, utf8_byte_length: Buffer.byteLength(long) }] });
+  const mock = createMockJournalInferencePort({ handlers: handlers() });
+  const roles = [];
+  const inferencePort = { capabilities: () => mock.capabilities(),
+    getCompletion: (operationKey) => mock.getCompletion(operationKey),
+    invoke(input) { roles.push(input.role); return mock.invoke(input); },
+    close: () => mock.close() };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, "CALIBRATION_SIZE_BOUND_EXCEEDED");
+    assert.equal(first.calibration_failure.failed_units, 1);
+    assert.equal(first.calibration_failure.completed_calibration_units, 2,
+      "the unit before the oversized one is checked before the limit stops the round");
+    assert.ok(roles.includes("extractor"));
   } finally { await runtime.close(); }
 });
 
