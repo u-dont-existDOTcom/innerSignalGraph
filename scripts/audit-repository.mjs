@@ -74,7 +74,7 @@ const CONTRIBUTION_CONTRACT = {
 };
 const PUBLIC_POSTURE_SHA256 = {
   "README.md": "1e6e8f8911d9e6c9d4f625e69595470b7b0cadf9b7f8c3568b6c6c029dbc3868",
-  "AGENTS.md": "729d6f4a1d53a015d437ab521f0ade89bd7e4041f3364ca0ca89695e26ed4838",
+  "AGENTS.md": "06d7357ae195213e8b517da1a386e246329d4f281ed0ddc54ca198b83b3c2151",
   "docs/INDEX.md": "2b1d8c9b3df73b87356f965485d9c665dc5e43c80edbfd1a56a802f36a44d27e",
   "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
   "CONTRIBUTING.md": "3e36a03597382a82cb628f0daa1c9595ad86b57ffa339873dcf18be1efdd40c4"
@@ -191,16 +191,16 @@ const EXPECTED_PROTECTED_BRANCH = {
   strict: true,
   enforce_admins: true,
   required_approvals: 0,
-  required_conversation_resolution: true,
+  required_conversation_resolution: false,
   required_linear_history: true,
   allow_force_pushes: false,
   allow_deletions: false
 };
 const EXPECTED_BRANCH_PROTECTION_EVIDENCE = {
-  checked_at: "2026-10-04T04:30:29Z",
-  note: "On 2026-10-04 the owner switched off required conversation resolution for main (owner question 2: A); stable is unchanged. AGENTS.md has the merge check that replaces it.",
+  checked_at: "2026-10-04T05:07:59Z",
+  note: "On 2026-10-04 the owner switched off required conversation resolution for main and stable (owner question 2: A). AGENTS.md has the merge check that replaces it.",
   required_contexts: ["deterministic-package", "workflow-policy", "codeql-javascript"],
-  main: { ...EXPECTED_PROTECTED_BRANCH, required_conversation_resolution: false },
+  main: EXPECTED_PROTECTED_BRANCH,
   stable: EXPECTED_PROTECTED_BRANCH
 };
 const DEPENDABOT_PATH = ".github/dependabot.yml";

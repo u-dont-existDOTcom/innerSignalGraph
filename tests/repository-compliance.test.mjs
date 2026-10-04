@@ -1151,8 +1151,8 @@ test("hosted-control evidence records verified improvements and exact unresolved
     open_alerts: 0
   });
   assert.deepEqual(profile.github_controls_evidence.branch_protection, {
-    checked_at: "2026-10-04T04:30:29Z",
-    note: "On 2026-10-04 the owner switched off required conversation resolution for main (owner question 2: A); stable is unchanged. AGENTS.md has the merge check that replaces it.",
+    checked_at: "2026-10-04T05:07:59Z",
+    note: "On 2026-10-04 the owner switched off required conversation resolution for main and stable (owner question 2: A). AGENTS.md has the merge check that replaces it.",
     required_contexts: ["deterministic-package", "workflow-policy", "codeql-javascript"],
     main: {
       protected: true,
@@ -1169,7 +1169,7 @@ test("hosted-control evidence records verified improvements and exact unresolved
       strict: true,
       enforce_admins: true,
       required_approvals: 0,
-      required_conversation_resolution: true,
+      required_conversation_resolution: false,
       required_linear_history: true,
       allow_force_pushes: false,
       allow_deletions: false
