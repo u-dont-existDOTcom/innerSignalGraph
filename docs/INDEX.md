@@ -41,10 +41,12 @@ The transition report names the fully gated private candidate, the public visibi
 - `superpowers/plans/`: implementation plans
 - `superpowers/plans/2026-10-01-journal-codex-lane.md`: request-pinned Codex exec exchange, staged-answer admission, and synthetic worker regressions
 - `superpowers/plans/2026-10-01-journal-claude-lane-and-supervision.md`: implemented Claude hardest lane on the Codex exchange; supervisor tier and command remain deferred
+- `superpowers/plans/2026-10-01-journal-lookahead.md`: bounded exchange lookahead for journal import, shared operation planning, and synthetic equivalence tests
 - `superpowers/plans/2026-10-01-journal-recalibrate.md`: explicit calibration retry with epoch-scoped identities and append-only unit records
 - `superpowers/plans/2026-10-02-journal-calibration-diagnostics.md`: content-free extraction failure counts across repair cycles and hardest attempt
 - `superpowers/plans/2026-10-02-journal-fidelity-repair.md`: audit-only retry, bounded hardest fidelity repair and content-free recovery diagnostics
 - `superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`: answered extractor context requests, one hardest self-repair and calibration rounds that run to the end
+- `superpowers/plans/2026-10-03-journal-review-convergence.md`: re-reviews scoped to what a repair changed, withholding what is still flagged when repairs run out, and a calibration gate on pooled recall with no critical miss
 - `superpowers/specs/`: accepted design specifications
 
 ## Obsidian graph authoring

@@ -10,6 +10,10 @@ import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { createMockJournalInferencePort, JournalInferencePortError } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
+import { exchangeHarness } from "./fixtures/journal-lookahead-exchange.mjs";
+import { createJournalLookahead } from "../src/journal-import/lookahead.mjs";
+import { journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
+import { createDeterministicAuditSample } from "../src/journal-import/audit.mjs";
 
 // A synthetic import driven from intake to a committed generation through the operator commands,
 // with every role answered by a mock. Each test makes one role answer the way a real journal
@@ -19,18 +23,31 @@ const CASE_ID = "synthetic-case";
 const WRITER = "synthetic-operator-token";
 const READER = "synthetic-reader-token";
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const randomObjectRef = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gu;
+async function corpusObjectIds(executionRoot) {
+  const root = path.join(executionRoot, ".journal-corpora");
+  let files;
+  try { files = (await fs.readdir(root, { recursive: true })).filter(name => name.endsWith(".journal-object.json")); }
+  catch (error) { if (error.code === "ENOENT") return []; throw error; }
+  return (await Promise.all(files.map(async name => JSON.parse(await fs.readFile(path.join(root, name), "utf8")).object_id))).sort();
+}
+function assertSameCorpusObjects(actual, expected) {
+  assert.equal(actual.length, expected.length, "lookahead changed the corpus object count");
+  const stable = ids => ids.map(id => id.replace(randomObjectRef, "<random-ref>")).sort();
+  assert.deepEqual(stable(actual), stable(expected), "lookahead changed the corpus object IDs");
+}
 const TEXTS = [
   "Synthetic Monday: I walked by the river and felt calm.",
   "Synthetic Wednesday: I walked by the river again and felt calm.",
   "Synthetic Friday: I stayed home and wrote a letter."
 ];
 
-async function environment(t) {
+async function environment(t, entries = TEXTS) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "journal-finish-synthetic-"));
   await fs.chmod(root, 0o700);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, "private"), { mode: 0o700 });
-  const text = TEXTS.join("\n");
+  const text = entries.join("\n");
   await fs.writeFile(path.join(root, "private", "source.txt"), text, { mode: 0o600 });
   const credentialsPath = path.join(root, "credentials.json");
   await fs.writeFile(credentialsPath, `${JSON.stringify({ schema_version: 1, root_dir: path.join(root, "vaults"), grants: [
@@ -51,8 +68,8 @@ async function environment(t) {
   // One page per entry, so each is its own unit.
   const sourceParser = async () => ({
     source: { sha256: config.source.sha256, byte_length: config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-finish" },
-    pages: TEXTS.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
-    representations: TEXTS.map((entry, index) => ({ representation_id: `synthetic:page:${index}`, text: entry, utf8_byte_length: Buffer.byteLength(entry) }))
+    pages: entries.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
+    representations: entries.map((entry, index) => ({ representation_id: `synthetic:page:${index}`, text: entry, utf8_byte_length: Buffer.byteLength(entry) }))
   });
   return { root, config, configPath, service, sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER } };
 }
@@ -60,6 +77,20 @@ async function environment(t) {
 const unknownTime = { raw: null, from: null, to: null, precision: "unknown", timezone: null, basis: "unresolved", evidence_ids: [] };
 const review = (role, packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation, review_role: role,
   assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" });
+// A frozen reference with one critical item on the packet's first unit. The default reader returns no reference
+// items, which meets pooled recall without any evidence, so a calibration test that must stop the round needs an
+// item the unit can miss.
+const criticalReference = (packet) => ({ schema_version: "1.0", source_only_first_pass: true,
+  reference_items: [{ id: "reference:critical", statement: "Synthetic critical proposition.", required_qualifiers: [],
+    anchors: [{ unit_id: packet.source_windows[0].unit_id, quote: packet.source_windows[0].text, occurrence: null }],
+    importance_reason: "Synthetic critical item.", critical: true }],
+  questions: [], unassessed_unit_ids: [] });
+// A calibration fidelity answer that keeps, or misses, every frozen reference item.
+const referenceAudit = (packet, kept) => ({ ...review("fidelity_auditor", packet),
+  assessments: (packet.frozen_reference?.reference_items ?? []).map(({ id, critical }) => ({ target_id: id,
+    outcome: kept ? "preserved" : "omitted", critical, finding_type: kept ? "none" : "missing_evidence",
+    explanation: kept ? "Synthetic check preserved it." : "Synthetic check found it missing.", evidence_ids: [] })),
+  status: kept ? "sufficient_for_stated_scope" : "repair_required" });
 
 function scannedParser(f, pages) {
   return async () => ({ source: { sha256: f.config.source.sha256,
@@ -149,6 +180,379 @@ async function drive(f, roleHandlers, calls = [], portOptions = {}, runtimeOptio
     return summaries;
   } finally { await runtime.close(); }
 }
+
+test("unsupported inference ports report sequential fallback at requested concurrency", async (t) => {
+  const f = await environment(t);
+  f.config.semantic_concurrency = 4;
+  const result = await drive(f, handlers());
+  assert.equal(result.run.lookahead, "unsupported_port");
+  assert.equal(result.commit.completion.profile_committed, "pass");
+  await assert.rejects(openJournalExecutionRuntime({ config: { ...f.config, semantic_concurrency: 9 },
+    configPath: f.configPath, service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers() }), environment: f.environment }),
+  { code: "JOURNAL_SEMANTIC_CONCURRENCY_INVALID" });
+});
+
+test("exchange lookahead preserves the synthetic import and sequential identities", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) =>
+    `Synthetic journal entry ${index}: I walked by the river and observed a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  const stagePort = createMockJournalInferencePort({ handlers: handlers() });
+  const staged = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, inferencePort: stagePort, sourceParser: f.sourceParser,
+    environment: f.environment });
+  try { await staged.execute("stage"); } finally { await staged.close(); }
+  const executionRoots = [path.join(f.root, "sequential"), path.join(f.root, "parallel")];
+  for (const executionRoot of executionRoots)
+    await fs.cp(f.config.execution_root, executionRoot, { recursive: true });
+  const runCase = async (semanticConcurrency, executionRoot) => {
+    let maxOutstanding = 0;
+    const h = exchangeHarness({ waitMs: 30_000,
+      onDispatch: ({ dispatch, results }) => {
+        maxOutstanding = Math.max(maxOutstanding,
+          [...dispatch.keys()].filter(id => !results.has(id)).length);
+      } });
+    const roleHandlers = handlers();
+    const invoked = [], prefetched = [];
+    const port = { ...h.port,
+      async invoke(input) { invoked.push({ role: input.role, key: input.operationKey });
+        return h.port.invoke(input); },
+      async prefetch(input) { prefetched.push({ role: input.role, key: input.operationKey,
+        tier: input.tier });
+        return h.port.prefetch(input); } };
+    let stopped = false, rounds = 0, seed = 17;
+    const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
+    const answering = (async () => {
+      while (!stopped) {
+        let pending = [...h.dispatch.keys()].filter(id => !h.results.has(id));
+        if (pending.length) {
+          // One fake transport round collects concurrent dispatches before answering them.
+          await new Promise(resolve => setTimeout(resolve, 12));
+          pending = [...h.dispatch.keys()].filter(id => !h.results.has(id))
+            .sort(() => random() - 0.5);
+          rounds += 1;
+          await Promise.all(pending.map(async id => {
+            await new Promise(resolve => setTimeout(resolve, 20 + Math.floor(random() * 12)));
+            const item = h.work.get(id);
+            if (item && h.dispatch.has(id) && !h.results.has(id))
+              h.answerWork(id, roleHandlers[item.role](item.packet));
+          }));
+        } else await new Promise(resolve => setTimeout(resolve, 15));
+      }
+    })();
+    let runtime;
+    try {
+      runtime = await openJournalExecutionRuntime({ config: { ...f.config,
+        semantic_concurrency: semanticConcurrency, execution_root: executionRoot },
+      configPath: f.configPath, service: f.service, inferencePort: port,
+      sourceParser: f.sourceParser, environment: f.environment });
+      const run = await runtime.execute("run");
+      const prefetchedInRun = prefetched.map((call) => call.role);
+      // Both copies audit the same sampled units, even when the sample omits units.
+      const beforeAudit = JSON.parse(await fs.readFile(path.join(executionRoot, "state.json"), "utf8"));
+      const corpus = createPrivateJournalCorpusStore({ rootDir: executionRoot, caseId: CASE_ID,
+        corpusId: beforeAudit.corpus_id,
+        corpusKey: await fs.readFile(path.join(executionRoot, "staging.key")) });
+      try {
+        const bytes = await corpus.reassembleOriginal(beforeAudit.visual_plan_ref ?? beforeAudit.parsed_ref);
+        let plan;
+        try { plan = JSON.parse(bytes.toString("utf8")); } finally { bytes.fill(0); }
+        const units = plan.units.map(unit => ({ ...unit,
+          duplicate_group_id: `duplicate:${sha256(unit.text)}` }));
+        const sample = createDeterministicAuditSample({ units, seed: "synthetic-fixed-audit-seed" });
+        beforeAudit.audit_sample_ref = await corpus.writeChunkedOriginal({
+          objectId: "audit:sample:fixed-lookahead", bytes: Buffer.from(JSON.stringify(sample)) });
+      } finally { await corpus.close(); }
+      await fs.writeFile(path.join(executionRoot, "state.json"), JSON.stringify(beforeAudit), { mode: 0o600 });
+      const audit = await runtime.execute("audit");
+      const patterns = await runtime.execute("patterns");
+      const commit = await runtime.execute("commit");
+      const state = JSON.parse(await fs.readFile(path.join(executionRoot, "state.json"), "utf8"));
+      const graph = await readStoredReport({ ...f, config: { ...f.config,
+        execution_root: executionRoot } }, "reviewed_graph_ref");
+      const auditReport = await readStoredReport({ ...f, config: { ...f.config,
+        execution_root: executionRoot } }, "audit_report_ref");
+      const objectIds = await corpusObjectIds(executionRoot);
+      return { run, audit, patterns, commit, state, graph, auditReport,
+        objectIds, invoked, prefetched, prefetchedInRun, rounds,
+        maxOutstanding,
+        duplicatePublishes: [...h.successful.values()].filter(count => count > 1).length };
+    } finally { stopped = true; await runtime?.close(); await answering; }
+  };
+  const sequential = await runCase(1, executionRoots[0]);
+  const parallel = await runCase(4, executionRoots[1]);
+  assert.equal(sequential.run.completion.graph_built, "pass");
+  assert.equal(parallel.run.completion.graph_built, "pass");
+  assert.deepEqual(parallel.graph, sequential.graph);
+  assert.equal(parallel.commit.completion.profile_committed, "pass");
+  assert.equal(sequential.commit.completion.profile_committed, "pass");
+  assert.equal(parallel.state.reviewed_persisted.manifest.graph_sha256,
+    sequential.state.reviewed_persisted.manifest.graph_sha256);
+  assert.deepEqual(parallel.auditReport.probability_unweighted,
+    sequential.auditReport.probability_unweighted);
+  assert.deepEqual(parallel.auditReport.probability_weighted,
+    sequential.auditReport.probability_weighted);
+  assert.equal(parallel.auditReport.unassessed_unit_count,
+    sequential.auditReport.unassessed_unit_count);
+  assert.deepEqual(parallel.audit.residuals, sequential.audit.residuals);
+  assert.deepEqual(parallel.patterns.residuals, sequential.patterns.residuals);
+  assert.deepEqual(parallel.invoked, sequential.invoked);
+  assertSameCorpusObjects(parallel.objectIds, sequential.objectIds);
+  assert.equal(sequential.prefetched.length, 0);
+  assert.ok(parallel.prefetched.length > 0);
+  assert.ok(parallel.prefetched.every(call => call.tier === "standard"));
+  // During the run only calibration sends reference readings, so these are calibration units sent ahead.
+  assert.ok(parallel.prefetchedInRun.includes("reference_reader"), "calibration reference readings are sent ahead");
+  assert.ok(parallel.prefetchedInRun.includes("extractor"));
+  assert.ok(parallel.maxOutstanding <= 4);
+  assert.equal(parallel.duplicatePublishes, 0);
+  assert.ok(parallel.run.lookahead.sent > 0);
+  assert.ok(parallel.run.lookahead.used > 0);
+  assert.equal(parallel.run.lookahead.unused, 0);
+  const invokedKeys = new Set(parallel.invoked.map(call => call.key));
+  assert.ok(parallel.prefetched.every(call => invokedKeys.has(call.key)),
+    "every prefetched operation must be invoked by the sequential run");
+  assert.ok(parallel.run.lookahead.concurrency === 4);
+  assert.ok(parallel.audit.lookahead.sent >= parallel.run.lookahead.sent);
+  assert.ok(parallel.audit.lookahead.used >= parallel.run.lookahead.used);
+  assert.ok(parallel.rounds < sequential.rounds,
+    `expected parallel dispatch rounds ${parallel.rounds} < ${sequential.rounds}`);
+});
+
+test("audit lookahead reads the current epoch's record of a recalibrated unit", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) =>
+    `Synthetic recalibrated entry ${index}: I walked by the river and observed a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  f.config.calibration_failure_limit = 1;
+  const baseline = handlers();
+  // Round 0: the third calibration unit fails extraction, so its epoch-zero record is source-only.
+  const failingText = entries[3];
+  const failing = createMockJournalInferencePort({ handlers: handlers({ extractor: (packet) =>
+    packet.core_units.some((unit) => unit.text === failingText)
+      ? { ...baseline.extractor(packet), status: "incomplete" } : baseline.extractor(packet) }) });
+  let runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: failing, environment: f.environment });
+  try {
+    const failed = await runtime.execute("run");
+    assert.equal(failed.calibration, "failed");
+    assert.equal(failed.calibration_failure.failed_units, 1);
+    assert.equal((await runtime.execute("recalibrate")).calibration_epoch, 1);
+  } finally { await runtime.close(); }
+  // Round 1 passes through the exchange with lookahead, then the audit runs with lookahead too.
+  const h = exchangeHarness({ waitMs: 30_000 });
+  const prefetched = [];
+  const port = { ...h.port, async prefetch(input) {
+    prefetched.push({ role: input.role, unit_id: input.packet.assigned_core_ids[0] });
+    return h.port.prefetch(input);
+  } };
+  let stopped = false;
+  const answering = (async () => {
+    while (!stopped) {
+      for (const id of [...h.dispatch.keys()].filter((key) => !h.results.has(key))) {
+        const item = h.work.get(id);
+        if (item) h.answerWork(id, baseline[item.role](item.packet));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+  })();
+  try {
+    runtime = await openJournalExecutionRuntime({ config: { ...f.config, semantic_concurrency: 4 }, configPath: f.configPath,
+      service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const auditStart = prefetched.length;
+    const audit = await runtime.execute("audit");
+    const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+    const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+      corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+    let recalibrated;
+    try {
+      const bytes = await store.reassembleOriginal(state.visual_plan_ref ?? state.parsed_ref);
+      try { recalibrated = JSON.parse(bytes.toString("utf8")).units.find((unit) => unit.text === failingText); }
+      finally { bytes.fill(0); }
+    } finally { await store.close(); }
+    // The epoch-zero record of this unit is source-only; the audit reads its current, passing record, and so
+    // does the lookahead, which therefore sends its reference reading ahead and leaves nothing unused.
+    assert.ok(prefetched.slice(auditStart).some((call) => call.role === "reference_reader"
+      && call.unit_id === recalibrated.unit_id));
+    assert.equal(audit.lookahead.unused, 0);
+  } finally { stopped = true; await runtime?.close(); await answering; }
+});
+
+test("corpus parity detects a prepare that writes an object", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "synthetic-lookahead-mutation-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const corpus = createPrivateJournalCorpusStore({ rootDir: root, caseId: CASE_ID,
+    corpusId: "synthetic-corpus", corpusKey: Buffer.alloc(32, 19) });
+  t.after(() => corpus.close());
+  const before = await corpusObjectIds(root);
+  const lookahead = createJournalLookahead({ limit: 2, port: { prefetch() {} },
+    authorize: async () => {}, grant: {}, prepare: async () => {
+      await corpus.writeJsonObject({ objectId: "synthetic:unexpected-lookahead-write", value: { synthetic: true } });
+      return null;
+  } });
+  lookahead.ahead([{ jobId: "synthetic-mutation" }]);
+  for (let attempts = 0; attempts < 100 && (await corpusObjectIds(root)).length === 0; attempts += 1)
+    await new Promise(resolve => setTimeout(resolve, 2));
+  await lookahead.close();
+  const after = await corpusObjectIds(root);
+  assert.throws(() => assertSameCorpusObjects(after, before), /lookahead changed the corpus object count/u);
+});
+
+test("reference audit replaces expired or changed speculative work on its original job key", async (t) => {
+  for (const variant of ["expired", "changed-grant", "answered-changed-grant"]) {
+    const f = await environment(t);
+    let time = Date.parse("2026-10-01T00:00:00.000Z");
+    let replaced = false;
+    let staleId = null;
+    const roleHandlers = handlers();
+    let h;
+    h = exchangeHarness({ now: () => new Date(time), ttlMs: 10_000,
+      onDispatch: ({ work, dispatch, results }) => {
+        for (const id of dispatch.keys()) if (!results.has(id) && id !== staleId
+          && work.get(id).origin !== "lookahead") {
+          const item = work.get(id);
+          h.answerWork(id, roleHandlers[item.role](item.packet));
+        }
+      } });
+    const port = { ...h.port, async invoke(input) {
+      if (!replaced && input.role === "reference_reader") {
+        replaced = true;
+        await h.port.prefetch({ ...input, grant: variant !== "expired"
+          ? { ...input.grant, grant_id: "synthetic:previous-grant" } : input.grant });
+        staleId = [...h.work.keys()].at(-1);
+        if (variant === "expired") time += 10_001;
+        if (variant === "answered-changed-grant") h.answerWork(staleId);
+      }
+      return h.port.invoke(input);
+    } };
+    const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+      service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+      environment: f.environment });
+    try {
+      const run = await runtime.execute("run");
+      assert.equal(run.blocker, null, variant);
+      assert.equal(run.completion.graph_built, "pass", variant);
+      assert.equal(h.results.get(staleId).retired, true, variant);
+      assert.equal(h.successful.get(`${staleId}:r1`), 1, variant);
+    } finally { await runtime.close(); }
+  }
+});
+
+test("real lookahead prepare checks access and writes no corpus objects", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic access entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  let revoked = false;
+  let h;
+  const roleHandlers = handlers();
+  h = exchangeHarness({ onDispatch: ({ work, dispatch, results }) => {
+    for (const id of dispatch.keys()) if (!results.has(id) && work.get(id).origin !== "lookahead")
+      h.answerWork(id, roleHandlers[work.get(id).role](work.get(id).packet));
+  } });
+  const objectCount = async () => {
+    const root = path.join(f.config.execution_root, ".journal-corpora");
+    try { return (await fs.readdir(root, { recursive: true })).filter(name => name.endsWith(".journal-object.json")).length; }
+    catch (error) { if (error.code === "ENOENT") return 0; throw error; }
+  };
+  const counts = [];
+  const port = { ...h.port,
+    async invoke(input) { await new Promise(resolve => setTimeout(resolve, 150)); return h.port.invoke(input); },
+    async prefetch(input) {
+      const before = await objectCount();
+      const result = await h.port.prefetch(input);
+      counts.push([before, await objectCount()]);
+      revoked = true;
+      return result;
+    } };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+    environment: f.environment, authContextProvider: async () => ({ bearerToken: revoked ? "revoked-synthetic" : WRITER }) });
+  try {
+    // The first send ahead is now a calibration reference reading. A denial during a reference call is
+    // recorded as unsent and stops the run with that blocker; one during a controller job throws. Either
+    // way nothing further is sent.
+    const outcome = await runtime.execute("run").then((summary) => summary.blocker, (error) => error.code);
+    assert.equal(outcome, "PRIVATE_CASE_ACCESS_DENIED");
+  } finally { await runtime.close(); }
+  assert.equal(counts.length, 1);
+  assert.equal(counts[0][1], counts[0][0]);
+  assert.equal([...h.work.values()].filter(item => item.origin === "lookahead").length, 1);
+});
+
+test("hardest lane run never prefetches a hardest work item", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic hardest entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  f.config.hardest_lane = { enabled: true, daily_limit: 8 };
+  const normal = handlers();
+  let h;
+  h = exchangeHarness({ onDispatch: ({ work, dispatch, results }) => {
+    for (const id of dispatch.keys()) if (!results.has(id)) {
+      const item = work.get(id);
+      let output = normal[item.role](item.packet);
+      if (item.role === "extractor" && item.tier !== "hardest"
+        && item.packet.core_units.some(unit => unit.text === entries[2]))
+        output = { ...output, status: "needs_context", requested_context: [{
+          unit_id: item.packet.core_units[0].unit_id, direction: "after", reason: "Synthetic context." }] };
+      h.answerWork(id, output);
+    }
+  } });
+  const port = { ...h.port,
+    async invoke(input) { await new Promise(resolve => setTimeout(resolve, 150)); return h.port.invoke(input); } };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+    environment: f.environment });
+  try { await runtime.execute("run"); } finally { await runtime.close(); }
+  assert.ok(h.published.some(item => item.tier === "hardest"));
+  assert.ok(h.published.some(item => item.origin === "lookahead"));
+  assert.ok(h.published.every(item => item.origin !== "lookahead" || item.tier !== "hardest"));
+});
+
+test("runtime close and reopen reuses each published work item", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic restart entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  let hold = false, resumed = false;
+  const roleHandlers = handlers();
+  let h;
+  h = exchangeHarness({ waitMs: 30, onDispatch: ({ work, dispatch, results }) => {
+    if ([...work.values()].some(item => item.origin === "lookahead")) hold = true;
+    if (hold && !resumed) return;
+    for (const id of dispatch.keys()) if (!results.has(id))
+      h.answerWork(id, roleHandlers[work.get(id).role](work.get(id).packet));
+  } });
+  const options = { config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, environment: f.environment };
+  const logicalKeys = new Set();
+  const delayed = base => ({ ...base,
+    async invoke(input) { logicalKeys.add(input.operationKey);
+      await new Promise(resolve => setTimeout(resolve, 150)); return base.invoke(input); },
+    async prefetch(input) { logicalKeys.add(input.operationKey); return base.prefetch(input); } });
+  let runtime = await openJournalExecutionRuntime({ ...options, inferencePort: delayed(h.port) });
+  let firstSummary;
+  try { firstSummary = await runtime.execute("run"); } finally { await runtime.close(); }
+  assert.ok(hold, "the first runtime must close with speculative work pending");
+  assert.equal(firstSummary.blocker, "COMPLETION_UNKNOWN");
+  resumed = true;
+  for (const id of h.dispatch.keys()) if (!h.results.has(id))
+    h.answerWork(id, roleHandlers[h.work.get(id).role](h.work.get(id).packet));
+  runtime = await openJournalExecutionRuntime({ ...options, inferencePort: delayed(h.makePort()) });
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.completion.graph_built, "pass");
+  } finally { await runtime.close(); }
+  assert.ok([...h.successful.values()].every(count => count === 1));
+  for (const key of logicalKeys) {
+    const baseId = journalExchangeWorkId(key);
+    assert.equal([...h.successful].filter(([id]) => id === baseId || id.startsWith(`${baseId}:r`))
+      .reduce((total, [, count]) => total + count, 0), 1, key);
+  }
+});
 
 async function searchPublishedAssertions(f) {
   const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
@@ -438,7 +842,10 @@ test("a hardest extraction whose omission packet grows too large still counts as
       pages: [...parsed.pages, { page_number: parsed.pages.length + 1, representation_id: "synthetic:page:sunday", disposition: "readable", warnings: [], image_inventory: [] }],
       representations: [...parsed.representations, { representation_id: "synthetic:page:sunday", text, utf8_byte_length: Buffer.byteLength(text) }] };
   };
-  const standard = createMockJournalInferencePort({ handlers: handlers({ extractor: unresolvedSunday }) });
+  // The Sunday unit's frozen reference has a critical item, so its source-only failure stops the calibration round.
+  const standard = createMockJournalInferencePort({ handlers: handlers({ extractor: unresolvedSunday,
+    reference_reader: (packet) => packet.source_windows[0].text.includes("Synthetic Sunday")
+      ? criticalReference(packet) : normal.reference_reader(packet) }) });
   // The hardest extractor completes, but its long (schema-valid) output makes the omission packet exceed the bound.
   const hardest = createMockJournalInferencePort({ handlers: handlers({ extractor: (packet) => ({
     ...normal.extractor(packet),
@@ -456,6 +863,7 @@ test("a hardest extraction whose omission packet grows too large still counts as
     // The unit is a calibration unit: calibration stops as unresolved (not as an unspent size refusal),
     // and the consumed hardest call is counted.
     assert.equal(summary.calibration, "failed");
+    assert.equal(summary.calibration_failure.status, "CALIBRATION_REPAIR_REQUIRED");
     assert.equal(summary.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
     assert.equal(summary.residuals.hardest_attempted, 1);
     assert.equal(summary.residuals.hardest_resolved, 0);
@@ -947,7 +1355,9 @@ test("duplicate calibration assessments exhaust bounded attempts and stop on res
   let fidelityCalls = 0;
   const calls = [];
   const baseline = handlers();
+  // A source-only failure keeps none of the unit's reference items, so the critical one stops calibration.
   const port = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     fidelity_auditor: packet => {
       fidelityCalls += 1;
       calls.push("fidelity_auditor");
@@ -968,13 +1378,15 @@ test("duplicate calibration assessments exhaust bounded attempts and stop on res
   } finally { await runtime.close(); }
 });
 
-test("duplicate assessments during calibration repair stop calibration", async t => {
+test("duplicate assessments during a calibration repair are never accepted, and the unit keeps its earlier audit", async t => {
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
   let fidelityCalls = 0;
   const calls = [];
   const baseline = handlers();
+  // A source-only failure keeps none of the unit's reference items, so the critical one stops calibration.
   const port = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     fidelity_auditor: packet => {
       fidelityCalls += 1;
       calls.push("fidelity_auditor");
@@ -989,9 +1401,13 @@ test("duplicate assessments during calibration repair stop calibration", async t
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
   try {
-    await assertCalibrationStopped(runtime, f, "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
-      "FIDELITY_DUPLICATE_ASSESSMENT", calls);
+    // The repair's audits repeat an assessment until its attempts run out, so none of them counts. The repairs
+    // end there, and the unit keeps its first audit, which kept the critical item.
+    const result = await runtime.execute("run");
     assert.equal(fidelityCalls, 4);
+    assert.equal(result.calibration, "pass");
+    assert.equal(result.calibration_gate.critical_miss_count, 0);
+    assert.equal(result.calibration_gate.preserved, result.calibration_gate.reference_total);
   } finally { await runtime.close(); }
 });
 
@@ -999,18 +1415,23 @@ test("a calibration review still requiring repair after bounded cycles stops the
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
   const calls = [];
-  const baseline = handlers();
+  // Every audit finds the unit's critical reference item missing. When the bounded repair cycles end, the unit
+  // keeps its best audited attempt, which still misses that item, so it fails its own reference check and the
+  // critical miss stops the round.
   const port = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     fidelity_auditor: packet => {
       calls.push("fidelity_auditor");
-      return { ...baseline.fidelity_auditor(packet), status: "repair_required" };
+      return referenceAudit(packet, false);
     }
   }) });
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
   try {
-    await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+    const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
     assert.equal(calls.length, 3, "initial review plus two repair cycles");
+    assert.deepEqual(stopped.calibration_failure.failures.map((item) => item.reference), [{ reference_total: 1,
+      preserved: 0, omitted: 1, distorted: 0, unassessed: 0, critical_miss_count: 1, qualifier_error_count: 0 }]);
   } finally { await runtime.close(); }
 });
 
@@ -1021,7 +1442,11 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
     f.config.hardest_lane = { enabled };
     const baseline = handlers();
     const calls = [];
+    // The hardest fidelity repair runs only while the reference score fails, so every audit misses the unit's
+    // critical reference item until the hardest repair's answer (when it `passes`) keeps it. A unit that still
+    // misses it keeps its best attempt and fails its own reference check.
     const base = createMockJournalInferencePort({ handlers: handlers({
+      reference_reader: criticalReference,
       extractor: packet => {
         const output = baseline.extractor(packet);
         if (packet.repair_request?.cycle === "fidelity-hardest") {
@@ -1032,10 +1457,8 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
         }
         return output;
       },
-      fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet),
-        status: passes && packet.imported_generation.assertions.some(node =>
-          node.data.statement === "Synthetic hardest repaired report.")
-          ? "sufficient_for_stated_scope" : "repair_required" })
+      fidelity_auditor: packet => referenceAudit(packet, passes && packet.imported_generation.assertions.some(node =>
+        node.data.statement === "Synthetic hardest repaired report."))
     }) });
     const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
       invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
@@ -1044,7 +1467,7 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
     const runtime = await openJournalExecutionRuntime(options);
     try {
       const result = enabled && passes ? await runtime.execute("run")
-        : await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+        : await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
       assert.equal(result.calibration, enabled && passes ? "pass" : "failed");
       assert.equal(result.residuals.hardest_attempted ?? 0, enabled ? 1 : 0);
       assert.equal(result.residuals.hardest_resolved ?? 0, enabled && passes ? 1 : 0);
@@ -1076,6 +1499,50 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
   });
 }
 
+test("a calibration unit whose reference items pass skips the hardest fidelity repair and withholds what review flags", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  f.config.hardest_lane = { enabled: true };
+  const calls = [];
+  // Every audit keeps the critical reference item and flags the unit's one assertion.
+  const base = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
+    fidelity_auditor: packet => {
+      const kept = referenceAudit(packet, true);
+      return { ...kept, status: "repair_required", assessments: [...kept.assessments,
+        ...packet.imported_generation.assertions.map(node => ({ target_id: node.id, outcome: "distorted", critical: false,
+          finding_type: "unsupported_claim", explanation: "Synthetic finding.", evidence_ids: [] }))] };
+    }
+  }) });
+  const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
+    invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.calibration, "pass");
+    assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3, "initial audit and two standard repairs");
+    assert.deepEqual(calls.filter(call => call.tier === "hardest"), [], "the scarce tier is kept for reference items that fail");
+    assert.equal(run.residuals.hardest_attempted ?? 0, 0);
+    assert.equal(run.calibration_gate.calibration_pass, true);
+    assert.equal(run.calibration_gate.withheld_assertions, 1);
+    const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+    const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+      corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+    let record;
+    try { record = await store.readJsonObject({ objectId: `unit:graph:${state.completed_units[0]}` }); }
+    finally { await store.close(); }
+    assert.equal(record.source_only_unresolved, false);
+    assert.equal(record.diagnostics.hardest_fidelity, null);
+    assert.deepEqual(record.review_residuals, { withheld_assertions: 1, withheld_entities: 0, withheld_episodes: 0, omission_gaps: 0 });
+    const { batch, ...calibration } = record.calibration;
+    assert.equal(typeof batch, "string");
+    assert.deepEqual(calibration, { reference_total: 1, preserved: 1, omitted: 0, distorted: 0, unassessed: 0,
+      critical_miss_count: 0, qualifier_error_count: 0, outcome: "pass" });
+    assert.equal(record.graph.nodes.some(node => node.kind === "assertion"), false);
+  } finally { await runtime.close(); }
+});
+
 test("the Codex-route hardest fidelity repair pauses at its dependent daily limit and resumes", async t => {
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
@@ -1083,15 +1550,16 @@ test("the Codex-route hardest fidelity repair pauses at its dependent daily limi
   const baseline = handlers();
   let day = "2026-10-02T12:00:00Z";
   const calls = [];
+  // Only the hardest repair's answer keeps the critical reference item, so the hardest fidelity repair is needed.
   const base = createMockJournalInferencePort({ handlers: handlers({
+    reference_reader: criticalReference,
     extractor: packet => {
       const output = baseline.extractor(packet);
       if (packet.repair_request?.cycle === "fidelity-hardest")
         output.assertions[0].statement = "Synthetic hardest repaired report.";
       return output;
-    }, fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet),
-      status: packet.imported_generation.assertions.some(node => node.data.statement === "Synthetic hardest repaired report.")
-        ? "sufficient_for_stated_scope" : "repair_required" })
+    }, fidelity_auditor: packet => referenceAudit(packet,
+      packet.imported_generation.assertions.some(node => node.data.statement === "Synthetic hardest repaired report."))
   }) });
   const port = { capabilities: () => ({ ...base.capabilities(), transport: "codex_exec_exchange",
       hardest_fresh_context_per_generate: true, hardest_authenticated_execution_profile_per_generate: true }),
@@ -1127,7 +1595,11 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
     f.config.hardest_lane = { enabled: true };
     const baseline = handlers();
     const calls = [];
+    // Every audit misses the unit's critical reference item, so the hardest fidelity repair runs (it is skipped
+    // once the reference score passes), and the unit, keeping its best audited attempt, fails its own
+    // reference check.
     const base = createMockJournalInferencePort({ handlers: handlers({
+      reference_reader: criticalReference,
       extractor: packet => {
         const output = baseline.extractor(packet);
         if (failure === "packet-before-extractor" && packet.repair_request?.cycle === "fidelity-2")
@@ -1135,14 +1607,20 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
         if (packet.repair_request?.cycle === "fidelity-hardest") {
           if (failure === "packet-after-extractor") output.coverage[0].reason = "PRIVATE_SYNTHETIC_SENTINEL".repeat(24_000);
           if (failure === "binding") output.assertions[0].anchors[0].quote = "PRIVATE_SYNTHETIC_SENTINEL_ABSENT";
-          if (failure === "omission") output.coverage[0].reason = "hardest";
+          // The hardest answer rewrites an assertion, so its own review counts for that assertion.
+          if (failure === "omission") {
+            output.coverage[0].reason = "hardest";
+            output.assertions[0].statement = "Synthetic hardest rewritten report.";
+          }
         }
         return output;
       },
-      omission_checker: packet => ({ ...baseline.omission_checker(packet),
-        status: failure === "omission" && packet.candidate_extraction.coverage[0].reason === "hardest"
-          ? "repair_required" : "sufficient_for_stated_scope" }),
-      fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet), status: "repair_required" })
+      omission_checker: packet => failure === "omission" && packet.candidate_extraction.coverage[0].reason === "hardest"
+        ? { ...baseline.omission_checker(packet), status: "repair_required",
+          assessments: [{ target_id: packet.candidate_extraction.assertions[0].local_id, outcome: "distorted",
+            critical: false, finding_type: "unsupported_claim", explanation: "Synthetic finding.", evidence_ids: [] }] }
+        : baseline.omission_checker(packet),
+      fidelity_auditor: packet => referenceAudit(packet, false)
     }) });
     const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
       invoke(input) {
@@ -1155,26 +1633,33 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
     const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
       sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
     try {
-      const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+      const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
       assert.equal(stopped.residuals.hardest_attempted ?? 0, failure === "packet-before-extractor" ? 0 : 1);
       assert.equal(stopped.residuals.hardest_resolved ?? 0, 0);
-      // A hardest repair that its own binding or review leaves unresolved is repaired once more at the same
-      // tier; here that repair passes its review and gets the fourth audit.
-      const repairedAgain = ["binding", "omission"].includes(failure);
-      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, repairedAgain ? 4 : 3);
+      // A hardest answer that didn't bind is repaired once more at the same tier; here that repair passes its
+      // review and gets the fourth audit. Review findings don't earn that repair: a hardest answer that binds is
+      // audited as it is (the fourth audit), and what its review still flags is withheld when the repairs end.
+      const repairedAgain = failure === "binding";
+      const audited = ["binding", "omission"].includes(failure);
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, audited ? 4 : 3);
       const snapshot = stopped.calibration_failure.diagnostics.hardest_fidelity;
       if (repairedAgain) {
         assert.equal(snapshot.repair.binding_failure_code, null);
         assert.equal(snapshot.repair.omission.status, "sufficient_for_stated_scope");
         assert.equal(snapshot.repair.extraction_changed, true);
-        assert.equal(snapshot.fidelity.calibration_pass, false);
         assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
           ["extractor", "omission_checker", "extractor", "omission_checker"]);
       } else assert.equal(Object.hasOwn(snapshot, "repair"), false);
+      if (audited) assert.equal(snapshot.fidelity.calibration_pass, false);
       if (failure.startsWith("packet-")) assert.equal(snapshot.blocker_code, "JOURNAL_WORK_PACKET_TOO_LARGE");
       if (failure === "spent") assert.equal(snapshot.blocker_code, "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED");
       if (failure === "binding") assert.equal(snapshot.binding_failure_code, "QUOTE_NOT_FOUND");
-      if (failure === "omission") assert.equal(snapshot.omission.status, "repair_required");
+      if (failure === "omission") {
+        assert.equal(snapshot.omission.status, "repair_required");
+        assert.deepEqual(snapshot.review_scope, { carried: 0, changed: 1, removed: 0, earlier_findings: 0 });
+        assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
+          ["extractor", "omission_checker"]);
+      }
       assert.equal(snapshot.extraction_changed, failure === "packet-before-extractor" || failure === "spent" ? null : true);
       assert.equal(JSON.stringify(stopped).includes("PRIVATE_SYNTHETIC_SENTINEL"), false);
     } finally { await runtime.close(); }
@@ -1516,6 +2001,38 @@ test("a calibration unit above its configured semantic batch bound stops the run
   } finally { await runtime.close(); }
 });
 
+test("an oversized calibration unit fails in source order, after the calibration units before it", async t => {
+  const f = await environment(t);
+  f.config.semantic_batching = { maximum_bytes: 4096, calibration_maximum_bytes: 4096 };
+  f.config.calibration_failure_limit = 1;
+  const short = "Synthetic short entry: I walked by the river and observed a blue cup.";
+  const long = "Synthetic long unit. ".repeat(350);
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-ordered-units" },
+    pages: [
+      { page_number: 1, representation_id: "synthetic:short", disposition: "readable", warnings: [], image_inventory: [] },
+      { page_number: 2, representation_id: "synthetic:long", disposition: "readable", warnings: [], image_inventory: [] }],
+    representations: [
+      { representation_id: "synthetic:short", text: short, utf8_byte_length: Buffer.byteLength(short) },
+      { representation_id: "synthetic:long", text: long, utf8_byte_length: Buffer.byteLength(long) }] });
+  const mock = createMockJournalInferencePort({ handlers: handlers() });
+  const roles = [];
+  const inferencePort = { capabilities: () => mock.capabilities(),
+    getCompletion: (operationKey) => mock.getCompletion(operationKey),
+    invoke(input) { roles.push(input.role); return mock.invoke(input); },
+    close: () => mock.close() };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, "CALIBRATION_SIZE_BOUND_EXCEEDED");
+    assert.equal(first.calibration_failure.failed_units, 1);
+    assert.equal(first.calibration_failure.completed_calibration_units, 2,
+      "the unit before the oversized one is checked before the limit stops the round");
+    assert.ok(roles.includes("extractor"));
+  } finally { await runtime.close(); }
+});
+
 for (const [label, count, field] of [
   ["reconciliation packet over 180 KB", 170, "reconciliation_unresolved_units"],
   ["pattern context over 50 KB", 32, "unresolved_batches"]
@@ -1552,4 +2069,221 @@ for (const [label, count, field] of [
     }
     assert.equal((await runtime.execute("commit")).completion.profile_committed, "pass");
   } finally { await runtime.close(); }
+});
+
+// How repeated omission reviews of one regular unit settle. Thirteen one-page units: calibration takes twelve
+// windows by source position, which leaves unit 06 as the only regular unit; every other unit answers cleanly.
+const CONVERGENCE_ENTRIES = Array.from({ length: 13 }, (_, index) =>
+  `Synthetic convergence unit ${String(index).padStart(2, "0")} has unique text.`);
+const isRegularUnit = (packet) => packet.core_units?.length === 1 && packet.core_units[0].text === CONVERGENCE_ENTRIES[6];
+const FLAWED_X = "Synthetic report X, before its repair.";
+const REPAIRED_X = "Synthetic report X, repaired.";
+const REPORT_Y = "Synthetic report Y.";
+const unitAnchors = (unit) => [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }];
+const diarist = (unit) => ({ local_id: "self", label: "Synthetic diarist", entity_kind: "person", anchors: unitAnchors(unit) });
+const proposal = (unit, localId, statement, extra = {}) => ({ local_id: localId, statement, assertion_kind: "direct_report",
+  narrative_mode: "waking", speaker_local_id: "self", subject_local_ids: ["self"], episode_local_id: null,
+  polarity: "affirmed", qualifiers: [], authored_time: unknownTime, event_time: unknownTime, anchors: unitAnchors(unit),
+  importance_reasons: ["synthetic"], extraction_confidence: "high", ...extra });
+const unitExtraction = (unit, assertions, { entities = [diarist(unit)], status = "complete", requestedContext = [] } = {}) => ({
+  schema_version: "1.0", status, entities, episodes: [], assertions,
+  coverage: [{ unit_id: unit.unit_id, disposition: "extracted", assertion_local_ids: assertions.map((item) => item.local_id), reason: null }],
+  requested_context: requestedContext });
+// A unit keeps its cycle diagnostics on its record only when something else happened to it, here an answered
+// context request. Visual context for a native-text unit can never be supplied, so it is answered `unavailable`:
+// the pass records its diagnostics, and the next review stays scoped (newly supplied context would make it count
+// whole).
+const contextRequest = (unit) => [{ unit_id: unit.unit_id, direction: "visual", reason: "Synthetic context request." }];
+// The regular unit's omission review: a finding on each flagged target (a target, or a target and its finding
+// type), and the candidate's other assertions kept.
+const flaggingReview = (packet, flagged) => {
+  const findings = flagged.map((entry) => Array.isArray(entry) ? entry : [entry, "unsupported_claim"]);
+  const targets = new Set(findings.map(([target]) => target));
+  return { ...review("omission_checker", packet),
+    assessments: [...findings.map(([target, findingType]) => ({ target_id: target, outcome: "distorted", critical: false,
+      finding_type: findingType, explanation: "Synthetic finding.", evidence_ids: [] })),
+    ...packet.candidate_extraction.assertions.filter((item) => !targets.has(item.local_id)).map((item) => ({
+      target_id: item.local_id, outcome: "preserved", critical: false, finding_type: "none",
+      explanation: "Synthetic check preserved it.", evidence_ids: [] }))],
+    status: findings.length ? "repair_required" : "sufficient_for_stated_scope" };
+};
+// `omission(candidate, call)` names what the regular unit's review flags; `call` counts that unit's reviews.
+const regularHandlers = ({ extractor, omission }) => {
+  let reviews = 0;
+  return handlers({
+    extractor: (packet) => isRegularUnit(packet) ? extractor(packet.core_units[0], packet) : handlers().extractor(packet),
+    omission_checker: (packet) => isRegularUnit(packet)
+      ? flaggingReview(packet, omission(packet.candidate_extraction, reviews++)) : review("omission_checker", packet)
+  });
+};
+const assertionStatements = (graph) => graph.nodes.filter((node) => node.kind === "assertion")
+  .map((node) => node.data.statement).sort();
+
+async function runRegularUnit(t, roleHandlers, configure = () => {}) {
+  const f = await environment(t, CONVERGENCE_ENTRIES);
+  configure(f.config);
+  const calls = [];
+  const base = createMockJournalInferencePort({ handlers: roleHandlers });
+  const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
+    invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  let run;
+  try { run = await runtime.execute("run"); } finally { await runtime.close(); }
+  const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+  const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+    corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+  try {
+    const bytes = await store.reassembleOriginal(state.visual_plan_ref ?? state.parsed_ref);
+    let plan;
+    try { plan = JSON.parse(bytes.toString("utf8")); } finally { bytes.fill(0); }
+    const unit = plan.units.find((item) => item.text === CONVERGENCE_ENTRIES[6]);
+    assert.equal(state.calibration, "pass");
+    assert.ok(!plan.calibration.some((item) => item.unit_id === unit.unit_id), "unit 06 is a regular unit");
+    return { f, run, calls, unit, record: await store.readJsonObject({ objectId: `unit:graph:${unit.unit_id}` }) };
+  } finally { await store.close(); }
+}
+
+test("after a repair, review counts only for what the repair changed: a finding on an unchanged assertion carries forward", async t => {
+  const cycles = [];
+  const { run, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit, packet) => {
+      const cycle = packet.repair_request?.cycle ?? 0;
+      cycles.push(cycle);
+      // The repair fixes X and returns Y exactly as it was, under the same local ID.
+      return unitExtraction(unit, [proposal(unit, "x", cycle === 0 ? FLAWED_X : REPAIRED_X), proposal(unit, "y", REPORT_Y)],
+        cycle === 0 ? { requestedContext: contextRequest(unit) } : {});
+    },
+    // The first review flags X; the repair's review flags only the unchanged Y.
+    omission: (candidate) => [candidate.assertions.some((item) => item.statement === REPAIRED_X) ? "y" : "x"]
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(run.completion.graph_built, "pass");
+  assert.deepEqual(cycles, [0, 1], "the unit resolves at cycle 1");
+  assert.equal(record.source_only_unresolved, false);
+  assert.equal(Object.hasOwn(record, "review_residuals"), false);
+  assert.deepEqual(assertionStatements(record.graph), [REPAIRED_X, REPORT_Y].sort());
+  // The repair's own review still flagged Y, which the repair couldn't have affected, so that verdict didn't count.
+  assert.deepEqual(record.omission.output.assessments.filter((item) => item.outcome !== "preserved")
+    .map((item) => item.target_id), ["y"]);
+  assert.deepEqual(record.diagnostics.cycles.map((cycle) => cycle.cycle), [0, 1]);
+  assert.deepEqual(record.diagnostics.cycles[1].review_scope, { carried: 1, changed: 1, removed: 0, earlier_findings: 1 });
+  assert.equal(record.diagnostics.cycles[1].omission.status, "sufficient_for_stated_scope");
+  assert.equal(record.diagnostics.cycles[1].omission.findings, 0);
+});
+
+test("after a repair, a finding from the earlier review stays in scope when the repair leaves its assertion unchanged", async t => {
+  const repairRequests = [];
+  const { run, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit, packet) => {
+      const cycle = packet.repair_request?.cycle ?? 0;
+      repairRequests.push([cycle, packet.repair_request ?? null]);
+      // The first repair returns the flagged X unchanged; the second fixes it.
+      return unitExtraction(unit, [proposal(unit, "x", cycle < 2 ? FLAWED_X : REPAIRED_X), proposal(unit, "y", REPORT_Y)],
+        cycle === 0 ? { requestedContext: contextRequest(unit) } : {});
+    },
+    // The repair's review flags X again, with a finding of its own.
+    omission: (candidate, call) => candidate.assertions.some((item) => item.statement === FLAWED_X)
+      ? [["x", call === 0 ? "unsupported_claim" : "lost_qualifier"]] : []
+  }));
+  assert.equal(run.blocker, null);
+  assert.deepEqual(repairRequests.map(([cycle]) => cycle), [0, 1, 2], "cycle 1 leaves the unit unresolved");
+  // The next repair is asked to fix what cycle 1's counted review still flags: X, checked again since it was
+  // flagged before, so cycle 1's own verdict counts rather than the earlier one carried forward.
+  const counted = repairRequests[2][1].omission_review;
+  assert.equal(counted.status, "repair_required");
+  assert.deepEqual(counted.assessments.filter((item) => item.outcome !== "preserved")
+    .map((item) => [item.target_id, item.finding_type]), [["x", "lost_qualifier"]]);
+  assert.deepEqual(record.diagnostics.cycles[1].review_scope, { carried: 0, changed: 0, removed: 0, earlier_findings: 1 });
+  assert.equal(record.diagnostics.cycles[1].omission.findings, 1);
+  assert.deepEqual(record.diagnostics.cycles[2].review_scope, { carried: 0, changed: 1, removed: 0, earlier_findings: 1 });
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(assertionStatements(record.graph), [REPAIRED_X, REPORT_Y].sort());
+});
+
+test("a unit still flagged after every cycle and the hardest lane withholds the flagged assertion and keeps the rest", async t => {
+  const { f, run, calls, unit, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit) => unitExtraction(unit, [proposal(unit, "x", FLAWED_X), proposal(unit, "y", REPORT_Y)]),
+    omission: () => ["x"]
+  }), (config) => { config.hardest_lane = { enabled: true }; });
+  assert.equal(run.blocker, null);
+  // Withholding leaves the graph partial and says why.
+  assert.equal(run.completion.graph_built, "partial");
+  assert.equal(run.residuals.source_only_units, 0);
+  assert.equal(run.residuals.review_residual_units, 1);
+  assert.equal(run.residuals.review_withheld_assertions, 1);
+  // Every cycle, the hardest answer and its one repair at that tier all left X flagged.
+  assert.deepEqual(calls.filter((call) => call.tier === "hardest").map((call) => call.role),
+    ["extractor", "omission_checker", "extractor", "omission_checker"]);
+  assert.equal(run.residuals.hardest_attempted, 1);
+  assert.equal(run.residuals.hardest_resolved, 0);
+  assert.deepEqual(record.diagnostics.cycles.map((cycle) => cycle.omission.findings), [1, 1, 1]);
+  assert.equal(record.diagnostics.hardest.omission.status, "repair_required");
+  assert.equal(record.diagnostics.hardest.repair.omission.status, "repair_required");
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(record.review_residuals, { withheld_assertions: 1, withheld_entities: 0, withheld_episodes: 0, omission_gaps: 0 });
+  assert.deepEqual(assertionStatements(record.graph), [REPORT_Y]);
+  assert.deepEqual(record.unit_extraction.coverage, [{ unit_id: unit.unit_id, disposition: "needs_review",
+    assertion_local_ids: ["y"], reason: "After the repair attempts, review still flagged 1 assertion(s), which were withheld, and found 0 possible omission(s); the archived source keeps this unit's full text." }]);
+  const graph = await readStoredReport(f, "graph_ref");
+  assert.ok(graph.nodes.some((node) => node.kind === "assertion" && node.data.statement === REPORT_Y));
+  assert.ok(!graph.nodes.some((node) => node.kind === "assertion" && node.data.statement === FLAWED_X));
+  assert.equal(JSON.stringify([record.diagnostics, record.review_residuals]).includes("Synthetic"), false);
+});
+
+test("a withheld entity withholds every assertion it speaks or is the subject of, and the rest still bind", async t => {
+  const { run, unit, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit) => unitExtraction(unit, [
+      // Its event time cites the flagged entity, so it binds only once that evidence points at the unit instead.
+      proposal(unit, "own", "Synthetic report about the diarist.", { event_time: { ...unknownTime, evidence_ids: ["friend"] } }),
+      proposal(unit, "about", "Synthetic report about the friend.", { subject_local_ids: ["self", "friend"] }),
+      proposal(unit, "quoted", "Synthetic advice the friend gave.", { assertion_kind: "quoted_other",
+        narrative_mode: "quoted", speaker_local_id: "friend" })
+    ], { entities: [diarist(unit), { local_id: "friend", label: "Synthetic friend", entity_kind: "person", anchors: unitAnchors(unit) }] }),
+    omission: () => ["friend"]
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(run.residuals.source_only_units, 0);
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(record.review_residuals, { withheld_assertions: 2, withheld_entities: 1, withheld_episodes: 0, omission_gaps: 0 });
+  assert.deepEqual(assertionStatements(record.graph), ["Synthetic report about the diarist."]);
+  assert.deepEqual(record.graph.nodes.filter((node) => node.kind === "entity").map((node) => node.data.label), ["Synthetic diarist"]);
+  const kept = record.graph.nodes.find((node) => node.kind === "assertion");
+  assert.deepEqual(kept.data.event_time.evidence_ids,
+    record.graph.nodes.filter((node) => node.kind === "passage" && node.data.unit_id === unit.unit_id).map((node) => node.id));
+  assert.deepEqual(record.unit_extraction.coverage.map((item) => [item.disposition, item.assertion_local_ids]),
+    [["needs_review", ["own"]]]);
+});
+
+test("a final extraction that is incomplete can't be withheld from: the unit stays source-only", async t => {
+  const { run, record } = await runRegularUnit(t, regularHandlers({
+    extractor: (unit, packet) => unitExtraction(unit, [proposal(unit, "x", FLAWED_X), proposal(unit, "y", REPORT_Y)],
+      { status: (packet.repair_request?.cycle ?? 0) === 2 ? "incomplete" : "complete" }),
+    omission: () => ["x"]
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(run.completion.graph_built, "partial");
+  assert.equal(run.residuals.source_only_units, 1);
+  assert.deepEqual(record.diagnostics.cycles.map((cycle) => cycle.extraction.status), ["complete", "complete", "incomplete"]);
+  assert.equal(record.source_only_unresolved, true);
+  assert.equal(Object.hasOwn(record, "review_residuals"), false);
+  assert.deepEqual(assertionStatements(record.graph), []);
+});
+
+test("a review that calls itself sufficient but still proposes a repair leaves the item flagged until it is withheld", async t => {
+  const { run, record } = await runRegularUnit(t, handlers({
+    extractor: (packet) => isRegularUnit(packet)
+      ? unitExtraction(packet.core_units[0], [proposal(packet.core_units[0], "x", FLAWED_X), proposal(packet.core_units[0], "y", REPORT_Y)])
+      : handlers().extractor(packet),
+    omission_checker: (packet) => isRegularUnit(packet)
+      ? { ...review("omission_checker", packet), status: "sufficient_for_stated_scope",
+        assessments: packet.candidate_extraction.assertions.map((item) => ({ target_id: item.local_id, outcome: "preserved",
+          critical: false, finding_type: "none", explanation: "Synthetic check preserved it.", evidence_ids: [] })),
+        proposed_repairs: [{ target_id: "x", repair: "Synthetic repair request.", evidence_ids: [] }] }
+      : review("omission_checker", packet)
+  }));
+  assert.equal(run.blocker, null);
+  assert.equal(record.source_only_unresolved, false);
+  assert.deepEqual(assertionStatements(record.graph), [REPORT_Y]);
+  assert.deepEqual(record.review_residuals, { withheld_assertions: 1, withheld_entities: 0, withheld_episodes: 0, omission_gaps: 0 });
 });
