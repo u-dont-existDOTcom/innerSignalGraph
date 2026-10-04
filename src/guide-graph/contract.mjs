@@ -58,6 +58,7 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   attention_loop: ["present", "absent", "unknown"],
   thinking_yield: ["new_information_or_action", "repetitive_no_new_output", "mixed", "unknown"],
   inward_attention_effect: ["helps", "neutral", "worsens", "mixed", "unknown"],
+  practice_challenge: ["none", "workable", "overwhelming", "unknown"],
   other_person_central: ["yes", "no", "unknown"],
   relational_capacity_evidence: ["reciprocal", "limited", "mixed", "insufficient", "unknown"],
   emotional_takeover_pressure: ["present", "absent", "unknown"],
