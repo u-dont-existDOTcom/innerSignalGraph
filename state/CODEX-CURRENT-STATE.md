@@ -9,6 +9,7 @@ Updated: 2026-10-04
 - **Readback (GitHub REST API, 2026-10-04T05:07:59Z):** neither branch requires conversation resolution. Everything else matches the earlier record on both branches: the three strict required checks, administrator enforcement, zero required approvals, linear history, and no force pushes or deletions. The `stable` edit briefly switched off administrator enforcement as well; the owner switched it back on before this readback. `.github/codex-repository.json` records the readback, and the repository audit and its test pin it.
 - **Replacement check:** `AGENTS.md` (Workflow) says that before a merge the pull request records that Codex's review of the final commit found nothing, that each earlier review comment has a fix or a written reason, and that every required check passed on the final commit.
 - **Merges stay with the owner:** the Claude session's safety check refused to merge its own pull request ("Merge Without Review"), including after the owner's explicit go-ahead in chat. The agent writes the merge check on the pull request and gives the owner the link to click.
+- **Also recorded:** the claim-integrity wording (`OWNER-QUESTIONS.md`, question 1) is parked. The owner approved it as written on 3 Oct and on 4 Oct chose not to ship it until the polish and ship phase (question 9: C); PR #96 stays a draft. `docs/suggested-fixes-ledger.md` records the deferral and its trigger.
 - **Next:** Promotion to `stable` stays owner-gated.
 
 ## Journal reviews that settle: scoped re-review, withholding, pooled calibration gate (2026-10-03)
