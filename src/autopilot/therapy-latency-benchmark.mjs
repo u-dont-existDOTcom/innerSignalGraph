@@ -57,6 +57,7 @@ const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
   "ic_last_tolerated_level",
   "ic_reactivation_ready",
   "ic_titration_needed",
+  "ic_real_world_transfer",
   "medical_urgency",
   "other_person_central",
   "relational_capacity_evidence",

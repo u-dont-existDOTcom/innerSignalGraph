@@ -22,6 +22,7 @@ source_refs:
   - IC.BORROW_ONE_FUNCTION
   - IC.BORROW_LOVE
   - IC.SPIRITUAL_LOAN
+  - AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
 regression_refs:
   - G004
   - G005
@@ -34,9 +35,10 @@ regression_refs:
   - G074
   - G087
   - G088
-base_record_sha256: 08a74bafc5433b5fe2ca3c120c5f410ceac4f6b6acd22979b669a96f432a4055
-base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
-projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
+  - G089
+base_record_sha256: 05bc189c5fc4093686eadbd62425b537fa844cc73b3d063ce66fa45af3cb9d26
+base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
+projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179848e5c9e9
 ---
 
 # Enter deeper child dialogue only when capacity is adequate
@@ -90,7 +92,8 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
     "requiredNuance": [
       "General orientation and stop/return capacity establish safety readiness, not the positive caring adult function needed for this relational exercise.",
       "Partial but usable positive care/protection can be enough for a bounded step; unknown access is uncertainty to clarify, not a permanent incapacity finding.",
-      "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care."
+      "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care.",
+      "A successful inner exercise and ordinary-life transfer are separate evidence states; when the practice works but carryover does not, deepen only after the transfer mismatch has been addressed or new unresolved material actually warrants it."
     ]
   },
   "recommendations": [
@@ -98,7 +101,8 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
     "Keep memory-source distinctions explicit.",
     "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift.",
     "When the needed positive caring/protective function is known to be unavailable, use IC.BORROW_ONE_FUNCTION as adult-side preparation before deeper child-facing dialogue.",
-    "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap."
+    "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap.",
+    "When the adult function is already clearly usable in-session but ordinary-life transfer is still session-only, hand off to IC.PRACTICE_TO_LIFE_TRANSFER before repeating or deepening the child-facing exercise for more intensity."
   ],
   "successSignals": [
     "The session increases capacity and functioning rather than compulsion or disorientation."
@@ -122,3 +126,5 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
 [[current/sources/inner-child-guide/IC.BORROW_LOVE]]
 
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
+
+[[current/governance/amendments/AMEND.IC.PRACTICE_TO_LIFE_TRANSFER]]

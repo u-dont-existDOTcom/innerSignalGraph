@@ -12,7 +12,7 @@ section_hash: b6e1ba7b6408797292398dacb41fc0a21030f12a21aac4a2ac8d4d5d7dc9cd73
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_ACTION_LOCK
-projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
+projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179848e5c9e9
 ---
 
 # Action Lock and Euphoric Certainty

@@ -111,6 +111,23 @@ Before publishing or replacing a humanized guide version:
 
 This gate does not require one public paragraph per graph node and does not require byte similarity to the canonical source.
 
+## Pending change queue
+
+`authoring/PENDING-PUBLIC-GUIDE-CHANGES.md` is the durable handoff from approved source/map/rule work into later public-guide humanization. It is downstream bookkeeping, never therapy authority.
+
+Whenever an approved canonical source, owner amendment, graph node/edge, activation/gate, realization rule, safety boundary, or other therapy rule changes **reader-facing meaning**, the same reviewed change must add or update the corresponding obligation in that queue. Runtime-only mechanics do not require a public-guide entry.
+
+A humanizer starting or resuming an Inner Child public-guide pass must read this document and the pending queue after freezing upstream authority and before choosing the next section. Reconcile every pending item against the frozen authority. If the public draft already expresses an obligation adequately, consume the item without duplicating prose.
+
+Consumption is transactional:
+
+- when only some items are handled, remove only those consumed items and leave the queue `PENDING`;
+- when all items are incorporated or explicitly dispositioned under this document and the affected `authoring/public-guide-sync.json` bookkeeping is updated, reset the queue to its `EMPTY` sentinel in the same reviewed change;
+- keep the queue file permanently rather than deleting it, so the humanizer bootstrap has one stable path;
+- a later reader-relevant canonical change changes the queue back to `PENDING` in the same reviewed change that creates the new obligation.
+
+This prevents a map/rule fix from being semantically correct at runtime while silently disappearing from the later reader-facing guide.
+
 ## Humanization workflow
 
 For a large public pass, work section by section rather than rewriting the entire guide and reconciling afterward:

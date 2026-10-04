@@ -19,6 +19,8 @@ For governed developer or supervisor work, load the current task-relevant Univer
 
 Repository governance and reasoning-selection documents control their named developer or supervisory consumers. They are not therapy content and must not be copied into runtime prompts or private case packets. Application roles receive only their role-specific prompt, authorized context, and executable contracts. A documented reasoning method or model effort is not evidence that a provider received or executed that setting; require the route's mechanical configuration or receipt.
 
+Before starting or resuming public-guide humanization, read `docs/PUBLIC-GUIDE-HUMANIZATION.md` and `authoring/PENDING-PUBLIC-GUIDE-CHANGES.md`. The pending file is the stable downstream handoff for approved reader-facing semantic changes: any canonical map/source/rule change that affects what the public guide should teach must update it in the same reviewed change. A humanizer consumes only incorporated/dispositioned entries, updates the affected public-guide sync bookkeeping, and resets the file to its EMPTY sentinel only when nothing remains pending. Never delete the queue file, and never treat it as therapy authority.
+
 ## Validation
 
 - Runtime: Node 24.18.0 (`.nvmrc`)
