@@ -3234,6 +3234,11 @@
             "field": "orientation",
             "op": "eq",
             "value": "disoriented"
+          },
+          {
+            "field": "practice_challenge",
+            "op": "eq",
+            "value": "overwhelming"
           }
         ]
       },
@@ -3288,6 +3293,11 @@
       "activation": {
         "all": [
           {
+            "field": "practice_challenge",
+            "op": "eq",
+            "value": "workable"
+          },
+          {
             "field": "current_intent",
             "op": "in",
             "value": [
@@ -3323,6 +3333,11 @@
             "field": "dissociation",
             "op": "eq",
             "value": "high"
+          },
+          {
+            "field": "inward_attention_effect",
+            "op": "eq",
+            "value": "worsens"
           }
         ]
       },
