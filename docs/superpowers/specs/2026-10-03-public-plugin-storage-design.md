@@ -1,7 +1,7 @@
 # Public plugin storage
 
 Date: 2026-10-03
-Status: PROPOSED DESIGN for a direction the owner approved on 2026-10-03 (quoted below). Nothing here is implemented, deployed, or connected to real data. It grants no deployment, installation, release, `stable`, therapy-policy or product-policy authority. The owner questions at the end are open.
+Status: PROPOSED DESIGN for a direction the owner approved on 2026-10-03 (quoted below). Nothing here is implemented, deployed, or connected to real data. It grants no deployment, installation, release, `stable`, therapy-policy or product-policy authority. The owner answered the storage questions on 2026-10-04 (below); where the records are kept is open again after the hosting vendors' data-processing terms were read.
 Classification: public design; contains no private data.
 
 ## In plain words
@@ -26,6 +26,17 @@ What he approved: the public plugin saves everything on InnerSignal's server for
 Background, in his words: ChatGPT reported it "can't write anything via the innersignal plugin"; "how are we writing things now, just into github right, so we need to fix it so it works for a public plugin, we need to write everything, the turns the journal, the settings, i think this is mostly already mapped out but wasn't implemented for the public?" He first considered storing data locally in each user's ChatGPT, then chose server storage for everyone.
 
 **What this supersedes.** The 2026-09-26 design `2026-09-26-care-channels-supervision-and-learning-governance.md` recorded owner requirement 8, "Free users store locally", its "Local storage for free users" section, and the channel-table row saying the server keeps nothing for free users by default. This decision replaces those three parts. The rest of that design stands, including its consent rules for sharing with supervisors, the separate escalation packages, and their 30-day-after-review retention. A person's own saved records are never shown to a supervisor without the consent that design requires.
+
+## Owner decisions (2026-10-04)
+
+The owner answered at 01:55 UTC. Question numbers are this design's; his owner page numbered them 3 to 8.
+
+1. **Saving inside ChatGPT and Claude: B.** His words: "B sounds fine just remind people on each turn 'tell me save to save this turn, only the web app can auto-save' (and link to the web app) that's fine a little friction for free users is ok." Saves in the plugin follow the person's request; the web app saves every turn. The reminder: OpenAI's plugin guidelines say "Do not insert unrelated content, attempt to redirect the interaction, or collect data beyond what is reasonably necessary", and Anthropic's directory policy says "When possible, users should be given options to exclude unnecessary text in the response." Neither forbids a reminder about the app's own saving, but a link in every reply is what a reviewer could call redirecting. So the default is the reminder with the link in the first reply of each conversation and right after anything worth saving, switched off when the person asks, with no prices or upgrade wording; every reply only if the owner says "3: every turn". Since no letter to the platforms is planned under B, the age question below needs its own letter to OpenAI.
+2. **Where the server runs: open again.** His words: "not sure, i guess A. you didn't explain why you don't rec C. check the data-processing terms tho." The terms were read (see "Hosting vendors' data-processing terms") and change the recommendation; see owner question 2 below.
+3. **Retention: B.** Until deleted, or 24 months after the last sign-in, with warnings at 23 months and 30 days before.
+4. **Legal review: C.** A privacy consultant first (impact assessment, policies, records), with a lawyer reviewing only the consent text and the privacy policy.
+5. **Legal entity:** "Mayan Roots, LLC. that's my LLC in USA. or if it would create less legal burden can be me in Senegal idk." So Mayan Roots, LLC is the controller unless the consultant finds the owner as an individual in Senegal simpler; the consultant gets that question.
+6. **Minimum age: A,** 18 and over. OpenAI requires listed apps to be "suitable for general audiences, including users aged 13–17", so OpenAI's view is needed before submission.
 
 ## Goals
 
@@ -155,6 +166,16 @@ The specification's "latest" page links to the version dated 2026-07-28; this de
 **HIPAA.** HHS: "Only health plans, health care clearinghouses and most health care providers are covered entities". When a consumer uses an app on her own, the developer is "not creating, receiving, maintaining or transmitting protected health information (PHI) on behalf of a covered entity", so HIPAA does not apply. When a provider directs patients to an app on the provider's behalf, "the developer is a business associate of the provider".
 
 **FTC.** The Health Breach Notification Rule covers health apps outside HIPAA: a "mobile app, website, Internet-connected device or similar technology that holds consumers' health information" (FTC guidance, July 2024), with penalties stated then as "up to $51,744 per violation". The FTC's 2023 BetterHelp order required "online counseling service BetterHelp to pay $7.8 million" over sharing health data for advertising.
+
+### Hosting vendors' data-processing terms (read 2026-10-04)
+
+Quotes come through a page-reading tool that returns text, not the page bytes; the ones below were returned the same way twice.
+
+- **Railway** ([DPA](https://railway.com/legal/dpa)): the description of processing says "Sensitive Data or Special Categories of Data: None"; "Customer acknowledges that Company's primary processing operations take place in the United States"; "Company may provide options for certain local data storage to Customer if Customer is receiving Paid Services pursuant to the Agreement." The DPA is executed through a self-service DocuSign form, and the parties "are deemed to have signed the EU SCCs". Its regions page lists EU West in Amsterdam, and volumes follow the service's region. *Secondary:* a Railway staff reply on its community forum says logs are stored in US West whatever the deploy region, and that no plan has a contractual single-country commitment. A HIPAA BAA needs a $1,000-a-month committed-spend tier.
+- **Supabase** ([DPA](https://supabase.com/legal/dpa), version 1, 1 August 2026): "Sensitive Data" includes "data concerning health"; "Where Customer directs Supabase to Process Covered Data in a specific geographical region, Supabase shall ensure that such Covered Data is stored and primarily Processed in that region unless otherwise required to comply with Customer's additional instructions, applicable law or as necessary to provide Services requested by Customer"; "acceptance of the Agreement shall have the same effect as signing the SCCs". HIPAA data needs a BAA and a paid add-on on the Team plan (from $599 a month) or Enterprise. EU regions include Frankfurt, Ireland, Paris and Stockholm; where backups and logs are kept is not stated.
+- **Cloudflare R2** offers an EU jurisdiction fixed at bucket creation; the DPA text read does not name R2, and Cloudflare's BAA is for enterprise customers. **AWS KMS** and **Google Cloud KMS** keep single-region key material in the chosen region, under each provider's DPA.
+
+What it means: as written, Railway's terms don't cover health records or EU-only processing, so records shouldn't go onto Railway until it confirms both in writing; Supabase's terms cover both for stored records. In either option the connector runs on Railway and handles decrypted records while it answers, so Railway's terms matter either way, and the connector's logs must stay free of content.
 
 ### What these facts mean for the design (inferences, not legal advice)
 
@@ -553,71 +574,22 @@ Each phase ships as its own pull request with tests and a review, and needs owne
 
 ## Owner questions
 
-Six questions are open. Each has a recommendation; answer like "1: C". Each needs you because it spends money, picks a vendor or a legal identity, or sets a rule about people's health data.
+Answered on 2026-10-04 except question 2, which the vendors' terms reopened (see "Owner decisions (2026-10-04)").
 
-### 1. How should saving work inside ChatGPT and Claude?
+### 2. Where are the records kept?
 
-You approved saving every turn. ChatGPT's rules for listed apps forbid a server that "pull[s], reconstruct[s], or infer[s] the full chat log", and Claude's directory rules forbid collecting "extraneous conversation data" or extracting chat history. The storage is the same in every option; only what the plugin sends changes. This needs you because it trades your approved behavior against being listed.
+The owner asked why option C (Supabase) wasn't recommended: it is a second company holding the records, so one more contract, one more place a breach can happen and one more subprocessor list to disclose, for about $10–25 a month more, while the connector still runs on Railway. The vendors' terms, read since, change the picture (see above).
 
-- **A. Every turn, automatically, as approved, through an unlisted connector people add by link.** Gets: complete history in every chat. Costs: no listing in either directory; in ChatGPT only paid plans can add custom apps (Plus, Pro, Business, Enterprise, Edu); probably an approval click per save unless people widen permissions; the platforms could still object.
-- **B. In ChatGPT and Claude, save what the person asks to save** (a whole conversation, a part of it, a journal entry), about one approval per request; save every turn automatically in the InnerSignal web app. Gets: the best chance of being listed. Costs: plugin history has gaps where people did not save; complete history only in the web app.
-- **C. Ask OpenAI and Anthropic in writing first.** Until they answer, offer B in the public plugin and A to invited testers. Gets: an authoritative answer without blocking the build. Costs: a wait of unknown length; no extra build, because A and B differ only in instructions and a setting.
+- **A (recommended). Build and test on Railway with invented data only.** Before any real person's records go in, ask Railway in writing to add health data and EU-only processing, logs included, to its DPA; an agent drafts the letter and the owner sends it from the Railway account. If Railway declines, the records move to Supabase in Frankfurt; the code is the same Postgres either way. The privacy consultant checks the result.
+- **B. Records on Supabase in Frankfurt from the start.** Its terms already cover health data and regional storage. About $10–25 a month more; Railway still has to cover the connector, which handles records while it answers.
 
-Recommended: **C**; if nobody answers, B is the public default. Next: an agent drafts the two letters, which you send from your developer accounts; the build (phase 1) goes ahead meanwhile.
-
-### 2. Where does the server run, and what does it cost per user?
-
-This picks a vendor and a monthly bill.
-
-- **A. Railway, EU region (Amsterdam).** Your 2026-09-19 default host, managed. About $60–65 a month to start: about $0.62 per active user at 100 users and $0.07–0.14 at 1,000. Costs: about three times option B; Railway's data-processing terms were not checked.
-- **B. A dedicated Netcup server.** About $21–25 a month: about $0.23 per user at 100 users and $0.03–0.06 at 1,000. Costs: someone does patching, monitoring and recovery, and one server has no failover.
-- **C. Supabase-managed database (EU) plus the connector on Railway.** Managed database and backups from $25 a month plus the connector, about $70–90 in total. Costs: one more vendor; Supabase's HIPAA option starts with the $599-a-month Team plan, which InnerSignal does not need now.
-
-Recommended: **A**, with two KMS root keys (about $2.50 a month together) and backups on Cloudflare R2. Next: you create the Railway project and a KMS account (see "Owner tasks"); phase 1 deploys to staging there with invented data only.
-
-### 3. How long are saved records kept?
-
-This sets a rule about people's health data.
-
-- **A. Until the person deletes them, with no expiry.** Gets: nothing is lost. Costs: keeps data of people who stopped using InnerSignal, which is harder to justify for health data.
-- **B. Until deleted, or 24 months after the last sign-in,** with email warnings at 23 months and 30 days before. Gets: a clear, defensible limit. Costs: account emails must be sent.
-- **C. 12 months after the last sign-in.** Gets: the least data kept. Costs: people returning after a long break lose their history.
-
-Recommended: **B**. Fixed in every option: 7 days in "Recently deleted", 30-day backups, content-free logs. Storage cost is negligible in every option, about half a cent per user a month after a year. Next: the chosen rule goes into the privacy policy and the account page.
-
-### 4. Who does the legal review, and when?
-
-This hires and pays someone.
-
-- **A. Two specialists:** an EU/UK data-protection lawyer and a US health-privacy lawyer. Gets: the deepest coverage. Costs: two engagements, more coordination.
-- **B. One firm with cross-border health-privacy practice** covering the EU, the UK, the US states above and the country InnerSignal is run from. Gets: one answer for the whole checklist. Costs: fewer such firms; may cost more per hour.
-- **C. A privacy consultant first** (impact assessment, policies, records), with a lawyer reviewing only the consent text and privacy policy. Gets: lower cost. Costs: less legal certainty on the open questions.
-
-Recommended: **B**, engaged once this design is approved, with a fixed-fee quote against the checklist above. Prices were not researched. Next: the reviewer's sign-off is the gate before invited testers (phase 3).
-
-### 5. Which legal entity runs InnerSignal, and from which country?
-
-The privacy policy must name the "controller". The answer decides which national law applies, whether EU and UK representatives are needed, and where the server can be.
-
-- **A. You as an individual.** Gets: the simplest start; OpenAI accepts verified individuals. Costs: personal liability for any claim.
-- **B. A small company** in a country you choose with the lawyer. Gets: limited liability, easier contracts and insurance. Costs: formation and yearly fees, which were not researched.
-
-Recommended: decide with the reviewer in question 4; **B** if the paid web app is coming soon. Next: the entity's name goes into the privacy policy, the platform submissions and the processor contracts.
-
-### 6. What is the minimum age?
-
-This sets who may use saving.
-
-- **A. 18 and over.** Gets: the simplest consent rules, fitting for mental-health records. Costs: OpenAI requires listed apps to be "suitable for general audiences, including users aged 13–17", so this needs OpenAI's view, which can go in the letter from question 1.
-- **B. 16 and over** (the GDPR default age). Gets: more reach. Costs: some EU countries set other ages, and under-18 users need extra protections.
-
-Recommended: **A**. Next: the sign-up page asks for the age confirmation, and the letter in question 1 asks OpenAI about it.
+Default if unanswered: A.
 
 ## Owner tasks (no decision needed)
 
-- After question 1: send the drafted letters to OpenAI and Anthropic from your developer accounts.
-- After question 2: create the Railway project in the EU region and a KMS account with multi-factor sign-in.
-- After question 4: engage the reviewer and share this design and the checklist.
+- Create the Railway project in the EU region and a KMS account with multi-factor sign-in (phase 1, invented data only).
+- Before any real data: send Railway the drafted letter on health data and EU-only processing, and send OpenAI the drafted letter on the 18-and-over age limit.
+- Engage the privacy consultant (question 4: C) and share this design, the checklist and the entity question.
 
 ## Coming up (defaults unless you say otherwise)
 
@@ -637,6 +609,7 @@ Recommended: **A**. Next: the sign-up page asks for the age confirmation, and th
 - Nevada and Connecticut details (secondary sources only); New York's 2026 bill; the outcome of the Data Privacy Framework appeal.
 - Legal-review, representative, registration and company-formation costs.
 - Whether Keycloak's experimental CIMD and resource indicators are stable enough for production.
+- Where Railway stores logs (a forum reply only) and where Supabase keeps backups and logs (not stated); whether either vendor accepts mental-health records that are not PHI.
 
 ## Sources
 
