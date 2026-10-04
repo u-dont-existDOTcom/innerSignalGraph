@@ -76,10 +76,21 @@ export function extractionItemChanges(previous, current) {
   // until nothing more changes.
   const changedIds = { assertion: new Set(), entity: new Set(), episode: new Set() };
   for (const item of items) if (item.changed) changedIds[item.kind].add(item.localId);
-  // Local IDs are unique only within a kind, so removals are tracked per kind too. Time evidence can name any kind.
+  // Local IDs are unique only within a kind, so removals are tracked per kind too.
   const goneIds = { assertion: new Set(), entity: new Set(), episode: new Set() };
   for (const item of removed) goneIds[item.kind].add(item.localId);
-  const touched = (id) => ["assertion", "entity", "episode"].some((kind) => goneIds[kind].has(id) || changedIds[kind].has(id));
+  // Time evidence names a local ID without its kind, and the graph resolves it to an assertion first, then an
+  // episode, then an entity. It is touched when that resolved item changed, or when the ID now resolves to a
+  // different kind than before (including to nothing).
+  const kindsOf = (extraction) => ({ assertion: new Set((extraction?.assertions ?? []).map((item) => item.local_id)),
+    episode: new Set((extraction?.episodes ?? []).map((item) => item.local_id)),
+    entity: new Set((extraction?.entities ?? []).map((item) => item.local_id)) });
+  const previousKinds = kindsOf(previous), currentKinds = kindsOf(current);
+  const resolvedKind = (kinds, id) => ["assertion", "episode", "entity"].find((kind) => kinds[kind].has(id)) ?? null;
+  const touched = (id) => {
+    const kind = resolvedKind(currentKinds, id);
+    return kind !== resolvedKind(previousKinds, id) || (kind !== null && changedIds[kind].has(id));
+  };
   const entityTouched = (id) => goneIds.entity.has(id) || changedIds.entity.has(id);
   const timeIds = (item) => [...(item.authored_time?.evidence_ids ?? []), ...(item.event_time?.evidence_ids ?? [])];
   const sources = { assertion: new Map((current?.assertions ?? []).map((item) => [item.local_id, item])),
@@ -105,7 +116,7 @@ export function extractionItemChanges(previous, current) {
 // After a repair, the new review counts for the targets of the earlier review's open findings, for the items
 // the repair added or changed, for units it removed an item from, and for any target it can't place (such as a
 // frozen reference item). Every other verdict carries forward: an item that passed and didn't change keeps the
-// earlier verdict, under its current ID. `previousReview` is the earlier effective review, so a finding that
+// earlier verdict, under its current ID, even when the new review leaves it out. `previousReview` is the earlier effective review, so a finding that
 // was out of scope then doesn't come back as an earlier finding now. `targetOf(kind, localId, unitIds)` gives
 // the ID a reviewer uses for an item: the local ID for the omission checker, the bound graph ID for the
 // fidelity auditor.
@@ -129,6 +140,14 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
     byTarget.set(target, [...(byTarget.get(target) ?? []), { ...item, previousTarget }]);
   }
   const previousAssessments = new Map(previousReview.assessments.map((assessment) => [assessment.target_id, assessment]));
+  // Earlier targets of items that are still there, mapped to their current targets; earlier verdicts carried forward
+  // are re-keyed to current targets, evidence included, so they keep pointing at the same items.
+  const currentTarget = new Map();
+  for (const [target, entries] of byTarget) {
+    for (const entry of entries) if (entry.previousTarget !== null) currentTarget.set(entry.previousTarget, target);
+  }
+  const rekey = (prior, target) => ({ ...prior, target_id: target,
+    evidence_ids: [...new Set(prior.evidence_ids.map((id) => currentTarget.get(id) ?? id))] });
   const placement = new Map();
   const place = (target) => {
     if (placement.has(target)) return placement.get(target);
@@ -150,7 +169,7 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
     if (inScope) { assessments.push(assessment); continue; }
     if (assessmentIsFinding(assessment)) carried += 1;
     const prior = previousAssessments.get(carriedFrom);
-    if (prior) assessments.push({ ...prior, target_id: assessment.target_id });
+    if (prior) assessments.push(rekey(prior, assessment.target_id));
   }
   const unassessed = review.unassessed_ids.filter((id) => {
     if (place(id).inScope) return true;
@@ -165,16 +184,35 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   // unassessed.)
   const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids,
     ...review.proposed_repairs.map((repair) => repair.target_id)]);
-  const currentTarget = new Map();
-  for (const [target, entries] of byTarget) {
-    for (const entry of entries) if (entry.previousTarget !== null) currentTarget.set(entry.previousTarget, target);
-  }
   const stillThere = (target) => currentTarget.has(target) || byTarget.has(target);
   const counted = new Set(assessments.map((assessment) => assessment.target_id));
   for (const prior of previousReview.assessments.filter(assessmentIsFinding)) {
     const target = currentTarget.get(prior.target_id) ?? prior.target_id;
     if (mentioned.has(target) || counted.has(target) || !stillThere(prior.target_id)) continue;
-    assessments.push({ ...prior, target_id: target });
+    assessments.push(rekey(prior, target));
+    counted.add(target);
+  }
+  // A clean earlier verdict the new review leaves out carries forward when what it vouched for didn't change: an
+  // unchanged item keeps its verdict, and a target that isn't an item or a unit (such as a frozen reference item)
+  // keeps it when every item its evidence names is still there unchanged. Without item evidence there is nothing
+  // to check, so the target is left to the new review (a fidelity score counts a missing reference item as
+  // unassessed).
+  const unchangedTarget = (target) => (byTarget.get(target) ?? []).length > 0
+    && byTarget.get(target).every((entry) => !entry.changed);
+  const previousItemTargets = new Set([...currentTarget.keys(),
+    ...removed.map((item) => targetOf(item.kind, item.localId, item.unitIds))]);
+  for (const prior of previousReview.assessments.filter((assessment) => !assessmentIsFinding(assessment))) {
+    const target = currentTarget.get(prior.target_id) ?? prior.target_id;
+    if (mentioned.has(target) || counted.has(target) || units.has(target)) continue;
+    let carry;
+    if (byTarget.has(target)) carry = unchangedTarget(target);
+    else if (previousItemTargets.has(prior.target_id)) carry = false;
+    else {
+      const itemEvidence = prior.evidence_ids.filter((id) => previousItemTargets.has(id) || byTarget.has(id));
+      carry = itemEvidence.length > 0 && itemEvidence.every((id) => unchangedTarget(currentTarget.get(id) ?? id));
+    }
+    if (!carry) continue;
+    assessments.push(rekey(prior, target));
     counted.add(target);
   }
   for (const id of previousReview.unassessed_ids) {

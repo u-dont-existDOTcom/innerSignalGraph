@@ -337,7 +337,9 @@ test("scopeReviewAfterRepair: carrying the only findings leaves nothing open and
   const repaired = story(edited(storyItems(), "assertions", "a3", { statement: "The keeper said the lamp would be lit by night." }));
   const later = review({ assessments: [flag("a1", "later"), ok("a3", "later"), flag("a4", "later", "wrong_time")] });
   const result = scope({ review: later, extraction: repaired });
-  assert.deepEqual(explanations(result), { a1: "earlier verdict on a1.", a3: "later verdict on a3.", a4: "earlier verdict on a4." });
+  // a2, unchanged and left out of the new review, keeps its earlier clean verdict too.
+  assert.deepEqual(explanations(result), { a1: "earlier verdict on a1.", a2: "earlier verdict on a2.",
+    a3: "later verdict on a3.", a4: "earlier verdict on a4." });
   assert.deepEqual(result.scope, { carried: 2, changed: 1, removed: 0, earlier_findings: 0 });
   assert.equal(result.review.status, "sufficient_for_stated_scope");
 });
@@ -346,7 +348,8 @@ test("scopeReviewAfterRepair: an out-of-scope finding with no earlier verdict is
   const repaired = story(edited(storyItems(), "assertions", "a3", { statement: "The keeper said the lamp would be lit by night." }));
   const later = review({ assessments: [flag("a2", "later"), ok("a3", "later")] });
   const result = scope({ review: later, previousReview: earlierClean(["a1"]), extraction: repaired });
-  assert.deepEqual(targetsIn(result), ["a3"]);
+  // a2's finding goes; a1, unchanged and left out of the new review, keeps its earlier clean verdict.
+  assert.deepEqual(targetsIn(result), ["a3", "a1"]);
   assert.equal(result.scope.carried, 1);
   assert.equal(result.review.status, "sufficient_for_stated_scope");
 });
@@ -374,7 +377,8 @@ test("scopeReviewAfterRepair: entities and episodes are scoped like assertions",
   assert.deepEqual(explanations(result), {
     "e-lamp": "later verdict on e-lamp.",
     "ep-walk": "earlier verdict on ep-walk.",
-    "ep-fog": "later verdict on ep-fog."
+    "ep-fog": "later verdict on ep-fog.",
+    "ep-ferry": "earlier verdict on ep-ferry." // unchanged and left out of the new review
   });
   // e-lamp and ep-fog changed, and so did a2 and a3, which name e-lamp as their subject.
   assert.deepEqual(result.scope, { carried: 2, changed: 4, removed: 0, earlier_findings: 0 });
@@ -466,7 +470,7 @@ test("scopeReviewAfterRepair: a unit that lost an item by having it re-anchored 
 test("scopeReviewAfterRepair: a target that is neither an item nor a unit always counts", () => {
   const later = review({ assessments: [flag("ref-1", "later"), ok("ref-2", "later")], unassessed: ["ref-3"],
     repairs: [repairFor("ref-4")] });
-  const result = scope({ review: later, extraction: story() });
+  const result = scope({ review: later, previousReview: review({ assessments: [] }), extraction: story() });
   assert.deepEqual(explanations(result), { "ref-1": "later verdict on ref-1.", "ref-2": "later verdict on ref-2." });
   assert.deepEqual(result.review.unassessed_ids, ["ref-3"]);
   assert.deepEqual(result.review.proposed_repairs.map((item) => item.target_id), ["ref-4"]);
@@ -1416,4 +1420,39 @@ test("scopeReviewAfterRepair: after an earlier review that stopped without namin
   assert.equal(result.scope, null);
   assert.equal(verdictOn(result, "a3").explanation, "later verdict on a3.");
   assert.equal(result.review.status, "repair_required");
+});
+
+test("scopeReviewAfterRepair: a reference item the new review leaves out keeps its clean verdict while its carriers are unchanged", () => {
+  const bound = (kind, localId, unitId) => journalLocalNodeId({ caseId: "case-1", corpusId: "corpus-1", generation: "gen-1",
+    localIdNamespace: unitId, kind, localId });
+  const targetOf = (kind, localId, unitIds) => bound(kind, localId, unitIds[0] ?? "");
+  const keptRef = verdict("ref-1", "preserved", "none", { evidenceIds: [bound("assertion", "a1", U1)], explanation: "earlier verdict on ref-1." });
+  const earlier = review({ role: "fidelity_auditor", assessments: [keptRef] });
+  const later = review({ role: "fidelity_auditor", assessments: [ok("ref-2", "later")] });
+  // Only a3 changes: ref-1's carrier a1 is untouched, so its verdict carries forward.
+  const a3Changed = story(edited(storyItems(), "assertions", "a3", { statement: "The keeper said the lamp would be lit by night." }));
+  const carried = scope({ review: later, previousReview: earlier, extraction: a3Changed, targetOf });
+  assert.equal(verdictOn(carried, "ref-1").explanation, "earlier verdict on ref-1.");
+  // a1 itself changes: the earlier verdict no longer vouches for what is there, so ref-1 is left to the new review.
+  const a1Changed = story(edited(storyItems(), "assertions", "a1", { statement: "Maren walked out to Pell Point after breakfast." }));
+  const dropped = scope({ review: later, previousReview: earlier, extraction: a1Changed, targetOf });
+  assert.equal(verdictOn(dropped, "ref-1"), undefined);
+});
+
+test("extractionItemChanges: time evidence follows the graph's precedence when an entity and an assertion share an ID", () => {
+  const base = storyItems();
+  const timed = (item, ids) => ({ ...item, event_time: { ...item.event_time, evidence_ids: ids } });
+  const make = (entityLabel, keepAssertion) => story({
+    entities: [...base.entities, entity("x", U2, entityLabel)],
+    episodes: base.episodes,
+    assertions: [...base.assertions.slice(0, 3), timed(base.assertions[3], ["x"]),
+      ...(keepAssertion ? [assertion("x", U1, "Maren walked out to Pell Point before breakfast.", { subjects: ["e-maren"] })] : [])]
+  });
+  // The entity x changes but the assertion x, which the evidence resolves to, doesn't: a4 is unchanged.
+  const entityOnly = extractionItemChanges(make("the keeper", true), make("the harbour master", true));
+  assert.equal(record(entityOnly, "entity", "x").changed, true);
+  assert.equal(record(entityOnly, "assertion", "a4").changed, false);
+  // The assertion x goes, so "x" now resolves to the entity: a4's time evidence means something else.
+  const resolvedElsewhere = extractionItemChanges(make("the keeper", true), make("the keeper", false));
+  assert.equal(record(resolvedElsewhere, "assertion", "a4").changed, true);
 });
