@@ -12,7 +12,7 @@ section_hash: 7804d0a901b70546b98051c1a4d0c635e9986a7fe9fb9ac052996f3e76a8e126
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.WISER_SELF_PERSPECTIVE
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
 ---
 
 # AMEND.IC.WISDOM_WISER_SELF

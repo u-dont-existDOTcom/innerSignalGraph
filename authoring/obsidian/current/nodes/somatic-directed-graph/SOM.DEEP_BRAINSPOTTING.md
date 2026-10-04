@@ -21,7 +21,7 @@ regression_refs:
   - G002
 base_record_sha256: 5bcc060e0093ae2a14b71a2e534ec332529146195241373c6a96611b00f7f4fa
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
 ---
 
 # Deep Brainspotting for diffuse or body-held material
