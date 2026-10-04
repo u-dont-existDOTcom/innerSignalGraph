@@ -1529,3 +1529,31 @@ test("scopeReviewAfterRepair: carried evidence drops an item the repair removed"
   const carried = scope({ review: laterA1, previousReview: flaggedA1, extraction: removedA2, targetOf });
   assert.deepEqual(verdictOn(carried, "a1").evidence_ids, ["a1", U1]);
 });
+
+test("scopeReviewAfterRepair: a carried repair proposal points its evidence at current items", () => {
+  // The earlier review asked for a repair on a2 citing a1 and a3; the repair renames a1 and removes a3.
+  const earlier = review({ assessments: [ok("a1", "earlier"), ok("a2", "earlier"), ok("a4", "earlier")],
+    repairs: [{ ...repairFor("a2"), evidence_ids: ["a1", "a3", U1] }] });
+  const repaired = story(renamed(without(storyItems(), "assertions", "a3"), "assertions", "a1", "a1-v2"));
+  const result = scope({ review: review({ assessments: [] }), previousReview: earlier, extraction: repaired });
+  assert.deepEqual(result.review.proposed_repairs.map((repair) => [repair.target_id, repair.evidence_ids]),
+    [["a2", ["a1-v2", U1]]]);
+});
+
+test("scopeReviewAfterRepair: open work on a local ID two items shared stays on both when one is renamed", () => {
+  const base = storyItems();
+  // An entity and an assertion share the local ID x; the repair renames the entity to x2 and keeps the assertion.
+  const shared = (entityId) => story({ entities: [...base.entities, entity(entityId, U2, "the harbour master")],
+    episodes: base.episodes,
+    assertions: [...base.assertions, assertion("x", U1, "The harbour master waved from the quay.", { subjects: ["e-maren"] })] });
+  const flagged = review({ assessments: [flag("x", "earlier")], repairs: [repairFor("x")] });
+  const result = scope({ review: review({ assessments: [] }), previousReview: flagged, previousExtraction: shared("x"),
+    extraction: shared("x2") });
+  assert.deepEqual(targetsIn(result).sort(), ["x", "x2"]);
+  assert.deepEqual(result.review.proposed_repairs.map((repair) => repair.target_id).sort(), ["x", "x2"]);
+  assert.equal(result.review.status, "repair_required");
+  const gap = review({ assessments: [], unassessed: ["x"], status: "incomplete" });
+  const afterGap = scope({ review: review({ assessments: [] }), previousReview: gap, previousExtraction: shared("x"),
+    extraction: shared("x2") });
+  assert.deepEqual([...afterGap.review.unassessed_ids].sort(), ["x", "x2"]);
+});

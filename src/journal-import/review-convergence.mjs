@@ -146,19 +146,23 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
     byTarget.set(target, [...(byTarget.get(target) ?? []), { ...item, previousTarget }]);
   }
   const previousAssessments = new Map(previousReview.assessments.map((assessment) => [assessment.target_id, assessment]));
-  // Earlier targets of items that are still there, mapped to their current targets; earlier verdicts carried forward
-  // are re-keyed to current targets, evidence included, so they keep pointing at the same items.
-  const currentTarget = new Map();
+  // Earlier targets of items that are still there, mapped to the current targets of the items they became. Items
+  // of different kinds may share a local ID, so one earlier target can have several successors. Earlier verdicts
+  // carried forward are re-keyed to current targets, evidence included, so they keep pointing at the same items.
+  const successors = new Map();
   for (const [target, entries] of byTarget) {
-    for (const entry of entries) if (entry.previousTarget !== null) currentTarget.set(entry.previousTarget, target);
+    for (const entry of entries) {
+      if (entry.previousTarget === null) continue;
+      successors.set(entry.previousTarget, [...new Set([...(successors.get(entry.previousTarget) ?? []), target])]);
+    }
   }
-  // Where an earlier target is now. An item's earlier target maps to the item it became. An item the repair
+  // Where an earlier target is now. An item's earlier target maps to the items it became. An item the repair
   // removed takes its verdicts and its place as evidence with it, even when its ID now names another item. A unit,
   // or a target that isn't an item (such as a frozen reference item), stays where it is.
   const removedTargets = new Set(removed.map((item) => targetOf(item.kind, item.localId, item.unitIds)));
-  const nowAt = (target) => currentTarget.get(target) ?? (removedTargets.has(target) ? null : target);
-  const rekey = (prior, target) => ({ ...prior, target_id: target,
-    evidence_ids: [...new Set(prior.evidence_ids.map(nowAt).filter((id) => id !== null))] });
+  const nowAt = (target) => successors.get(target) ?? (removedTargets.has(target) ? [] : [target]);
+  const rekeyEvidence = (ids) => [...new Set(ids.flatMap(nowAt))];
+  const rekey = (prior, target) => ({ ...prior, target_id: target, evidence_ids: rekeyEvidence(prior.evidence_ids) });
   const placement = new Map();
   const place = (target) => {
     if (placement.has(target)) return placement.get(target);
@@ -196,11 +200,13 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids,
     ...review.proposed_repairs.map((repair) => repair.target_id)]);
   const counted = new Set(assessments.map((assessment) => assessment.target_id));
+  // An earlier target that two items shared keeps its open work on each of them.
   for (const prior of previousReview.assessments.filter(assessmentIsFinding)) {
-    const target = currentTarget.get(prior.target_id);
-    if (target === undefined || mentioned.has(target) || counted.has(target)) continue;
-    assessments.push(rekey(prior, target));
-    counted.add(target);
+    for (const target of successors.get(prior.target_id) ?? []) {
+      if (mentioned.has(target) || counted.has(target)) continue;
+      assessments.push(rekey(prior, target));
+      counted.add(target);
+    }
   }
   // A clean earlier verdict the new review leaves out carries forward when what it vouched for didn't change: an
   // unchanged item keeps its verdict, and a target that isn't an item or a unit (such as a frozen reference item)
@@ -209,33 +215,36 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   // unassessed).
   const unchangedTarget = (target) => (byTarget.get(target) ?? []).length > 0
     && byTarget.get(target).every((entry) => !entry.changed);
-  const previousItemTargets = new Set([...currentTarget.keys(),
-    ...removed.map((item) => targetOf(item.kind, item.localId, item.unitIds))]);
+  const previousItemTargets = new Set([...successors.keys(), ...removedTargets]);
+  const stillUnchanged = (id) => nowAt(id).length > 0 && nowAt(id).every(unchangedTarget);
   for (const prior of previousReview.assessments.filter((assessment) => !assessmentIsFinding(assessment))) {
-    const target = nowAt(prior.target_id);
-    if (target === null || mentioned.has(target) || counted.has(target) || units.has(target)) continue;
-    let carry;
-    if (byTarget.has(target)) carry = unchangedTarget(target);
-    else {
-      const itemEvidence = prior.evidence_ids.filter((id) => previousItemTargets.has(id) || byTarget.has(id));
-      carry = itemEvidence.length > 0 && itemEvidence.every((id) => nowAt(id) !== null && unchangedTarget(nowAt(id)));
+    for (const target of nowAt(prior.target_id)) {
+      if (mentioned.has(target) || counted.has(target) || units.has(target)) continue;
+      let carry;
+      if (byTarget.has(target)) carry = unchangedTarget(target);
+      else {
+        const itemEvidence = prior.evidence_ids.filter((id) => previousItemTargets.has(id) || byTarget.has(id));
+        carry = itemEvidence.length > 0 && itemEvidence.every(stillUnchanged);
+      }
+      if (!carry) continue;
+      assessments.push(rekey(prior, target));
+      counted.add(target);
     }
-    if (!carry) continue;
-    assessments.push(rekey(prior, target));
-    counted.add(target);
   }
   for (const id of previousReview.unassessed_ids) {
-    const target = currentTarget.get(id);
-    if (target === undefined || mentioned.has(target) || unassessed.includes(target)) continue;
-    unassessed.push(target);
+    for (const target of successors.get(id) ?? []) {
+      if (mentioned.has(target) || unassessed.includes(target)) continue;
+      unassessed.push(target);
+    }
   }
   const proposedRepairs = review.proposed_repairs.filter((repair) => place(repair.target_id).inScope);
   // A repair the earlier review asked for on an item that is still there stays asked for until the new review
   // reassesses that item, like its findings.
   for (const prior of previousReview.proposed_repairs) {
-    const target = currentTarget.get(prior.target_id);
-    if (target === undefined || mentioned.has(target) || proposedRepairs.some((repair) => repair.target_id === target)) continue;
-    proposedRepairs.push({ ...prior, target_id: target });
+    for (const target of successors.get(prior.target_id) ?? []) {
+      if (mentioned.has(target) || proposedRepairs.some((repair) => repair.target_id === target)) continue;
+      proposedRepairs.push({ ...prior, target_id: target, evidence_ids: rekeyEvidence(prior.evidence_ids) });
+    }
   }
   const open = assessments.some(assessmentIsFinding) || unassessed.length > 0 || proposedRepairs.length > 0;
   // An incomplete review that names nothing it left can't be placed, so it stays incomplete.
