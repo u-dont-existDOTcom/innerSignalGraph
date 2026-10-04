@@ -213,7 +213,7 @@
     },
     {
       "id": "SOM.GENTLE_SHAKING",
-      "title": "Gentle shaking or qigong as regulation or discharge",
+      "title": "Use gentle shaking for regulation and judge benefit by carryover",
       "kind": "decision-node",
       "tier": 4,
       "priority": 82,
@@ -254,15 +254,18 @@
       "sourceRefs": [
         "SOM.GENTLE_SHAKING",
         "SOM.SHAKING_QIGONG",
-        "AMEND.SOM.PREP_MODALITIES"
+        "AMEND.SOM.PREP_MODALITIES",
+        "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use short, playful movement that can stop easily; increase dose only when the person can orient and settle afterward.",
-        "Follow stronger discharge with settling rather than walking away raw."
+        "Follow stronger discharge with settling rather than walking away raw.",
+        "Use a brief bounded check of onset, duration, recurrence and later functioning when evaluating benefit; brief relief can be worth noting without inflating it into resolution or turning tracking into another monitoring ritual."
       ],
       "avoid": [
-        "Do not chase catharsis, let unsupported neck whipping continue, or treat shaking as the primary treatment for severe PTSD."
+        "Do not chase catharsis, let unsupported neck whipping continue, or treat shaking as the primary treatment for severe PTSD.",
+        "Do not escalate shaking merely because it produced brief relief, and do not use repeated symptom checks to force certainty about whether it worked."
       ],
       "successSignals": [
         "The person finishes more regulated rather than blasted open."
@@ -275,8 +278,12 @@
       "effects": {
         "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [],
-        "forbiddenOverclaims": []
+        "requiredNuance": [
+          "Match the claim to the observed horizon: short-lived relief followed by recurrence is evidence of short-lived relief or association, not durable resolution."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that shaking ended an episode, produced durable improvement, treated its underlying cause, or established a mechanism when symptoms returned shortly afterward."
+        ]
       },
       "defaultQuestion": ""
     },

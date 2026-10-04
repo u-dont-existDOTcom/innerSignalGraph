@@ -7,20 +7,20 @@ source_id: IC.CHECKING_LOOP
 guide_id: inner-child-guide
 heading: When More Processing Becomes the Hook
 source_role: primary-framework
-source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
-section_hash: 3c9923656573bffc6de14fa49731005cef728faeca29bd62c020c61db8aa6ef0
+source_hash: f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e
+section_hash: 6187808a6533e655dee02cabc77dbfcd2100131fc36eb9234881b6fdd4aed2f6
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # When More Processing Becomes the Hook
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-25.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r3.txt`
 
-Locator: Lines 151–162
+Locator: Lines 179–194
 
 ```text
 When More Processing Becomes the Hook

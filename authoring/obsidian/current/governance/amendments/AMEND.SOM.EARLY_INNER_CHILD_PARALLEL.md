@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
 status: owner-approved
 domain: somatic
-base_record_sha256: a0393ca8e009e614884a131d8945ed74b2d19cd37ce4e43a33ac344922f1a9f0
-source_file_sha256: ef5a0b3c85a8cdab853ea710b5f3d9a3e76d5d8c8238ddedc329c73fbb03f0d4
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+base_record_sha256: fe082ed62e4ddca9254bb77d95e1cb4f0f032a62b06ca5cac6f7224d9062d19e
+source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
@@ -17,13 +17,13 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
 
 ```json
 {
-  "approvedAt": "2026-10-03",
+  "approvedAt": "2026-10-04",
   "item": {
     "domain": "somatic",
     "id": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
     "status": "owner-approved",
     "text": "Early inner-child work may run alongside somatic preparation when it remains present-focused: neutral witness, borrowed adulthood, non-cruelty, Protector actions, borrowed love, and limited dialogue. Deep memories, immersive child dialogue, and deep hypnosis wait for adequate capacity."
   },
-  "version": "2026-10-03-state-dependent-transfer-r1"
+  "version": "2026-10-04-continuity-scaffolding-r2"
 }
 ```

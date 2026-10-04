@@ -7,7 +7,7 @@
   "nodes": [
     {
       "id": "ROUTE.RELATIONAL_REALITY_CHECK",
-      "title": "Reality-check the relationship before self-analysis",
+      "title": "Reality-check relationships and keep social practice reciprocal",
       "kind": "decision-node",
       "tier": 3,
       "priority": 100,
@@ -63,7 +63,8 @@
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
-        "AMEND.IC.WISDOM_CORE"
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -74,18 +75,25 @@
         "Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.",
         "Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.",
         "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.",
-        "After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary."
+        "After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary.",
+        "Keep social practice reciprocal rather than performative: notice the other person, allow them their own purposes, and do not turn contact into a verdict about whether the user is normal, attractive, lovable or capable of intimacy.",
+        "Calibrate vulnerability to demonstrated trust. Privacy with strangers or low-trust contacts is not fakery and total disclosure is not required; when closeness deepens beyond the level at which the person can be meaningfully honest, either increase truthful contact at a safe pace or reduce the depth.",
+        "Treat the relief of being accepted or not judged as important relational information without automatically calling it romantic love, compatibility or earned trust.",
+        "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure."
       ],
       "avoid": [
         "Do not diagnose or automatically label another person emotionally immature, manipulative, narcissistic, or unsafe from a disagreement or a single frustrating interaction.",
         "Do not infer motive, moral worth, or global personality from a capacity assessment.",
         "Do not recommend cutoff by default; calibrate trust, access, distance, requests, and investment to the actual evidence and safety needs.",
-        "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities."
+        "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.",
+        "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
+        "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available."
       ],
       "successSignals": [
         "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
         "The chosen interaction has a realistic outcome and preserves the user's position, boundaries, and practical options.",
-        "Inward work, when used, follows rather than erases the external reality check."
+        "Inward work, when used, follows rather than erases the external reality check.",
+        "Social contact remains reciprocal rather than a self-test, and disclosure depth tracks demonstrated trust and safety."
       ],
       "tags": [
         "three-way-routing",
@@ -99,12 +107,19 @@
         "deferNodes": [],
         "forbiddenOverclaims": [
           "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
-          "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character."
+          "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character.",
+          "Do not claim that seeking healthy support or mutual co-regulation makes another person a reassurance machine or invalidates the relationship.",
+          "Do not claim that relief from acceptance or nonjudgment proves romantic love, compatibility, or earned trust.",
+          "Do not claim that social-anxiety or exposure practice overrides consent, requires sexual or romantic contact, or requires disclosure in an unsafe relationship."
         ],
         "requiredNuance": [
           "Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.",
           "A person trained to internalize blame, manage adults, or take on forced adulthood may reflexively analyze themselves or caretake first; use that linkage only when their history supports it, not as a universal explanation.",
-          "Selecting for reciprocal maturity means calibrating closeness and investment toward demonstrated reciprocity; it does not require automatic cutoff or contempt for limited people."
+          "Selecting for reciprocal maturity means calibrating closeness and investment toward demonstrated reciprocity; it does not require automatic cutoff or contempt for limited people.",
+          "Authenticity is graded and relational: selective privacy can coexist with honesty, while deep intimacy built on a maintained false persona creates a different problem.",
+          "Acceptance, attachment relief, attraction, romantic love, compatibility and trust are separable observations that should not be collapsed into one another.",
+          "Support and mutual co-regulation are healthy relational functions; the restriction targets using another person as a certainty test, reassurance machine or diagnostic instrument.",
+          "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability."
         ]
       },
       "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
@@ -130,7 +145,9 @@
       },
       "sourceRefs": [
         "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
-        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE"
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -140,7 +157,8 @@
       ],
       "avoid": [
         "Do not use love, forgiveness, compassion, spiritual aspiration, or the wish not to hate as a substitute for physical or social safety.",
-        "Do not advise the person to approach, tolerate, remain with, or reopen access to danger in order to prove love."
+        "Do not advise the person to approach, tolerate, remain with, or reopen access to danger in order to prove love.",
+        "Do not dismiss or steer genuine attraction, sexual orientation, or gender identity because it is unwanted, stigmatized, confusing, or conflicts with expectations."
       ],
       "successSignals": [
         "Care and practical protection can coexist without one canceling the other.",
@@ -156,17 +174,20 @@
         "deferNodes": [],
         "blockNodes": [],
         "requiredNuance": [
-          "Remaining loving or refusing hatred under unavoidable harm is a spiritual aspiration, not ordinary safety advice and not a reason to accept preventable exposure."
+          "Remaining loving or refusing hatred under unavoidable harm is a spiritual aspiration, not ordinary safety advice and not a reason to accept preventable exposure.",
+          "Ordinary protection and relational reality checking must remain neutral about sexual orientation and gender identity; distress or stigma is not evidence that an identity is intrusive or unreal."
         ],
         "forbiddenOverclaims": [
-          "Do not say or imply that sufficient love makes practical protection, boundaries, distance, refusal, or outside help unnecessary."
+          "Do not say or imply that sufficient love makes practical protection, boundaries, distance, refusal, or outside help unnecessary.",
+          "Do not claim that genuine attraction, sexual orientation, or gender identity is merely intrusive or unreal because it is unwanted, stigmatized, confusing, or conflicts with personal or community expectations.",
+          "Do not steer the person toward or away from any sexual orientation or gender identity."
         ]
       },
       "defaultQuestion": ""
     },
     {
       "id": "ROUTE.INFLUENCE_INTERNAL",
-      "title": "Route internal influence through existing process maps",
+      "title": "Separate inner experience from interpretation before routing",
       "kind": "decision-node",
       "tier": 3,
       "priority": 96,
@@ -181,16 +202,22 @@
       },
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
-        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE"
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "For parts, compulsions, urges, or loops, use the least elaborate existing inner-child, somatic, or metacognitive route that fits the maintaining process.",
-        "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent."
+        "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent.",
+        "Separate the occurrence of a thought, image, urge or sensation from the interpretation placed on it and from the action chosen next; a felt state can be completely real as an experience without being self-interpreting proof of identity, intention, endorsement, love, danger or required action.",
+        "When shame is attached to intrusive material, protect against identity fusion and reassurance loops rather than asking the person to construct the feared moral verdict about what the material supposedly proves.",
+        "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance."
       ],
       "avoid": [
         "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
-        "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model."
+        "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
+        "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
+        "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
       ],
       "successSignals": [
         "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -206,10 +233,17 @@
         "deferNodes": [],
         "blockNodes": [],
         "requiredNuance": [
-          "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department."
+          "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department.",
+          "Experience, interpretation and chosen action are distinct layers; uncertainty about interpretation can remain while action still follows evidence and values.",
+          "Separating occurrence from endorsement does not suspend current-intent, planning, consent or safety routing; reported intention, planning and behavior remain consequential."
         ],
         "forbiddenOverclaims": [
-          "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom."
+          "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom.",
+          "Do not claim that involuntary intrusive content establishes identity, intention or endorsement.",
+          "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing.",
+          "Do not claim that ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is checking merely because certainty is unavailable.",
+          "Do not claim that genuine attraction, orientation, or gender identity is merely intrusive or unreal because it is unwanted, stigmatized, confusing, or value-conflicting.",
+          "Do not steer the person toward or away from any sexual orientation or gender identity under the guise of distinguishing intrusive content from identity."
         ]
       },
       "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
@@ -407,7 +441,7 @@
     },
     {
       "id": "ROUTE.LEAVE_ALONE",
-      "title": "Leave the loop alone and re-enter ordinary life",
+      "title": "Leave certainty-checking loops unanswered and re-enter ordinary life",
       "kind": "decision-node",
       "tier": 3,
       "priority": 100,
@@ -422,17 +456,23 @@
       },
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
-        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Notice the thought, sensation, or urge to solve without suppressing it and without answering the same question again; then re-engage ordinary life.",
         "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action.",
-        "If a concrete problem or clearly avoided inner issue later appears, route back to outward action or inward processing rather than preserving non-engagement as a dogma."
+        "If a concrete problem or clearly avoided inner issue later appears, route back to outward action or inward processing rather than preserving non-engagement as a dogma.",
+        "Recognize behavioral checking as well as verbal rumination: repeated body scans, searches, confessions, conversations, dates, sexual or romantic encounters, or 'exposures' can all be reassurance when their primary function is to prove identity, attraction, normality, safety, worth or certainty.",
+        "When useful exposure or clinician-guided ERP is already part of the plan, keep the exposure while dropping reassurance, covert tests and repeated verdict-seeking; avoidance driven by the same doubt can maintain the loop too."
       ],
       "avoid": [
         "Do not call thought suppression, denial, emotional numbing, or ignoring a medical, safety, relational, or practical problem 'leaving it alone'.",
-        "Do not treat reduced attention to symptoms as proof that the underlying condition is cured."
+        "Do not treat reduced attention to symptoms as proof that the underlying condition is cured.",
+        "Do not answer a checking loop by declaring which transient sensation is the person's true state, and do not use another person as a diagnostic instrument for a question that the loop will simply reopen.",
+        "Do not use ERP or anti-avoidance language to override consent, continue touch or sex the person wants to stop, remain in concrete danger, or skip evaluation of a possible medical red flag."
       ],
       "successSignals": [
         "Checking and reassurance decrease while flexible attention, ordinary activity, relationships, and functioning increase.",
@@ -457,10 +497,17 @@
         "requiredNuance": [
           "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop.",
           "Low-dose regulation is not forbidden when it is needed for functioning; the stop rule targets repetitive processing and checking rather than every form of support.",
-          "Non-engagement concerns this repetitive operation, not a declaration that background grief, a relationship, or all developmental work is resolved. A completed reality check reopens for new relevant evidence, not every renewed reassurance urge."
+          "Non-engagement concerns this repetitive operation, not a declaration that background grief, a relationship, or all developmental work is resolved. A completed reality check reopens for new relevant evidence, not every renewed reassurance urge.",
+          "Leaving the checking operation alone does not require social withdrawal; ordinary reciprocal contact and values-based action can continue without turning them into tests.",
+          "Genuine exploration of sexuality, orientation, gender, attraction or relationship fit is not checking merely because certainty is unavailable.",
+          "Exposure or clinician-guided ERP can continue when appropriate; leave the certainty-checking operation unanswered rather than avoiding the relevant situation.",
+          "Exposure or clinician-guided ERP remains compatible with this route: keep useful exposure when appropriate and drop reassurance, covert testing and repeated verdict-seeking rather than avoiding the situation.",
+          "Exposure never requires continuing touch or sex the person wants to stop, staying in concrete danger, or skipping a check of a possible medical red flag."
         ],
         "forbiddenOverclaims": [
-          "Do not claim that rumination or attention caused all symptoms, or that every persistent symptom should simply be ignored."
+          "Do not claim that rumination or attention caused all symptoms, or that every persistent symptom should simply be ignored.",
+          "Do not claim that completing a date, sexual encounter, exposure or other test proves identity, attraction, normality, safety, worth or certainty.",
+          "Do not claim that ERP, exposure, or anti-avoidance requires continuing touch or sex after the person wants to stop, staying in concrete danger, or skipping medical evaluation of a possible red flag."
         ]
       },
       "defaultQuestion": ""
@@ -504,7 +551,11 @@
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
-        "AMEND.IC.WISDOM_CORE"
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
+        "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
+        "AMEND.IC.CONTINUITY_TITRATION",
+        "AMEND.IC.COMMUNITY_REPARENTING"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -512,12 +563,18 @@
         "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
         "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
         "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
-        "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion."
+        "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion.",
+        "For deliberate social or relationship practice, name the life-serving purpose first—connection, curiosity, communication, skill, play or another chosen value. If the action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation.",
+        "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
+        "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
         "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
-        "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit."
+        "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.",
+        "Do not call a social, romantic or sexual action healthy exposure merely because it is difficult when its main function is reassurance, self-testing or using another person to regulate uncertainty.",
+        "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate.",
+        "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation."
       ],
       "successSignals": [
         "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -533,10 +590,17 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [
-          "Do not reduce every emotional problem to productivity or behavioral execution."
+          "Do not reduce every emotional problem to productivity or behavioral execution.",
+          "Do not claim that brief relief from an action establishes durable improvement, resolution, or a causal mechanism.",
+          "Do not claim that useful exposure requires continuing touch or sex after the person wants to stop, staying in concrete danger, or skipping a medical check of a possible red flag."
         ],
         "requiredNuance": [
-          "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job."
+          "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job.",
+          "Outward action is judged by its function and consequences, not by courage or exposure intensity alone.",
+          "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
+          "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
+          "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
+          "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn."
         ]
       },
       "defaultQuestion": "What is the next observable action that could actually change this situation?",
@@ -590,17 +654,21 @@
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "SOM.MAP_NOT_LADDER",
         "SOM.SE",
-        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.CONTINUITY_TITRATION",
+        "AMEND.IC.SCAFFOLDED_CHALLENGE"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Prefer eyes-open orientation and ordinary embodied activity that requires contact with the environment: walking, gym, sport, swimming, cycling, chores, social contact, or another tolerable activity.",
         "Treat this as embodiment without symptom-scanning: attention can be in movement, coordination, effort, surroundings, and ordinary life rather than repeatedly checking the internal state.",
-        "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work."
+        "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work.",
+        "If inner-child work is already active and still wanted, external orientation reduces depth rather than erasing the relationship. If even minimal contact must pause, record a bounded safety/tolerance pause and an observable reactivation condition; do not surface that continuity message during an acute safety turn."
       ],
       "avoid": [
         "Do not repeatedly body-scan to test whether the external activity is working.",
-        "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now."
+        "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now.",
+        "Do not turn temporary external orientation into a permanent ban on InnerSignal or reparenting when the evidence only supports reducing depth or representation."
       ],
       "successSignals": [
         "Derealization, panic, or hypermonitoring is no longer being amplified by repeated inward checking.",
@@ -621,7 +689,8 @@
         ],
         "blockNodes": [],
         "requiredNuance": [
-          "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other."
+          "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other.",
+          "External orientation is a depth/pacing adjustment only when inner-child work was already in play and still wanted; refusal is a separate hard boundary."
         ],
         "forbiddenOverclaims": [
           "Do not claim that external activity proves the symptoms are psychological or that exercise is sufficient treatment for every cause of derealization or panic."
@@ -675,18 +744,22 @@
         "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
         "AMEND.SOM.PREP_MODALITIES",
         "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
-        "AMEND.SOM.ADVANCED_RELEASE_PARALLEL"
+        "AMEND.SOM.ADVANCED_RELEASE_PARALLEL",
+        "AMEND.IC.SCAFFOLDED_CHALLENGE",
+        "AMEND.IC.CONTINUITY_TITRATION"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Contact only material that is actually present rather than assuming that distress always hides another layer of trauma.",
         "Route relational, part-level, credibility, trust, or developmental conflict toward the relevant Nurturer, Protector, Guide, guard, or inner-child function; route bodily activation or freeze toward low-dose somatic regulation, EFT, movement or shaking, and titrated body work according to response.",
         "For a stable discrete memory target, EMDR can be considered without forcing a long preparatory ladder; for diffuse or developmental body-held material, resource-oriented or deeper Brainspotting and developmental EMDR remain conditional on capacity.",
-        "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing."
+        "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing.",
+        "When the material is difficult but the person remains safe, oriented, able to stop and return, and later functioning is intact enough, titrate depth rather than treating distress itself as evidence that inward work is harmful. Use the person's appraisal and recovery over time, not pleasantness alone."
       ],
       "avoid": [
         "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse.",
-        "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic."
+        "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic.",
+        "Do not equate a disturbing dream, tears, grief, fear, or temporary activation with adverse effect unless the practice is actually degrading orientation, stopping/return capacity, functioning, or recovery enough to change the route."
       ],
       "successSignals": [
         "Contact with inner material produces new emotional information, greater integration, a changed relationship to a part or memory, or more behavioral freedom rather than only more description.",
@@ -705,7 +778,8 @@
           "Do not infer recovered memories, hidden trauma, or a coherent inner child from symptoms alone."
         ],
         "requiredNuance": [
-          "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
+          "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order.",
+          "Workable challenge and overload are different states. Scaffold and pendulate by changing depth, duration, timing, representation, and support before concluding that the whole inward route should be abandoned."
         ]
       },
       "defaultQuestion": "What exactly seems unfinished or avoided here, and what changes when you contact it rather than merely think about it?",
@@ -771,19 +845,23 @@
         ]
       },
       "sourceRefs": [
-        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING"
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Before prescribing another technique, discriminate whether the next useful movement is inward processing, outward action, or leaving a self-maintaining loop unanswered.",
-        "Use output rather than intensity as the stop rule: useful thinking should yield new information, a decision, an action, or genuinely changed contact with previously avoided material."
+        "Use output rather than intensity as the stop rule: useful thinking should yield new information, a decision, an action, or genuinely changed contact with previously avoided material.",
+        "Discriminate genuine inquiry from certainty-seeking: genuine inquiry can update with evidence and tolerate an unresolved answer, while a checking loop tends to rerun the same question, use the body, other people or repeated actions as tests, and obtain only short-lived reassurance."
       ],
       "avoid": [
         "Do not assume repeated analysis is problem-solving merely because the topic is important.",
-        "Do not label refusal to process as healthy non-engagement until concrete problems and clearly avoided material have been checked."
+        "Do not label refusal to process as healthy non-engagement until concrete problems and clearly avoided material have been checked.",
+        "Do not treat behavioral effort as automatically productive merely because it is outward or difficult; an action can still be the same reassurance or certainty computation in behavioral form."
       ],
       "successSignals": [
-        "The case can be classified into one primary movement without forcing every difficulty into a therapy technique."
+        "The case can be classified into one primary movement without forcing every difficulty into a therapy technique.",
+        "The person can leave an interpretation unresolved when no new evidence is available and choose the next useful action without first obtaining complete internal certainty."
       ],
       "tags": [
         "three-way-routing",
@@ -794,7 +872,10 @@
         "deferNodes": [],
         "blockNodes": [],
         "requiredNuance": [
-          "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification."
+          "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification.",
+          "The relevant distinction is function, not whether the checking happens in thought or behavior.",
+          "Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless a repetitive certainty-seeking pattern is actually present.",
+          "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation."
         ],
         "forbiddenOverclaims": [
           "Do not claim that one branch is universally superior to the others."
@@ -989,7 +1070,8 @@
       "sourceRefs": [
         "ALT.AFTERMATH",
         "ALT.EPISTEMICS",
-        "AMEND.CROSS.STATE_DEPENDENT_TRANSFER"
+        "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+        "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -997,11 +1079,14 @@
         "Record facts first—what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state—then consider emotional, relational, spiritual, or practical meaning.",
         "Separate lingering anxiety, sleep disruption, derealization/depersonalization, visual symptoms, shame/social disconnection, existential shock, trauma material, psychosis-like beliefs, and somatic hyperarousal because they can require different support.",
         "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds.",
-        "Ask what became experientially credible or accessible in the state and what is now state-bound, fading, partially available, or usable soberly; when access is fading, treat that gap as an integration target before assuming another altered state is the default next step."
+        "Ask what became experientially credible or accessible in the state and what is now state-bound, fading, partially available, or usable soberly; when access is fading, treat that gap as an integration target before assuming another altered state is the default next step.",
+        "Treat one psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—as enough reason not to retest that substance without professional assessment, even after apparent stabilization; weigh that history when considering other psychoactives that can also disturb reality testing. Repeated milder confusion or dissociation also matters.",
+        "Seek prompt professional help when symptoms are severe, risky or make safety uncertain; persistence or recurrence while sober strengthens the need for assessment."
       ],
       "avoid": [
         "Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.",
-        "Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion."
+        "Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion.",
+        "Do not turn one person's adverse history into a blanket rule against all psychoactive substances, and do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on without appropriate medical guidance."
       ],
       "successSignals": [
         "Ordinary functioning and sleep recover, facts and interpretations remain distinguishable, and any retained insight produces proportionate behavior rather than escalating practice."
@@ -1017,10 +1102,18 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [
-          "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment."
+          "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment.",
+          "Do not claim that one adverse psychoactive reaction proves every psychoactive substance is unsafe for that person.",
+          "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction.",
+          "Do not imply that repeated psychotic-type reactions are required before a prior episode matters.",
+          "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on."
         ],
         "requiredNuance": [
-          "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed."
+          "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed.",
+          "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued.",
+          "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
+          "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment.",
+          "Caution about a psychoactive adverse reaction must not become advice to abruptly stop prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
         ]
       },
       "defaultQuestion": ""
@@ -1211,7 +1304,8 @@
       },
       "sourceRefs": [
         "ALT.PREPARATION",
-        "AMEND.CROSS.STATE_DEPENDENT_TRANSFER"
+        "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+        "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1219,11 +1313,15 @@
         "Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.",
         "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended.",
         "Familiarize the person soberly with any relevant inner-child, guard, Nurturer, Protector, or Guide map and practice at least one small adult function, so newly accessible material has somewhere to land without requiring belief in advance.",
-        "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough."
+        "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough.",
+        "Before planning another altered-state session, ask about prior voices, paranoia, major loss of reality testing, persistent perceptual disturbance, or repeated destabilizing confusion/dissociation from psychoactive substances; one psychotic-type or persisting perceptual reaction warrants professional assessment before retesting that substance and should inform consideration of other psychoactives that can disturb reality testing.",
+        "If psychotic-type or perceptual symptoms are current, severe, risky, or make safety uncertain, prioritize prompt professional or emergency assessment over planning another altered-state session."
       ],
       "avoid": [
         "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
-        "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change."
+        "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change.",
+        "Do not treat feeling stable now as proof that retesting is safe after a psychotic-type or persisting perceptual reaction, and do not convert that history into a blanket anti-drug rule.",
+        "Do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on; stopping may require medical guidance."
       ],
       "successSignals": [
         "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."
@@ -1237,8 +1335,18 @@
       "effects": {
         "blockNodes": [],
         "deferNodes": [],
-        "forbiddenOverclaims": [],
-        "requiredNuance": []
+        "forbiddenOverclaims": [
+          "Do not claim that a different psychoactive is automatically safe merely because the prior severe reaction involved another substance.",
+          "Do not imply that repeated psychotic-type reactions are required before a prior episode matters for retest planning.",
+          "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on.",
+          "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction."
+        ],
+        "requiredNuance": [
+          "Psychoactive risk is informed by both substance-specific history and person-level vulnerability; the response remains proportional rather than universally prohibitive.",
+          "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
+          "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment rather than another altered-state experiment.",
+          "The altered-state gate must not be implemented through abrupt stopping of prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
+        ]
       },
       "defaultQuestion": ""
     },
@@ -1324,6 +1432,116 @@
         "requiredNuance": [
           "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement.",
           "Experiential credibility and external factual certainty are different. Epistemic caution should protect consequential claims without needlessly nullifying a live private therapeutic experience."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.COMMUNITY_SUPPORT",
+      "title": "Build a diversified human support ecology",
+      "kind": "route-node",
+      "tier": 3,
+      "priority": 96,
+      "activation": {
+        "all": [
+          {
+            "field": "social_connection_need",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.COMMUNITY_REPARENTING",
+        "IC.RELATIONSHIP",
+        "IC.THREE_FUNCTIONS"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Treat a current need for human contact as a real need, not failed independence. Explore several realistic sources of recurring contact with genuine commonality: trusted people already known, peer support, spiritually fitting communities, interest/activity groups, classes, clubs, volunteering, and practical or professional services.",
+        "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
+        "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
+        "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language."
+      ],
+      "avoid": [
+        "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
+        "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
+        "Do not prescribe a spiritual community merely because the person is spiritual, or present a long directory when one or two realistic next contacts are more usable.",
+        "Do not advise withdrawing from an existing safe support merely to diversify."
+      ],
+      "successSignals": [
+        "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",
+        "The support plan reduces single-point dependence without requiring self-sufficiency or abandoning existing safe relationships."
+      ],
+      "tags": [
+        "community",
+        "social-support",
+        "connection",
+        "nurturer",
+        "protector",
+        "guide"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency."
+        ],
+        "requiredNuance": [
+          "Human beings can need both inner adult capacity and real reciprocal attachment; these are complementary rather than competing goals.",
+          "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure."
+        ]
+      },
+      "defaultQuestion": "What kinds of people or communities would actually feel like your people—and what is the smallest realistic way to try one without making it your only hope?"
+    },
+    {
+      "id": "ROUTE.MEDICAL_RED_FLAG",
+      "title": "Handle an urgent medical red flag before therapy interpretation",
+      "kind": "route-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "medical_urgency",
+            "op": "eq",
+            "value": "urgent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.FOCUS_PRIORITY_BASELINE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Give direct, proportionate guidance for urgent medical assessment or emergency help before continuing therapeutic interpretation.",
+        "Do not delay an urgent red flag with baseline-history questions. Once immediate safety is handled, return to the person's therapeutic focus when appropriate."
+      ],
+      "avoid": [
+        "Do not park a clearly urgent medical or neurological red flag because the person mentioned it as an aside.",
+        "Do not diagnose the cause from chat, and do not turn an urgent medical turn into inner-child continuity messaging."
+      ],
+      "successSignals": [
+        "The response prioritizes immediate medical safety without unnecessary diagnostic speculation and leaves therapy work for after the urgent issue is addressed."
+      ],
+      "tags": [
+        "medical",
+        "urgent",
+        "safety",
+        "red-flag"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "IC.REACTIVATION",
+          "IC.SCAFFOLDED_CHALLENGE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not diagnose a medical or neurological condition from a red-flag symptom alone."
+        ],
+        "requiredNuance": [
+          "Hard safety and urgent medical red flags are exempt from ordinary focus parking; they take priority only to the degree needed for immediate protection or urgent assessment."
         ]
       },
       "defaultQuestion": ""
@@ -1569,6 +1787,21 @@
       "from": "ROUTE.ALTERED_STATE_TRANSFER",
       "relation": "may-build-sober-credibility",
       "to": "IC.CREDIBILITY_REPAIR"
+    },
+    {
+      "from": "ROUTE.COMMUNITY_SUPPORT",
+      "relation": "may-support",
+      "to": "IC.ADULT_APPRENTICE"
+    },
+    {
+      "from": "ROUTE.COMMUNITY_SUPPORT",
+      "relation": "may-support",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "ROUTE.MEDICAL_RED_FLAG",
+      "relation": "precedes",
+      "to": "ROUTE.GO_INWARD"
     }
   ],
   "taskPolicyVersion": 1,

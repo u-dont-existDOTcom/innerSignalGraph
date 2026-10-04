@@ -1,0 +1,34 @@
+{
+  "contractVersion": "inner-signal-source-sync-v2",
+  "guideId": "inner-child-guide",
+  "capturedAt": "2026-10-03",
+  "sourceKind": "owner-supplied-substack-editor-html",
+  "ownerBaseline": {
+    "rawCapture": {
+      "path": "guides/source-captures/inner-child-guide-2026-10-03.substack.html",
+      "sha256": "3a61bb2aa6aa9ff1ec35efbce8077430a2432e1908f16a8e55153454b56ec867"
+    },
+    "operationalText": {
+      "path": "guides/inner-child-guide-2026-10-03.txt",
+      "sha256": "925b056aeb7a9adc882952608388587c420c6eb09418722f676505dc35f25e90",
+      "visibleBlocks": 482,
+      "characters": 102055
+    }
+  },
+  "activeRevision": {
+    "rawCapture": {
+      "path": "guides/source-captures/inner-child-guide-2026-10-03-r4.substack.html",
+      "sha256": "31991658554ec1624f0ba363bf92b5062d72058ddac5b404ade23a58cbb20f77"
+    },
+    "operationalText": {
+      "path": "guides/inner-child-guide-2026-10-03-r4.txt",
+      "sha256": "1ae4140f0c6acb900ff18ef961ca2e7a136c0812678e88e64f02dc4268ca08cb",
+      "visibleBlocks": 494,
+      "characters": 109671
+    },
+    "version": "owner-latest-humanized-2026-10-03-r4"
+  },
+  "extractor": "tasks/reparenting-strategy-refinement-20260925/extract_substack_source.py",
+  "semanticStatus": "reader-facing-language-repair-r4",
+  "note": "The exact owner-supplied Oct 3 capture and prior r3 review candidate remain separately pinned. Active r4 repairs reader-facing prose only and does not move executable InnerSignal policy into the article."
+}

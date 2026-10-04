@@ -7,13 +7,13 @@ source_id: AMEND.IC.REALIZATION_LOVE_INTEGRATION
 guide_id: owner-amendments
 heading: AMEND.IC.REALIZATION_LOVE_INTEGRATION
 source_role: owner-approved-extension
-source_hash: ef5a0b3c85a8cdab853ea710b5f3d9a3e76d5d8c8238ddedc329c73fbb03f0d4
+source_hash: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
 section_hash: 3122e43e9246d5ccf3d1e706f1af7528769ed0e88f087e1fe479ff480aa4824c
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.GUIDE_LATER
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # AMEND.IC.REALIZATION_LOVE_INTEGRATION
