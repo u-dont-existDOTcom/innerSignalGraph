@@ -45,7 +45,8 @@ Updated: 2026-10-04
 - **Key finding:** OpenAI's plugin guidelines ("must not pull, reconstruct, or infer the full chat log") and Anthropic's directory policy ("must not collect extraneous conversation data") conflict with automatic every-turn saving in a listed plugin; owner question 1 offers user-requested saves, an unlisted connector, or asking both platforms first.
 - **Not done:** no code, deployment, Keycloak change, data access, cross-family check or legal review.
 - **Evidence:** `npm run audit:repository` and `node --test tests/repository-compliance.test.mjs` on this branch; the complete package gate runs in CI.
-- **Next:** owner answers the six questions; then an implementation plan for phase 1 (invented data only).
+- **Owner answers (2026-10-04):** saving B (saves when the person asks; a reminder with the web-app link in every reply, which the person can switch off); records on Railway with invented data first (A), with Railway's written DPA amendment before any real data or else Supabase in Frankfurt; retention B; legal review C; Mayan Roots, LLC as controller unless the consultant finds otherwise; 18 and over. The spec's "Owner decisions (2026-10-04)" quotes each answer, and no owner question is open.
+- **Next:** an implementation plan for phase 1 (invented data only) when the owner asks for it. No real record goes into the new store before the hosting agreement is settled (phase 1 gate).
 - **Lesson closeout:** project-specific design. Lesson candidate, not promoted to Universal: check host platforms' listing rules before designing data collection through a plugin.
 
 

@@ -31,7 +31,7 @@ Background, in his words: ChatGPT reported it "can't write anything via the inne
 
 The owner answered at 01:55 UTC, and answered question 2 again at 05:39 UTC after the vendors' terms were read. Question numbers are this design's; his owner page numbered them 3 to 8, with question 2 as page question 4.
 
-1. **Saving inside ChatGPT and Claude: B.** His words: "B sounds fine just remind people on each turn 'tell me save to save this turn, only the web app can auto-save' (and link to the web app) that's fine a little friction for free users is ok." Saves in the plugin follow the person's request; the web app saves every turn. The reminder: OpenAI's plugin guidelines say "Do not insert unrelated content, attempt to redirect the interaction, or collect data beyond what is reasonably necessary", and Anthropic's directory policy says "When possible, users should be given options to exclude unnecessary text in the response." Neither forbids a reminder about the app's own saving, but a link in every reply is what a reviewer could call redirecting. So the default is the reminder with the link in the first reply of each conversation and right after anything worth saving, switched off when the person asks, with no prices or upgrade wording; every reply only if the owner says "3: every turn". Since no letter to the platforms is planned under B, the age question below needs its own letter to OpenAI.
+1. **Saving inside ChatGPT and Claude: B.** His words: "B sounds fine just remind people on each turn 'tell me save to save this turn, only the web app can auto-save' (and link to the web app) that's fine a little friction for free users is ok." Saves in the plugin follow the person's request; the web app saves every turn. The reminder: OpenAI's plugin guidelines say "Do not insert unrelated content, attempt to redirect the interaction, or collect data beyond what is reasonably necessary", and Anthropic's directory policy says "When possible, users should be given options to exclude unnecessary text in the response." Neither forbids a reminder about the app's own saving. So the reminder goes in every reply, as he asked, with the link to the web app and no prices or upgrade wording; because of Anthropic's rule, a person can switch it off. A directory reviewer could still call a link in every reply redirecting, so before the listing submissions (phase 4) the agent puts that risk to the owner, with a fallback of the first reply of each conversation plus right after a save. The fallback is not used unless he chooses it. Since no letter to the platforms is planned under B, the age question below needs its own letter to OpenAI.
 2. **Where the records are kept: A.** His first answer: "not sure, i guess A. you didn't explain why you don't rec C. check the data-processing terms tho." The terms were read (see "Hosting vendors' data-processing terms") and the question was put again with A recommended; he answered "4a" at 05:39 UTC. So: build and test on Railway with invented data only. Before any real person's records go in, ask Railway in writing to add health data and EU-only processing, logs included, to its DPA; an agent drafts the letter and the owner sends it from the Railway account. If Railway declines, the records move to Supabase in Frankfurt; the code is the same Postgres either way. The privacy consultant checks the result.
 3. **Retention: B.** Until deleted, or 24 months after the last sign-in, with warnings at 23 months and 30 days before.
 4. **Legal review: C.** A privacy consultant first (impact assessment, policies, records), with a lawyer reviewing only the consent text and the privacy policy.
@@ -218,7 +218,8 @@ Every table carries `account_id`. Content columns hold AES-256-GCM ciphertext; e
 | `account_id` | random UUID | internal; never shown to the host model |
 | `idp_subject` | text, unique | Keycloak `sub`; how a token finds its account |
 | `case_id` | text | one private case per account, created at sign-up; links to existing case-shaped code |
-| `status` | enum | `active`, `saving_paused`, `deletion_pending`, `deleted` |
+| `status` | enum | `active`, `deletion_pending`, `deleted` |
+| `paused_scopes` | set of enum | `conversations`, `journal`; empty when nothing is paused. Survives restarts; see `pause_saving` |
 | `created_at`, `last_seen_at` | timestamps | `last_seen_at` drives the inactivity rule |
 | `adult_confirmed_at` | timestamp | age confirmation at sign-up (owner question 6) |
 | `quota_bytes_used` | integer | limits |
@@ -268,7 +269,7 @@ A withdrawal is a new row; nothing is edited. Records hold no IP address and no 
 
 - The tools act only on the caller's own account, found from the token subject. No tool accepts an account ID or a case ID. A wrong or foreign ID returns the same `NOT_FOUND` as a missing one, so IDs cannot be probed.
 - New scopes: `records:read`, `records:write`, `records:delete`. The first sign-in asks for all three, so no host has to handle a later scope upgrade, whose host support is unverified. The existing `case:*` scopes keep serving the legacy case tools unchanged.
-- Every write checks consent first. Without `save_records` the tool returns `CONSENT_REQUIRED` with the account-page link and stores nothing. While saving is paused it returns `SAVING_PAUSED`.
+- Every write checks consent first. Without `save_records` the tool returns `CONSENT_REQUIRED` with the account-page link and stores nothing. When the write's scope is paused it returns `SAVING_PAUSED` with that scope, and writes in other scopes go through.
 - Errors are codes with schema paths, never content: `CONSENT_REQUIRED`, `SAVING_PAUSED`, `TURN_CONFLICT`, `VERSION_CONFLICT`, `NOT_FOUND`, `QUOTA_EXCEEDED`, `RATE_LIMITED`, `INVALID_INPUT`, `ACCOUNT_DELETION_PENDING`.
 - Responses do not echo saved text back.
 - Every tool has a `title`, `readOnlyHint`, `destructiveHint`, `idempotentHint` and `openWorldHint: false` (the records stay inside one private account).
@@ -311,7 +312,7 @@ In both modes the model copies text exactly. A lost `conversation_id`, for examp
 
 **`delete_saved_item`.** Inputs: `item_type` (`conversation`, `journal_entry` or `handoff`) and `item_id`. The item disappears from every read tool and session at once and can be restored from the account page for 7 days, after which it is destroyed (see "Deletion"). Account deletion is not a chat tool; it happens only on the account page after signing in again.
 
-**`pause_saving`.** Inputs: `scope` (`conversations`, `journal`, `all`). Stopping takes one sentence in chat. Turning saving back on happens on the account page, where consent is recorded with its exact text.
+**`pause_saving`.** Inputs: `scope` (`conversations`, `journal`, `all`). It adds the scope to the account's `paused_scopes` (`all` adds both), which survives restarts. `conversations` blocks `save_conversation_turns` and `create_handoff`, since a handoff is a note about conversations; `journal` blocks journal writes; `all` blocks both. Settings changes and deletions stay allowed during any pause, because the person may need them. A pause is not a consent withdrawal and changes no consent record. Stopping takes one sentence in chat. Turning a scope back on happens on the account page, where consent is recorded with its exact text.
 
 ### Read tools
 
@@ -374,7 +375,7 @@ It does not protect against InnerSignal's running server, anyone who controls it
 ### Key management
 
 - Only the production service identity may ask the KMS to decrypt. Key administration needs the owner's account with multi-factor sign-in. No person decrypts data in routine work.
-- KMS request logs are watched for unusual volume. Disabling a root key stops all decryption at once, as an emergency brake.
+- KMS request logs are watched for unusual volume. The emergency brake removes the production service's decrypt permission on both root keys, or disables both keys: either root key alone unwraps every account key, so acting on one stops nothing. Account keys already unwrapped stay in memory for up to 5 minutes after last use, so the brake also stops the service. Lifting the brake restores the permission and needs the owner's account with multi-factor sign-in.
 - Root keys rotate on the provider's schedule. An account key can be replaced by re-wrapping its item keys, without re-encrypting content.
 - Support access to a person's content needs that person's explicit request, or a documented legal or security reason, and is logged in `access_events`. Supervisor access follows the 2026-09-26 consent rules.
 
@@ -541,7 +542,7 @@ Each phase ships as its own pull request with tests and a review, and needs owne
 | Phase | What | Gate before the next phase |
 |---|---|---|
 | 0. Decide | Owner answers the questions; legal reviewer engaged; impact assessment started; written questions sent to OpenAI and Anthropic | answers recorded |
-| 1. Build with invented data | Records service, data model, encryption, tools, account page (consent, history, export, delete), all off by default; staging with invented data only | security review of the crypto and key management; synthetic tests green |
+| 1. Build with invented data | Records service, data model, encryption, tools, account page (consent, history, export, delete), all off by default; staging with invented data only | security review of the crypto and key management; synthetic tests green; the hosting agreement settled under owner decision 2: Railway's written DPA amendment covering health data and EU-only processing, logs included, received and checked by the privacy consultant, or the records moved to Supabase in Frankfurt. No real record, the owner's included, goes into the store before this |
 | 2. Owner only | The owner's account is created and his existing records migrated; he uses ChatGPT and Claude with it. Other existing cases move only when their people have consented | fresh-chat retrieval, deletion, export and a restore drill pass; the owner confirms the migration |
 | 3. Invited testers (up to 20) | Unlisted connector, save mode per owner question 1 | legal review signed off; privacy policy and consent text published; incident plan ready |
 | 4. Public listing | Submissions to OpenAI and Anthropic per their answers | listing approval; monitoring in place |
