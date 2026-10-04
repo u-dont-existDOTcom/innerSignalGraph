@@ -141,7 +141,7 @@ test("focus rules reach each reasoning consumer exactly once and gate the protec
   assert.match(focusDisciplineAuditRules, /salience hijacking/);
   assert.match(caseExtractionPrompt(context).system, /A difficult dream, grief, tears, fear, activation, or vivid inner material does not by itself make inward_attention_effect worsens/);
   assert.match(caseExtractionPrompt(context).system, /new or different from their baseline/);
-  assert.match(longitudinalClinicalRules, /distinguish reducing depth from abandoning reparenting/);
+  assert.match(longitudinalClinicalRules, /distinguish reducing depth from abandoning the relationship/);
   assert.match(longitudinalClinicalRules, /Real human support can itself be Nurturer\/Protector\/Guide action/);
   assert.match(realizationPrompt(context, {}, "synthetic").system, /InnerSignal continuity is broader than any one child-facing exercise/);
 });
