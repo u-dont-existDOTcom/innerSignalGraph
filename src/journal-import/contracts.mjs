@@ -73,6 +73,9 @@ export function validateExtractionReferences(value, assignedUnitIds = []) {
       if (unitIds.size) invariant(unitIds.has(anchor.unit_id), "ANCHOR_OUTSIDE_ASSIGNED_UNITS");
     }
   }
+  // A local ID that equals an assigned unit ID would make a review target, or time evidence that names the unit,
+  // ambiguous between the item and the unit.
+  for (const id of [...entityIds, ...episodeIds, ...assertionIds]) invariant(!unitIds.has(id), "LOCAL_ID_IS_UNIT_ID");
   const covered = new Set();
   for (const item of result.coverage) {
     invariant(!covered.has(item.unit_id), "DUPLICATE_UNIT_COVERAGE");

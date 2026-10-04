@@ -25,7 +25,7 @@ function schemaEnums(value, found = new Set()) {
 const bindingCodes = new Set([
   "BINDING_FAILURE_CODE_UNRECOGNIZED",
   "JOURNAL_SCHEMA_INVALID", "JOURNAL_SCHEMA_UNKNOWN", "DUPLICATE_LOCAL_ASSERTION_ID", "MISSING_LOCAL_SPEAKER",
-  "MISSING_LOCAL_SUBJECT", "MISSING_LOCAL_EPISODE", "ANCHOR_OUTSIDE_ASSIGNED_UNITS",
+  "MISSING_LOCAL_SUBJECT", "MISSING_LOCAL_EPISODE", "ANCHOR_OUTSIDE_ASSIGNED_UNITS", "LOCAL_ID_IS_UNIT_ID",
   "DUPLICATE_UNIT_COVERAGE", "COVERAGE_UNKNOWN_ASSERTION", "UNIT_COVERAGE_INCOMPLETE",
   "BATCH_EXTRACTION_CROSS_UNIT_PROPOSAL", "BATCH_EXTRACTION_UNIT_IDS_INVALID",
   "BATCH_EXTRACTION_ENTITY_ID_DUPLICATE", "BATCH_EXTRACTION_EPISODE_ID_DUPLICATE",
@@ -63,6 +63,9 @@ const permittedKeys = new Set([
   "critical_assessments", "proposed_repairs", "unassessed", "findings",
   "critical_miss_count", "qualifier_error_count", "reference_total", "reference_counts",
   "preserved", "omitted", "distorted", "recall_target_met", "calibration_pass",
+  // How a repaired attempt's review was scoped: findings carried forward, items changed or removed, and the
+  // earlier findings checked again.
+  "review_scope", "fidelity_scope", "carried", "changed", "removed", "earlier_findings",
   ...coverageDispositions, ...outcomes, ...findingTypes
 ]);
 
@@ -94,9 +97,11 @@ const countBy = (items, field, values) => Object.fromEntries(values.map((value) 
 const assessmentCounts = (review) => Object.fromEntries(outcomes.map((outcome) => [outcome,
   countBy(review.assessments.filter((item) => item.outcome === outcome), "finding_type", findingTypes)]));
 
-export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
+// `countedReview`, when given, is the omission review that counted for this attempt (scoped after a repair);
+// otherwise the attempt's own review is counted.
+export function extractionCycleDiagnostics(results, bindingFailureCode = null, countedReview = undefined) {
   const extraction = results?.[0]?.output ?? null;
-  const review = results?.[1]?.output ?? null;
+  const review = countedReview === undefined ? results?.[1]?.output ?? null : countedReview;
   return {
     extraction: extraction ? {
       status: extraction.status,
