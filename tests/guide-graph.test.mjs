@@ -333,7 +333,7 @@ test("difficult but workable inner-child material preserves challenge calibratio
     variables: {
       present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
       suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
-      current_intent: "gentle_practice", unresolved_inner_material: "present", actionable_problem: "absent",
+      current_intent: "gentle_practice", practice_challenge: "workable", unresolved_inner_material: "present", actionable_problem: "absent",
       attention_loop: "absent", inward_attention_effect: "neutral", thinking_yield: "new_information_or_action",
       deep_work_readiness: "yes"
     }
@@ -351,7 +351,7 @@ test("genuine inward worsening de-escalates depth without abandoning InnerSignal
     variables: {
       present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
       suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
-      current_intent: "deep_dialogue", deep_work_readiness: "yes", unresolved_inner_material: "present",
+      current_intent: "deep_dialogue", practice_challenge: "overwhelming", deep_work_readiness: "yes", unresolved_inner_material: "present",
       actionable_problem: "absent", attention_loop: "present", inward_attention_effect: "worsens", thinking_yield: "mixed"
     }
   });
