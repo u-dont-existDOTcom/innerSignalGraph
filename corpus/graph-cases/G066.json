@@ -1,0 +1,34 @@
+{
+  "id": "G066",
+  "title": "explicit refusal suppresses inner-child continuity and reactivation",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "actionable_problem": "present",
+    "unresolved_inner_material": "present",
+    "deep_work_readiness": "no",
+    "ic_status": "declined",
+    "ic_titration_needed": "no",
+    "social_connection_need": "absent"
+  },
+  "expected": {
+    "primary": "ROUTE.ACT_OUTWARD",
+    "selectedExcludes": [
+      "IC.CONTINUITY_TITRATION",
+      "IC.REACTIVATION",
+      "IC.SCAFFOLDED_CHALLENGE",
+      "IC.CHALLENGE_CHECK_IN"
+    ],
+    "requiredNuancePatterns": [
+      "Outward action can embody inner care without being labeled as reparenting"
+    ],
+    "forbiddenOverclaimPatterns": []
+  }
+}

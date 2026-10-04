@@ -1,0 +1,42 @@
+{
+  "id": "G062",
+  "title": "difficult dream after reparenting calibrates challenge without inventing harm",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "gentle_practice",
+    "unresolved_inner_material": "present",
+    "actionable_problem": "absent",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral",
+    "thinking_yield": "new_information_or_action",
+    "deep_work_readiness": "yes",
+    "practice_challenge": "workable",
+    "practice_challenge_domain": "inner_child",
+    "practice_reapproach_willingness": "yes",
+    "ic_status": "active",
+    "ic_titration_needed": "no"
+  },
+  "expected": {
+    "primary": "ROUTE.GO_INWARD",
+    "selectedIncludes": [
+      "IC.SCAFFOLDED_CHALLENGE"
+    ],
+    "selectedExcludes": [
+      "ROUTE.EXTERNAL_EMBODIMENT"
+    ],
+    "requiredNuancePatterns": [
+      "Distress and harm are not synonyms",
+      "workable challenge requires willingness plus intact capacity and recovery"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "disturbing dreams reveal hidden historical truth"
+    ]
+  }
+}

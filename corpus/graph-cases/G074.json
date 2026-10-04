@@ -1,0 +1,38 @@
+{
+  "id": "G074",
+  "title": "difficult inner-child material with unknown recovery asks before deepening",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "deep_dialogue",
+    "unresolved_inner_material": "present",
+    "ic_status": "active",
+    "ic_titration_needed": "unknown",
+    "practice_challenge": "needs_check_in",
+    "practice_challenge_domain": "inner_child",
+    "practice_reapproach_willingness": "unknown",
+    "deep_work_readiness": "yes"
+  },
+  "expected": {
+    "primary": "IC.CHALLENGE_CHECK_IN",
+    "selectedIncludes": [
+      "ROUTE.GO_INWARD"
+    ],
+    "deferredIncludes": [
+      "IC.DEEP_CHILD_DIALOGUE"
+    ],
+    "nextQuestionPattern": "How did that experience land",
+    "requiredNuancePatterns": [
+      "ask first and defer deeper work"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "difficult dream proves either therapeutic progress or historical truth"
+    ]
+  }
+}

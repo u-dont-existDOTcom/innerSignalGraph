@@ -18,11 +18,13 @@ graph_tags:
 source_refs:
   - ALT.PREPARATION
   - AMEND.CROSS.STATE_DEPENDENT_TRANSFER
+  - AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD
 regression_refs:
   - G048
-base_record_sha256: c86d2d6552ea03210dc24eda0ab469ec561c0c37467bf0498fa642f7835f4fa5
-base_graph_sha256: 09fcd58a61e13de924524b56a428337b92056447695e679b980b90dca2a35d55
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+  - G058
+base_record_sha256: a5e3cee863d0d87f8aabbfb4d7fe4db8be24af9f47bf6ebc512091cd3d22c535
+base_graph_sha256: f1bea04c4bb68ab1421a367d01dcc78009bcd00e338e401deba09c8a9319550b
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Give planned altered-state work a beginning, support plan, and ending
@@ -57,21 +59,35 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
   },
   "avoid": [
     "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
-    "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change."
+    "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change.",
+    "Do not treat feeling stable now as proof that retesting is safe after a psychotic-type or persisting perceptual reaction, and do not convert that history into a blanket anti-drug rule.",
+    "Do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on; stopping may require medical guidance."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
-    "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "forbiddenOverclaims": [
+      "Do not claim that a different psychoactive is automatically safe merely because the prior severe reaction involved another substance.",
+      "Do not imply that repeated psychotic-type reactions are required before a prior episode matters for retest planning.",
+      "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on.",
+      "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction."
+    ],
+    "requiredNuance": [
+      "Psychoactive risk is informed by both substance-specific history and person-level vulnerability; the response remains proportional rather than universally prohibitive.",
+      "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
+      "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment rather than another altered-state experiment.",
+      "The altered-state gate must not be implemented through abrupt stopping of prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
+    ]
   },
   "recommendations": [
     "Plan rest and timing, physical safety, environment, support, and what would require outside help before the session begins.",
     "Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.",
     "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended.",
     "Familiarize the person soberly with any relevant inner-child, guard, Nurturer, Protector, or Guide map and practice at least one small adult function, so newly accessible material has somewhere to land without requiring belief in advance.",
-    "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough."
+    "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough.",
+    "Before planning another altered-state session, ask about prior voices, paranoia, major loss of reality testing, persistent perceptual disturbance, or repeated destabilizing confusion/dissociation from psychoactive substances; one psychotic-type or persisting perceptual reaction warrants professional assessment before retesting that substance and should inform consideration of other psychoactives that can disturb reality testing.",
+    "If psychotic-type or perceptual symptoms are current, severe, risky, or make safety uncertain, prioritize prompt professional or emergency assessment over planning another altered-state session."
   ],
   "successSignals": [
     "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."
@@ -85,3 +101,5 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
 [[current/sources/altered-states-map-source/ALT.PREPARATION]]
 
 [[current/governance/amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER]]
+
+[[current/governance/amendments/AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD]]

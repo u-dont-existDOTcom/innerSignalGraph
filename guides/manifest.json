@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-latest-humanized-2026-09-25",
-      "file": "inner-child-guide-2026-09-25.txt",
-      "sha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1",
+      "version": "owner-approved-continuity-scaffolding-2026-10-04-r3-reader-facing",
+      "file": "inner-child-guide-2026-10-04-r3.txt",
+      "sha256": "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e",
       "role": "primary-framework",
       "format": "text"
     },
@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-10-03-state-dependent-transfer-r1",
+      "version": "2026-10-04-continuity-scaffolding-r2",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article is the owner-supplied 2026-09-25 Substack editor capture, preserved verbatim at guides/source-captures/inner-child-guide-2026-09-25.substack.html (SHA-256 20073058fef619d8a8f5aa7fef8337face5ed50cf89d17c8142138effdb125b6). The operational text projection preserves visible author text and is bound above by its own SHA-256; earlier source snapshots remain retained. This source synchronization does not itself approve graph semantic changes, install a Guide Packet, or change stable. The somatic and altered-states source notes and safety boundaries remain unchanged.",
+  "notes": "The active inner-child article preserves the owner-supplied 2026-10-03 Substack source and the 2026-10-04 reader-facing r4 repair, then adds the owner-authorized 2026-10-04 continuity/scaffolding/community material after independent semantic review. The exact r4 Substack capture remains preserved at guides/source-captures/inner-child-guide-2026-10-03-r4.substack.html and r4 remains pinned in source history. The pre-reader-rebase continuity drafts remain preserved separately. Executable policy remains graph-owned. This development-main source change does not install a Guide Packet or promote stable.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -71,6 +71,48 @@
       "version": "owner-current-2026-09-07-e01-e12",
       "file": "inner-child-guide-2026-09-07.txt",
       "sha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-09-25",
+      "file": "inner-child-guide-2026-09-25.txt",
+      "sha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-supplied-2026-10-03-before-current-edit",
+      "file": "inner-child-guide-2026-10-03.txt",
+      "sha256": "925b056aeb7a9adc882952608388587c420c6eb09418722f676505dc35f25e90"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-10-03-r2",
+      "file": "inner-child-guide-2026-10-03-r2.txt",
+      "sha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-10-03-r3",
+      "file": "inner-child-guide-2026-10-03-r3.txt",
+      "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-10-03-r4",
+      "file": "inner-child-guide-2026-10-03-r4.txt",
+      "sha256": "1ae4140f0c6acb900ff18ef961ca2e7a136c0812678e88e64f02dc4268ca08cb"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-approved-continuity-scaffolding-2026-10-04-r1",
+      "file": "inner-child-guide-2026-10-04-r1.txt",
+      "sha256": "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-approved-continuity-scaffolding-2026-10-04-r2-pre-reader-rebase",
+      "file": "inner-child-guide-2026-10-04-r2.txt",
+      "sha256": "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5"
     }
   ]
 }

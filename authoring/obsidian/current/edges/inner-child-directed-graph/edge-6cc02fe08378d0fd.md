@@ -9,8 +9,8 @@ graph_id: inner-child-directed-graph
 from_node_id: IC.SPIRITUAL_STRUGGLE
 to_node_id: IC.BORROW_ONE_FUNCTION
 relation: may-connect-to
-base_graph_sha256: 779b3f5d7b6098cdfa10243aa5d32caac60d988fa8394a0e35917a1ee289c369
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # IC.SPIRITUAL_STRUGGLE may-connect-to IC.BORROW_ONE_FUNCTION
