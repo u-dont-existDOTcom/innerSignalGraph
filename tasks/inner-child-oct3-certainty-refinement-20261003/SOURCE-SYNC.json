@@ -17,18 +17,18 @@
   },
   "activeRevision": {
     "rawCapture": {
-      "path": "guides/source-captures/inner-child-guide-2026-10-03-r3.substack.html",
-      "sha256": "c8138b47ff38de516d73545c7696642e28adc841a79a8fe2842e1407c9fbd6b6"
+      "path": "guides/source-captures/inner-child-guide-2026-10-03-r4.substack.html",
+      "sha256": "31991658554ec1624f0ba363bf92b5062d72058ddac5b404ade23a58cbb20f77"
     },
     "operationalText": {
-      "path": "guides/inner-child-guide-2026-10-03-r3.txt",
-      "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb",
+      "path": "guides/inner-child-guide-2026-10-03-r4.txt",
+      "sha256": "1ae4140f0c6acb900ff18ef961ca2e7a136c0812678e88e64f02dc4268ca08cb",
       "visibleBlocks": 494,
-      "characters": 109681
+      "characters": 109671
     },
-    "version": "owner-latest-humanized-2026-10-03-r3"
+    "version": "owner-latest-humanized-2026-10-03-r4"
   },
   "extractor": "tasks/reparenting-strategy-refinement-20260925/extract_substack_source.py",
-  "semanticStatus": "owner-approved-certainty-authenticity-refinement-r3",
-  "note": "The exact owner-supplied Oct 3 capture remains separately pinned. The active r1 adds only owner-authorized guide semantics. This development-main source change does not install or promote stable."
+  "semanticStatus": "reader-facing-language-repair-r4",
+  "note": "The exact owner-supplied Oct 3 capture and prior r3 review candidate remain separately pinned. Active r4 repairs reader-facing prose only and does not move executable InnerSignal policy into the article."
 }

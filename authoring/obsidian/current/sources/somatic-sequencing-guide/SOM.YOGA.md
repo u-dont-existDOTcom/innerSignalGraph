@@ -12,7 +12,7 @@ section_hash: 261f0674ef4ed297f0f6a48eea18a10beddd053328db9bee27c01f2befcf4e59
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.GENTLE_REGULATION
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
 ---
 
 # Trauma-Sensitive / Restorative Yoga
