@@ -16,7 +16,8 @@
     "attention_loop": "absent",
     "inward_attention_effect": "neutral",
     "thinking_yield": "new_information_or_action",
-    "deep_work_readiness": "yes"
+    "deep_work_readiness": "yes",
+    "practice_challenge": "workable"
   },
   "expected": {
     "primary": "ROUTE.GO_INWARD",
