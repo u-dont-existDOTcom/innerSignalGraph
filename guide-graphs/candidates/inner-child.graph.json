@@ -3206,7 +3206,7 @@
       "id": "IC.CONTINUITY_TITRATION",
       "title": "Preserve the inner relationship while reducing depth",
       "kind": "decision-node",
-      "tier": 2,
+      "tier": 4,
       "priority": 99,
       "activation": {
         "any": [
