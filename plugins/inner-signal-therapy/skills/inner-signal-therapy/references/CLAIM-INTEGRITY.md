@@ -1,14 +1,3 @@
-# Owner questions
-
-## 1. Approve the proposed therapy claim-integrity wording
-
-Status: ANSWERED. Owner, 3 Oct 2026, 20:16 UTC: "1 A", approving the wording below as written. The reconciliation and the sample-reply test are in PR #96; shipping still needs his yes. Source: Universal suggestion `suggested-fixes/innerSignalGraph/2026-09-30-claim-integrity-checks.md` (2026-09-30, explicitly an owner request), pointing to the separate claim-integrity proposal, PR #96. This question does not block the journal Claude worker fixes and does not authorize therapy prompt edits in this branch.
-
-Recommended: approve the exact wording below for the separate therapy-policy review and conflict reconciliation. It prevents unsupported attribution, invented quotations, overbroad absence claims and overriding a person's correction. Its text explicitly preserves natural paraphrase and warmth; a model could still over-hedge or lengthen replies, so synthetic reply evaluation belongs to that separate proposal. Alternatively, request wording changes before approval; that preserves the current prompts while the proposal is revised. Answer with approval or the exact requested changes. After approval, reconcile that proposal against current prompts and the served protocol and recompute its protocol hash in its own task branch.
-
-The proposed text fetched from PR #96's `plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md` is reproduced for review; it has not been installed into runtime prompts:
-
-```text
 # Claim integrity
 
 Shared semantic rules; not proof of model adherence.
@@ -29,5 +18,3 @@ Use the consumer's existing findings/removal schema; do not invent an output fie
 - REFLECTION_CORRECTION_OVERRIDDEN: after the person corrects how their words or meaning were reflected, the response defends the earlier reading or substitutes a reading they did not offer.
 - UNACKNOWLEDGED_CONTRADICTION: the response contradicts an earlier assistant statement on the same topic without saying so.
 - UNLABELED_ESTIMATE: the response presents an estimate as exact, or gives a derived number, time, or count more precisely than its source allows.
-
-```

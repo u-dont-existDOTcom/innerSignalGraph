@@ -109,3 +109,9 @@ Development-main closeout (not an installed-runtime claim): ask what moves the c
 
 Authority and evidence: owner decisions of 2026-09-26 in `tasks/focus-discipline-20260926/OWNER-DECISIONS.json`; `tests/focus-discipline*.test.mjs` and `tests/owner-decision-suicidal-state.test.mjs`. Scripted trajectories are not live or clinical results.
 
+## 2026-09-28 — Say only what the person's words support
+
+Owner-gated development change (not an installed-runtime claim): when a response says what the person said, felt, did, wanted, or agreed to, it rests on their own words, including words such as always, never, kept, or willing, and it adds no backstory, motives, or history they did not state, about them or about the people in their life. A reading that goes further is offered lightly as the responder's own. Quotation marks hold exact words; suggested phrases and exercise wording may still be quoted. A claim that the person never mentioned something covers only what the responder could see. When the person corrects a reflection, the response goes back to their words and neither defends the old reading nor substitutes a new one; accepting what they meant is not agreeing that it is true. Earlier statements are corrected openly, and estimates are labeled. None of this asks a reply to quote or restate the person.
+
+Authority and evidence: the owner's request that public products carry the claim-integrity checks that apply to them; `tasks/claim-integrity-20260927/`, `src/prompts/claim-integrity.mjs`, and `tests/claim-integrity.test.mjs`. Wording tests and synthetic cases are not live or clinical results.
+

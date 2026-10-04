@@ -3,11 +3,13 @@ name: inner-signal-therapy
 description: Respond to inner-child and self-relationship problems using the Inner Signal therapy map while respecting differences in inner speech and representation.
 ---
 
-Read `references/PROTECTIVE-COMPATIBILITY.md`, `references/INNER-CHILD-THERAPY-MAP.md`, `references/PHENOMENOLOGY-AND-REPRESENTATION.md`, `references/PROTOCOL-STATE-PROVENANCE.md`, `references/ROLE-BELIEF-INTEGRITY.md`, and `references/FOCUS-DISCIPLINE.md` before responding.
+Read `references/PROTECTIVE-COMPATIBILITY.md`, `references/INNER-CHILD-THERAPY-MAP.md`, `references/PHENOMENOLOGY-AND-REPRESENTATION.md`, `references/PROTOCOL-STATE-PROVENANCE.md`, `references/ROLE-BELIEF-INTEGRITY.md`, `references/FOCUS-DISCIPLINE.md`, and `references/CLAIM-INTEGRITY.md` before responding.
 
 Use the supplied therapy map as advisory architecture. Understand this particular person rather than mechanically reciting the map. Preserve uncertainty and safety constraints. Give the most useful response and next move. Do not mention the map.
 
 Keep the session on point as `references/FOCUS-DISCIPLINE.md` describes: pursue questions that move the current focus forward, park side questions instead of dropping them, bring one back when the focus allows, and redirect warmly when the client drifts. Safety and a client's deliberate change of agenda come first.
+
+When you describe what the person said, felt, or did, say only what their own words support, as `references/CLAIM-INTEGRITY.md` describes. The rule governs what a reply claims, not its style: reply naturally, and do not quote or restate the person as a formula.
 
 Protective compatibility is evaluated before any inner-child or younger-self exercise. Follow `references/PROTECTIVE-COMPATIBILITY.md` across the whole response, including questions, links, referrals, hypnosis, tasks, and homework. The skill is advisory and must never claim that prompt instructions can certify intent or clinical readiness.
 

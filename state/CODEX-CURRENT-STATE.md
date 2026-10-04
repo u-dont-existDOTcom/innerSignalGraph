@@ -1,7 +1,15 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-03
+Updated: 2026-10-04
 
+## Claim integrity in the served protocol and response prompts — `claude/claim-integrity-checks-20260927`
+
+- **Goal:** the owner asked that each public product carry the claim-integrity checks that apply to it, since published products do not load the development architecture. InnerSignal is a companion product.
+- **Owner decision:** "1 A" on 3 Oct 2026, 20:16 UTC: the wording is approved as written. Next, as he approved: reconcile with the current prompts and the served protocol, test sample replies, and bring him the result before anything ships.
+- **Done, don't repeat:** `src/prompts/claim-integrity.mjs` (`claim-integrity-v1`) adds five rules and six audit codes on what a reply claims about the person; they reach case audit, drafting, critique, adjudication, realization, private audit and repair through `longitudinalClinicalRules`, and the byte-matched `references/CLAIM-INTEGRITY.md` is always-read and served over MCP. Merged with `main` at `0764ab0` on 4 Oct: no clash or duplication with current rules, the approved text is carried word for word, the journal import roles were assessed and stay unchanged (`COVERAGE.json`), and the served `protocol_sha256` becomes `dfb72a14a7a2bcf22f5981a3887a23f48ffe78ac8def4a33556444ad28589a54` (8 files; `main` serves `6d27393e…`, 7 files). The sample-reply test (`tasks/claim-integrity-20260927/sample-reply-test/`) found no cost in warmth, length or hedging and no claim errors in either version, so it can't show a benefit.
+- **Verified:** `tests/claim-integrity.test.mjs` and the affected prompt and protocol tests pass; the full gates for the final head are listed in the pull request. Wording tests and a smoke test on invented conversations do not show model adherence in live use.
+- **Safety:** prompt text only. No graph, guide, schema, routing, storage, model-role, or deployment change; the mock therapy-policy fingerprints are unchanged.
+- **Next safe action:** the owner's yes to ship, then merge and the normal hosted MCP redeploy to serve the new protocol. No `stable` change, installation or deployment is authorized before that.
 
 ## Journal calibration: answered context, hardest self-repair and full rounds (2026-10-03)
 
