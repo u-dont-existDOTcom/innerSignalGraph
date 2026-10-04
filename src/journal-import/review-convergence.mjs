@@ -135,14 +135,38 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   const { items, removed } = extractionItemChanges(previousExtraction, extraction);
   const earlier = reviewFindingTargets(previousReview);
   const units = new Set(unitIds);
+  // Current items written back in their earlier local IDs, so a pure rename (an item kept with identical content
+  // under a new ID, and the references that follow it) is neither new content nor a new coverage list.
+  const earlierIdOf = { assertion: new Map(), entity: new Map(), episode: new Map() };
+  for (const item of items) if (item.previousId !== null) earlierIdOf[item.kind].set(item.localId, item.previousId);
+  const currentIds = { assertion: new Set(extraction.assertions.map((item) => item.local_id)),
+    episode: new Set(extraction.episodes.map((item) => item.local_id)), entity: new Set(extraction.entities.map((item) => item.local_id)) };
+  const asEarlier = (kind) => (id) => (id === null || id === undefined ? id : earlierIdOf[kind].get(id) ?? id);
+  const timeIdAsEarlier = (id) => {
+    const kind = ["assertion", "episode", "entity"].find((candidate) => currentIds[candidate].has(id));
+    return kind ? earlierIdOf[kind].get(id) ?? id : id;
+  };
+  const timeAsEarlier = (time) => (time ? { ...time, evidence_ids: (time.evidence_ids ?? []).map(timeIdAsEarlier) } : time);
+  const earlierContentKey = (field, item) => contentKey(field === "entities" ? item : {
+    ...item, authored_time: timeAsEarlier(item.authored_time), event_time: timeAsEarlier(item.event_time),
+    ...(field === "assertions" ? { speaker_local_id: asEarlier("entity")(item.speaker_local_id),
+      subject_local_ids: item.subject_local_ids.map(asEarlier("entity")),
+      episode_local_id: asEarlier("episode")(item.episode_local_id) } : {}) });
   // A unit changed when it lost an item (one anchored in it was removed, or rewritten so that it no longer is), or
-  // when its coverage record changed: a different disposition or reason.
+  // when its coverage record changed: a different disposition or reason, or a different list of the assertions that
+  // were there before and still are. Gaining a new assertion doesn't change a unit: the review assesses new items
+  // under their own IDs.
   const unitsChanged = new Set([...removed.flatMap((item) => item.unitIds),
     ...items.filter((item) => item.changed).flatMap((item) => item.previousUnitIds
       .filter((unitId) => !item.unitIds.includes(unitId)))]);
-  const coverageOf = (value) => new Map((value.coverage ?? []).map((record) => [record.unit_id,
-    canonicalJson({ disposition: record.disposition, reason: record.reason ?? null })]));
-  const coverageBefore = coverageOf(previousExtraction), coverageAfter = coverageOf(extraction);
+  const removedAssertions = new Set(removed.filter((item) => item.kind === "assertion").map((item) => item.localId));
+  const newAssertions = new Set(items.filter((item) => item.kind === "assertion" && item.previousId === null)
+    .map((item) => item.localId));
+  const coverageOf = (value, listed) => new Map((value.coverage ?? []).map((record) => [record.unit_id,
+    canonicalJson({ disposition: record.disposition, reason: record.reason ?? null,
+      assertions: [...new Set(listed(record.assertion_local_ids ?? []))].sort() })]));
+  const coverageBefore = coverageOf(previousExtraction, (ids) => ids.filter((id) => !removedAssertions.has(id)));
+  const coverageAfter = coverageOf(extraction, (ids) => ids.filter((id) => !newAssertions.has(id)).map(asEarlier("assertion")));
   for (const unitId of units) if (coverageBefore.get(unitId) !== coverageAfter.get(unitId)) unitsChanged.add(unitId);
   const byTarget = new Map();
   for (const item of items) {
@@ -199,7 +223,8 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   // An earlier open finding on an item that is still there stays open until the new review reassesses that item: a
   // review that leaves a flagged item out hasn't shown the defect is gone. A finding on an item the repair removed
   // goes with the item. A finding on a unit stays open too, unless the repair added or rewrote content anchored in
-  // that unit: a repair answers an omission with new items, which the review assesses under their own IDs. A
+  // that unit (a rename doesn't count): a repair answers an omission with new items, which the review assesses under
+  // their own IDs. A
   // finding on a target that is neither (such as a frozen reference item) stays open only if the review names it
   // again; the fidelity score already counts a reference item the review leaves out as unassessed.
   const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids,
@@ -209,7 +234,7 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   for (const [field] of ITEM_FIELDS) {
     const earlierContent = new Set((previousExtraction[field] ?? []).map(contentKey));
     for (const item of extraction[field] ?? []) {
-      if (!earlierContent.has(contentKey(item))) for (const unitId of anchorUnitIds(item)) unitsWithNewContent.add(unitId);
+      if (!earlierContent.has(earlierContentKey(field, item))) for (const unitId of anchorUnitIds(item)) unitsWithNewContent.add(unitId);
     }
   }
   // Where earlier open work on a target now applies: the items it became, or the unit itself while the repair has

@@ -1582,6 +1582,31 @@ test("scopeReviewAfterRepair: a unit-level finding counts when the repair change
   assert.equal(result.review.status, "repair_required");
 });
 
+test("scopeReviewAfterRepair: renaming an entity and the references to it adds no content to a unit", () => {
+  const items = storyItems();
+  const toV2 = (id) => (id === "e-maren" ? "e-maren-v2" : id);
+  const renamedMaren = { ...renamed(items, "entities", "e-maren", "e-maren-v2"),
+    assertions: items.assertions.map((item) => ({ ...item, speaker_local_id: toV2(item.speaker_local_id),
+      subject_local_ids: item.subject_local_ids.map(toV2) })) };
+  const earlier = review({ assessments: [flag(U1, "earlier")], unassessed: [U2], status: "incomplete" });
+  const result = scope({ review: review({ assessments: [] }), previousReview: earlier, extraction: story(renamedMaren) });
+  assert.equal(verdictOn(result, U1).explanation, "earlier verdict on u1.", "the omission in u1 stays open");
+  assert.deepEqual(result.review.unassessed_ids, [U2]);
+});
+
+test("scopeReviewAfterRepair: a changed list of a unit's existing assertions puts the unit in scope, a rename doesn't", () => {
+  const items = storyItems();
+  const dropped = extraction({ ...items, unitIds: [U1, U2], coverage: coverageFor([U1, U2], items.assertions)
+    .map((record) => record.unit_id === U2 ? { ...record, assertion_local_ids: record.assertion_local_ids.filter((id) => id !== "a4") } : record) });
+  const earlier = review({ assessments: [ok("u1", "earlier"), ok("u2", "earlier")] });
+  const later = review({ assessments: [flag("u1", "later"), flag("u2", "later")] });
+  assert.deepEqual(explanations(scope({ review: later, previousReview: earlier, extraction: dropped })),
+    { u1: "earlier verdict on u1.", u2: "later verdict on u2." });
+  const renamedA4 = story(renamed(items, "assertions", "a4", "a4-v2"));
+  assert.deepEqual(explanations(scope({ review: later, previousReview: earlier, extraction: renamedA4 })),
+    { u1: "earlier verdict on u1.", u2: "earlier verdict on u2." });
+});
+
 test("validateExtractionReferences: a local ID may not equal an assigned unit ID", () => {
   assert.throws(() => story(renamed(storyItems(), "episodes", "ep-storm", U2)), /LOCAL_ID_IS_UNIT_ID/);
   assert.throws(() => story(renamed(storyItems(), "assertions", "a4", U1)), /LOCAL_ID_IS_UNIT_ID/);
