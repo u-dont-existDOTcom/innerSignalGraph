@@ -1456,3 +1456,76 @@ test("extractionItemChanges: time evidence follows the graph's precedence when a
   const resolvedElsewhere = extractionItemChanges(make("the keeper", true), make("the keeper", false));
   assert.equal(record(resolvedElsewhere, "assertion", "a4").changed, true);
 });
+
+// a4 takes its time from a2. A repair that drops a2 and renames a3 to a2 leaves "a2" naming the keeper's words.
+const timedFromA2 = (items) => edited(items, "assertions", "a4",
+  { event_time: { ...items.assertions[3].event_time, evidence_ids: ["a2"] } });
+const a3RenamedOntoA2 = () => renamed(without(timedFromA2(storyItems()), "assertions", "a2"), "assertions", "a3", "a2");
+
+test("extractionItemChanges: time evidence naming an ID that another item now carries counts as changed", () => {
+  const before = story(timedFromA2(storyItems()));
+  const reused = extractionItemChanges(before, story(a3RenamedOntoA2()));
+  assert.deepEqual(record(reused, "assertion", "a2"), { kind: "assertion", localId: "a2", unitIds: [U2],
+    changed: false, previousId: "a3", previousUnitIds: [U2] });
+  assert.deepEqual(reused.removed, [{ kind: "assertion", localId: "a2", unitIds: [U1] }]);
+  assert.equal(record(reused, "assertion", "a4").changed, true, "a4's time evidence now resolves to other passages");
+  assert.equal(record(reused, "assertion", "a1").changed, false);
+  // Two items that trade IDs: nothing is removed, but "a2" still names different passages than before.
+  const items = timedFromA2(storyItems());
+  const traded = { ...items, assertions: items.assertions.map((item) => item.local_id === "a2" ? { ...item, local_id: "a3" }
+    : item.local_id === "a3" ? { ...item, local_id: "a2" } : item) };
+  const swapped = extractionItemChanges(before, story(traded));
+  assert.deepEqual(swapped.removed, []);
+  assert.equal(record(swapped, "assertion", "a4").changed, true);
+});
+
+test("extractionItemChanges: entities that trade IDs change the assertions that cite them", () => {
+  const before = storyItems();
+  const traded = { ...before, entities: before.entities.map((item) => item.local_id === "e-keeper" ? { ...item, local_id: "e-lamp" }
+    : item.local_id === "e-lamp" ? { ...item, local_id: "e-keeper" } : item) };
+  const result = extractionItemChanges(story(before), story(traded));
+  assert.deepEqual([record(result, "entity", "e-lamp").changed, record(result, "entity", "e-lamp").previousId], [false, "e-keeper"]);
+  // a2 and a3 cite the lamp, and a3's speaker is the keeper: each now points at the other entity.
+  assert.deepEqual(result.items.filter((item) => item.changed).map((item) => item.localId).sort(), ["a2", "a3"]);
+});
+
+test("scopeReviewAfterRepair: a dependent whose time evidence ID now names another item is reviewed again", () => {
+  const later = review({ assessments: [verdict("a4", "distorted", "wrong_time")] });
+  const result = scope({ review: later, previousExtraction: story(timedFromA2(storyItems())),
+    extraction: story(a3RenamedOntoA2()) });
+  assert.equal(verdictOn(result, "a4").explanation, "later verdict on a4.", "the new wrong-time finding counts");
+  assert.equal(verdictOn(result, "a2").explanation, "earlier verdict on a3.", "the renamed item keeps its own verdict");
+  assert.equal(result.review.status, "repair_required");
+});
+
+test("scopeReviewAfterRepair: what an earlier review left open on a removed item stays with it when another item takes its ID", () => {
+  const reused = story(renamed(without(storyItems(), "assertions", "a2"), "assertions", "a3", "a2"));
+  const flagged = review({ assessments: [flag("a2", "earlier"), ok("a1", "earlier"), ok("a3", "earlier"), ok("a4", "earlier")],
+    repairs: [repairFor("a2")] });
+  const afterFlag = scope({ review: review({ assessments: [] }), previousReview: flagged, extraction: reused });
+  assert.equal(verdictOn(afterFlag, "a2").explanation, "earlier verdict on a3.", "the item now called a2 keeps a3's verdict");
+  assert.deepEqual(afterFlag.review.proposed_repairs, []);
+  assert.equal(afterFlag.review.status, "sufficient_for_stated_scope");
+  const gap = review({ assessments: [ok("a1", "earlier"), ok("a3", "earlier"), ok("a4", "earlier")], unassessed: ["a2"],
+    status: "incomplete" });
+  const afterGap = scope({ review: review({ assessments: [] }), previousReview: gap, extraction: reused });
+  assert.deepEqual(afterGap.review.unassessed_ids, []);
+  assert.equal(afterGap.review.status, "sufficient_for_stated_scope");
+});
+
+test("scopeReviewAfterRepair: carried evidence drops an item the repair removed", () => {
+  const targetOf = (_kind, localId) => localId;
+  // ref-1 was vouched for by a1 and a2. The repair removes a2 and renames a3 onto its ID, so the verdict no
+  // longer carries: the item now called a2 is not the one that carried ref-1.
+  const earlier = review({ role: "fidelity_auditor", assessments: [{ ...ok("ref-1", "earlier"), evidence_ids: ["a1", "a2"] }] });
+  const later = review({ role: "fidelity_auditor", assessments: [] });
+  const reused = story(renamed(without(storyItems(), "assertions", "a2"), "assertions", "a3", "a2"));
+  assert.equal(verdictOn(scope({ review: later, previousReview: earlier, extraction: reused, targetOf }), "ref-1"), undefined);
+  const removedA2 = story(without(storyItems(), "assertions", "a2"));
+  // An out-of-scope verdict replaced by its earlier one keeps only evidence that is still there.
+  const flaggedA1 = review({ role: "fidelity_auditor",
+    assessments: [{ ...ok("a1", "earlier"), evidence_ids: ["a1", "a2", U1] }] });
+  const laterA1 = review({ role: "fidelity_auditor", assessments: [flag("a1", "later")] });
+  const carried = scope({ review: laterA1, previousReview: flaggedA1, extraction: removedA2, targetOf });
+  assert.deepEqual(verdictOn(carried, "a1").evidence_ids, ["a1", U1]);
+});

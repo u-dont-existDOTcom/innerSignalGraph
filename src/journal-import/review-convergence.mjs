@@ -74,14 +74,20 @@ export function extractionItemChanges(previous, current) {
   // An item that changed or went away also changes what points at it: an assertion through its speaker,
   // subjects, episode or time evidence, and an episode through its time evidence. Those count as changed too,
   // until nothing more changes.
+  // Local IDs are unique only within a kind, so changes are tracked per kind.
   const changedIds = { assertion: new Set(), entity: new Set(), episode: new Set() };
   for (const item of items) if (item.changed) changedIds[item.kind].add(item.localId);
-  // Local IDs are unique only within a kind, so removals are tracked per kind too.
-  const goneIds = { assertion: new Set(), entity: new Set(), episode: new Set() };
-  for (const item of removed) goneIds[item.kind].add(item.localId);
+  // A reference still means what it meant only while an unchanged item carries its ID and matches the earlier
+  // item that carried it. A removed ID, an ID handed to another item (renamed onto it, or traded) and an item
+  // changed in place all change what the reference points at.
+  const recordOf = new Map(items.map((record) => [`${record.kind}\u0000${record.localId}`, record]));
+  const sameItem = (kind, id) => {
+    const record = recordOf.get(`${kind}\u0000${id}`);
+    return record !== undefined && record.previousId === id && !changedIds[kind].has(id);
+  };
   // Time evidence names a local ID without its kind, and the graph resolves it to an assertion first, then an
-  // episode, then an entity. It is touched when that resolved item changed, or when the ID now resolves to a
-  // different kind than before (including to nothing).
+  // episode, then an entity. It is touched when the ID now resolves to a different kind than before (including
+  // to nothing), or to a different item of the same kind.
   const kindsOf = (extraction) => ({ assertion: new Set((extraction?.assertions ?? []).map((item) => item.local_id)),
     episode: new Set((extraction?.episodes ?? []).map((item) => item.local_id)),
     entity: new Set((extraction?.entities ?? []).map((item) => item.local_id)) });
@@ -89,9 +95,10 @@ export function extractionItemChanges(previous, current) {
   const resolvedKind = (kinds, id) => ["assertion", "episode", "entity"].find((kind) => kinds[kind].has(id)) ?? null;
   const touched = (id) => {
     const kind = resolvedKind(currentKinds, id);
-    return kind !== resolvedKind(previousKinds, id) || (kind !== null && changedIds[kind].has(id));
+    return kind !== resolvedKind(previousKinds, id) || (kind !== null && !sameItem(kind, id));
   };
-  const entityTouched = (id) => goneIds.entity.has(id) || changedIds.entity.has(id);
+  const refTouched = (kind) => (id) => id !== null && id !== undefined && !sameItem(kind, id);
+  const entityTouched = refTouched("entity"), episodeTouched = refTouched("episode");
   const timeIds = (item) => [...(item.authored_time?.evidence_ids ?? []), ...(item.event_time?.evidence_ids ?? [])];
   const sources = { assertion: new Map((current?.assertions ?? []).map((item) => [item.local_id, item])),
     episode: new Map((current?.episodes ?? []).map((item) => [item.local_id, item])) };
@@ -102,8 +109,7 @@ export function extractionItemChanges(previous, current) {
       const source = sources[record.kind].get(record.localId);
       const depends = timeIds(source).some(touched) || (record.kind === "assertion"
         && (entityTouched(source.speaker_local_id) || source.subject_local_ids.some(entityTouched)
-          || (source.episode_local_id !== null && (goneIds.episode.has(source.episode_local_id)
-            || changedIds.episode.has(source.episode_local_id)))));
+          || episodeTouched(source.episode_local_id)));
       if (!depends) continue;
       record.changed = true;
       changedIds[record.kind].add(record.localId);
@@ -146,8 +152,13 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   for (const [target, entries] of byTarget) {
     for (const entry of entries) if (entry.previousTarget !== null) currentTarget.set(entry.previousTarget, target);
   }
+  // Where an earlier target is now. An item's earlier target maps to the item it became. An item the repair
+  // removed takes its verdicts and its place as evidence with it, even when its ID now names another item. A unit,
+  // or a target that isn't an item (such as a frozen reference item), stays where it is.
+  const removedTargets = new Set(removed.map((item) => targetOf(item.kind, item.localId, item.unitIds)));
+  const nowAt = (target) => currentTarget.get(target) ?? (removedTargets.has(target) ? null : target);
   const rekey = (prior, target) => ({ ...prior, target_id: target,
-    evidence_ids: [...new Set(prior.evidence_ids.map((id) => currentTarget.get(id) ?? id))] });
+    evidence_ids: [...new Set(prior.evidence_ids.map(nowAt).filter((id) => id !== null))] });
   const placement = new Map();
   const place = (target) => {
     if (placement.has(target)) return placement.get(target);
@@ -184,11 +195,10 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   // unassessed.)
   const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids,
     ...review.proposed_repairs.map((repair) => repair.target_id)]);
-  const stillThere = (target) => currentTarget.has(target) || byTarget.has(target);
   const counted = new Set(assessments.map((assessment) => assessment.target_id));
   for (const prior of previousReview.assessments.filter(assessmentIsFinding)) {
-    const target = currentTarget.get(prior.target_id) ?? prior.target_id;
-    if (mentioned.has(target) || counted.has(target) || !stillThere(prior.target_id)) continue;
+    const target = currentTarget.get(prior.target_id);
+    if (target === undefined || mentioned.has(target) || counted.has(target)) continue;
     assessments.push(rekey(prior, target));
     counted.add(target);
   }
@@ -202,31 +212,29 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   const previousItemTargets = new Set([...currentTarget.keys(),
     ...removed.map((item) => targetOf(item.kind, item.localId, item.unitIds))]);
   for (const prior of previousReview.assessments.filter((assessment) => !assessmentIsFinding(assessment))) {
-    const target = currentTarget.get(prior.target_id) ?? prior.target_id;
-    if (mentioned.has(target) || counted.has(target) || units.has(target)) continue;
+    const target = nowAt(prior.target_id);
+    if (target === null || mentioned.has(target) || counted.has(target) || units.has(target)) continue;
     let carry;
     if (byTarget.has(target)) carry = unchangedTarget(target);
-    else if (previousItemTargets.has(prior.target_id)) carry = false;
     else {
       const itemEvidence = prior.evidence_ids.filter((id) => previousItemTargets.has(id) || byTarget.has(id));
-      carry = itemEvidence.length > 0 && itemEvidence.every((id) => unchangedTarget(currentTarget.get(id) ?? id));
+      carry = itemEvidence.length > 0 && itemEvidence.every((id) => nowAt(id) !== null && unchangedTarget(nowAt(id)));
     }
     if (!carry) continue;
     assessments.push(rekey(prior, target));
     counted.add(target);
   }
   for (const id of previousReview.unassessed_ids) {
-    const target = currentTarget.get(id) ?? id;
-    if (mentioned.has(target) || unassessed.includes(target) || !stillThere(id)) continue;
+    const target = currentTarget.get(id);
+    if (target === undefined || mentioned.has(target) || unassessed.includes(target)) continue;
     unassessed.push(target);
   }
   const proposedRepairs = review.proposed_repairs.filter((repair) => place(repair.target_id).inScope);
   // A repair the earlier review asked for on an item that is still there stays asked for until the new review
   // reassesses that item, like its findings.
   for (const prior of previousReview.proposed_repairs) {
-    const target = currentTarget.get(prior.target_id) ?? prior.target_id;
-    if (mentioned.has(target) || proposedRepairs.some((repair) => repair.target_id === target)
-      || !stillThere(prior.target_id)) continue;
+    const target = currentTarget.get(prior.target_id);
+    if (target === undefined || mentioned.has(target) || proposedRepairs.some((repair) => repair.target_id === target)) continue;
     proposedRepairs.push({ ...prior, target_id: target });
   }
   const open = assessments.some(assessmentIsFinding) || unassessed.length > 0 || proposedRepairs.length > 0;
