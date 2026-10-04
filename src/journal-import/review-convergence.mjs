@@ -287,7 +287,10 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
     }
   }
   const open = assessments.some(assessmentIsFinding) || unassessed.length > 0 || proposedRepairs.length > 0;
-  // An incomplete review that names nothing it left can't be placed, so it stays incomplete.
+  // The status follows what the review names, whatever the reviewer claimed. A finished review that flags nothing
+  // leaves nothing to repair or withhold (only what review still flags is withheld), so a claimed repair_required
+  // that names nothing counts as clean. An incomplete review is different: it didn't finish, and one that names
+  // nothing it left can't vouch for what it skipped, so it stays incomplete.
   const unplacedIncomplete = review.status === "incomplete" && review.unassessed_ids.length === 0;
   const status = unplacedIncomplete || (review.status === "incomplete" && unassessed.length > 0) ? "incomplete"
     : open ? "repair_required" : "sufficient_for_stated_scope";

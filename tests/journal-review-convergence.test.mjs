@@ -532,6 +532,12 @@ test("scopeReviewAfterRepair: an incomplete review that names nothing it left st
   assert.deepEqual(result.review.unassessed_ids, []);
 });
 
+test("scopeReviewAfterRepair: a claimed repair_required that names nothing counts as clean, unlike an incomplete review", () => {
+  const claimedRepair = review({ assessments: [ok("a3", "later")], status: "repair_required" });
+  assert.equal(scope({ review: claimedRepair, extraction: story() }).review.status, "sufficient_for_stated_scope",
+    "a finished review that flags nothing leaves nothing to repair or withhold");
+});
+
 test("scopeReviewAfterRepair: an incomplete review whose unassessed IDs were all out of scope is no longer incomplete", () => {
   const repaired = story(edited(storyItems(), "assertions", "a3", { statement: "The keeper said the lamp would be lit by night." }));
   const clean = review({ assessments: [ok("a3", "later")], unassessed: ["a1"], status: "incomplete" });
