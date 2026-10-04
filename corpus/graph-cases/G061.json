@@ -1,0 +1,32 @@
+{
+  "id": "G061",
+  "title": "acceptance relief is not automatically love compatibility or trust",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "other_person_central": "yes",
+    "influence_domain": "ordinary_social",
+    "relational_check_status": "unknown",
+    "actionable_problem": "unknown",
+    "unresolved_inner_material": "unknown",
+    "attention_loop": "absent"
+  },
+  "expected": {
+    "primary": "ROUTE.RELATIONAL_REALITY_CHECK",
+    "requiredNuancePatterns": [
+      "Acceptance, attachment relief, attraction, romantic love, compatibility and trust",
+      "Support and mutual co-regulation"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "acceptance or nonjudgment",
+      "romantic love"
+    ]
+  }
+}

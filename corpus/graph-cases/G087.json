@@ -1,0 +1,35 @@
+{
+  "id": "G087",
+  "title": "paused safety status cannot re-enter through the titration ladder",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "deep_dialogue",
+    "unresolved_inner_material": "present",
+    "deep_work_readiness": "yes",
+    "ic_status": "paused_safety",
+    "ic_titration_needed": "yes",
+    "ic_reactivation_ready": "no",
+    "practice_challenge": "overwhelming",
+    "practice_challenge_domain": "inner_child",
+    "practice_reapproach_willingness": "unknown",
+    "medical_urgency": "none"
+  },
+  "expected": {
+    "primary": "ROUTE.GO_INWARD",
+    "selectedExcludes": [
+      "IC.CONTINUITY_TITRATION",
+      "IC.REACTIVATION",
+      "IC.DEEP_CHILD_DIALOGUE",
+      "IC.SCAFFOLDED_CHALLENGE"
+    ],
+    "requiredNuancePatterns": [],
+    "forbiddenOverclaimPatterns": []
+  }
+}

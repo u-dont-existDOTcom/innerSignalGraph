@@ -1,0 +1,37 @@
+{
+  "id": "G053",
+  "title": "brief shaking relief followed by recurrence is not durable resolution",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "body_capacity": "adequate",
+    "current_intent": "gentle_practice",
+    "freeze_pattern": "present",
+    "bypass_risk": "absent",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent",
+    "attention_loop": "absent"
+  },
+  "expected": {
+    "requiredNuancePatterns": [
+      "short-lived relief followed by recurrence"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "durable improvement",
+      "underlying cause"
+    ],
+    "selectedIncludes": [
+      "SOM.GENTLE_SHAKING"
+    ]
+  }
+}

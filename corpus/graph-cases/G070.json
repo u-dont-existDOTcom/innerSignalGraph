@@ -1,0 +1,28 @@
+{
+  "id": "G070",
+  "title": "inner-child not in play does not trigger continuity from low deep-work readiness",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "actionable_problem": "present",
+    "deep_work_readiness": "no",
+    "ic_status": "not_in_play",
+    "ic_titration_needed": "unknown"
+  },
+  "expected": {
+    "primary": "ROUTE.ACT_OUTWARD",
+    "selectedExcludes": [
+      "IC.CONTINUITY_TITRATION",
+      "IC.REACTIVATION",
+      "IC.SCAFFOLDED_CHALLENGE",
+      "IC.CHALLENGE_CHECK_IN"
+    ]
+  }
+}
