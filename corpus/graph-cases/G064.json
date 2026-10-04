@@ -1,0 +1,37 @@
+{
+  "id": "G064",
+  "title": "loneliness routes to outward connection as reparenting with diversified supports",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "actionable_problem": "present",
+    "unresolved_inner_material": "present",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral",
+    "inner_adult_access": "partial",
+    "support_available": "absent",
+    "social_connection_need": "present"
+  },
+  "expected": {
+    "primary": "ROUTE.ACT_OUTWARD",
+    "selectedIncludes": [
+      "IC.COMMUNITY_SUPPORT",
+      "IC.PROTECTOR_ACTION",
+      "ROUTE.GO_INWARD"
+    ],
+    "requiredNuancePatterns": [
+      "outward action and inner reparenting can be the same move",
+      "portfolio of imperfect supports"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "joining a group will cure loneliness"
+    ]
+  }
+}
