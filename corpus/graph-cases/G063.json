@@ -16,7 +16,8 @@
     "actionable_problem": "absent",
     "attention_loop": "present",
     "inward_attention_effect": "worsens",
-    "thinking_yield": "mixed"
+    "thinking_yield": "mixed",
+    "practice_challenge": "overwhelming"
   },
   "expected": {
     "primary": "ROUTE.EXTERNAL_EMBODIMENT",
@@ -29,7 +30,7 @@
     ],
     "requiredNuancePatterns": [
       "depth/pacing adjustment",
-      "observable reactivation condition"
+      "reactivation conditions must be observable"
     ],
     "forbiddenOverclaimPatterns": [
       "permanently abandoned"
