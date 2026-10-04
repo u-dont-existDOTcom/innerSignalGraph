@@ -1385,8 +1385,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             && value.critical_miss_count === 0 && value.qualifier_error_count === 0
             && !output.assessments.some((item) => item.outcome === "omitted"
               || item.outcome === "distorted" || item.finding_type !== "none");
-          // An attempt passes when its reference audit passes and its omission review leaves nothing open.
-          const attemptPasses = () => auditPasses(fidelityReview, score) && !reviewHasFindings(omissionReview);
+          // An attempt passes when its reference score passes and neither counted review leaves anything open, whatever
+          // status a review gives: a finding, unassessed ID or proposed repair on either keeps the repairs going.
+          const attemptPasses = () => auditPasses(fidelityReview, score) && !reviewHasFindings(fidelityReview)
+            && !reviewHasFindings(omissionReview);
           let calibrationPass = attemptPasses();
           fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results, null, omissionReview), blocker_code: null,
             fidelity: fidelityCycleDiagnostics(fidelityReview, score, calibrationPass) });

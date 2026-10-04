@@ -44,7 +44,7 @@ async function environment(t, hardest = true) {
 const unknownTime = { raw: null, from: null, to: null, precision: "unknown", timezone: null, basis: "unresolved", evidence_ids: [] };
 const review = (role, packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation, review_role: role,
   assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" });
-const handlersFor = ({ failFirstFidelityRepair = false, citeCarrier = true } = {}) => ({
+const handlersFor = ({ failFirstFidelityRepair = false, citeCarrier = true, fidelityStatus = "repair_required" } = {}) => ({
   reference_reader: (packet) => ({ schema_version: "1.0", source_only_first_pass: true,
     reference_items: [{ id: "reference:critical", statement: "Synthetic critical proposition.", required_qualifiers: [],
       anchors: [{ unit_id: packet.source_windows[0].unit_id, quote: packet.source_windows[0].text, occurrence: null }],
@@ -61,7 +61,7 @@ const handlersFor = ({ failFirstFidelityRepair = false, citeCarrier = true } = {
   // Like round 4's unit 2: the critical reference item is kept, carried by the saved assertion, and the same
   // assertion is called unsupported in the candidate sample.
   fidelity_auditor: (packet) => { const [node] = packet.imported_generation.assertions;
-    return { ...review("fidelity_auditor", packet), status: "repair_required", assessments: [
+    return { ...review("fidelity_auditor", packet), status: fidelityStatus, assessments: [
       { target_id: "reference:critical", outcome: "preserved", critical: true, finding_type: "none", explanation: "Kept.", evidence_ids: citeCarrier ? [node.id] : [] },
       { target_id: node.id, outcome: "distorted", critical: false, finding_type: "unsupported_claim", explanation: "Addition.", evidence_ids: [] }] }; }
 });
@@ -98,4 +98,14 @@ test("a standard fidelity repair that runs out of attempts keeps the unit's earl
   assert.equal(run.calibration_gate.preserved, 1);
   assert.equal(run.calibration_gate.withheld_assertions, 1);
   assert.equal(run.calibration_gate.failed_units, 0);
+});
+
+test("a fidelity audit that calls itself sufficient but flags a candidate still gets the repairs", async (t) => {
+  // The status says sufficient, but a0 is called unsupported while it carries the critical item. Passing here would
+  // withhold a0 without trying a repair first.
+  const { calls } = await runOnce(t, { hardest: true, fidelityStatus: "sufficient_for_stated_scope" });
+  const repairCycles = calls.filter((call) => call.role === "extractor" && call.packet.repair_request?.cycle)
+    .map((call) => call.packet.repair_request.cycle);
+  assert.ok(repairCycles.includes("fidelity-1"), "the first standard fidelity repair ran");
+  assert.ok(calls.some((call) => call.tier === "hardest" && call.role === "extractor"), "the hardest fidelity repair ran");
 });
