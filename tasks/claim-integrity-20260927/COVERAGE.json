@@ -123,8 +123,9 @@
       "decision": "Unchanged. Owner-only authoring tooling that audits the owner's guides against the graph; not a user-facing surface. Carrying review checks there would be a separate owner decision."
     },
     {
-      "surface": "Private journal import role instructions (open pull request #94)",
-      "decision": "Not on main. Its extraction, pattern, and review roles read the person's own journal and should be assessed for these checks when that pull request is reviewed."
+      "surface": "Journal import roles (src/journal-import/provider-port-roles/*.md)",
+      "decision": "Unchanged. They turn the person's own journal into source-anchored structured items, not replies: every item is anchored to an exact quote, and the omission checker, fidelity auditor, and pattern reviewer already check what is preserved, omitted, or distorted and narrow unsupported generalization.",
+      "anchor": { "file": "src/journal-import/provider-port-roles/extractor.md", "text": "Preserve original language in quotes, source spelling, speaker, subject, negation, uncertainty, authored/event time and narrative mode." }
     },
     {
       "surface": "Development roles (src/dev/*) and repository documents (AGENTS.md, AUTOPILOT.md, docs/, tasks/, THERAPY-LESSONS)",

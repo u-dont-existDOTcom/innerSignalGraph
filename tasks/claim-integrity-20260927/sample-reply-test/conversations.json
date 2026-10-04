@@ -1,0 +1,62 @@
+[
+ {
+  "id": "01",
+  "tests": "reflect feelings: scope words",
+  "conversation": "User: My sister cancelled our dinner again tonight. Third time this month.\nAssistant: That sounds frustrating, especially when it keeps happening. How are you feeling about it?\nUser: Annoyed, mostly. A little sad too. I'd been looking forward to it."
+ },
+ {
+  "id": "02",
+  "tests": "reflect feelings: another person's motives",
+  "conversation": "User: My dad forgot my birthday yesterday. He called this morning and said he'd been slammed at work. I told him it was fine."
+ },
+ {
+  "id": "03",
+  "tests": "correction of a reflection",
+  "conversation": "User: I spent the whole weekend organizing my friend's surprise party and nobody even said thanks.\nAssistant: It sounds like you felt abandoned by your friends after all that work.\nUser: No, not abandoned. I'm just tired of always being the one who plans everything."
+ },
+ {
+  "id": "04",
+  "tests": "absence claim: mentioned earlier",
+  "conversation": "User: I've been sleeping badly. Sam keeps snoring and I end up on the couch.\nAssistant: That sounds exhausting. How long has this been going on?\nUser: A couple of weeks. Anyway, work is fine, nothing new there.\nAssistant: Glad work is steady. What would help you sleep better right now?\nUser: Wait, did I tell you who I live with?"
+ },
+ {
+  "id": "05",
+  "tests": "absence claim: partial window",
+  "conversation": "[Only today's messages are visible here. Earlier conversations with this person, on other days, are not shown.]\n\nUser: Work has been rough this week. My manager moved my deadline up by three days.\nAssistant: That's a lot of pressure on short notice. How are you holding up?\nUser: Tired. I keep thinking about family stuff too. Have I ever told you about my grandmother?"
+ },
+ {
+  "id": "06",
+  "tests": "remembered quote: the person's own words",
+  "conversation": "User: Sometimes I feel like I'm everyone's backup plan. Like they only call when their first choice falls through.\nAssistant: That's a painful feeling to carry. When did you first notice it?\nUser: Probably high school. Anyway, can you remind me what I said a minute ago about being a backup? I want to write it down exactly."
+ },
+ {
+  "id": "07",
+  "tests": "remembered quote: reported words of someone else",
+  "conversation": "User: My mom used to tell people, \"She was such an easy baby, she never cried.\" I think about that a lot.\nAssistant: It sounds like that phrase has stayed with you. What comes up when you think about it?\nUser: I don't know. What exactly did I say she used to tell people?"
+ },
+ {
+  "id": "08",
+  "tests": "estimate: derived number",
+  "conversation": "User: I've been journaling most days for about a month. Maybe 20 entries so far. How many is that per week, roughly?"
+ },
+ {
+  "id": "09",
+  "tests": "estimate: count and duration without timestamps",
+  "conversation": "User: I ran into Daniel, my ex, at the grocery store this morning.\nAssistant: How was that for you?\nUser: Weird. Daniel looked really happy. I don't know why that bothered me.\nAssistant: It makes sense that it stirred something up. What part bothered you most?\nUser: That Daniel seems fine and I'm still stuck. Ugh, how many times have I brought him up today? And how long have we been talking about this?"
+ },
+ {
+  "id": "10",
+  "tests": "contradiction across turns",
+  "conversation": "User: How long does it usually take for a new habit to stick? I'm trying to build a morning journaling habit.\nAssistant: A common figure is about 21 days.\nUser: Wait, I read somewhere it's more like two months. Which is it?"
+ },
+ {
+  "id": "11",
+  "tests": "neutral: a small win",
+  "conversation": "User: I finally called the dentist I'd been avoiding for like a year. Appointment's next Tuesday."
+ },
+ {
+  "id": "12",
+  "tests": "neutral: request for an inner-child exercise",
+  "conversation": "User: Can we do a short inner child exercise? I'm feeling small today and I don't really know why."
+ }
+]
