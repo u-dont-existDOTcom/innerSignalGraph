@@ -15,15 +15,12 @@
     "unresolved_inner_material": "absent",
     "attention_loop": "absent",
     "inward_attention_effect": "neutral",
-    "inner_adult_access": "partial",
+    "inner_adult_access": "available",
     "support_available": "present",
     "social_connection_need": "present"
   },
   "expected": {
     "primary": "IC.COMMUNITY_SUPPORT",
-    "selectedIncludes": [
-      "IC.ADULT_APPRENTICE"
-    ],
     "requiredNuancePatterns": [
       "portfolio of imperfect supports",
       "Human beings can need both inner adult capacity and real reciprocal attachment"
