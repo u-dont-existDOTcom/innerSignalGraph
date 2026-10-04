@@ -1571,6 +1571,17 @@ test("scopeReviewAfterRepair: an earlier unit-level omission stays open while th
     .explanation, "earlier verdict on u2.");
 });
 
+test("scopeReviewAfterRepair: a unit-level finding counts when the repair changed only the unit's coverage record", () => {
+  const items = storyItems();
+  const relabelled = extraction({ ...items, unitIds: [U1, U2], coverage: coverageFor([U1, U2], items.assertions)
+    .map((record) => record.unit_id === U2 ? { ...record, disposition: "needs_review", reason: "Part of the page is hard to read." } : record) });
+  const earlier = review({ assessments: [ok("u1", "earlier"), ok("u2", "earlier")] });
+  const later = review({ assessments: [flag("u1", "later"), flag("u2", "later")] });
+  const result = scope({ review: later, previousReview: earlier, extraction: relabelled });
+  assert.deepEqual(explanations(result), { u1: "earlier verdict on u1.", u2: "later verdict on u2." });
+  assert.equal(result.review.status, "repair_required");
+});
+
 test("validateExtractionReferences: a local ID may not equal an assigned unit ID", () => {
   assert.throws(() => story(renamed(storyItems(), "episodes", "ep-storm", U2)), /LOCAL_ID_IS_UNIT_ID/);
   assert.throws(() => story(renamed(storyItems(), "assertions", "a4", U1)), /LOCAL_ID_IS_UNIT_ID/);

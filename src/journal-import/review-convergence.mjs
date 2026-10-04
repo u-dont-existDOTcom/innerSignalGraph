@@ -135,10 +135,15 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   const { items, removed } = extractionItemChanges(previousExtraction, extraction);
   const earlier = reviewFindingTargets(previousReview);
   const units = new Set(unitIds);
-  // A unit lost an item when one anchored in it was removed, or rewritten so that it no longer is.
-  const unitsWithRemovals = new Set([...removed.flatMap((item) => item.unitIds),
+  // A unit changed when it lost an item (one anchored in it was removed, or rewritten so that it no longer is), or
+  // when its coverage record changed: a different disposition or reason.
+  const unitsChanged = new Set([...removed.flatMap((item) => item.unitIds),
     ...items.filter((item) => item.changed).flatMap((item) => item.previousUnitIds
       .filter((unitId) => !item.unitIds.includes(unitId)))]);
+  const coverageOf = (value) => new Map((value.coverage ?? []).map((record) => [record.unit_id,
+    canonicalJson({ disposition: record.disposition, reason: record.reason ?? null })]));
+  const coverageBefore = coverageOf(previousExtraction), coverageAfter = coverageOf(extraction);
+  for (const unitId of units) if (coverageBefore.get(unitId) !== coverageAfter.get(unitId)) unitsChanged.add(unitId);
   const byTarget = new Map();
   for (const item of items) {
     const target = targetOf(item.kind, item.localId, item.unitIds);
@@ -167,7 +172,7 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   const place = (target) => {
     if (placement.has(target)) return placement.get(target);
     let value;
-    if (units.has(target)) value = { inScope: earlier.has(target) || unitsWithRemovals.has(target), carriedFrom: target };
+    if (units.has(target)) value = { inScope: earlier.has(target) || unitsChanged.has(target), carriedFrom: target };
     else if (byTarget.has(target)) {
       const entries = byTarget.get(target);
       const inScope = earlier.has(target) || entries.some((entry) => entry.changed
