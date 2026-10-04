@@ -7,13 +7,13 @@ source_id: AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
 guide_id: owner-amendments
 heading: AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
 source_role: owner-approved-extension
-source_hash: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
+source_hash: 1e66de8978fae366e0b1a95e444cb9cfcc020570355175caa38bfae66df7529b
 section_hash: 766b82344b2a2cea0d55ad0d72508c162132b9f11e65630a5eb8bf2bd61a2a1d
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
   - ROUTE.GO_INWARD
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
 ---
 
 # AMEND.SOM.EARLY_INNER_CHILD_PARALLEL

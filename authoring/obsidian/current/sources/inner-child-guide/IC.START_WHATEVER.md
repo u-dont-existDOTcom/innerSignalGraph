@@ -7,21 +7,21 @@ source_id: IC.START_WHATEVER
 guide_id: inner-child-guide
 heading: Start With Whatever Showed Up
 source_role: primary-framework
-source_hash: 3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb
+source_hash: 08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac
 section_hash: 26c121459967799e1c277672dbbdab487c4de20dfddd09f99ed8b0af66050ae6
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
 ---
 
 # Start With Whatever Showed Up
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-03-r3.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r1.txt`
 
-Locator: Lines 417–436
+Locator: Lines 423–442
 
 ```text
 Start With Whatever Showed Up

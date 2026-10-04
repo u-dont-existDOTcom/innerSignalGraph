@@ -21,14 +21,17 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
   - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
+  - AMEND.IC.CONTINUITY_TITRATION
+  - AMEND.IC.COMMUNITY_REPARENTING
 regression_refs:
   - G013
   - G014
   - G033
   - G060
-base_record_sha256: b63626c2c67d82dbf821fa306dff28ddf7cd3a311c8aae138b6ca9313642496c
-base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+  - G064
+base_record_sha256: 4b93745024524b11e37d2ec4a114d77e6ccda5443e9d346b0680dffbff6f4d0b
+base_graph_sha256: 4215d3017d07c259c83dbf53cc440124af89e204119c6068e6b0a9dd6bbb6f53
+projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
 ---
 
 # Act on the concrete problem
@@ -92,7 +95,8 @@ projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc
       "Outward action is judged by its function and consequences, not by courage or exposure intensity alone.",
       "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
       "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
-      "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation."
+      "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
+      "Outward action and inner reparenting can be the same move when the adult action meets the younger self's actual need; acting outward does not automatically close the inner therapeutic task."
     ]
   },
   "questionPolicy": {
@@ -106,7 +110,8 @@ projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc
     "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
     "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion.",
     "For deliberate social or relationship practice, name the life-serving purpose first—connection, curiosity, communication, skill, play or another chosen value. If the action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation.",
-    "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism."
+    "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
+    "When the outward step genuinely supplies care, protection, guidance, or connection, name that adult function when useful: asking a friend for company, contacting a service, joining a community, eating, securing belongings, or handling logistics can be reparenting in action rather than a departure from inner work."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -127,3 +132,7 @@ projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
 
 [[current/governance/amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION]]
+
+[[current/governance/amendments/AMEND.IC.CONTINUITY_TITRATION]]
+
+[[current/governance/amendments/AMEND.IC.COMMUNITY_REPARENTING]]

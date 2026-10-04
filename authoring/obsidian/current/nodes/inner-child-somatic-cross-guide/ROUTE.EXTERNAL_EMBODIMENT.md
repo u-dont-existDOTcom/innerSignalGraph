@@ -20,11 +20,15 @@ source_refs:
   - SOM.MAP_NOT_LADDER
   - SOM.SE
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
+  - AMEND.IC.CONTINUITY_TITRATION
+  - AMEND.IC.SCAFFOLDED_CHALLENGE
 regression_refs:
   - G032
-base_record_sha256: 7bfec7046e592060c89d6493621deb16c87b13c542afe3a7594b6200bafcd9f1
-base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+  - G062
+  - G063
+base_record_sha256: 334e45e60b9c2538f8b2763ad6005b3448b2340f7191be6e068f3ce1d95c65d6
+base_graph_sha256: 4215d3017d07c259c83dbf53cc440124af89e204119c6068e6b0a9dd6bbb6f53
+projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
 ---
 
 # Shift from inward monitoring to external embodiment
@@ -73,7 +77,8 @@ projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc
   },
   "avoid": [
     "Do not repeatedly body-scan to test whether the external activity is working.",
-    "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now."
+    "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now.",
+    "Do not turn temporary external orientation into a permanent ban on InnerSignal or reparenting when the evidence only supports reducing depth or representation."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -88,13 +93,16 @@ projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc
       "Do not claim that external activity proves the symptoms are psychological or that exercise is sufficient treatment for every cause of derealization or panic."
     ],
     "requiredNuance": [
-      "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other."
+      "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other.",
+      "External orientation is a depth/pacing adjustment, not an identity change from InnerSignal to 'inner-not-signal'; the person may still decline the modality, and safety gates still control re-entry."
     ]
   },
   "recommendations": [
     "Prefer eyes-open orientation and ordinary embodied activity that requires contact with the environment: walking, gym, sport, swimming, cycling, chores, social contact, or another tolerable activity.",
     "Treat this as embodiment without symptom-scanning: attention can be in movement, coordination, effort, surroundings, and ordinary life rather than repeatedly checking the internal state.",
-    "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work."
+    "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work.",
+    "Reduce the destabilizing form of inward attention without discarding the inner relationship. When permitted, keep the smallest present-focused Nurturer/Protector/Guide stance or let an ordinary adult action carry that function while attention returns outward.",
+    "If even minimal inner contact must pause, preserve an observable reactivation condition and retry first at a gentler level once orientation, stopping/return capacity, or functioning has recovered."
   ],
   "successSignals": [
     "Derealization, panic, or hypermonitoring is no longer being amplified by repeated inward checking.",
@@ -113,3 +121,7 @@ projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc
 [[current/sources/somatic-sequencing-guide/SOM.SE]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
+
+[[current/governance/amendments/AMEND.IC.CONTINUITY_TITRATION]]
+
+[[current/governance/amendments/AMEND.IC.SCAFFOLDED_CHALLENGE]]

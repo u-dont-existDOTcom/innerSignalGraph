@@ -7,14 +7,14 @@ source_id: AMEND.CROSS.LITERATURE_ACTION_REVIEW
 guide_id: owner-amendments
 heading: AMEND.CROSS.LITERATURE_ACTION_REVIEW
 source_role: owner-approved-extension
-source_hash: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
+source_hash: 1e66de8978fae366e0b1a95e444cb9cfcc020570355175caa38bfae66df7529b
 section_hash: 888ddef39f6952a4bc6762b597d3769475841d5bc418644f8782e6bfda960ba0
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
   - IC.PROTECTOR_ACTION
   - ROUTE.ACT_OUTWARD
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
 ---
 
 # AMEND.CROSS.LITERATURE_ACTION_REVIEW

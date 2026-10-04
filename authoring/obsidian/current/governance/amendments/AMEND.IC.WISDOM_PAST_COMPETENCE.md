@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_PAST_COMPETENCE
 status: owner-approved
 domain: inner-child
-base_record_sha256: f19998accc69ea2400fec39af1bed2e8be1e204142179394fda98da95d93f038
-source_file_sha256: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+base_record_sha256: 8db55ff19a3067ddc5303e72dff844c6e25cfac2dd2742442eb7a016a28e93ef
+source_file_sha256: 1e66de8978fae366e0b1a95e444cb9cfcc020570355175caa38bfae66df7529b
+projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
 ---
 
 # AMEND.IC.WISDOM_PAST_COMPETENCE
@@ -17,13 +17,13 @@ projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc
 
 ```json
 {
-  "approvedAt": "2026-10-03",
+  "approvedAt": "2026-10-04",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_PAST_COMPETENCE",
     "status": "owner-approved",
     "text": "Invite a real occasion of meeting difficulty in a way the person respects. Retrieve the actual action and enabling conditions, and one part available now. The past occasion need not be more difficult. Do not invent a memory, pressure recall, or use prior competence to deny current exhaustion, illness, resource limits or need for help. A small specific success can be enough. Optional anchors may be identified during clearer moments using existing private continuity; no new memory store is implied. Past capacity is evidence to draw upon, not a guarantee or a demand."
   },
-  "version": "2026-10-03-certainty-authenticity-r3"
+  "version": "2026-10-04-continuity-scaffolding-r1"
 }
 ```

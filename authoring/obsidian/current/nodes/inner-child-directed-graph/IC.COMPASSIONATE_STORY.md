@@ -20,8 +20,8 @@ source_refs:
   - AMEND.IC.WISDOM_SOURCES
 regression_refs: []
 base_record_sha256: ace8b0fb16db52bfa349fe3b33ff2ad72ae8d6ef9ff45838e7900f921378a5b9
-base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
-projection_input_sha256: 472e89ed8e6652c8ac06555d5735544ebd7de75353a6b5421092fcc0f901df75
+base_graph_sha256: e9856521bef7b4cdc99119361292128385607971644ed075fd48d520522cfc3d
+projection_input_sha256: 04d7283ac4e6fe1785a7c608486553be179beb204d2ff4ff66b8917c40f8b8af
 ---
 
 # Give a difficult memory compassionate story punctuation
