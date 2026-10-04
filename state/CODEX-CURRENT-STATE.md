@@ -3,6 +3,13 @@
 Updated: 2026-10-04
 
 
+## Review conversations no longer block merges (2026-10-04)
+
+- **Owner outcome:** Stop asking the owner to mark review comments resolved (owner question 2: A, 2026-10-04 01:55 UTC). GitHub refused the agent's change to branch protection, so the owner unticked "Require conversation resolution before merging" for `main` himself.
+- **Readback (GitHub REST API, 2026-10-04T04:30:29Z):** `main` no longer requires conversation resolution. Everything else is unchanged on both branches: the three strict required checks, administrator enforcement, zero required approvals, linear history, and no force pushes or deletions. `stable` still requires conversation resolution. `.github/codex-repository.json` records the readback, and the repository audit and its test pin it.
+- **Replacement check:** `AGENTS.md` (Workflow) says that before a merge the pull request records that Codex's review of the final commit found nothing, that each earlier review comment has a fix or a written reason, and that every required check passed on the final commit.
+- **Next:** If the owner also unticks the box for `stable`, read it back and update the record the same way. Promotion to `stable` stays owner-gated.
+
 ## InnerSignal continuity, scaffolded challenge, and community support (2026-10-04)
 
 - **Owner outcome:** Repair the routing failure exposed by a new-client test without committing private client facts. Preserve inner-child reparenting as an ongoing relationship when the person wants the framework; reduce depth before abandoning wanted work; treat a full tolerance pause as last resort with explicit re-entry conditions; distinguish workable challenge from harm; let real-world connection/actions serve adult care functions; diversify human support; and prevent unusual/medical side details from hijacking the primary therapeutic task unless immediate safety or the next step changes.

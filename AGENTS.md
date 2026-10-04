@@ -38,6 +38,8 @@ Provider checks are explicit opt-in and are not hermetic CI.
 
 Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. The GitHub repository is public and the publication transition is complete. Public visibility does not grant release or product-policy authority; hosted controls remain claims only when supported by current GitHub API/settings evidence. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
 
+Merging: `main` does not require resolved review conversations (owner, 2026-10-04, question 2: A), so nobody has to mark review comments resolved. Before merging, write in the pull request that Codex's review of the final commit found nothing, that each earlier review comment has a fix or a written reason, and that every required check passed on the final commit. Merge only when all three hold.
+
 For Obsidian authoring, `guide-graphs/candidates/*.graph.json` and the current guide/source family remain authority. `authoring/obsidian/current/`, Bases, Canvas, Mermaid, links, and proposal previews are non-authoritative. Semantic approval remains in the Guide Packet owner-decision artifact. Reconciliation requires an exact approved packet and hash on a task branch and never installs or writes to `stable`.
 
 Integrity maintenance: any legitimate edit to `README.md`, `AGENTS.md`, `docs/INDEX.md`, `SECURITY.md`, or `CONTRIBUTING.md`—including Task 9 public/completed reconciliation—must update the reviewed SHA-256 bindings in `scripts/audit-repository.mjs` in the same reviewed change.

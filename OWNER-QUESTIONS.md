@@ -1,5 +1,7 @@
 # Owner questions
 
+Current owner questions, with recommendations, are on the owner's private page "InnerSignal owner questions", which the working session keeps up to date. This file keeps the record of question 1.
+
 ## 1. Approve the proposed therapy claim-integrity wording
 
 Status: OPEN. Source: Universal suggestion `suggested-fixes/innerSignalGraph/2026-09-30-claim-integrity-checks.md` (2026-09-30, explicitly an owner request), pointing to the separate claim-integrity proposal, PR #96. This question does not block the journal Claude worker fixes and does not authorize therapy prompt edits in this branch.
