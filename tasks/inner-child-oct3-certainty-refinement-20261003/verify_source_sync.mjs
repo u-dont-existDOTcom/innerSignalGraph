@@ -19,24 +19,24 @@ export async function verifyOct3SourceSync({ projectRoot = root, candidateText }
 
   assert.equal(hash(baselineRaw), receipt.ownerBaseline.rawCapture.sha256, "Oct 3 owner raw capture hash mismatch");
   assert.equal(hash(baselineText), receipt.ownerBaseline.operationalText.sha256, "Oct 3 synchronized baseline text hash mismatch");
-  assert.equal(hash(activeRaw), receipt.activeRevision.rawCapture.sha256, "Oct 3 r3 raw capture hash mismatch");
-  assert.equal(hash(activeText), receipt.activeRevision.operationalText.sha256, "Oct 3 r3 operational guide text hash mismatch");
+  assert.equal(hash(activeRaw), receipt.activeRevision.rawCapture.sha256, "Oct 3 r4 raw capture hash mismatch");
+  assert.equal(hash(activeText), receipt.activeRevision.operationalText.sha256, "Oct 3 r4 operational guide text hash mismatch");
   assert.ok(baselineRaw.toString("utf8").startsWith('<div contenteditable="true"'), "Owner baseline no longer begins with the captured Substack editor root");
   assert.ok(activeRaw.toString("utf8").startsWith('<div contenteditable="true"'), "Active revision no longer begins with the Substack editor root");
 
   const manifest = JSON.parse(await read("guides/manifest.json"));
   const current = manifest.sources.find(source => source.id === "inner-child-guide");
-  const r3IsCurrent = current
+  const readerFacingIsCurrent = current
     && `guides/${current.file}` === receipt.activeRevision.operationalText.path
     && current.sha256 === receipt.activeRevision.operationalText.sha256
     && current.version === receipt.activeRevision.version;
-  const r3IsHistorical = manifest.sourceHistory.some(item =>
+  const readerFacingIsHistorical = manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide"
     && item.version === receipt.activeRevision.version
     && item.file === path.basename(receipt.activeRevision.operationalText.path)
     && item.sha256 === receipt.activeRevision.operationalText.sha256
   );
-  assert.ok(r3IsCurrent || r3IsHistorical, "Exact Oct 3 r3 text must remain current or pinned in source history");
+  assert.ok(readerFacingIsCurrent || readerFacingIsHistorical, "Exact Oct 3 r4 reader-facing text must remain current or pinned in source history");
   assert.ok(manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide"
     && item.version === "owner-supplied-2026-10-03-before-current-edit"
