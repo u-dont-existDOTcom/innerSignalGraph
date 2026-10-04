@@ -112,6 +112,9 @@ export function extractionItemChanges(previous, current) {
 export function scopeReviewAfterRepair({ review, previousReview, previousExtraction, extraction, unitIds,
   targetOf = localTarget }) {
   if (!review || !previousReview || !previousExtraction || !extraction) return { review: review ?? null, scope: null };
+  // An earlier review that stopped without naming what it left can't vouch for anything it didn't mention, so the
+  // new review counts whole until a whole review has covered the unit.
+  if (previousReview.status === "incomplete" && previousReview.unassessed_ids.length === 0) return { review, scope: null };
   const { items, removed } = extractionItemChanges(previousExtraction, extraction);
   const earlier = reviewFindingTargets(previousReview);
   const units = new Set(unitIds);

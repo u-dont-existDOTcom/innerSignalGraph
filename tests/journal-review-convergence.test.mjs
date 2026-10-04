@@ -1408,3 +1408,12 @@ test("reviewAfterWithholding: a reference item the review still proposes to repa
   assert.equal(score.critical_miss_count, 1);
   assert.equal(referenceScorePasses(score), false);
 });
+
+test("scopeReviewAfterRepair: after an earlier review that stopped without naming what it left, the new review counts whole", () => {
+  const earlier = review({ assessments: [ok("a1", "earlier")], status: "incomplete" });
+  const later = review({ assessments: [flag("a3", "later")] }); // a3 unchanged and never assessed before
+  const result = scope({ review: later, previousReview: earlier, extraction: story() });
+  assert.equal(result.scope, null);
+  assert.equal(verdictOn(result, "a3").explanation, "later verdict on a3.");
+  assert.equal(result.review.status, "repair_required");
+});
