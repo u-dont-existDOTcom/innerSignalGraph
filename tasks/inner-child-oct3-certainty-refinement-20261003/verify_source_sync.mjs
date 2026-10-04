@@ -26,9 +26,17 @@ export async function verifyOct3SourceSync({ projectRoot = root, candidateText }
 
   const manifest = JSON.parse(await read("guides/manifest.json"));
   const current = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(`guides/${current.file}`, receipt.activeRevision.operationalText.path);
-  assert.equal(current.sha256, receipt.activeRevision.operationalText.sha256);
-  assert.equal(current.version, receipt.activeRevision.version);
+  const r3IsCurrent = current
+    && `guides/${current.file}` === receipt.activeRevision.operationalText.path
+    && current.sha256 === receipt.activeRevision.operationalText.sha256
+    && current.version === receipt.activeRevision.version;
+  const r3IsHistorical = manifest.sourceHistory.some(item =>
+    item.id === "inner-child-guide"
+    && item.version === receipt.activeRevision.version
+    && item.file === path.basename(receipt.activeRevision.operationalText.path)
+    && item.sha256 === receipt.activeRevision.operationalText.sha256
+  );
+  assert.ok(r3IsCurrent || r3IsHistorical, "Exact Oct 3 r3 text must remain current or pinned in source history");
   assert.ok(manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide"
     && item.version === "owner-supplied-2026-10-03-before-current-edit"
