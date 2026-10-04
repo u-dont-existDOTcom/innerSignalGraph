@@ -21,14 +21,19 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
   - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
+  - AMEND.IC.CONTINUITY_TITRATION
+  - AMEND.IC.COMMUNITY_REPARENTING
 regression_refs:
   - G013
   - G014
   - G033
   - G060
-base_record_sha256: b63626c2c67d82dbf821fa306dff28ddf7cd3a311c8aae138b6ca9313642496c
-base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+  - G064
+  - G066
+  - G070
+base_record_sha256: decb951fb693a2ee2922ef7f5af4d5ae418994911841fb1411a00ad392929d23
+base_graph_sha256: f1bea04c4bb68ab1421a367d01dcc78009bcd00e338e401deba09c8a9319550b
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Act on the concrete problem
@@ -92,7 +97,8 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
       "Outward action is judged by its function and consequences, not by courage or exposure intensity alone.",
       "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
       "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
-      "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation."
+      "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
+      "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn."
     ]
   },
   "questionPolicy": {
@@ -106,7 +112,8 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
     "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
     "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion.",
     "For deliberate social or relationship practice, name the life-serving purpose first—connection, curiosity, communication, skill, play or another chosen value. If the action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation.",
-    "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism."
+    "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
+    "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -127,3 +134,7 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
 
 [[current/governance/amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION]]
+
+[[current/governance/amendments/AMEND.IC.CONTINUITY_TITRATION]]
+
+[[current/governance/amendments/AMEND.IC.COMMUNITY_REPARENTING]]

@@ -7,20 +7,24 @@ source_id: IC.SESSION_CLOSURE
 guide_id: inner-child-guide
 heading: Close the Session and Return to Life
 source_role: primary-framework
-source_hash: 1ae4140f0c6acb900ff18ef961ca2e7a136c0812678e88e64f02dc4268ca08cb
+source_hash: f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e
 section_hash: 9ce3d1ce6c041a758765ef20529180bdbdec835305c1fbff6c15dfed5979a330
 locator_kind: text-lines
-cited_by_node_ids: []
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+cited_by_node_ids:
+  - IC.CHALLENGE_CHECK_IN
+  - IC.CONTINUITY_TITRATION
+  - IC.REACTIVATION
+  - IC.SCAFFOLDED_CHALLENGE
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Close the Session and Return to Life
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-03-r4.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r3.txt`
 
-Locator: Lines 715–730
+Locator: Lines 733–748
 
 ```text
 Close the Session and Return to Life

@@ -7,22 +7,23 @@ source_id: IC.RELATIONSHIP
 guide_id: inner-child-guide
 heading: Borrowed Adulthood in Relationship
 source_role: primary-framework
-source_hash: 1ae4140f0c6acb900ff18ef961ca2e7a136c0812678e88e64f02dc4268ca08cb
+source_hash: f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e
 section_hash: 3e875727d3a834b7832fbd63c5d0c790c0f651699148a38959bba96d37f329b5
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+  - ROUTE.COMMUNITY_SUPPORT
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Borrowed Adulthood in Relationship
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-03-r4.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r3.txt`
 
-Locator: Lines 921–952
+Locator: Lines 941–972
 
 ```text
 Borrowed Adulthood in Relationship

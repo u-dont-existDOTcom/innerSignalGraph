@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.DEEP_LOVE_TO_CHILD
 status: owner-approved
 domain: inner-child
-base_record_sha256: c57b731a936a799b8d4a9a52a05414622c01d2c935a41fe02a4a83bab662d4d8
-source_file_sha256: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+base_record_sha256: d181638976207cee33d23e89a4394bc5f5fe25e6142c41f5c7a0dd4306367feb
+source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # AMEND.IC.DEEP_LOVE_TO_CHILD
@@ -17,13 +17,13 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
 
 ```json
 {
-  "approvedAt": "2026-10-03",
+  "approvedAt": "2026-10-04",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.DEEP_LOVE_TO_CHILD",
     "status": "owner-approved",
     "text": "Classify deep or transpersonal love by actual experience and present access, not by theism, religion, doctrine, or identity. When profound love is genuinely accessible, contact that real love first and then see whether the younger self can be included in it—the feast must reach the hungry child. If the child recoils, goes numb, distrusts the source, or cannot receive it, do not intensify the spiritual exercise; hear the guard or credibility problem and continue Nurturer or Protector repair without forcing transfer."
   },
-  "version": "2026-10-03-certainty-authenticity-r3"
+  "version": "2026-10-04-continuity-scaffolding-r2"
 }
 ```

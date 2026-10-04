@@ -31,9 +31,10 @@ regression_refs:
   - G052
   - G057
   - G059
+  - G069
 base_record_sha256: ef132738544df05f1718ef081eff9550d67e68a541346ddf926c5409936b3cc6
-base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Hear the protective response without automatically obeying it

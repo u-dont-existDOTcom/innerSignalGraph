@@ -3201,6 +3201,371 @@
         ]
       },
       "defaultQuestion": ""
+    },
+    {
+      "id": "IC.CONTINUITY_TITRATION",
+      "title": "Preserve the inner relationship while reducing depth",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "ic_status",
+            "op": "in",
+            "value": [
+              "active",
+              "stepped_down"
+            ]
+          },
+          {
+            "field": "ic_titration_needed",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "medical_urgency",
+            "op": "eq",
+            "value": "urgent"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "intent",
+              "imminent"
+            ]
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.CONTINUITY_TITRATION",
+        "IC.BEFORE_DEEP",
+        "IC.THREE_FUNCTIONS",
+        "IC.SESSION_CLOSURE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "If stopping, return, or orientation is currently compromised, stop the inner exercise and orient outward first. Do not trial another inward technique until those capacities recover.",
+        "If inward attention itself is worsening things, step outward first: an ordinary adult action, real human support, or a brief eyes-open acknowledgment may preserve care without demanding more inward attention.",
+        "When the person still wants inner-child work but depth is too much, reduce depth rather than abandoning the relationship. A full tolerance pause is last-resort; a safety gate may require a pause regardless.",
+        "Record the pause reason, last tolerated level, and an observable reactivation condition that includes the person's agreement. Do not surface continuity language during an acute safety turn.",
+        "When status is paused_tolerance or paused_safety, do not run a child-facing titration ladder. Preserve the pause until the separate reactivation gate clears."
+      ],
+      "avoid": [
+        "Do not treat a person's refusal of inner-child framing as a tolerance problem, a pause, or something to reactivate.",
+        "Do not trial imagery, witnessing, or symbolic contact when the capacity currently failing is inward attention, orientation, stopping, or return.",
+        "Do not turn a temporary external-orientation decision into a permanent ban on reparenting when the person still wants the framework.",
+        "Do not use witnessing, imagery, symbolic contact, or other child-facing contact while status remains paused_tolerance or paused_safety."
+      ],
+      "successSignals": [
+        "The person retains choice and ordinary functioning while care/protection continues at a tolerable level or a safety/tolerance pause is clearly bounded.",
+        "Any later re-entry is consensual and begins at or below the last tolerated level."
+      ],
+      "tags": [
+        "inner-signal-continuity",
+        "titration",
+        "reparenting",
+        "reactivation"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that needing less depth means the person has failed reparenting or that InnerSignal should be permanently abandoned.",
+          "Do not label unrelated practical work as reparenting after the person has declined the frame."
+        ],
+        "requiredNuance": [
+          "A refusal is not a pause: when inner-child framing is declined, stop using that framing and do not create a reactivation condition.",
+          "For tolerance or safety pauses, continuity state is preserved without being surfaced during acute safety work; re-entry requires agreement and begins at or below the last tolerated level."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.SCAFFOLDED_CHALLENGE",
+      "title": "Titrate difficult material instead of equating distress with harm",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 89,
+      "activation": {
+        "all": [
+          {
+            "field": "practice_challenge",
+            "op": "eq",
+            "value": "workable"
+          },
+          {
+            "field": "practice_challenge_domain",
+            "op": "eq",
+            "value": "inner_child"
+          },
+          {
+            "field": "practice_reapproach_willingness",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "deep_dialogue",
+              "memory_processing",
+              "hypnosis"
+            ]
+          },
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "safe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "oriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "inward_attention_effect",
+            "op": "eq",
+            "value": "worsens"
+          },
+          {
+            "field": "ic_status",
+            "op": "eq",
+            "value": "declined"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SCAFFOLDED_CHALLENGE",
+        "IC.REGULATION_BEFORE_DIALOGUE",
+        "IC.SESSION_CLOSURE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Treat difficult material as calibration information, not automatic evidence of harm or progress. Workable requires intact orientation/stopping/return, willingness to re-approach, a non-aversive appraisal, and recovery/later functioning that have not meaningfully deteriorated.",
+        "Pendulate between challenge and resource. Adjust one dimension at a time when calibrating, or several at once if distress is climbing: duration, depth, timing, imagery intensity, representation, eyes-open/external anchoring, isolation, and support.",
+        "Re-approach only when the person wants to and both their appraisal and observed recovery/functioning support it.",
+        "Dreams and imagery may be explored for present meaning, feelings, needs, or capacities; they are not evidence of historical events and must not be used to confirm or reconstruct memories."
+      ],
+      "avoid": [
+        "Do not protect the person from every unpleasant emotion or dream merely because it is distressing.",
+        "Do not push through disorientation, loss of stopping/return capacity, functional decline, delayed deterioration, or unwillingness in the name of growth.",
+        "Do not treat intensity, suffering, vividness, endurance, or dream content as proof that the exercise is working or historically true."
+      ],
+      "successSignals": [
+        "The person can approach and leave difficult material voluntarily while remaining oriented and recovering afterward.",
+        "Challenge produces usable emotional information, agency, skill, connection, or ordinary-life movement without requiring escalating intensity."
+      ],
+      "tags": [
+        "scaffolding",
+        "pendulation",
+        "challenge",
+        "titration",
+        "dreams"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not claim that adversity necessarily causes growth or that disturbing dreams reveal hidden historical truth."
+        ],
+        "requiredNuance": [
+          "Distress and harm are not synonyms; workable challenge requires willingness plus intact capacity and recovery, not capacity alone.",
+          "If distress is climbing, several challenge dimensions may be reduced at once; 'one at a time' is a calibration preference, not a rigidity."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.CHALLENGE_CHECK_IN",
+      "title": "Check how difficult material landed before choosing depth",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "practice_challenge",
+            "op": "eq",
+            "value": "needs_check_in"
+          },
+          {
+            "field": "practice_challenge_domain",
+            "op": "eq",
+            "value": "inner_child"
+          }
+        ],
+        "none": [
+          {
+            "field": "ic_status",
+            "op": "eq",
+            "value": "declined"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SCAFFOLDED_CHALLENGE",
+        "IC.SESSION_CLOSURE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Before deciding whether to deepen or step down, ask how the difficult material landed, whether the person wants to return to it, and how sleep, recovery, and ordinary functioning have been since.",
+        "Assume neither harm nor growth while appraisal, willingness, or delayed recovery remains unknown."
+      ],
+      "avoid": [
+        "Do not infer workable challenge from intact in-session capacity alone.",
+        "Do not infer harm from a difficult dream or emotion alone."
+      ],
+      "successSignals": [
+        "The next depth decision is based on the person's appraisal, willingness, and recovery rather than pleasantness or intensity alone."
+      ],
+      "tags": [
+        "challenge",
+        "check-in",
+        "recovery",
+        "dreams"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that a difficult dream proves either therapeutic progress or historical truth."
+        ],
+        "requiredNuance": [
+          "When difficult material has appeared but appraisal or recovery is unknown, ask first and defer deeper work."
+        ]
+      },
+      "defaultQuestion": "How did that experience land for you—and since then, have you recovered normally enough that you actually want to go back toward it?"
+    },
+    {
+      "id": "IC.REACTIVATION",
+      "title": "Re-enter inner-child work below the prior ceiling",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "ic_status",
+            "op": "in",
+            "value": [
+              "stepped_down",
+              "paused_tolerance",
+              "paused_safety"
+            ]
+          },
+          {
+            "field": "ic_reactivation_ready",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "safe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "oriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "ic_titration_needed",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "practice_challenge",
+            "op": "eq",
+            "value": "needs_check_in"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.CONTINUITY_TITRATION",
+        "IC.BEFORE_DEEP",
+        "IC.SESSION_CLOSURE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Do not resume while a new titration need is active or a difficult inner-child episode still needs appraisal/recovery check-in; resolve that first.",
+        "Confirm that the person wants to resume. Then re-enter at or below the last tolerated level rather than returning automatically to the earlier depth.",
+        "Treat the first resumed contact as a calibration pass. Keep deep child dialogue deferred until the gentler level is again demonstrated as workable."
+      ],
+      "avoid": [
+        "Do not reactivate inner-child framing after it has been declined.",
+        "Do not jump from a safety or tolerance pause directly back to deep dialogue.",
+        "Do not let reactivation tie or outrank a pending challenge check-in."
+      ],
+      "successSignals": [
+        "The person resumes voluntarily at a gentler or previously tolerated level and can stop, return, recover, and function afterward."
+      ],
+      "tags": [
+        "reactivation",
+        "reentry",
+        "continuity",
+        "consent"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not treat a cleared safety/tolerance trigger as proof that the previous depth is now appropriate."
+        ],
+        "requiredNuance": [
+          "Re-entry requires the person's agreement and starts at or below the last tolerated level; deeper work earns its way back through new evidence."
+        ]
+      },
+      "defaultQuestion": "Do you actually want to return to the inner-child work now, starting gentler than where it became too much?"
     }
   ],
   "edges": [
@@ -3418,6 +3783,36 @@
       "from": "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
       "to": "IC.SAFETY_ORIENTATION",
       "relation": "escalates-if-orientation-lost"
+    },
+    {
+      "from": "IC.SAFETY_ORIENTATION",
+      "relation": "precedes",
+      "to": "IC.CONTINUITY_TITRATION"
+    },
+    {
+      "from": "IC.CONTINUITY_TITRATION",
+      "relation": "calibrates",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "IC.SCAFFOLDED_CHALLENGE",
+      "relation": "supports-calibration",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "IC.CONTINUITY_TITRATION",
+      "relation": "precedes",
+      "to": "IC.REACTIVATION"
+    },
+    {
+      "from": "IC.REACTIVATION",
+      "relation": "calibrates",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "IC.CHALLENGE_CHECK_IN",
+      "relation": "calibrates",
+      "to": "IC.SCAFFOLDED_CHALLENGE"
     }
   ],
   "taskPolicyVersion": 1,

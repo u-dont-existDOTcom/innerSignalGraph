@@ -23,8 +23,8 @@ source_refs:
   - IC.BORROW_ONE_FUNCTION
 regression_refs: []
 base_record_sha256: 5e78ce47d2eb8608ffc30c1e4117ca2a7e745a559d76c96291c9d5a0de95957a
-base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Bring a second adult or witness seat into the room

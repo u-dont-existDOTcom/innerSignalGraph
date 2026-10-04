@@ -1,0 +1,33 @@
+{
+  "id": "G069",
+  "title": "acute suicidal intent during active inner-child work keeps continuity silent",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "intent",
+    "activation": "high",
+    "dissociation": "mild",
+    "altered_state": "sober",
+    "current_intent": "deep_dialogue",
+    "unresolved_inner_material": "present",
+    "ic_status": "active",
+    "ic_titration_needed": "yes",
+    "medical_urgency": "urgent"
+  },
+  "expected": {
+    "primary": "IC.SAFETY_ORIENTATION",
+    "selectedExcludes": [
+      "IC.CONTINUITY_TITRATION",
+      "IC.REACTIVATION",
+      "IC.SCAFFOLDED_CHALLENGE",
+      "IC.CHALLENGE_CHECK_IN"
+    ],
+    "deferredIncludes": [
+      "IC.DEEP_CHILD_DIALOGUE"
+    ],
+    "requiredNuancePatterns": [],
+    "forbiddenOverclaimPatterns": []
+  }
+}

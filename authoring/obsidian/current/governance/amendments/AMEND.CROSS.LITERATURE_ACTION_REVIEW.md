@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.LITERATURE_ACTION_REVIEW
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 2ba31dcf92ae702d3c1dcc980cf9407e29bdab74f2ef97646651fdee5b3291d0
-source_file_sha256: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+base_record_sha256: 66a8f82e569f76d7258b7a5e8fa7059eb1d81b2b5ce6eb985d950cdf332ebaeb
+source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # AMEND.CROSS.LITERATURE_ACTION_REVIEW
@@ -17,13 +17,13 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
 
 ```json
 {
-  "approvedAt": "2026-10-03",
+  "approvedAt": "2026-10-04",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
     "status": "owner-approved",
     "text": "Use the existing outward, Protector and apprentice routes for agreed feasible actions. Establish only useful details of cue, size, resources, purpose and review. Review actual attempts and their consequences; check opportunity, practical constraints, skill, safety and competing consequences before inferring resistance. Completion or immediate relief is not the sole criterion. Rest, connection, flexibility, grief and appropriate relinquishment may be useful; activity does not mean productivity or forced exposure. Return capacity and judgment without requiring refusal of help."
   },
-  "version": "2026-10-03-certainty-authenticity-r3"
+  "version": "2026-10-04-continuity-scaffolding-r2"
 }
 ```

@@ -21,11 +21,53 @@ test("historical September 25 source remains pinned byte for byte", async () => 
   assert.equal(hash(text), "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1");
 });
 
-test("current October 3 r4 source preserves the exact owner baseline and active edited bytes", async () => {
+test("October 3 r4 reader-facing source remains exact and pinned after the successor", async () => {
   const result = await verifyOct3SourceSync();
   assert.equal(result.status, "PASS");
   assert.equal(result.sourceHistoryPreserved, true);
   assert.equal(result.semanticStatus, "reader-facing-language-repair-r4");
+});
+
+test("October 4 r3 adds only the approved continuity material on top of reader-facing r4", async () => {
+  const r4 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-03-r4.txt", import.meta.url), "utf8");
+  const r1 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r1.txt", import.meta.url), "utf8");
+  const r2 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r2.txt", import.meta.url), "utf8");
+  const current = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r3.txt", import.meta.url), "utf8");
+  assert.equal(hash(r4), "1ae4140f0c6acb900ff18ef961ca2e7a136c0812678e88e64f02dc4268ca08cb");
+  assert.equal(hash(r1), "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac");
+  assert.equal(hash(r2), "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5");
+  assert.equal(hash(current), "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e");
+
+  const priorLines = r4.split("\n");
+  let priorIndex = 0;
+  for (const line of current.split("\n")) {
+    if (priorIndex < priorLines.length && line === priorLines[priorIndex]) priorIndex += 1;
+  }
+  assert.equal(priorIndex, priorLines.length, "The successor must preserve every reader-facing r4 line in order");
+
+  for (const markerText of [
+    "A no to the frame is not a pacing problem to solve",
+    "If those answers are not known yet, do not rush to classify the experience as healing or harmful",
+    "If inner-child language already feels natural to you, you might call that reparenting in action",
+    "do not treat it as proof of a recovered historical event"
+  ]) {
+    assert.equal(current.split(markerText).length - 1, 1, markerText);
+    assert.equal(r4.includes(markerText), false, markerText);
+  }
+  assert.match(current, /Don’t dismiss your own genuine attraction, orientation, gender identity/);
+  assert.doesNotMatch(current, /InnerSignal should not steer somebody toward or away from an orientation or identity/);
+  assert.doesNotMatch(current, /inner-not-signal/);
+
+  const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
+  const active = manifest.sources.find(source => source.id === "inner-child-guide");
+  assert.equal(active.version, "owner-approved-continuity-scaffolding-2026-10-04-r3-reader-facing");
+  assert.equal(active.file, "inner-child-guide-2026-10-04-r3.txt");
+  assert.equal(active.sha256, "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e");
+  for (const [version, sha256] of [
+    ["owner-latest-humanized-2026-10-03-r4", "1ae4140f0c6acb900ff18ef961ca2e7a136c0812678e88e64f02dc4268ca08cb"],
+    ["owner-approved-continuity-scaffolding-2026-10-04-r1", "08b27742b0daa4907bbd995cc61ec3d750eb6b13d215863a70bb47f8060fbcac"],
+    ["owner-approved-continuity-scaffolding-2026-10-04-r2-pre-reader-rebase", "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5"]
+  ]) assert.ok(manifest.sourceHistory.some(item => item.version === version && item.sha256 === sha256));
 });
 
 test("current source preservation proof rejects both loss and unapproved extra wording", async () => {

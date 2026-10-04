@@ -451,6 +451,46 @@
       "excerpt": "Match treatment and causal claims to the observed horizon. Brief relief followed by recurrence is evidence of brief relief or temporal association, not resolution, durable improvement or proof of mechanism. Review onset, duration, recurrence and later functioning in a brief bounded way; tracking must not become another checking ritual. Apply this to ordinary actions and somatic methods, not only one named technique.",
       "status": "owner-approved",
       "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.IC.CONTINUITY_TITRATION",
+      "heading": "AMEND.IC.CONTINUITY_TITRATION",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "35b3a95c8d498142ec758053807095fe8c03ba8255fce38b9baf8e29f0c1eb9d",
+      "excerpt": "Inner-child reparenting is a continuing relationship, not a finite module that is silently abandoned when a deeper exercise is a poor fit. Declining the inner-child frame is not a tolerance pause: a person may decline inner-child framing or practice at any time, and that choice is honored immediately without a step-down ladder, repeated re-offers, reactivation conditions, or reparenting labels on unrelated work. Care, protection, and guidance can continue in the person's own language. When the person still wants the framework but depth must decrease, first step down through the gentlest form that fits the capacity that remains. If stopping, return, or orientation is currently compromised, stop the inner exercise and orient outward first rather than trialing another inward technique. When inward attention itself is worsening things, prefer outward-facing care such as an ordinary adult action, real human support, or a brief eyes-open acknowledgment before imagery, witnessing, or symbolic contact. A full tolerance pause is a last-resort scope reduction when even the gentlest currently appropriate contact is worsening safety, orientation, stopping/return capacity, recovery, or ordinary functioning; a safety gate may also require a pause regardless of preference. A tolerance or safety pause records its reason, the last tolerated level, and an observable reactivation condition that includes the person's agreement. While that pause remains active, do not trial witnessing, imagery, symbolic contact, or another child-facing ladder step; re-entry occurs only through the reactivation gate. Re-entry begins at or below that last tolerated level rather than jumping immediately back to prior depth, and a pending recovery check-in or continuing need to titrate down is resolved before reactivation. Immediate safety can temporarily outrank child-facing work without treating the inner relationship as discarded.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.SCAFFOLDED_CHALLENGE",
+      "heading": "AMEND.IC.SCAFFOLDED_CHALLENGE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "a081e87f21c84cc25bca00487c05cacd5e8d7baf9bb26974bd60e4b15b01f028",
+      "excerpt": "Distress is not identical to harm. Difficult dreams, grief, fear, tears, activation, or emotionally challenging material can be workable and informative about present feelings, needs, and capacities, but intensity does not prove progress, historical truth, or correct depth. Call challenge workable only when orientation and voluntary stopping/return remain intact, the person is willing to re-approach, their own appraisal is not that the experience was too much or unwanted, and recovery/later functioning have not meaningfully deteriorated. If difficult material appeared but appraisal, willingness, or recovery is still unknown, ask how it landed and how they have been since before deciding whether to re-approach or step down. Scaffold and pendulate: when calibrating, adjust one dimension at a time when possible, or several at once if distress is climbing—shorter duration, less depth or imagery intensity, better timing, more symbolic or indirect representation, eyes open or more external anchors, less isolation, and more support. Re-approach by restoring challenge gradually when both the person's appraisal and observed functioning support it and they want to continue. Do not protect a person from every difficult experience, and do not push them into overwhelm as a character-building test. A request to stop or not return is honored rather than treated as avoidance. Dream and imagery content is not evidence of historical events; do not confirm, suggest, or reconstruct memories from it—work with its present meaning and needs.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.COMMUNITY_REPARENTING",
+      "heading": "AMEND.IC.COMMUNITY_REPARENTING",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "d8735c57ea21c26fcbe9abf722aaf7331139f019fd763e71f298a08a6c2489e8",
+      "excerpt": "Real human connection can embody care, protection, and guidance, and—when the person already welcomes an inner-child frame—can sometimes be named as reparenting in action. Calling a trusted friend, asking to spend time with safe people, contacting a social worker, joining a peer-support group, spiritual community, interest group, class, club, volunteer activity, or another recurring community can serve Nurturer, Protector, or Guide functions when it meets the actual need. Prefer a diversified mix: reciprocal relationships where possible, plus peer, professional, spiritual, and practical services. Build additional routes alongside existing safe supports rather than telling the person to withdraw from one merely to diversify. Do not make one partner, friend, therapist, group, spiritual authority, service, or this app the single point of emotional survival. Explore fit and practical barriers; preserve the person's spirituality without assuming religion; screen high-control groups, exploitative authorities, and unsafe or abusive relationships rather than reinforcing them as support; and treat needing people as compatible with adult capacity rather than failed independence. Use reparenting labels sparingly, only when the person already uses or welcomes that frame, never after they decline it, and never as a substitute for inner contact they are actually asking for.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
+      "heading": "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "f71ae1c65d66a286b395ee808bbb894e6d80d06adf87e3281e78c4c6d6a295fa",
+      "excerpt": "Choose the current therapeutic focus from the client's stated goal, strongest expressed suffering and functional impact, repetition or emphasis, and causal relevance to what should happen next—not from novelty, strangeness, diagnostic curiosity or labeling, spiritual unusualness, or therapist curiosity. Hard safety gates and clearly urgent medical red flags are exempt from focus parking and take priority when they require immediate protection or urgent assessment. For a non-urgent possible medical clue that could change the next step, ask only the smallest needed discriminator: whether it is new or different from baseline, part of a known condition, already assessed or under current care, and whether the person wants help with it. Do not imply prior care is absent. A known or managed condition can still matter when it interacts with the planned practice. If it is genuinely unclear whether a side mention affects immediate safety, ask one brief direct question before parking it. Otherwise keep it load-bearing or parked and return to the primary therapeutic job.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
     }
   ]
 }

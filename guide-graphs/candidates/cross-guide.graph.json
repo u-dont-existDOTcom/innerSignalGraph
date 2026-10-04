@@ -553,7 +553,9 @@
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
-        "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION"
+        "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
+        "AMEND.IC.CONTINUITY_TITRATION",
+        "AMEND.IC.COMMUNITY_REPARENTING"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -563,7 +565,8 @@
         "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
         "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion.",
         "For deliberate social or relationship practice, name the life-serving purpose first—connection, curiosity, communication, skill, play or another chosen value. If the action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation.",
-        "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism."
+        "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
+        "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -596,7 +599,8 @@
           "Outward action is judged by its function and consequences, not by courage or exposure intensity alone.",
           "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
           "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
-          "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation."
+          "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
+          "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn."
         ]
       },
       "defaultQuestion": "What is the next observable action that could actually change this situation?",
@@ -650,17 +654,21 @@
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "SOM.MAP_NOT_LADDER",
         "SOM.SE",
-        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.CONTINUITY_TITRATION",
+        "AMEND.IC.SCAFFOLDED_CHALLENGE"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Prefer eyes-open orientation and ordinary embodied activity that requires contact with the environment: walking, gym, sport, swimming, cycling, chores, social contact, or another tolerable activity.",
         "Treat this as embodiment without symptom-scanning: attention can be in movement, coordination, effort, surroundings, and ordinary life rather than repeatedly checking the internal state.",
-        "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work."
+        "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work.",
+        "If inner-child work is already active and still wanted, external orientation reduces depth rather than erasing the relationship. If even minimal contact must pause, record a bounded safety/tolerance pause and an observable reactivation condition; do not surface that continuity message during an acute safety turn."
       ],
       "avoid": [
         "Do not repeatedly body-scan to test whether the external activity is working.",
-        "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now."
+        "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now.",
+        "Do not turn temporary external orientation into a permanent ban on InnerSignal or reparenting when the evidence only supports reducing depth or representation."
       ],
       "successSignals": [
         "Derealization, panic, or hypermonitoring is no longer being amplified by repeated inward checking.",
@@ -681,7 +689,8 @@
         ],
         "blockNodes": [],
         "requiredNuance": [
-          "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other."
+          "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other.",
+          "External orientation is a depth/pacing adjustment only when inner-child work was already in play and still wanted; refusal is a separate hard boundary."
         ],
         "forbiddenOverclaims": [
           "Do not claim that external activity proves the symptoms are psychological or that exercise is sufficient treatment for every cause of derealization or panic."
@@ -735,18 +744,22 @@
         "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
         "AMEND.SOM.PREP_MODALITIES",
         "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
-        "AMEND.SOM.ADVANCED_RELEASE_PARALLEL"
+        "AMEND.SOM.ADVANCED_RELEASE_PARALLEL",
+        "AMEND.IC.SCAFFOLDED_CHALLENGE",
+        "AMEND.IC.CONTINUITY_TITRATION"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Contact only material that is actually present rather than assuming that distress always hides another layer of trauma.",
         "Route relational, part-level, credibility, trust, or developmental conflict toward the relevant Nurturer, Protector, Guide, guard, or inner-child function; route bodily activation or freeze toward low-dose somatic regulation, EFT, movement or shaking, and titrated body work according to response.",
         "For a stable discrete memory target, EMDR can be considered without forcing a long preparatory ladder; for diffuse or developmental body-held material, resource-oriented or deeper Brainspotting and developmental EMDR remain conditional on capacity.",
-        "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing."
+        "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing.",
+        "When the material is difficult but the person remains safe, oriented, able to stop and return, and later functioning is intact enough, titrate depth rather than treating distress itself as evidence that inward work is harmful. Use the person's appraisal and recovery over time, not pleasantness alone."
       ],
       "avoid": [
         "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse.",
-        "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic."
+        "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic.",
+        "Do not equate a disturbing dream, tears, grief, fear, or temporary activation with adverse effect unless the practice is actually degrading orientation, stopping/return capacity, functioning, or recovery enough to change the route."
       ],
       "successSignals": [
         "Contact with inner material produces new emotional information, greater integration, a changed relationship to a part or memory, or more behavioral freedom rather than only more description.",
@@ -765,7 +778,8 @@
           "Do not infer recovered memories, hidden trauma, or a coherent inner child from symptoms alone."
         ],
         "requiredNuance": [
-          "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
+          "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order.",
+          "Workable challenge and overload are different states. Scaffold and pendulate by changing depth, duration, timing, representation, and support before concluding that the whole inward route should be abandoned."
         ]
       },
       "defaultQuestion": "What exactly seems unfinished or avoided here, and what changes when you contact it rather than merely think about it?",
@@ -1421,6 +1435,116 @@
         ]
       },
       "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.COMMUNITY_SUPPORT",
+      "title": "Build a diversified human support ecology",
+      "kind": "route-node",
+      "tier": 3,
+      "priority": 96,
+      "activation": {
+        "all": [
+          {
+            "field": "social_connection_need",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.COMMUNITY_REPARENTING",
+        "IC.RELATIONSHIP",
+        "IC.THREE_FUNCTIONS"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Treat a current need for human contact as a real need, not failed independence. Explore several realistic sources of recurring contact with genuine commonality: trusted people already known, peer support, spiritually fitting communities, interest/activity groups, classes, clubs, volunteering, and practical or professional services.",
+        "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
+        "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
+        "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language."
+      ],
+      "avoid": [
+        "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
+        "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
+        "Do not prescribe a spiritual community merely because the person is spiritual, or present a long directory when one or two realistic next contacts are more usable.",
+        "Do not advise withdrawing from an existing safe support merely to diversify."
+      ],
+      "successSignals": [
+        "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",
+        "The support plan reduces single-point dependence without requiring self-sufficiency or abandoning existing safe relationships."
+      ],
+      "tags": [
+        "community",
+        "social-support",
+        "connection",
+        "nurturer",
+        "protector",
+        "guide"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency."
+        ],
+        "requiredNuance": [
+          "Human beings can need both inner adult capacity and real reciprocal attachment; these are complementary rather than competing goals.",
+          "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure."
+        ]
+      },
+      "defaultQuestion": "What kinds of people or communities would actually feel like your people—and what is the smallest realistic way to try one without making it your only hope?"
+    },
+    {
+      "id": "ROUTE.MEDICAL_RED_FLAG",
+      "title": "Handle an urgent medical red flag before therapy interpretation",
+      "kind": "route-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "medical_urgency",
+            "op": "eq",
+            "value": "urgent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.FOCUS_PRIORITY_BASELINE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Give direct, proportionate guidance for urgent medical assessment or emergency help before continuing therapeutic interpretation.",
+        "Do not delay an urgent red flag with baseline-history questions. Once immediate safety is handled, return to the person's therapeutic focus when appropriate."
+      ],
+      "avoid": [
+        "Do not park a clearly urgent medical or neurological red flag because the person mentioned it as an aside.",
+        "Do not diagnose the cause from chat, and do not turn an urgent medical turn into inner-child continuity messaging."
+      ],
+      "successSignals": [
+        "The response prioritizes immediate medical safety without unnecessary diagnostic speculation and leaves therapy work for after the urgent issue is addressed."
+      ],
+      "tags": [
+        "medical",
+        "urgent",
+        "safety",
+        "red-flag"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "IC.REACTIVATION",
+          "IC.SCAFFOLDED_CHALLENGE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not diagnose a medical or neurological condition from a red-flag symptom alone."
+        ],
+        "requiredNuance": [
+          "Hard safety and urgent medical red flags are exempt from ordinary focus parking; they take priority only to the degree needed for immediate protection or urgent assessment."
+        ]
+      },
+      "defaultQuestion": ""
     }
   ],
   "edges": [
@@ -1663,6 +1787,21 @@
       "from": "ROUTE.ALTERED_STATE_TRANSFER",
       "relation": "may-build-sober-credibility",
       "to": "IC.CREDIBILITY_REPAIR"
+    },
+    {
+      "from": "ROUTE.COMMUNITY_SUPPORT",
+      "relation": "may-support",
+      "to": "IC.ADULT_APPRENTICE"
+    },
+    {
+      "from": "ROUTE.COMMUNITY_SUPPORT",
+      "relation": "may-support",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "ROUTE.MEDICAL_RED_FLAG",
+      "relation": "precedes",
+      "to": "ROUTE.GO_INWARD"
     }
   ],
   "taskPolicyVersion": 1,

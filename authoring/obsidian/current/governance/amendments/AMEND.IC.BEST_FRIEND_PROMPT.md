@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.BEST_FRIEND_PROMPT
 status: owner-approved
 domain: inner-child
-base_record_sha256: 28bf9b7929d5d12d36c05c192e2bb2cee08bf980e64c27e4a852bd522309a5b6
-source_file_sha256: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+base_record_sha256: b6e665defe1cf01b6f71d10134169e0d536610e3e48466d8a3d13a0947e40f4f
+source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # AMEND.IC.BEST_FRIEND_PROMPT
@@ -17,13 +17,13 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
 
 ```json
 {
-  "approvedAt": "2026-10-03",
+  "approvedAt": "2026-10-04",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.BEST_FRIEND_PROMPT",
     "status": "owner-approved",
     "text": "Ask: 'What would I tell my best friend in this exact situation?' Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action for the self."
   },
-  "version": "2026-10-03-certainty-authenticity-r3"
+  "version": "2026-10-04-continuity-scaffolding-r2"
 }
 ```

@@ -22,8 +22,8 @@ source_refs:
   - AMEND.CROSS.STATE_DEPENDENT_TRANSFER
 regression_refs: []
 base_record_sha256: e98d1a5107e7ec1f7bcca2fa64260001e89418ba9b7bac10f6e3af13d3d13936
-base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+base_graph_sha256: f1bea04c4bb68ab1421a367d01dcc78009bcd00e338e401deba09c8a9319550b
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Continue substantive therapy when altered-state capacity remains coherent and safe

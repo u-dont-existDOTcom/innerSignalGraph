@@ -21,6 +21,8 @@ source_refs:
   - AMEND.SOM.PREP_MODALITIES
   - AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
   - AMEND.SOM.ADVANCED_RELEASE_PARALLEL
+  - AMEND.IC.SCAFFOLDED_CHALLENGE
+  - AMEND.IC.CONTINUITY_TITRATION
 regression_refs:
   - G013
   - G014
@@ -35,9 +37,17 @@ regression_refs:
   - G055
   - G057
   - G059
-base_record_sha256: 1c26cf6ac1f2e2726cc71ad942ac05bb06ac23b969ea3cd27c39ad1ea7ca3ae0
-base_graph_sha256: f2be6a2332d84ae3c771b97261698829b09bec863ad4a57f6675e1bceac413c9
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+  - G062
+  - G063
+  - G064
+  - G066
+  - G068
+  - G074
+  - G087
+  - G088
+base_record_sha256: 79ed6b9be32af80893f152e503022c08d38150d026f8b2ac34a4c628b0d8a73b
+base_graph_sha256: f1bea04c4bb68ab1421a367d01dcc78009bcd00e338e401deba09c8a9319550b
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Go inward only for material that is actually there
@@ -86,7 +96,8 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
   },
   "avoid": [
     "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse.",
-    "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic."
+    "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic.",
+    "Do not equate a disturbing dream, tears, grief, fear, or temporary activation with adverse effect unless the practice is actually degrading orientation, stopping/return capacity, functioning, or recovery enough to change the route."
   ],
   "defaultQuestion": "What exactly seems unfinished or avoided here, and what changes when you contact it rather than merely think about it?",
   "effects": {
@@ -96,7 +107,8 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
       "Do not infer recovered memories, hidden trauma, or a coherent inner child from symptoms alone."
     ],
     "requiredNuance": [
-      "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
+      "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order.",
+      "Workable challenge and overload are different states. Scaffold and pendulate by changing depth, duration, timing, representation, and support before concluding that the whole inward route should be abandoned."
     ]
   },
   "questionPolicy": {
@@ -107,7 +119,8 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
     "Contact only material that is actually present rather than assuming that distress always hides another layer of trauma.",
     "Route relational, part-level, credibility, trust, or developmental conflict toward the relevant Nurturer, Protector, Guide, guard, or inner-child function; route bodily activation or freeze toward low-dose somatic regulation, EFT, movement or shaking, and titrated body work according to response.",
     "For a stable discrete memory target, EMDR can be considered without forcing a long preparatory ladder; for diffuse or developmental body-held material, resource-oriented or deeper Brainspotting and developmental EMDR remain conditional on capacity.",
-    "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing."
+    "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing.",
+    "When the material is difficult but the person remains safe, oriented, able to stop and return, and later functioning is intact enough, titrate depth rather than treating distress itself as evidence that inward work is harmful. Use the person's appraisal and recovery over time, not pleasantness alone."
   ],
   "successSignals": [
     "Contact with inner material produces new emotional information, greater integration, a changed relationship to a part or memory, or more behavioral freedom rather than only more description.",
@@ -128,3 +141,7 @@ projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fec
 [[current/governance/amendments/AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL]]
 
 [[current/governance/amendments/AMEND.SOM.ADVANCED_RELEASE_PARALLEL]]
+
+[[current/governance/amendments/AMEND.IC.SCAFFOLDED_CHALLENGE]]
+
+[[current/governance/amendments/AMEND.IC.CONTINUITY_TITRATION]]

@@ -13,7 +13,7 @@ locator_kind: text-lines
 cited_by_node_ids:
   - SOM.MEANING_INTEGRATION
   - SOM.SIBAM_TRACKING
-projection_input_sha256: 1095040bcb3258c07ae813989cacb96e2c1f0d87cbdf24373854fecd52376b53
+projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
 ---
 
 # Light CBT / Narrative Integration
