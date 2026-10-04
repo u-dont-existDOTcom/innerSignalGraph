@@ -34,7 +34,7 @@ regression_refs:
   - G069
 base_record_sha256: ef132738544df05f1718ef081eff9550d67e68a541346ddf926c5409936b3cc6
 base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: fd61220748e948cc9b4f13891c8a8a086d3076acbaf1a862234cd8125f42baf7
 ---
 
 # Hear the protective response without automatically obeying it

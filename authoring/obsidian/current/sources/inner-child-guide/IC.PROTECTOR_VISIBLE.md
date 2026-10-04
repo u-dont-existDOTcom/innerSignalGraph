@@ -7,7 +7,7 @@ source_id: IC.PROTECTOR_VISIBLE
 guide_id: inner-child-guide
 heading: Make the Protector Visible
 source_role: primary-framework
-source_hash: f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e
+source_hash: 215e4d1dd060ed99df276f775f4e915db2b111698ea21311550a69f7f977333f
 section_hash: f119d9a2d21270425e7e03e1eb2c60ba15497f271967e70fb05ece67e375da76
 locator_kind: text-lines
 cited_by_node_ids:
@@ -15,14 +15,14 @@ cited_by_node_ids:
   - IC.PROTECTOR_ACTION
   - IC.REALIZATION_LOVE_INTEGRATION
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: fd61220748e948cc9b4f13891c8a8a086d3076acbaf1a862234cd8125f42baf7
 ---
 
 # Make the Protector Visible
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-04-r3.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r4.txt`
 
 Locator: Lines 337–394
 

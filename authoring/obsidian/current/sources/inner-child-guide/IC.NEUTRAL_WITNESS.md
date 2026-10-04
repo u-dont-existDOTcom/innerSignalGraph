@@ -7,20 +7,20 @@ source_id: IC.NEUTRAL_WITNESS
 guide_id: inner-child-guide
 heading: A Witness Is Enough to Begin
 source_role: primary-framework
-source_hash: f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e
+source_hash: 215e4d1dd060ed99df276f775f4e915db2b111698ea21311550a69f7f977333f
 section_hash: a636b51c2ddbfb20d886a56c583afdb69fbb6ef526224815806f0653713ffa36
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.NEUTRAL_WITNESS
   - IC.SUICIDAL_ADULT_SEAT
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: fd61220748e948cc9b4f13891c8a8a086d3076acbaf1a862234cd8125f42baf7
 ---
 
 # A Witness Is Enough to Begin
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-04-r3.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r4.txt`
 
 Locator: Lines 199–208
 

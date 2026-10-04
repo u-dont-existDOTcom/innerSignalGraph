@@ -11,7 +11,7 @@ source_hash: 79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c
 section_hash: 79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c
 locator_kind: pdf-pages
 cited_by_node_ids: []
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: fd61220748e948cc9b4f13891c8a8a086d3076acbaf1a862234cd8125f42baf7
 ---
 
 # VAGAL.CLAIMS.P1_4

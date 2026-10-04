@@ -7,18 +7,18 @@ source_id: IC.RELATIONAL_REALITY
 guide_id: inner-child-guide
 heading: Also Look Outward
 source_role: primary-framework
-source_hash: f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e
+source_hash: 215e4d1dd060ed99df276f775f4e915db2b111698ea21311550a69f7f977333f
 section_hash: ea57d7f3e3158e063f3382d4efd7ae38cd8f6b6c0f561b7a1c9d9c1d121ba2c8
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: fd61220748e948cc9b4f13891c8a8a086d3076acbaf1a862234cd8125f42baf7
 ---
 
 # Also Look Outward
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-04-r3.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r4.txt`
 
 Locator: Lines 147–178
 
