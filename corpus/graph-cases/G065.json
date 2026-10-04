@@ -1,0 +1,35 @@
+{
+  "id": "G065",
+  "title": "existing support does not block building a broader support ecology",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral",
+    "inner_adult_access": "partial",
+    "support_available": "present",
+    "social_connection_need": "present"
+  },
+  "expected": {
+    "primary": "IC.COMMUNITY_SUPPORT",
+    "selectedIncludes": [
+      "IC.ADULT_APPRENTICE"
+    ],
+    "requiredNuancePatterns": [
+      "portfolio of imperfect supports",
+      "Human beings can need both inner adult capacity and real reciprocal attachment"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "needing people proves dependency"
+    ]
+  }
+}
