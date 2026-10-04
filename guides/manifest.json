@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-approved-continuity-scaffolding-2026-10-04-r3-reader-facing",
-      "file": "inner-child-guide-2026-10-04-r3.txt",
-      "sha256": "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e",
+      "version": "owner-approved-missing-love-listening-positive-language-2026-10-04-r4",
+      "file": "inner-child-guide-2026-10-04-r4.txt",
+      "sha256": "281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b",
       "role": "primary-framework",
       "format": "text"
     },
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article preserves the owner-supplied 2026-10-03 Substack source and the 2026-10-04 reader-facing r4 repair, then adds the owner-authorized 2026-10-04 continuity/scaffolding/community material after independent semantic review. The exact r4 Substack capture remains preserved at guides/source-captures/inner-child-guide-2026-10-03-r4.substack.html and r4 remains pinned in source history. The pre-reader-rebase continuity drafts remain preserved separately. Executable policy remains graph-owned. This development-main source change does not install a Guide Packet or promote stable.",
+  "notes": "The active inner-child article preserves the owner-supplied October 3 source, the reader-facing r4 repair, and the October 4 continuity/scaffolding/community additions, then adds the owner-authorized missing-to-love, concentrated borrowed-adulthood, support-mode, guide-literacy, and positive-direction-language clarifications. Earlier source snapshots remain retained. Executable policy remains graph/prompt-owned; this development source change does not install a Guide Packet or promote stable.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -113,6 +113,14 @@
       "version": "owner-approved-continuity-scaffolding-2026-10-04-r2-pre-reader-rebase",
       "file": "inner-child-guide-2026-10-04-r2.txt",
       "sha256": "d110de6c48c4ea725fa99edf1d25b6badfa2bf764374b794fb17b93fe646d1a5"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-approved-continuity-scaffolding-2026-10-04-r3-reader-facing",
+      "file": "inner-child-guide-2026-10-04-r3.txt",
+      "sha256": "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e",
+      "role": "primary-framework",
+      "format": "text"
     }
   ]
 }

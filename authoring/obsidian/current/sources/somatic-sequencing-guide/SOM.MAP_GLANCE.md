@@ -11,7 +11,7 @@ source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
 section_hash: 243eb24a8b8b00b8e3e48e10051c09f964511b30b699c8a2b3e32b2ed52e9b56
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
 ---
 
 # The Map at a Glance
