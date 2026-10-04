@@ -1,6 +1,6 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-03
+Updated: 2026-10-04
 
 
 ## Journal reviews that settle: scoped re-review, withholding, pooled calibration gate (2026-10-03)
@@ -8,9 +8,11 @@ Updated: 2026-10-03
 - **Owner decision:** "i approve your rec" (19:58 UTC) for options A, B and D after round 4. Plan: `docs/superpowers/plans/2026-10-03-journal-review-convergence.md`.
 - **Implemented:** (A) after a repair, the omission review and the calibration fidelity review count only for the earlier findings, the items the repair added, changed or moved, and units that lost an item; other verdicts carry forward. (B) A single regular unit unresolved after its passes and the hardest lane keeps everything except what review still flags; withheld counts go in `review_residuals`, and the unit is `needs_review`. Calibration units go on to their reference audit with review findings open, the hardest fidelity repair is skipped when the reference score passes, and each unit keeps its best attempt after withholding. (D) Calibration passes on pooled recall at the unchanged 0.95 target with no critical miss and every unit scored; a critical miss or an unscored unit ends the round; `calibration_failure_limit` is an optional cap with no default.
 - **Preserved:** recall target, critical-miss rule, reference roles, packet bounds, hardest-lane accounting and daily limit, multi-unit splitting, the diagnostics allowlist (new keys are counts), and the privacy boundary.
-- **Evidence:** Synthetic tests only: 110 unit tests for the pure rules and new runtime tests for each behaviour; existing calibration tests adapted where the intended behaviour changed (scenarios that failed only through review findings now need a critical reference item they can't keep; extractor job IDs changed with the extractor instruction).
+- **Codex review rounds 1 to 12** each found edge cases, all fixed with regression tests. From round 8: a reference touches its dependents unless an unchanged item still carries its ID and matches the earlier item (reused or traded IDs); open work follows every item an earlier target became and stays with removed items; carried evidence and proposals are re-keyed; a unit omission stays open while the repair adds nothing there; a changed coverage record puts its unit in scope; a local ID equal to an assigned unit ID no longer binds (`LOCAL_ID_IS_UNIT_ID`).
+- **Evidence (synthetic only):** at `cf7f4a6`, `tests/journal-review-convergence.test.mjs` 135/135; the five affected runtime files (`journal-review-convergence-calibration`, `-resume`, `journal-recalibrate`, `journal-runtime-finish`, `journal-hardest-lane`) 122/122; all `tests/journal-*.test.mjs` 756/756 at `b07e8ea`; the full `npm run verify` passed in CI (`deterministic-package`) on `cf7f4a6`. Existing calibration tests were adapted where the intended behaviour changed (scenarios that failed only through review findings now need a critical reference item they can't keep; extractor job IDs changed with the extractor instruction).
 - **Supervisor review (Claude Opus, independent):** one blocking issue (hardest fidelity repair skipped on the pre-withholding score) and four to fix (later failures discarding audited work, an unfinished hardest answer replacing a finished pass, scoping that missed dependents and pre-context verdicts, withholding invisible in the graph status); all fixed with regression tests. Pacing risk noted: the hardest tier's 20-a-day limit.
-- **Next:** Deploy to the import host, `journal-recalibrate.sh` for round 5 (a new epoch), and report content-free counts.
+- **Deployed:** `c47476c` to the import host on 4 Oct at 01:08 UTC with the owner's "Deploy"; round 5 started as epoch 5. Codex calls failed until the owner signed the server's Codex in again at 02:13 UTC (the copied sign-in had expired on 3 Oct); one unit finished; since 02:32 UTC import runs stop at `OPERATOR_TOKEN_UNAVAILABLE` because the host's HTTPS front door hangs for the Keycloak issuer (TLS handshake), which needs an admin restart.
+- **Next:** after the front-door restart, deploy the later fixes (from `001a00c`) with the owner's OK, let round 5 continue, and report content-free counts.
 
 
 ## Journal calibration round 4 stopped; owner decision pending (2026-10-03)
