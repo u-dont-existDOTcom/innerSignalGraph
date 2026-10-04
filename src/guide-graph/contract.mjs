@@ -74,6 +74,7 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   memory_source_risk: ["present", "absent", "unknown"],
   forgiveness_interest: ["present", "absent", "unknown"],
   support_available: ["present", "absent", "unknown"],
+  social_connection_need: ["present", "absent", "unknown"],
   body_capacity: ["low", "adequate", "high", "unknown"],
   target_type: ["discrete", "developmental", "diffuse", "none", "unknown"],
   trigger_loop: ["present", "absent", "unknown"],
