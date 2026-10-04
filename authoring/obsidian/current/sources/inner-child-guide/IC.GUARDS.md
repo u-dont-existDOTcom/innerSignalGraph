@@ -7,12 +7,12 @@ source_id: IC.GUARDS
 guide_id: inner-child-guide
 heading: Two Common Protective Patterns
 source_role: primary-framework
-source_hash: 215e4d1dd060ed99df276f775f4e915db2b111698ea21311550a69f7f977333f
+source_hash: 281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b
 section_hash: 827d28ad3cea4f58bc04e3e144b5d6f345899a1a9335c834c3222aad3169b171
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: fd61220748e948cc9b4f13891c8a8a086d3076acbaf1a862234cd8125f42baf7
+projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
 ---
 
 # Two Common Protective Patterns

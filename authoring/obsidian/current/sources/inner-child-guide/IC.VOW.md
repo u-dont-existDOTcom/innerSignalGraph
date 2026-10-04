@@ -7,12 +7,12 @@ source_id: IC.VOW
 guide_id: inner-child-guide
 heading: Make a Simple Vow
 source_role: primary-framework
-source_hash: 215e4d1dd060ed99df276f775f4e915db2b111698ea21311550a69f7f977333f
+source_hash: 281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b
 section_hash: c3888969957849f65e0e3a417f516fff0fc70f22299e98e08e6641f14dacd6f1
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
-projection_input_sha256: fd61220748e948cc9b4f13891c8a8a086d3076acbaf1a862234cd8125f42baf7
+projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
 ---
 
 # Make a Simple Vow

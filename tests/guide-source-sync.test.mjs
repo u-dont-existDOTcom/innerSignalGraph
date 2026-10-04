@@ -71,7 +71,7 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
   const r3 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r3.txt", import.meta.url), "utf8");
   const current = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-04-r4.txt", import.meta.url), "utf8");
   assert.equal(hash(r3), "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e");
-  assert.equal(hash(current), "215e4d1dd060ed99df276f775f4e915db2b111698ea21311550a69f7f977333f");
+  assert.equal(hash(current), "281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b");
 
   const priorLines = r3.split("\n");
   let priorIndex = 0;
@@ -83,7 +83,9 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
   for (const markerText of [
     "Sometimes the ache itself can become a cue for love",
     "Sometimes one person ends up carrying many borrowed-adult functions at once",
-    "Do you want me to mostly listen, help you untangle this, give you ideas, or some mix?"
+    "Do you want me to mostly listen, help you untangle this, give you ideas, or some mix?",
+    "Speak Toward What You Are Building",
+    "Having somebody who can care for you when you are struggling can be an enormous blessing"
   ]) {
     assert.equal(current.split(markerText).length - 1, 1, markerText);
     assert.equal(r3.includes(markerText), false, markerText);
@@ -91,9 +93,9 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-missing-love-listening-2026-10-04-r4");
+  assert.equal(active.version, "owner-approved-missing-love-listening-positive-language-2026-10-04-r4");
   assert.equal(active.file, "inner-child-guide-2026-10-04-r4.txt");
-  assert.equal(active.sha256, "215e4d1dd060ed99df276f775f4e915db2b111698ea21311550a69f7f977333f");
+  assert.equal(active.sha256, "281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b");
   assert.ok(manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide"
     && item.version === "owner-approved-continuity-scaffolding-2026-10-04-r3-reader-facing"
