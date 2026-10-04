@@ -1,8 +1,8 @@
 {
-  "version": 7,
-  "sourceFile": "guides/inner-child-guide-2026-10-04-r3.txt",
-  "sourceSha256": "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e",
-  "purpose": "Bind the unchanged synthetic fidelity cases to the exact active 2026-10-04 r3 reader-facing continuity/scaffolding article while preserving existing source refs, user turns, required functions and calibration controls. The exact October 3 r4 reader-facing source and earlier continuity drafts remain pinned separately.",
+  "version": 8,
+  "sourceFile": "guides/inner-child-guide-2026-10-04-r4.txt",
+  "sourceSha256": "281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b",
+  "purpose": "Bind the unchanged synthetic fidelity cases to the exact active October 4 r4 inner-child article after the missing-to-love, concentrated borrowed-adulthood, support-mode, guide-literacy, and positive-direction-language clarifications, while preserving existing source refs, user turns, required functions and calibration controls.",
   "additionalSourceRefs": {
     "GF01": [
       "IC.CHECKING_LOOP"

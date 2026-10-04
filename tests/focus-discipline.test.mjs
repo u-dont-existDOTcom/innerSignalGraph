@@ -144,6 +144,15 @@ test("focus rules reach each reasoning consumer exactly once and gate the protec
   assert.match(longitudinalClinicalRules, /separate refusal from tolerance\/safety titration/);
   assert.match(longitudinalClinicalRules, /Real human support can supply care, protection and guidance/);
   assert.match(realizationPrompt(context, {}, "synthetic").system, /InnerSignal continuity is broader than any one child-facing exercise/);
+  assert.match(longitudinalClinicalRules, /mostly listen, help untangle what is happening, offer ideas\/advice, or some mix/);
+  assert.match(longitudinalClinicalRules, /missing cue a brief loving-kindness response/);
+  assert.match(longitudinalClinicalRules, /distinguish the pain of missing that person from the real loss of infrastructure/);
+  assert.match(longitudinalClinicalRules, /Never assume the client has read an InnerSignal guide/);
+  assert.match(realizationPrompt(context, {}, "synthetic").system, /Never assume the client has read the guide or remembers its vocabulary/);
+  assert.match(realizationPrompt(context, {}, "synthetic").system, /mostly listen, help you untangle this, give ideas, or some mix/);
+  assert.match(longitudinalClinicalRules, /Use positive-direction therapeutic language when it remains truthful/);
+  assert.match(realizationPrompt(context, {}, "synthetic").system, /Prefer positive-direction language when it is honest/);
+  assert.match(realizationPrompt(context, {}, "synthetic").system, /Do not introduce an unnecessary negative label/);
 });
 
 test("the plugin and MCP-served protocol carry the focus rules and every always-read reference", async () => {

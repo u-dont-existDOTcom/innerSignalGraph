@@ -12,7 +12,7 @@ section_hash: 921bcde0d16344aaac229ee483c51ea74da480b6ea71106847dcd65110f846c1
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.CRITICISM_KERNEL
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
 ---
 
 # AMEND.IC.WISDOM_CRITICISM_KERNEL

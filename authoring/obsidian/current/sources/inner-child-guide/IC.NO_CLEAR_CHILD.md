@@ -7,19 +7,19 @@ source_id: IC.NO_CLEAR_CHILD
 guide_id: inner-child-guide
 heading: Sometimes There Isn’t a Clear Child Yet
 source_role: primary-framework
-source_hash: f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e
+source_hash: 281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b
 section_hash: 66fd9f93831bcf68ccf34c8bb153dcdacf2942542906fd0bd08531d246b6503f
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.IDENTITY_FORMATION
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
 ---
 
 # Sometimes There Isn’t a Clear Child Yet
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-04-r3.txt`
+Authority path: `guides/inner-child-guide-2026-10-04-r4.txt`
 
 Locator: Lines 511–518
 

@@ -24,6 +24,11 @@ test("all affected prompt consumers receive the role/belief contract exactly onc
     hypnosisRepairPrompt(context, {}, {}, {}, {}, "synthetic"), hypnosisFinalReviewPrompt(context, {}, {}, "synthetic")];
   for (const prompt of prompts) assert.equal(prompt.system.split(roleBeliefIntegrityRules).length - 1, 1);
   for (const code of ROLE_BELIEF_BLOCKING_CODES) assert.ok(roleBeliefIntegrityRules.includes(code));
+  assert.match(roleBeliefIntegrityRules, /invent lived experience/i);
+  assert.match(roleBeliefIntegrityRules, /heartbreak, missing someone/);
+  assert.match(roleBeliefIntegrityRules, /claims such as "I've found this helps me"/);
+  assert.match(roleBeliefIntegrityRules, /draft written explicitly on behalf of a human may use that human's first-person experience only when it is grounded in supplied source material/);
+  assert.match(roleBeliefIntegrityRules, /FALSE_ASSISTANT_IDENTITY: the assistant identifies as human or invents lived experience/);
 });
 
 test("plugin reference is the exact shared rule and activated in its skill", async () => {

@@ -5,7 +5,7 @@
   "sourceMaps": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide-2026-10-04-r3.txt",
+      "file": "inner-child-guide-2026-10-04-r4.txt",
       "sections": [
         {
           "id": "IC.CHICKEN_EGG",
@@ -275,31 +275,31 @@
           "id": "IC.FORGIVENESS",
           "heading": "How to Forgive Without Forgetting",
           "lineStart": 893,
-          "lineEnd": 940,
-          "sha256": "804f3dd6fbb7572ad70d1d304a0e94ddc63016f63ffa556bf9b8101fd22b7dad",
+          "lineEnd": 942,
+          "sha256": "02211ea4068f9703baf92c8d52bb917cd71649e5447f95fcdf2e68e1a3d3ed24",
           "excerpt": "How to Forgive Without Forgetting\n\nFor many people, healing eventually includes some form of forgiveness or release from active resentment. It can’t be required on schedule, and it isn’t a prerequisite for safety, accountability, boundaries, justice, or recovery.\n\nActive resentment can narrow what you see and keep the child organized around the injury. Pressure to forgive early creates an enlightened performance while the wound goes underground.\n\nThe understanding that helps me is seeing how a p"
         },
         {
           "id": "IC.RELATIONSHIP",
           "heading": "Borrowed Adulthood in Relationship",
-          "lineStart": 941,
-          "lineEnd": 972,
-          "sha256": "3e875727d3a834b7832fbd63c5d0c790c0f651699148a38959bba96d37f329b5",
-          "excerpt": "Borrowed Adulthood in Relationship\n\nReparenting is usually framed as something you do alone or with a therapist. The child was wounded in relationship, though, and a relational injury can only heal so far in isolation.\n\nHearthwork, my peer-counseling framework, begins: Equal time. Attention without interpretation, advice, or fixing. You speak. I listen. Then we switch. Presence, Warmth, Discipline, Confidentiality. It creates a third kind of relationship alongside ordinary friendship and therapy"
+          "lineStart": 943,
+          "lineEnd": 984,
+          "sha256": "15f2d8d307e5062f120074ace50ace28ef8269f460795a1c25409a47b5b2c59c",
+          "excerpt": "Borrowed Adulthood in Relationship\n\nReparenting is usually framed as something you do alone or with a therapist. The child was wounded in relationship, though, and a relational injury can only heal so far in isolation.\n\nSometimes one person ends up carrying many borrowed-adult functions at once: food, planning, health decisions, transport, social connection, reassurance, protection, companionship, or simply the sense that somebody competent is beside you. Having somebody who can care for you whe"
         },
         {
           "id": "IC.IFS",
           "heading": "How This Relates to IFS",
-          "lineStart": 973,
-          "lineEnd": 990,
+          "lineStart": 985,
+          "lineEnd": 1002,
           "sha256": "8b697cc55bb689fb5a8ce63d55c73ce91066e3e68a3a7a0953ea8a5c3ec0a9c5",
           "excerpt": "How This Relates to IFS\n\nInternal Family Systems, or IFS, overlaps with this guide. It recognizes protective parts and teaches people to approach them without shame or combat. The “meet the protector first” sequence is compatible with IFS.\n\nMy reparenting method diverges from IFS at an important point. Standard IFS treats the healer as the Self, a calm and compassionate inner source assumed to be available once parts “unblend.” I emphasize the inner adult you build and practice occupying: Nurtur"
         },
         {
           "id": "IC.RELATED_CLINICAL_WORK",
           "heading": "Related Clinical Work",
-          "lineStart": 991,
-          "lineEnd": 1008,
+          "lineStart": 1003,
+          "lineEnd": 1020,
           "sha256": "be4059ea79b5b355f2cf6a63d0dc950049201ae07637bd66b298019352ff2139",
           "excerpt": "Related Clinical Work\n\nThis framework developed through the teachers and collaborators credited below and my own practice. Later revisions also draw on comparisons with schema therapy, compassion-focused therapy, attachment repair, motivational interviewing, mentalizing, metacognitive therapy, behavioral activation, radically open DBT, emotion-focused therapy, and spiritually integrated psychotherapy. These approaches do not all make the same claims. I borrow particular distinctions and practice"
         }

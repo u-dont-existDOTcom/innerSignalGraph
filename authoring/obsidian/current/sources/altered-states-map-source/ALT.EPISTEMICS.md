@@ -16,7 +16,7 @@ cited_by_node_ids:
   - ROUTE.ALTERED_AFTERMATH
   - ROUTE.ALTERED_STABLE_THERAPY
   - ROUTE.ALTERED_STATE_TRANSFER
-projection_input_sha256: fc8dd37105e6ec367a7b6cbf4b2b0913c7cbafb96e7325e6d695811e3512330a
+projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
 ---
 
 # Visions, Entities, Memories, and Commands
