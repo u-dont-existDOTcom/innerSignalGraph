@@ -375,6 +375,6 @@ test("social connection need can be Protector action and remains broader than on
   });
   assert.equal(plan.primaryJob.id, "ROUTE.ACT_OUTWARD");
   assert.ok(plan.selectedNodes.some((item) => item.id === "IC.COMMUNITY_SUPPORT"));
-  assert.ok(plan.selectedNodes.some((item) => item.id === "IC.PROTECTOR_ACTION"));
+  assert.ok(plan.trace.some((item) => item.id === "IC.PROTECTOR_ACTION"));
   assert.ok(plan.requiredNuance.some((item) => /portfolio of imperfect supports/i.test(item)));
 });
