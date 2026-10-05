@@ -372,7 +372,18 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   if (update?.response === "declined" && !hasFresh("representation_declined")) { status = "UNCLEAR"; decision = "SWITCH"; route = "reconsider"; reason = "The exercise was declined; stop that exercise without withdrawing care."; }
   if (harm && !significantHarm && decision !== "SWITCH") { status = "ADVERSE"; decision = "PROBE"; route = "continue"; reason = "Distress or an adverse-looking response is present. Review fit, pacing and attribution without assuming the exercise caused pre-existing distress or that the whole method failed."; }
   if (external) { status = harm ? "ADVERSE" : "STALLED"; decision = "SWITCH"; route = "external"; reason = "Evidenced state constraints make external stabilization the next strategy."; addFailure("STATE_CONSTRAINT"); }
-  if (variables.actionable_problem === "present" && !emergency && !significantHarm) {
+  if (variables.actionable_problem === "present" && variables.practical_action_state === "blocked_waiting" && !external && !emergency && !significantHarm) {
+    if (old?.strategy.node_id === "ROUTE.DEFINED_WAIT" && ["CONTINUE", "PROBE", "ADJUST_DELIVERY", "REFINE"].includes(decision)) {
+      route = "continue";
+      if (decision === "CONTINUE") decision = "PROBE";
+      reason = "The practical problem remains real, but the known route is still blocked by an external prerequisite. Preserve the blocker and reopening condition rather than manufacturing another action.";
+    } else {
+      route = "reconsider";
+      decision = "PROBE";
+      reason = "The practical problem remains real, but all currently supported next steps are blocked by a known external prerequisite. Route to a defined wait instead of inventing a workaround.";
+    }
+  } else if (variables.actionable_problem === "present" && variables.practical_action_state !== "resolved"
+      && !(variables.practical_action_state === "blocked_waiting" && external) && !emergency && !significantHarm) {
     if (old?.strategy.node_id === "ROUTE.ACT_OUTWARD" && ["CONTINUE", "PROBE", "ADJUST_DELIVERY", "REFINE"].includes(decision)) {
       route = "continue";
       if (decision === "CONTINUE") decision = "PROBE";

@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-04-r1`
+Queue version: `2026-10-05-r1`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -85,6 +85,19 @@ Suggested reader-facing material to merge with that section without duplicating 
 > Then review what happened without turning the review into another judgment of your worth. The question is simply whether this action made the caring, protective, or guiding function a little more real outside the exercise, and what should be kept or adjusted next time.
 
 Preserve these limits: do not require homework after every meditation; do not treat one outward act as generalized adult capacity; do not call weak carryover proof that the meditation was fake or that reparenting failed.
+
+## Pending bundle D — blocked action, conversational continuity, and memory support
+
+Upstream authority: `AMEND.CROSS.BLOCKED_ACTION_WAIT`, `AMEND.CROSS.SUPPORT_MODE_CONTINUITY`, `AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING`, and the corresponding runtime/graph rules.
+
+### PGQ-014 — Some real problems are blocked, not actionable yet
+Preserve the reader-facing distinction between a concrete problem that has a feasible next action and one whose currently relevant steps are all blocked by a known external prerequisite, permission, timing condition, or unavailable resource. In the blocked state, preserve the actual constraint chain and the condition that would reopen action rather than inventing a workaround that assumes a known constraint away. Waiting for a real external condition is not failed motivation or avoidance; put available effort into another useful priority until the route reopens.
+
+### PGQ-015 — Remember a stated support mode and avoid stale advice
+Preserve the conversational principle that an explicit preference for listening, collaborative untangling, advice/ideas, or a mix should be remembered until changed rather than repeatedly re-asked. Do not infer this preference from gender or another stereotype. When substantially the same guidance was already given and new information does not alter its rationale or feasibility, reference it briefly and move forward instead of presenting the old advice as a new intervention.
+
+### PGQ-016 — Memory support is not the same as reflective journaling
+Preserve the distinction between meaning-making journals and low-interpretation external memory. When reflective journaling makes experience more confusing, a short dated fact log, what-helped note, reminder, next-step entry, or voice note can preserve continuity without requiring simultaneous interpretation. Pattern-finding can happen later if useful; a memory aid does not need to explain the person's life.
 
 ## EMPTY sentinel
 

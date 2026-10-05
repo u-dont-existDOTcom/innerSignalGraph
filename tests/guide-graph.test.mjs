@@ -11,9 +11,9 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.contractVersion, "guide-graph-v1");
   assert.equal(bundle.version, "inner-child-somatic-pilot-2026-08-09-r5");
   assert.equal(bundle.stats.graphCount, 3);
-  assert.equal(bundle.stats.nodeCount, 81);
-  assert.equal(bundle.stats.edgeCount, 114);
-  assert.equal(bundle.stats.ownerAmendmentCount, 50);
+  assert.equal(bundle.stats.nodeCount, 82);
+  assert.equal(bundle.stats.edgeCount, 116);
+  assert.equal(bundle.stats.ownerAmendmentCount, 53);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "altered-states-map-source"));
@@ -29,7 +29,7 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 61);
+  assert.equal(result.count, 62);
 });
 
 test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {
@@ -178,6 +178,56 @@ test("a concrete problem outranks surrounding rumination and routes to outward a
   assert.ok(plan.selectedNodes.some((item) => item.id === "ROUTE.GO_INWARD"));
   assert.ok(!plan.selectedNodes.some((item) => item.id === "ROUTE.LEAVE_ALONE"));
   assert.ok(plan.requiredNuance.some((item) => /outward action goes first/i.test(item)));
+});
+
+test("a real practical problem with a known external blocker routes to defined wait instead of inventing another action", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      attention_loop: "present", thinking_yield: "mixed",
+      actionable_problem: "present", practical_action_state: "blocked_waiting",
+      unresolved_inner_material: "absent", inward_attention_effect: "neutral"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.DEFINED_WAIT");
+  assert.ok(!plan.selectedNodes.some((item) => item.id === "ROUTE.ACT_OUTWARD"));
+  assert.equal(plan.nextQuestion, "");
+  assert.ok(plan.requiredNuance.some((item) => /problem can be concrete and important while currently lacking an executable next step/i.test(item)));
+  assert.ok(plan.avoid.some((item) => /undocumented exception/i.test(item)));
+});
+
+test("immediate safety still outranks a blocked practical lane", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "unsafe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "high", dissociation: "none", altered_state: "sober",
+      actionable_problem: "present", practical_action_state: "blocked_waiting",
+      unresolved_inner_material: "absent", attention_loop: "present", thinking_yield: "mixed", inward_attention_effect: "neutral"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "IC.SAFETY_ORIENTATION");
+  assert.ok(!plan.selectedNodes.some((item) => item.id === "ROUTE.DEFINED_WAIT"));
+});
+
+test("a concrete problem with a feasible current step still routes to outward action", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      attention_loop: "present", thinking_yield: "mixed",
+      actionable_problem: "present", practical_action_state: "action_available",
+      unresolved_inner_material: "present", inward_attention_effect: "neutral"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.ACT_OUTWARD");
+  assert.ok(!plan.selectedNodes.some((item) => item.id === "ROUTE.DEFINED_WAIT"));
 });
 
 test("clearly unresolved material routes inward through existing inner-child and somatic branches", async () => {

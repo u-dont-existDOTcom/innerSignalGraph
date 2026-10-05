@@ -501,6 +501,36 @@
       "excerpt": "Treat in-session reparenting capacity and ordinary-life transfer as distinct evidence. When a Nurturer, Protector, Guide, or other adult function is clearly usable during an inner-child practice but ordinary life still shows little or no matching carryover, record that mismatch as session-only transfer rather than assuming the person needs a deeper, more intense, or simply repeated version of an already-working exercise. Name the function that actually worked and choose one bounded five-percent ordinary-life action that expresses the same function. Keep the action small enough to fit current capacity, and review what it actually contributed without requiring the younger state to trust it yet, without demanding immediate emotional change, and without turning follow-through into punishment or self-surveillance. Do not make every meditation produce homework; use this transfer route only when the transcript supports a real mismatch between in-session capacity and ordinary-life carryover. One aligned action is emerging transfer, not generalized capacity; broader integration requires repeated carryover over time or across relevant contexts. A good meditation is proximal evidence of in-session capacity, not proof of durable ordinary-life change.",
       "status": "owner-approved",
       "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.CROSS.BLOCKED_ACTION_WAIT",
+      "heading": "AMEND.CROSS.BLOCKED_ACTION_WAIT",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "d8c5a89a5a2f407c0c3971727cd3481e1f40cac3298b723d66e29a167dc8b627",
+      "excerpt": "A concrete practical problem can remain real while no useful action is currently available. Distinguish action available now from blocked waiting. Use blocked waiting only when the relevant next steps are all constrained by an explicitly known external prerequisite, permission, timing condition, unavailable resource, or other condition outside the person's present control. Preserve the actual constraint chain and the event or condition that would reopen action. Do not invent a workaround that silently requires one of the known constraints to be false. An alternative is worth pursuing only when it is genuinely independent of the blocker and supported by available evidence. Waiting for a real external condition is not passivity, avoidance, lack of motivation, or therapeutic failure; redirect available effort toward another useful priority until the route reopens.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.SUPPORT_MODE_CONTINUITY",
+      "heading": "AMEND.CROSS.SUPPORT_MODE_CONTINUITY",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "e6d6053db8950b2642932654133bab0d17826e25c80a119002466998f73bdf15",
+      "excerpt": "When a person explicitly states how conversational support helps them most—primarily being heard, collaborative untangling, ideas/advice, or a mix—treat that as a durable preference until they change it. Do not ask the same support-mode question again merely because the topic changes, and do not infer the preference from gender, age, diagnosis, culture, or another stereotype. A current explicit request can override the default for that turn. Before repeating advice or a therapeutic framing, check recent conversation and task history; if substantially the same guidance was already delivered and the new turn does not change its rationale, feasibility, or application, reference it minimally and advance from the new information rather than presenting the old advice as new.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING",
+      "heading": "AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "24ce3110868f726866fcc6d755fc9f8b05ee6d8cfe24f7c3a927fe7591b5c1e2",
+      "excerpt": "Separate reflective journaling from external memory support. If narrative, interpretive, or meaning-making journaling increases confusion, do not assume the answer is more journaling or more interpretation. Preserve the useful memory and continuity function in the least cognitively demanding format that fits the person—for example brief dated facts, what helped, what needs remembering, one next step, or a voice note—while leaving interpretation and pattern-finding optional for later. A memory aid does not need to explain the person's life in order to be useful.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
     }
   ]
 }

@@ -34,6 +34,25 @@ test("longitudinal rules detect inadequate examples, repeated questions, and cli
   assert.match(longitudinalClinicalRules, /self-love, self-respect, or reduced self-rejection/u);
 });
 
+test("longitudinal rules preserve constraint chains, support mode, nonrepetitive advice, and low-interpretation memory support", () => {
+  assert.match(longitudinalClinicalRules, /A real problem can be blocked rather than actionable now/u);
+  assert.match(longitudinalClinicalRules, /known external prerequisite/u);
+  assert.match(longitudinalClinicalRules, /durable conversational preference/u);
+  assert.match(longitudinalClinicalRules, /do not re-ask on later turns/u);
+  assert.match(longitudinalClinicalRules, /Before repeating advice/u);
+  assert.match(longitudinalClinicalRules, /Distinguish reflective journaling from external memory support/u);
+  const prompt = realizationPrompt(
+    { userMessage: "Synthetic current turn asks to listen.", recentTranscript: "Synthetic prior advice.", interventionContract: { variables: { support_mode_preference: "advice", support_mode_current: "listen", practical_action_state: "blocked_waiting" } } },
+    {},
+    "synthetic"
+  );
+  assert.match(prompt.system, /support_mode_current is the effective mode for this turn/u);
+  assert.match(prompt.system, /durable support_mode_preference is the fallback baseline/u);
+  assert.match(prompt.system, /Treat known practical constraints as binding context/u);
+  assert.match(prompt.system, /Do not re-deliver already-given advice as if it were new/u);
+  assert.match(prompt.system, /simple factual log or voice note/u);
+});
+
 test("case audit receives the longitudinal invariants before routing", () => {
   const prompt = caseAuditPrompt(
     { recentTranscript: "Synthetic prior turn.", userMessage: "Synthetic current turn." },
@@ -43,6 +62,10 @@ test("case audit receives the longitudinal invariants before routing", () => {
   assert.match(prompt.system, /client's appraisal that an event is minor/u);
   assert.match(prompt.system, /nonverbal critic, presence, shame state, or part/u);
   assert.match(prompt.system, /client-generated functional hypothesis/u);
+  assert.match(prompt.system, /all relevant next steps are blocked by a known external prerequisite/u);
+  assert.match(prompt.system, /explicit durable support-mode preference being lost/u);
+  assert.match(prompt.system, /substantially identical advice being re-delivered/u);
+  assert.match(prompt.system, /reflective journaling being prescribed again/u);
 });
 
 test("response realization receives the same longitudinal invariants", () => {

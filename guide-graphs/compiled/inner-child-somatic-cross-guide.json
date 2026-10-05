@@ -545,6 +545,14 @@
               "intent",
               "imminent"
             ]
+          },
+          {
+            "field": "practical_action_state",
+            "op": "in",
+            "value": [
+              "blocked_waiting",
+              "resolved"
+            ]
           }
         ]
       },
@@ -555,11 +563,13 @@
         "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
         "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
         "AMEND.IC.CONTINUITY_TITRATION",
-        "AMEND.IC.COMMUNITY_REPARENTING"
+        "AMEND.IC.COMMUNITY_REPARENTING",
+        "AMEND.CROSS.BLOCKED_ACTION_WAIT"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+        "Before planning an action, distinguish a feasible step available now from a real problem that is externally blocked. If all supported next steps are blocked, use the defined-wait route rather than inventing a workaround.",
         "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
         "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
         "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
@@ -570,6 +580,7 @@
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
+        "Do not assign an action that requires a known external constraint to be false; blocked waiting is a different state from failure to act.",
         "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
         "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.",
         "Do not call a social, romantic or sexual action healthy exposure merely because it is difficult when its main function is reassurance, self-testing or using another person to regulate uncertainty.",
@@ -608,6 +619,88 @@
         "purpose": "discriminate",
         "unresolvedFields": []
       }
+    },
+    {
+      "id": "ROUTE.DEFINED_WAIT",
+      "title": "Hold a real problem at a defined external blocker",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "actionable_problem",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "practical_action_state",
+            "op": "eq",
+            "value": "blocked_waiting"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.BLOCKED_ACTION_WAIT"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Preserve the known constraint chain, including steps already completed, and state the external event, permission, resource, or timing condition that would reopen action.",
+        "Do not generate substitute actions merely to avoid waiting. Offer an alternative only when it is genuinely independent of the blocker and supported by the transcript or grounded external information.",
+        "Treat a defined wait as an active planning state: keep the reopening condition visible, then redirect available effort toward another useful current priority instead of repeatedly solving the same blocked step.",
+        "When the reopening condition changes or a genuinely independent feasible step becomes available, update practical_action_state to action_available and return to ordinary outward action."
+      ],
+      "avoid": [
+        "Do not invent an undocumented exception, alternate address, payment path, pickup option, transport route, institutional policy, or other workaround that silently contradicts an established constraint.",
+        "Do not re-ask the already established blocker chain merely because the model has lost track of it; ask only when new information could change the route.",
+        "Do not interpret waiting on a real external prerequisite as avoidance, lack of motivation, dependence, resistance, or therapeutic failure."
+      ],
+      "successSignals": [
+        "The concrete problem remains represented accurately while no impossible or contradicted action is assigned.",
+        "The blocker and reopening condition are clear enough that attention can move to another feasible task until something materially changes."
+      ],
+      "tags": [
+        "three-way-routing",
+        "outward-action",
+        "blocked-waiting",
+        "constraint-chain",
+        "guide"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not claim a workaround exists when the available evidence does not establish one.",
+          "Do not claim that waiting on a known external prerequisite proves passivity, avoidance, lack of motivation, or failed self-leadership."
+        ],
+        "requiredNuance": [
+          "A problem can be concrete and important while currently lacking an executable next step; problem reality and present actionability are separate variables.",
+          "A genuinely independent supported action can coexist with a blocked lane. blocked_waiting applies to the live practical route only when all relevant next steps for that route are currently blocked.",
+          "Defined waiting is temporary and conditional: a change in the blocker or new grounded information can reopen outward action without requiring the person to re-explain the entire problem."
+        ]
+      },
+      "defaultQuestion": ""
     },
     {
       "id": "ROUTE.EXTERNAL_EMBODIMENT",
@@ -1802,6 +1895,16 @@
       "from": "ROUTE.MEDICAL_RED_FLAG",
       "relation": "precedes",
       "to": "ROUTE.GO_INWARD"
+    },
+    {
+      "from": "ROUTE.THREE_WAY_GATE",
+      "to": "ROUTE.DEFINED_WAIT",
+      "relation": "routes-to"
+    },
+    {
+      "from": "ROUTE.DEFINED_WAIT",
+      "to": "ROUTE.ACT_OUTWARD",
+      "relation": "reopens-to-when-feasible"
     }
   ],
   "taskPolicyVersion": 1,

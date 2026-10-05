@@ -1,4 +1,5 @@
 import { PERSPECTIVE_PRACTICE_VALUES } from "./perspective-practices.mjs";
+import { SUPPORT_MODE_PREFERENCES } from "../case-formulation/support-mode.mjs";
 
 export const GUIDE_GRAPH_CONTRACT = "guide-graph-v1";
 export const GUIDE_GRAPH_BUNDLE_VERSION = "inner-child-somatic-pilot-2026-08-09-r5";
@@ -54,6 +55,9 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   belonging_pressure: ["present", "absent", "unknown"],
   self_criticism: ["present", "absent", "unknown"],
   actionable_problem: ["present", "absent", "unknown"],
+  practical_action_state: ["action_available", "blocked_waiting", "resolved", "unknown"],
+  support_mode_preference: SUPPORT_MODE_PREFERENCES,
+  support_mode_current: SUPPORT_MODE_PREFERENCES,
   unresolved_inner_material: ["present", "absent", "unknown"],
   attention_loop: ["present", "absent", "unknown"],
   thinking_yield: ["new_information_or_action", "repetitive_no_new_output", "mixed", "unknown"],

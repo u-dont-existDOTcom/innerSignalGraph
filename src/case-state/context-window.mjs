@@ -180,6 +180,7 @@ export function decisionRelevantProjection(context) {
     high_relevance_items: state.items.filter((item) => item.decision_relevance === "high" && item.still_current !== false).map((item) => ({ id: item.id, status: item.status, confidence: item.confidence, source: structuredClone(item.source), statement: item.statement })),
     open_high_relevance_contradictions: state.contradiction_clusters.filter((item) => item.status === "open" && item.decision_relevance === "high").map((item) => item.id),
     answered_questions: state.answered_questions.filter((item) => item.still_current !== false).map((item) => item.id),
+    support_mode_preference: state.support_mode_preference ?? "unknown",
     current_episode: state.current_episode ? { id: state.current_episode.id, target: state.current_episode.target, route: state.current_episode.route, next_question: state.current_episode.next_question } : null,
     threat_pathway: state.threat_pathway?.current ? {
       issue: state.threat_pathway.current.issue,
