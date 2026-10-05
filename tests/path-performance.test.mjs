@@ -246,6 +246,26 @@ test("significant dissociation/fragmentation overrides praise, movement, old tas
  assert.match(p.executionContract.taskGuidance.join(" "), /No deeper imagery/);
 });
 
+test("blocked practical work interrupts the current strategy with a defined wait rather than another action plan", () => {
+ const variables = { ...steady, actionable_problem: "present", practical_action_state: "blocked_waiting" };
+ const reviewed = review(start(), update([]), variables);
+ assert.equal(reviewed.latest.route, "reconsider");
+ assert.match(reviewed.latest.reason, /blocked by a known external prerequisite/i);
+ const p = plan(reviewed, variables);
+ assert.equal(p.primaryJob.id, "ROUTE.DEFINED_WAIT");
+ assert.deepEqual(requiredRealizationNodeIds(p), ["ROUTE.DEFINED_WAIT"]);
+ assert.equal(p.nextQuestion, "");
+});
+
+test("external stabilization still outranks a separately blocked practical lane", () => {
+ const variables = { ...steady, actionable_problem: "present", practical_action_state: "blocked_waiting" };
+ const reviewed = review(start(), update([signal("external_stabilization_needed")]), variables);
+ assert.equal(reviewed.latest.route, "external");
+ const p = plan(reviewed, variables);
+ assert.equal(p.primaryJob.id, "ROUTE.EXTERNAL_EMBODIMENT");
+ assert.notEqual(p.primaryJob.id, "ROUTE.DEFINED_WAIT");
+});
+
 test("external stabilization replaces deeper inner work and actionable safety retains precedence", () => {
  const s = review(start(), update([signal("external_stabilization_needed")]));
  assert.equal(plan(s).primaryJob.id, "ROUTE.EXTERNAL_EMBODIMENT");

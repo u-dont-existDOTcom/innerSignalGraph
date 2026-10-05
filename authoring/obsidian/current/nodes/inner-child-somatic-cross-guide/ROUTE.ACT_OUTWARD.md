@@ -23,6 +23,7 @@ source_refs:
   - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
   - AMEND.IC.CONTINUITY_TITRATION
   - AMEND.IC.COMMUNITY_REPARENTING
+  - AMEND.CROSS.BLOCKED_ACTION_WAIT
 regression_refs:
   - G013
   - G014
@@ -32,9 +33,10 @@ regression_refs:
   - G066
   - G070
   - G091
-base_record_sha256: decb951fb693a2ee2922ef7f5af4d5ae418994911841fb1411a00ad392929d23
-base_graph_sha256: f1bea04c4bb68ab1421a367d01dcc78009bcd00e338e401deba09c8a9319550b
-projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179848e5c9e9
+  - G092
+base_record_sha256: 7ccb5150c159bf9197c976f0b113cd52de42d0ac0406eb8cae6f2dd68a934322
+base_graph_sha256: 32fe4c146863ea66e757304b8b840c4eb219d5d2fdc51ce7c1b1896bb6771455
+projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
 ---
 
 # Act on the concrete problem
@@ -73,11 +75,20 @@ projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179
           "intent",
           "imminent"
         ]
+      },
+      {
+        "field": "practical_action_state",
+        "op": "in",
+        "value": [
+          "blocked_waiting",
+          "resolved"
+        ]
       }
     ]
   },
   "avoid": [
     "Do not wait for complete emotional certainty before taking a reversible necessary action.",
+    "Do not assign an action that requires a known external constraint to be false; blocked waiting is a different state from failure to act.",
     "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
     "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.",
     "Do not call a social, romantic or sexual action healthy exposure merely because it is difficult when its main function is reassurance, self-testing or using another person to regulate uncertainty.",
@@ -108,6 +119,7 @@ projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179
   },
   "recommendations": [
     "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+    "Before planning an action, distinguish a feasible step available now from a real problem that is externally blocked. If all supported next steps are blocked, use the defined-wait route rather than inventing a workaround.",
     "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
     "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
     "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
@@ -139,3 +151,5 @@ projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179
 [[current/governance/amendments/AMEND.IC.CONTINUITY_TITRATION]]
 
 [[current/governance/amendments/AMEND.IC.COMMUNITY_REPARENTING]]
+
+[[current/governance/amendments/AMEND.CROSS.BLOCKED_ACTION_WAIT]]

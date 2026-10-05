@@ -11,7 +11,7 @@ source_hash: 281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b
 section_hash: be4059ea79b5b355f2cf6a63d0dc950049201ae07637bd66b298019352ff2139
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179848e5c9e9
+projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
 ---
 
 # Related Clinical Work

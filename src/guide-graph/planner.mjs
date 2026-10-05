@@ -76,6 +76,9 @@ function definiteNo(values) {
 
 export function deriveCaseVariables(input = {}) {
   const variables = validateCaseVariables({ ...blankCaseVariables(), ...input });
+  if (variables.support_mode_current === "unknown" && variables.support_mode_preference !== "unknown") {
+    variables.support_mode_current = variables.support_mode_preference;
+  }
 
   const unsafeForDeep = definiteNo([
     variables.present_safety === "unsafe",
@@ -229,7 +232,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   // existing exception and higher-priority safety/external routes still outrank it.
   if (!control && preparationNodeId && !emergency
       && !eligible.some(node => node.tier <= 2)
-      && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id))) {
+      && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.DEFINED_WAIT", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id))) {
     const preparation = eligible.find(node => node.id === preparationNodeId);
     if (preparation) eligible = [preparation, ...eligible.filter(node => node.id !== preparationNodeId)];
   }
@@ -237,7 +240,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   // constraints, a live external problem or an uncompleted relational reality check.
   if (taskPolicy && task?.agreement === "accepted" && task.node_id && !emergency
       && !eligible.some(node => node.tier <= 2)
-      && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id) && node.id !== task.node_id)) {
+      && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.DEFINED_WAIT", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id) && node.id !== task.node_id)) {
     const taskPriorityId = preparationNodeId ?? task.node_id;
     eligible = [...eligible].sort((a,b) => Number(b.id === taskPriorityId) - Number(a.id === taskPriorityId));
   }
@@ -251,7 +254,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     "ROUTE.ALTERED_ACUTE_STABILIZATION",
     "ROUTE.ALTERED_ACTION_LOCK"
   ]);
-  const higherRoutes = new Set([...safetyIds, "ROUTE.ACT_OUTWARD", "ROUTE.EXTERNAL_EMBODIMENT", "ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.LEAVE_ALONE"]);
+  const higherRoutes = new Set([...safetyIds, "ROUTE.DEFINED_WAIT", "ROUTE.ACT_OUTWARD", "ROUTE.EXTERNAL_EMBODIMENT", "ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.LEAVE_ALONE"]);
   if (control && !control.active && control.latest.decision === "PROBE" && !interrupt && !emergency) {
     const precedence = eligible.find(node => higherRoutes.has(node.id) || node.tier === 1);
     const probeNode = eligible.find(node => node.id === "ROUTE.THREE_WAY_GATE");
@@ -277,6 +280,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   if (interrupt) {
     const route = control.latest.route;
     const protective = eligible.find(n => (safetyIds.has(n.id) || n.tier === 1) && n.id !== control.active?.strategy.node_id);
+    const wait = eligible.find(n => n.id === "ROUTE.DEFINED_WAIT" && n.id !== control.active?.strategy.node_id);
     const action = eligible.find(n => n.id === "ROUTE.ACT_OUTWARD" && n.id !== control.active?.strategy.node_id);
     const relational = eligible.find(n => n.id === "ROUTE.RELATIONAL_REALITY_CHECK" && n.id !== control.active?.strategy.node_id);
     const forcedId = route === "safety" ? "IC.SAFETY_ORIENTATION"
@@ -284,7 +288,8 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
       : route === "external" ? "ROUTE.EXTERNAL_EMBODIMENT"
       : route === "leave" ? "ROUTE.LEAVE_ALONE" : "ROUTE.THREE_WAY_GATE";
     controlNode = route === "safety" ? nodes.find(n => n.id === "IC.SAFETY_ORIENTATION")
-      : protective ?? action ?? (route === "reconsider" ? relational : null) ?? nodes.find(n => n.id === forcedId);
+      : route === "external" ? nodes.find(n => n.id === "ROUTE.EXTERNAL_EMBODIMENT")
+      : protective ?? wait ?? action ?? (route === "reconsider" ? relational : null) ?? nodes.find(n => n.id === forcedId);
     if (!controlNode || blockedIds.has(controlNode.id)) throw new TypeError("Path controller requires an available permitted routing node.");
     if (controlNode.id === control.active?.strategy.node_id && route !== "safety") {
       const exhaustedProbe = control.active.strategy.node_id === "ROUTE.THREE_WAY_GATE";
@@ -354,7 +359,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     .filter(item => !taskPolicy || !emergency || ["present_safety", "orientation", "ability_to_stop", "ability_to_return", "support_available"].includes(item.variable))
     .sort((a,b) => (b.importance ?? 0) - (a.importance ?? 0));
   const currentTaskQuestion = !emergency && task && (task.node_id === primary?.id || draftEditorSupport) ? taskQuestion(task) : "";
-  const noQuestion = taskPolicy && ((!emergency && (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE"))
+  const noQuestion = taskPolicy && ((!emergency && (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE" || primary?.id === "ROUTE.DEFINED_WAIT"))
     || (task?.question_focus === "none" && (task.node_id === primary?.id || draftEditorSupport) && !emergency));
   let nextQuestion = noQuestion ? "" : currentTaskQuestion || questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "";
   let nextQuestionSource = !nextQuestion ? null : currentTaskQuestion

@@ -12,6 +12,7 @@ import {
   validateProtectiveCompatibilityState
 } from "../case-formulation/protective-compatibility.mjs";
 import { validateFocusState } from "../case-formulation/focus-discipline.mjs";
+import { SUPPORT_MODE_PREFERENCES } from "../case-formulation/support-mode.mjs";
 
 export const CASE_STATE_VERSION = 1;
 export const CASE_STATE_STATUSES = Object.freeze(["direct_report", "supervisor_report", "observed_pattern", "hypothesis", "inference", "unresolved_conflict"]);
@@ -132,6 +133,7 @@ export function createEmptyCaseState({ caseId = "local-case" } = {}) {
     current_episode: null,
     threat_pathway: null,
     protective_compatibility: null,
+    support_mode_preference: "unknown",
     retrieval_hints: []
   };
 }
@@ -172,6 +174,7 @@ export function validateCaseState(value) {
   validateEpisode(value.current_episode);
   if (Object.hasOwn(value, "threat_pathway")) validateThreatPathwayState(value.threat_pathway);
   if (Object.hasOwn(value, "protective_compatibility")) validateProtectiveCompatibilityState(value.protective_compatibility);
+  if (Object.hasOwn(value, "support_mode_preference") && !SUPPORT_MODE_PREFERENCES.includes(value.support_mode_preference)) throw new ValidationError("caseState.support_mode_preference is invalid.");
   if (Object.hasOwn(value, "focus_discipline")) validateFocusState(value.focus_discipline);
   return value;
 }
@@ -203,7 +206,8 @@ export function applyCaseStatePatch(previous, patch = {}) {
     trajectory_observability: patch.trajectory_observability ? clone(patch.trajectory_observability) : before.trajectory_observability,
     current_episode: Object.hasOwn(patch, "current_episode") ? clone(patch.current_episode) : before.current_episode,
     threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null),
-    protective_compatibility: Object.hasOwn(patch, "protective_compatibility") ? clone(patch.protective_compatibility) : (before.protective_compatibility ?? null)
+    protective_compatibility: Object.hasOwn(patch, "protective_compatibility") ? clone(patch.protective_compatibility) : (before.protective_compatibility ?? null),
+    support_mode_preference: Object.hasOwn(patch, "support_mode_preference") ? patch.support_mode_preference : (before.support_mode_preference ?? "unknown")
   };
   // Parked side questions are optional runtime memory; historical states without them stay valid.
   if (Object.hasOwn(patch, "focus_discipline")) next.focus_discipline = clone(patch.focus_discipline);
@@ -263,6 +267,7 @@ export function diffCaseStates(previous, next) {
     current_episode_changed: JSON.stringify(before.current_episode) !== JSON.stringify(after.current_episode),
     threat_pathway_changed: JSON.stringify(before.threat_pathway ?? null) !== JSON.stringify(after.threat_pathway ?? null),
     protective_compatibility_changed: JSON.stringify(before.protective_compatibility ?? null) !== JSON.stringify(after.protective_compatibility ?? null),
+    support_mode_preference_changed: (before.support_mode_preference ?? "unknown") !== (after.support_mode_preference ?? "unknown"),
     focus_discipline_changed: JSON.stringify(before.focus_discipline ?? null) !== JSON.stringify(after.focus_discipline ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
@@ -276,6 +281,7 @@ export function projectCaseStateForInspection(state) {
     currentEpisode: value.current_episode,
     threatPathway: value.threat_pathway ?? null,
     protectiveCompatibility: value.protective_compatibility ?? null,
+    supportModePreference: value.support_mode_preference ?? "unknown",
     factsAndHypotheses: value.items,
     contradictions: value.contradiction_clusters,
     settledAnswers: value.answered_questions,
@@ -381,12 +387,17 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   const protectiveCompatibility = compatibilityAssessment || previous.protective_compatibility
     ? updateProtectiveCompatibilityState(previous.protective_compatibility ?? null, compatibilityAssessment, compatibilityDecision, { turnId, recordedAt })
     : null;
+  const extractedSupportMode = snapshot?.variables?.support_mode_preference;
+  const supportModePreference = SUPPORT_MODE_PREFERENCES.includes(extractedSupportMode) && extractedSupportMode != "unknown"
+    ? extractedSupportMode
+    : (previous.support_mode_preference ?? "unknown");
   return applyCaseStatePatch(projectEvidenceAuthority(previous), {
     items,
     intervention_history: interventionHistory,
     current_episode: currentEpisode,
     threat_pathway: threatPathway,
     protective_compatibility: protectiveCompatibility,
+    support_mode_preference: supportModePreference,
     ...(snapshot?.focus_discipline ? { focus_discipline: snapshot.focus_discipline } : {})
   });
 }

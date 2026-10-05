@@ -24,12 +24,12 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  revision: "practice-to-life-transfer-2026-10-04-r3",
+  revision: "blocked-action-support-mode-2026-10-05-r1",
   fast: Object.freeze({
-    semanticHash: "e9624348b7e508b2caf1af3736f8aa232c725bd7fb841e253932c60c33ef32e9"
+    semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "d75e92465f7290db265c5147be243e76e3fc327c45d6c79dd1775ea6cba7621c"
+    semanticHash: "18d7a0eeddb898e3ad4c7768d0aa0c22de8e461ddb7ba6240ccde616c5d3857e"
   })
 });
 

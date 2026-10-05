@@ -7,12 +7,12 @@ source_id: AMEND.IC.WISDOM_COMMON_HUMANITY
 guide_id: owner-amendments
 heading: AMEND.IC.WISDOM_COMMON_HUMANITY
 source_role: owner-approved-extension
-source_hash: 361c766fea0540408f69765acee0bd8407a3c3b2f93ad77ee62152b449c84e92
+source_hash: 2b9bb2ea891e003d72d2ca12580f635a4e5b8aa59c0ce06157bd92995a38a3f2
 section_hash: 9c59fe467e60712dc2fccbf63936d7648e1e611428b9735e79648ff67adc0c25
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.COMMON_HUMANITY
-projection_input_sha256: e36e91942351df953f6c5630631ef9cd60322cea36c01d7956e3179848e5c9e9
+projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
 ---
 
 # AMEND.IC.WISDOM_COMMON_HUMANITY

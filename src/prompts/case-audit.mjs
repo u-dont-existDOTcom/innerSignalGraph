@@ -32,6 +32,10 @@ Pay special attention to:
 - a divided, real/fake, alien, or two-self experience being declared healing, pathological, internal, or external without discriminating evidence; preserve differentiation/integration versus alienation/expulsion as live alternatives when supported;
 - a mundane concrete example being used to cancel an earlier high-stakes description without checking whether the example is representative or why the client counts it as an instance;
 - a supposedly high-information question whose answer is already present in the recent transcript or settled task history;
+- a concrete practical problem being treated as actionable-now when the transcript establishes that all relevant next steps are blocked by a known external prerequisite, or a proposed workaround silently requiring a known constraint to be false; preserve the blocker chain and reopening condition;
+- an explicit durable support-mode preference being lost, re-asked without evidence of change, inferred from gender/demographics, or overwritten by a clearly one-turn request; support_mode_current may differ for one turn without changing support_mode_preference;
+- substantially identical advice being re-delivered as new despite no change in rationale, feasibility, or application, instead of minimally referencing it and advancing from the new information;
+- reflective journaling being prescribed again after the person reports that interpretation-heavy journaling increases confusion, without distinguishing simple external memory support from meaning-making;
 - a client-generated functional hypothesis being ignored because it is unproven, or confirmed merely because it sounds coherent; require concrete function, prediction, and disconfirming evidence before promoting it, and make it the live question only when its answer could change the next step for the current focus (otherwise it is a parked side question);
 - a question chasing the client's tangent or the latest salient detail instead of the current focus, or a side question that is actually load-bearing for the current target being set aside.
 ${focusDisciplineAuditRules}

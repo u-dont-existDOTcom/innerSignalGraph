@@ -388,6 +388,17 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
     caseSnapshotGenerationSchema,
     onProgress
   );
+  // Carry a durable support-mode baseline mechanically. The extractor may supply a
+  // one-turn support_mode_current override without erasing the stored preference.
+  const durableSupportMode = context.durableCaseState?.support_mode_preference ?? "unknown";
+  if (durableSupportMode !== "unknown") {
+    if (extraction.value.variables.support_mode_preference === "unknown") {
+      extraction.value.variables.support_mode_preference = durableSupportMode;
+    }
+    if (extraction.value.variables.support_mode_current === "unknown") {
+      extraction.value.variables.support_mode_current = durableSupportMode;
+    }
+  }
   // Ignore model-supplied controller state. Only the existing session state owns history.
   delete extraction.value.path_performance;
   delete extraction.value._path_prior;
