@@ -16,7 +16,8 @@ test("generated Mermaid is deterministic, complete, visibly layered, and injecti
   const options = { bundle, registries, mapId: "inner-child", projectionInputSha256: "a".repeat(64) };
   const first = renderMermaidMap(options);
   assert.equal(renderMermaidMap(options), first);
-  assert.match(first, /all 19 compiled inner-child nodes and all 10 compiled inner-child edges/);
+  const graph = bundle.graphs.find((item) => item.graphId === "inner-child-directed-graph");
+  assert.match(first, new RegExp(`all ${graph.nodes.length} compiled inner-child nodes and all ${graph.edges.length} compiled inner-child edges`));
   assert.equal((first.match(/OWNER-APPROVED \/ NOT COMPILED/g) ?? []).length, 12);
   assert.doesNotMatch(first, /pause for 1(?:–|-)​?3 breaths/i);
   assert.equal(escapeMermaidLabel('x"] --> HACK["y'), "x&quot;&#93; --&gt; HACK&#91;&quot;y");

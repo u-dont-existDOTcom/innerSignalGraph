@@ -7,7 +7,7 @@
 
 Compiled graph JSON remains executable development authority. Dashed overlay relationships are owner-approved documentation only and are not planner input.
 
-This is an inner-child-scoped view: all 19 compiled inner-child nodes and all 10 compiled inner-child edges are shown. It is not a whole-bundle view.
+This is an inner-child-scoped view: all 44 compiled inner-child nodes and all 51 compiled inner-child edges are shown. It is not a whole-bundle view.
 
 The map is not a linear requirement to perform every node. The smallest sufficient branch wins.
 

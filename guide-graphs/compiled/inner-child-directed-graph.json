@@ -577,6 +577,23 @@
             "field": "ic_real_world_transfer",
             "op": "eq",
             "value": "session_only"
+          },
+          {
+            "field": "ic_status",
+            "op": "in",
+            "value": [
+              "active",
+              "stepped_down"
+            ]
+          },
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "deep_dialogue",
+              "integration"
+            ]
           }
         ],
         "none": [
