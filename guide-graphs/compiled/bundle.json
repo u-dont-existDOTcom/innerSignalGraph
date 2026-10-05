@@ -1098,6 +1098,16 @@
           "excerpt": "Choose the current therapeutic focus from the client's stated goal, strongest expressed suffering and functional impact, repetition or emphasis, and causal relevance to what should happen next—not from novelty, strangeness, diagnostic curiosity or labeling, spiritual unusualness, or therapist curiosity. Hard safety gates and clearly urgent medical red flags are exempt from focus parking and take priority when they require immediate protection or urgent assessment. For a non-urgent possible medical clue that could change the next step, ask only the smallest needed discriminator: whether it is new or different from baseline, part of a known condition, already assessed or under current care, and whether the person wants help with it. Do not imply prior care is absent. A known or managed condition can still matter when it interacts with the planned practice. If it is genuinely unclear whether a side mention affects immediate safety, ask one brief direct question before parking it. Otherwise keep it load-bearing or parked and return to the primary therapeutic job.",
           "status": "owner-approved",
           "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+          "heading": "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "decb58cbe93a5232cf231cb6440877d84bbdad4922c2c0ce4e92a4b79cc86798",
+          "excerpt": "Treat in-session reparenting capacity and ordinary-life transfer as distinct evidence. When a Nurturer, Protector, Guide, or other adult function is clearly usable during an inner-child practice but ordinary life still shows little or no matching carryover, record that mismatch as session-only transfer rather than assuming the person needs a deeper, more intense, or simply repeated version of an already-working exercise. Name the function that actually worked and choose one bounded five-percent ordinary-life action that expresses the same function. Keep the action small enough to fit current capacity, and review what it actually contributed without requiring the younger state to trust it yet, without demanding immediate emotional change, and without turning follow-through into punishment or self-surveillance. Do not make every meditation produce homework; use this transfer route only when the transcript supports a real mismatch between in-session capacity and ordinary-life carryover. One aligned action is emerging transfer, not generalized capacity; broader integration requires repeated carryover over time or across relevant contexts. A good meditation is proximal evidence of in-session capacity, not proof of durable ordinary-life change.",
+          "status": "owner-approved",
+          "domain": "inner-child"
         }
       ]
     },
@@ -1697,7 +1707,8 @@
             "IC.BORROW_ADULT",
             "IC.BORROW_ONE_FUNCTION",
             "IC.SPIRITUAL_LOAN",
-            "AMEND.IC.NONPUNITIVE_REVIEW"
+            "AMEND.IC.NONPUNITIVE_REVIEW",
+            "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -1730,7 +1741,98 @@
               "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question.",
               "Receiving support is not the endpoint: the sequence is receive care, observe care, participate in care, initiate a small part, and internalize what proves usable.",
               "The adult function can become real through ordinary action before it feels like a stable identity.",
-              "Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity."
+              "Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity.",
+              "Adult capacity can be available inside an exercise while ordinary-life transfer remains session-only; do not infer generalized self-leadership from meditation performance alone."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "IC.PRACTICE_TO_LIFE_TRANSFER",
+          "title": "Carry a working inner adult into ordinary life",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 98,
+          "activation": {
+            "all": [
+              {
+                "field": "ic_real_world_transfer",
+                "op": "eq",
+                "value": "session_only"
+              },
+              {
+                "field": "ic_status",
+                "op": "in",
+                "value": [
+                  "active",
+                  "stepped_down"
+                ]
+              },
+              {
+                "field": "current_intent",
+                "op": "in",
+                "value": [
+                  "gentle_practice",
+                  "deep_dialogue",
+                  "integration"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+            "IC.ADULT_APPRENTICE",
+            "IC.PROTECTOR_VISIBLE",
+            "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+            "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Name the adult function that was genuinely usable in the practice—Nurturer, Protector, Guide, or a narrower caring/protective/guiding move—and choose one five-percent ordinary-life action that expresses the same function.",
+            "Keep the action small enough to fit present capacity and the actual need. A meal, rest, boundary, request for help, truthful but calibrated disclosure, task handled, self-test stopped, or another concrete act may fit; do not assign generic homework merely because a meditation occurred.",
+            "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
+            "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity."
+          ],
+          "avoid": [
+            "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
+            "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
+            "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack."
+          ],
+          "successSignals": [
+            "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
+            "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity."
+          ],
+          "tags": [
+            "inner-signal-continuity",
+            "practice-transfer",
+            "ordinary-life",
+            "adult-apprentice"
+          ],
+          "effects": {
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE"
+            ],
+            "blockNodes": [],
+            "requiredNuance": [
+              "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
+              "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
+              "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that a successful meditation proves durable real-life change.",
+              "Do not claim that weak carryover means the meditation was fake or that the whole reparenting method failed."
             ]
           },
           "defaultQuestion": ""
@@ -2108,7 +2210,8 @@
             "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
             "IC.BORROW_ONE_FUNCTION",
             "IC.BORROW_LOVE",
-            "IC.SPIRITUAL_LOAN"
+            "IC.SPIRITUAL_LOAN",
+            "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -2116,7 +2219,8 @@
             "Keep memory-source distinctions explicit.",
             "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift.",
             "When the needed positive caring/protective function is known to be unavailable, use IC.BORROW_ONE_FUNCTION as adult-side preparation before deeper child-facing dialogue.",
-            "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap."
+            "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap.",
+            "When the adult function is already clearly usable in-session but ordinary-life transfer is still session-only, hand off to IC.PRACTICE_TO_LIFE_TRANSFER before repeating or deepening the child-facing exercise for more intensity."
           ],
           "avoid": [
             "Do not interrogate imagery or imply emotional truth proves historical fact.",
@@ -2137,7 +2241,8 @@
             "requiredNuance": [
               "General orientation and stop/return capacity establish safety readiness, not the positive caring adult function needed for this relational exercise.",
               "Partial but usable positive care/protection can be enough for a bounded step; unknown access is uncertainty to clarify, not a permanent incapacity finding.",
-              "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care."
+              "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care.",
+              "A successful inner exercise and ordinary-life transfer are separate evidence states; when the practice works but carryover does not, deepen only after the transfer mismatch has been addressed or new unresolved material actually warrants it."
             ]
           },
           "defaultQuestion": ""
@@ -4985,6 +5090,16 @@
           "from": "IC.CHALLENGE_CHECK_IN",
           "relation": "calibrates",
           "to": "IC.SCAFFOLDED_CHALLENGE"
+        },
+        {
+          "from": "IC.DEEP_CHILD_DIALOGUE",
+          "to": "IC.PRACTICE_TO_LIFE_TRANSFER",
+          "relation": "hands-off-when-session-only"
+        },
+        {
+          "from": "IC.PRACTICE_TO_LIFE_TRANSFER",
+          "to": "IC.PROTECTOR_ACTION",
+          "relation": "embodies-through"
         }
       ],
       "taskPolicyVersion": 1,
@@ -7990,9 +8105,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 80,
-    "edgeCount": 112,
-    "sourceSectionCount": 127,
-    "ownerAmendmentCount": 49
+    "nodeCount": 81,
+    "edgeCount": 114,
+    "sourceSectionCount": 128,
+    "ownerAmendmentCount": 50
   }
 }

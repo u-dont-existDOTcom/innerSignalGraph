@@ -65,6 +65,7 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   ic_last_tolerated_level: ["none", "ordinary_adult_action", "brief_acknowledgment", "borrowed_care", "witnessing", "gentle_dialogue", "deep_dialogue", "unknown"],
   ic_reactivation_ready: ["yes", "no", "unknown"],
   ic_titration_needed: ["yes", "no", "unknown"],
+  ic_real_world_transfer: ["not_in_play", "session_only", "emerging", "generalizing", "integrated", "unknown"],
   medical_urgency: ["none", "urgent", "nonurgent", "unknown"],
   other_person_central: ["yes", "no", "unknown"],
   relational_capacity_evidence: ["reciprocal", "limited", "mixed", "insufficient", "unknown"],

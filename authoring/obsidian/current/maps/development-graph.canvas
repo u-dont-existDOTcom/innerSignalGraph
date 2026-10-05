@@ -145,6 +145,12 @@
       "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
     },
     {
+      "fromNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401",
+      "id": "25072aa143df4b40e0c935952427dddd153699937cf247f6e6dee8138084a304",
+      "label": "hands-off-when-session-only",
+      "toNode": "6180b399f8f49558fc9f372a4fd3e89403dc4661aef8924a0e8848869c9ff9dc"
+    },
+    {
       "fromNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851",
       "id": "2533d0ac1c60ebd12c053e6c2b3d03436dba21d7dbf5956e1303ae1c0ec76310",
       "label": "followed-by",
@@ -221,6 +227,12 @@
       "id": "379a3403a875b6e57fa1724c15c4a501c3f05cb6fe990ec42b2cd6f2c4947e91",
       "label": "enables",
       "toNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c"
+    },
+    {
+      "fromNode": "6180b399f8f49558fc9f372a4fd3e89403dc4661aef8924a0e8848869c9ff9dc",
+      "id": "3b41fb02f23d6e089f16fb8b5c3e921ce9de69f2329818744321f8a5854fdc97",
+      "label": "embodies-through",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
       "fromNode": "065a374a67c57d69f994c510bf64c2ec1800d4108a5a95816ebf904402fa7722",
@@ -834,7 +846,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1320
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
@@ -852,7 +864,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1540
+      "y": 1760
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
@@ -1018,6 +1030,15 @@
       "width": 300,
       "x": 0,
       "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.PRACTICE_TO_LIFE_TRANSFER.md",
+      "height": 140,
+      "id": "6180b399f8f49558fc9f372a4fd3e89403dc4661aef8924a0e8848869c9ff9dc",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 660
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.EMDR_DEVELOPMENTAL.md",
@@ -1218,7 +1239,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 660
+      "y": 880
     },
     {
       "color": "3",
@@ -1237,7 +1258,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1760
+      "y": 1980
     },
     {
       "color": "3",
@@ -1366,7 +1387,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1100
+      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
@@ -1393,7 +1414,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1980
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
@@ -1503,7 +1524,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",

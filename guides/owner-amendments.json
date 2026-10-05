@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-04-continuity-scaffolding-r2",
+  "version": "2026-10-04-practice-to-life-transfer-r3",
   "approvedAt": "2026-10-04",
   "items": [
     {
@@ -295,6 +295,12 @@
       "domain": "cross-guide",
       "status": "owner-approved",
       "text": "Choose the current therapeutic focus from the client's stated goal, strongest expressed suffering and functional impact, repetition or emphasis, and causal relevance to what should happen next\u2014not from novelty, strangeness, diagnostic curiosity or labeling, spiritual unusualness, or therapist curiosity. Hard safety gates and clearly urgent medical red flags are exempt from focus parking and take priority when they require immediate protection or urgent assessment. For a non-urgent possible medical clue that could change the next step, ask only the smallest needed discriminator: whether it is new or different from baseline, part of a known condition, already assessed or under current care, and whether the person wants help with it. Do not imply prior care is absent. A known or managed condition can still matter when it interacts with the planned practice. If it is genuinely unclear whether a side mention affects immediate safety, ask one brief direct question before parking it. Otherwise keep it load-bearing or parked and return to the primary therapeutic job."
+    },
+    {
+      "id": "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Treat in-session reparenting capacity and ordinary-life transfer as distinct evidence. When a Nurturer, Protector, Guide, or other adult function is clearly usable during an inner-child practice but ordinary life still shows little or no matching carryover, record that mismatch as session-only transfer rather than assuming the person needs a deeper, more intense, or simply repeated version of an already-working exercise. Name the function that actually worked and choose one bounded five-percent ordinary-life action that expresses the same function. Keep the action small enough to fit current capacity, and review what it actually contributed without requiring the younger state to trust it yet, without demanding immediate emotional change, and without turning follow-through into punishment or self-surveillance. Do not make every meditation produce homework; use this transfer route only when the transcript supports a real mismatch between in-session capacity and ordinary-life carryover. One aligned action is emerging transfer, not generalized capacity; broader integration requires repeated carryover over time or across relevant contexts. A good meditation is proximal evidence of in-session capacity, not proof of durable ordinary-life change."
     }
   ]
 }

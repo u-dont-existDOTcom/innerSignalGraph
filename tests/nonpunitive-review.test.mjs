@@ -57,7 +57,8 @@ test("the owner-approved wording is compiled exactly and appended without distur
   assert.equal(apprentice.recommendations.at(-1), reviewLine);
   assert.equal(apprentice.avoid.at(-1), avoidPunitive);
   assert.equal(apprentice.successSignals.at(-1), successSignal);
-  assert.equal(apprentice.effects.requiredNuance.at(-1), accountabilityNuance);
+  assert.ok(apprentice.effects.requiredNuance.includes(accountabilityNuance));
+  assert.equal(apprentice.effects.requiredNuance.at(-1), "Adult capacity can be available inside an exercise while ordinary-life transfer remains session-only; do not infer generalized self-leadership from meditation performance alone.");
   assert.equal(credibility.recommendations.at(-1), repairLine);
   assert.equal(credibility.avoid.at(-1), avoidWorthVerdict);
   assert.equal(credibility.effects.requiredNuance.at(-1), credibilityNuance);
