@@ -44,6 +44,7 @@ const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const JOURNAL_ID = /^[A-Za-z0-9:_-]{1,160}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
 const RECORD_VERSION = 7;
+const HISTORICAL_DELIVERY_SOURCE_KIND = "owner-supplied-historical-delivery-v1";
 const TRACKER_QUERY_VARIABLES = Object.freeze([
   "sleep_duration_hours", "sleep_quality", "pain_intensity", "pain_location", "pain_function_interference",
   "anxiety", "depressed_mood", "stability", "unreality", "division", "social_contact_quality",
@@ -513,6 +514,41 @@ function candidateDeliveryCompletion(record, candidate) {
       && candidate.metadata.sent_with_audit_id && candidate.metadata.sent_in_reply_to_turn_id
     ? { candidate_id: candidate.id, candidate_version: candidate.version }
     : null;
+}
+
+function historicalDeliveryCompletion(record) {
+  for (const artifact of [...record.source_artifacts].reverse()) {
+    const metadata = artifact.metadata;
+    if (metadata?.kind !== HISTORICAL_DELIVERY_SOURCE_KIND || metadata.supplied_by !== "owner") continue;
+    const sentAtStatus = metadata.reported_sent_at_status;
+    if (!["known", "unavailable"].includes(sentAtStatus)) continue;
+    if (sentAtStatus === "known" && (typeof metadata.reported_sent_at !== "string" || !metadata.reported_sent_at.trim())) continue;
+    if (sentAtStatus === "unavailable" && metadata.reported_sent_at != null) continue;
+    const userTurnIndex = record.raw_transcript.findIndex((turn) => turn.id === metadata.in_reply_to_turn_id);
+    const assistantTurnIndex = record.raw_transcript.findIndex((turn) => turn.id === metadata.assistant_turn_id);
+    const userTurn = record.raw_transcript[userTurnIndex];
+    const assistantTurn = record.raw_transcript[assistantTurnIndex];
+    if (!userTurn || userTurn.role !== "user" || !assistantTurn || assistantTurn.role !== "assistant"
+        || userTurn.exchange_id !== assistantTurn.exchange_id
+        || assistantTurnIndex !== record.raw_transcript.length - 1
+        || userTurnIndex !== assistantTurnIndex - 1) continue;
+    let source;
+    try { source = JSON.parse(artifact.exact_text); }
+    catch { continue; }
+    if (source?.schema_version !== 1
+        || JSON.stringify(source.user_turn) !== JSON.stringify(userTurn)
+        || JSON.stringify(source.assistant_turn) !== JSON.stringify(assistantTurn)) continue;
+    return Object.freeze({
+      kind: HISTORICAL_DELIVERY_SOURCE_KIND,
+      source_artifact_id: artifact.id,
+      assistant_turn_id: assistantTurn.id,
+      in_reply_to_turn_id: userTurn.id,
+      imported_at: artifact.created_at,
+      reported_sent_at_status: sentAtStatus,
+      reported_sent_at: sentAtStatus === "known" ? metadata.reported_sent_at : null
+    });
+  }
+  return null;
 }
 
 export function createEncryptedPrivateCaseStore({
@@ -1501,6 +1537,7 @@ export function createEncryptedPrivateCaseStore({
       });
       const candidate = selectContinuationCandidate(record, candidateId);
       const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
+      const historicalDelivery = candidate == null ? historicalDeliveryCompletion(record) : null;
       const recent = Object.keys(episodePolicy).length
         ? selectRecentVerbatimWindow(transcript, {
             currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
@@ -1524,6 +1561,7 @@ export function createEncryptedPrivateCaseStore({
         transcript_amendments: structuredClone(record.transcript_amendments),
         candidate_response: candidate ? structuredClone(candidate) : null,
         delivery_completion: deliveryCompletion ? structuredClone(deliveryCompletion) : null,
+        historical_delivery_completion: historicalDelivery ? structuredClone(historicalDelivery) : null,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({
           id: artifact.id,
           version: artifact.version,
