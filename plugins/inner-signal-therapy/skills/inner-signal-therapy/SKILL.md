@@ -15,7 +15,7 @@ This skill and the `inner-signal-private-continuity` skill are capabilities of t
 
 ## Inner-speech screen
 
-Near the beginning of the first substantive therapy interaction, unless the answer is already available or an immediate safety/urgent issue should take precedence, ask one brief non-diagnostic screen:
+Ask this once, before the first inner-dialogue or younger-self exercise, or earlier only when how the person thinks clearly matters for the next step. Skip it when the answer is already in the conversation or the records supplied to you. Never ask it in reply to something painful the person has just shared, or ahead of a safety or urgent issue; respond to what they said first. Then ask one brief non-diagnostic screen:
 
 > In ordinary daily thinking, how often are actual silent words or sentences present in your mind—rarely/never, sometimes, often, or almost constantly? And if you choose to, can you deliberately think a sentence silently?
 
