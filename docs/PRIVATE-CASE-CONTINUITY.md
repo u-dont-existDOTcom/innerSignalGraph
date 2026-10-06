@@ -74,7 +74,7 @@ Ordinary reasoning ledgers now default to `redacted`; that form excludes user-fa
 | `saveSourceArtifact` / `getSourceArtifact` | Immutable exact private source plus a contiguous byte-range integrity manifest |
 | `retrieveCaseEvidence` | Raw older turns by query, stable provenance IDs, or time range |
 | `getCurrentEpisode` | Current therapeutic path/episode |
-| `loadCaseContext` | All-in-one fresh-session bootstrap and continuation-safety gate |
+| `loadCaseContext` | All-in-one fresh-session bootstrap and continuation-safety gate; when no unsent candidate remains, preserves the latest exact sent candidate plus transcript-bound delivery completion |
 | `bindCaseAlias` / `loadCaseContextByAlias` | Backend-only binding of a private name to an opaque case ID; read-only named-case bootstrap through the same authorization and continuation-safety gate |
 | `createHandoff` / `loadHandoff` | Freeze and retrieve an immutable exact private continuation snapshot; the loader needs only `handoff_id` |
 | `getStateDiffByReference` / `getRecentVerbatimByReference` | Read current or handoff-frozen state diff and exact recent episode |
