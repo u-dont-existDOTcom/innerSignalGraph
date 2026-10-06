@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.BEST_FRIEND_PROMPT
 status: owner-approved
 domain: inner-child
-base_record_sha256: 0034aa1dc956d57d970b4b09567ea45ee67a9db1b02e61f070acbb66d83f671d
-source_file_sha256: 2b9bb2ea891e003d72d2ca12580f635a4e5b8aa59c0ce06157bd92995a38a3f2
-projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
+base_record_sha256: 477d32abf798320ccabd2f55615a556f09dd90952e261b61297298c1752fc9cd
+source_file_sha256: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # AMEND.IC.BEST_FRIEND_PROMPT
@@ -17,13 +17,13 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
 
 ```json
 {
-  "approvedAt": "2026-10-05",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.BEST_FRIEND_PROMPT",
     "status": "owner-approved",
     "text": "Ask: 'What would I tell my best friend in this exact situation?' Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action for the self."
   },
-  "version": "2026-10-05-blocked-action-support-mode-r1"
+  "version": "2026-10-06-practical-focus-sequencing-r1"
 }
 ```

@@ -1,6 +1,6 @@
 {
-  "version": "2026-10-05-blocked-action-support-mode-r1",
-  "approvedAt": "2026-10-05",
+  "version": "2026-10-06-practical-focus-sequencing-r1",
+  "approvedAt": "2026-10-06",
   "items": [
     {
       "id": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
@@ -319,6 +319,12 @@
       "domain": "cross-guide",
       "status": "owner-approved",
       "text": "Separate reflective journaling from external memory support. If narrative, interpretive, or meaning-making journaling increases confusion, do not assume the answer is more journaling or more interpretation. Preserve the useful memory and continuity function in the least cognitively demanding format that fits the person\u2014for example brief dated facts, what helped, what needs remembering, one next step, or a voice note\u2014while leaving interpretation and pattern-finding optional for later. A memory aid does not need to explain the person's life in order to be useful."
+    },
+    {
+      "id": "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
+      "domain": "cross-guide",
+      "status": "owner-approved",
+      "text": "When several concrete practical problems coexist, route each by its own actionability instead of collapsing the whole turn into one blocked state. Choose one current practical focus from the person's stated goal, functional impact, urgency, leverage, and present feasibility. A blocked sibling lane remains real and keeps its constraint chain and reopening condition, but it must not suppress an independent higher-value priority that has an evidence-supported action. practical_action_state therefore applies to the selected practical focus and must be recomputed when that focus changes. When the person is cognitively overloaded or says they cannot focus, reduce the sorting burden: use one brief organizing statement, one prioritized next step when action is supported, and only a question whose different answers would materially change what happens next. Do not make the person define ordinary language or listen to a long paraphrase when the practical implication is already clear enough to act on."
     }
   ]
 }

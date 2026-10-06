@@ -10,7 +10,7 @@ from_node_id: IC.SUICIDAL_SELF_DEATH_INQUIRY
 to_node_id: IC.PRECIOUS_HUMAN_OPPORTUNITY
 relation: requires-reality-check
 base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
-projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # IC.SUICIDAL_SELF_DEATH_INQUIRY requires-reality-check IC.PRECIOUS_HUMAN_OPPORTUNITY

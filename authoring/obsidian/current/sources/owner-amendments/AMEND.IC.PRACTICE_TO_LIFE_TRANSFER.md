@@ -7,14 +7,14 @@ source_id: AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
 guide_id: owner-amendments
 heading: AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
 source_role: owner-approved-extension
-source_hash: 2b9bb2ea891e003d72d2ca12580f635a4e5b8aa59c0ce06157bd92995a38a3f2
+source_hash: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
 section_hash: decb58cbe93a5232cf231cb6440877d84bbdad4922c2c0ce4e92a4b79cc86798
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
   - IC.DEEP_CHILD_DIALOGUE
   - IC.PRACTICE_TO_LIFE_TRANSFER
-projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # AMEND.IC.PRACTICE_TO_LIFE_TRANSFER

@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-10-05-blocked-action-support-mode-r1",
+      "version": "2026-10-06-practical-focus-sequencing-r1",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
