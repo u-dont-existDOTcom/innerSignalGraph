@@ -16,6 +16,7 @@ import { decryptVaultEnvelopeWithRecoverySecret } from "../src/storage/vault-cry
 import { chunkExactSourceText, reconstructExactSourceChunks } from "../src/storage/exact-source-artifact.mjs";
 import { validateTrackerEntry } from "../src/case-state/tracker.mjs";
 import { selectRecentVerbatimWindow } from "../src/case-state/context-window.mjs";
+import { runPrivateCandidateAudit } from "../src/supervisor/private-candidate-audit.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -546,6 +547,57 @@ test("continuation safety uses semantic active-episode completeness rather than 
   });
   assert.equal(missingStart.episode_completeness.complete, false);
   assert.match(missingStart.episode_completeness.failures.join("\n"), /start turn is absent/);
+});
+
+test("fresh case context stays continuation-safe after an exact candidate is delivered", async (t) => {
+  const environment = await makeEnvironment(t);
+  await runSession("seed", environment);
+  const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  t.after(() => providers.close());
+  const service = createPrivateCaseAccessService({
+    rootDir: providers.rootDir,
+    authorizationProvider: providers.authorizationProvider,
+    keyProvider: providers.keyProvider,
+    allowDevelopmentFileProvider: true
+  });
+  const auth = { bearerToken: TOKEN };
+  const candidateId = "candidate:delivered:003";
+  const auditId = "audit:delivered:003";
+  await service.appendTranscriptTurn(CASE_ID, turn("E6", "user", "Synthetic latest user turn for delivered-response continuity.", "episode:active", 6), auth);
+  await service.saveCandidateResponse(CASE_ID, candidateId, "Synthetic exact delivered response.", {
+    status: "pending_audit",
+    producer_context_id: "producer:synthetic:delivered"
+  }, auth);
+  const audited = await runPrivateCandidateAudit({
+    caseAccessService: service,
+    caseId: CASE_ID,
+    candidateId,
+    authContext: auth,
+    auditId,
+    auditorContext: { kind: "independent", context_id: "auditor:synthetic:delivered" },
+    completedAt: "2026-09-06T13:00:00.000Z",
+    auditor: async () => ({ findings: [] })
+  });
+  assert.equal(audited.audit_evidence.sufficient_for_approval, true);
+  await service.approveCandidateForDelivery(CASE_ID, candidateId, auditId, auth);
+  await service.deliverCandidateResponse(CASE_ID, candidateId, {
+    auditId,
+    assistantTurnId: "E6-assistant",
+    inReplyToTurnId: "E6-user"
+  }, auth);
+
+  const loaded = await service.loadCaseContext(CASE_ID, auth, {
+    candidateId: "current_pending",
+    requireContinuationSafe: true,
+    requireAuditScope: true,
+    episodePolicy: { requireCompleteEpisode: true }
+  });
+  assert.equal(loaded.candidate_response.id, candidateId);
+  assert.equal(loaded.candidate_response.status, "sent");
+  assert.deepEqual(loaded.delivery_completion, { candidate_id: candidateId, candidate_version: loaded.candidate_response.version });
+  assert.equal(loaded.recent_verbatim.turns.at(-1).id, "E6-assistant");
+  assert.equal(loaded.continuation_safety.continuation_safe, true);
+  assert.equal(loaded.continuation_safety.exact_delivery_available, true);
 });
 
 test("candidate artifacts are immutable and a newer pending candidate atomically supersedes the prior pending version", async (t) => {
