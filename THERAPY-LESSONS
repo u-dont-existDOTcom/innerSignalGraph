@@ -2,6 +2,12 @@
 
 This root log records concrete lessons about how Inner Signal handles therapy prompts better. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` means the lesson was found in the newest uploaded Guide Packet but is not active until its substantive owner decision is approved and installed.
 
+## 2026-10-06 — Ask the inner-speech question before the first inner dialogue, not at the start
+
+Development-main lesson (not an installed-runtime claim): the served protocol asked the inner-speech screen "near the beginning of the first substantive therapy interaction", so on a first conversation replies asked it on almost any turn, including straight after something painful. Ask it once, before the first inner-dialogue or younger-self exercise, or earlier only when how the person thinks clearly matters for the next step. Skip it when the answer is already in the conversation or the supplied records. Never ask it in reply to something painful the person has just shared, or ahead of a safety or urgent issue; respond to what they said first. The question itself is unchanged.
+
+Authority and evidence: owner decision 10: A of 2026-10-06 (owner questions page), approving the exact wording; `tasks/inner-speech-timing-20261006/` sample-reply rerun on the twelve invented first conversations: 2 of 24 replies asked it, both in the conversation that asked for an inner-child exercise and after acknowledging the feeling, against 16 of 24 with the old wording on 2026-10-04. Sample replies from one model on invented conversations are not live or clinical results.
+
 ## 2026-10-03 — Treat altered-state access as a transfer problem before reflexive repetition
 
 Development-candidate lesson (not an installed-runtime claim): when an altered or nonordinary state makes an inner-child relationship, compassion, grief, protection, or another therapeutic insight experientially credible but sober access later fades, preserve the experience without either dismissing it or promoting it into external historical/metaphysical proof. Distinguish genuinely new exploration from repeating mainly to restore access to a known state, conviction, love, or relationship. For restore-access cases, prepare the relevant adult capacities beforehand and work explicitly on sober carryover afterward; do not assume sober work can replace altered-state methods for every person, and do not infer addiction, avoidance, or failed integration from repetition alone.

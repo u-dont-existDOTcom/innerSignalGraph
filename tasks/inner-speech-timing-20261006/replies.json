@@ -1,0 +1,174 @@
+{
+  "protocol_sha256": "efd2ef4274d091ed95a14a43c8b84be809d331074786f27fefa7631ac97de1e6",
+  "generator": "Claude Sonnet (fresh agent per reply)",
+  "replies": [
+    {
+      "conversation": "01",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 30,
+      "text": "Mostly annoyed and a little sad, and this is the third time this month. That's a real letdown.\n\nWhat was it about the dinner that you'd been looking forward to?"
+    },
+    {
+      "conversation": "01",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 60,
+      "text": "Mostly annoyed, a bit sad, and you'd been looking forward to it. That mix makes sense, especially with it being the third time this month.\n\nWhat would help most right now: talking more about how it's sitting with you, or working out what, if anything, you want to do about it with your sister? Or something else, if neither fits."
+    },
+    {
+      "conversation": "02",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 54,
+      "text": "Your dad forgot your birthday yesterday, called this morning to say he'd been slammed at work, and you told him it was fine.\n\nSometimes \"fine\" is the whole answer, and sometimes it's just where the answer starts. I can't tell which it is from what you've written. How does it sit with you now?"
+    },
+    {
+      "conversation": "02",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 83,
+      "text": "Thanks for telling me. Your dad forgot your birthday yesterday, called this morning and said he'd been slammed at work, and you told him it was fine.\n\nI don't know yet whether \"fine\" is how it sits with you, what seemed right to say in the moment, or something in between.\n\nWhat do you notice when you think back to that call? Anything counts, including not much. And if you already know what you'd like from this conversation, you can start there instead."
+    },
+    {
+      "conversation": "03",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 76,
+      "text": "I got that wrong, and I'm glad you told me. Abandoned was my word, not yours.\n\nYou spent the whole weekend on your friend's surprise party and nobody even said thanks. What you're tired of is always being the one who plans everything, and that sounds like a lot to carry.\n\nWhat would you like to be different about that? You don't have to know yet. You can also just tell me more about the \"always.\""
+    },
+    {
+      "conversation": "03",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 52,
+      "text": "Thanks for correcting me. I guessed at a feeling and got it wrong, so I'll ask instead.\n\nYou said you're tired of always being the one who plans everything. Is that mostly the sheer amount of planning, the fact that it's always you, or getting no thanks for it? Or something else?"
+    },
+    {
+      "conversation": "04",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 78,
+      "text": "No, not in this conversation. All I know is that you've been sleeping badly for a couple of weeks, Sam keeps snoring, and you end up on the couch. I don't know who Sam is to you or who you live with, and I'd rather ask than guess.\n\nWho do you live with, and who is Sam to you? That will shape what's worth trying for your sleep, and then we can get back to what would help."
+    },
+    {
+      "conversation": "04",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 57,
+      "text": "Not in this conversation, no. So far I have that Sam keeps snoring and you end up on the couch. I don't know who Sam is to you or who you live with, so I won't assume.\n\nTell me who you live with and where Sam fits in. That will shape what's worth trying for your sleep."
+    },
+    {
+      "conversation": "05",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 90,
+      "text": "I can't tell whether you have. All I can see is today's conversation, and you haven't told me anything about her in it. If you told me on another day, I can't see that, so you may be telling me again. Sorry if that means repeating yourself.\n\nWe can come back to the work pressure whenever you want. For now, tell me about her. If she's part of the family stuff you keep thinking about, that's a fine place to start, and a few lines is plenty if you're tired."
+    },
+    {
+      "conversation": "05",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 75,
+      "text": "Tired makes sense, with your deadline moved up three days and family stuff on your mind. We can come back to the deadline any time.\n\nYou haven't told me anything about your grandmother today, and I can't see our conversations from other days, so I don't know whether she's come up before. Is she part of the family stuff you keep thinking about? Tell me about her, as much or as little as you want."
+    },
+    {
+      "conversation": "06",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 67,
+      "text": "Of course. Here's what you said, word for word:\n\n\"Sometimes I feel like I'm everyone's backup plan. Like they only call when their first choice falls through.\"\n\nTake your time getting it down. You also said you probably first noticed this in high school, and when you're ready, let's pick that back up: is there one moment from then that comes to mind, even a small one?"
+    },
+    {
+      "conversation": "06",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 61,
+      "text": "Here's what you said, word for word:\n\n\"Sometimes I feel like I'm everyone's backup plan. Like they only call when their first choice falls through.\"\n\nTake your time writing it down. When you're ready, we can go back to high school, since that's when you said you probably first noticed it. What's one small moment from then that comes to mind?"
+    },
+    {
+      "conversation": "07",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 61,
+      "text": "You said your mom used to tell people, \"She was such an easy baby, she never cried.\"\n\nIt's fine not to know what comes up. Reading it again, do you notice anything at all, even something small? It could be a feeling, a picture, a memory, or a part of the sentence that stands out. Nothing much is an answer too."
+    },
+    {
+      "conversation": "07",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 63,
+      "text": "You told me your mom used to tell people, \"She was such an easy baby, she never cried.\" You added that you think about it a lot.\n\n\"I don't know\" is a fine place to start. When you read it again, does any part stand out to you: the \"easy baby\" part, the \"never cried\" part, or something else? Or nothing in particular?"
+    },
+    {
+      "conversation": "08",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 47,
+      "text": "Roughly 4 to 5 a week. A month is a little over four weeks, so 20 entries averages out to about 4.5 a week, which fits with \"most days.\"\n\nIs there anything about the journaling you'd like to talk through, or was the count all you needed?"
+    },
+    {
+      "conversation": "08",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 54,
+      "text": "Roughly 4 to 5 a week. A month is about 4.3 weeks, so 20 entries comes to around 4.6 a week, which is about two days out of every three and fits with \"most days.\"\n\nAre you tracking that against a goal, or is there something in the journal you'd like to work with?"
+    },
+    {
+      "conversation": "09",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 91,
+      "text": "In this conversation he's come up in all three of your messages, which isn't surprising since you started with running into him this morning. I can't see a clock or the rest of your day, so I can't say more about how many times or how long.\n\nI'll save the counting for later, since it sounds like it bothers you. Let's stay with what you said right before the \"ugh\": that he seems fine and you're still stuck. What does \"still stuck\" look like for you? One small example is plenty."
+    },
+    {
+      "conversation": "09",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 90,
+      "text": "Three times in this chat, once in each of your messages, and I'm not judging the number. As for how long, I can't see timestamps, so I can't give you minutes, but it's three messages so far. If the counting itself is bugging you, we can come back to that.\n\nFor now I'd like to stay with what you said bothered you most: Daniel seems fine and you're still stuck. When you say \"stuck,\" what does that look like, or feel like, for you? A sentence or two is plenty."
+    },
+    {
+      "conversation": "10",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 184,
+      "text": "Closer to two months, though it varies a lot from person to person. You were right to push on that: I gave you the popular figure, and it isn't what the research found.\n\nThe best-known study on this is by Lally and colleagues at University College London. Ninety-six people each picked a daily eating, drinking, or exercise habit. The median time for it to feel automatic was about 66 days, and individuals ranged from 18 to 254 days. The 21-day figure comes from a plastic surgeon's 1960 book about how long patients took to adjust after surgery; it wasn't a habit study.\n\nIf journaling still takes effort at three weeks, that's normal. Sixty-six days is when the habit felt automatic, so you can be journaling reliably well before then, and one missed day didn't set people back much in the study. Journaling wasn't one of the behaviors tested, so treat the range as rough for you. I haven't verified these details against the sources, so check them before you quote them.\n\nHow's it going so far: already some mornings in, or about to start?"
+    },
+    {
+      "conversation": "10",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 230,
+      "text": "Two months is closer. The 21 days I mentioned is the number most people repeat, and I should have said how little is behind it.\n\nIt traces to Maxwell Maltz, a plastic surgeon whose 1960 self-help book, Psycho-Cybernetics, noted that patients took a minimum of about three weeks to get used to a new face. He wasn't studying habits.\n\nThe best-known study that did measure them followed 96 people for 12 weeks. Each repeated one small daily behavior at the same point in their day and rated how automatic it felt. For the typical person that rating leveled off around day 66, and the range ran from under three weeks to over eight months.\n\nSimpler behaviors got there sooner, which is a reason to start with a few lines rather than a full page. Missing a single day changed little.\n\nI'm going from my general knowledge of this research, not a source I've just checked, so take the numbers as approximate. The study is by Phillippa Lally and colleagues, titled \"How are habits formed,\" if you want to look it up.\n\nOne thing worth keeping apart: the study measured how automatic the behavior felt, which is separate from whether you keep doing it. You can journal most mornings long before it feels effortless, so neither number is a deadline.\n\nHave you started yet, and how has it gone so far?"
+    },
+    {
+      "conversation": "11",
+      "sample": "a",
+      "asks_inner_speech_question": false,
+      "words": 29,
+      "text": "After a year of avoiding the dentist, you made the call, and next Tuesday is booked. That's a real step.\n\nWhat got you to finally pick up the phone?"
+    },
+    {
+      "conversation": "11",
+      "sample": "b",
+      "asks_inner_speech_question": false,
+      "words": 41,
+      "text": "You finally made the call, and next Tuesday is on the calendar. After about a year of avoiding it, that's a real step.\n\nWhat got you to pick up the phone this time? Whatever it was might help on Tuesday too."
+    },
+    {
+      "conversation": "12",
+      "sample": "a",
+      "asks_inner_speech_question": true,
+      "words": 86,
+      "text": "Yes, let's do a short one. Feeling small today is enough to start from, even without knowing why. You can stop or change anything along the way.\n\nBefore we begin, I have one quick question so I can fit the exercise to the way you think. There's no right answer.\n\nIn ordinary daily thinking, how often are actual silent words or sentences present in your mind: rarely or never, sometimes, often, or almost constantly? And if you choose to, can you deliberately think a sentence silently?"
+    },
+    {
+      "conversation": "12",
+      "sample": "b",
+      "asks_inner_speech_question": true,
+      "words": 119,
+      "text": "Yes, we can keep it short. Thank you for telling me how you're feeling. You don't need to know why you feel small before we begin; we can start with the feeling itself, just as it is.\n\nOne quick question first, so I can choose a way in that suits you:\n\nIn ordinary daily thinking, how often are actual silent words or sentences present in your mind: rarely/never, sometimes, often, or almost constantly? And if you choose to, can you deliberately think a sentence silently?\n\nThere's no right answer, and I'll adjust as we go. Once you've answered, we'll start by noticing what \"small\" is like for you, at your pace. You can pause or stop at any point."
+    }
+  ]
+}

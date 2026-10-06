@@ -3,6 +3,13 @@
 Updated: 2026-10-06
 
 
+## Inner-speech question asked before the first inner dialogue (2026-10-06, awaiting owner merge and deploy)
+
+- **Owner decision:** question 10: A (2026-10-06), approving the exact wording that replaces "Near the beginning of the first substantive therapy interaction, ..." in the served `SKILL.md` inner-speech screen. The question itself is unchanged.
+- **Change:** one sentence in `plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md`: ask the screen once, before the first inner-dialogue or younger-self exercise or earlier only when how the person thinks clearly matters; skip it when the answer is known; never in reply to something painful or ahead of a safety or urgent issue. The served `protocol_sha256` is computed from the files, so it changes with the deploy; the plugin version is unchanged.
+- **Evidence:** `tasks/inner-speech-timing-20261006/`: 2 of 24 Sonnet sample replies asked it (both before a requested inner-child exercise, after acknowledging the feeling) against 16 of 24 with the old wording on 4 Oct. Targeted tests that read the served skill 124/124, therapy lessons verify, repository audit ok. `THERAPY-LESSONS` has the 2026-10-06 entry.
+- **Next:** the owner merges; nothing reaches ChatGPT or Claude until the owner says `deploy`.
+
 ## Named private-case continuity (2026-10-06, code complete; external release owner-gated)
 
 - **Owner outcome:** Prevent fresh InnerSignal sessions from hunting general ChatGPT/browser conversation history when the user says to continue a known named private case. Named continuation should resolve the exact encrypted private case first, while preserving case authorization and non-disclosure.
