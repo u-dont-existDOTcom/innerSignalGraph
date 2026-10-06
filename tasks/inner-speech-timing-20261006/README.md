@@ -31,7 +31,7 @@ The question itself is unchanged. This is a smoke test on invented conversations
 | Replies that ask the question | 16 of 24 | 2 of 24 |
 | Conversations where it was asked | 9 of 12 | 1 of 12 (conversation 12) |
 | Asked right after something painful | yes, in all six such conversations | never |
-| Length, mean / median words | 116 / 108 | 78 / 67 |
+| Length, mean / median words | 116 / 107.5 | 78 / 65 |
 
 - Both asks came in conversation 12, where the person asked for an inner-child exercise: each reply first
   acknowledged "feeling small" and then asked the question before starting, which is what the new wording asks for.
