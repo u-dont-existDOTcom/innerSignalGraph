@@ -498,6 +498,23 @@ async function durableEncryptedWrite(file, envelope) {
   }
 }
 
+function selectContinuationCandidate(record, candidateId) {
+  if (candidateId !== "current_pending") return record.candidate_responses.find((entry) => entry.id === candidateId) ?? null;
+  const pending = [...record.candidate_responses].reverse().find((entry) => ["pending_audit", "reconstructed_pending_audit"].includes(entry.status));
+  if (pending) return pending;
+  const latest = record.candidate_responses.at(-1) ?? null;
+  return latest?.status === "sent" ? latest : null;
+}
+
+function candidateDeliveryCompletion(record, candidate) {
+  if (candidate?.status !== "sent") return null;
+  const sentTurn = record.raw_transcript.find((turn) => turn.id === candidate.metadata.sent_turn_id);
+  return sentTurn?.role === "assistant" && sentTurn.text === candidate.exact_text
+      && candidate.metadata.sent_with_audit_id && candidate.metadata.sent_in_reply_to_turn_id
+    ? { candidate_id: candidate.id, candidate_version: candidate.version }
+    : null;
+}
+
 export function createEncryptedPrivateCaseStore({
   rootDir,
   routineKek,
@@ -1482,9 +1499,8 @@ export function createEncryptedPrivateCaseStore({
         transcriptEntries: transcript,
         trackerEntries: record.tracker_entries
       });
-      const candidate = candidateId === "current_pending"
-        ? [...record.candidate_responses].reverse().find((entry) => ["pending_audit", "reconstructed_pending_audit"].includes(entry.status))
-        : record.candidate_responses.find((entry) => entry.id === candidateId);
+      const candidate = selectContinuationCandidate(record, candidateId);
+      const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
       const recent = Object.keys(episodePolicy).length
         ? selectRecentVerbatimWindow(transcript, {
             currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
@@ -1507,6 +1523,7 @@ export function createEncryptedPrivateCaseStore({
         recent_verbatim: structuredClone(recent),
         transcript_amendments: structuredClone(record.transcript_amendments),
         candidate_response: candidate ? structuredClone(candidate) : null,
+        delivery_completion: deliveryCompletion ? structuredClone(deliveryCompletion) : null,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({
           id: artifact.id,
           version: artifact.version,
@@ -1542,17 +1559,8 @@ export function createEncryptedPrivateCaseStore({
         maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
         requireCompleteEpisode: true
       });
-      const activeCandidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate) ?? null;
-      const candidate = activeCandidate ?? (record.candidate_responses.at(-1)?.status === "sent" ? record.candidate_responses.at(-1) : null);
-      const sentTurn = candidate?.status === "sent"
-        ? record.raw_transcript.find((turn) => turn.id === candidate.metadata.sent_turn_id)
-        : null;
-      const deliveryCompletion = sentTurn?.role === "assistant" && sentTurn.text === candidate.exact_text
-          && candidate.metadata.sent_with_audit_id && candidate.metadata.sent_in_reply_to_turn_id
-        ? {
-        candidate_id: candidate.id,
-        candidate_version: candidate.version
-        } : null;
+      const candidate = selectContinuationCandidate(record, "current_pending");
+      const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
       const context = {
         case_state: record.case_state,
         last_state_diff: record.state_diff_history.at(-1) ?? null,
