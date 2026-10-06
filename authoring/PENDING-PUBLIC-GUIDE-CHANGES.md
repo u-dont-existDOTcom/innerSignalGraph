@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-05-r1`
+Queue version: `2026-10-06-r2`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -88,7 +88,7 @@ Preserve these limits: do not require homework after every meditation; do not tr
 
 ## Pending bundle D — blocked action, conversational continuity, and memory support
 
-Upstream authority: `AMEND.CROSS.BLOCKED_ACTION_WAIT`, `AMEND.CROSS.SUPPORT_MODE_CONTINUITY`, `AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING`, and the corresponding runtime/graph rules.
+Upstream authority: `AMEND.CROSS.BLOCKED_ACTION_WAIT`, `AMEND.CROSS.SUPPORT_MODE_CONTINUITY`, `AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING`, `AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING`, and the corresponding runtime/graph rules.
 
 ### PGQ-014 — Some real problems are blocked, not actionable yet
 Preserve the reader-facing distinction between a concrete problem that has a feasible next action and one whose currently relevant steps are all blocked by a known external prerequisite, permission, timing condition, or unavailable resource. In the blocked state, preserve the actual constraint chain and the condition that would reopen action rather than inventing a workaround that assumes a known constraint away. Waiting for a real external condition is not failed motivation or avoidance; put available effort into another useful priority until the route reopens.
@@ -98,6 +98,9 @@ Preserve the conversational principle that an explicit preference for listening,
 
 ### PGQ-016 — Memory support is not the same as reflective journaling
 Preserve the distinction between meaning-making journals and low-interpretation external memory. When reflective journaling makes experience more confusing, a short dated fact log, what-helped note, reminder, next-step entry, or voice note can preserve continuity without requiring simultaneous interpretation. Pattern-finding can happen later if useful; a memory aid does not need to explain the person's life.
+
+### PGQ-017 — One blocked problem should not block the whole life
+Preserve the reader-facing distinction between separate practical lanes. When several real problems coexist, one can be externally blocked while another still has a useful next step. Choose the current practical focus from the person's stated goal, impact, urgency, leverage, and what can actually move now; keep the blocked lane's reopening condition visible without letting it suppress an independent actionable priority. When overwhelm makes everything feel scrambled, reduce the sorting burden: one short organizing statement, one prioritized next step, and only a clarification whose answer would genuinely change that next step. Do not make the person define ordinary words or listen to a long recap when the practical implication is already clear enough.
 
 ## EMPTY sentinel
 

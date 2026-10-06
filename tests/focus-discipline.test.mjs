@@ -136,6 +136,10 @@ test("focus rules reach each reasoning consumer exactly once and gate the protec
   assert.match(longitudinalClinicalRules, /It is not automatically the agenda\. When confirming or disconfirming it could change what is done next for the current focus, test it concretely/);
   assert.match(longitudinalClinicalRules, /otherwise park that question rather than investigating the symptom's function merely because it is available/);
   assert.match(focusDisciplineRules, /strongest expressed suffering or functional impact/);
+  assert.match(focusDisciplineRules, /leverage and present feasibility/u);
+  assert.match(focusDisciplineRules, /blocked practical lane does not automatically become the whole focus/u);
+  assert.match(focusDisciplineRules, /Cognitive overload is a reason to simplify the therapist's work/u);
+  assert.match(focusDisciplineRules, /ordinary-language definition or preference distinction/u);
   assert.match(focusDisciplineRules, /Novelty, strangeness, diagnostic curiosity or labeling/);
   assert.match(focusDisciplineRules, /baseline\/prior-assessment discriminator/);
   assert.match(focusDisciplineAuditRules, /salience hijacking/);

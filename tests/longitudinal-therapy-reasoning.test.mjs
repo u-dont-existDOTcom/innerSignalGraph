@@ -37,6 +37,10 @@ test("longitudinal rules detect inadequate examples, repeated questions, and cli
 test("longitudinal rules preserve constraint chains, support mode, nonrepetitive advice, and low-interpretation memory support", () => {
   assert.match(longitudinalClinicalRules, /A real problem can be blocked rather than actionable now/u);
   assert.match(longitudinalClinicalRules, /known external prerequisite/u);
+  assert.match(longitudinalClinicalRules, /practical_action_state is scoped to that selected practical focus/u);
+  assert.match(longitudinalClinicalRules, /blocked lane does not suppress another current priority/u);
+  assert.match(longitudinalClinicalRules, /cannot focus, everything feels scrambled/u);
+  assert.match(longitudinalClinicalRules, /Do not spend the response reciting facts they just supplied/u);
   assert.match(longitudinalClinicalRules, /durable conversational preference/u);
   assert.match(longitudinalClinicalRules, /do not re-ask on later turns/u);
   assert.match(longitudinalClinicalRules, /Before repeating advice/u);
@@ -49,6 +53,11 @@ test("longitudinal rules preserve constraint chains, support mode, nonrepetitive
   assert.match(prompt.system, /support_mode_current is the effective mode for this turn/u);
   assert.match(prompt.system, /durable support_mode_preference is the fallback baseline/u);
   assert.match(prompt.system, /Treat known practical constraints as binding context/u);
+  assert.match(prompt.system, /practical_action_state applies to the selected practical focus/u);
+  assert.match(prompt.system, /one blocked lane must not suppress another feasible one/u);
+  assert.match(prompt.system, /Untangling must add structure/u);
+  assert.match(prompt.system, /include a concrete recommendation rather than substituting reflection for advice/u);
+  assert.match(prompt.system, /Use at most a short organizing recap/u);
   assert.match(prompt.system, /Do not re-deliver already-given advice as if it were new/u);
   assert.match(prompt.system, /simple factual log or voice note/u);
 });
@@ -62,7 +71,9 @@ test("case audit receives the longitudinal invariants before routing", () => {
   assert.match(prompt.system, /client's appraisal that an event is minor/u);
   assert.match(prompt.system, /nonverbal critic, presence, shame state, or part/u);
   assert.match(prompt.system, /client-generated functional hypothesis/u);
-  assert.match(prompt.system, /all relevant next steps are blocked by a known external prerequisite/u);
+  assert.match(prompt.system, /all relevant next steps for the selected practical focus are blocked by a known external prerequisite/u);
+  assert.match(prompt.system, /practical_action_state being applied globally across several independent practical lanes/u);
+  assert.match(prompt.system, /cognitive overload being answered with a long recap/u);
   assert.match(prompt.system, /explicit durable support-mode preference being lost/u);
   assert.match(prompt.system, /substantially identical advice being re-delivered/u);
   assert.match(prompt.system, /reflective journaling being prescribed again/u);

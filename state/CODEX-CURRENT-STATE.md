@@ -1,7 +1,17 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-05
+Updated: 2026-10-06
 
+
+## Practical-focus sequencing and overload response (2026-10-06, active)
+
+- **Owner outcome:** Repair the failure where a response repeated a distressed person's facts, treated one externally blocked lane as if the whole practical situation were blocked, and asked them to define an ordinary goal instead of giving useful advice. Generalize without private case facts.
+- **Diagnosis:** `practical_action_state` is a scalar and was not explicit enough about focus scope. The map already said a genuinely independent action can coexist with a blocked lane, but extraction and realization could still let one blocked subproblem suppress another actionable priority. Realization also prohibited repetitive paraphrase but did not make cognitive-overload sequencing or advice-mode action concrete enough.
+- **Current candidate:** Scope `practical_action_state` to the selected practical focus; require recomputation when focus changes; preserve blocked sibling lanes without letting them suppress a higher-leverage feasible priority; add overload sequencing and nonredundant-clarification rules; strengthen advice/mixed realization; add owner amendment `AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING`, graph regression G093, and public-guide obligation PGQ-017.
+- **Evidence:** Focused prompt/state/focus/graph tests PASS 48/48 before projection closeout. After synchronizing the canonical owner-amendment manifest, exact authoring inventory, plugin focus/map references, and generated projections, the affected suite PASSes 67/67. Graph regressions PASS 63/63; therapy lessons PASS 5/5; authoring project/validate/check/maps PASS at 482 generated files with projection input SHA-256 `ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44`; repository audit has zero errors and the pre-existing hosted-permissions warning; `git diff --check` and the public-diff privacy grep PASS. A full local `npm run verify` reached the automated suite and exposed three stale synchronization expectations caused by the new amendment/regression/map identity; all three were repaired and are green in the 67-test affected rerun. The same full run also hit unrelated `ERR_ACCESS_DENIED` failures in restricted journal parser tests on this local execution surface; their security boundary was not weakened or changed. Exact-head hosted CI remains the merge authority for those environment-sensitive tests.
+- **Independent review:** Cross-family check not run: the authorized Claude Opus 5.5/max route returned its weekly usage limit before reviewing the generalized packet. No same-family or lower-tier substitute is being represented as equivalent.
+- **Current step:** Re-run the lightweight post-sync graph/authoring/audit/privacy gates, commit and publish the generalized task branch, require exact-head hosted Verify/workflow-policy/CodeQL checks, reconcile if `main` moves, and merge to development `main` only when those checks pass.
+- **Boundary:** Generalized policy and synthetic regression only. No private transcript, name, location, diagnosis, account detail, or private-derived identifier enters Git. Development `main` only; no stable promotion, installation, deployment, Guide Packet release, or public-guide publication is authorized.
 
 ## Blocked practical action, support-mode continuity, and memory support (2026-10-05, complete)
 

@@ -12,7 +12,7 @@ section_hash: 827d28ad3cea4f58bc04e3e144b5d6f345899a1a9335c834c3222aad3169b171
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # Two Common Protective Patterns

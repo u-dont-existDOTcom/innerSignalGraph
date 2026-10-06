@@ -24,6 +24,7 @@ source_refs:
   - AMEND.IC.CONTINUITY_TITRATION
   - AMEND.IC.COMMUNITY_REPARENTING
   - AMEND.CROSS.BLOCKED_ACTION_WAIT
+  - AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
 regression_refs:
   - G013
   - G014
@@ -34,9 +35,10 @@ regression_refs:
   - G070
   - G091
   - G092
-base_record_sha256: 7ccb5150c159bf9197c976f0b113cd52de42d0ac0406eb8cae6f2dd68a934322
-base_graph_sha256: 32fe4c146863ea66e757304b8b840c4eb219d5d2fdc51ce7c1b1896bb6771455
-projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
+  - G093
+base_record_sha256: ec33bc90ba1720f08c19b643fdc40b56e0199d02730188f4550f5de4c1aaf816
+base_graph_sha256: aaa58c6795d8fb057d4167add2cd04c37377850b68247fbf9cf5bb99866963dd
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # Act on the concrete problem
@@ -93,7 +95,8 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
     "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.",
     "Do not call a social, romantic or sexual action healthy exposure merely because it is difficult when its main function is reassurance, self-testing or using another person to regulate uncertainty.",
     "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate.",
-    "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation."
+    "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
+    "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -110,7 +113,8 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
       "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
       "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
       "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
-      "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn."
+      "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn.",
+      "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus."
     ]
   },
   "questionPolicy": {
@@ -119,6 +123,7 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
   },
   "recommendations": [
     "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+    "When several independent practical lanes coexist, choose the highest-leverage feasible current focus. Preserve blocked sibling lanes and their reopening conditions, but do not let them suppress action on the selected focus.",
     "Before planning an action, distinguish a feasible step available now from a real problem that is externally blocked. If all supported next steps are blocked, use the defined-wait route rather than inventing a workaround.",
     "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
     "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
@@ -153,3 +158,5 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
 [[current/governance/amendments/AMEND.IC.COMMUNITY_REPARENTING]]
 
 [[current/governance/amendments/AMEND.CROSS.BLOCKED_ACTION_WAIT]]
+
+[[current/governance/amendments/AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING]]

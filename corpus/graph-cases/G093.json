@@ -1,0 +1,35 @@
+{
+  "id": "G093",
+  "title": "an actionable practical focus stays outward even when a separate practical lane is blocked",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "actionable_problem": "present",
+    "practical_action_state": "action_available",
+    "unresolved_inner_material": "absent",
+    "attention_loop": "present",
+    "thinking_yield": "mixed",
+    "inward_attention_effect": "neutral"
+  },
+  "expected": {
+    "primary": "ROUTE.ACT_OUTWARD",
+    "selectedIncludes": [
+      "ROUTE.ACT_OUTWARD"
+    ],
+    "selectedExcludes": [
+      "ROUTE.DEFINED_WAIT"
+    ],
+    "requiredNuancePatterns": [
+      "scoped to the selected practical focus",
+      "another practical lane can remain blocked_waiting"
+    ],
+    "forbiddenOverclaimPatterns": []
+  }
+}

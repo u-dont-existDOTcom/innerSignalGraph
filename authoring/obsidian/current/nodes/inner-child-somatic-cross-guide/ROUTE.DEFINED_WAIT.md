@@ -18,11 +18,13 @@ graph_tags:
   - guide
 source_refs:
   - AMEND.CROSS.BLOCKED_ACTION_WAIT
+  - AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
 regression_refs:
   - G092
-base_record_sha256: ff0c505da85982bdba654d6018865479ee53274b6fafa3ac60978e89dc67111a
-base_graph_sha256: 32fe4c146863ea66e757304b8b840c4eb219d5d2fdc51ce7c1b1896bb6771455
-projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
+  - G093
+base_record_sha256: f7d0e06615193b82a423958adc64bb7b1bf13e3aa53ee8c6c94ee783b3f2bd02
+base_graph_sha256: aaa58c6795d8fb057d4167add2cd04c37377850b68247fbf9cf5bb99866963dd
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # Hold a real problem at a defined external blocker
@@ -72,7 +74,8 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
   "avoid": [
     "Do not invent an undocumented exception, alternate address, payment path, pickup option, transport route, institutional policy, or other workaround that silently contradicts an established constraint.",
     "Do not re-ask the already established blocker chain merely because the model has lost track of it; ask only when new information could change the route.",
-    "Do not interpret waiting on a real external prerequisite as avoidance, lack of motivation, dependence, resistance, or therapeutic failure."
+    "Do not interpret waiting on a real external prerequisite as avoidance, lack of motivation, dependence, resistance, or therapeutic failure.",
+    "Do not let one blocked lane monopolize the reply when a separate higher-leverage current priority is actionable."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -85,12 +88,14 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
     "requiredNuance": [
       "A problem can be concrete and important while currently lacking an executable next step; problem reality and present actionability are separate variables.",
       "A genuinely independent supported action can coexist with a blocked lane. blocked_waiting applies to the live practical route only when all relevant next steps for that route are currently blocked.",
-      "Defined waiting is temporary and conditional: a change in the blocker or new grounded information can reopen outward action without requiring the person to re-explain the entire problem."
+      "Defined waiting is temporary and conditional: a change in the blocker or new grounded information can reopen outward action without requiring the person to re-explain the entire problem.",
+      "Defined waiting applies to the selected practical focus, not globally to every problem mentioned in the turn; a blocked sibling lane and an actionable focus can coexist."
     ]
   },
   "recommendations": [
     "Preserve the known constraint chain, including steps already completed, and state the external event, permission, resource, or timing condition that would reopen action.",
     "Do not generate substitute actions merely to avoid waiting. Offer an alternative only when it is genuinely independent of the blocker and supported by the transcript or grounded external information.",
+    "Before making defined waiting the practical route, check whether another independent current priority has a supported action. If it does, park this blocked lane and route available effort to that feasible priority.",
     "Treat a defined wait as an active planning state: keep the reopening condition visible, then redirect available effort toward another useful current priority instead of repeatedly solving the same blocked step.",
     "When the reopening condition changes or a genuinely independent feasible step becomes available, update practical_action_state to action_available and return to ordinary outward action."
   ],
@@ -105,3 +110,5 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
 ## Source navigation
 
 [[current/governance/amendments/AMEND.CROSS.BLOCKED_ACTION_WAIT]]
+
+[[current/governance/amendments/AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING]]

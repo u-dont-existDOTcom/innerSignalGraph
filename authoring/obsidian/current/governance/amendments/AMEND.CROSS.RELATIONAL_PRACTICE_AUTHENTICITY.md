@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
 status: owner-approved
 domain: cross-guide
-base_record_sha256: eb250de586bba9a44761638d39098fbb55fa29606a8f7f5a0b182ca02e803a8e
-source_file_sha256: 2b9bb2ea891e003d72d2ca12580f635a4e5b8aa59c0ce06157bd92995a38a3f2
-projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83e93b98ec8
+base_record_sha256: a8ffae4f70fadd4d577cad00491e8a112a769926a0f844b0ae409544ee626b10
+source_file_sha256: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
@@ -17,13 +17,13 @@ projection_input_sha256: 61a6f2bc0a4901a995b341b8e10f0a2d918b76e60ce795da05c2e83
 
 ```json
 {
-  "approvedAt": "2026-10-05",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
     "status": "owner-approved",
     "text": "Social practice or exposure should serve reciprocal contact, skill, ordinary life and chosen values rather than proving normality, attractiveness, orientation, lovability, intimacy capacity or certainty. Another person is not a diagnostic instrument or reassurance machine; healthy support and mutual co-regulation remain available, and crisis support can take priority. When an action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation; clinician-guided ERP and useful exposure remain compatible. Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless the repetitive certainty-seeking pattern is actually present. Calibrate closeness and disclosure to demonstrated trust: privacy is not fakery and total disclosure is not required; where disclosure is unsafe, protection comes first. Relationship depth that depends on maintaining a false normal, happy or perfect persona should become more honest at a safe pace or be reduced. Acceptance or nonjudgment can bring powerful relief without proving romantic love, compatibility or earned trust. Exposure and anti-avoidance never override consent, require continuing touch or sex after a no, require remaining in concrete danger, or justify skipping evaluation of a possible medical red flag."
   },
-  "version": "2026-10-05-blocked-action-support-mode-r1"
+  "version": "2026-10-06-practical-focus-sequencing-r1"
 }
 ```

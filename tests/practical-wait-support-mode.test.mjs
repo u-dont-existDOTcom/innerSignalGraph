@@ -112,8 +112,10 @@ test("extractor is told to preserve durable support mode and distinguish blocked
     pathPerformanceEnabled: false,
     perspectivePracticesEnabled: false
   });
-  assert.match(prompt.system, /practical_action_state tracks the current execution state/u);
-  assert.match(prompt.system, /blocked_waiting only when all currently relevant next steps are blocked/u);
+  assert.match(prompt.system, /practical_action_state is scoped to the selected practical focus/u);
+  assert.match(prompt.system, /blocked_waiting only when all currently relevant next steps for that selected focus are blocked/u);
+  assert.match(prompt.system, /blocked sibling lane and its reopening condition/u);
+  assert.match(prompt.system, /Recompute practical_action_state when the selected practical focus changes/u);
   assert.match(prompt.system, /support_mode_preference is the durable baseline/u);
   assert.match(prompt.system, /support_mode_current is the effective mode for this turn/u);
   assert.match(prompt.system, /Never infer either support-mode field from gender/u);
