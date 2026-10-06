@@ -1483,8 +1483,26 @@ export function createEncryptedPrivateCaseStore({
         trackerEntries: record.tracker_entries
       });
       const candidate = candidateId === "current_pending"
-        ? [...record.candidate_responses].reverse().find((entry) => ["pending_audit", "reconstructed_pending_audit"].includes(entry.status))
+        ? ([...record.candidate_responses].reverse().find((entry) => ["pending_audit", "reconstructed_pending_audit"].includes(entry.status))
+          ?? (record.candidate_responses.at(-1)?.status === "sent" ? record.candidate_responses.at(-1) : null))
         : record.candidate_responses.find((entry) => entry.id === candidateId);
+      const sentTurn = candidate?.status === "sent"
+        ? transcript.find((turn) => turn.id === candidate.metadata.sent_turn_id)
+        : null;
+      const deliveryCompletion = sentTurn?.role === "assistant" && sentTurn.text === candidate?.exact_text
+          && candidate?.metadata.sent_with_audit_id && candidate?.metadata.sent_in_reply_to_turn_id
+        ? {
+            schema_version: 1,
+            kind: "candidate",
+            candidate_id: candidate.id,
+            candidate_version: candidate.version,
+            candidate_sha256: sha256Hex(candidate.exact_text),
+            audit_id: candidate.metadata.sent_with_audit_id,
+            assistant_turn_id: candidate.metadata.sent_turn_id,
+            in_reply_to_turn_id: candidate.metadata.sent_in_reply_to_turn_id,
+            delivered_at: sentTurn.at
+          }
+        : null;
       const recent = Object.keys(episodePolicy).length
         ? selectRecentVerbatimWindow(transcript, {
             currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
@@ -1507,6 +1525,7 @@ export function createEncryptedPrivateCaseStore({
         recent_verbatim: structuredClone(recent),
         transcript_amendments: structuredClone(record.transcript_amendments),
         candidate_response: candidate ? structuredClone(candidate) : null,
+        delivery_completion: deliveryCompletion ? structuredClone(deliveryCompletion) : null,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({
           id: artifact.id,
           version: artifact.version,

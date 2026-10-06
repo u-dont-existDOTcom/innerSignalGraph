@@ -245,6 +245,17 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   assert.equal(deliveredTurn.text, reconstruct.exact_text);
   assert.equal(deliveredTurn.exchange_id, deliveredRecord.raw_transcript[0].exchange_id);
   assert.equal(deliveredTurn.episode_id, deliveredRecord.raw_transcript[0].episode_id);
+  const deliveredContext = await store.loadCaseContext(CASE_ID, {
+    candidateId: "current_pending",
+    episodePolicy: { requireCompleteEpisode: true },
+    journalContinuitySupported: true
+  });
+  assert.equal(deliveredContext.candidate_response.id, REPAIR_ID);
+  assert.equal(deliveredContext.candidate_response.status, "sent");
+  assert.equal(deliveredContext.delivery_completion.candidate_id, REPAIR_ID);
+  assert.equal(deliveredContext.delivery_completion.audit_id, passingAuditId);
+  assert.equal(deliveredContext.delivery_completion.assistant_turn_id, deliveryRequest.assistant_turn_id);
+  assert.equal(assessContinuationSafety(deliveredContext).continuation_safe, true);
   const deliveredHandoff = await store.loadHandoff(CASE_ID, DELIVERED_HANDOFF_ID);
   assert.equal(deliveredHandoff.schema_version, 4);
   assert.equal(deliveredHandoff.journal_continuity.mode, "not_attached");

@@ -3,6 +3,14 @@
 Updated: 2026-10-06
 
 
+## Sent-case fresh-session continuity (2026-10-06, active)
+
+- **Owner outcome:** A named private case must remain continuation-safe after the previous assistant reply has already been delivered; fresh sessions must not fall back to conversation search merely because there is no unsent candidate.
+- **Diagnosis:** `loadCaseContext(..., candidateId: "current_pending")` selected only unsent candidates and never reconstructed `delivery_completion`. After a normal delivered response it therefore returned no candidate/delivery evidence and failed the continuation-safety gate, even though handoff creation already knew how to bind the last sent candidate to its exact assistant/user transcript turns.
+- **Current candidate:** When no unsent candidate exists, ordinary case loading falls back only to the latest exact `sent` candidate; it verifies the stored sent assistant turn text plus audit/reply metadata, emits the full transcript-bound `delivery_completion` projection, and leaves all audit/delivery gates unchanged.
+- **Evidence:** Focused private continuity/OAuth/orchestration suite PASS 26/26. Full `private-case:acceptance` PASS 52/52. The regression uses a genuinely audited, approved, transcript-bound delivered candidate and proves `current_pending` falls back to that exact sent candidate, reconstructs its full delivery projection, and passes continuation safety without weakening audit or delivery gates.
+- **Boundary:** Internal encrypted continuity/storage semantics only. No therapy-map, public-guide, model-policy, private-case content, deployment, alias binding, or stable promotion is part of this code change.
+
 ## Named private-case continuity (2026-10-06, code complete; external release owner-gated)
 
 - **Owner outcome:** Prevent fresh InnerSignal sessions from hunting general ChatGPT/browser conversation history when the user says to continue a known named private case. Named continuation should resolve the exact encrypted private case first, while preserving case authorization and non-disclosure.
