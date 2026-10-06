@@ -19,7 +19,17 @@ export function assessContinuationSafety(context) {
   if (!context?.constitution_ref?.version) failures.push("constitution reference is missing");
   const candidate = context?.candidate_response;
   const delivery = context?.delivery_completion;
-  if (!candidate?.exact_text && !delivery) failures.push("exact candidate response is missing");
+  const historicalDelivery = context?.historical_delivery_completion;
+  const historicalDeliveryValid = historicalDelivery?.kind === "owner-supplied-historical-delivery-v1"
+    && typeof historicalDelivery.source_artifact_id === "string" && historicalDelivery.source_artifact_id.length > 0
+    && typeof historicalDelivery.assistant_turn_id === "string" && historicalDelivery.assistant_turn_id.length > 0
+    && typeof historicalDelivery.in_reply_to_turn_id === "string" && historicalDelivery.in_reply_to_turn_id.length > 0
+    && ["known", "unavailable"].includes(historicalDelivery.reported_sent_at_status)
+    && (historicalDelivery.reported_sent_at_status === "known"
+      ? typeof historicalDelivery.reported_sent_at === "string" && historicalDelivery.reported_sent_at.length > 0
+      : historicalDelivery.reported_sent_at == null);
+  if (historicalDelivery && !historicalDeliveryValid) failures.push("historical delivery completion is invalid");
+  if (!candidate?.exact_text && !delivery && !historicalDeliveryValid) failures.push("exact candidate response or historical delivery checkpoint is missing");
   else if (candidate?.status === "sent") {
     if (!delivery || delivery.candidate_id !== candidate.id || delivery.candidate_version !== candidate.version) {
       failures.push("sent candidate is missing exact transcript-bound delivery evidence");
@@ -42,7 +52,8 @@ export function assessContinuationSafety(context) {
     continuation_safe: failures.length === 0,
     failures: Object.freeze(failures),
     exact_candidate_available: Boolean(candidate?.exact_text && candidate.status !== "sent"),
-    exact_delivery_available: Boolean(delivery),
+    exact_delivery_available: Boolean(delivery || historicalDeliveryValid),
+    historical_delivery_available: historicalDeliveryValid,
     exact_recent_verbatim_available: episodeCompleteness?.complete === true,
     journal_continuity_available: Boolean(context?.journal_continuity?.corpora?.length),
     journal_continuity_supported: context?.journal_continuity?.consumer_capability_supported === true,

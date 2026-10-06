@@ -549,6 +549,72 @@ test("continuation safety uses semantic active-episode completeness rather than 
   assert.match(missingStart.episode_completeness.failures.join("\n"), /start turn is absent/);
 });
 
+test("owner-supplied historical delivery can bootstrap continuity without fabricating a candidate audit", async (t) => {
+  const environment = await makeEnvironment(t);
+  const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  t.after(() => providers.close());
+  const service = createPrivateCaseAccessService({
+    rootDir: providers.rootDir,
+    authorizationProvider: providers.authorizationProvider,
+    keyProvider: providers.keyProvider,
+    allowDevelopmentFileProvider: true
+  });
+  const auth = { bearerToken: TOKEN };
+  const state = structuredClone(syntheticState());
+  state.current_episode = {
+    ...state.current_episode,
+    id: "episode:historical",
+    started_turn_id: "H1-user",
+    source_item_ids: []
+  };
+  const userTurn = turn("H1", "user", "Synthetic exact historical user message.", "episode:historical", 6);
+  const assistantTurn = turn("H1", "assistant", "Synthetic exact historical assistant reply.", "episode:historical", 6);
+  await service.commitCaseTurn(CASE_ID, {
+    transcript_entries: [userTurn, assistantTurn],
+    case_state: state,
+    state_diff: { schema_version: 1, additions: [], current_episode_changed: true },
+    diff_id: "diff:H1",
+    diff_turn_id: userTurn.id
+  }, auth);
+  const sourceText = JSON.stringify({ schema_version: 1, user_turn: userTurn, assistant_turn: assistantTurn });
+  await service.saveSourceArtifact(CASE_ID, "source:historical-delivery:001", chunkExactSourceText(sourceText), {
+    kind: "owner-supplied-historical-delivery-v1",
+    supplied_by: "owner",
+    assistant_turn_id: assistantTurn.id,
+    in_reply_to_turn_id: userTurn.id,
+    reported_sent_at_status: "unavailable",
+    reported_sent_at: null
+  }, auth);
+
+  const loaded = await service.loadCaseContext(CASE_ID, auth, {
+    candidateId: "current_pending",
+    requireContinuationSafe: true,
+    requireAuditScope: true,
+    episodePolicy: { requireCompleteEpisode: true }
+  });
+  assert.equal(loaded.candidate_response, null);
+  assert.equal(loaded.delivery_completion, null);
+  assert.equal(loaded.historical_delivery_completion.kind, "owner-supplied-historical-delivery-v1");
+  assert.equal(loaded.historical_delivery_completion.source_artifact_id, "source:historical-delivery:001");
+  assert.equal(loaded.historical_delivery_completion.assistant_turn_id, assistantTurn.id);
+  assert.equal(loaded.continuation_safety.continuation_safe, true);
+  assert.equal(loaded.continuation_safety.exact_delivery_available, true);
+  assert.equal(loaded.continuation_safety.historical_delivery_available, true);
+  assert.equal(loaded.recent_verbatim.turns.at(-1).text, assistantTurn.text);
+
+  await service.appendTranscriptTurn(CASE_ID, turn("H2", "user", "Synthetic newer unanswered user turn.", "episode:historical", 7), auth);
+  await assert.rejects(
+    () => service.loadCaseContext(CASE_ID, auth, {
+      candidateId: "current_pending",
+      requireContinuationSafe: true,
+      requireAuditScope: true,
+      episodePolicy: { requireCompleteEpisode: true }
+    }),
+    (error) => error.code === "CASE_NOT_CONTINUATION_SAFE"
+      && error.details.failures.includes("exact candidate response or historical delivery checkpoint is missing")
+  );
+});
+
 test("fresh case context stays continuation-safe after an exact candidate is delivered", async (t) => {
   const environment = await makeEnvironment(t);
   await runSession("seed", environment);
@@ -639,7 +705,7 @@ test("continuation acceptance fails with the required high-level message when an
   });
   assert.equal(result.continuation_safe, false);
   assert.ok(result.failures.includes("last state diff is missing"));
-  assert.ok(result.failures.includes("exact candidate response is missing"));
+  assert.ok(result.failures.includes("exact candidate response or historical delivery checkpoint is missing"));
   assert.ok(result.failures.includes("targeted older raw evidence has no retrievable private provenance source"));
   const error = new CaseNotContinuationSafeError(result.failures);
   assert.match(error.message, /^Case is not continuation-safe for a fresh session:/);

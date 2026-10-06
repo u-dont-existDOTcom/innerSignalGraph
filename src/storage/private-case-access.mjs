@@ -242,6 +242,7 @@ export function createPrivateCaseAccessService({
     async deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
       return write(caseId, authContext, (store) => store.deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
     },
+    async commitCaseTurn(caseId, input, authContext) { return write(caseId, authContext, (store) => store.commitTurn(caseId, input)); },
     async saveCaseState(caseId, state, authContext) { return write(caseId, authContext, (store) => store.saveCaseState(caseId, state)); },
     async getCaseState(caseId, authContext) { return read(caseId, authContext, (store) => store.getCaseState(caseId)); },
     async saveCaseDiff(caseId, diff, options, authContext) { return write(caseId, authContext, (store) => store.saveCaseDiff(caseId, diff, options)); },
