@@ -3,7 +3,7 @@
 Claude uses InnerSignal as one custom MCP connector: the hosted private-case MCP. That connector carries both halves of the InnerSignal plugin:
 
 - **Therapy.** `load_therapy_protocol` returns the therapy skill's instructions and its reference files, including the inner-child therapy map. `get_therapy_protocol_manifest` returns only the version and SHA-256 hashes. Both tools are public and read-only; the content is the public packaged skill.
-- **Private continuity.** The ten read-only case tools (`load_handoff`, `load_case_context`, …) keep the existing OAuth, scopes and subject-to-case ACL.
+- **Private continuity.** The eleven read-only case tools (`load_handoff`, `load_case_context`, `load_case_context_by_alias`, …) keep the existing OAuth, scopes and subject-to-case ACL. Named-case resolution is non-enumerable and still passes through the ordinary case authorization and key boundary.
 
 The server's `initialize` instructions tell the host to call `load_therapy_protocol` before any inner-child, younger-self or self-relationship therapy response, and to say the protocol is unavailable rather than improvise it if the call fails.
 

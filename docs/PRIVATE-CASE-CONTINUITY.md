@@ -14,7 +14,7 @@ A case is continuation-safe only when an authorized loader, starting with no pri
 6. the current therapeutic episode; and
 7. the constitution version/reference, without copying the constitution into the case.
 
-`loadCaseContext`, `loadHandoff`, and the MCP `load_case_context` / `load_handoff` tools enforce this gate. They fail with `CASE_NOT_CONTINUATION_SAFE` rather than returning a public fixture, a summary, a hash, or regenerated prose when a required artifact is absent. `Create Handoff` may still freeze an incomplete snapshot, but it is labeled `BLOCKED_CONTINUATION_UNSAFE`; local encrypted round-trip alone remains `PENDING_FRESH_SESSION`, never `FRESH_SESSION_GREEN`. None of these APIs returns hidden model reasoning.
+`loadCaseContext`, `loadHandoff`, and the MCP `load_case_context` / `load_handoff` tools enforce this gate. A private non-enumerable alias locator additionally lets `load_case_context_by_alias` resolve a user-supplied case name to its opaque case ID before applying the same authorization and continuation-safety gate. Alias locators contain only a normalized-alias SHA-256 digest plus the opaque case ID; there is no list/search-all-cases tool. They fail with the same generic authorization boundary rather than disclosing whether an alias exists. These routes fail with `CASE_NOT_CONTINUATION_SAFE` rather than returning a public fixture, a summary, a hash, or regenerated prose when a required artifact is absent. `Create Handoff` may still freeze an incomplete snapshot, but it is labeled `BLOCKED_CONTINUATION_UNSAFE`; local encrypted round-trip alone remains `PENDING_FRESH_SESSION`, never `FRESH_SESSION_GREEN`. None of these APIs returns hidden model reasoning.
 
 ## Candidate audit and reconstruction gate
 
@@ -46,7 +46,7 @@ The private store keeps separate fields for:
 - immutable exact source artifacts plus a lossless byte-range/chunk integrity manifest; and
 - current episode state through the structured record.
 
-Each immutable handoff is stored separately as a mode-`0600` encrypted envelope below the private root. The handoff contains a canonical snapshot, component hashes, exact deterministic component chunks with contiguous byte ranges, and a retrieval index. An authorized loader can therefore reconstruct an oversized component without treating one source read larger than the 20,000-byte handoff ceiling as available. Private mode-`0600` locator records map opaque handoff or candidate IDs to the case required for authorization; they contain routing metadata only, never therapy text, candidate text, state, journal/tracker content, secrets, or private-derived payload hashes. A production implementation should place this locator mapping in its authenticated private database rather than a public or client-controlled store.
+Each immutable handoff is stored separately as a mode-`0600` encrypted envelope below the private root. The handoff contains a canonical snapshot, component hashes, exact deterministic component chunks with contiguous byte ranges, and a retrieval index. An authorized loader can therefore reconstruct an oversized component without treating one source read larger than the 20,000-byte handoff ceiling as available. Private mode-`0600` locator records map opaque handoff or candidate IDs to the case required for authorization; they contain routing metadata only, never therapy text, candidate text, state, journal/tracker content, secrets, or private-derived payload hashes. Separate private alias locators use only a normalized-alias SHA-256 digest and opaque case ID; plaintext aliases are not stored in locator filenames or contents, aliases cannot be enumerated through MCP, and successful resolution still requires ordinary case authorization and keys. A production implementation should place this locator mapping in its authenticated private database rather than a public or client-controlled store.
 
 Ordinary reasoning ledgers now default to `redacted`; that form excludes user-facing response text, case formulation, audit prose, and reasoning evidence. The automatic private controller forces the underlying candidate pipeline ledger off and persists its recovery state only in the encrypted case record. `LEDGER_MODE=full` remains an explicit operator choice for non-private diagnostics and is not the private case persistence mechanism.
 
@@ -75,6 +75,7 @@ Ordinary reasoning ledgers now default to `redacted`; that form excludes user-fa
 | `retrieveCaseEvidence` | Raw older turns by query, stable provenance IDs, or time range |
 | `getCurrentEpisode` | Current therapeutic path/episode |
 | `loadCaseContext` | All-in-one fresh-session bootstrap and continuation-safety gate |
+| `bindCaseAlias` / `loadCaseContextByAlias` | Backend-only binding of a private name to an opaque case ID; read-only named-case bootstrap through the same authorization and continuation-safety gate |
 | `createHandoff` / `loadHandoff` | Freeze and retrieve an immutable exact private continuation snapshot; the loader needs only `handoff_id` |
 | `getStateDiffByReference` / `getRecentVerbatimByReference` | Read current or handoff-frozen state diff and exact recent episode |
 | `getPendingCandidateByReference` | Resolve exact text using only `candidate_id` or `handoff_id` |
@@ -158,6 +159,7 @@ The process prints a local `/mcp` URL. Authentication is an HTTP bearer token su
 
 - `load_handoff`
 - `load_case_context`
+- `load_case_context_by_alias`
 - `get_state_diff`
 - `get_recent_verbatim`
 - `retrieve_case_evidence`

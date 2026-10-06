@@ -8,6 +8,7 @@ const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const PRIVATE_ID = /^[A-Za-z0-9:_-]{1,200}$/;
 const OPERATIONS = new Set([
   "append_transcript_completion",
+  "bind_case_alias",
   "record_candidate_audit",
   "reconstruct_candidate_and_create_handoff",
   "create_handoff",
@@ -185,6 +186,13 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           corpus_id: request.corpus_id,
           visibility_epoch: visibilityEpoch
         });
+      }
+
+      if (request.operation === "bind_case_alias") {
+        requiredText(request.case_alias, "case_alias", 160);
+        if (typeof caseAccessService.bindCaseAlias !== "function") throw new ValidationError("caseAccessService must support private case alias binding.");
+        const result = await caseAccessService.bindCaseAlias(caseId, request.case_alias, authContext);
+        return Object.freeze({ schema_version: 1, operation_succeeded: true, case_id: caseId, alias_bound: result.alias_bound === true });
       }
 
       if (request.operation === "append_transcript_completion") {

@@ -84,6 +84,21 @@ const TOOL_DEFINITIONS = Object.freeze([
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   },
   {
+    name: "load_case_context_by_alias",
+    title: "Load private InnerSignal case context by alias",
+    description: "Resolve a non-enumerable private case alias and load that authorized continuation-safe case context. Use this when the user names a known case but does not provide an opaque case or handoff ID.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["case_alias"],
+      properties: {
+        case_alias: { type: "string", minLength: 1, maxLength: 160 },
+        candidate_id: { type: "string", default: "current_pending" }
+      }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
     name: "get_state_diff",
     title: "Get private case state diff",
     description: "Load the current case diff or the exact diff frozen into a private handoff.",
@@ -239,19 +254,19 @@ const THERAPY_INSTRUCTIONS = [
 ];
 const AUTHORIZATION_INSTRUCTION = "Authorization is transport-owned; never put bearer tokens or key material in tool arguments.";
 
-// Without journal work tools this is exactly the long-standing instruction text.
+// Keep the ordinary and journal-enabled continuity instructions aligned; journal mode adds only its mutation exception and journal-specific instructions.
 function serverInstructions(journalWork) {
   return [
     ...THERAPY_INSTRUCTIONS,
     journalWork
-      ? "To continue from an InnerSignal handoff, call load_handoff first. The private case tools are read-only, except submit_journal_work_result."
-      : "To continue from an InnerSignal handoff, call load_handoff first. The private case tools are read-only.",
+      ? "To continue from an InnerSignal handoff, call load_handoff first. If the user names a known private case but supplies no opaque ID, call load_case_context_by_alias before searching or reconstructing prior conversation. The private case tools are read-only, except submit_journal_work_result."
+      : "To continue from an InnerSignal handoff, call load_handoff first. If the user names a known private case but supplies no opaque ID, call load_case_context_by_alias before searching or reconstructing prior conversation. The private case tools are read-only.",
     ...(journalWork ? [journalWork.instructions] : []),
     AUTHORIZATION_INSTRUCTION
   ].join(" ");
 }
 
-const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
+const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "load_case_context_by_alias", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
 const toolScopes = (name, journalWork = null) => {
   if (journalWork?.names.has(name)) return [...journalWork.scopes(name)];
   return AUDIT_TOOLS.has(name)
@@ -403,7 +418,7 @@ async function deniedForSignedInAccount(service, token, name, journalWork = null
 
 function caseNotAuthorizedResult() {
   return {
-    content: [{ type: "text", text: "This account cannot open that case or handoff, or it does not exist. Check the ID with the user; signing in again will not change this." }],
+    content: [{ type: "text", text: "This account cannot open that case, alias, or handoff, or it does not exist. Check the case reference with the user; signing in again will not change this." }],
     structuredContent: { code: "PRIVATE_CASE_NOT_AUTHORIZED" },
     isError: true
   };
@@ -416,6 +431,15 @@ async function callTool(service, name, args, authContext, journalApi = null) {
   });
   if (name === "load_case_context") {
     return service.loadCaseContext(args.case_id, authContext, {
+      candidateId: args.candidate_id ?? "current_pending",
+      requireContinuationSafe: true,
+      requireAuditScope: true,
+      journalContinuitySupported: Boolean(journalApi),
+      episodePolicy: { requireCompleteEpisode: true }
+    });
+  }
+  if (name === "load_case_context_by_alias") {
+    return service.loadCaseContextByAlias(args.case_alias, authContext, {
       candidateId: args.candidate_id ?? "current_pending",
       requireContinuationSafe: true,
       requireAuditScope: true,
@@ -515,7 +539,7 @@ async function callTool(service, name, args, authContext, journalApi = null) {
 }
 
 export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null } = {}) {
-  if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new TypeError("caseAccessService is required.");
+  if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function" || typeof caseAccessService.loadCaseContextByAlias !== "function") throw new TypeError("caseAccessService with exact-ID and alias continuity is required.");
   if (journalWork !== null && (typeof journalWork?.call !== "function" || !(journalWork.names instanceof Set))) {
     throw new TypeError("journalWork must come from createJournalWorkTools.");
   }
