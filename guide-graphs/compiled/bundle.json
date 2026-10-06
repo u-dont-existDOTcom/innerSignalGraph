@@ -1098,6 +1098,56 @@
           "excerpt": "Choose the current therapeutic focus from the client's stated goal, strongest expressed suffering and functional impact, repetition or emphasis, and causal relevance to what should happen next—not from novelty, strangeness, diagnostic curiosity or labeling, spiritual unusualness, or therapist curiosity. Hard safety gates and clearly urgent medical red flags are exempt from focus parking and take priority when they require immediate protection or urgent assessment. For a non-urgent possible medical clue that could change the next step, ask only the smallest needed discriminator: whether it is new or different from baseline, part of a known condition, already assessed or under current care, and whether the person wants help with it. Do not imply prior care is absent. A known or managed condition can still matter when it interacts with the planned practice. If it is genuinely unclear whether a side mention affects immediate safety, ask one brief direct question before parking it. Otherwise keep it load-bearing or parked and return to the primary therapeutic job.",
           "status": "owner-approved",
           "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+          "heading": "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "decb58cbe93a5232cf231cb6440877d84bbdad4922c2c0ce4e92a4b79cc86798",
+          "excerpt": "Treat in-session reparenting capacity and ordinary-life transfer as distinct evidence. When a Nurturer, Protector, Guide, or other adult function is clearly usable during an inner-child practice but ordinary life still shows little or no matching carryover, record that mismatch as session-only transfer rather than assuming the person needs a deeper, more intense, or simply repeated version of an already-working exercise. Name the function that actually worked and choose one bounded five-percent ordinary-life action that expresses the same function. Keep the action small enough to fit current capacity, and review what it actually contributed without requiring the younger state to trust it yet, without demanding immediate emotional change, and without turning follow-through into punishment or self-surveillance. Do not make every meditation produce homework; use this transfer route only when the transcript supports a real mismatch between in-session capacity and ordinary-life carryover. One aligned action is emerging transfer, not generalized capacity; broader integration requires repeated carryover over time or across relevant contexts. A good meditation is proximal evidence of in-session capacity, not proof of durable ordinary-life change.",
+          "status": "owner-approved",
+          "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.CROSS.BLOCKED_ACTION_WAIT",
+          "heading": "AMEND.CROSS.BLOCKED_ACTION_WAIT",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "d8c5a89a5a2f407c0c3971727cd3481e1f40cac3298b723d66e29a167dc8b627",
+          "excerpt": "A concrete practical problem can remain real while no useful action is currently available. Distinguish action available now from blocked waiting. Use blocked waiting only when the relevant next steps are all constrained by an explicitly known external prerequisite, permission, timing condition, unavailable resource, or other condition outside the person's present control. Preserve the actual constraint chain and the event or condition that would reopen action. Do not invent a workaround that silently requires one of the known constraints to be false. An alternative is worth pursuing only when it is genuinely independent of the blocker and supported by available evidence. Waiting for a real external condition is not passivity, avoidance, lack of motivation, or therapeutic failure; redirect available effort toward another useful priority until the route reopens.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.SUPPORT_MODE_CONTINUITY",
+          "heading": "AMEND.CROSS.SUPPORT_MODE_CONTINUITY",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "e6d6053db8950b2642932654133bab0d17826e25c80a119002466998f73bdf15",
+          "excerpt": "When a person explicitly states how conversational support helps them most—primarily being heard, collaborative untangling, ideas/advice, or a mix—treat that as a durable preference until they change it. Do not ask the same support-mode question again merely because the topic changes, and do not infer the preference from gender, age, diagnosis, culture, or another stereotype. A current explicit request can override the default for that turn. Before repeating advice or a therapeutic framing, check recent conversation and task history; if substantially the same guidance was already delivered and the new turn does not change its rationale, feasibility, or application, reference it minimally and advance from the new information rather than presenting the old advice as new.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING",
+          "heading": "AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "24ce3110868f726866fcc6d755fc9f8b05ee6d8cfe24f7c3a927fe7591b5c1e2",
+          "excerpt": "Separate reflective journaling from external memory support. If narrative, interpretive, or meaning-making journaling increases confusion, do not assume the answer is more journaling or more interpretation. Preserve the useful memory and continuity function in the least cognitively demanding format that fits the person—for example brief dated facts, what helped, what needs remembering, one next step, or a voice note—while leaving interpretation and pattern-finding optional for later. A memory aid does not need to explain the person's life in order to be useful.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
+          "heading": "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "37fc128e6951158f7c7d2fcca259e3d161851bb3a2d58a23f336e07f8b0a17e9",
+          "excerpt": "When several concrete practical problems coexist, route each by its own actionability instead of collapsing the whole turn into one blocked state. Choose one current practical focus from the person's stated goal, functional impact, urgency, leverage, and present feasibility. A blocked sibling lane remains real and keeps its constraint chain and reopening condition, but it must not suppress an independent higher-value priority that has an evidence-supported action. practical_action_state therefore applies to the selected practical focus and must be recomputed when that focus changes. When the person is cognitively overloaded or says they cannot focus, reduce the sorting burden: use one brief organizing statement, one prioritized next step when action is supported, and only a question whose different answers would materially change what happens next. Do not make the person define ordinary language or listen to a long paraphrase when the practical implication is already clear enough to act on.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
         }
       ]
     },
@@ -1697,7 +1747,8 @@
             "IC.BORROW_ADULT",
             "IC.BORROW_ONE_FUNCTION",
             "IC.SPIRITUAL_LOAN",
-            "AMEND.IC.NONPUNITIVE_REVIEW"
+            "AMEND.IC.NONPUNITIVE_REVIEW",
+            "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -1730,7 +1781,98 @@
               "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question.",
               "Receiving support is not the endpoint: the sequence is receive care, observe care, participate in care, initiate a small part, and internalize what proves usable.",
               "The adult function can become real through ordinary action before it feels like a stable identity.",
-              "Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity."
+              "Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity.",
+              "Adult capacity can be available inside an exercise while ordinary-life transfer remains session-only; do not infer generalized self-leadership from meditation performance alone."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "IC.PRACTICE_TO_LIFE_TRANSFER",
+          "title": "Carry a working inner adult into ordinary life",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 98,
+          "activation": {
+            "all": [
+              {
+                "field": "ic_real_world_transfer",
+                "op": "eq",
+                "value": "session_only"
+              },
+              {
+                "field": "ic_status",
+                "op": "in",
+                "value": [
+                  "active",
+                  "stepped_down"
+                ]
+              },
+              {
+                "field": "current_intent",
+                "op": "in",
+                "value": [
+                  "gentle_practice",
+                  "deep_dialogue",
+                  "integration"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+            "IC.ADULT_APPRENTICE",
+            "IC.PROTECTOR_VISIBLE",
+            "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+            "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Name the adult function that was genuinely usable in the practice—Nurturer, Protector, Guide, or a narrower caring/protective/guiding move—and choose one five-percent ordinary-life action that expresses the same function.",
+            "Keep the action small enough to fit present capacity and the actual need. A meal, rest, boundary, request for help, truthful but calibrated disclosure, task handled, self-test stopped, or another concrete act may fit; do not assign generic homework merely because a meditation occurred.",
+            "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
+            "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity."
+          ],
+          "avoid": [
+            "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
+            "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
+            "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack."
+          ],
+          "successSignals": [
+            "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
+            "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity."
+          ],
+          "tags": [
+            "inner-signal-continuity",
+            "practice-transfer",
+            "ordinary-life",
+            "adult-apprentice"
+          ],
+          "effects": {
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE"
+            ],
+            "blockNodes": [],
+            "requiredNuance": [
+              "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
+              "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
+              "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that a successful meditation proves durable real-life change.",
+              "Do not claim that weak carryover means the meditation was fake or that the whole reparenting method failed."
             ]
           },
           "defaultQuestion": ""
@@ -2108,7 +2250,8 @@
             "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
             "IC.BORROW_ONE_FUNCTION",
             "IC.BORROW_LOVE",
-            "IC.SPIRITUAL_LOAN"
+            "IC.SPIRITUAL_LOAN",
+            "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -2116,7 +2259,8 @@
             "Keep memory-source distinctions explicit.",
             "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift.",
             "When the needed positive caring/protective function is known to be unavailable, use IC.BORROW_ONE_FUNCTION as adult-side preparation before deeper child-facing dialogue.",
-            "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap."
+            "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap.",
+            "When the adult function is already clearly usable in-session but ordinary-life transfer is still session-only, hand off to IC.PRACTICE_TO_LIFE_TRANSFER before repeating or deepening the child-facing exercise for more intensity."
           ],
           "avoid": [
             "Do not interrogate imagery or imply emotional truth proves historical fact.",
@@ -2137,7 +2281,8 @@
             "requiredNuance": [
               "General orientation and stop/return capacity establish safety readiness, not the positive caring adult function needed for this relational exercise.",
               "Partial but usable positive care/protection can be enough for a bounded step; unknown access is uncertainty to clarify, not a permanent incapacity finding.",
-              "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care."
+              "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care.",
+              "A successful inner exercise and ordinary-life transfer are separate evidence states; when the practice works but carryover does not, deepen only after the transfer mismatch has been addressed or new unresolved material actually warrants it."
             ]
           },
           "defaultQuestion": ""
@@ -4985,6 +5130,16 @@
           "from": "IC.CHALLENGE_CHECK_IN",
           "relation": "calibrates",
           "to": "IC.SCAFFOLDED_CHALLENGE"
+        },
+        {
+          "from": "IC.DEEP_CHILD_DIALOGUE",
+          "to": "IC.PRACTICE_TO_LIFE_TRANSFER",
+          "relation": "hands-off-when-session-only"
+        },
+        {
+          "from": "IC.PRACTICE_TO_LIFE_TRANSFER",
+          "to": "IC.PROTECTOR_ACTION",
+          "relation": "embodies-through"
         }
       ],
       "taskPolicyVersion": 1,
@@ -6724,6 +6879,14 @@
                   "intent",
                   "imminent"
                 ]
+              },
+              {
+                "field": "practical_action_state",
+                "op": "in",
+                "value": [
+                  "blocked_waiting",
+                  "resolved"
+                ]
               }
             ]
           },
@@ -6734,11 +6897,15 @@
             "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
             "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
             "AMEND.IC.CONTINUITY_TITRATION",
-            "AMEND.IC.COMMUNITY_REPARENTING"
+            "AMEND.IC.COMMUNITY_REPARENTING",
+            "AMEND.CROSS.BLOCKED_ACTION_WAIT",
+            "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
             "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+            "When several independent practical lanes coexist, choose the highest-leverage feasible current focus. Preserve blocked sibling lanes and their reopening conditions, but do not let them suppress action on the selected focus.",
+            "Before planning an action, distinguish a feasible step available now from a real problem that is externally blocked. If all supported next steps are blocked, use the defined-wait route rather than inventing a workaround.",
             "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
             "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
             "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
@@ -6749,11 +6916,13 @@
           ],
           "avoid": [
             "Do not wait for complete emotional certainty before taking a reversible necessary action.",
+            "Do not assign an action that requires a known external constraint to be false; blocked waiting is a different state from failure to act.",
             "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
             "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.",
             "Do not call a social, romantic or sexual action healthy exposure merely because it is difficult when its main function is reassurance, self-testing or using another person to regulate uncertainty.",
             "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate.",
-            "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation."
+            "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
+            "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step."
           ],
           "successSignals": [
             "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -6779,7 +6948,8 @@
               "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
               "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
               "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
-              "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn."
+              "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn.",
+              "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus."
             ]
           },
           "defaultQuestion": "What is the next observable action that could actually change this situation?",
@@ -6787,6 +6957,92 @@
             "purpose": "discriminate",
             "unresolvedFields": []
           }
+        },
+        {
+          "id": "ROUTE.DEFINED_WAIT",
+          "title": "Hold a real problem at a defined external blocker",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 100,
+          "activation": {
+            "all": [
+              {
+                "field": "actionable_problem",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "practical_action_state",
+                "op": "eq",
+                "value": "blocked_waiting"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "suicidal_state",
+                "op": "in",
+                "value": [
+                  "ideation",
+                  "intent",
+                  "imminent"
+                ]
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.CROSS.BLOCKED_ACTION_WAIT",
+            "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Preserve the known constraint chain, including steps already completed, and state the external event, permission, resource, or timing condition that would reopen action.",
+            "Do not generate substitute actions merely to avoid waiting. Offer an alternative only when it is genuinely independent of the blocker and supported by the transcript or grounded external information.",
+            "Before making defined waiting the practical route, check whether another independent current priority has a supported action. If it does, park this blocked lane and route available effort to that feasible priority.",
+            "Treat a defined wait as an active planning state: keep the reopening condition visible, then redirect available effort toward another useful current priority instead of repeatedly solving the same blocked step.",
+            "When the reopening condition changes or a genuinely independent feasible step becomes available, update practical_action_state to action_available and return to ordinary outward action."
+          ],
+          "avoid": [
+            "Do not invent an undocumented exception, alternate address, payment path, pickup option, transport route, institutional policy, or other workaround that silently contradicts an established constraint.",
+            "Do not re-ask the already established blocker chain merely because the model has lost track of it; ask only when new information could change the route.",
+            "Do not interpret waiting on a real external prerequisite as avoidance, lack of motivation, dependence, resistance, or therapeutic failure.",
+            "Do not let one blocked lane monopolize the reply when a separate higher-leverage current priority is actionable."
+          ],
+          "successSignals": [
+            "The concrete problem remains represented accurately while no impossible or contradicted action is assigned.",
+            "The blocker and reopening condition are clear enough that attention can move to another feasible task until something materially changes."
+          ],
+          "tags": [
+            "three-way-routing",
+            "outward-action",
+            "blocked-waiting",
+            "constraint-chain",
+            "guide"
+          ],
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [
+              "Do not claim a workaround exists when the available evidence does not establish one.",
+              "Do not claim that waiting on a known external prerequisite proves passivity, avoidance, lack of motivation, or failed self-leadership."
+            ],
+            "requiredNuance": [
+              "A problem can be concrete and important while currently lacking an executable next step; problem reality and present actionability are separate variables.",
+              "A genuinely independent supported action can coexist with a blocked lane. blocked_waiting applies to the live practical route only when all relevant next steps for that route are currently blocked.",
+              "Defined waiting is temporary and conditional: a change in the blocker or new grounded information can reopen outward action without requiring the person to re-explain the entire problem.",
+              "Defined waiting applies to the selected practical focus, not globally to every problem mentioned in the turn; a blocked sibling lane and an actionable focus can coexist."
+            ]
+          },
+          "defaultQuestion": ""
         },
         {
           "id": "ROUTE.EXTERNAL_EMBODIMENT",
@@ -7981,6 +8237,16 @@
           "from": "ROUTE.MEDICAL_RED_FLAG",
           "relation": "precedes",
           "to": "ROUTE.GO_INWARD"
+        },
+        {
+          "from": "ROUTE.THREE_WAY_GATE",
+          "to": "ROUTE.DEFINED_WAIT",
+          "relation": "routes-to"
+        },
+        {
+          "from": "ROUTE.DEFINED_WAIT",
+          "to": "ROUTE.ACT_OUTWARD",
+          "relation": "reopens-to-when-feasible"
         }
       ],
       "taskPolicyVersion": 1,
@@ -7990,9 +8256,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 80,
-    "edgeCount": 112,
-    "sourceSectionCount": 127,
-    "ownerAmendmentCount": 49
+    "nodeCount": 82,
+    "edgeCount": 116,
+    "sourceSectionCount": 132,
+    "ownerAmendmentCount": 54
   }
 }

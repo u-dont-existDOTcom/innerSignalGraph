@@ -145,6 +145,12 @@
       "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
     },
     {
+      "fromNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401",
+      "id": "25072aa143df4b40e0c935952427dddd153699937cf247f6e6dee8138084a304",
+      "label": "hands-off-when-session-only",
+      "toNode": "6180b399f8f49558fc9f372a4fd3e89403dc4661aef8924a0e8848869c9ff9dc"
+    },
+    {
       "fromNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851",
       "id": "2533d0ac1c60ebd12c053e6c2b3d03436dba21d7dbf5956e1303ae1c0ec76310",
       "label": "followed-by",
@@ -221,6 +227,12 @@
       "id": "379a3403a875b6e57fa1724c15c4a501c3f05cb6fe990ec42b2cd6f2c4947e91",
       "label": "enables",
       "toNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c"
+    },
+    {
+      "fromNode": "6180b399f8f49558fc9f372a4fd3e89403dc4661aef8924a0e8848869c9ff9dc",
+      "id": "3b41fb02f23d6e089f16fb8b5c3e921ce9de69f2329818744321f8a5854fdc97",
+      "label": "embodies-through",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
       "fromNode": "065a374a67c57d69f994c510bf64c2ec1800d4108a5a95816ebf904402fa7722",
@@ -325,6 +337,12 @@
       "toNode": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6"
     },
     {
+      "fromNode": "1bf744dc95770e3d812fa21fb9850628a2b60917029b0d9ca0801aefc325fa84",
+      "id": "69996deb74624c468151e8e83c22c33a5f029f824a46b1b05320b987222e7655",
+      "label": "reopens-to-when-feasible",
+      "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
+    },
+    {
       "fromNode": "e9eaeef47af57324a0dc343ad17643121768ffcfaeb508142999aed98490a529",
       "id": "6a0fc52a6f4c16dcf198b24a77e09e7e3aa45e1898e17e4a9adb5baa587d8730",
       "label": "may-enable-access",
@@ -353,6 +371,12 @@
       "id": "6fb9a21aa26c1dd65dba394f0cd7f5697d1e98f6570d3aac0e92a38077d63678",
       "label": "optional-parallel-not-readiness",
       "toNode": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db"
+    },
+    {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "709e70af3fe22ed8591156deb06f4d9a6beba10f3920ed2f225b18a9e39cf188",
+      "label": "routes-to",
+      "toNode": "1bf744dc95770e3d812fa21fb9850628a2b60917029b0d9ca0801aefc325fa84"
     },
     {
       "fromNode": "9e8508abe48d12733d0ead0118cf1dbffc617269fbd96f0b4949d26b0a5c89f8",
@@ -771,7 +795,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1540
+      "y": 1760
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.SUICIDAL_SELF_DEATH_INQUIRY.md",
@@ -781,6 +805,15 @@
       "width": 300,
       "x": 0,
       "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.DEFINED_WAIT.md",
+      "height": 140,
+      "id": "1bf744dc95770e3d812fa21fb9850628a2b60917029b0d9ca0801aefc325fa84",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 0
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.WISER_SELF_PERSPECTIVE.md",
@@ -807,7 +840,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1320
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STABLE_THERAPY.md",
@@ -834,7 +867,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1320
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
@@ -852,7 +885,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1540
+      "y": 1760
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
@@ -861,7 +894,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.RELATIONAL_REALITY_CHECK.md",
@@ -870,7 +903,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 220
+      "y": 440
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_ACUTE_STABILIZATION.md",
@@ -917,7 +950,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2640
+      "y": 2860
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.IDENTITY_FORMATION.md",
@@ -944,7 +977,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2200
+      "y": 2420
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_AFTERMATH.md",
@@ -953,7 +986,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2420
+      "y": 2640
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CHALLENGE_CHECK_IN.md",
@@ -999,7 +1032,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1760
+      "y": 1980
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.ADVANCED_RELEASE_BLOCK.md",
@@ -1020,6 +1053,15 @@
       "y": 0
     },
     {
+      "file": "current/nodes/inner-child-directed-graph/IC.PRACTICE_TO_LIFE_TRANSFER.md",
+      "height": 140,
+      "id": "6180b399f8f49558fc9f372a4fd3e89403dc4661aef8924a0e8848869c9ff9dc",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 660
+    },
+    {
       "file": "current/nodes/somatic-directed-graph/SOM.EMDR_DEVELOPMENTAL.md",
       "height": 140,
       "id": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6",
@@ -1035,7 +1077,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1100
+      "y": 1320
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.GENTLE_SHAKING.md",
@@ -1164,7 +1206,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2860
+      "y": 3080
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.RESOURCE_BRAINSPOTTING.md",
@@ -1218,7 +1260,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 660
+      "y": 880
     },
     {
       "color": "3",
@@ -1237,7 +1279,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1760
+      "y": 1980
     },
     {
       "color": "3",
@@ -1274,7 +1316,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 3080
+      "y": 3300
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.ADULT_APPRENTICE.md",
@@ -1310,7 +1352,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 0
+      "y": 220
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.DEEP_BRAINSPOTTING.md",
@@ -1348,7 +1390,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 440
+      "y": 660
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PRECIOUS_HUMAN_OPPORTUNITY.md",
@@ -1366,7 +1408,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1100
+      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
@@ -1384,7 +1426,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 660
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.SOLAR_PLEXUS_RELAXATION.md",
@@ -1393,7 +1435,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1980
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
@@ -1438,7 +1480,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1980
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DRAFT_EDITOR.md",
@@ -1503,7 +1545,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",

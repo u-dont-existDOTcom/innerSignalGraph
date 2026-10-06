@@ -24,10 +24,11 @@ source_refs:
   - IC.BORROW_ONE_FUNCTION
   - IC.SPIRITUAL_LOAN
   - AMEND.IC.NONPUNITIVE_REVIEW
+  - AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
 regression_refs: []
-base_record_sha256: 51e7987999ad0ecde9a9af11c40570c3ef08ec2e1789432467a1ef01e7c8bf93
-base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
-projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
+base_record_sha256: d330ec1b4eaa008d5dc984be4c651481c242e40a2e11b1853eac56f5c7787c89
+base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # Move from receiving care to doing five percent
@@ -81,7 +82,8 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
       "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question.",
       "Receiving support is not the endpoint: the sequence is receive care, observe care, participate in care, initiate a small part, and internalize what proves usable.",
       "The adult function can become real through ordinary action before it feels like a stable identity.",
-      "Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity."
+      "Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity.",
+      "Adult capacity can be available inside an exercise while ordinary-life transfer remains session-only; do not infer generalized self-leadership from meditation performance alone."
     ]
   },
   "recommendations": [
@@ -120,3 +122,5 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
 
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
+
+[[current/governance/amendments/AMEND.IC.PRACTICE_TO_LIFE_TRANSFER]]

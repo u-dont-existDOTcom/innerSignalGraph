@@ -10,11 +10,13 @@ import { fileURLToPath } from "node:url";
 import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateCaseHandoff, openPrivateHandoffArtifact, validatePrivateCaseHandoff } from "../src/storage/private-case-handoff.mjs";
+import { writePrivateCaseAliasLocator } from "../src/storage/private-case-alias-locator.mjs";
 import { deserializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
 import { decryptVaultEnvelopeWithRecoverySecret } from "../src/storage/vault-crypto.mjs";
 import { chunkExactSourceText, reconstructExactSourceChunks } from "../src/storage/exact-source-artifact.mjs";
 import { validateTrackerEntry } from "../src/case-state/tracker.mjs";
 import { selectRecentVerbatimWindow } from "../src/case-state/context-window.mjs";
+import { runPrivateCandidateAudit } from "../src/supervisor/private-candidate-audit.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -547,6 +549,57 @@ test("continuation safety uses semantic active-episode completeness rather than 
   assert.match(missingStart.episode_completeness.failures.join("\n"), /start turn is absent/);
 });
 
+test("fresh case context stays continuation-safe after an exact candidate is delivered", async (t) => {
+  const environment = await makeEnvironment(t);
+  await runSession("seed", environment);
+  const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  t.after(() => providers.close());
+  const service = createPrivateCaseAccessService({
+    rootDir: providers.rootDir,
+    authorizationProvider: providers.authorizationProvider,
+    keyProvider: providers.keyProvider,
+    allowDevelopmentFileProvider: true
+  });
+  const auth = { bearerToken: TOKEN };
+  const candidateId = "candidate:delivered:003";
+  const auditId = "audit:delivered:003";
+  await service.appendTranscriptTurn(CASE_ID, turn("E6", "user", "Synthetic latest user turn for delivered-response continuity.", "episode:active", 6), auth);
+  await service.saveCandidateResponse(CASE_ID, candidateId, "Synthetic exact delivered response.", {
+    status: "pending_audit",
+    producer_context_id: "producer:synthetic:delivered"
+  }, auth);
+  const audited = await runPrivateCandidateAudit({
+    caseAccessService: service,
+    caseId: CASE_ID,
+    candidateId,
+    authContext: auth,
+    auditId,
+    auditorContext: { kind: "independent", context_id: "auditor:synthetic:delivered" },
+    completedAt: "2026-09-06T13:00:00.000Z",
+    auditor: async () => ({ findings: [] })
+  });
+  assert.equal(audited.audit_evidence.sufficient_for_approval, true);
+  await service.approveCandidateForDelivery(CASE_ID, candidateId, auditId, auth);
+  await service.deliverCandidateResponse(CASE_ID, candidateId, {
+    auditId,
+    assistantTurnId: "E6-assistant",
+    inReplyToTurnId: "E6-user"
+  }, auth);
+
+  const loaded = await service.loadCaseContext(CASE_ID, auth, {
+    candidateId: "current_pending",
+    requireContinuationSafe: true,
+    requireAuditScope: true,
+    episodePolicy: { requireCompleteEpisode: true }
+  });
+  assert.equal(loaded.candidate_response.id, candidateId);
+  assert.equal(loaded.candidate_response.status, "sent");
+  assert.deepEqual(loaded.delivery_completion, { candidate_id: candidateId, candidate_version: loaded.candidate_response.version });
+  assert.equal(loaded.recent_verbatim.turns.at(-1).id, "E6-assistant");
+  assert.equal(loaded.continuation_safety.continuation_safe, true);
+  assert.equal(loaded.continuation_safety.exact_delivery_available, true);
+});
+
 test("candidate artifacts are immutable and a newer pending candidate atomically supersedes the prior pending version", async (t) => {
   const environment = await makeEnvironment(t);
   await runSession("seed", environment);
@@ -609,10 +662,59 @@ test("private handoff requires stable identifiers and executable retrieval evide
   );
 });
 
+test("private case alias resolution is normalized, non-enumerable, private on disk, and authorization-bound", async (t) => {
+  const environment = await makeEnvironment(t);
+  await runSession("seed", environment);
+  const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  t.after(() => providers.close());
+  const service = createPrivateCaseAccessService({
+    rootDir: providers.rootDir,
+    authorizationProvider: providers.authorizationProvider,
+    keyProvider: providers.keyProvider,
+    allowDevelopmentFileProvider: true
+  });
+  const auth = { bearerToken: TOKEN };
+  const bound = await service.bindCaseAlias(CASE_ID, "  Synthetic   ORCHID  ", auth);
+  assert.equal(bound.alias_bound, true);
+  const loaded = await service.loadCaseContextByAlias("synthetic orchid", auth, {
+    requireContinuationSafe: true,
+    requireAuditScope: true,
+    episodePolicy: { requireCompleteEpisode: true }
+  });
+  assert.equal(loaded.case_state.case_id, CASE_ID);
+  assert.equal(loaded.candidate_response.exact_text, environment.payload.candidate_text);
+  assert.equal(loaded.continuation_safety.continuation_safe, true);
+
+  const aliasDir = path.join(environment.vaultRoot, ".case-alias-locators");
+  const files = await fs.readdir(aliasDir);
+  assert.equal(files.length, 1);
+  assert.doesNotMatch(files[0], /orchid/iu);
+  const locatorText = await fs.readFile(path.join(aliasDir, files[0]), "utf8");
+  assert.doesNotMatch(locatorText, /orchid/iu);
+  assert.equal((await fs.stat(aliasDir)).mode & 0o777, 0o700);
+  assert.equal((await fs.stat(path.join(aliasDir, files[0]))).mode & 0o777, 0o600);
+
+  await assert.rejects(() => service.loadCaseContextByAlias("unknown private case", auth), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+  await assert.rejects(() => service.loadCaseContextByAlias("synthetic orchid", { bearerToken: "wrong-token" }), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+  await assert.rejects(
+    () => writePrivateCaseAliasLocator({ rootDir: environment.vaultRoot, alias: "Synthetic Orchid", caseId: "different-synthetic-case" }),
+    /already resolves to a different case/u
+  );
+});
+
 test("separate read-only MCP process executes load_case_context from a fresh client process", async (t) => {
   const environment = await makeEnvironment(t);
   await runSession("seed", environment);
   await runSession("handoff-create", environment, { handoffId: HANDOFF_ID });
+  const aliasProviders = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  const aliasService = createPrivateCaseAccessService({
+    rootDir: aliasProviders.rootDir,
+    authorizationProvider: aliasProviders.authorizationProvider,
+    keyProvider: aliasProviders.keyProvider,
+    allowDevelopmentFileProvider: true
+  });
+  await aliasService.bindCaseAlias(CASE_ID, "Synthetic Named Case", { bearerToken: TOKEN });
+  aliasProviders.close();
   const readyPath = path.join(environment.privateRoot, "mcp-ready.json");
   const child = spawn(process.execPath, [mcpCli, "--credentials", environment.credentialsPath, "--port", "0", "--ready-file", readyPath], {
     cwd: root,
@@ -637,7 +739,7 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   }).then((response) => response.json());
   assert.deepEqual(
     listed.result.tools.map((tool) => tool.name),
-    ["get_therapy_protocol_manifest", "load_therapy_protocol", "load_handoff", "load_case_context", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact"]
+    ["get_therapy_protocol_manifest", "load_therapy_protocol", "load_handoff", "load_case_context", "load_case_context_by_alias", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact"]
   );
   const { stdout } = await runSession("mcp-load", environment, { fourthArg: ready.mcpUrl });
   const result = JSON.parse(stdout);
@@ -653,6 +755,25 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   }).then((response) => response.json());
   assert.equal(handoffResult.result.structuredContent.handoff_id, HANDOFF_ID);
   assert.equal(handoffResult.result.structuredContent.pending_artifacts[0].exact_text, environment.payload.candidate_text);
+
+  const aliasResult = await fetch(ready.mcpUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${TOKEN}` },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "load_case_context_by_alias", arguments: { case_alias: "  synthetic   named CASE " } } })
+  }).then((response) => response.json());
+  assert.equal(aliasResult.result.structuredContent.case_state.case_id, CASE_ID);
+  assert.equal(aliasResult.result.structuredContent.candidate_response.exact_text, environment.payload.candidate_text);
+  assert.equal(aliasResult.result.structuredContent.continuation_safety.continuation_safe, true);
+
+  const unknownAliasResponse = await fetch(ready.mcpUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${TOKEN}` },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "load_case_context_by_alias", arguments: { case_alias: "not bound" } } })
+  });
+  const unknownAliasText = await unknownAliasResponse.text();
+  assert.equal(unknownAliasResponse.status, 401);
+  assert.doesNotMatch(unknownAliasText, /not bound|Synthetic Named Case|synthetic-case-continuity/iu);
+  assert.match(unknownAliasText, /Authentication required for this private case tool/iu);
 
   const candidateResult = await fetch(ready.mcpUrl, {
     method: "POST",

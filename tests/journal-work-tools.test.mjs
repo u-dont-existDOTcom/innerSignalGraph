@@ -18,6 +18,7 @@ const TOKENS = Object.freeze({ full: ["case:read", "journal:submit"], reader: ["
 
 const deniedService = Object.freeze({
   async loadCaseContext() { throw new PrivateCaseAccessDeniedError(); },
+  async loadCaseContextByAlias() { throw new PrivateCaseAccessDeniedError(); },
   async authenticate() { return null; }
 });
 

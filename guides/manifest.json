@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-10-04-continuity-scaffolding-r2",
+      "version": "2026-10-06-practical-focus-sequencing-r1",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article preserves the owner-supplied October 3 source, the reader-facing r4 repair, and the October 4 continuity/scaffolding/community additions, then adds the owner-authorized missing-to-love, concentrated borrowed-adulthood, support-mode, guide-literacy, and positive-direction-language clarifications. Earlier source snapshots remain retained. Executable policy remains graph/prompt-owned; this development source change does not install a Guide Packet or promote stable.",
+  "notes": "The active inner-child article remains unchanged in this pass. Owner-approved October 5 cross-guide amendments add blocked/waiting practical routing, durable support-mode continuity with stale-advice suppression, and the distinction between reflective journaling and low-interpretation external memory support. Reader-facing guide updates are queued separately; no Guide Packet install or stable promotion is implied.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",

@@ -23,8 +23,8 @@ source_refs:
   - IC.LOVE_MISSING
 regression_refs: []
 base_record_sha256: 37a0e06940ea9e8d4451adb9690e1dbaeac7104a9e15d67ddf696427bde86281
-base_graph_sha256: 621e1bba7ae0340bc3885cd0f50c870328ec6ada3847e267a839bbd02ca19863
-projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
+base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # Use familiar music as an optional emotional-access doorway

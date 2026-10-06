@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.LITERATURE_TASK_PROGRESS
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 204cd15ddc7ea999da61c1975fb8ddce2c835664478dd81591b86cecb99287c1
-source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
-projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
+base_record_sha256: 3d88c5566fa3443880433c46c969bb5c6c9ddac879c1fa7ee9c9a56e60b516ae
+source_file_sha256: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # AMEND.CROSS.LITERATURE_TASK_PROGRESS
@@ -17,13 +17,13 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
 
 ```json
 {
-  "approvedAt": "2026-10-04",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
     "status": "owner-approved",
     "text": "Apply the approved literature reconciliation to the current task without duplicating existing modalities. Completed relational assessment is not reopened by repeated reassurance alone; new relevant evidence or a changed decision does reopen it. A distinct repetitive checking process may be left unanswered while background grief remains meaningful. A present protective response that permits a bounded step need not disappear; unknown or refused permission never licenses deeper work. Unknown capacities are not deficits. Keep one chosen current task and only necessary supporting interventions, while all applicable safety and evidence constraints remain in force. Record the user’s reported response and advance, adapt or close rather than replay completed steps. Authored questions must still matter now, and intentional absence of a question is authoritative."
   },
-  "version": "2026-10-04-continuity-scaffolding-r2"
+  "version": "2026-10-06-practical-focus-sequencing-r1"
 }
 ```

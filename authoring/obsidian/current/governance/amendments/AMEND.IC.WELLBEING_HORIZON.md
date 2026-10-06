@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WELLBEING_HORIZON
 status: owner-approved
 domain: inner-child
-base_record_sha256: ab5837372b30d915c54d18c4331b687ee1db708b239121f3eda55ef7dd9796e9
-source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
-projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
+base_record_sha256: 84e44e3da853169efa84b2b8333f79b66d3f807767026e281d80c3a57e9e2167
+source_file_sha256: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # AMEND.IC.WELLBEING_HORIZON
@@ -17,13 +17,13 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
 
 ```json
 {
-  "approvedAt": "2026-10-04",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WELLBEING_HORIZON",
     "status": "owner-approved",
     "text": "Love includes wanting wellbeing for beings, and the horizon of that love can expand when a person directly learns that deeper happiness, peace, freedom, or unconditional love is possible. Ordinary practical love is real and important; profound spiritual realization may disclose a much larger horizon, but mystical intensity is not itself proof of deep love. Metta or loving-kindness meditation is one way to cultivate, stabilize, or extend love; it is not equivalent to the deepest love and is not a universal first step."
   },
-  "version": "2026-10-04-continuity-scaffolding-r2"
+  "version": "2026-10-06-practical-focus-sequencing-r1"
 }
 ```

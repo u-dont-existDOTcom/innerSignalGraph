@@ -255,11 +255,15 @@ const active = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 if (active.packetId !== "inner-signal-guides-2026.08.12-r02-candidate") throw new Error("Corrected r02 is not the bundled active candidate.");
 NODE
 echo "PASS bundled Guide Packet candidate auto-stages without installing production policy."
-node --input-type=module - "$auto_tmp/runtime/.inner-signal-autopilot/latest.json" <<'NODE'
+node --input-type=module - "$auto_tmp/runtime/.inner-signal-autopilot/latest.json" "guide-graphs/compiled/bundle.json" <<'NODE'
 import fs from "node:fs";
 const latest = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const compiled = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
 if (latest.details?.graphRegressions?.ok !== true) throw new Error("Fake autopilot did not record the graph regression gate.");
-if (latest.details?.graphBundle?.stats?.nodeCount !== 80) throw new Error("Fake autopilot did not record the compiled graph bundle.");
+const actualStats = latest.details?.graphBundle?.stats;
+for (const [key, expected] of Object.entries(compiled.stats ?? {})) {
+  if (actualStats?.[key] !== expected) throw new Error(`Fake autopilot graph bundle stat mismatch: ${key}.`);
+}
 NODE
 test ! -e "$auto_tmp/runtime"/inner-signal-evidence-*.zip
 echo "PASS evidence remains local and no transfer bundle is created."

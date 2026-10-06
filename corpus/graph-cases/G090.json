@@ -1,0 +1,24 @@
+{
+  "id": "G090",
+  "title": "one aligned ordinary-life act marks emerging transfer without trapping the person in transfer work",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "deep_dialogue",
+    "inner_adult_access": "available",
+    "ic_status": "active",
+    "ic_titration_needed": "no",
+    "ic_real_world_transfer": "emerging",
+    "unresolved_inner_material": "present"
+  },
+  "expected": {
+    "selectedExcludes": ["IC.PRACTICE_TO_LIFE_TRANSFER"],
+    "forbiddenOverclaimPatterns": []
+  }
+}

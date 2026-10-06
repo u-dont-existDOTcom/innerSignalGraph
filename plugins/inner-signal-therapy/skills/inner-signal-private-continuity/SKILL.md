@@ -13,7 +13,9 @@ Use the host's authenticated private continuity MCP only when its tools are actu
 
 When the user provides an InnerSignal `handoff_id`, call `load_handoff` first. Treat a successful returned handoff as the continuation authority for that private episode. Do not reconstruct prior therapy from memory, public repository summaries, or guesses when exact private context is available.
 
-When the user instead supplies or clearly selects an authorized private case and no handoff identifier is available, use `load_case_context` when the host exposes it. Use narrower tools only as needed:
+When the user instead names a known private case but does not supply an opaque `case_id` or `handoff_id`, use `load_case_context_by_alias` when the host exposes it. This alias route is deliberately non-enumerable: resolve only the name the user actually supplied. Do not search ChatGPT conversation history, browser history, public repository material, or memory to reconstruct the case first when the private alias resolver is available. If the alias is not bound or authorized, state that exact boundary rather than silently falling back to a reconstructed history.
+
+When the user supplies an opaque authorized private case ID, use `load_case_context`. Use narrower tools only as needed:
 
 - `get_state_diff` for the frozen/current structured change;
 - `get_recent_verbatim` for the exact active episode;

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_CRITICISM_KERNEL
 status: owner-approved
 domain: inner-child
-base_record_sha256: c7aaae76b910323ff0f1332f404ecbafbf5e92a329cebfcc012d26475b84f3de
-source_file_sha256: 3d5131b7ecb3d44982fc5e83e98b55cb7c63180d68a70f70912e800e2c177824
-projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f82dc539ae
+base_record_sha256: 53f209435e88c6511a0180d89718f52b37f75f71e0bc7673db38eee0d9b73ab2
+source_file_sha256: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
+projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
 ---
 
 # AMEND.IC.WISDOM_CRITICISM_KERNEL
@@ -17,13 +17,13 @@ projection_input_sha256: d846619943d4fb4ee1a82e5986da21d7d9f00726b7049a20862771f
 
 ```json
 {
-  "approvedAt": "2026-10-04",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_CRITICISM_KERNEL",
     "status": "owner-approved",
     "text": "After appropriate present-day assessment, separate a specific supported point in criticism from contempt, exaggeration and coercive demands. A charitable reconstruction is a hypothesis, not an obligation to concede. Accept accurate responsibility while retaining boundaries; no useful kernel needs to be manufactured. Clarification and nonresponse are both possible. This is owner-reported and Rogers-inspired; the exact maxim was not verified as a Fred Rogers quotation. Noticing good qualities is not a replacement for assessment of safety or demonstrated capacity."
   },
-  "version": "2026-10-04-continuity-scaffolding-r2"
+  "version": "2026-10-06-practical-focus-sequencing-r1"
 }
 ```

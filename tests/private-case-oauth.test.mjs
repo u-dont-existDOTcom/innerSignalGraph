@@ -208,8 +208,15 @@ test("with several granted accounts, a denial keeps the sign-in challenge", asyn
   assert.equal(allowed.body.result.structuredContent.turns[0].text, PRIVATE_MARKER);
 });
 
+test("MCP refuses to advertise named-case continuity when the access service lacks the alias route", () => {
+  assert.throws(
+    () => createPrivateCaseMcpServer({ caseAccessService: { loadCaseContext() {} } }),
+    /alias continuity/u
+  );
+});
+
 test("production-ready server configuration cannot omit OAuth discovery", () => {
-  const caseAccessService = { loadCaseContext() {} };
+  const caseAccessService = { loadCaseContext() {}, loadCaseContextByAlias() {} };
   assert.throws(() => createPrivateCaseMcpServer({ caseAccessService, productionAuthReady: true }), /requires OAuth metadata/);
 });
 

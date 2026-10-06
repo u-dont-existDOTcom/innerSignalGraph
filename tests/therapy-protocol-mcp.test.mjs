@@ -17,6 +17,7 @@ const ISSUER = "https://identity.synthetic.example";
 
 const deniedService = Object.freeze({
   async loadCaseContext() { throw new PrivateCaseAccessDeniedError(); },
+  async loadCaseContextByAlias() { throw new PrivateCaseAccessDeniedError(); },
   async retrieveCaseEvidence() { throw new PrivateCaseAccessDeniedError(); }
 });
 
@@ -81,6 +82,7 @@ test("initialize tells the host to load the protocol first and to fail closed", 
   assert.match(instructions, /call load_therapy_protocol/u);
   assert.match(instructions, /unavailable right now instead of improvising/u);
   assert.match(instructions, /call load_handoff first/u);
+  assert.match(instructions, /load_case_context_by_alias before searching or reconstructing prior conversation/u);
   assert.match(instructions, /never put bearer tokens/u);
 });
 
