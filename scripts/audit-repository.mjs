@@ -74,7 +74,7 @@ const CONTRIBUTION_CONTRACT = {
 };
 const PUBLIC_POSTURE_SHA256 = {
   "README.md": "1e6e8f8911d9e6c9d4f625e69595470b7b0cadf9b7f8c3568b6c6c029dbc3868",
-  "AGENTS.md": "b52ac7006d01d3b40744335a0f745ff73067e53d9f254769870d12a2fc8ef0a9",
+  "AGENTS.md": "25a296303abbc2cda76ed4ed66bddecd1e4511df065185441b6dd86ebaa5fba1",
   "docs/INDEX.md": "cd765ef3d3b551720d304526854a5bef825b809451abda79003c3bd882112282",
   "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
   "CONTRIBUTING.md": "3e36a03597382a82cb628f0daa1c9595ad86b57ffa339873dcf18be1efdd40c4"
@@ -191,12 +191,14 @@ const EXPECTED_PROTECTED_BRANCH = {
   strict: true,
   enforce_admins: true,
   required_approvals: 0,
-  required_conversation_resolution: true,
+  required_conversation_resolution: false,
   required_linear_history: true,
   allow_force_pushes: false,
   allow_deletions: false
 };
 const EXPECTED_BRANCH_PROTECTION_EVIDENCE = {
+  checked_at: "2026-10-04T05:07:59Z",
+  note: "On 2026-10-04 the owner switched off required conversation resolution for main and stable (owner question 2: A). AGENTS.md has the merge check that replaces it.",
   required_contexts: ["deterministic-package", "workflow-policy", "codeql-javascript"],
   main: EXPECTED_PROTECTED_BRANCH,
   stable: EXPECTED_PROTECTED_BRANCH

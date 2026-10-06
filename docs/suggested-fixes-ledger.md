@@ -30,3 +30,8 @@
 
 - Read live from the default branch of `u-dont-existDOTcom/universal-dev-architecture`: `suggested-fixes/innerSignalGraph/` holds one item, `2026-09-30-claim-integrity-checks.md` (owner request; existing pull request #96).
 - `2026-09-30-claim-integrity-checks.md`: open, not declined or deferred. It concerns the therapy protocol and reply prompts, outside this journal-import change, and therapy prompt wording needs the owner's approval. The owner was told on 2026-10-01 that it waits for his decision; the next therapy-prompt change reviews #96 as the item asks (check newer prompt changes, rebase, recompute the served protocol hash, and show him the exact wording with what it prevents and what it could cost in warmth or length).
+
+## 2026-10-04: claim-integrity item parked by the owner
+
+- `2026-09-30-claim-integrity-checks.md`: DEFER until the polish and ship phase, by the owner's decision. He approved the exact wording on 2026-10-03 ("1 A"), and on 2026-10-04 chose not to ship it yet (owner page question 9: C) while he is still fixing the maps, rules and guide from his client sessions. PR #96 is a draft that keeps the approved wording, its fit with the current prompts and the served protocol, and the sample-reply test. Trigger: the owner starts the polish and ship phase. Then rebase PR #96 on the prompts current at that time, recompute the served protocol hash, and ask him to ship it. Details: `OWNER-QUESTIONS.md`, question 1.
+- Live lane read on 2026-10-04 (default branch of `u-dont-existDOTcom/universal-dev-architecture`): `suggested-fixes/innerSignalGraph/` still holds only this item.
