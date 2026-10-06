@@ -3,7 +3,7 @@
 Updated: 2026-10-05
 
 
-## Blocked practical action, support-mode continuity, and memory support (2026-10-05, active)
+## Blocked practical action, support-mode continuity, and memory support (2026-10-05, complete)
 
 - **Owner outcome:** Implement the lessons from the latest client-response review without committing private client facts: distinguish a real practical problem that is currently externally blocked from one with an executable next step; remember an explicitly stated conversational support preference across turns; stop re-delivering unchanged advice as new; and preserve memory continuity without forcing reflective journaling when that format increases confusion.
 - **Baseline:** Task branch/worktree `task/blocked-action-support-mode-20261005` from development `main` `f33f183a02fa71d6becae4a9eb5019205728a00b`. Public repository; generalized rules/regressions only.
