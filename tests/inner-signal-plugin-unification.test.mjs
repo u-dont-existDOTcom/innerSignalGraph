@@ -10,6 +10,7 @@ const mcpSourceUrl = new URL("../src/server/private-case-mcp.mjs", import.meta.u
 const expectedReadOnlyTools = [
   "load_handoff",
   "load_case_context",
+  "load_case_context_by_alias",
   "get_state_diff",
   "get_recent_verbatim",
   "retrieve_case_evidence",
@@ -34,6 +35,8 @@ test("therapy skill routes private continuation inside the same plugin", async (
   assert.match(skill, /same \*\*InnerSignal\*\* plugin/i);
   assert.match(skill, /Do not tell the user to install a separate handoff\/continuity plugin/i);
   assert.match(skill, /use that capability first/i);
+  assert.match(skill, /load_case_context_by_alias/i);
+  assert.match(skill, /before any attempt to search or reconstruct prior conversation history/i);
 });
 
 test("private continuity skill uses the existing read-only MCP surface", async () => {
@@ -43,6 +46,8 @@ test("private continuity skill uses the existing read-only MCP surface", async (
   ]);
   assert.match(skill, /read-only/i);
   assert.match(skill, /call `load_handoff` first/i);
+  assert.match(skill, /load_case_context_by_alias/i);
+  assert.match(skill, /Do not search ChatGPT conversation history, browser history/i);
   assert.match(skill, /Do not ask the user to paste bearer tokens/i);
   for (const tool of expectedReadOnlyTools) {
     assert.match(skill, new RegExp(`\\b${tool}\\b`));

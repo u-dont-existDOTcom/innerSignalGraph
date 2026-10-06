@@ -33,7 +33,20 @@ Snapshot the realm's current public JWKS into `INNER_SIGNAL_OPERATOR_OAUTH_JWKS_
 
 Create an operator working directory outside the checkout with mode `0700`. The request must be a regular file with mode `0600`; the receipt is created with mode `0600`. The Compose service in `deploy/private-case-operator.compose.yml` mounts only that working directory and the private vault, with the vault writable only for the duration of the operation.
 
-Start with a non-mutating authorization probe:
+For named-case continuity, bind a private alias only after the exact existing case ID is independently known. The alias request is private, mode-`0600`, and the receipt does not echo the alias. The read-only MCP never exposes a bind/list operation:
+
+```json
+{
+  "schema_version": 1,
+  "operation": "bind_case_alias",
+  "case_id": "<exact-existing-case-id>",
+  "case_alias": "<private-user-facing-case-name>"
+}
+```
+
+Binding is idempotent after normalization when the alias already maps to the same case and fails closed if it maps to a different case. The private locator stores only the normalized-alias SHA-256 digest and opaque case ID; successful named loading still requires the caller's ordinary case read/audit authorization and case keys.
+
+Start journal work with a non-mutating authorization probe:
 
 ```json
 {

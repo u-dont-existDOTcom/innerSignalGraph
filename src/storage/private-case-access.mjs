@@ -8,6 +8,7 @@ import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
 import { createPrivateJournalCorpusStore } from "./private-journal-corpus.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 import { resolvePrivateArtifactCaseId } from "./private-artifact-locator.mjs";
+import { resolvePrivateCaseAliasCaseId, writePrivateCaseAliasLocator } from "./private-case-alias-locator.mjs";
 
 export { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 
@@ -143,6 +144,27 @@ export function createPrivateCaseAccessService({
     try { caseId = await resolvePrivateArtifactCaseId({ rootDir, kind, artifactId }); }
     catch { throw new PrivateCaseAccessDeniedError(); }
     return withStore(caseId, authContext, requiredScope, (store, authorization) => operation(store, caseId, authorization));
+  };
+  const resolvedCaseAlias = async (caseAlias) => {
+    try { return await resolvePrivateCaseAliasCaseId({ rootDir, alias: caseAlias }); }
+    catch { throw new PrivateCaseAccessDeniedError(); }
+  };
+  const loadCaseContextForId = async (caseId, authContext, options = {}) => {
+    const requiredScope = options.requireAuditScope === false ? PRIVATE_CASE_SCOPES.READ : PRIVATE_CASE_SCOPES.AUDIT;
+    const effectiveOptions = {
+      ...options,
+      episodePolicy: {
+        requireCompleteEpisode: options.episodePolicy?.requireCompleteEpisode !== false,
+        ...(options.episodePolicy?.maximumSelectedTurns != null ? { maximumSelectedTurns: options.episodePolicy.maximumSelectedTurns } : {}),
+        ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {}),
+        ...(options.episodePolicy?.currentEpisodeStartTurnId ? { currentEpisodeStartTurnId: options.episodePolicy.currentEpisodeStartTurnId } : {})
+      }
+    };
+    const context = await withStore(caseId, authContext, requiredScope, (store) => store.loadCaseContext(caseId, effectiveOptions));
+    const continuationSafety = assessContinuationSafety(context);
+    const result = Object.freeze({ ...context, continuation_safety: continuationSafety });
+    if (options.requireContinuationSafe !== false && !continuationSafety.continuation_safe) throw new CaseNotContinuationSafeError(continuationSafety.failures);
+    return result;
   };
 
   return Object.freeze({
@@ -342,6 +364,14 @@ export function createPrivateCaseAccessService({
     async appendTracker(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendTracker(caseId, entry)); },
     async appendJournal(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendJournal(caseId, entry)); },
     async getCurrentEpisode(caseId, authContext) { return read(caseId, authContext, (store) => store.getCurrentEpisode(caseId)); },
+    async bindCaseAlias(caseId, caseAlias, authContext) {
+      return write(caseId, authContext, async (store) => {
+        const record = await store.load(caseId);
+        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        await writePrivateCaseAliasLocator({ rootDir, alias: caseAlias, caseId });
+        return Object.freeze({ case_id: caseId, alias_bound: true });
+      });
+    },
     async createHandoff(caseId, options, authContext) { return write(caseId, authContext, (store) => store.createHandoff(caseId, options)); },
     async loadHandoff(handoffId, authContext, { requireContinuationSafe = true, journalContinuitySupported = false } = {}) {
       const packet = await withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, caseId) => store.loadHandoff(caseId, handoffId));
@@ -386,21 +416,11 @@ export function createPrivateCaseAccessService({
       return read(caseId, authContext, (store) => store.getJournalEntries(caseId, options));
     },
     async loadCaseContext(caseId, authContext, options = {}) {
-      const requiredScope = options.requireAuditScope === false ? PRIVATE_CASE_SCOPES.READ : PRIVATE_CASE_SCOPES.AUDIT;
-      const effectiveOptions = {
-        ...options,
-        episodePolicy: {
-          requireCompleteEpisode: options.episodePolicy?.requireCompleteEpisode !== false,
-          ...(options.episodePolicy?.maximumSelectedTurns != null ? { maximumSelectedTurns: options.episodePolicy.maximumSelectedTurns } : {}),
-          ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {}),
-          ...(options.episodePolicy?.currentEpisodeStartTurnId ? { currentEpisodeStartTurnId: options.episodePolicy.currentEpisodeStartTurnId } : {})
-        }
-      };
-      const context = await withStore(caseId, authContext, requiredScope, (store) => store.loadCaseContext(caseId, effectiveOptions));
-      const continuationSafety = assessContinuationSafety(context);
-      const result = Object.freeze({ ...context, continuation_safety: continuationSafety });
-      if (options.requireContinuationSafe !== false && !continuationSafety.continuation_safe) throw new CaseNotContinuationSafeError(continuationSafety.failures);
-      return result;
+      return loadCaseContextForId(caseId, authContext, options);
+    },
+    async loadCaseContextByAlias(caseAlias, authContext, options = {}) {
+      const caseId = await resolvedCaseAlias(caseAlias);
+      return loadCaseContextForId(caseId, authContext, options);
     }
   });
 }

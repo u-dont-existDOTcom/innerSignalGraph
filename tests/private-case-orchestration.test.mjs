@@ -42,6 +42,7 @@ function serviceFor(store) {
     rollbackJournalGeneration: (caseId, input) => store.rollbackJournalGeneration(caseId, input),
     incrementJournalVisibilityEpoch: (caseId, input) => store.incrementJournalVisibilityEpoch(caseId, input),
     getTranscriptAmendments: (caseId) => store.getTranscriptAmendments(caseId),
+    bindCaseAlias: async (caseId, _caseAlias) => ({ case_id: caseId, alias_bound: true }),
     appendTranscriptCompletionAmendment: (caseId, amendment) => store.appendTranscriptCompletionAmendment(caseId, amendment),
     getCandidateResponse: (caseId, selector) => store.getCandidateResponse(caseId, selector),
     recordCandidateAudit: (caseId, candidateId, evidence) => store.recordCandidateAudit(caseId, candidateId, evidence),
@@ -101,6 +102,18 @@ async function makeHarness(t) {
   const service = serviceFor(store);
   return { store, orchestrator: createPrivateCaseOrchestrator({ caseAccessService: service }) };
 }
+
+test("backend-only alias binding returns no alias plaintext and is schema-valid", async (t) => {
+  const { orchestrator } = await makeHarness(t);
+  const receipt = await orchestrator.execute(operation("bind_case_alias", { case_alias: "Synthetic Named Case" }), {});
+  assert.deepEqual(receipt, {
+    schema_version: 1,
+    operation_succeeded: true,
+    case_id: CASE_ID,
+    alias_bound: true
+  });
+  assert.equal(JSON.stringify(receipt).includes("Synthetic Named Case"), false);
+});
 
 test("completion amendment preserves raw bytes and produces effective handoff context", async (t) => {
   const { store, orchestrator } = await makeHarness(t);
@@ -339,6 +352,7 @@ test("published private operation schemas compile strictly", async () => {
   for (const schema of schemas) assert.equal(typeof ajv.getSchema(schema.$id), "function");
   const validateOperation = ajv.getSchema(schemas.at(-1).$id);
   assert.equal(validateOperation(operation("mark_candidate_sent", { candidate_id: REPAIR_ID })), true);
+  assert.equal(validateOperation(operation("bind_case_alias", { case_alias: "Synthetic Named Case" })), true);
   assert.equal(validateOperation(operation("probe_journal_write", { purpose: "archive" })), true);
   assert.equal(validateOperation(operation("create_journal_corpus", {
     corpus_id: "corpus:synthetic:schema",

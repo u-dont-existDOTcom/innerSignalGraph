@@ -4,6 +4,7 @@
   "title": "Backend-only private case mutation operation",
   "oneOf": [
     { "$ref": "#/$defs/appendCompletion" },
+    { "$ref": "#/$defs/bindCaseAlias" },
     { "$ref": "#/$defs/recordAudit" },
     { "$ref": "#/$defs/reconstructAndHandoff" },
     { "$ref": "#/$defs/createHandoff" },
@@ -24,6 +25,16 @@
       "type": "object",
       "required": ["schema_version", "operation", "case_id"],
       "properties": { "schema_version": { "const": 1 }, "operation": { "type": "string" }, "case_id": { "$ref": "#/$defs/caseId" } }
+    },
+    "bindCaseAlias": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "case_alias"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "bind_case_alias" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "case_alias": { "type": "string", "minLength": 1, "maxLength": 160 }
+        }
+      }]
     },
     "appendCompletion": {
       "allOf": [{ "$ref": "#/$defs/base" }, {
