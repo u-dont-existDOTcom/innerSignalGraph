@@ -1226,6 +1226,21 @@ test("pooledCalibration: a single critical miss fails the gate however high reca
   assert.equal(result.calibration_pass, false);
 });
 
+test("pooledCalibration: a configured critical-miss limit lets the gate pass up to the limit and records it", () => {
+  const counts = [batch(50, 49, { critical_miss_count: 1 }), batch(50, 49, { critical_miss_count: 1 }), batch(50, 50)];
+  const within = pooledCalibration(counts, TARGET, 2);
+  assert.deepEqual([within.critical_miss_count, within.critical_miss_limit, within.calibration_pass], [2, 2, true]);
+  const past = pooledCalibration(counts, TARGET, 1);
+  assert.deepEqual([past.critical_miss_count, past.critical_miss_limit, past.calibration_pass], [2, 1, false]);
+  // The limit never rescues recall below the target.
+  assert.equal(pooledCalibration([batch(10, 8, { critical_miss_count: 1 })], TARGET, 5).calibration_pass, false);
+  // With no limit (or a limit of zero) the gate reads exactly as before, without the field.
+  for (const result of [pooledCalibration(counts, TARGET), pooledCalibration(counts, TARGET, 0)]) {
+    assert.equal(result.calibration_pass, false);
+    assert.equal(Object.hasOwn(result, "critical_miss_limit"), false);
+  }
+});
+
 test("pooledCalibration: lost qualifiers are reported but do not gate", () => {
   const result = pooledCalibration([batch(20, 20, { qualifier_error_count: 2 })], TARGET);
   assert.equal(result.qualifier_error_count, 2);

@@ -35,3 +35,7 @@
 
 - `2026-09-30-claim-integrity-checks.md`: DEFER until the polish and ship phase, by the owner's decision. He approved the exact wording on 2026-10-03 ("1 A"), and on 2026-10-04 chose not to ship it yet (owner page question 9: C) while he is still fixing the maps, rules and guide from his client sessions. PR #96 is a draft that keeps the approved wording, its fit with the current prompts and the served protocol, and the sample-reply test. Trigger: the owner starts the polish and ship phase. Then rebase PR #96 on the prompts current at that time, recompute the served protocol hash, and ask him to ship it. Details: `OWNER-QUESTIONS.md`, question 1.
 - Live lane read on 2026-10-04 (default branch of `u-dont-existDOTcom/universal-dev-architecture`): `suggested-fixes/innerSignalGraph/` still holds only this item.
+
+## 2026-10-08: journal calibration critical-miss limit
+
+- Live lane read on 2026-10-08 (default branch of `u-dont-existDOTcom/universal-dev-architecture`): `suggested-fixes/innerSignalGraph/` still holds only `2026-09-30-claim-integrity-checks.md`, deferred above until the polish and ship phase. This branch changes the journal importer only and adds no new disposition.

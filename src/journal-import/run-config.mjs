@@ -21,6 +21,17 @@ export function journalCalibrationFailureLimit(config) {
   return value;
 }
 
+// How many critical reference items a calibration round may miss after repairs and still pass. Unset means none,
+// the original rule. Each miss stays recorded with its unit, and one more than the limit ends the round.
+export function journalCalibrationCriticalMissLimit(config) {
+  if (config.calibration_critical_miss_limit === undefined || config.calibration_critical_miss_limit === null) return 0;
+  const value = config.calibration_critical_miss_limit;
+  if (!Number.isSafeInteger(value) || value < 0)
+    throw new ValidationError("JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID",
+      { code: "JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID" });
+  return value;
+}
+
 export function normalizeJournalHardestLaneConfig(config) {
   return Object.freeze({
     enabled: config?.hardest_lane?.enabled === true,

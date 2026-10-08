@@ -1642,3 +1642,132 @@ test("an optional failure limit of one ends the round after the first unit that 
     assert.deepEqual(await callsByPage(f.config, calls, "reference_reader", [1, 2]), [1, 0]);
   } finally { await runtime.close(); }
 });
+
+// The optional critical-miss limit, and reopening a stopped round under it.
+test("a critical miss within the configured limit doesn't end the round, which passes on pooled recall", async t => {
+  const f = await fixture(t, { pages: 3 });
+  f.config.calibration_critical_miss_limit = 1;
+  const calls = [];
+  // Page 1 misses its one critical item; pages 2 and 3 keep all 20 of theirs. Pooled recall is 40 of 41.
+  const runtime = await f.open(mockPort({ calls,
+    reference: gateReference({ 1: [true], 2: Array(20).fill(false), 3: Array(20).fill(false) }),
+    fidelity: gateFidelity({ 1: 1 }) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "pass");
+    assert.equal(Object.hasOwn(result, "calibration_failure"), false);
+    assert.deepEqual(result.calibration_gate, { scored_batches: 3, reference_total: 41, preserved: 40, omitted: 1,
+      distorted: 0, unassessed: 0, critical_miss_count: 1, qualifier_error_count: 0, recall_target_met: true,
+      calibration_pass: true, critical_miss_limit: 1, failed_units: 1, unscored_units: 0, withheld_assertions: 0,
+      omission_gaps: 1, completed_calibration_units: 3, calibration_units: 3 });
+    // The miss stays on record with its unit.
+    const [missed] = await pageRecords(f.config, [1]);
+    assert.deepEqual([missed.source_only_unresolved, missed.calibration.outcome, missed.calibration.critical_miss_count],
+      [false, "fail", 1]);
+    // The round went on past page 1's critical miss to pages 2 and 3.
+    assert.deepEqual(await callsByPage(f.config, calls, "extractor", [1, 2, 3]), [3, 1, 1]);
+  } finally { await runtime.close(); }
+});
+
+test("a critical miss past the configured limit ends the round and names the unit that went past it", async t => {
+  const f = await fixture(t, { pages: 3 });
+  f.config.calibration_critical_miss_limit = 1;
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls,
+    reference: gateReference({ 1: [true], 2: [true], 3: Array(20).fill(false) }), fidelity: gateFidelity({ 1: 1, 2: 1 }) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "failed");
+    const plan = await readPlan(f.config);
+    const failure = result.calibration_failure;
+    assert.deepEqual([failure.unit_id, failure.status, failure.reason, result.blocker], [pageUnit(plan, 2).unit_id,
+      "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED"]);
+    assert.deepEqual([failure.failed_units, failure.completed_calibration_units, failure.calibration_units], [2, 2, 3]);
+    assert.deepEqual([failure.gate.critical_miss_count, failure.gate.critical_miss_limit, failure.gate.calibration_pass],
+      [2, 1, false]);
+    const [, second] = await pageRecords(f.config, [1, 2]);
+    assert.deepEqual(failure.diagnostics, second.diagnostics);
+    // Page 3 waits for the next round: its reference was never read.
+    assert.deepEqual(await callsByPage(f.config, calls, "reference_reader", [1, 2, 3]), [1, 1, 0]);
+  } finally { await runtime.close(); }
+});
+
+test("resume-calibration reopens a round a critical miss stopped once the limit allows it, keeping the checked units", async t => {
+  const f = await fixture(t, { pages: 3 });
+  const reference = gateReference({ 1: [true], 2: Array(20).fill(false), 3: Array(20).fill(false) });
+  const fidelity = gateFidelity({ 1: 1 });
+  let runtime = await f.open(mockPort({ calls: [], reference, fidelity }));
+  let stopped;
+  try {
+    stopped = await runtime.execute("run");
+    assert.equal(stopped.calibration, "failed");
+    assert.equal(stopped.calibration_failure.completed_calibration_units, 1);
+    // Without a limit the round can't be reopened: the current config would stop it again.
+    await assert.rejects(runtime.execute("resume-calibration"), { code: "JOURNAL_RESUME_CALIBRATION_NOT_ALLOWED" });
+    assert.deepEqual(await checkpoint(f.config).then((state) => [state.calibration, Object.hasOwn(state, "calibration_resumes")]),
+      ["failed", false]);
+  } finally { await runtime.close(); }
+  const epoch = (await checkpoint(f.config)).calibration_epoch;
+  f.config.calibration_critical_miss_limit = 1;
+  const calls = [];
+  runtime = await f.open(mockPort({ calls, reference, fidelity }), true);
+  try {
+    const reopened = await runtime.execute("resume-calibration");
+    assert.deepEqual([reopened.calibration, reopened.blocker, reopened.calibration_epoch, reopened.completed_units,
+      reopened.calibration_resume_count], ["not_run", null, epoch, 1, 1]);
+    assert.equal(Object.hasOwn(reopened, "calibration_failure"), false);
+    const state = await checkpoint(f.config);
+    assert.deepEqual(state.calibration_resumes.map((item) => [item.epoch, item.critical_miss_limit, item.previous_failure.status]),
+      [[epoch, 1, "CALIBRATION_REFERENCE_MISSED"]]);
+    assert.deepEqual(state.calibration_resumes[0].previous_failure.gate, stopped.calibration_failure.gate);
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "pass");
+    assert.deepEqual([result.calibration_gate.critical_miss_count, result.calibration_gate.failed_units,
+      result.calibration_gate.completed_calibration_units], [1, 1, 3]);
+    // Page 1 kept its result, so nothing went out for it again; pages 2 and 3 were checked once each.
+    for (const role of ["reference_reader", "extractor"])
+      assert.deepEqual(await callsByPage(f.config, calls, role, [1, 2, 3]), [0, 1, 1]);
+    // A round that isn't stopped can't be reopened.
+    await assert.rejects(runtime.execute("resume-calibration"), { code: "JOURNAL_RESUME_CALIBRATION_NOT_FAILED" });
+    for (const value of [await checkpoint(f.config), result])
+      assert.equal(JSON.stringify(value).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+test("resume-calibration leaves a round stopped by an unscored unit or by the failure limit as it is", async t => {
+  // An unscored unit can't be judged, whatever the critical-miss limit.
+  const f = await fixture(t, { pages: 3 });
+  f.config.calibration_critical_miss_limit = 5;
+  const items = gateReference({});
+  let runtime = await f.open(mockPort({ calls: [], reference: (packet) => syntheticPage(packet.source_windows[0].text) === 2
+    ? { ...items(packet), reference_items: invalidReferenceItems(packet) } : items(packet) }));
+  try {
+    const stopped = await runtime.execute("run");
+    assert.equal(stopped.calibration_failure.status, "CALIBRATION_REFERENCE_UNRESOLVED");
+    await assert.rejects(runtime.execute("resume-calibration"), { code: "JOURNAL_RESUME_CALIBRATION_NOT_ALLOWED" });
+    const state = await checkpoint(f.config);
+    assert.deepEqual([state.calibration, state.blocker, Object.hasOwn(state, "calibration_resumes")],
+      ["failed", "CALIBRATION_REFERENCE_UNRESOLVED", false]);
+  } finally { await runtime.close(); }
+  // A round the failure limit ended stays stopped while that limit still holds.
+  const g = await fixture(t, { pages: 2 });
+  g.config.calibration_failure_limit = 1;
+  g.config.calibration_critical_miss_limit = 5;
+  runtime = await g.open(mockPort({ calls: [], reference: gateReference({ 1: [false], 2: Array(39).fill(false) }),
+    fidelity: gateFidelity({ 1: 1 }) }));
+  try {
+    const stopped = await runtime.execute("run");
+    assert.deepEqual([stopped.calibration, stopped.calibration_failure.failed_units], ["failed", 1]);
+    await assert.rejects(runtime.execute("resume-calibration"), { code: "JOURNAL_RESUME_CALIBRATION_NOT_ALLOWED" });
+  } finally { await runtime.close(); }
+});
+
+test("an invalid critical-miss limit is refused when the run opens, before any provider call", async t => {
+  for (const value of [-1, 1.5, "2"]) {
+    const f = await fixture(t);
+    f.config.calibration_critical_miss_limit = value;
+    const calls = [];
+    await assert.rejects(f.open(mockPort({ calls })), { code: "JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID" });
+    assert.deepEqual(calls, []);
+  }
+});

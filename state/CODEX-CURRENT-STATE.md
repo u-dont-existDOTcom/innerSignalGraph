@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-06
+Updated: 2026-10-08
+
+
+## Journal calibration round 5 stopped on one critical miss; optional limit and resume prepared (2026-10-08, awaiting owner decision)
+
+- **Stop:** round 5 (epoch 5) stopped at about 04:23 UTC on 8 Oct after 93 of 162 calibration units: pooled recall 864/872 (99.1%, target 0.95), 6 failed units, 1 critical miss (blocker `CALIBRATION_REFERENCE_MISSED`). Content-free counts only; the per-unit diagnostics stay in the private runtime.
+- **Owner decision pending:** owner page question 15. A (recommended): keep round 5 and allow up to 3 critical misses across the 162 units. B: `recalibrate` under the unchanged rule.
+- **Prepared for A** (`docs/superpowers/plans/2026-10-08-journal-calibration-critical-miss-limit.md`): optional `calibration_critical_miss_limit` (default 0, the current rule; invalid values refused at open and by doctor) and the operator command `resume-calibration`, which reopens a stopped round in the same epoch only when the current config wouldn't have stopped it. The new tests in `journal-recalibrate`, `journal-review-convergence` and `journal-contracts` fail without the source change.
+- **Next:** if A, merge, deploy, set the limit in the private run config, restart the worker and run `resume-calibration`. If B, close this change and run `recalibrate`. Nothing is deployed before the owner's answer.
 
 
 ## Inner-speech question asked before the first inner dialogue (2026-10-06, awaiting owner merge and deploy)

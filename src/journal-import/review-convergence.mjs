@@ -459,9 +459,10 @@ export const sourceOnlyCalibrationCounts = (reference) => ({
   qualifier_error_count: 0
 });
 
-// Calibration passes when pooled recall across the scored batches meets the target and no critical reference
-// item is missed after repairs. Failed units and qualifier errors are reported, not gated.
-export function pooledCalibration(counts, target) {
+// Calibration passes when pooled recall across the scored batches meets the target and the critical reference
+// items missed after repairs are within the limit, which is none unless the run config allows some. Failed units
+// and qualifier errors are reported, not gated.
+export function pooledCalibration(counts, target, criticalMissLimit = 0) {
   const total = (field) => counts.reduce((sum, item) => sum + item[field], 0);
   const referenceTotal = total("reference_total"), preserved = total("preserved");
   const criticalMisses = total("critical_miss_count");
@@ -476,6 +477,7 @@ export function pooledCalibration(counts, target) {
     critical_miss_count: criticalMisses,
     qualifier_error_count: total("qualifier_error_count"),
     recall_target_met: recallTargetMet,
-    calibration_pass: recallTargetMet && criticalMisses === 0
+    calibration_pass: recallTargetMet && criticalMisses <= criticalMissLimit,
+    ...(criticalMissLimit > 0 ? { critical_miss_limit: criticalMissLimit } : {})
   };
 }

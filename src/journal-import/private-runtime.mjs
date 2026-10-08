@@ -5,8 +5,8 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { journalCalibrationFailureLimit, journalSemanticConcurrency, normalizeJournalHardestLaneConfig,
-  vaultRootMatchesConfig } from "./run-config.mjs";
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalSemanticConcurrency,
+  normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -162,6 +162,7 @@ async function removeLegacyPageRenders(root) {
 export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage, now = () => new Date() }) {
   const semanticConcurrency = journalSemanticConcurrency(config);
   const calibrationFailureLimit = journalCalibrationFailureLimit(config);
+  const calibrationCriticalMissLimit = journalCalibrationCriticalMissLimit(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -361,6 +362,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
       calibration_epoch: calibrationEpoch(), calibration_history_length: state.calibration_history?.length ?? 0,
+      ...(state.calibration_resumes?.length ? { calibration_resume_count: state.calibration_resumes.length } : {}),
       ...(state.calibration_history?.length ? { previous_failure:
         structuredClone(state.calibration_history.at(-1).previous_failure) } : {}),
       ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
@@ -997,13 +999,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       };
       // A failed calibration unit is kept as source-only with its reason and counts, and calibration goes on to
       // the next unit. The round is judged on pooled totals when it ends: recall across every scored batch must
-      // meet the target, no critical reference item may be missed, and every unit must have been scored against
-      // a frozen reference. A critical miss or an unscored unit ends the round at once, since it can't pass, and
-      // an optional failure limit can end it sooner.
+      // meet the target, critical reference items missed must stay within the limit (none unless the run config
+      // allows some), and every unit must have been scored against a frozen reference. A critical miss past the
+      // limit or an unscored unit ends the round at once, since it can't pass, and an optional failure limit can
+      // end it sooner.
       const failureLimit = calibrationFailureLimit;
       let calibrationFailures = 0, calibrationCriticalMisses = 0, calibrationUnscored = 0;
-      const calibrationRoundOver = () => calibrationCriticalMisses > 0 || calibrationUnscored > 0
-        || (failureLimit !== null && calibrationFailures >= failureLimit);
+      const calibrationRoundOver = () => calibrationCriticalMisses > calibrationCriticalMissLimit
+        || calibrationUnscored > 0 || (failureLimit !== null && calibrationFailures >= failureLimit);
       // `calibrationCounts` is the batch's reference result when it has a frozen reference: a source-only batch
       // keeps none of its reference items. Without one (an oversized unit, or a reference that never quoted its
       // source) the unit is unscored.
@@ -1662,7 +1665,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             failures.push({ unit_id: unitId, status: "CALIBRATION_REFERENCE_MISSED", reason: "CALIBRATION_REFERENCE_MISSED", ...details });
           }
         }
-        const pooled = pooledCalibration([...batches.values()], JOURNAL_GRAPH_CONTRACT.audit_defaults.reference_set_recall_target);
+        const pooled = pooledCalibration([...batches.values()], JOURNAL_GRAPH_CONTRACT.audit_defaults.reference_set_recall_target,
+          calibrationCriticalMissLimit);
         return { failures, gate: { ...pooled, calibration_pass: pooled.calibration_pass && unscored === 0,
           failed_units: failures.length, unscored_units: unscored,
           ...(legacyPassed ? { legacy_passed_units: legacyPassed } : {}), withheld_assertions: withheld, omission_gaps: gaps,
@@ -1701,9 +1705,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         state.calibration_gate = gate;
         const complete = calibrationOrder.every((id) => state.completed_units.includes(id));
         if (!complete || !gate.calibration_pass) {
-          // The stop names the unit that decided it: the first with a critical miss, else the first unscored, else
-          // the first failure when a limit ended the round. Recall below the target with neither is the round's.
-          const first = failures.find((item) => (item.reference?.critical_miss_count ?? 0) > 0)
+          // The stop names the unit that decided it: the one whose critical miss took the round past its limit
+          // (with no limit, the first critical miss), else the first unscored, else the first failure when a limit
+          // ended the round. Recall below the target with none of these is the round's.
+          let criticalSoFar = 0;
+          const pastCriticalLimit = failures.find((item) =>
+            (criticalSoFar += item.reference?.critical_miss_count ?? 0) > calibrationCriticalMissLimit);
+          const first = pastCriticalLimit
             ?? failures.find((item) => !item.reference)
             ?? (complete ? null : failures[0] ?? null);
           const status = first?.status ?? "CALIBRATION_RECALL_BELOW_TARGET";
@@ -1809,6 +1817,36 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       delete state.calibration_gate;
       state.blocker = null;
       state.completed_units = state.completed_units.filter((id) => !calibrationIds.has(id));
+      await save();
+      return summary();
+    }
+
+    // Reopens a stopped round under the current run config instead of starting it over: the units it already
+    // checked keep their results, and the rest are checked next in the same epoch. Only a round the pooled gate
+    // stopped can be reopened, and only when the current config wouldn't have stopped it (for example a critical
+    // miss now within a raised limit), so a round that still can't pass stays stopped.
+    async function resumeCalibration() {
+      invariant(state.calibration === "failed", "JOURNAL_RESUME_CALIBRATION_NOT_FAILED");
+      invariant(!state.graph_ref && !state.reconciled_ref && !state.persisted, "JOURNAL_RESUME_CALIBRATION_AFTER_GRAPH");
+      const failure = state.calibration_failure;
+      const gate = failure?.gate;
+      const complete = gate?.completed_calibration_units === gate?.calibration_units;
+      invariant(gate && Array.isArray(failure.failures)
+        && gate.unscored_units === 0
+        && gate.critical_miss_count <= calibrationCriticalMissLimit
+        && (calibrationFailureLimit === null || gate.failed_units < calibrationFailureLimit)
+        && (!complete || gate.recall_target_met), "JOURNAL_RESUME_CALIBRATION_NOT_ALLOWED");
+      state.calibration_resumes ??= [];
+      state.calibration_resumes.push({ epoch: calibrationEpoch(), at: now().toISOString(),
+        critical_miss_limit: calibrationCriticalMissLimit,
+        previous_failure: { status: failure.status, reason: failure.reason, failed_units: failure.failed_units,
+          completed_calibration_units: failure.completed_calibration_units, calibration_units: failure.calibration_units,
+          gate: structuredClone(gate) } });
+      state.calibration = "not_run";
+      delete state.calibration_failure;
+      delete state.calibration_round_failures;
+      delete state.calibration_gate;
+      state.blocker = null;
       await save();
       return summary();
     }
@@ -2530,6 +2568,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       async execute(command) {
         if (["inventory", "stage"].includes(command)) return stage();
         if (command === "recalibrate") return recalibrate();
+        if (command === "resume-calibration") return resumeCalibration();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();
