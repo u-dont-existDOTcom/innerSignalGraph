@@ -11,6 +11,7 @@ import {
   calibrationScoreCounts,
   extractionItemChanges,
   pooledCalibration,
+  firstFailurePastCriticalLimit,
   referenceScorePasses,
   reviewAfterWithholding,
   reviewFindingTargets,
@@ -1239,6 +1240,23 @@ test("pooledCalibration: a configured critical-miss limit lets the gate pass up 
     assert.equal(result.calibration_pass, false);
     assert.equal(Object.hasOwn(result, "critical_miss_limit"), false);
   }
+});
+
+test("firstFailurePastCriticalLimit: names the failure that takes the round past its limit, counting each batch once", () => {
+  const failure = (unit, critical) => ({ unit_id: unit, reference: { critical_miss_count: critical } });
+  const unscored = (unit) => ({ unit_id: unit });
+  // Two failed units from one batch carry the batch's one critical miss: within a limit of 1.
+  const sameBatch = [failure("u1", 1), failure("u2", 1)];
+  assert.equal(firstFailurePastCriticalLimit(sameBatch, ["b1", "b1"], 1), null);
+  // With no limit, the first critical miss decides, as before the limit existed.
+  assert.equal(firstFailurePastCriticalLimit(sameBatch, ["b1", "b1"], 0), sameBatch[0]);
+  // Separate batches add up, and the one that goes past the limit is named.
+  assert.equal(firstFailurePastCriticalLimit(sameBatch, ["b1", "b2"], 1), sameBatch[1]);
+  // An unscored failure has no reference counts and adds nothing; a later batch still counts.
+  const mixed = [unscored("u0"), failure("u1", 0), failure("u2", 2)];
+  assert.equal(firstFailurePastCriticalLimit(mixed, [null, "b1", "b2"], 1), mixed[2]);
+  assert.equal(firstFailurePastCriticalLimit(mixed, [null, "b1", "b2"], 2), null);
+  assert.equal(firstFailurePastCriticalLimit([], [], 0), null);
 });
 
 test("pooledCalibration: lost qualifiers are reported but do not gate", () => {

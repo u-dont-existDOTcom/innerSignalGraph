@@ -29,6 +29,8 @@ not show the import misses critical items less often; it would only show the sam
    outcome `fail`), as every failed unit's counts do now.
 3. **The stop record** names the unit whose critical miss took the round past its limit (with no limit, the first
    critical miss, as now), else the first unscored unit, else the first failure when a failure limit ended the round.
+   A batch's counts sit on every unit record it wrote, so this count takes each batch once, as the pooled gate does
+   (`firstFailurePastCriticalLimit`).
 4. **`resume-calibration` (operator command).** Reopens a stopped round under the current run config instead of
    starting it over. The units it already checked keep their records, and the rest are checked next in the same
    epoch, so answers already received are reused. It is refused (`JOURNAL_RESUME_CALIBRATION_NOT_ALLOWED`) unless
@@ -65,5 +67,6 @@ units unread; `resume-calibration` is refused while the config would stop the ro
 limit allows, keeping the checked unit's record (no call goes out for it again) and passing on the remaining units;
 it is refused for an unscored stop, a failure-limit stop and a round that isn't stopped; an invalid limit is refused
 before any provider call. `tests/journal-review-convergence.test.mjs`: `pooledCalibration` passes up to the limit,
-never rescues recall below the target, and keeps its old shape without a limit. `tests/journal-contracts.test.mjs`:
+never rescues recall below the target, and keeps its old shape without a limit; `firstFailurePastCriticalLimit`
+counts each batch once and names the failure that goes past the limit. `tests/journal-contracts.test.mjs`:
 doctor reports an invalid limit. Each new test fails without the source change.

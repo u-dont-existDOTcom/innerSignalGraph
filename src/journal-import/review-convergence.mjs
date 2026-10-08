@@ -459,6 +459,24 @@ export const sourceOnlyCalibrationCounts = (reference) => ({
   qualifier_error_count: 0
 });
 
+// The failure whose critical misses take a calibration round past its limit, or null. `failureBatches[i]` is the
+// batch of `failures[i]` (null when unscored). A batch's counts sit on every unit record it wrote, so each batch
+// counts once, at its first failed unit.
+export function firstFailurePastCriticalLimit(failures, failureBatches, limit) {
+  let misses = 0;
+  const counted = new Set();
+  for (const [index, failure] of failures.entries()) {
+    const batch = failureBatches[index] ?? null;
+    if (batch !== null) {
+      if (counted.has(batch)) continue;
+      counted.add(batch);
+    }
+    misses += failure.reference?.critical_miss_count ?? 0;
+    if (misses > limit) return failure;
+  }
+  return null;
+}
+
 // Calibration passes when pooled recall across the scored batches meets the target and the critical reference
 // items missed after repairs are within the limit, which is none unless the run config allows some. Failed units
 // and qualifier errors are reported, not gated.

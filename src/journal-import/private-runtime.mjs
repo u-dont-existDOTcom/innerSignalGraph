@@ -20,8 +20,8 @@ import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "./graph.mjs";
-import { calibrationScoreCounts, pooledCalibration, referenceScorePasses, reviewAfterWithholding,
-  scopeReviewAfterRepair, sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
+import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibration, referenceScorePasses,
+  reviewAfterWithholding, scopeReviewAfterRepair, sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
 import { JOURNAL_GRAPH_CONTRACT, validateJournalGraph, resolveExactQuote } from "./contracts.mjs";
 import { createDurableJournalInferencePort } from "./durable-inference.mjs";
 import { openPrivateJournalGraph } from "./retrieval.mjs";
@@ -1643,7 +1643,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // Rebuilt from the unit records, so a resumed round is judged the same way: each failed unit with its
       // reason, and each scored batch's reference result counted once.
       const calibrationRecords = async () => {
-        const failures = [], batches = new Map();
+        // `failureBatches[i]` is the batch of `failures[i]` (null when unscored), kept apart so the failure records
+        // keep their shape. A batch's counts sit on every unit record it wrote, so sums over failures take each
+        // batch once.
+        const failures = [], failureBatches = [], batches = new Map();
         let unscored = 0, legacyPassed = 0, withheld = 0, gaps = 0;
         for (const unitId of completedCalibration()) {
           const record = await readUnitRecord(unitId);
@@ -1661,13 +1664,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (record.source_only_unresolved) {
             failures.push({ unit_id: unitId, status: calibrationStopStatus(record.source_only_reason),
               reason: record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED", ...details });
+            failureBatches.push(record.calibration ? batch : null);
           } else if (outcome === "fail") {
             failures.push({ unit_id: unitId, status: "CALIBRATION_REFERENCE_MISSED", reason: "CALIBRATION_REFERENCE_MISSED", ...details });
+            failureBatches.push(batch);
           }
         }
         const pooled = pooledCalibration([...batches.values()], JOURNAL_GRAPH_CONTRACT.audit_defaults.reference_set_recall_target,
           calibrationCriticalMissLimit);
-        return { failures, gate: { ...pooled, calibration_pass: pooled.calibration_pass && unscored === 0,
+        return { failures, failureBatches, gate: { ...pooled, calibration_pass: pooled.calibration_pass && unscored === 0,
           failed_units: failures.length, unscored_units: unscored,
           ...(legacyPassed ? { legacy_passed_units: legacyPassed } : {}), withheld_assertions: withheld, omission_gaps: gaps,
           completed_calibration_units: completedCalibration().length, calibration_units: calibrationOrder.length } };
@@ -1701,17 +1706,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           if (!(await processBatch(frozenUnits(step.ids), true))) return summary();
         }
-        const { failures, gate } = await calibrationRecords();
+        const { failures, failureBatches, gate } = await calibrationRecords();
         state.calibration_gate = gate;
         const complete = calibrationOrder.every((id) => state.completed_units.includes(id));
         if (!complete || !gate.calibration_pass) {
           // The stop names the unit that decided it: the one whose critical miss took the round past its limit
           // (with no limit, the first critical miss), else the first unscored, else the first failure when a limit
           // ended the round. Recall below the target with none of these is the round's.
-          let criticalSoFar = 0;
-          const pastCriticalLimit = failures.find((item) =>
-            (criticalSoFar += item.reference?.critical_miss_count ?? 0) > calibrationCriticalMissLimit);
-          const first = pastCriticalLimit
+          const first = firstFailurePastCriticalLimit(failures, failureBatches, calibrationCriticalMissLimit)
             ?? failures.find((item) => !item.reference)
             ?? (complete ? null : failures[0] ?? null);
           const status = first?.status ?? "CALIBRATION_RECALL_BELOW_TARGET";
