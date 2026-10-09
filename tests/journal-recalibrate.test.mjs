@@ -1845,3 +1845,24 @@ test("the reference reader marks items critical by the list the fidelity auditor
     assert.ok(auditor.toLowerCase().replace("unsafe causal/treatment", "unsafe causal or treatment").includes(kind), kind);
   }
 });
+
+test("a second judge that keeps a missed critical item but leaves it open confirms the miss", async t => {
+  const f = await fixture(t, { pages: 1 });
+  const calls = [];
+  let audits = 0;
+  // The fourth audit, the second judge's, finds the item preserved but still lists it as unassessed.
+  const fidelity = (packet) => {
+    audits += 1;
+    if (audits <= 3) return gateFidelity({ 1: 1 })(packet);
+    const answer = gateFidelity({})(packet);
+    return { ...answer, unassessed_ids: [packet.frozen_reference.reference_items[0].id], status: "incomplete" };
+  };
+  const runtime = await f.open(mockPort({ calls, reference: gateReference({ 1: [true, ...Array(19).fill(false)] }), fidelity }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "failed");
+    assert.deepEqual(result.calibration_failure.diagnostics.critical_confirmation,
+      { tier: "standard", critical_miss_count: 1, confirmed: 1, unconfirmed: 0, blocker_code: null });
+    assert.equal(audits, 4);
+  } finally { await runtime.close(); }
+});

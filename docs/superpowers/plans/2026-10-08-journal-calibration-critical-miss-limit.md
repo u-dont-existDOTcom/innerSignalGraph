@@ -73,13 +73,16 @@ It came back here as a hard floor on an undefined label.
    - from the hardest tier (Claude Opus) when that lane is on, under the usual daily limit and pause;
    - otherwise from a fresh standard audit under its own identity.
 
-   A missed critical item counts as confirmed unless the second audit finds it preserved without a finding.
+   A missed critical item counts as confirmed unless the second audit finds it preserved without a finding and
+   leaves nothing open on it: no unassessed ID and no proposed repair.
    - Confirmed misses go into the unit's `calibration.critical_miss_count` and count toward the limit.
    - Unconfirmed ones are recorded as `unconfirmed_critical_miss_count`, on the unit and in the gate, and never count.
    - When no second audit can be had, the first judge's misses stand, so the second judge can never hide a miss.
    - The second judge only rules on items the first judge missed; it adds no new misses.
    - The unit's diagnostics record a `critical_confirmation` snapshot: tier, misses, confirmed, unconfirmed and
      blocker code.
+   - A hardest-tier confirmation is recorded with the other hardest attempts (`residuals.hardest_attempted`): resolved
+     when it answered, failed when it couldn't.
 7. **A status is read from what the review names** (`reviewStatusFromContent`).
    - A review that names no finding, no unassessed ID and no proposed repair has nothing to repair. A claimed
      `repair_required` from it counts as `sufficient_for_stated_scope`, for omission and fidelity reviews alike.
@@ -121,7 +124,8 @@ Run step 3 only after step 1. A worker still on the old code would stop the reop
   - is refused for an unscored stop, a failure-limit stop and a round that isn't stopped.
 - An invalid limit is refused before any provider call.
 - A critical miss the second judge doesn't confirm doesn't count, and the round passes. One it confirms ends the
-  round. Both record the snapshot.
+  round. Both record the snapshot. A second judge that keeps the item but leaves it open (an unassessed ID)
+  confirms the miss.
 - An audit claiming `incomplete` or `repair_required` that assessed every reference item and names nothing passes
   with one audit: no re-audit, no repair and no second judge.
 - The reference reader's definition of critical matches the auditor's list.
@@ -140,7 +144,8 @@ Run step 3 only after step 1. A worker still on the old code would stop the reop
 Updated expectations:
 
 - The runtime-finish, recalibrate and convergence-calibration tests whose units end with a critical miss now see
-  the second judge's audit: one more fidelity call, at the hardest tier when the lane is on.
+  the second judge's audit: one more fidelity call, at the hardest tier when the lane is on, where it also adds one
+  hardest attempt to the residuals.
 - One test whose first audit claimed `repair_required` while naming nothing now names a finding, so it still
   exercises a repair.
 - The pinned reference-reader job ID and operation key in `journal-lookahead` change only with the reader's text

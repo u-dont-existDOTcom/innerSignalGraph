@@ -86,7 +86,8 @@ test("the hardest fidelity repair still runs when withholding the flagged carrie
   // reference score passes, after it the item is lost, so the hardest tier gets its repair before a miss counts.
   const { run, calls } = await runOnce(t, { hardest: true });
   assert.ok(calls.some((call) => call.tier === "hardest" && call.role === "extractor"), "the hardest fidelity repair ran");
-  assert.equal(run.residuals.hardest_attempted, 1);
+  // The hardest fidelity repair and the second judge's audit at the hardest tier.
+  assert.equal(run.residuals.hardest_attempted, 2);
   assert.equal(run.calibration, "failed");
   assert.equal(run.calibration_failure.status, "CALIBRATION_REFERENCE_MISSED");
   assert.equal(run.calibration_gate.critical_miss_count, 1);

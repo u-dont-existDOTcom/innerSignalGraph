@@ -1472,8 +1472,10 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
       const result = enabled && passes ? await runtime.execute("run")
         : await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
       assert.equal(result.calibration, enabled && passes ? "pass" : "failed");
-      assert.equal(result.residuals.hardest_attempted ?? 0, enabled ? 1 : 0);
-      assert.equal(result.residuals.hardest_resolved ?? 0, enabled && passes ? 1 : 0);
+      // With the lane on, a unit still missing its critical item also gets the second judge's hardest audit,
+      // recorded as resolved when it answers.
+      assert.equal(result.residuals.hardest_attempted ?? 0, enabled ? (passes ? 1 : 2) : 0);
+      assert.equal(result.residuals.hardest_resolved ?? 0, enabled ? 1 : 0);
       assert.equal(calls.filter(call => call.role === "extractor").length, enabled ? 4 : 3);
       // A unit that still misses its critical item gets one more audit from a second judge: the hardest tier when
       // the lane is on, a fresh standard audit when it is off.
@@ -1640,8 +1642,9 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
       sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
     try {
       const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
-      assert.equal(stopped.residuals.hardest_attempted ?? 0, failure === "packet-before-extractor" ? 0 : 1);
-      assert.equal(stopped.residuals.hardest_resolved ?? 0, 0);
+      // Plus the second judge's hardest audit of the kept attempt, which answers (resolved).
+      assert.equal(stopped.residuals.hardest_attempted ?? 0, (failure === "packet-before-extractor" ? 0 : 1) + 1);
+      assert.equal(stopped.residuals.hardest_resolved ?? 0, 1);
       // A hardest answer that didn't bind is repaired once more at the same tier; here that repair passes its
       // review and gets the fourth audit. Review findings don't earn that repair: a hardest answer that binds is
       // audited as it is (the fourth audit), and what its review still flags is withheld when the repairs end.

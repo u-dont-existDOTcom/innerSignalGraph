@@ -21,8 +21,8 @@ import { partitionRepresentation, verifyRepresentationCoverage } from "./partiti
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "./graph.mjs";
 import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibration, referenceScorePasses,
-  reviewAfterWithholding, reviewStatusFromContent, scopeReviewAfterRepair, sourceOnlyCalibrationCounts,
-  withholdFlaggedItems } from "./review-convergence.mjs";
+  reviewAfterWithholding, reviewFindingTargets, reviewStatusFromContent, scopeReviewAfterRepair,
+  sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
 import { JOURNAL_GRAPH_CONTRACT, validateJournalGraph, resolveExactQuote } from "./contracts.mjs";
 import { createDurableJournalInferencePort } from "./durable-inference.mjs";
 import { openPrivateJournalGraph } from "./retrieval.mjs";
@@ -1608,8 +1608,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           // A critical miss on the kept attempt counts only when a second, independent judge agrees. The kept
           // extraction gets one more fidelity audit: from the hardest tier (Claude Opus) when that lane is on, else a
           // fresh standard audit under its own identity. A critical reference item the first judge missed counts as
-          // confirmed unless the second finds it preserved without a finding. When no second audit can be had, the
-          // first judge's misses stand, so the confirmation can never hide one.
+          // confirmed unless the second finds it preserved without a finding and leaves nothing open on it (no
+          // unassessed ID, no proposed repair). When no second audit can be had, the first judge's misses stand, so
+          // the confirmation can never hide one. A hardest-tier confirmation is recorded with the other hardest
+          // attempts: resolved when it answered, failed when it couldn't.
           let keptScore = chosen.keptScore;
           if (keptScore.critical_miss_count > 0) {
             const keptGraph = mergeGraphs([...chosen.rebound.graphs.values()]);
@@ -1624,6 +1626,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               if (!answer && !workExhausted) return false;
               if (answer) failure = checkFailure(checkScores(keptGraph), answer);
               else { failure = state.blocker ?? "COMPLETION_UNKNOWN"; state.blocker = null; await save(); }
+              await recordHardestOutcome(request.id, failure ? "failed" : "resolved");
               if (!failure) second = answer[0].output;
             } else {
               const attempt = await checkedWork(request, checkScores(keptGraph));
@@ -1634,7 +1637,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             const preservedIn = (review, id) => review?.assessments.some((item) => item.target_id === id
               && item.outcome === "preserved" && item.finding_type === "none");
             const missed = reference.output.reference_items.filter((item) => item.critical && !preservedIn(chosen.keptReview, item.id));
-            const unconfirmed = second ? missed.filter((item) => preservedIn(second, item.id)).length : 0;
+            const secondOpen = reviewFindingTargets(second);
+            const unconfirmed = second
+              ? missed.filter((item) => preservedIn(second, item.id) && !secondOpen.has(item.id)).length : 0;
             keptScore = { ...keptScore, critical_miss_count: keptScore.critical_miss_count - unconfirmed };
             criticalConfirmation = { tier: hardestJudge ? "hardest" : "standard", critical_miss_count: missed.length,
               confirmed: keptScore.critical_miss_count, unconfirmed, blocker_code: failure ? diagnosticBlockerCode(failure) : null };
