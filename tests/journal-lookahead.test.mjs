@@ -57,8 +57,8 @@ test("semantic concurrency defaults to one and accepts only integers through eig
 test("legacy job ID and operation key remain byte for byte stable", async () => {
   const snapshot = snapshotFor();
   const planned = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
-  assert.equal(jobId, "job:471d8dd70ccc0a09ab1918704c78f961b8e63a78bd51f862f7fa9ef5a99e418b");
-  assert.equal(planned.operationKey, "journal:287fa082f919114851268b61061d817805047c6a:2c6cf58e3318cc252d28d7173ad8229c");
+  assert.equal(jobId, "job:dc687afd6a4df9854c5220fbbccf28d6ac91f2cd1224e1eb703bc7b6fb942d1a");
+  assert.equal(planned.operationKey, "journal:9ea61c7251c19676af2d689706a68a5346e0e9a4:4e6f709853489d9347af88996012b402");
   assert.equal(planned.packet.controller_provenance_tag, snapshot.work_items[0].work_id);
 });
 

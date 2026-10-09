@@ -1,14 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-08
+Updated: 2026-10-09
 
 
-## Journal calibration round 5 stopped on one critical miss; optional limit and resume prepared (2026-10-08, awaiting owner decision)
+## Journal calibration round 5 stopped on one critical miss; the critical-miss design fixed (2026-10-09, awaiting the owner's deploy)
 
 - **Stop:** round 5 (epoch 5) stopped at about 04:23 UTC on 8 Oct after 93 of 162 calibration units: pooled recall 864/872 (99.1%, target 0.95), 6 failed units, 1 critical miss (blocker `CALIBRATION_REFERENCE_MISSED`). Content-free counts only; the per-unit diagnostics stay in the private runtime.
-- **Owner decision pending:** owner page question 15. A (recommended): keep round 5 and allow up to 3 critical misses across the 162 units. B: `recalibrate` under the unchanged rule.
-- **Prepared for A** (`docs/superpowers/plans/2026-10-08-journal-calibration-critical-miss-limit.md`): optional `calibration_critical_miss_limit` (default 0, the current rule; invalid values refused at open and by doctor) and the operator command `resume-calibration`, which reopens a stopped round in the same epoch only when the current config wouldn't have stopped it. The new tests in `journal-recalibrate`, `journal-review-convergence` and `journal-contracts` fail without the source change.
-- **Next:** if A, merge, deploy, set the limit in the private run config, restart the worker and run `resume-calibration`. If B, close this change and run `recalibrate`. Nothing is deployed before the owner's answer.
+- **Owner decision:** "fix it" (9 Oct, after the owner page explained the critical miss). Part 1, the recommended option of question 15: optional `calibration_critical_miss_limit` (default 0; 3 recommended) and the operator command `resume-calibration`, which reopens a stopped round in the same epoch only when the current config wouldn't have stopped it. Part 2: the reference reader defines critical by the fidelity auditor's list; a critical miss on a kept attempt counts only when a second judge (hardest tier when on, else a fresh standard audit) confirms it; a review's status is read from what it names (`reviewStatusFromContent`). Plan: `docs/superpowers/plans/2026-10-08-journal-calibration-critical-miss-limit.md`.
+- **Evidence:** every new test in `journal-recalibrate`, `journal-review-convergence` and `journal-contracts` fails without the source change; the pinned reference-reader job ID changes only with the reader's text.
+- **Next:** on the owner's `deploy`: deploy, restart the import worker, set the limit to 3, run `resume-calibration`, then check the next import run. The owner merges when Codex's review of the final commit is clean.
 
 
 ## Inner-speech question asked before the first inner dialogue (2026-10-06, awaiting owner merge and deploy)

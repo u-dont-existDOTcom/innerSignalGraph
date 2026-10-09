@@ -1391,8 +1391,11 @@ test("duplicate assessments during a calibration repair are never accepted, and 
       fidelityCalls += 1;
       calls.push("fidelity_auditor");
       const answer = baseline.fidelity_auditor(packet);
-      if (fidelityCalls === 1) return { ...answer, status: "repair_required" };
       const id = packet.imported_generation?.assertions?.[0]?.id;
+      // The first audit names something to repair (a status alone, naming nothing, no longer asks for one).
+      if (fidelityCalls === 1) return { ...answer, status: "repair_required", assessments: [...answer.assessments,
+        { target_id: id, outcome: "distorted", critical: false, finding_type: "unsupported_claim",
+          explanation: "Synthetic addition.", evidence_ids: [] }] };
       const assessment = { target_id: id, outcome: "preserved", critical: false,
         finding_type: "none", explanation: "Synthetic duplicate.", evidence_ids: [] };
       return { ...answer, assessments: [assessment, assessment] };
@@ -1429,7 +1432,7 @@ test("a calibration review still requiring repair after bounded cycles stops the
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
   try {
     const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_MISSED", "CALIBRATION_REFERENCE_MISSED", calls);
-    assert.equal(calls.length, 3, "initial review plus two repair cycles");
+    assert.equal(calls.length, 4, "initial review, two repair cycles and the second judge's confirmation");
     assert.deepEqual(stopped.calibration_failure.failures.map((item) => item.reference), [{ reference_total: 1,
       preserved: 0, omitted: 1, distorted: 0, unassessed: 0, critical_miss_count: 1, qualifier_error_count: 0 }]);
   } finally { await runtime.close(); }
@@ -1472,9 +1475,12 @@ for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
       assert.equal(result.residuals.hardest_attempted ?? 0, enabled ? 1 : 0);
       assert.equal(result.residuals.hardest_resolved ?? 0, enabled && passes ? 1 : 0);
       assert.equal(calls.filter(call => call.role === "extractor").length, enabled ? 4 : 3);
-      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, enabled ? 4 : 3);
+      // A unit that still misses its critical item gets one more audit from a second judge: the hardest tier when
+      // the lane is on, a fresh standard audit when it is off.
+      const confirmed = !(enabled && passes);
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, (enabled ? 4 : 3) + (confirmed ? 1 : 0));
       assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
-        enabled ? ["extractor", "omission_checker"] : []);
+        enabled ? ["extractor", "omission_checker", ...(confirmed ? ["fidelity_auditor"] : [])] : []);
       let diagnostics = result.calibration_failure?.diagnostics;
       if (enabled && passes) {
         assert.equal(result.completion.graph_built, "pass");
@@ -1641,14 +1647,15 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
       // audited as it is (the fourth audit), and what its review still flags is withheld when the repairs end.
       const repairedAgain = failure === "binding";
       const audited = ["binding", "omission"].includes(failure);
-      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, audited ? 4 : 3);
+      // Plus one audit from the second judge, which confirms the critical miss.
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, (audited ? 4 : 3) + 1);
       const snapshot = stopped.calibration_failure.diagnostics.hardest_fidelity;
       if (repairedAgain) {
         assert.equal(snapshot.repair.binding_failure_code, null);
         assert.equal(snapshot.repair.omission.status, "sufficient_for_stated_scope");
         assert.equal(snapshot.repair.extraction_changed, true);
         assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
-          ["extractor", "omission_checker", "extractor", "omission_checker"]);
+          ["extractor", "omission_checker", "extractor", "omission_checker", "fidelity_auditor"]);
       } else assert.equal(Object.hasOwn(snapshot, "repair"), false);
       if (audited) assert.equal(snapshot.fidelity.calibration_pass, false);
       if (failure.startsWith("packet-")) assert.equal(snapshot.blocker_code, "JOURNAL_WORK_PACKET_TOO_LARGE");
@@ -1658,7 +1665,7 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
         assert.equal(snapshot.omission.status, "repair_required");
         assert.deepEqual(snapshot.review_scope, { carried: 0, changed: 1, removed: 0, earlier_findings: 0 });
         assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
-          ["extractor", "omission_checker"]);
+          ["extractor", "omission_checker", "fidelity_auditor"]);
       }
       assert.equal(snapshot.extraction_changed, failure === "packet-before-extractor" || failure === "spent" ? null : true);
       assert.equal(JSON.stringify(stopped).includes("PRIVATE_SYNTHETIC_SENTINEL"), false);

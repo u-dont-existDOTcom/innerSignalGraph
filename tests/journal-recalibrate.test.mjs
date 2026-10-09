@@ -295,7 +295,9 @@ for (const finding of ["omitted", "distorted", "critical_miss", "qualifier_error
         assert.deepEqual([failure.unit_id, failure.reason], [null, "CALIBRATION_RECALL_BELOW_TARGET"]);
         assert.equal(unitFailure.reason, "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
       }
-      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3);
+      // A critical miss on the kept attempt gets one more audit from a second judge, which here also leaves the
+      // item unassessed, so the miss is confirmed.
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, finding === "critical_miss" ? 4 : 3);
       assert.equal(calls.filter(call => call.role === "extractor").length, 3);
       assert.equal(unitFailure.diagnostics.reaudit, null);
     } finally { await runtime.close(); }
@@ -1769,5 +1771,77 @@ test("an invalid critical-miss limit is refused when the run opens, before any p
     const calls = [];
     await assert.rejects(f.open(mockPort({ calls })), { code: "JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID" });
     assert.deepEqual(calls, []);
+  }
+});
+
+// A second judge before a critical miss counts, and statuses read from what a review names.
+test("a critical miss the second judge doesn't confirm doesn't count, and the round goes on and passes", async t => {
+  const f = await fixture(t, { pages: 2 });
+  const calls = [];
+  // Page 1's critical item (the first of its 20) is found omitted by the first audit and both repairs' audits;
+  // the fourth audit of page 1, the second judge's, finds every item kept.
+  const audits = new Map();
+  const fidelity = (packet) => {
+    const page = syntheticPage(packet.supporting_passages[0].text);
+    const count = (audits.get(page) ?? 0) + 1;
+    audits.set(page, count);
+    return gateFidelity(page === 1 && count <= 3 ? { 1: 1 } : {})(packet);
+  };
+  const runtime = await f.open(mockPort({ calls,
+    reference: gateReference({ 1: [true, ...Array(19).fill(false)], 2: Array(20).fill(false) }), fidelity }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "pass");
+    assert.deepEqual([result.calibration_gate.critical_miss_count, result.calibration_gate.unconfirmed_critical_miss_count],
+      [0, 1]);
+    const [first] = await pageRecords(f.config, [1]);
+    assert.deepEqual([first.calibration.critical_miss_count, first.calibration.unconfirmed_critical_miss_count], [0, 1]);
+    assert.deepEqual(first.diagnostics.critical_confirmation,
+      { tier: "standard", critical_miss_count: 1, confirmed: 0, unconfirmed: 1, blocker_code: null });
+    // The first judge's audit, two repairs' audits and the second judge's; page 2 needed one.
+    assert.deepEqual(await callsByPage(f.config, calls, "fidelity_auditor", [1, 2]), [4, 1]);
+    assert.equal(JSON.stringify(await checkpoint(f.config)).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+test("a critical miss the second judge confirms still counts and ends the round", async t => {
+  const f = await fixture(t, { pages: 2 });
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls, reference: gateReference({ 1: [true] }), fidelity: gateFidelity({ 1: 1 }) }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration, "failed");
+    assert.equal(result.calibration_failure.status, "CALIBRATION_REFERENCE_MISSED");
+    assert.equal(Object.hasOwn(result.calibration_failure.gate, "unconfirmed_critical_miss_count"), false);
+    assert.deepEqual(result.calibration_failure.diagnostics.critical_confirmation,
+      { tier: "standard", critical_miss_count: 1, confirmed: 1, unconfirmed: 0, blocker_code: null });
+    assert.deepEqual(await callsByPage(f.config, calls, "fidelity_auditor", [1, 2]), [4, 0]);
+  } finally { await runtime.close(); }
+});
+
+for (const claimed of ["incomplete", "repair_required"]) {
+  test(`a fidelity audit claiming ${claimed} that assessed every reference item and names nothing passes as it is`, async t => {
+    const f = await fixture(t, { pages: 1 });
+    const calls = [];
+    const runtime = await f.open(mockPort({ calls, reference: gateReference({ 1: [true, false] }),
+      fidelity: (packet) => ({ ...gateFidelity({})(packet), status: claimed }) }));
+    try {
+      const result = await runtime.execute("run");
+      assert.equal(result.calibration, "pass");
+      assert.equal(result.calibration_gate.critical_miss_count, 0);
+      // No re-audit, no repair and no second judge: one extraction and one audit.
+      assert.deepEqual([calls.filter((call) => call.role === "extractor").length,
+        calls.filter((call) => call.role === "fidelity_auditor").length], [1, 1]);
+    } finally { await runtime.close(); }
+  });
+}
+
+test("the reference reader marks items critical by the list the fidelity auditor checks", () => {
+  const reader = journalRoleInstruction("reference_reader");
+  const auditor = journalRoleInstruction("fidelity_auditor");
+  assert.match(reader, /Mark a reference item `critical` only when/);
+  for (const kind of ["wrong-person attribution", "dream promoted to fact", "false currentness", "unsafe causal or treatment promotion"]) {
+    assert.ok(reader.includes(kind), kind);
+    assert.ok(auditor.toLowerCase().replace("unsafe causal/treatment", "unsafe causal or treatment").includes(kind), kind);
   }
 });

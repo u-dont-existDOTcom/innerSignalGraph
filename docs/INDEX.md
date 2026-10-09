@@ -47,7 +47,7 @@ The transition report names the fully gated private candidate, the public visibi
 - `superpowers/plans/2026-10-02-journal-fidelity-repair.md`: audit-only retry, bounded hardest fidelity repair and content-free recovery diagnostics
 - `superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`: answered extractor context requests, one hardest self-repair and calibration rounds that run to the end
 - `superpowers/plans/2026-10-03-journal-review-convergence.md`: re-reviews scoped to what a repair changed, withholding what is still flagged when repairs run out, and a calibration gate on pooled recall with no critical miss
-- `superpowers/plans/2026-10-08-journal-calibration-critical-miss-limit.md`: an optional limit on critical misses in a calibration round, and `resume-calibration` to reopen a stopped round under it
+- `superpowers/plans/2026-10-08-journal-calibration-critical-miss-limit.md`: critical misses defined by one shared list, confirmed by a second judge and counted against an optional limit; review statuses read from what reviews name; `resume-calibration` to reopen a stopped round
 - `superpowers/specs/`: accepted design specifications
 
 ## Obsidian graph authoring

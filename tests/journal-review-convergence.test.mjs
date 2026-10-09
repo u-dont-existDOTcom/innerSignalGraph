@@ -12,6 +12,7 @@ import {
   extractionItemChanges,
   pooledCalibration,
   firstFailurePastCriticalLimit,
+  reviewStatusFromContent,
   referenceScorePasses,
   reviewAfterWithholding,
   reviewFindingTargets,
@@ -1650,4 +1651,32 @@ test("validateExtractionReferences: a local ID may not equal an assigned unit ID
   assert.throws(() => story(renamed(storyItems(), "episodes", "ep-storm", U2)), /LOCAL_ID_IS_UNIT_ID/);
   assert.throws(() => story(renamed(storyItems(), "assertions", "a4", U1)), /LOCAL_ID_IS_UNIT_ID/);
   assert.doesNotThrow(() => story(renamed(storyItems(), "episodes", "ep-storm", U3)), "only assigned units count");
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// reviewStatusFromContent
+// ---------------------------------------------------------------------------------------------------------
+
+test("reviewStatusFromContent: a status that names nothing reads as what the review found", () => {
+  const preserved = (id) => ({ target_id: id, outcome: "preserved", critical: false, finding_type: "none", explanation: "Kept.", evidence_ids: [] });
+  const base = { schema_version: "1.0", target_generation: "g", review_role: "fidelity_auditor",
+    assessments: [preserved("r1"), preserved("r2")], proposed_repairs: [], unassessed_ids: [] };
+  // "repair_required" with nothing named has nothing to repair.
+  assert.equal(reviewStatusFromContent({ ...base, status: "repair_required" }).status, "sufficient_for_stated_scope");
+  // "incomplete" counts as sufficient only when every frozen reference item was assessed.
+  assert.equal(reviewStatusFromContent({ ...base, status: "incomplete" }, { referenceIds: ["r1", "r2"] }).status,
+    "sufficient_for_stated_scope");
+  assert.equal(reviewStatusFromContent({ ...base, status: "incomplete" }, { referenceIds: ["r1", "r2", "r3"] }).status,
+    "incomplete");
+  assert.equal(reviewStatusFromContent({ ...base, status: "incomplete" }).status, "incomplete");
+  // Anything named keeps the claimed status: a finding, an unassessed ID, a proposed repair.
+  const flagged = { ...base, assessments: [preserved("r1"), { ...preserved("r2"), finding_type: "lost_qualifier" }] };
+  for (const review of [flagged, { ...base, unassessed_ids: ["r2"] },
+    { ...base, proposed_repairs: [{ target_id: "r2", action: "revise", explanation: "Fix.", evidence_ids: [] }] }]) {
+    for (const status of ["repair_required", "incomplete"])
+      assert.equal(reviewStatusFromContent({ ...review, status }, { referenceIds: ["r1", "r2"] }).status, status);
+  }
+  assert.equal(reviewStatusFromContent(null), null);
+  const sufficient = { ...base, status: "sufficient_for_stated_scope" };
+  assert.equal(reviewStatusFromContent(sufficient), sufficient);
 });

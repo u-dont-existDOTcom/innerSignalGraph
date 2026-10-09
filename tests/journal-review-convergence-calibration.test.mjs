@@ -61,6 +61,9 @@ const handlersFor = ({ failFirstFidelityRepair = false, citeCarrier = true, fide
   // Like round 4's unit 2: the critical reference item is kept, carried by the saved assertion, and the same
   // assertion is called unsupported in the candidate sample.
   fidelity_auditor: (packet) => { const [node] = packet.imported_generation.assertions;
+    // The second judge audits what the unit keeps; with a0 withheld nothing carries the critical item.
+    if (!node) return { ...review("fidelity_auditor", packet), status: "repair_required", assessments: [
+      { target_id: "reference:critical", outcome: "omitted", critical: true, finding_type: "missing_evidence", explanation: "Missing.", evidence_ids: [] }] };
     return { ...review("fidelity_auditor", packet), status: fidelityStatus, assessments: [
       { target_id: "reference:critical", outcome: "preserved", critical: true, finding_type: "none", explanation: "Kept.", evidence_ids: citeCarrier ? [node.id] : [] },
       { target_id: node.id, outcome: "distorted", critical: false, finding_type: "unsupported_claim", explanation: "Addition.", evidence_ids: [] }] }; }

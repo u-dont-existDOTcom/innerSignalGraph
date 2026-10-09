@@ -21,7 +21,8 @@ import { partitionRepresentation, verifyRepresentationCoverage } from "./partiti
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "./graph.mjs";
 import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibration, referenceScorePasses,
-  reviewAfterWithholding, scopeReviewAfterRepair, sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
+  reviewAfterWithholding, reviewStatusFromContent, scopeReviewAfterRepair, sourceOnlyCalibrationCounts,
+  withholdFlaggedItems } from "./review-convergence.mjs";
 import { JOURNAL_GRAPH_CONTRACT, validateJournalGraph, resolveExactQuote } from "./contracts.mjs";
 import { createDurableJournalInferencePort } from "./durable-inference.mjs";
 import { openPrivateJournalGraph } from "./retrieval.mjs";
@@ -1032,10 +1033,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (calibration && calibrationRoundOver()) return true;
         const cycles = [];
         let hardestDiagnostics = null;
-        let reauditDiagnostics = null, hardestFidelityDiagnostics = null;
+        let reauditDiagnostics = null, hardestFidelityDiagnostics = null, criticalConfirmation = null;
         const fidelityCycles = [];
         const diagnostics = () => unresolvedExtractionDiagnostics(cycles, hardestDiagnostics, fidelityCycles,
-          reauditDiagnostics, hardestFidelityDiagnostics);
+          reauditDiagnostics, hardestFidelityDiagnostics, criticalConfirmation);
         const halves = async () => {
           const middle = Math.ceil(units.length / 2);
           return await processBatch(units.slice(0, middle), calibration)
@@ -1100,8 +1101,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // The current widened context is read at each call.
         const extract = (id, repairRequest, tier = "standard") => work(extractionRequestFor({
           id, units, core, adjacentContext, visualContext, repairRequest, tier }));
-        // A review leaves work open with any finding, unassessed ID or proposed repair, whatever status it gives.
-        const reviewHasFindings = (review) => review?.status !== "sufficient_for_stated_scope"
+        // A review leaves work open with any finding, unassessed ID or proposed repair, whatever status it gives, and
+        // when it says it didn't finish. Its status is read from what it names: a "repair_required" that names
+        // nothing has nothing to repair (reviewStatusFromContent).
+        const reviewHasFindings = (review) => reviewStatusFromContent(review)?.status !== "sufficient_for_stated_scope"
           || review.assessments.some((assessment) => assessment.outcome !== "preserved"
             || assessment.finding_type !== "none")
           || review.unassessed_ids.length > 0
@@ -1353,7 +1356,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           // reference item.
           const attempts = [];
           let auditedExtraction = null, fidelityReview = null, score;
-          const countFidelity = (rawReview, graph, extraction) => {
+          // A fidelity review that assessed every frozen reference item and names nothing open counts as sufficient
+          // whatever status it claims, so a version can't be held back by a status its own verdicts contradict.
+          const referenceIds = reference.output.reference_items.map((item) => item.id);
+          const countFidelity = (claimedReview, graph, extraction) => {
+            const rawReview = reviewStatusFromContent(claimedReview, { referenceIds });
             const scoped = auditedExtraction && fidelityReview
               ? scopeReviewAfterRepair({ review: rawReview, previousReview: fidelityReview,
                 previousExtraction: auditedExtraction, extraction, unitIds, targetOf: nodeTarget })
@@ -1432,10 +1439,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             // Entities count as carriers too, so an item the auditor tied only to a withheld entity is lost with it.
             const candidateTargets = new Set(mergeGraphs([...attempt.graphsByUnit.values()]).nodes
               .filter((node) => node.kind === "assertion" || node.kind === "entity").map((node) => node.id));
-            const keptScore = scoreReferenceReview({ referenceResult: reference.output,
-              reviewResult: reviewAfterWithholding({ review: attempt.fidelityReview, withheldTargets, candidateTargets }),
+            const keptReview = reviewAfterWithholding({ review: attempt.fidelityReview, withheldTargets, candidateTargets });
+            const keptScore = scoreReferenceReview({ referenceResult: reference.output, reviewResult: keptReview,
               candidateIds: assertionIds(mergeGraphs([...rebound.graphs.values()])) });
-            return { kept, rebound, keptScore };
+            return { kept, rebound, keptReview, keptScore };
           };
           // A single unit whose re-audit or repairs run out keeps its best audited attempt; only one with no audit
           // at all fails source-only.
@@ -1598,14 +1605,49 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             return failCalibrationUnit(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED",
               diagnostics(), sourceOnlyCounts());
           }
+          // A critical miss on the kept attempt counts only when a second, independent judge agrees. The kept
+          // extraction gets one more fidelity audit: from the hardest tier (Claude Opus) when that lane is on, else a
+          // fresh standard audit under its own identity. A critical reference item the first judge missed counts as
+          // confirmed unless the second finds it preserved without a finding. When no second audit can be had, the
+          // first judge's misses stand, so the confirmation can never hide one.
+          let keptScore = chosen.keptScore;
+          if (keptScore.critical_miss_count > 0) {
+            const keptGraph = mergeGraphs([...chosen.rebound.graphs.values()]);
+            const request = { id: epochId(`fidelity:calibration-confirm:batch:${keyId}`, true), role: "fidelity_auditor",
+              stage: "REFERENCE_AUDIT", units, packetInput: auditPacket(keptGraph) };
+            const hardestJudge = hardestLane.enabled
+              && port.capabilities?.().hardest_roles?.fidelity_auditor?.available !== false
+              && hardestJournalRequestFits(request, state.generation, grant.purpose);
+            let second = null, failure = null;
+            if (hardestJudge) {
+              const answer = await work({ ...request, id: derivedId(request.id, "hardest"), tier: "hardest" });
+              if (!answer && !workExhausted) return false;
+              if (answer) failure = checkFailure(checkScores(keptGraph), answer);
+              else { failure = state.blocker ?? "COMPLETION_UNKNOWN"; state.blocker = null; await save(); }
+              if (!failure) second = answer[0].output;
+            } else {
+              const attempt = await checkedWork(request, checkScores(keptGraph));
+              if (attempt.blocked) return false;
+              if (attempt.failure) failure = attempt.failure;
+              else second = attempt.result[0].output;
+            }
+            const preservedIn = (review, id) => review?.assessments.some((item) => item.target_id === id
+              && item.outcome === "preserved" && item.finding_type === "none");
+            const missed = reference.output.reference_items.filter((item) => item.critical && !preservedIn(chosen.keptReview, item.id));
+            const unconfirmed = second ? missed.filter((item) => preservedIn(second, item.id)).length : 0;
+            keptScore = { ...keptScore, critical_miss_count: keptScore.critical_miss_count - unconfirmed };
+            criticalConfirmation = { tier: hardestJudge ? "hardest" : "standard", critical_miss_count: missed.length,
+              confirmed: keptScore.critical_miss_count, unconfirmed, blocker_code: failure ? diagnosticBlockerCode(failure) : null };
+          }
           results = chosen.attempt.results;
           omissionReview = chosen.attempt.omissionReview;
           ({ split, graphs: graphsByUnit } = chosen.rebound);
           residualsByUnit = chosen.kept.residualsByUnit;
-          const unitPasses = referenceScorePasses(chosen.keptScore);
-          calibrationRecord = { batch: keyId, ...calibrationScoreCounts(chosen.keptScore), outcome: unitPasses ? "pass" : "fail" };
+          const unitPasses = referenceScorePasses(keptScore);
+          calibrationRecord = { batch: keyId, ...calibrationScoreCounts(keptScore), outcome: unitPasses ? "pass" : "fail",
+            ...(criticalConfirmation?.unconfirmed ? { unconfirmed_critical_miss_count: criticalConfirmation.unconfirmed } : {}) };
           if (!unitPasses) calibrationFailures += units.length;
-          calibrationCriticalMisses += chosen.keptScore.critical_miss_count;
+          calibrationCriticalMisses += keptScore.critical_miss_count;
         }
         const contextAnswered = [...cycles, ...fidelityCycles].some((cycle) => cycle.context_answer);
         const unitResiduals = (unitId) => {
@@ -1622,8 +1664,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             source_only_unresolved: false,
             ...(residual ? { review_residuals: residual } : {}),
             ...(calibrationRecord ? { calibration: calibrationRecord } : {}),
-            ...((reauditDiagnostics || hardestFidelityDiagnostics || hardestDiagnostics || contextAnswered || residual)
-              ? { diagnostics: diagnostics() } : {})
+            ...((reauditDiagnostics || hardestFidelityDiagnostics || hardestDiagnostics || criticalConfirmation
+              || contextAnswered || residual) ? { diagnostics: diagnostics() } : {})
           });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
         }
@@ -1672,7 +1714,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         const pooled = pooledCalibration([...batches.values()], JOURNAL_GRAPH_CONTRACT.audit_defaults.reference_set_recall_target,
           calibrationCriticalMissLimit);
+        // Critical misses the second judge didn't confirm: reported, never counted against the round.
+        const unconfirmedCritical = [...batches.values()].reduce((sum, item) => sum + (item.unconfirmed_critical_miss_count ?? 0), 0);
         return { failures, failureBatches, gate: { ...pooled, calibration_pass: pooled.calibration_pass && unscored === 0,
+          ...(unconfirmedCritical ? { unconfirmed_critical_miss_count: unconfirmedCritical } : {}),
           failed_units: failures.length, unscored_units: unscored,
           ...(legacyPassed ? { legacy_passed_units: legacyPassed } : {}), withheld_assertions: withheld, omission_gaps: gaps,
           completed_calibration_units: completedCalibration().length, calibration_units: calibrationOrder.length } };
