@@ -494,6 +494,20 @@ async function callTool(service, name, args, authContext, journalApi = null) {
     if (!artifact) throw Object.assign(new Error("Exact source artifact was not found."), { code: "PRIVATE_SOURCE_ARTIFACT_NOT_FOUND" });
     return artifact;
   }
+  if (name === "find_journal_quotes" && journalApi) {
+    return journalApi.findQuotes({
+      caseId: args.case_id,
+      corpusId: args.corpus_id,
+      query: args.query,
+      purpose: args.purpose,
+      from: args.from,
+      to: args.to,
+      includeUndated: args.include_undated,
+      limit: args.limit,
+      byteBudget: args.byte_budget,
+      offset: args.offset
+    }, authContext);
+  }
   if (name === "search_journal_graph" && journalApi) {
     return journalApi.search({
       caseId: args.case_id,

@@ -48,6 +48,7 @@ The transition report names the fully gated private candidate, the public visibi
 - `superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`: answered extractor context requests, one hardest self-repair and calibration rounds that run to the end
 - `superpowers/plans/2026-10-03-journal-review-convergence.md`: re-reviews scoped to what a repair changed, withholding what is still flagged when repairs run out, and a calibration gate on pooled recall with no critical miss
 - `superpowers/plans/2026-10-08-journal-calibration-critical-miss-limit.md`: critical misses defined by one shared list, confirmed by a second judge and counted against an optional limit; review statuses read from what reviews name; `resume-calibration` to reopen a stopped round
+- `superpowers/plans/2026-10-09-journal-quote-first.md`: the journal as exact paragraph quotes with their date lines and wording cues, found by `find_journal_quotes` in about a tenth of a second; `build-quotes` and `publish-quotes` publish it beside the semantic import
 - `superpowers/specs/`: accepted design specifications
 
 ## Obsidian graph authoring

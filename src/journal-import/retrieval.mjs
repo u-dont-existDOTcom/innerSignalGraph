@@ -2,6 +2,19 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
 import { compareSourceOrder, knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
+import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_UNDATED_KEY, quoteCues } from "./quote-index.mjs";
+
+export const QUOTE_SEARCH_LIMITS = Object.freeze({
+  limitDefault: 12,
+  limitMax: 40,
+  byteBudgetDefault: 12_000,
+  byteBudgetMin: 1_000,
+  byteBudgetMax: 48_000,
+  offsetMax: 2_000,
+  termsMax: 24,
+  // How many ranked matches a time filter may look through before it says it stopped early.
+  filterScanMax: 5_000
+});
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const active = (record) => !["deleted", "revoked"].includes(record.lifecycle);
@@ -446,7 +459,7 @@ export async function openPrivateJournalGraph({
 
   // A representation is one JSON object or, when too large for one, UTF-8 chunks checked against
   // the digest the manifest records for it.
-  const representationText = (representationId, descriptor) => memoized(representationTexts, descriptor.object_id, async () => {
+  const representationText = (representationId, descriptor, digest = null) => memoized(representationTexts, descriptor.object_id, async () => {
     if (!Array.isArray(descriptor.chunks)) {
       const representation = await readJson(descriptor.object_id);
       invariant(representation.representation_id === representationId, "SOURCE_REPRESENTATION_MISMATCH");
@@ -456,7 +469,7 @@ export async function openPrivateJournalGraph({
     const bytes = await corpusStore.reassembleOriginal(descriptor);
     objectReads += descriptor.chunks.length;
     try {
-      const expected = (await representationDirectory()).digests[representationId];
+      const expected = digest ?? (await representationDirectory()).digests[representationId];
       invariant(expected && bytes.length === expected.utf8_byte_length && sha256(bytes) === expected.sha256, "SOURCE_REPRESENTATION_MISMATCH");
       return bytes.toString("utf8");
     } finally { bytes.fill(0); }
@@ -494,9 +507,149 @@ export async function openPrivateJournalGraph({
     return Object.freeze({ exact_spans: exactSpans, source_locators: sourceLocators });
   };
 
+  // A generation that indexes its representations opens one page by its key; others read the
+  // directory of every page once.
+  const representationLocation = async (representationId) => {
+    if (Array.isArray(manifest.indexes.representation_objects)) {
+      const [entry = null] = await readIndex("representation_objects", representationId);
+      return entry ? { descriptor: entry.descriptor, digest: { utf8_byte_length: entry.utf8_byte_length, sha256: entry.sha256 } } : null;
+    }
+    const descriptor = (await representationDirectory()).objects[representationId];
+    return descriptor ? { descriptor, digest: null } : null;
+  };
+
+  // A span's exact text, read from its representation and checked against the digest recorded for it,
+  // as resolveEvidence checks a passage.
+  const exactText = async ({ representationId, startByte, endByte, expectedSha256 }) => {
+    const location = await representationLocation(representationId);
+    invariant(location?.descriptor?.object_id, "SOURCE_REPRESENTATION_UNAVAILABLE");
+    const sourceBytes = Buffer.from(await representationText(representationId, location.descriptor, location.digest), "utf8");
+    const slice = sourceBytes.subarray(startByte, endByte);
+    invariant(slice.byteLength === endByte - startByte, "SOURCE_SPAN_OUT_OF_RANGE");
+    invariant(sha256(slice) === expectedSha256, "SOURCE_SPAN_DIGEST_MISMATCH");
+    return slice.toString("utf8");
+  };
+
+  /**
+   * The person's own words for a question: exact quotes ranked by how many of the query's words they
+   * hold, rarer words counting more (each word adds the log of how rare it is), with ties in a fixed
+   * order so the same query pages the same way. Common function words (`QUOTE_STOPWORDS`) are left out
+   * of the ranking unless the query has nothing else. A time window keeps the quotes written under a
+   * date line inside it,
+   * and undated ones only when asked to. A page stops at its quote limit or byte budget, and always
+   * holds at least one quote when any match. Each quote comes with its page, the date line it was
+   * written under, and the wording cues found in it (`quoteCues`). Works on any generation. On a
+   * quote index, the `quote_meta` index gives each quote's span, page and date line, so no record is
+   * decrypted; elsewhere the passage record supplies the span and there are no dates.
+   */
+  const findQuotes = async ({ query, from = null, to = null, includeUndated = true, limit = QUOTE_SEARCH_LIMITS.limitDefault,
+    byteBudget = QUOTE_SEARCH_LIMITS.byteBudgetDefault, offset = 0 } = {}) => {
+    await assertCurrent();
+    invariant(typeof query === "string" && query.length > 0 && query.length <= 4_000, "QUOTE_QUERY_INVALID");
+    invariant((from === null || isJournalTimeBound(from)) && (to === null || isJournalTimeBound(to)) && typeof includeUndated === "boolean", "QUOTE_FILTERS_INVALID");
+    invariant(Number.isSafeInteger(limit) && limit >= 1 && limit <= QUOTE_SEARCH_LIMITS.limitMax, "QUOTE_LIMIT_INVALID");
+    invariant(Number.isSafeInteger(byteBudget) && byteBudget >= QUOTE_SEARCH_LIMITS.byteBudgetMin && byteBudget <= QUOTE_SEARCH_LIMITS.byteBudgetMax, "QUOTE_BUDGET_INVALID");
+    invariant(Number.isSafeInteger(offset) && offset >= 0 && offset <= QUOTE_SEARCH_LIMITS.offsetMax, "QUOTE_OFFSET_INVALID");
+    const allTerms = lexicalTerms(query);
+    invariant(allTerms.length > 0, "SEARCH_QUERY_HAS_NO_TERMS");
+    const content = allTerms.filter((term) => !QUOTE_STOPWORDS.has(term));
+    const terms = (content.length ? content : allTerms).slice(0, QUOTE_SEARCH_LIMITS.termsMax);
+    const ignored = allTerms.filter((term) => !terms.includes(term));
+    const beforeReads = objectReads;
+    const postings = await Promise.all(terms.map((term) => readIndex("lexical", term)));
+    const population = Math.max(1, manifest.node_count ?? 1);
+    const scores = new Map();
+    const matched = new Map();
+    terms.forEach((term, index) => {
+      const ids = [...new Set(postings[index])].filter((id) => id.startsWith("passage:"));
+      if (!ids.length) return;
+      const weight = Math.log(1 + population / ids.length);
+      for (const id of ids) {
+        scores.set(id, (scores.get(id) ?? 0) + weight);
+        if (!matched.has(id)) matched.set(id, []);
+        matched.get(id).push(term);
+      }
+    });
+    const ranked = [...scores.keys()].sort((left, right) => scores.get(right) - scores.get(left)
+      || matched.get(right).length - matched.get(left).length || left.localeCompare(right));
+    const quoteIndex = Array.isArray(manifest.indexes.quote_meta);
+    const windowed = from !== null || to !== null;
+    // A quote index lists its quotes by the month they were written, so a time window first keeps the
+    // matches from overlapping months (and undated ones when asked), without reading each match.
+    let candidates = ranked;
+    if (windowed && Array.isArray(manifest.indexes.quote_months)) {
+      const months = (await readIndex("quote_months", QUOTE_MONTHS_KEY)).filter((month) => inTimeWindow([[month, month]], { from, to, include_unknown: false }));
+      const lists = await Promise.all([...months, ...(includeUndated ? [QUOTE_UNDATED_KEY] : [])].map((key) => readIndex("quote_months", key)));
+      const allowed = new Set(lists.flat());
+      candidates = ranked.filter((id) => allowed.has(id));
+    }
+    const quotes = [];
+    let passed = 0, visited = 0, bytes = 0, more = false, scanCapped = false;
+    for (const id of candidates) {
+      if (windowed && visited >= QUOTE_SEARCH_LIMITS.filterScanMax) { scanCapped = true; more = true; break; }
+      visited += 1;
+      const [meta = null] = quoteIndex ? await readIndex("quote_meta", id) : [];
+      const date = meta?.written ?? null;
+      if (windowed && !inTimeWindow(date ? [[date.from, date.to]] : [], { from, to, include_unknown: includeUndated })) continue;
+      passed += 1;
+      if (passed <= offset) continue;
+      if (quotes.length >= limit) { more = true; break; }
+      let text, page;
+      if (meta) {
+        text = await exactText({ representationId: meta.representation_id, startByte: meta.start_byte, endByte: meta.end_byte, expectedSha256: meta.sha256 });
+        page = meta.page;
+      } else {
+        const record = await loadRecord(id);
+        if (!active(record) || record.kind !== "passage" || record.data.disclosure === "restricted") continue;
+        text = await exactText({ representationId: record.data.representation_id, startByte: record.data.start_byte, endByte: record.data.end_byte,
+          expectedSha256: record.data.quote_sha256 });
+        if (record.data.quote != null) invariant(text === record.data.quote, "SOURCE_SPAN_QUOTE_MISMATCH");
+        page = record.data.locator?.page ?? null;
+      }
+      const line = date?.line ? await exactText({ representationId: date.line.representation_id, startByte: date.line.start_byte,
+        endByte: date.line.end_byte, expectedSha256: date.line.sha256 }) : null;
+      const size = Buffer.byteLength(text, "utf8") + (line ? Buffer.byteLength(line, "utf8") : 0);
+      if (quotes.length > 0 && bytes + size > byteBudget) { more = true; break; }
+      bytes += size;
+      quotes.push(Object.freeze({
+        quote_id: id,
+        text,
+        page,
+        written: date ? Object.freeze({
+          from: date.from,
+          to: date.to,
+          precision: date.precision,
+          date_line: line,
+          ...(date.ambiguous ? { ambiguous: true } : {})
+        }) : null,
+        cues: quoteCues(text),
+        matched_terms: Object.freeze([...matched.get(id)]),
+        score: Math.round(scores.get(id) * 1000) / 1000
+      }));
+    }
+    const result = Object.freeze({
+      quotes: Object.freeze(quotes),
+      next_offset: more ? offset + quotes.length : null,
+      more_available: more,
+      coverage: Object.freeze({
+        terms_ranked: Object.freeze([...terms]),
+        terms_ignored: Object.freeze(ignored),
+        matching_quotes: windowed ? null : ranked.length,
+        quotes_examined: visited,
+        filter_scan_capped: scanCapped,
+        quote_index: quoteIndex,
+        encrypted_objects_read: objectReads - beforeReads,
+        full_archive_loaded: false
+      })
+    });
+    await assertCurrent();
+    return result;
+  };
+
   return Object.freeze({
     manifest: structuredClone(manifest),
     search,
+    findQuotes,
     findEntities,
     timeline,
     evidenceGroup,

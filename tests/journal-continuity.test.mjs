@@ -216,6 +216,7 @@ test("purpose-scoped profile commitment supports a truly cold paginated source r
   const journalTools = listed.result.tools.filter((tool) => tool.name.includes("journal"));
   assert.deepEqual(journalTools.map(({ name }) => name), [
     "get_journal_entries",
+    "find_journal_quotes",
     "search_journal_graph",
     "get_journal_subgraph",
     "resolve_journal_evidence",
