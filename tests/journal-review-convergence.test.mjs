@@ -11,6 +11,8 @@ import {
   calibrationScoreCounts,
   extractionItemChanges,
   pooledCalibration,
+  firstFailurePastCriticalLimit,
+  reviewStatusFromContent,
   referenceScorePasses,
   reviewAfterWithholding,
   reviewFindingTargets,
@@ -1226,6 +1228,38 @@ test("pooledCalibration: a single critical miss fails the gate however high reca
   assert.equal(result.calibration_pass, false);
 });
 
+test("pooledCalibration: a configured critical-miss limit lets the gate pass up to the limit and records it", () => {
+  const counts = [batch(50, 49, { critical_miss_count: 1 }), batch(50, 49, { critical_miss_count: 1 }), batch(50, 50)];
+  const within = pooledCalibration(counts, TARGET, 2);
+  assert.deepEqual([within.critical_miss_count, within.critical_miss_limit, within.calibration_pass], [2, 2, true]);
+  const past = pooledCalibration(counts, TARGET, 1);
+  assert.deepEqual([past.critical_miss_count, past.critical_miss_limit, past.calibration_pass], [2, 1, false]);
+  // The limit never rescues recall below the target.
+  assert.equal(pooledCalibration([batch(10, 8, { critical_miss_count: 1 })], TARGET, 5).calibration_pass, false);
+  // With no limit (or a limit of zero) the gate reads exactly as before, without the field.
+  for (const result of [pooledCalibration(counts, TARGET), pooledCalibration(counts, TARGET, 0)]) {
+    assert.equal(result.calibration_pass, false);
+    assert.equal(Object.hasOwn(result, "critical_miss_limit"), false);
+  }
+});
+
+test("firstFailurePastCriticalLimit: names the failure that takes the round past its limit, counting each batch once", () => {
+  const failure = (unit, critical) => ({ unit_id: unit, reference: { critical_miss_count: critical } });
+  const unscored = (unit) => ({ unit_id: unit });
+  // Two failed units from one batch carry the batch's one critical miss: within a limit of 1.
+  const sameBatch = [failure("u1", 1), failure("u2", 1)];
+  assert.equal(firstFailurePastCriticalLimit(sameBatch, ["b1", "b1"], 1), null);
+  // With no limit, the first critical miss decides, as before the limit existed.
+  assert.equal(firstFailurePastCriticalLimit(sameBatch, ["b1", "b1"], 0), sameBatch[0]);
+  // Separate batches add up, and the one that goes past the limit is named.
+  assert.equal(firstFailurePastCriticalLimit(sameBatch, ["b1", "b2"], 1), sameBatch[1]);
+  // An unscored failure has no reference counts and adds nothing; a later batch still counts.
+  const mixed = [unscored("u0"), failure("u1", 0), failure("u2", 2)];
+  assert.equal(firstFailurePastCriticalLimit(mixed, [null, "b1", "b2"], 1), mixed[2]);
+  assert.equal(firstFailurePastCriticalLimit(mixed, [null, "b1", "b2"], 2), null);
+  assert.equal(firstFailurePastCriticalLimit([], [], 0), null);
+});
+
 test("pooledCalibration: lost qualifiers are reported but do not gate", () => {
   const result = pooledCalibration([batch(20, 20, { qualifier_error_count: 2 })], TARGET);
   assert.equal(result.qualifier_error_count, 2);
@@ -1617,4 +1651,32 @@ test("validateExtractionReferences: a local ID may not equal an assigned unit ID
   assert.throws(() => story(renamed(storyItems(), "episodes", "ep-storm", U2)), /LOCAL_ID_IS_UNIT_ID/);
   assert.throws(() => story(renamed(storyItems(), "assertions", "a4", U1)), /LOCAL_ID_IS_UNIT_ID/);
   assert.doesNotThrow(() => story(renamed(storyItems(), "episodes", "ep-storm", U3)), "only assigned units count");
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// reviewStatusFromContent
+// ---------------------------------------------------------------------------------------------------------
+
+test("reviewStatusFromContent: a status that names nothing reads as what the review found", () => {
+  const preserved = (id) => ({ target_id: id, outcome: "preserved", critical: false, finding_type: "none", explanation: "Kept.", evidence_ids: [] });
+  const base = { schema_version: "1.0", target_generation: "g", review_role: "fidelity_auditor",
+    assessments: [preserved("r1"), preserved("r2")], proposed_repairs: [], unassessed_ids: [] };
+  // "repair_required" with nothing named has nothing to repair.
+  assert.equal(reviewStatusFromContent({ ...base, status: "repair_required" }).status, "sufficient_for_stated_scope");
+  // "incomplete" counts as sufficient only when every frozen reference item was assessed.
+  assert.equal(reviewStatusFromContent({ ...base, status: "incomplete" }, { referenceIds: ["r1", "r2"] }).status,
+    "sufficient_for_stated_scope");
+  assert.equal(reviewStatusFromContent({ ...base, status: "incomplete" }, { referenceIds: ["r1", "r2", "r3"] }).status,
+    "incomplete");
+  assert.equal(reviewStatusFromContent({ ...base, status: "incomplete" }).status, "incomplete");
+  // Anything named keeps the claimed status: a finding, an unassessed ID, a proposed repair.
+  const flagged = { ...base, assessments: [preserved("r1"), { ...preserved("r2"), finding_type: "lost_qualifier" }] };
+  for (const review of [flagged, { ...base, unassessed_ids: ["r2"] },
+    { ...base, proposed_repairs: [{ target_id: "r2", action: "revise", explanation: "Fix.", evidence_ids: [] }] }]) {
+    for (const status of ["repair_required", "incomplete"])
+      assert.equal(reviewStatusFromContent({ ...review, status }, { referenceIds: ["r1", "r2"] }).status, status);
+  }
+  assert.equal(reviewStatusFromContent(null), null);
+  const sufficient = { ...base, status: "sufficient_for_stated_scope" };
+  assert.equal(reviewStatusFromContent(sufficient), sufficient);
 });

@@ -174,6 +174,12 @@ test("configured doctor verifies the private source while reporting missing oper
   await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
   const invalidLimitReport = await configuredJournalDoctorReport(configPath, {});
   assert.ok(invalidLimitReport.blockers.includes("JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID"));
+  delete invalid.calibration_failure_limit;
+  invalid.calibration_critical_miss_limit = -1;
+  await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
+  const invalidCriticalReport = await configuredJournalDoctorReport(configPath, {});
+  assert.ok(invalidCriticalReport.blockers.includes("JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID"));
+  assert.equal(invalidCriticalReport.blockers.includes("JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID"), false);
 });
 
 test("configured doctor prepares the exchange before authorizing its inference route", async (t) => {

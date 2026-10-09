@@ -5,8 +5,8 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { journalCalibrationFailureLimit, journalSemanticConcurrency, normalizeJournalHardestLaneConfig,
-  vaultRootMatchesConfig } from "./run-config.mjs";
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalSemanticConcurrency,
+  normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -20,8 +20,9 @@ import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "./graph.mjs";
-import { calibrationScoreCounts, pooledCalibration, referenceScorePasses, reviewAfterWithholding,
-  scopeReviewAfterRepair, sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
+import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibration, referenceScorePasses,
+  reviewAfterWithholding, reviewFindingTargets, reviewStatusFromContent, scopeReviewAfterRepair,
+  sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
 import { JOURNAL_GRAPH_CONTRACT, validateJournalGraph, resolveExactQuote } from "./contracts.mjs";
 import { createDurableJournalInferencePort } from "./durable-inference.mjs";
 import { openPrivateJournalGraph } from "./retrieval.mjs";
@@ -162,6 +163,7 @@ async function removeLegacyPageRenders(root) {
 export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage, now = () => new Date() }) {
   const semanticConcurrency = journalSemanticConcurrency(config);
   const calibrationFailureLimit = journalCalibrationFailureLimit(config);
+  const calibrationCriticalMissLimit = journalCalibrationCriticalMissLimit(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -361,6 +363,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
       calibration_epoch: calibrationEpoch(), calibration_history_length: state.calibration_history?.length ?? 0,
+      ...(state.calibration_resumes?.length ? { calibration_resume_count: state.calibration_resumes.length } : {}),
       ...(state.calibration_history?.length ? { previous_failure:
         structuredClone(state.calibration_history.at(-1).previous_failure) } : {}),
       ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
@@ -997,13 +1000,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       };
       // A failed calibration unit is kept as source-only with its reason and counts, and calibration goes on to
       // the next unit. The round is judged on pooled totals when it ends: recall across every scored batch must
-      // meet the target, no critical reference item may be missed, and every unit must have been scored against
-      // a frozen reference. A critical miss or an unscored unit ends the round at once, since it can't pass, and
-      // an optional failure limit can end it sooner.
+      // meet the target, critical reference items missed must stay within the limit (none unless the run config
+      // allows some), and every unit must have been scored against a frozen reference. A critical miss past the
+      // limit or an unscored unit ends the round at once, since it can't pass, and an optional failure limit can
+      // end it sooner.
       const failureLimit = calibrationFailureLimit;
       let calibrationFailures = 0, calibrationCriticalMisses = 0, calibrationUnscored = 0;
-      const calibrationRoundOver = () => calibrationCriticalMisses > 0 || calibrationUnscored > 0
-        || (failureLimit !== null && calibrationFailures >= failureLimit);
+      const calibrationRoundOver = () => calibrationCriticalMisses > calibrationCriticalMissLimit
+        || calibrationUnscored > 0 || (failureLimit !== null && calibrationFailures >= failureLimit);
       // `calibrationCounts` is the batch's reference result when it has a frozen reference: a source-only batch
       // keeps none of its reference items. Without one (an oversized unit, or a reference that never quoted its
       // source) the unit is unscored.
@@ -1029,10 +1033,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (calibration && calibrationRoundOver()) return true;
         const cycles = [];
         let hardestDiagnostics = null;
-        let reauditDiagnostics = null, hardestFidelityDiagnostics = null;
+        let reauditDiagnostics = null, hardestFidelityDiagnostics = null, criticalConfirmation = null;
         const fidelityCycles = [];
         const diagnostics = () => unresolvedExtractionDiagnostics(cycles, hardestDiagnostics, fidelityCycles,
-          reauditDiagnostics, hardestFidelityDiagnostics);
+          reauditDiagnostics, hardestFidelityDiagnostics, criticalConfirmation);
         const halves = async () => {
           const middle = Math.ceil(units.length / 2);
           return await processBatch(units.slice(0, middle), calibration)
@@ -1097,8 +1101,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // The current widened context is read at each call.
         const extract = (id, repairRequest, tier = "standard") => work(extractionRequestFor({
           id, units, core, adjacentContext, visualContext, repairRequest, tier }));
-        // A review leaves work open with any finding, unassessed ID or proposed repair, whatever status it gives.
-        const reviewHasFindings = (review) => review?.status !== "sufficient_for_stated_scope"
+        // A review leaves work open with any finding, unassessed ID or proposed repair, whatever status it gives, and
+        // when it says it didn't finish. Its status is read from what it names: a "repair_required" that names
+        // nothing has nothing to repair (reviewStatusFromContent).
+        const reviewHasFindings = (review) => reviewStatusFromContent(review)?.status !== "sufficient_for_stated_scope"
           || review.assessments.some((assessment) => assessment.outcome !== "preserved"
             || assessment.finding_type !== "none")
           || review.unassessed_ids.length > 0
@@ -1350,7 +1356,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           // reference item.
           const attempts = [];
           let auditedExtraction = null, fidelityReview = null, score;
-          const countFidelity = (rawReview, graph, extraction) => {
+          // A fidelity review that assessed every frozen reference item and names nothing open counts as sufficient
+          // whatever status it claims, so a version can't be held back by a status its own verdicts contradict.
+          const referenceIds = reference.output.reference_items.map((item) => item.id);
+          const countFidelity = (claimedReview, graph, extraction) => {
+            const rawReview = reviewStatusFromContent(claimedReview, { referenceIds });
             const scoped = auditedExtraction && fidelityReview
               ? scopeReviewAfterRepair({ review: rawReview, previousReview: fidelityReview,
                 previousExtraction: auditedExtraction, extraction, unitIds, targetOf: nodeTarget })
@@ -1429,10 +1439,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             // Entities count as carriers too, so an item the auditor tied only to a withheld entity is lost with it.
             const candidateTargets = new Set(mergeGraphs([...attempt.graphsByUnit.values()]).nodes
               .filter((node) => node.kind === "assertion" || node.kind === "entity").map((node) => node.id));
-            const keptScore = scoreReferenceReview({ referenceResult: reference.output,
-              reviewResult: reviewAfterWithholding({ review: attempt.fidelityReview, withheldTargets, candidateTargets }),
+            const keptReview = reviewAfterWithholding({ review: attempt.fidelityReview, withheldTargets, candidateTargets });
+            const keptScore = scoreReferenceReview({ referenceResult: reference.output, reviewResult: keptReview,
               candidateIds: assertionIds(mergeGraphs([...rebound.graphs.values()])) });
-            return { kept, rebound, keptScore };
+            return { kept, rebound, keptReview, keptScore };
           };
           // A single unit whose re-audit or repairs run out keeps its best audited attempt; only one with no audit
           // at all fails source-only.
@@ -1595,14 +1605,54 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             return failCalibrationUnit(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED",
               diagnostics(), sourceOnlyCounts());
           }
+          // A critical miss on the kept attempt counts only when a second, independent judge agrees. The kept
+          // extraction gets one more fidelity audit: from the hardest tier (Claude Opus) when that lane is on, else a
+          // fresh standard audit under its own identity. A critical reference item the first judge missed counts as
+          // confirmed unless the second finds it preserved without a finding and leaves nothing open on it (no
+          // unassessed ID, no proposed repair). When no second audit can be had, the first judge's misses stand, so
+          // the confirmation can never hide one. A hardest-tier confirmation is recorded with the other hardest
+          // attempts: resolved when it answered, failed when it couldn't.
+          let keptScore = chosen.keptScore;
+          if (keptScore.critical_miss_count > 0) {
+            const keptGraph = mergeGraphs([...chosen.rebound.graphs.values()]);
+            const request = { id: epochId(`fidelity:calibration-confirm:batch:${keyId}`, true), role: "fidelity_auditor",
+              stage: "REFERENCE_AUDIT", units, packetInput: auditPacket(keptGraph) };
+            const hardestJudge = hardestLane.enabled
+              && port.capabilities?.().hardest_roles?.fidelity_auditor?.available !== false
+              && hardestJournalRequestFits(request, state.generation, grant.purpose);
+            let second = null, failure = null;
+            if (hardestJudge) {
+              const answer = await work({ ...request, id: derivedId(request.id, "hardest"), tier: "hardest" });
+              if (!answer && !workExhausted) return false;
+              if (answer) failure = checkFailure(checkScores(keptGraph), answer);
+              else { failure = state.blocker ?? "COMPLETION_UNKNOWN"; state.blocker = null; await save(); }
+              await recordHardestOutcome(request.id, failure ? "failed" : "resolved");
+              if (!failure) second = answer[0].output;
+            } else {
+              const attempt = await checkedWork(request, checkScores(keptGraph));
+              if (attempt.blocked) return false;
+              if (attempt.failure) failure = attempt.failure;
+              else second = attempt.result[0].output;
+            }
+            const preservedIn = (review, id) => review?.assessments.some((item) => item.target_id === id
+              && item.outcome === "preserved" && item.finding_type === "none");
+            const missed = reference.output.reference_items.filter((item) => item.critical && !preservedIn(chosen.keptReview, item.id));
+            const secondOpen = reviewFindingTargets(second);
+            const unconfirmed = second
+              ? missed.filter((item) => preservedIn(second, item.id) && !secondOpen.has(item.id)).length : 0;
+            keptScore = { ...keptScore, critical_miss_count: keptScore.critical_miss_count - unconfirmed };
+            criticalConfirmation = { tier: hardestJudge ? "hardest" : "standard", critical_miss_count: missed.length,
+              confirmed: keptScore.critical_miss_count, unconfirmed, blocker_code: failure ? diagnosticBlockerCode(failure) : null };
+          }
           results = chosen.attempt.results;
           omissionReview = chosen.attempt.omissionReview;
           ({ split, graphs: graphsByUnit } = chosen.rebound);
           residualsByUnit = chosen.kept.residualsByUnit;
-          const unitPasses = referenceScorePasses(chosen.keptScore);
-          calibrationRecord = { batch: keyId, ...calibrationScoreCounts(chosen.keptScore), outcome: unitPasses ? "pass" : "fail" };
+          const unitPasses = referenceScorePasses(keptScore);
+          calibrationRecord = { batch: keyId, ...calibrationScoreCounts(keptScore), outcome: unitPasses ? "pass" : "fail",
+            ...(criticalConfirmation?.unconfirmed ? { unconfirmed_critical_miss_count: criticalConfirmation.unconfirmed } : {}) };
           if (!unitPasses) calibrationFailures += units.length;
-          calibrationCriticalMisses += chosen.keptScore.critical_miss_count;
+          calibrationCriticalMisses += keptScore.critical_miss_count;
         }
         const contextAnswered = [...cycles, ...fidelityCycles].some((cycle) => cycle.context_answer);
         const unitResiduals = (unitId) => {
@@ -1619,8 +1669,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             source_only_unresolved: false,
             ...(residual ? { review_residuals: residual } : {}),
             ...(calibrationRecord ? { calibration: calibrationRecord } : {}),
-            ...((reauditDiagnostics || hardestFidelityDiagnostics || hardestDiagnostics || contextAnswered || residual)
-              ? { diagnostics: diagnostics() } : {})
+            ...((reauditDiagnostics || hardestFidelityDiagnostics || hardestDiagnostics || criticalConfirmation
+              || contextAnswered || residual) ? { diagnostics: diagnostics() } : {})
           });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
         }
@@ -1640,7 +1690,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // Rebuilt from the unit records, so a resumed round is judged the same way: each failed unit with its
       // reason, and each scored batch's reference result counted once.
       const calibrationRecords = async () => {
-        const failures = [], batches = new Map();
+        // `failureBatches[i]` is the batch of `failures[i]` (null when unscored), kept apart so the failure records
+        // keep their shape. A batch's counts sit on every unit record it wrote, so sums over failures take each
+        // batch once.
+        const failures = [], failureBatches = [], batches = new Map();
         let unscored = 0, legacyPassed = 0, withheld = 0, gaps = 0;
         for (const unitId of completedCalibration()) {
           const record = await readUnitRecord(unitId);
@@ -1658,12 +1711,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (record.source_only_unresolved) {
             failures.push({ unit_id: unitId, status: calibrationStopStatus(record.source_only_reason),
               reason: record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED", ...details });
+            failureBatches.push(record.calibration ? batch : null);
           } else if (outcome === "fail") {
             failures.push({ unit_id: unitId, status: "CALIBRATION_REFERENCE_MISSED", reason: "CALIBRATION_REFERENCE_MISSED", ...details });
+            failureBatches.push(batch);
           }
         }
-        const pooled = pooledCalibration([...batches.values()], JOURNAL_GRAPH_CONTRACT.audit_defaults.reference_set_recall_target);
-        return { failures, gate: { ...pooled, calibration_pass: pooled.calibration_pass && unscored === 0,
+        const pooled = pooledCalibration([...batches.values()], JOURNAL_GRAPH_CONTRACT.audit_defaults.reference_set_recall_target,
+          calibrationCriticalMissLimit);
+        // Critical misses the second judge didn't confirm: reported, never counted against the round.
+        const unconfirmedCritical = [...batches.values()].reduce((sum, item) => sum + (item.unconfirmed_critical_miss_count ?? 0), 0);
+        return { failures, failureBatches, gate: { ...pooled, calibration_pass: pooled.calibration_pass && unscored === 0,
+          ...(unconfirmedCritical ? { unconfirmed_critical_miss_count: unconfirmedCritical } : {}),
           failed_units: failures.length, unscored_units: unscored,
           ...(legacyPassed ? { legacy_passed_units: legacyPassed } : {}), withheld_assertions: withheld, omission_gaps: gaps,
           completed_calibration_units: completedCalibration().length, calibration_units: calibrationOrder.length } };
@@ -1697,13 +1756,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           if (!(await processBatch(frozenUnits(step.ids), true))) return summary();
         }
-        const { failures, gate } = await calibrationRecords();
+        const { failures, failureBatches, gate } = await calibrationRecords();
         state.calibration_gate = gate;
         const complete = calibrationOrder.every((id) => state.completed_units.includes(id));
         if (!complete || !gate.calibration_pass) {
-          // The stop names the unit that decided it: the first with a critical miss, else the first unscored, else
-          // the first failure when a limit ended the round. Recall below the target with neither is the round's.
-          const first = failures.find((item) => (item.reference?.critical_miss_count ?? 0) > 0)
+          // The stop names the unit that decided it: the one whose critical miss took the round past its limit
+          // (with no limit, the first critical miss), else the first unscored, else the first failure when a limit
+          // ended the round. Recall below the target with none of these is the round's.
+          const first = firstFailurePastCriticalLimit(failures, failureBatches, calibrationCriticalMissLimit)
             ?? failures.find((item) => !item.reference)
             ?? (complete ? null : failures[0] ?? null);
           const status = first?.status ?? "CALIBRATION_RECALL_BELOW_TARGET";
@@ -1809,6 +1869,36 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       delete state.calibration_gate;
       state.blocker = null;
       state.completed_units = state.completed_units.filter((id) => !calibrationIds.has(id));
+      await save();
+      return summary();
+    }
+
+    // Reopens a stopped round under the current run config instead of starting it over: the units it already
+    // checked keep their results, and the rest are checked next in the same epoch. Only a round the pooled gate
+    // stopped can be reopened, and only when the current config wouldn't have stopped it (for example a critical
+    // miss now within a raised limit), so a round that still can't pass stays stopped.
+    async function resumeCalibration() {
+      invariant(state.calibration === "failed", "JOURNAL_RESUME_CALIBRATION_NOT_FAILED");
+      invariant(!state.graph_ref && !state.reconciled_ref && !state.persisted, "JOURNAL_RESUME_CALIBRATION_AFTER_GRAPH");
+      const failure = state.calibration_failure;
+      const gate = failure?.gate;
+      const complete = gate?.completed_calibration_units === gate?.calibration_units;
+      invariant(gate && Array.isArray(failure.failures)
+        && gate.unscored_units === 0
+        && gate.critical_miss_count <= calibrationCriticalMissLimit
+        && (calibrationFailureLimit === null || gate.failed_units < calibrationFailureLimit)
+        && (!complete || gate.recall_target_met), "JOURNAL_RESUME_CALIBRATION_NOT_ALLOWED");
+      state.calibration_resumes ??= [];
+      state.calibration_resumes.push({ epoch: calibrationEpoch(), at: now().toISOString(),
+        critical_miss_limit: calibrationCriticalMissLimit,
+        previous_failure: { status: failure.status, reason: failure.reason, failed_units: failure.failed_units,
+          completed_calibration_units: failure.completed_calibration_units, calibration_units: failure.calibration_units,
+          gate: structuredClone(gate) } });
+      state.calibration = "not_run";
+      delete state.calibration_failure;
+      delete state.calibration_round_failures;
+      delete state.calibration_gate;
+      state.blocker = null;
       await save();
       return summary();
     }
@@ -2530,6 +2620,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       async execute(command) {
         if (["inventory", "stage"].includes(command)) return stage();
         if (command === "recalibrate") return recalibrate();
+        if (command === "resume-calibration") return resumeCalibration();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();

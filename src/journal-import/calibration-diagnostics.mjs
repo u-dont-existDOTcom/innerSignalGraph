@@ -53,7 +53,8 @@ const blockerCodes = new Set(["INVALID_STRUCTURED_OUTPUT", "OUTPUT_INCOMPLETE",
   "REFERENCE_RESEND_EXHAUSTED", "COMPLETION_UNKNOWN", "HARDEST_DAILY_LIMIT",
   // Hardest-lane refusals from the Claude lane.
   "JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED"]);
-const permittedValues = new Set([...schemaEnums(extractionSchema), ...schemaEnums(reviewSchema), ...bindingCodes, ...blockerCodes]);
+const permittedValues = new Set([...schemaEnums(extractionSchema), ...schemaEnums(reviewSchema), ...bindingCodes, ...blockerCodes,
+  "standard", "hardest"]);
 const permittedKeys = new Set([
   "cycles", "cycle", "hardest", "fidelity_cycles", "fidelity", "findings_per_cycle", "extraction", "omission", "invalid", "blocker_code",
   "reaudit", "hardest_fidelity", "extraction_changed", "repair", "context_answer",
@@ -66,6 +67,8 @@ const permittedKeys = new Set([
   // How a repaired attempt's review was scoped: findings carried forward, items changed or removed, and the
   // earlier findings checked again.
   "review_scope", "fidelity_scope", "carried", "changed", "removed", "earlier_findings",
+  // The second judge's check of a kept attempt's critical misses: its tier and how many it confirmed.
+  "critical_confirmation", "tier", "confirmed", "unconfirmed",
   ...coverageDispositions, ...outcomes, ...findingTypes
 ]);
 
@@ -142,13 +145,15 @@ export function fidelityCycleDiagnostics(review, score, calibrationPass) {
     calibration_pass: calibrationPass };
 }
 
-export function unresolvedExtractionDiagnostics(cycles, hardest = null, fidelityCycles = [], reaudit = null, hardestFidelity = null) {
+export function unresolvedExtractionDiagnostics(cycles, hardest = null, fidelityCycles = [], reaudit = null, hardestFidelity = null,
+  criticalConfirmation = null) {
   const value = {
     cycles,
     hardest,
     fidelity_cycles: fidelityCycles,
     reaudit,
     hardest_fidelity: hardestFidelity,
+    ...(criticalConfirmation ? { critical_confirmation: criticalConfirmation } : {}),
     findings_per_cycle: cycles.map(({ omission, binding_failure_code }) =>
       binding_failure_code || !omission ? null : omission.findings)
   };

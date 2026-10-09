@@ -61,6 +61,9 @@ const handlersFor = ({ failFirstFidelityRepair = false, citeCarrier = true, fide
   // Like round 4's unit 2: the critical reference item is kept, carried by the saved assertion, and the same
   // assertion is called unsupported in the candidate sample.
   fidelity_auditor: (packet) => { const [node] = packet.imported_generation.assertions;
+    // The second judge audits what the unit keeps; with a0 withheld nothing carries the critical item.
+    if (!node) return { ...review("fidelity_auditor", packet), status: "repair_required", assessments: [
+      { target_id: "reference:critical", outcome: "omitted", critical: true, finding_type: "missing_evidence", explanation: "Missing.", evidence_ids: [] }] };
     return { ...review("fidelity_auditor", packet), status: fidelityStatus, assessments: [
       { target_id: "reference:critical", outcome: "preserved", critical: true, finding_type: "none", explanation: "Kept.", evidence_ids: citeCarrier ? [node.id] : [] },
       { target_id: node.id, outcome: "distorted", critical: false, finding_type: "unsupported_claim", explanation: "Addition.", evidence_ids: [] }] }; }
@@ -83,7 +86,8 @@ test("the hardest fidelity repair still runs when withholding the flagged carrie
   // reference score passes, after it the item is lost, so the hardest tier gets its repair before a miss counts.
   const { run, calls } = await runOnce(t, { hardest: true });
   assert.ok(calls.some((call) => call.tier === "hardest" && call.role === "extractor"), "the hardest fidelity repair ran");
-  assert.equal(run.residuals.hardest_attempted, 1);
+  // The hardest fidelity repair and the second judge's audit at the hardest tier.
+  assert.equal(run.residuals.hardest_attempted, 2);
   assert.equal(run.calibration, "failed");
   assert.equal(run.calibration_failure.status, "CALIBRATION_REFERENCE_MISSED");
   assert.equal(run.calibration_gate.critical_miss_count, 1);

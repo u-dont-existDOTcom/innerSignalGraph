@@ -3,8 +3,9 @@
 // - after a repair, a review counts only for what the repair could have affected (scopeReviewAfterRepair);
 // - when repairs run out, what is still flagged is withheld and the rest of the unit is kept
 //   (withholdFlaggedItems, reviewAfterWithholding);
-// - calibration is judged on pooled totals with a hard floor for critical misses (pooledCalibration).
-// No model output decides its own scope: every rule here reads IDs and canonical content only.
+// - calibration is judged on pooled totals with a limit on critical misses (pooledCalibration).
+// No model output decides its own scope: every rule here reads IDs and canonical content only. Nor does a review's
+// status overrule what the review names (reviewStatusFromContent).
 
 const canonicalJson = (value) => JSON.stringify(value, (_key, item) =>
   item && typeof item === "object" && !Array.isArray(item)
@@ -25,6 +26,21 @@ export function reviewFindingTargets(review) {
     ...review.unassessed_ids,
     ...review.proposed_repairs.map((repair) => repair.target_id)
   ]);
+}
+
+// A review's status, read from what it names rather than from what it claims. A review that names no finding,
+// no unassessed ID and no proposed repair has nothing to repair, so a claimed "repair_required" counts as
+// sufficient. A claimed "incomplete" counts as sufficient only when its coverage can be checked: a fidelity review
+// that assessed every frozen reference item (`referenceIds`). Otherwise it stays incomplete, since it can't vouch
+// for what it may have skipped. A review that names anything keeps its status.
+export function reviewStatusFromContent(review, { referenceIds = null } = {}) {
+  if (!review || review.status === "sufficient_for_stated_scope" || reviewFindingTargets(review).size > 0) return review;
+  if (review.status === "repair_required") return { ...review, status: "sufficient_for_stated_scope" };
+  if (review.status === "incomplete" && Array.isArray(referenceIds)) {
+    const assessed = new Set(review.assessments.map((assessment) => assessment.target_id));
+    if (referenceIds.every((id) => assessed.has(id))) return { ...review, status: "sufficient_for_stated_scope" };
+  }
+  return review;
 }
 
 // How a repair changed an extraction's entities, episodes and assertions. An item with exactly the content of
@@ -459,9 +475,28 @@ export const sourceOnlyCalibrationCounts = (reference) => ({
   qualifier_error_count: 0
 });
 
-// Calibration passes when pooled recall across the scored batches meets the target and no critical reference
-// item is missed after repairs. Failed units and qualifier errors are reported, not gated.
-export function pooledCalibration(counts, target) {
+// The failure whose critical misses take a calibration round past its limit, or null. `failureBatches[i]` is the
+// batch of `failures[i]` (null when unscored). A batch's counts sit on every unit record it wrote, so each batch
+// counts once, at its first failed unit.
+export function firstFailurePastCriticalLimit(failures, failureBatches, limit) {
+  let misses = 0;
+  const counted = new Set();
+  for (const [index, failure] of failures.entries()) {
+    const batch = failureBatches[index] ?? null;
+    if (batch !== null) {
+      if (counted.has(batch)) continue;
+      counted.add(batch);
+    }
+    misses += failure.reference?.critical_miss_count ?? 0;
+    if (misses > limit) return failure;
+  }
+  return null;
+}
+
+// Calibration passes when pooled recall across the scored batches meets the target and the critical reference
+// items missed after repairs are within the limit, which is none unless the run config allows some. Failed units
+// and qualifier errors are reported, not gated.
+export function pooledCalibration(counts, target, criticalMissLimit = 0) {
   const total = (field) => counts.reduce((sum, item) => sum + item[field], 0);
   const referenceTotal = total("reference_total"), preserved = total("preserved");
   const criticalMisses = total("critical_miss_count");
@@ -476,6 +511,7 @@ export function pooledCalibration(counts, target) {
     critical_miss_count: criticalMisses,
     qualifier_error_count: total("qualifier_error_count"),
     recall_target_met: recallTargetMet,
-    calibration_pass: recallTargetMet && criticalMisses === 0
+    calibration_pass: recallTargetMet && criticalMisses <= criticalMissLimit,
+    ...(criticalMissLimit > 0 ? { critical_miss_limit: criticalMissLimit } : {})
   };
 }
