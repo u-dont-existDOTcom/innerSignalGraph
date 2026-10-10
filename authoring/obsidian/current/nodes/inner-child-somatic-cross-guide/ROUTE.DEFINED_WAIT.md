@@ -24,7 +24,7 @@ regression_refs:
   - G093
 base_record_sha256: f7d0e06615193b82a423958adc64bb7b1bf13e3aa53ee8c6c94ee783b3f2bd02
 base_graph_sha256: 21ba5908ecea2cb8008f88676aa266cb288abb06e6ee68205264232bd84bd560
-projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a4e3572784
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Hold a real problem at a defined external blocker

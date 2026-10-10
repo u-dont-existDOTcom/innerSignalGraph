@@ -31,9 +31,9 @@ regression_refs:
   - G050
   - G051
   - G057
-base_record_sha256: 2dd366ae97d332a380a083440f6ec395e1ab33c9ed2b64fc7e3b59c5774fd1b3
-base_graph_sha256: 031d73bbf137403d9f3137d15195c0da0d3c35139a3f98d837231b8536bab2b8
-projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a4e3572784
+base_record_sha256: bd3438f6edbe8fb7fd75893132de50fa04b5817d0c1c0564e19ccb696acb29bc
+base_graph_sha256: 4848af3f8e7938ad315a9a1b3e138768cd2d6a5d9c67530b520de13963130a83
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Make the Protector visible in ordinary life
@@ -68,9 +68,9 @@ projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a
     ]
   },
   "avoid": [
+    "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
     "Do not choose an action so large that failure becomes new evidence of unreliability.",
-    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance.",
-    "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress."
+    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
   ],
   "defaultQuestion": "",
   "effects": {

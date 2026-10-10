@@ -93,9 +93,19 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-missing-love-listening-positive-language-2026-10-04-r4");
-  assert.equal(active.file, "inner-child-guide-2026-10-04-r4.txt");
-  assert.equal(active.sha256, "281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b");
+  assert.equal(active.version, "owner-approved-pain-crisis-and-relational-readiness-2026-10-10-r5");
+  assert.equal(active.file, "inner-child-guide-2026-10-10-r5.txt");
+  assert.equal(active.sha256, "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
+  const successor = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
+  assert.equal(hash(successor), active.sha256);
+  for (const originalLine of current.split("\n")) {
+    if (originalLine.trim()) assert.ok(successor.includes(originalLine), "r5 preserves r4 wording: "+ originalLine.slice(0,60));
+  }
+  assert.ok(manifest.sourceHistory.some(item =>
+    item.id === "inner-child-guide" &&
+    item.file === "inner-child-guide-2026-10-04-r4.txt" &&
+    item.sha256 === "281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b"
+  ));
   assert.ok(manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide"
     && item.version === "owner-approved-continuity-scaffolding-2026-10-04-r3-reader-facing"

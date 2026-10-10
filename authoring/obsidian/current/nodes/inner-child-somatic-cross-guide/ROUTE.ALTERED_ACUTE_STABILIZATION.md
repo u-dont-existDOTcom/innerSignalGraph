@@ -23,7 +23,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 41ef01592f786e3897a4f85fea1e5cec2bcded04183686ce185d1465602205bd
 base_graph_sha256: 21ba5908ecea2cb8008f88676aa266cb288abb06e6ee68205264232bd84bd560
-projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a4e3572784
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Simplify the acute altered state before adding interpretation
