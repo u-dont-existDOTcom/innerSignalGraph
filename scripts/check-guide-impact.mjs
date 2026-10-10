@@ -26,6 +26,8 @@ export const TEACHING_POINT_FIELDS = Object.freeze(["Caused by:", "Teaching poin
 // may change what someone should understand or do.
 const MAP_PATTERNS = Object.freeze([
   /^guides\/owner-amendments\.json$/u,
+  // Reader-facing claims compiled into the guide source map, approved like guide text.
+  /^guides\/semantic-assets\.json$/u,
   /^guides\/[^/]+\.txt$/u,
   /^guide-graphs\/candidates\/[^/]+\.graph\.json$/u,
   /^src\/prompts\/[^/]+\.mjs$/u,

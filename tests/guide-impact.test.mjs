@@ -18,8 +18,8 @@ const ENTRY = [
   "Where: When to Change the Strategy"
 ].join("\n");
 
-test("the map is the amendments, graph candidates, prompt and realization rules, and canonical guide text", () => {
-  for (const file of ["guides/owner-amendments.json", "guides/inner-child-guide-2026-10-04-r4.txt", "guides/somatic-sequencing-guide.txt",
+test("the map is the amendments, semantic assets, graph candidates, prompt and realization rules, and canonical guide text", () => {
+  for (const file of ["guides/owner-amendments.json", "guides/semantic-assets.json", "guides/inner-child-guide-2026-10-04-r4.txt", "guides/somatic-sequencing-guide.txt",
     "guide-graphs/candidates/inner-child.graph.json", "src/prompts/realize.mjs", "src/prompts/candidate.mjs",
     "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.X.md", "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.X.md"]) {
     assert.equal(isMapPath(file), true, file);

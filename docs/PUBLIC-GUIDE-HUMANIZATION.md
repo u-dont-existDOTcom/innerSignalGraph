@@ -132,7 +132,7 @@ This prevents a map/rule fix from being semantically correct at runtime while si
 
 Owner request, 8 and 9 Oct 2026: guide additions must say what map change caused them and why a reader needs them, and the AI guide should follow from the map side.
 
-Every change to the map gets one of two things, in the same reviewed change. The map here means an owner amendment, a graph candidate node or route, a gate, a prompt or realization rule, or canonical guide text.
+Every change to the map gets one of two things, in the same reviewed change. The map here means an owner amendment, a semantic asset's claims, a graph candidate node or route, a gate, a prompt or realization rule, or canonical guide text.
 
 - **A teaching point.** One or two plain sentences from the person's side: what someone should understand or do differently. It goes on the queue as an entry with five fields:
 
