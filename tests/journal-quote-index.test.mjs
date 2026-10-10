@@ -200,6 +200,16 @@ test("a date written without its year takes the year of the dates before it, int
   assert.equal(lost.get("Un jour.").from, "2019-02-03");
   assert.equal(lost.get("Un jour qui n'existe pas."), null);
   assert.equal(unknown.stats.date_line_kinds.no_year_known, 2);
+
+  // A page that wasn't fully read may hide a new year, so a date after it doesn't take its year from before it.
+  const gap = build([page("28 décembre 2019\n\nAvant le dessin.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"),
+    page("2 janvier\n\nAprès le dessin.\n\n5 janvier 2021\n\nDaté de nouveau.\n\n6 janvier\n\nLe lendemain.", 3)]);
+  const afterGap = writtenByText(gap);
+  assert.equal(afterGap.get("Avant le dessin.").from, "2019-12-28");
+  assert.equal(afterGap.get("Après le dessin."), null);
+  assert.equal(afterGap.get("Daté de nouveau.").from, "2021-01-05");
+  assert.equal(afterGap.get("Le lendemain.").from, "2021-01-06", "a full date read after the gap gives later dates their year again");
+  assert.equal(gap.stats.date_line_kinds.no_year_known, 1);
 });
 
 test("every line that starts an entry ends the date before it", () => {

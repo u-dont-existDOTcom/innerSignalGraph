@@ -390,8 +390,9 @@ const EMPTY_EXTRACTION = (units) => ({
  * year can't be known, leaves them undated. A date is carried over the quotes after its line on its own
  * page and the next `carryPages` pages (`carryQuotes` quotes when there are no page numbers), and no
  * further: past that, quotes are undated. A page whose text wasn't fully read (any parse status but
- * "readable") may hide a newer date line, so no date is carried into it or past it: its quotes, and
- * the ones after it, are dated only by date lines that can be read.
+ * "readable") may hide a newer date line or a new year, so no date is carried into it or past it, and
+ * no date without a year after it takes its year from before it: its quotes, and the ones after it,
+ * are dated only by date lines that can be read.
  *
  * `stats` counts all of it without content: the entry lines of each kind, the quotes left undated by
  * the carry limit, and the line openings that look like a date but weren't read as one.
@@ -413,7 +414,9 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   for (const representation of representations) {
     const { representation_id: representationId, text, page_number: page = null, parse_status: parseStatus = "readable" } = representation;
     const complete = parseStatus === "readable";
-    if (!complete) current = null;
+    // A page not fully read may hide a date line or a new year: nothing carries into it, and no date
+    // after it takes its year from before it.
+    if (!complete) { current = null; context = null; }
     const units = splitQuoteUnits({ representationId, text, ...unitOptions, numericOrder });
     countUnreadDateShapes(text, numericOrder, unread);
     const graph = adaptExtractionToGraph({
@@ -490,7 +493,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         written
       }]);
     }
-    if (!complete) current = null;
+    if (!complete) { current = null; context = null; }
   }
   const byKey = ([left], [right]) => left.localeCompare(right);
   const sorted = new Map([...quoteMeta.entries()].sort(byKey));

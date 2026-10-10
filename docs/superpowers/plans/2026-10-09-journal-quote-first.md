@@ -155,8 +155,8 @@ that one date, most of them probably wrongly.
   can read (25/12) is read that way whatever the setting.
 - Dates written without a year: "mardi 3 mars", "3 mars :", "3/10", "3.10.". Such a date takes the year of the latest
   date read, or the next year when it would fall more than 31 days before that date, as January follows late
-  December. It's marked `year_inferred`. Before any year is read, or on a day that year doesn't have, it gives no
-  date.
+  December. It's marked `year_inferred`. Before any year is read, after a page that wasn't fully read (it may hide a
+  new year), or on a day that year doesn't have, it gives no date.
 - A year alone on a line. It dates the quotes under it to that year (precision `year`) and gives later dates their
   year.
 - A weekday alone on a line, written in full: "Dimanche", "Sunday evening:". It starts an entry whose date isn't
