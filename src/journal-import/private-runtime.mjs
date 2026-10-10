@@ -2630,8 +2630,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       try {
         if (state.quote_index?.generation !== generation) {
           // The generation the case reads now, if any: the last one published, or the one an unpublished
-          // build was already going to replace.
-          const supersedes = state.quote_index ? (state.quote_index.published ? state.quote_index.generation : state.quote_index.supersedes ?? null) : null;
+          // build was already going to replace. Rebuilding that same generation (a setting changed and
+          // changed back before publishing) replaces nothing.
+          const reading = state.quote_index ? (state.quote_index.published ? state.quote_index.generation : state.quote_index.supersedes ?? null) : null;
+          const supersedes = reading === generation ? null : reading;
           const plan = await readLarge(state.parsed_ref);
           const representations = plan.parsed.representations.map((representation) => {
             const page = plan.parsed.pages.find((p) => p.representation_id === representation.representation_id);

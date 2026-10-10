@@ -528,6 +528,14 @@ async function runtimeEnvironment(t) {
   return { open, service, config, stateFile: path.join(config.execution_root, "state.json") };
 }
 
+// The reference of the case's quote corpus (its active and previous generations), as a reader sees it.
+async function quoteCorpusReference(service) {
+  const reader = { bearerToken: READER };
+  const record = await service.loadPrivateRuntimeCase(CASE_ID, reader);
+  const { corpus_id: corpusId } = record.journal_corpora.find((item) => item.corpus_id.endsWith(":quotes"));
+  return (await service.getJournalCorpus(CASE_ID, corpusId, reader)).reference;
+}
+
 test("build-quotes stages the quote corpus and publish-quotes publishes it beside the untouched import corpus", async (t) => {
   const f = await runtimeEnvironment(t);
   let runtime = await f.open();
@@ -595,11 +603,7 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
 test("a quote index built another way replaces exactly the one published before it, and a reply paging the old one isn't cut off", async (t) => {
   const f = await runtimeEnvironment(t);
   const reader = { bearerToken: READER };
-  const quoteCorpus = async () => {
-    const record = await f.service.loadPrivateRuntimeCase(CASE_ID, reader);
-    const { corpus_id: corpusId } = record.journal_corpora.find((item) => item.corpus_id.endsWith(":quotes"));
-    return (await f.service.getJournalCorpus(CASE_ID, corpusId, reader)).reference;
-  };
+  const quoteCorpus = () => quoteCorpusReference(f.service);
   let runtime = await f.open();
   try { await runtime.execute("stage"); await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
   const first = await quoteCorpus();
@@ -651,4 +655,26 @@ test("a quote index built another way replaces exactly the one published before 
   // Building again with the same setting changes nothing.
   runtime = await f.open();
   try { assert.equal((await runtime.execute("build-quotes")).quote_index.built_at, published.quote_index.built_at); } finally { await runtime.close(); }
+});
+
+test("a setting changed and changed back before publishing returns to the published generation, which replaces nothing", async (t) => {
+  const f = await runtimeEnvironment(t);
+  let runtime = await f.open();
+  try { await runtime.execute("stage"); await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
+  const first = await quoteCorpusReference(f.service);
+  f.config.quote_numeric_date_order = "day_first";
+  runtime = await f.open();
+  try { assert.equal((await runtime.execute("build-quotes")).quote_index.supersedes, first.active_generation); } finally { await runtime.close(); }
+  f.config.quote_numeric_date_order = "month_first";
+  runtime = await f.open();
+  try {
+    const back = await runtime.execute("build-quotes");
+    assert.equal(back.quote_index.generation, first.active_generation);
+    assert.equal(back.quote_index.supersedes, null);
+    assert.notEqual((await runtime.execute("publish-quotes")).quote_index.published_at, null);
+  } finally { await runtime.close(); }
+  const after = await quoteCorpusReference(f.service);
+  assert.equal(after.active_generation, first.active_generation);
+  assert.equal(after.manifest_object_id, first.manifest_object_id);
+  assert.deepEqual(after.previous_generations, first.previous_generations, "nothing was replaced");
 });
