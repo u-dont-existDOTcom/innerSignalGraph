@@ -20,6 +20,7 @@ source_refs:
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.NONPUNITIVE_REVIEW
+  - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 regression_refs:
   - G003
   - G008
@@ -30,9 +31,9 @@ regression_refs:
   - G050
   - G051
   - G057
-base_record_sha256: 7245cfd315665ae66f22f77f4d81258c55ebb4da3b67a8e65f02a4a385aee683
-base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+base_record_sha256: 2dd366ae97d332a380a083440f6ec395e1ab33c9ed2b64fc7e3b59c5774fd1b3
+base_graph_sha256: 6a593783644d3af25f32954afa02726e9caf0e26004e8f15e27647fc45870fae
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # Make the Protector visible in ordinary life
@@ -68,7 +69,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
   },
   "avoid": [
     "Do not choose an action so large that failure becomes new evidence of unreliability.",
-    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
+    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance.",
+    "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -102,3 +104,5 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
 [[current/governance/amendments/AMEND.IC.WISDOM_CORE]]
 
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
+
+[[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]

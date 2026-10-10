@@ -25,8 +25,8 @@ regression_refs:
   - G018
   - G025
 base_record_sha256: 9b33f735fc2969418572e9868e6605c580c5a3e3f63e609eb8390a3efaf5bf35
-base_graph_sha256: aaa58c6795d8fb057d4167add2cd04c37377850b68247fbf9cf5bb99866963dd
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+base_graph_sha256: afbebefa2779fe9833dd7a974735316169e62d1ea9a769126199f53e9a9a96e5
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # Work phenomenologically while ontology remains open

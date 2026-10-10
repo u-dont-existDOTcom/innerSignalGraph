@@ -891,7 +891,8 @@
         "IC.ADULT_APPRENTICE",
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
         "AMEND.IC.WISDOM_CORE",
-        "AMEND.IC.NONPUNITIVE_REVIEW"
+        "AMEND.IC.NONPUNITIVE_REVIEW",
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -902,7 +903,8 @@
       ],
       "avoid": [
         "Do not choose an action so large that failure becomes new evidence of unreliability.",
-        "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
+        "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance.",
+        "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress."
       ],
       "successSignals": [
         "One small promise is kept.",
@@ -1842,6 +1844,11 @@
             "field": "altered_state",
             "op": "eq",
             "value": "altered"
+          },
+          {
+            "field": "medical_urgency",
+            "op": "eq",
+            "value": "urgent"
           }
         ]
       },
@@ -1849,19 +1856,22 @@
         "AMEND.IC.SUICIDAL_ADULT_SEAT",
         "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
         "IC.NEUTRAL_WITNESS",
-        "IC.BORROW_ONE_FUNCTION"
+        "IC.BORROW_ONE_FUNCTION",
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
       ],
       "authority": "author-framework",
       "recommendations": [
         "First discriminate fusion: ask whether the wish to die feels like the whole self right now or whether any observing/protective position can sit beside it.",
         "Invite one second seat rather than a complete ideal parent: neutral witness, Nurturer, Protector, future self, trusted person, spiritual figure, written plan, or another bounded source of adult capacity.",
         "If no internal adult position is available, borrow one function only: keep the body safe, listen without retaliation, and postpone irreversible action while the suicidal state speaks.",
-        "Once the person can hold the suicidal state and an observing/protective position at the same time, continue to the strict self/death/rebirth inquiry rather than remaining indefinitely in preparatory soothing."
+        "Once the person can hold the suicidal state and an observing/protective position at the same time, continue to the strict self/death/rebirth inquiry rather than remaining indefinitely in preparatory soothing.",
+        "When thoughts of death are reported as episodic reactions to severe physical pain without expressed intent, preserve that context and prioritize a workable medical pain-crisis plan and real-world protection over repetitive psychiatric intake scripts."
       ],
       "avoid": [
         "Do not announce that the suicidal voice is the inner child or impose a parts model the person has not endorsed.",
         "Do not make the borrowed adult into a new external authority over memories, medicine, relationships, or spiritual conclusions.",
-        "Do not use the adult position to lecture, shame, suppress, or outvote the suicidal state."
+        "Do not use the adult position to lecture, shame, suppress, or outvote the suicidal state.",
+        "Do not infer a suicide plan, enduring desire to die, substance dependence, or unavailable prior care from pain-triggered ideation alone. Remain responsive to new intent, inability to stay safe, and other supported acute danger."
       ],
       "successSignals": [
         "The person can distinguish the suicidal state from at least one observing or protective position, even if that adult capacity is weak, borrowed, or temporary."
@@ -1939,6 +1949,11 @@
             "field": "altered_state",
             "op": "eq",
             "value": "altered"
+          },
+          {
+            "field": "medical_urgency",
+            "op": "eq",
+            "value": "urgent"
           }
         ]
       },
@@ -1947,7 +1962,8 @@
         "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
         "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
         "AMEND.IC.WELLBEING_HORIZON",
-        "ASSET.IC.SUICIDE.COSMIC_JACKPOT"
+        "ASSET.IC.SUICIDE.COSMIC_JACKPOT",
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1964,7 +1980,8 @@
         "Do not shame or condemn the person, claim punitive divine certainty, assign postmortem odds, or say that a spiritual motive makes suicide safer.",
         "Do not present dreams, NDEs, rebirth reports, or religious teachings as empirical proof of a specific individual’s postmortem outcome.",
         "Do not claim psychology proves postmortem mental continuity.",
-        "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent."
+        "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent.",
+        "Do not replace urgent pain evaluation with philosophical death/rebirth questioning merely because transient thoughts of death appear during extreme pain; address the concrete pain problem first, and return to reflective inquiry only when relevant, wanted, and safe."
       ],
       "successSignals": [
         "The person can name what death is supposed to accomplish, recognize uncertainty in the self/death assumption, grasp the high value Buddhism assigns to the present human opportunity, and delay irreversible action while investigating spiritual claims and reversible life changes."

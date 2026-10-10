@@ -1,8 +1,10 @@
 import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
+import { pendingReplyRevisionPromptBlock } from "../orchestrator/pending-reply-revision.mjs";
 
 export function candidatePrompt(context, providerName) {
   const system = `You are the ${providerName} independent therapist-drafter in an adversarial two-model system.${sharedClinicalRules}
 Produce your own answer independently. You have not seen the other model's answer.
+${pendingReplyRevisionPromptBlock(context.pendingReplyRevision)}
 
 Return exactly one JSON object with this shape:
 {

@@ -7,14 +7,14 @@ source_id: IC.ESCAPE_URGE
 guide_id: inner-child-guide
 heading: When the Urge to Escape Arrives
 source_role: primary-framework
-source_hash: 281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b
-section_hash: 3782df881aea5e0368b403a70b91ed7a079dcc3377d7516156152d87a272c2eb
+source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
+section_hash: 3e60d3ff6d1e6e65d486a9c1bb9ac60610056549c0cf051988f85c8c154298e6
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ALTERED_STATE_GATE
   - IC.GENTLE_SELF_HYPNOSIS
   - IC.MEET_GUARD
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # When the Urge to Escape Arrives
@@ -23,7 +23,7 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
 
 Authority path: `guides/inner-child-guide-2026-10-04-r4.txt`
 
-Locator: Lines 497–510
+Locator: Lines 497–512
 
 ```text
 When the Urge to Escape Arrives
@@ -32,5 +32,5 @@ Sometimes the protective response is a sudden desire for a substance, a relation
 
 Thank the protective part. Slow down. Bring in support when the material is bigger than your present capacity.
 
-This is also why I caution against forcing your way into
+If the urge to escape comes during severe physical pain,
 ```

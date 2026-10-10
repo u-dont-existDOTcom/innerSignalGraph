@@ -17,12 +17,14 @@ graph_tags:
   - red-flag
 source_refs:
   - AMEND.CROSS.FOCUS_PRIORITY_BASELINE
+  - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 regression_refs:
   - G069
   - G079
-base_record_sha256: 2d8590ad736c20083e0fc4ffc0054e2fff3e3b8ee1e7a440b6434d9062e18e1d
-base_graph_sha256: aaa58c6795d8fb057d4167add2cd04c37377850b68247fbf9cf5bb99866963dd
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+  - G094
+base_record_sha256: 162be0f0399a14a0d1411f1e763cf8f49f4dd5a27f2baaacf2ef6222f55fd370
+base_graph_sha256: afbebefa2779fe9833dd7a974735316169e62d1ea9a769126199f53e9a9a96e5
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # Handle an urgent medical red flag before therapy interpretation
@@ -45,7 +47,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
   },
   "avoid": [
     "Do not park a clearly urgent medical or neurological red flag because the person mentioned it as an aside.",
-    "Do not diagnose the cause from chat, and do not turn an urgent medical turn into inner-child continuity messaging."
+    "Do not diagnose the cause from chat, and do not turn an urgent medical turn into inner-child continuity messaging.",
+    "Do not substitute a generic suicide-hotline script or repeat 'see a doctor' as new advice when thoughts of death are reported as pain-triggered and the actionable problem is unbearable bodily pain. Do not weaken immediate protective action if current self-harm intent or inability to remain safe is supported."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -64,7 +67,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
   },
   "recommendations": [
     "Give direct, proportionate guidance for urgent medical assessment or emergency help before continuing therapeutic interpretation.",
-    "Do not delay an urgent red flag with baseline-history questions. Once immediate safety is handled, return to the person's therapeutic focus when appropriate."
+    "Do not delay an urgent red flag with baseline-history questions. Once immediate safety is handled, return to the person's therapeutic focus when appropriate.",
+    "For severe recurrent pain after prior unrevealing assessments, preserve that history. During an unbearable attack, an appropriate local medical emergency/urgent-care triage service can assess the live episode and consider pain relief despite diagnostic uncertainty; do not promise an ambulance, admission, a particular medicine, or zero cost."
   ],
   "successSignals": [
     "The response prioritizes immediate medical safety without unnecessary diagnostic speculation and leaves therapy work for after the urgent issue is addressed."
@@ -76,3 +80,5 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
 ## Source navigation
 
 [[current/governance/amendments/AMEND.CROSS.FOCUS_PRIORITY_BASELINE]]
+
+[[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]

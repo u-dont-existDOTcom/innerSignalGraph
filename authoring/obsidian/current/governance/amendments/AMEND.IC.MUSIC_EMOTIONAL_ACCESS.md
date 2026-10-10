@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.MUSIC_EMOTIONAL_ACCESS
 status: owner-approved
 domain: inner-child
-base_record_sha256: 8a880fbc49e7fd1fd90b7f3fd4302c0750bc03a571fbfd32cbaf22704c51c2e8
-source_file_sha256: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+base_record_sha256: ab20ba1ab56681f3db085277a795570232a91fba6ff52f3c87696f17f3fe2718
+source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # AMEND.IC.MUSIC_EMOTIONAL_ACCESS
@@ -24,6 +24,6 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
     "status": "owner-approved",
     "text": "Personally meaningful, user-chosen music may be used as an optional emotional-access cue when words, imagery, or deliberate effort are not making a relevant feeling or caring function available. Ask about music the person already knows has helped; do not infer taste or prescribe a supposedly therapeutic song. Treat tears, chills, a rush of energy, vivid memory, or emotional intensity as access signals only—not proof of processing, memory accuracy, causal insight, integration, or durable improvement. Once something becomes available, continue through the existing relevant route such as borrowed love/Nurturer access, child contact, memory inquiry, or integration rather than chasing intensity. Preserve intervention identity and session context: same exercise versus different exercise, music present/absent and user-named track if supplied, state beforehand, immediate opening, and later carryover. If music increases overwhelm, derealization/dissociation, panic, disorientation, or loss of stopping capacity, reduce or stop it and return to present orientation/stabilization; existing safety gates retain priority."
   },
-  "version": "2026-10-06-practical-focus-sequencing-r1"
+  "version": "2026-10-09-pain-romance-revision-r1"
 }
 ```

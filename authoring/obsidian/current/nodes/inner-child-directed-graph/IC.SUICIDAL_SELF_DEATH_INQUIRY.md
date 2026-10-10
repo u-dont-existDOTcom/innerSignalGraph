@@ -22,11 +22,12 @@ source_refs:
   - AMEND.IC.EXISTENTIAL_LOVE_ROUTING
   - AMEND.IC.WELLBEING_HORIZON
   - ASSET.IC.SUICIDE.COSMIC_JACKPOT
+  - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 regression_refs:
-  - G069
-base_record_sha256: cd1e500d04f6a9dab711e0ee036536b391a8a7598d118819fa2efb8e99d2d2f9
-base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+  - G094
+base_record_sha256: 46f6a5fe3521182758551acb74f3b52af533c0af7be96178dd959aaaf5209fd7
+base_graph_sha256: 6a593783644d3af25f32954afa02726e9caf0e26004e8f15e27647fc45870fae
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # Examine the self/death assumption before an irreversible act
@@ -75,6 +76,11 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
         "field": "altered_state",
         "op": "eq",
         "value": "altered"
+      },
+      {
+        "field": "medical_urgency",
+        "op": "eq",
+        "value": "urgent"
       }
     ]
   },
@@ -82,7 +88,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
     "Do not shame or condemn the person, claim punitive divine certainty, assign postmortem odds, or say that a spiritual motive makes suicide safer.",
     "Do not present dreams, NDEs, rebirth reports, or religious teachings as empirical proof of a specific individual’s postmortem outcome.",
     "Do not claim psychology proves postmortem mental continuity.",
-    "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent."
+    "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent.",
+    "Do not replace urgent pain evaluation with philosophical death/rebirth questioning merely because transient thoughts of death appear during extreme pain; address the concrete pain problem first, and return to reflective inquiry only when relevant, wanted, and safe."
   ],
   "defaultQuestion": "What exactly is the self you want to kill, and what makes you think killing this body ends that self or the suffering you are trying to escape?",
   "effects": {
@@ -135,3 +142,5 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
 [[current/governance/amendments/AMEND.IC.WELLBEING_HORIZON]]
 
 [[current/sources/semantic-assets/ASSET.IC.SUICIDE.COSMIC_JACKPOT]]
+
+[[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]

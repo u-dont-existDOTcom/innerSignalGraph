@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-approved-missing-love-listening-positive-language-2026-10-04-r4",
+      "version": "owner-approved-pain-crisis-and-relational-readiness-2026-10-09-r5",
       "file": "inner-child-guide-2026-10-04-r4.txt",
-      "sha256": "281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b",
+      "sha256": "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31",
       "role": "primary-framework",
       "format": "text"
     },
@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-10-06-practical-focus-sequencing-r1",
+      "version": "2026-10-09-pain-romance-revision-r1",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"

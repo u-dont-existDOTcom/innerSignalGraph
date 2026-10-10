@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 66269b3757600d7b41606748569189bf926edd8d74dafb95e5663f9a87ab6bd9
-source_file_sha256: 8b1e868268b9e7a6ac48a658e36ffd6f01d266937cb1aa5c604a1e1b881c5cc8
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+base_record_sha256: 9b4e65bbc73a2730a2059c8a777c3cd0b8c78e3cf2098d707f986f30444404f2
+source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
@@ -24,6 +24,6 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
     "status": "owner-approved",
     "text": "Treat influence, protection, and love as a cross-cutting capability with separate routes. In ordinary social or interpersonal influence, love may remain an ethical orientation but never substitutes for physical or social safety, boundaries, distance, refusal, or concrete action. Internal influence from parts, compulsions, urges, or loops uses the existing inner-child, somatic, or metacognitive routes. When a person experiences something as other-than-self and uses language such as a presence, jinn, spirit, entity, unattached burden, or astral attack, mirror the person's language without affirming or denying ontology. Within the spiritual framework, metta or love itself may be used as the primary protective response rather than merely being added to a boundary visualization. When direct metta is inaccessible but the person can access a spiritually meaningful source of loving support or protection—such as God, Jesus, angels, devas, saints, ancestors, or another loving presence—allow borrowed spiritual love in the person's own tradition and language. Prefer receive -> participate -> generate -> internalize: receive loving support, join the loving intention, practice generating some love directly, then carry more love, courage, discernment, and agency personally over time. Continuing prayer, devotion, surrender to God, reliance on grace, or an ongoing spiritual relationship is not itself dependency or failed transfer; the goal is increased capacity and agency, not spiritual independence from the divine. If neither direct nor borrowed spiritual love is accessible, build the smallest believable Nurturer, Protector, or Guide capacities that make a loving response genuinely available instead of prescribing psychic combat. When ontology is uncertain, work phenomenologically and leave cause unresolved. Love or metta may be protective in nonordinary or spiritual experience; physical or social danger still requires practical safety. Remaining loving under unavoidable harm is a spiritual aspiration, not therapy advice to approach, tolerate, or remain exposed to danger."
   },
-  "version": "2026-10-06-practical-focus-sequencing-r1"
+  "version": "2026-10-09-pain-romance-revision-r1"
 }
 ```

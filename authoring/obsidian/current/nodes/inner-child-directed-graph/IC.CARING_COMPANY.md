@@ -20,8 +20,8 @@ source_refs:
   - AMEND.IC.WISDOM_SOURCES
 regression_refs: []
 base_record_sha256: 62c7cad11b9a91d60787d4b886c94243ad09d55e4478a72d5f8b9f223900d991
-base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+base_graph_sha256: 6a593783644d3af25f32954afa02726e9caf0e26004e8f15e27647fc45870fae
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # Meet the moment with remembered or imagined caring company

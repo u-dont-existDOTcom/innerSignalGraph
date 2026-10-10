@@ -22,8 +22,8 @@ source_refs:
   - ASSET.IC.SUICIDE.COSMIC_JACKPOT
 regression_refs: []
 base_record_sha256: 71691ff9bb1f8c2c0b35f1cc4a17f42fc03a1dcaa146debbb0590dbebe3e8ad2
-base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+base_graph_sha256: 6a593783644d3af25f32954afa02726e9caf0e26004e8f15e27647fc45870fae
+projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
 ---
 
 # Treat human birth as a precious opportunity before discarding it

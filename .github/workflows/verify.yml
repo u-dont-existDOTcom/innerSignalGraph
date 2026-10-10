@@ -35,6 +35,12 @@ jobs:
       - name: Audit repository policy
         run: npm run audit:repository
 
+      - name: Require map and guide teaching-point provenance
+        if: github.event_name == 'pull_request'
+        env:
+          GUIDE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/check-guide-change-provenance.mjs
+
       - name: Run deterministic package gate
         run: npm run verify
 

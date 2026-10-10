@@ -2,6 +2,7 @@ import { loadGuide, loadSomaticGuide, selectGuideExcerpts } from "../guide/load-
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { perspectivePracticesEnabled } from "../guide-graph/perspective-practices.mjs";
 import { ValidationError } from "../core/errors.mjs";
+import { normalizePendingReplyRevision } from "./pending-reply-revision.mjs";
 import { buildDurableCaseContext, formatVerbatimWindow } from "../case-state/context-window.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
 
@@ -34,6 +35,7 @@ export async function buildContext(input, config) {
 
   return {
     userMessage: input.userMessage.trim(),
+    pendingReplyRevision: normalizePendingReplyRevision(input.pendingReplyRevision ?? null),
     recentTranscript,
     userFacts,
     constitution: constitutionReference(),
