@@ -2620,8 +2620,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // journal corpus is not continuation-safe for a consumer that can't read one.
     //
     // The generation is named for the quote index version and how it read numeric dates, so a new
-    // version or a changed `quote_numeric_date_order` builds a new generation. One built after a
-    // published one records it as `supersedes`, and publishing replaces exactly that one.
+    // version or a changed `quote_numeric_date_order` builds a new generation. The run state keeps the
+    // generation this runtime last published (`quote_published`), apart from the latest build: a build
+    // of any other generation records that one as `supersedes`, and publishing replaces exactly that
+    // one. Rebuilding the published generation itself (a setting changed and changed back) replaces
+    // nothing, however many builds came in between.
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
       const corpusId = `${state.corpus_id}:quotes`;
@@ -2629,11 +2632,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
       try {
         if (state.quote_index?.generation !== generation) {
-          // The generation the case reads now, if any: the last one published, or the one an unpublished
-          // build was already going to replace. Rebuilding that same generation (a setting changed and
-          // changed back before publishing) replaces nothing.
-          const reading = state.quote_index ? (state.quote_index.published ? state.quote_index.generation : state.quote_index.supersedes ?? null) : null;
-          const supersedes = reading === generation ? null : reading;
+          // A run state from before `quote_published` names its published generation only in the build
+          // record this build replaces, so it is kept first.
+          if (!state.quote_published && state.quote_index?.published) {
+            state.quote_published = { generation: state.quote_index.generation, manifest_object_id: state.quote_index.manifest_object_id,
+              at: state.quote_index.published.at };
+          }
+          const published = state.quote_published?.generation ?? null;
+          const supersedes = published === generation ? null : published;
           const plan = await readLarge(state.parsed_ref);
           const representations = plan.parsed.representations.map((representation) => {
             const page = plan.parsed.pages.find((p) => p.representation_id === representation.representation_id);
@@ -2673,8 +2679,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const receipt = typeof service.rootDir === "string"
           ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
           : await publish();
-        state.quote_index.published = { at: now().toISOString(), legacy_state_unchanged: receipt.legacy_state_unchanged,
+        const at = now().toISOString();
+        state.quote_index.published = { at, legacy_state_unchanged: receipt.legacy_state_unchanged,
           objects_verified: receipt.transfer.objects_verified };
+        state.quote_published = { generation: state.quote_index.generation, manifest_object_id: manifestObjectId, at };
         await save();
         return summary();
       } finally { quoteStore.close(); }

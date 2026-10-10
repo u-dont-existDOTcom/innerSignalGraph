@@ -186,8 +186,10 @@ before. Its description says such a year is probable, not certain; that a date i
 
 **Publishing version 2 over version 1.** A generation is now named for the version and the numeric order:
 `<generation>:quotes:quote-index-v2-day-first`. A new version or a changed setting therefore builds a new generation.
-A build made after a published one records that one as `supersedes`, and `publish-quotes` passes it on. Publication
-then replaces the active generation only when it is exactly that one, and otherwise refuses with
+The run state keeps the generation this runtime last published (`quote_published`), apart from the latest build. A
+build of any other generation records that one as `supersedes`, and `publish-quotes` passes it on; rebuilding the
+published generation itself, after a setting was changed and changed back, replaces nothing. Publication then replaces
+the active generation only when it is exactly the one named, and otherwise refuses with
 `JOURNAL_PUBLICATION_GENERATION_CONFLICT`, so a generation someone else published in the meantime is never
 overwritten. The replaced generation stays among the corpus's previous generations. A reply already paging it with a
 cursor finishes on it, and a new search reads the new one.

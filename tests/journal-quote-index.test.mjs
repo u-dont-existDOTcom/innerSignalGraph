@@ -678,3 +678,31 @@ test("a setting changed and changed back before publishing returns to the publis
   assert.equal(after.manifest_object_id, first.manifest_object_id);
   assert.deepEqual(after.previous_generations, first.previous_generations, "nothing was replaced");
 });
+
+test("switching the setting back and forth before publishing still replaces the generation the case reads", async (t) => {
+  const f = await runtimeEnvironment(t);
+  let runtime = await f.open();
+  try { await runtime.execute("stage"); await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
+  const first = await quoteCorpusReference(f.service);
+  // A run state written before the published generation was kept on its own names it only in its build record.
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  assert.equal(state.quote_published.generation, first.active_generation);
+  delete state.quote_published;
+  await fs.writeFile(f.stateFile, JSON.stringify(state));
+  const build = async (order) => {
+    f.config.quote_numeric_date_order = order;
+    runtime = await f.open();
+    try { return (await runtime.execute("build-quotes")).quote_index; } finally { await runtime.close(); }
+  };
+  const dayFirst = await build("day_first");
+  assert.equal(dayFirst.supersedes, first.active_generation);
+  assert.equal((await build("month_first")).supersedes, null);
+  const again = await build("day_first");
+  assert.equal(again.generation, dayFirst.generation);
+  assert.equal(again.supersedes, first.active_generation, "the published generation isn't lost between builds");
+  runtime = await f.open();
+  try { await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
+  const after = await quoteCorpusReference(f.service);
+  assert.equal(after.active_generation, dayFirst.generation);
+  assert.deepEqual(after.previous_generations.at(-1), { generation: first.active_generation, manifest_object_id: first.manifest_object_id });
+});
