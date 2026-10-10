@@ -72,7 +72,10 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
       + "cues found in it: dream, wish, plan, hypothetical, negation, hedge, reported speech. Answer from these quotes. Quote "
       + "the exact words you rely on. Keep the person's own qualifiers. Treat anything under a dream, wish, plan or "
       + "hypothetical cue as that, never as something that happened, and say who said reported speech. Give the date a "
-      + "quote was written under when you say what it shows, and don't present an old quote as still true. If no quote "
+      + "quote was written under when you say what it shows, and don't present an old quote as still true. A written date "
+      + "is as precise as its precision (day, month or year); one with year_inferred took its year from the entries before "
+      + "it, so that year is probable, not certain; one marked ambiguous could be read the other way round, so check its "
+      + "date_line. A null written means the date is unknown: don't guess it. If no quote "
       + "answers the question, say so; don't infer what the journal says. Use the case's journal corpus whose ID ends in "
       + "\":quotes\" when there is one.",
     inputSchema: {

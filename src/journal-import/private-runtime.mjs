@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalSemanticConcurrency,
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalQuoteNumericDateOrder, journalSemanticConcurrency,
   normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
@@ -168,6 +168,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   const semanticConcurrency = journalSemanticConcurrency(config);
   const calibrationFailureLimit = journalCalibrationFailureLimit(config);
   const calibrationCriticalMissLimit = journalCalibrationCriticalMissLimit(config);
+  const quoteNumericDateOrder = journalQuoteNumericDateOrder(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -382,7 +383,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       completion: structuredClone(state.completion), blocker: state.blocker,
       residuals: structuredClone(state.residuals ?? {}),
       ...(state.quote_index ? { quote_index: { ...structuredClone(state.quote_index.stats), corpus_id: state.quote_index.corpus_id,
-        generation: state.quote_index.generation, built_at: state.quote_index.built_at, published_at: state.quote_index.published?.at ?? null } } : {}),
+        generation: state.quote_index.generation, built_at: state.quote_index.built_at, published_at: state.quote_index.published?.at ?? null,
+        supersedes: state.quote_index.supersedes ?? null } } : {}),
       hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0,
       lookahead: semanticConcurrency === 1
         ? { concurrency: 1, sent: 0, used: 0, unused: 0 }
@@ -2616,13 +2618,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // are untouched. `build-quotes` stages it in the execution root; `publish-quotes` also publishes
     // it to the case. Publish only once the connector serves the journal read tools: a case with a
     // journal corpus is not continuation-safe for a consumer that can't read one.
+    //
+    // The generation is named for the quote index version and how it read numeric dates, so a new
+    // version or a changed `quote_numeric_date_order` builds a new generation. One built after a
+    // published one records it as `supersedes`, and publishing replaces exactly that one.
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
       const corpusId = `${state.corpus_id}:quotes`;
-      const generation = `${state.generation}:quotes:${QUOTE_INDEX_VERSION}`;
+      const generation = `${state.generation}:quotes:${QUOTE_INDEX_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
       try {
         if (state.quote_index?.generation !== generation) {
+          // The generation the case reads now, if any: the last one published, or the one an unpublished
+          // build was already going to replace.
+          const supersedes = state.quote_index ? (state.quote_index.published ? state.quote_index.generation : state.quote_index.supersedes ?? null) : null;
           const plan = await readLarge(state.parsed_ref);
           const representations = plan.parsed.representations.map((representation) => {
             const page = plan.parsed.pages.find((p) => p.representation_id === representation.representation_id);
@@ -2630,7 +2639,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               page_number: page?.page_number ?? null, parse_status: parseStatus(page, plan.parsed.source.mime_type) };
           });
           const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: state.original.object_id,
-            mediaType: plan.parsed.source.mime_type, representations });
+            mediaType: plan.parsed.source.mime_type, representations, dateOptions: { numericOrder: quoteNumericDateOrder } });
           // The quote corpus carries the archived original its locators name, so it is complete on its own.
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
@@ -2641,7 +2650,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
           // The manifest stays in the store, not in the run state, which is rewritten on every save.
           state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
-            manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null };
+            manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null,
+            supersedes };
           await save();
         }
         return quoteStore;
@@ -2656,7 +2666,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const persisted = { manifest: await quoteStore.readJsonObject({ objectId: manifestObjectId }), manifest_reference: manifestReference,
           manifest_object_id: manifestObjectId };
         await authorize();
-        const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize });
+        const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize,
+          supersedes: state.quote_index.supersedes ?? null });
         const receipt = typeof service.rootDir === "string"
           ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
           : await publish();

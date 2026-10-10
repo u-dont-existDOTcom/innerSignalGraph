@@ -7,7 +7,9 @@ import path from "node:path";
 import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
-import { QUOTE_MONTHS_KEY, QUOTE_UNDATED_KEY, buildQuoteGeneration, dateLineValue, quoteCues, splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+import { QUOTE_MONTHS_KEY, QUOTE_UNDATED_KEY, buildQuoteGeneration, dateLineValue, entryDateLine, quoteCues, quoteDateOptions,
+  splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+import { journalQuoteNumericDateOrder } from "../src/journal-import/run-config.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
@@ -45,6 +47,43 @@ test("a date line is read only where a line opens with it", () => {
   assert.equal(dateLineValue("1.2.3 is a version"), null);
 });
 
+test("French, year-first and marked date lines are read, in the journal's numeric order", () => {
+  const read = (line, order) => entryDateLine(line, order ? { numericOrder: order } : undefined);
+  const day = (value, extra = {}) => ({ kind: "date", from: value, to: value, precision: "day", ...extra });
+  assert.deepEqual(read("mardi 3 mars 2020"), day("2020-03-03"));
+  assert.deepEqual(read("Le 1er août 2019"), day("2019-08-01"));
+  assert.deepEqual(read("Le mardi 3 mars 2020 — matin"), day("2020-03-03"));
+  assert.deepEqual(read("## 12 décembre 2018"), day("2018-12-12"));
+  assert.deepEqual(read("• 5 févr. 2020"), day("2020-02-05"));
+  assert.deepEqual(read("[3 mars 2020]"), day("2020-03-03"));
+  assert.deepEqual(read("- Date: 2021/10/03"), day("2021-10-03"));
+  assert.deepEqual(read("2021-10-03T21:40 soirée"), day("2021-10-03"));
+  assert.deepEqual(read("Le 3 mars 2020, il pleuvait toute la journée."), day("2020-03-03"));
+  assert.deepEqual(read("Février 2019"), { kind: "date", from: "2019-02", to: "2019-02", precision: "month" });
+  assert.deepEqual(read("fe\u0301vrier 2019"), { kind: "date", from: "2019-02", to: "2019-02", precision: "month" }, "an accent written as a separate mark");
+  // An all-numeric date both orders could read follows the journal's order and says it is ambiguous.
+  assert.deepEqual(read("03/04/2019"), day("2019-03-04", { ambiguous: true }));
+  assert.deepEqual(read("03/04/2019", "day_first"), day("2019-04-03", { ambiguous: true, day_first: true }));
+  assert.deepEqual(read("25/12/2019", "month_first"), day("2019-12-25", { day_first: true }), "only one order can be a date");
+  // Dates without a year, and the other lines that start an entry.
+  assert.deepEqual(read("mardi 3 mars"), { kind: "yearless", month: 3, day: 3 });
+  assert.deepEqual(read("3 mars :"), { kind: "yearless", month: 3, day: 3 });
+  assert.deepEqual(read("3 mars 21h30"), { kind: "yearless", month: 3, day: 3 });
+  assert.deepEqual(read("Tuesday, March 3, 9:40 pm"), { kind: "yearless", month: 3, day: 3 });
+  assert.deepEqual(read("Tue 3/10"), { kind: "yearless", month: 3, day: 10, ambiguous: true });
+  assert.deepEqual(read("mardi 3.10.", "day_first"), { kind: "yearless", month: 10, day: 3, ambiguous: true, day_first: true });
+  assert.deepEqual(read("2019"), { kind: "year", year: 2019 });
+  assert.deepEqual(read("Dimanche soir :"), { kind: "weekday" });
+  assert.deepEqual(read("Sunday"), { kind: "weekday" });
+  // Sentences, and things that only look like dates.
+  for (const line of ["March 3 was hard", "May I come in?", "Mars 3 fois par semaine", "2019 a été dure", "1/2 tasse de farine",
+    "Sam", "Lundi, je suis allé au marché.", "I saw her on 3 mars 2020.", "12.5 kg", "31 février", "1.2.3 is a version"]) {
+    assert.equal(read(line), null, line);
+    assert.equal(read(line, "day_first"), null, line);
+  }
+  assert.throws(() => entryDateLine("3/4/19", { numericOrder: "dmy" }), { code: "QUOTE_DATE_ORDER_INVALID" });
+});
+
 test("quote units are exact, trimmed, bounded spans that cover every non-space byte once", () => {
   for (const { representation_id: representationId, text } of representations) {
     const units = splitQuoteUnits({ representationId, text });
@@ -72,11 +111,11 @@ test("quote units are exact, trimmed, bounded spans that cover every non-space b
     "I dreamt that Mara left the house. It was only a dream.\n\nToday I didn't go to work. Maybe tomorrow."
   ]);
   assert.equal(units[1].heading, true);
-  assert.deepEqual(units[1].date_line, { from: "2019-03-03", to: "2019-03-03", precision: "day" });
+  assert.deepEqual(units[1].entry_line, { kind: "date", from: "2019-03-03", to: "2019-03-03", precision: "day" });
   const third = splitQuoteUnits({ representationId: representations[2].representation_id, text: representations[2].text });
   assert.match(third[0].text, /^2020-01-05 New year\./u, "a long line opening with a date starts its own unit");
   assert.equal(third[0].heading, false);
-  assert.equal(third[0].date_line.from, "2020-01-05");
+  assert.equal(third[0].entry_line.from, "2020-01-05");
   assert.ok(third.filter(({ text }) => text.startsWith("Sentence")).length >= 2, "a long paragraph is cut");
   assert.ok(third.filter(({ text }) => text.startsWith("Sentence")).every(({ text }) => text.endsWith(".")), "cuts fall after sentences");
   assert.ok(third.some(({ text }) => text.includes("Café ☕ visit with Jonás")), "multibyte text stays exact");
@@ -123,6 +162,104 @@ test("no date is carried into or past a page whose text wasn't fully read", () =
   assert.equal(byText.get("Native words around a scanned picture.").written, null, "not carried into the unread page");
   assert.equal(byText.get("The next readable page about the orchard.").written, null, "not carried past it");
   assert.equal(byText.get("A dated paragraph.").written.from, "2019-04-09", "a date line read after the gap dates what follows");
+});
+
+// The meta of each quote in a generation, by the text of its quote.
+function writtenByText(built) {
+  return new Map(built.graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.quote, built.quoteMeta.get(node.id)[0].written]));
+}
+const page = (text, number, parseStatus = "readable") => ({ representation_id: `dates:${number}`, text, page_number: number, parse_status: parseStatus });
+const build = (pages, dateOptions = {}, unitOptions = {}) => buildQuoteGeneration({ caseId: "quote-case", corpusId: "quote-corpus:quotes",
+  generation: "dates-generation", originalObjectId: "original:test", mediaType: "application/pdf", representations: pages, dateOptions, unitOptions });
+
+test("a date written without its year takes the year of the dates before it, into the next year after December", () => {
+  const built = build([
+    page("28 décembre 2019\n\nLe sapin est encore là.\n\n2 janvier\n\nPremière marche de l'année.", 1),
+    page("15 janvier :\n\nLa neige tient.\n\nmardi 3.3.\n\nToujours froid.", 2)
+  ], { numericOrder: "day_first" });
+  const written = writtenByText(built);
+  assert.deepEqual(written.get("Le sapin est encore là."), { from: "2019-12-28", to: "2019-12-28", precision: "day", ambiguous: false, year_inferred: false,
+    line: written.get("Le sapin est encore là.").line });
+  assert.equal(written.get("Première marche de l'année.").from, "2020-01-02");
+  assert.equal(written.get("Première marche de l'année.").year_inferred, true);
+  assert.equal(written.get("La neige tient.").from, "2020-01-15");
+  assert.equal(written.get("Toujours froid.").from, "2020-03-03");
+  assert.equal(written.get("Toujours froid.").ambiguous, false, "3.3. reads the same either way");
+  assert.deepEqual(built.stats.date_line_kinds, { full: 1, year_inferred: 3, year_only: 0, no_year_known: 0, weekday_only: 0 });
+
+  // A year alone dates what follows to that year, and gives later dates their year.
+  const years = writtenByText(build([page("2018\n\nUne année entière, sans date précise.\n\n4 mai\n\nLe printemps.", 1)]));
+  assert.deepEqual(years.get("Une année entière, sans date précise.").from, "2018");
+  assert.equal(years.get("Une année entière, sans date précise.").precision, "year");
+  assert.equal(years.get("Le printemps.").from, "2018-05-04");
+
+  // Before any year is known, or on a day the year doesn't have, a date without a year dates nothing.
+  const unknown = build([page("3 mars\n\nAvant toute année.\n\n3 février 2019\n\nUn jour.\n\n29 février\n\nUn jour qui n'existe pas.", 1)]);
+  const lost = writtenByText(unknown);
+  assert.equal(lost.get("Avant toute année."), null);
+  assert.equal(lost.get("Un jour.").from, "2019-02-03");
+  assert.equal(lost.get("Un jour qui n'existe pas."), null);
+  assert.equal(unknown.stats.date_line_kinds.no_year_known, 2);
+});
+
+test("every line that starts an entry ends the date before it", () => {
+  const built = build([page("3 mars 2020\n\nUne matinée calme.\n\nDimanche\n\nSans date écrite.\n\n5 mars\n\nDe nouveau daté.", 1)]);
+  const written = writtenByText(built);
+  assert.equal(written.get("Une matinée calme.").from, "2020-03-03");
+  assert.equal(written.get("Dimanche"), null);
+  assert.equal(written.get("Sans date écrite."), null, "a weekday alone ends the date before it");
+  assert.equal(written.get("De nouveau daté.").from, "2020-03-05", "the year still comes from before the weekday");
+  assert.equal(built.stats.date_line_kinds.weekday_only, 1);
+  assert.equal(built.stats.date_lines, 2);
+});
+
+test("a date is carried over its own page and the next two, or the next quotes in a source without pages", () => {
+  const pages = [page("1 avril 2020\n\nPage une.", 1), page("Page deux.", 2), page("Page trois.", 3), page("Page quatre.", 4), page("Page cinq.", 5)];
+  const built = build(pages);
+  const written = writtenByText(built);
+  assert.deepEqual(["Page une.", "Page deux.", "Page trois.", "Page quatre.", "Page cinq."].map((text) => written.get(text)?.from ?? null),
+    ["2020-04-01", "2020-04-01", "2020-04-01", null, null]);
+  assert.equal(built.stats.carry_capped_quotes, 2);
+  const tight = build(pages, { carryPages: 0 });
+  assert.deepEqual(["Page une.", "Page deux."].map((text) => writtenByText(tight).get(text)?.from ?? null), ["2020-04-01", null]);
+  assert.equal(tight.stats.carry_capped_quotes, 4);
+  // A text source has no page numbers: the date is carried over a number of quotes instead.
+  const text = ["1 avril 2020", ...Array.from({ length: 6 }, (_, index) => `Paragraphe ${index}.`)].join("\n\n");
+  const unpaged = build([{ representation_id: "text:whole", text, page_number: null, parse_status: "readable" }], { carryQuotes: 3 }, { minimumBytes: 0 });
+  const carried = writtenByText(unpaged);
+  assert.deepEqual(Array.from({ length: 6 }, (_, index) => carried.get(`Paragraphe ${index}.`)?.from ?? null),
+    ["2020-04-01", "2020-04-01", "2020-04-01", null, null, null]);
+  assert.equal(unpaged.stats.carry_capped_quotes, 3);
+  // A page that wasn't fully read still stops the carry, and its undated quotes aren't counted as capped.
+  const gap = build([page("1 avril 2020\n\nPage une.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"), page("Après le dessin.", 3)]);
+  assert.equal(writtenByText(gap).get("Après le dessin."), null);
+  assert.equal(gap.stats.carry_capped_quotes, 0);
+  assert.throws(() => build(pages, { carryPages: -1 }), { code: "QUOTE_DATE_OPTIONS_INVALID" });
+  assert.throws(() => build(pages, { numericOrder: "dmy" }), { code: "QUOTE_DATE_OPTIONS_INVALID" });
+  assert.throws(() => build(pages, { carry: 2 }), { code: "QUOTE_DATE_OPTIONS_INVALID" });
+});
+
+test("the counts describe the dates without any of the text", () => {
+  const built = build([page(["Mars est une planète.", "Lundi, je suis allé au marché.", "12-13 heures de sommeil.", "10-11 heures.", "1.5 litres d'eau.",
+    "3/4/2019", "Le rendez-vous.", "Vendredi", "Rien de daté."].join("\n\n"), 1)], { numericOrder: "day_first" });
+  const { stats } = built;
+  assert.equal(stats.numeric_date_order, "day_first");
+  assert.equal(stats.date_lines, 1);
+  assert.equal(stats.ambiguous_date_lines, 1);
+  assert.equal(writtenByText(built).get("Le rendez-vous.").from, "2019-04-03");
+  assert.deepEqual(stats.date_line_kinds, { full: 1, year_inferred: 0, year_only: 0, no_year_known: 0, weekday_only: 1 });
+  assert.deepEqual(stats.unread_date_like, { month_led: 1, weekday_led: 1, shapes: [{ shape: "99-99", count: 2 }, { shape: "9.9", count: 1 }] });
+  assert.equal(JSON.stringify(stats).match(/[\p{L}]{6,}/gu)?.some((word) => /planète|marché|sommeil|rendez/u.test(word)) ?? false, false);
+});
+
+test("the numeric date order is a run setting, month first unless the journal says otherwise", () => {
+  assert.equal(journalQuoteNumericDateOrder({}), "month_first");
+  assert.equal(journalQuoteNumericDateOrder({ quote_numeric_date_order: null }), "month_first");
+  assert.equal(journalQuoteNumericDateOrder({ quote_numeric_date_order: "day_first" }), "day_first");
+  for (const value of ["dmy", "DAY_FIRST", 1, true]) {
+    assert.throws(() => journalQuoteNumericDateOrder({ quote_numeric_date_order: value }), { code: "JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID" });
+  }
+  assert.deepEqual(quoteDateOptions(), { numericOrder: "month_first", carryPages: 2, carryQuotes: 24 });
 });
 
 async function persistedQuotes(t, { quoteIndexes = true } = {}) {
@@ -242,6 +379,35 @@ test("a time window keeps quotes written inside it, and undated ones only when a
   } finally { reader.close(); }
 });
 
+test("a year alone and a year taken from the dates before are searchable by time, and say how precise they are", async (t) => {
+  const pages = [
+    page("2018\n\nUne année entière au bord du lac, sans date précise.", 1),
+    page("28 décembre 2018\n\nLe lac gelé.\n\n2 janvier\n\nLe lac encore gelé.", 2)
+  ];
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "quote-dates-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const caseId = "quote-case", corpusId = "quote-corpus:quotes";
+  const store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: randomBytes(32) });
+  const built = buildQuoteGeneration({ caseId, corpusId, generation: "dates-generation", originalObjectId: "original:test", mediaType: "application/pdf", representations: pages });
+  assert.deepEqual(built.quoteMonths.get(QUOTE_MONTHS_KEY), ["2018", "2018-12", "2019-01"]);
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph: built.graph, sourceRepresentations: Object.fromEntries(pages.map((item) => [item.representation_id, item.text])),
+    permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096,
+    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
+  const reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId, corpusId,
+    generation: "dates-generation", visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+  try {
+    const texts = async (from, to) => (await reader.findQuotes({ query: "lac", from, to, includeUndated: false })).quotes.map(({ text }) => text).sort();
+    assert.deepEqual(await texts("2018-04", "2018-04"), ["Une année entière au bord du lac, sans date précise."], "a year overlaps every month in it");
+    assert.deepEqual(await texts("2018-12", "2018-12"), ["Le lac gelé.", "Une année entière au bord du lac, sans date précise."]);
+    assert.deepEqual(await texts("2019", "2019"), ["Le lac encore gelé."]);
+    const all = await reader.findQuotes({ query: "lac" });
+    const byText = new Map(all.quotes.map((quote) => [quote.text, quote.written]));
+    assert.deepEqual(byText.get("Une année entière au bord du lac, sans date précise."), { from: "2018", to: "2018", precision: "year", date_line: "2018" });
+    assert.deepEqual(byText.get("Le lac encore gelé."), { from: "2019-01-02", to: "2019-01-02", precision: "day", date_line: "2 janvier", year_inferred: true });
+    assert.deepEqual(byText.get("Le lac gelé."), { from: "2018-12-28", to: "2018-12-28", precision: "day", date_line: "28 décembre 2018" });
+  } finally { reader.close(); }
+});
+
 test("a quote cursor is refused on a different snapshot", async (t) => {
   const quotes = await persistedQuotes(t);
   const reader = await quotes.open();
@@ -349,7 +515,7 @@ async function runtimeEnvironment(t) {
   });
   const open = () => openJournalExecutionRuntime({ config, configPath, service, inferencePort: createMockJournalInferencePort({ handlers: {} }),
     sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER } });
-  return { open, service, stateFile: path.join(config.execution_root, "state.json") };
+  return { open, service, config, stateFile: path.join(config.execution_root, "state.json") };
 }
 
 test("build-quotes stages the quote corpus and publish-quotes publishes it beside the untouched import corpus", async (t) => {
@@ -381,7 +547,7 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   const corpora = record.journal_corpora.filter((item) => item.active_generation != null);
   assert.equal(corpora.length, 1, "only the quote corpus is active");
   assert.match(corpora[0].corpus_id, /:quotes$/u);
-  assert.match(corpora[0].active_generation, /:quotes:quote-index-v1$/u);
+  assert.match(corpora[0].active_generation, /:quotes:quote-index-v2-month-first$/u);
   // The published quote corpus carries the archived original its locators name.
   await f.service.withJournalCorpus(CASE_ID, corpora[0].corpus_id, { requiredScope: "case:write", requiredPurpose: "archive" }, async ({ corpusStore, reference }) => {
     const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
@@ -414,4 +580,65 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   try { await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
   const again = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
   assert.deepEqual(again.journal_corpora.filter((item) => item.active_generation != null).map((item) => item.active_generation), [corpora[0].active_generation]);
+});
+
+test("a quote index built another way replaces exactly the one published before it, and a reply paging the old one isn't cut off", async (t) => {
+  const f = await runtimeEnvironment(t);
+  const reader = { bearerToken: READER };
+  const quoteCorpus = async () => {
+    const record = await f.service.loadPrivateRuntimeCase(CASE_ID, reader);
+    const { corpus_id: corpusId } = record.journal_corpora.find((item) => item.corpus_id.endsWith(":quotes"));
+    return (await f.service.getJournalCorpus(CASE_ID, corpusId, reader)).reference;
+  };
+  let runtime = await f.open();
+  try { await runtime.execute("stage"); await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
+  const first = await quoteCorpus();
+  assert.match(first.active_generation, /:quotes:quote-index-v2-month-first$/u);
+  const api = createJournalPrivateApi({ caseAccessService: f.service });
+  const query = { caseId: CASE_ID, corpusId: first.corpus_id, query: "Mara cardamom running", limit: 1, purpose: "session_use" };
+  const oldPage = await api.findQuotes(query, reader);
+  assert.ok(oldPage.next_cursor);
+
+  // An invalid setting is refused before anything runs.
+  f.config.quote_numeric_date_order = "dmy";
+  await assert.rejects(f.open(), { code: "JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID" });
+
+  // The owner writes day first: the changed setting builds a new generation, which records the one it replaces.
+  f.config.quote_numeric_date_order = "day_first";
+  runtime = await f.open();
+  let built;
+  try { built = await runtime.execute("build-quotes"); } finally { await runtime.close(); }
+  assert.match(built.quote_index.generation, /:quotes:quote-index-v2-day-first$/u);
+  assert.equal(built.quote_index.supersedes, first.active_generation);
+  assert.equal(built.quote_index.numeric_date_order, "day_first");
+  assert.equal(built.quote_index.published_at, null);
+  assert.equal((await quoteCorpus()).active_generation, first.active_generation, "readers see no change before publication");
+
+  // Publication replaces only the generation recorded: one published by anyone else in the meantime stays.
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  await fs.writeFile(f.stateFile, JSON.stringify({ ...state, quote_index: { ...state.quote_index, supersedes: "generation:published-elsewhere" } }));
+  runtime = await f.open();
+  try { await assert.rejects(runtime.execute("publish-quotes"), { code: "JOURNAL_PUBLICATION_GENERATION_CONFLICT" }); } finally { await runtime.close(); }
+  assert.equal((await quoteCorpus()).active_generation, first.active_generation);
+  await fs.writeFile(f.stateFile, JSON.stringify(state));
+  runtime = await f.open();
+  let published;
+  try { published = await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
+  assert.notEqual(published.quote_index.published_at, null);
+  const second = await quoteCorpus();
+  assert.equal(second.active_generation, built.quote_index.generation);
+  assert.deepEqual(second.previous_generations.at(-1), { generation: first.active_generation, manifest_object_id: first.manifest_object_id });
+
+  // A reply already paging the old generation finishes on it; a new search reads the new one.
+  const next = await api.findQuotes({ ...query, cursor: oldPage.next_cursor }, reader);
+  assert.equal(next.snapshot.generation, first.active_generation);
+  assert.notEqual(next.quotes[0].quote_id, oldPage.quotes[0].quote_id);
+  const fresh = await api.findQuotes({ ...query, query: "Mara dreamt", limit: 5 }, reader);
+  assert.equal(fresh.snapshot.generation, second.active_generation);
+  assert.match(fresh.quotes[0].text, /^I dreamt that Mara/u);
+  await assert.rejects(api.findQuotes({ ...query, query: "Mara dreamt", cursor: oldPage.next_cursor }, reader), { code: "CURSOR_QUERY_MISMATCH" });
+
+  // Building again with the same setting changes nothing.
+  runtime = await f.open();
+  try { assert.equal((await runtime.execute("build-quotes")).quote_index.built_at, published.quote_index.built_at); } finally { await runtime.close(); }
 });

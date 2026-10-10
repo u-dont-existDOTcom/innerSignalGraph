@@ -573,8 +573,10 @@ export async function openPrivateJournalGraph({
    * date line inside it, and undated ones only when asked to. A page stops at its quote limit or byte
    * budget, and always holds at least one quote when any match. Later pages come from a cursor bound,
    * like search's, to the snapshot, query and filters, holding the position in the ranking where the
-   * next page starts. Each quote comes with its page, the date line it was written under, and the
-   * wording cues found in it (`quoteCues`). Works on any generation. On a
+   * next page starts. Each quote comes with its page, the date it was written under with that date's
+   * line (`year_inferred` when the line gave no year and it came from the entries before; `ambiguous`
+   * when the numbers could be read either way), and the wording cues found in it (`quoteCues`). Works on
+   * any generation. On a
    * quote index, the `quote_meta` index gives each quote's span, page and date line, so no record is
    * decrypted; elsewhere the passage record supplies the span and there are no dates.
    */
@@ -662,7 +664,8 @@ export async function openPrivateJournalGraph({
           to: date.to,
           precision: date.precision,
           date_line: line,
-          ...(date.ambiguous ? { ambiguous: true } : {})
+          ...(date.ambiguous ? { ambiguous: true } : {}),
+          ...(date.year_inferred ? { year_inferred: true } : {})
         }) : null,
         cues: quoteCues(text),
         matched_terms: Object.freeze([...matched.get(id)]),

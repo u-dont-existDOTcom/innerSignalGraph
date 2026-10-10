@@ -2,6 +2,12 @@
 
 Updated: 2026-10-10
 
+## Journal quote index v2: the journal's own dates (2026-10-10, awaiting review, merge and the owner's deploy)
+
+- **Owner answer:** question 17, 10 Oct, 01:49 UTC: "the dates are in euro format since he's french / day first". Plan: `docs/superpowers/plans/2026-10-09-journal-quote-first.md`, "Version 2". Version 1 read one date line in the owner's journal, so 1,349 of 1,804 quotes were undated and 455 carried that one date.
+- **Change:** `quote-index-v2` reads French month and weekday names, marks before a date, year-first dates, all-numeric dates in the journal's order (run setting `quote_numeric_date_order`, checked by `doctor` and when a run opens), dates without a year (year from the dates before, marked `year_inferred`), and years and weekdays alone on a line. Every entry line ends the date before it; a date reaches its own page and the next two (24 quotes without page numbers). Builds report content-free counts of the dates read and of date-like lines not read. Search returns `year_inferred`, and the tool description says what it means. `publish-quotes` replaces exactly the published generation it recorded (`supersedes`) and keeps it among the previous generations.
+- **Next:** Codex review; the owner merges; on the owner's `deploy`: set `quote_numeric_date_order` to `day_first` in the private run config (with a backup), deploy to the import server, rebuild the connector, stop the worker, run `publish-quotes`, start the worker, and read the date counts.
+
 ## Unsent supervisor-reply editing and guide provenance gate (2026-10-10, development PR in final review)
 
 - **Owner outcome:** Localized corrections to an unsent third-party therapeutic message must update the complete current draft, not create a new message that omits unrelated advice. Keep the advice anchored in known medical history, distinguish acute physical-pain needs from psychiatric assumptions, and distinguish friendship/support from premature intimacy-seeking. Update canonical AI guide and pending humanized-guide teaching-point queue together with relevant map/rule changes.

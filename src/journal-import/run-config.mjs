@@ -2,6 +2,7 @@ import path from "node:path";
 import { realLocation } from "../core/private-path.mjs";
 
 import { ValidationError } from "../core/errors.mjs";
+import { QUOTE_DATE_DEFAULTS, QUOTE_NUMERIC_DATE_ORDERS } from "./quote-index.mjs";
 
 export function journalSemanticConcurrency(config) {
   const value = config.semantic_concurrency === undefined ? 1 : config.semantic_concurrency;
@@ -29,6 +30,15 @@ export function journalCalibrationCriticalMissLimit(config) {
   if (!Number.isSafeInteger(value) || value < 0)
     throw new ValidationError("JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID",
       { code: "JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID" });
+  return value;
+}
+
+// How the quote index reads an all-numeric date both orders could read (3/4): "month_first", the default,
+// or "day_first", for a journal whose owner writes the day first.
+export function journalQuoteNumericDateOrder(config) {
+  const value = config.quote_numeric_date_order ?? QUOTE_DATE_DEFAULTS.numericOrder;
+  if (!QUOTE_NUMERIC_DATE_ORDERS.includes(value))
+    throw new ValidationError("JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID", { code: "JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID" });
   return value;
 }
 

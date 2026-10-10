@@ -130,8 +130,77 @@ Three changes brought it down to the figures above:
   - An all-numeric date that reads both ways is taken month-first and marked `ambiguous`.
   - A line that opens with an older date in the middle of an entry dates the paragraphs below it. The date line is
     shown with every quote, so the answering model sees it.
+  - Version 2, below, reads the owner's journal's own dates.
 - **No search by meaning yet.** Ranking is by rare words. Part 3's tags cover people and topics.
 - **No unpublish command.** A visibility change hides every snapshot of the corpus from readers.
+
+## Version 2: the journal's own dates (10 Oct 2026)
+
+Owner's answer to question 17 on the owner page, 10 Oct, 01:49 UTC: "the dates are in euro format since he's french /
+day first". Built here; it goes live with the owner's `deploy`.
+
+**What went wrong in version 1.** It read only English month and weekday names, read all-numeric dates month-first,
+and dated every quote by the nearest date line above it, however far back that was. In the owner's journal only one
+line opened with a date it could read, an ambiguous one. So 1,349 of the 1,804 quotes were undated, and 455 carried
+that one date, most of them probably wrongly.
+
+**What version 2 reads at the start of a line:**
+
+- French month and weekday names, with "le" and "1er", alongside the English ones: "mardi 3 mars 2020", "le 1er août
+  2019", "5 févr. 2020".
+- Marks before a date: heading marks, bullets, dashes, an opening bracket, a "Date:" label.
+- Year-first dates: "2021/10/03", "2021.10.03", "2021-10-03T21:40".
+- All-numeric dates in the journal's order. The run setting `quote_numeric_date_order` is `month_first` by default,
+  and `day_first` for this journal. A date both orders could read stays marked `ambiguous`. One that only one order
+  can read (25/12) is read that way whatever the setting.
+- Dates written without a year: "mardi 3 mars", "3 mars :", "3/10", "3.10.". Such a date takes the year of the latest
+  date read, or the next year when it would fall more than 31 days before that date, as January follows late
+  December. It's marked `year_inferred`. Before any year is read, or on a day that year doesn't have, it gives no
+  date.
+- A year alone on a line. It dates the quotes under it to that year (precision `year`) and gives later dates their
+  year.
+- A weekday alone on a line, written in full: "Dimanche", "Sunday evening:". It starts an entry whose date isn't
+  given.
+
+Lines are compared in composed Unicode form, so an accent stored as a separate mark still reads.
+
+**How far a date reaches.** Every line that starts an entry ends the date before it, and one that gives no date
+leaves its entry undated. A date covers the quotes after its line on its own page and the next two pages
+(`carryPages`), or, where pages aren't numbered, the next 24 quotes (`carryQuotes`). Past that, quotes are undated:
+an entry whose date line went unread mustn't lend its date to the entries after it, and a wrong date is worse than
+none. As before, no date is carried into or past a page whose text wasn't fully read.
+
+**What a build reports, without content.** Under `quote_index` in the output of `build-quotes` and `publish-quotes`:
+
+- `date_lines` and `ambiguous_date_lines`;
+- `date_line_kinds`: full dates, years inferred, years alone, dates without a year that got none, weekdays alone;
+- `carry_capped_quotes`: the quotes the carry limit left undated;
+- `unread_date_like`: how many lines open with a month or weekday name without being read as a date, and the six
+  commonest shapes of a number opening a line, with digits written as 9 ("99/99"). These show how the journal writes
+  its dates without anyone reading it;
+- `numeric_date_order`.
+
+**Answers.** `find_journal_quotes` returns `year_inferred: true` in `written` when the year came from the entries
+before. Its description says such a year is probable, not certain; that a date is only as precise as its
+`precision`; to check the date line of an `ambiguous` date; and that a null `written` means the date is unknown.
+
+**Publishing version 2 over version 1.** A generation is now named for the version and the numeric order:
+`<generation>:quotes:quote-index-v2-day-first`. A new version or a changed setting therefore builds a new generation.
+A build made after a published one records that one as `supersedes`, and `publish-quotes` passes it on. Publication
+then replaces the active generation only when it is exactly that one, and otherwise refuses with
+`JOURNAL_PUBLICATION_GENERATION_CONFLICT`, so a generation someone else published in the meantime is never
+overwritten. The replaced generation stays among the corpus's previous generations. A reply already paging it with a
+cursor finishes on it, and a new search reads the new one.
+
+**Operating version 2** (after the owner's `deploy`):
+
+1. Set `"quote_numeric_date_order": "day_first"` in the private run config, keeping a backup.
+2. Deploy the commit to the import server. `doctor` checks the setting.
+3. Rebuild the hosted connector, since the search results and the tool's description change.
+4. Stop the import worker, run `publish-quotes`, and start the worker again.
+5. Read the new `quote_index` counts. If `unread_date_like` still shows many lines led by a month or weekday name, or
+   a common number shape, the journal writes its dates in a form this version doesn't read yet, and the next version
+   reads it.
 
 ## Operating it (after the owner's `deploy`)
 
@@ -182,6 +251,26 @@ journal corpora, so the connector goes first.
   - is a no-op the second time.
 
   The published corpus answers through the API and through the MCP tool.
+
+Version 2, `tests/journal-quote-index.test.mjs`:
+
+- French, year-first and marked date lines are read, in the journal's numeric order; sentences and things that only
+  look like dates are refused, in either order.
+- A date without a year takes the year before it, and the next one after December. A year alone dates what follows
+  and gives later dates their year. Before any year, or on a day the year doesn't have, such a date dates nothing.
+- Every line that starts an entry ends the date before it.
+- A date reaches its own page and the next two, or 24 quotes without page numbers; an unread page still stops it.
+- The counts describe the dates without any of the text.
+- The numeric order is a run setting, and invalid values are refused.
+- A year alone and an inferred year are found by time windows and say how precise they are.
+- End to end: a changed setting builds a generation that records the one it replaces; publication refuses a
+  different one; the new one replaces exactly the old, which stays among the previous generations; a reply paging
+  the old one finishes on it; an invalid setting stops the run from opening.
+
+`tests/journal-publication.test.mjs`: a new generation replaces only the active generation it names; a missing,
+wrong or self-naming `supersedes` is refused; publishing again changes nothing.
+
+`tests/journal-contracts.test.mjs`: `doctor` reports an invalid numeric date order.
 
 `tests/journal-continuity.test.mjs`: the journal tools list includes `find_journal_quotes`.
 
