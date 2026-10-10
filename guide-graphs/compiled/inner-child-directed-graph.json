@@ -1783,7 +1783,7 @@
       "title": "Bring a second adult or witness seat into the room",
       "kind": "decision-node",
       "tier": 1,
-      "priority": 100,
+      "priority": 99,
       "activation": {
         "all": [
           {
@@ -1844,11 +1844,6 @@
             "field": "altered_state",
             "op": "eq",
             "value": "altered"
-          },
-          {
-            "field": "medical_urgency",
-            "op": "eq",
-            "value": "urgent"
           }
         ]
       },
@@ -1949,11 +1944,6 @@
             "field": "altered_state",
             "op": "eq",
             "value": "altered"
-          },
-          {
-            "field": "medical_urgency",
-            "op": "eq",
-            "value": "urgent"
           }
         ]
       },

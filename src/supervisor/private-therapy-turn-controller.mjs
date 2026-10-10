@@ -178,6 +178,11 @@ export function createPrivateTherapyTurnController({
   }
 
   async function executeRun({ caseId, runtimeTurnId, exchangeId, userTurnId, assistantTurnId, userMessage, userInput = {}, authContext }) {
+    // A supervisor correction is not an inbound client therapy turn. Reject it before
+    // private persistence or model inference; the explicit unsent edit path is separate.
+    if (userInput && Object.hasOwn(userInput, "pendingReplyRevision")) {
+      throw new ValidationError("Supervisor reply revision cannot be submitted to the private therapy response endpoint.");
+    }
     await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage }], authContext);
     const operationKey = sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24);
 

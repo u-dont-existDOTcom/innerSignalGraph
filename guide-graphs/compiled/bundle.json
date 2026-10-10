@@ -3025,7 +3025,7 @@
           "title": "Bring a second adult or witness seat into the room",
           "kind": "decision-node",
           "tier": 1,
-          "priority": 100,
+          "priority": 99,
           "activation": {
             "all": [
               {
@@ -3086,11 +3086,6 @@
                 "field": "altered_state",
                 "op": "eq",
                 "value": "altered"
-              },
-              {
-                "field": "medical_urgency",
-                "op": "eq",
-                "value": "urgent"
               }
             ]
           },
@@ -3191,11 +3186,6 @@
                 "field": "altered_state",
                 "op": "eq",
                 "value": "altered"
-              },
-              {
-                "field": "medical_urgency",
-                "op": "eq",
-                "value": "urgent"
               }
             ]
           },
@@ -8017,13 +8007,16 @@
             "deferNodes": [
               "IC.DEEP_CHILD_DIALOGUE",
               "IC.REACTIVATION",
-              "IC.SCAFFOLDED_CHALLENGE"
+              "IC.SCAFFOLDED_CHALLENGE",
+              "IC.SUICIDAL_SELF_DEATH_INQUIRY"
             ],
             "forbiddenOverclaims": [
-              "Do not diagnose a medical or neurological condition from a red-flag symptom alone."
+              "Do not diagnose a medical or neurological condition from a red-flag symptom alone.",
+              "Do not promise an ambulance, a particular pain medication, guaranteed analgesia, a definitive diagnosis or zero cost from emergency assessment."
             ],
             "requiredNuance": [
-              "Hard safety and urgent medical red flags are exempt from ordinary focus parking; they take priority only to the degree needed for immediate protection or urgent assessment."
+              "Hard safety and urgent medical red flags are exempt from ordinary focus parking; they take priority only to the degree needed for immediate protection or urgent assessment.",
+              "During urgent bodily pain, medical assessment and relief take precedence over existential inquiry; acute self-harm danger still requires immediate safety actions in parallel, and the supporting adult-protection function is not disabled."
             ]
           },
           "defaultQuestion": ""

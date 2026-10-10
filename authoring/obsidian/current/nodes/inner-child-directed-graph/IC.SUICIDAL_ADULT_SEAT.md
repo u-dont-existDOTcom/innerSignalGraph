@@ -8,7 +8,7 @@ node_id: IC.SUICIDAL_ADULT_SEAT
 title: Bring a second adult or witness seat into the room
 kind: decision-node
 tier: 1
-priority: 100
+priority: 99
 authority: author-framework
 graph_tags:
   - suicide-prevention
@@ -24,9 +24,11 @@ source_refs:
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 regression_refs:
   - G094
-base_record_sha256: c01d46456f2149fbb64b40937d01dadf772d614427a212bc43d89c1b78b290e2
-base_graph_sha256: 6a593783644d3af25f32954afa02726e9caf0e26004e8f15e27647fc45870fae
-projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
+  - G095
+  - G098
+base_record_sha256: 7af2c4706ff3437bc6200143593cdb11131825fb02297d90cec51879ba675ce4
+base_graph_sha256: 031d73bbf137403d9f3137d15195c0da0d3c35139a3f98d837231b8536bab2b8
+projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a4e3572784
 ---
 
 # Bring a second adult or witness seat into the room
@@ -98,11 +100,6 @@ projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d117
         "field": "altered_state",
         "op": "eq",
         "value": "altered"
-      },
-      {
-        "field": "medical_urgency",
-        "op": "eq",
-        "value": "urgent"
       }
     ]
   },

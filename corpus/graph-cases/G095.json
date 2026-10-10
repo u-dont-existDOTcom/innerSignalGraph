@@ -1,0 +1,29 @@
+{
+  "id": "G095",
+  "title": "urgent bodily pain with stated intent keeps safety support reachable",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "intent",
+    "medical_urgency": "urgent",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "inner_adult_access": "low",
+    "witness_capacity": "unknown"
+  },
+  "expected": {
+    "primary": "ROUTE.MEDICAL_RED_FLAG",
+    "selectedIncludes": [
+      "IC.SUICIDAL_ADULT_SEAT",
+      "ROUTE.MEDICAL_RED_FLAG"
+    ],
+    "deferredIncludes": [
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY"
+    ]
+  }
+}

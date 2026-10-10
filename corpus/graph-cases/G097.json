@@ -1,0 +1,24 @@
+{
+  "id": "G097",
+  "title": "suicidal ideation without urgent medical crisis retains reflective route eligibility",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "ideation",
+    "medical_urgency": "nonurgent",
+    "actionable_problem": "absent",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "inner_adult_access": "available",
+    "witness_capacity": "present"
+  },
+  "expected": {
+    "selectedIncludes": [
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY"
+    ]
+  }
+}

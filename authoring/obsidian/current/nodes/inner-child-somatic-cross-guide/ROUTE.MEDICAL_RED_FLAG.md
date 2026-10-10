@@ -22,9 +22,12 @@ regression_refs:
   - G069
   - G079
   - G094
-base_record_sha256: 162be0f0399a14a0d1411f1e763cf8f49f4dd5a27f2baaacf2ef6222f55fd370
-base_graph_sha256: afbebefa2779fe9833dd7a974735316169e62d1ea9a769126199f53e9a9a96e5
-projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
+  - G095
+  - G096
+  - G098
+base_record_sha256: bafc1f355371ae618ddeeadc246bfa78038696779a8bcc7f8639950964065573
+base_graph_sha256: 21ba5908ecea2cb8008f88676aa266cb288abb06e6ee68205264232bd84bd560
+projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a4e3572784
 ---
 
 # Handle an urgent medical red flag before therapy interpretation
@@ -56,13 +59,16 @@ projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d117
     "deferNodes": [
       "IC.DEEP_CHILD_DIALOGUE",
       "IC.REACTIVATION",
-      "IC.SCAFFOLDED_CHALLENGE"
+      "IC.SCAFFOLDED_CHALLENGE",
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY"
     ],
     "forbiddenOverclaims": [
-      "Do not diagnose a medical or neurological condition from a red-flag symptom alone."
+      "Do not diagnose a medical or neurological condition from a red-flag symptom alone.",
+      "Do not promise an ambulance, a particular pain medication, guaranteed analgesia, a definitive diagnosis or zero cost from emergency assessment."
     ],
     "requiredNuance": [
-      "Hard safety and urgent medical red flags are exempt from ordinary focus parking; they take priority only to the degree needed for immediate protection or urgent assessment."
+      "Hard safety and urgent medical red flags are exempt from ordinary focus parking; they take priority only to the degree needed for immediate protection or urgent assessment.",
+      "During urgent bodily pain, medical assessment and relief take precedence over existential inquiry; acute self-harm danger still requires immediate safety actions in parallel, and the supporting adult-protection function is not disabled."
     ]
   },
   "recommendations": [

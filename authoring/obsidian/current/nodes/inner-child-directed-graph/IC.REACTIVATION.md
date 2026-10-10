@@ -28,8 +28,8 @@ regression_refs:
   - G087
   - G088
 base_record_sha256: 214ebf081e300b02b4ca61c1ef56f3ff09beb575f6020f6b2f6a0032a5a05856
-base_graph_sha256: 6a593783644d3af25f32954afa02726e9caf0e26004e8f15e27647fc45870fae
-projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
+base_graph_sha256: 031d73bbf137403d9f3137d15195c0da0d3c35139a3f98d837231b8536bab2b8
+projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a4e3572784
 ---
 
 # Re-enter inner-child work below the prior ceiling

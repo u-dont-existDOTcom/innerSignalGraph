@@ -1,7 +1,9 @@
 import { runCaseFormulation } from "../case-formulation/run.mjs";
 import { runAdversarialPipeline } from "./run-pipeline.mjs";
+import { rejectSupervisorRevisionInTherapyPipeline } from "./pending-reply-revision.mjs";
 
 export async function runFormulatedPipeline({ context, providers, config, caseId = null, onProgress, caseRecovery }) {
+  rejectSupervisorRevisionInTherapyPipeline(context);
   const formulation = await runCaseFormulation({ context, providers, onProgress, recovery: caseRecovery });
   const enrichedContext = {
     ...context,

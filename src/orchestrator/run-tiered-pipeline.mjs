@@ -7,6 +7,7 @@ import {
 } from "../case-formulation/run.mjs";
 import { runAdversarialPipeline, runCompactAdversarialPipeline, realizeAdjudication } from "./run-pipeline.mjs";
 import { writeLedger } from "./ledger.mjs";
+import { rejectSupervisorRevisionInTherapyPipeline } from "./pending-reply-revision.mjs";
 
 const HARD_INTENTS = new Set(["deep_dialogue", "hypnosis", "memory_processing", "photo_work", "altered_state", "advanced_release"]);
 const CRITICAL_DELTA_FIELDS = [
@@ -180,6 +181,7 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
 }
 
 export async function runTieredTherapyPipeline({ context, providers, config, processingMode = "auto", onProgress, caseRecovery, instrumentation = {} }) {
+  rejectSupervisorRevisionInTherapyPipeline(context);
   const startedAt = new Date().toISOString();
   const extractor = providers.renderer ?? providers.anthropic;
   const initial = await runUnauditedCaseSnapshot({ context, provider: extractor, onProgress, recovery: caseRecovery });

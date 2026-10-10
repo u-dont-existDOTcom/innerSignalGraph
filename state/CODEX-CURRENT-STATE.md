@@ -1,6 +1,15 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-09
+Updated: 2026-10-10
+
+## Unsent supervisor-reply editing and guide provenance gate (2026-10-10, development PR in final review)
+
+- **Owner outcome:** Localized corrections to an unsent third-party therapeutic message must update the complete current draft, not create a new message that omits unrelated advice. Keep the advice anchored in known medical history, distinguish acute physical-pain needs from psychiatric assumptions, and distinguish friendship/support from premature intimacy-seeking. Update canonical AI guide and pending humanized-guide teaching-point queue together with relevant map/rule changes.
+- **Correction after independent review:** Claude Opus identified a dangerously broad exclusion of self-harm nodes when medical urgency was marked urgent. The exclusion was removed; urgent medical guidance now defers reflective self/death inquiry but retains adult-protection support when indicated, with route priority tuned so an urgent pain problem is primary while unsafe-present safety remains first. Synthetic regressions G094–G098 cover ideation, active intent, immediate danger, nonurgent ideation, and urgent medical pain without suicidality.
+- **Enforced execution boundary:** Exact-anchored supervisor edits have an explicit deterministic operation through the respond CLI, producing an UNSENT / independent-audit-required candidate and no automatic delivery. All ordinary therapist orchestration pipelines reject supervisor revision input before any clinical provider call, avoiding classification of supervisor feedback as fresh client speech. Free-form feedback without exact operations fails closed rather than being passed into a model system prompt; the human ChatGPT supervisor skill separately gives the lossless editorial instruction.
+- **Guide impact:** Changes with reader meaning update canonical source and PGQ teaching points with cause, reader need, prior coverage, and placement. Approved prior teaching points are backfilled; no public humanized guide has been automatically published. The CI provenance gate now rejects missing, blank, or placeholder teaching-point fields and app-only bypass of canonical guide edits. Generated graph and authoring projections are refreshed.
+- **Validation status:** Local Node 24.18.0 focused tests, graph regressions, and authoring projections have been exercised; exact-head hosted package, workflow-policy, CodeQL and independent final Codex review govern merge. No new live therapeutic claims or real case bytes were committed.
+- **Release boundary:** Development merge alone does not deploy. Stable is a separate release branch, currently divergent from main by a large development backlog and one stable-only commit; do not promote that unrelated backlog without candidate-specific release/Guide Packet and rollback evidence. The hosted therapy MCP must be separately redeployed from an authorized exact build and verified by a changed protocol SHA before reporting live.
 
 
 ## Journal quote-first: answer from the person's own words (2026-10-09, awaiting review, merge and the owner's deploy)

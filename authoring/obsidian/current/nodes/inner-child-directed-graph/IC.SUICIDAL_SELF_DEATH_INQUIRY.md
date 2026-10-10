@@ -24,10 +24,15 @@ source_refs:
   - ASSET.IC.SUICIDE.COSMIC_JACKPOT
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 regression_refs:
+  - G069
   - G094
-base_record_sha256: 46f6a5fe3521182758551acb74f3b52af533c0af7be96178dd959aaaf5209fd7
-base_graph_sha256: 6a593783644d3af25f32954afa02726e9caf0e26004e8f15e27647fc45870fae
-projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d11791b525913
+  - G095
+  - G096
+  - G097
+  - G098
+base_record_sha256: dd60c4dbac1cdb8b7e266f27f7ec69a9a4341adccc290fcecc4318689cda47da
+base_graph_sha256: 031d73bbf137403d9f3137d15195c0da0d3c35139a3f98d837231b8536bab2b8
+projection_input_sha256: 4e2c21f579757efa586193e93fd481be32616ab07c84fc5177ab65a4e3572784
 ---
 
 # Examine the self/death assumption before an irreversible act
@@ -76,11 +81,6 @@ projection_input_sha256: 42a366bf501a3e110c367dacca83a75f4384ae8d7025813f3d1d117
         "field": "altered_state",
         "op": "eq",
         "value": "altered"
-      },
-      {
-        "field": "medical_urgency",
-        "op": "eq",
-        "value": "urgent"
       }
     ]
   },
