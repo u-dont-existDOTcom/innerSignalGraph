@@ -110,6 +110,21 @@ test("the quote generation validates, dates quotes from the line above across pa
   assert.equal(built.stats.date_lines, 3);
 });
 
+test("no date is carried into or past a page whose text wasn't fully read", () => {
+  const pages = [
+    { representation_id: "gap:1", text: "March 3, 2019\n\nA readable entry about the orchard.", page_number: 1, parse_status: "readable" },
+    { representation_id: "gap:2", text: "Native words around a scanned picture.", page_number: 2, parse_status: "visual_pending" },
+    { representation_id: "gap:3", text: "The next readable page about the orchard.\n\nApril 9, 2019\n\nA dated paragraph.", page_number: 3, parse_status: "readable" }
+  ];
+  const built = buildQuoteGeneration({ caseId: "quote-case", corpusId: "quote-corpus:quotes", generation: "gap-generation",
+    originalObjectId: "original:test", mediaType: "application/pdf", representations: pages });
+  const byText = new Map(built.graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.quote, built.quoteMeta.get(node.id)[0]]));
+  assert.equal(byText.get("A readable entry about the orchard.").written.from, "2019-03-03");
+  assert.equal(byText.get("Native words around a scanned picture.").written, null, "not carried into the unread page");
+  assert.equal(byText.get("The next readable page about the orchard.").written, null, "not carried past it");
+  assert.equal(byText.get("A dated paragraph.").written.from, "2019-04-09", "a date line read after the gap dates what follows");
+});
+
 async function persistedQuotes(t, { quoteIndexes = true } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "quote-index-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));

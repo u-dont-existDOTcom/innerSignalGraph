@@ -224,7 +224,9 @@ const EMPTY_EXTRACTION = (units) => ({
  * passage per quote unit, and the `quote_meta` index. For each quote it holds the exact span and its
  * digest, the page, and the date line the quote was written under (the nearest one above it, carried
  * across pages in source order) with where that line is, so a search can show quotes without
- * decrypting their records. Representations must be in source order.
+ * decrypting their records. Representations must be in source order. A page whose text wasn't fully
+ * read (any parse status but "readable") may hide a newer date line, so no date is carried into it or
+ * past it: its quotes, and the ones after it, are dated only by date lines that can be read.
  */
 export function buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId, mediaType, representations, unitOptions = {} }) {
   invariant(typeof caseId === "string" && typeof corpusId === "string" && typeof generation === "string", "QUOTE_GENERATION_IDENTITY_INVALID");
@@ -236,6 +238,8 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   let quotes = 0, dated = 0, dateLines = 0, ambiguousDates = 0;
   for (const representation of representations) {
     const { representation_id: representationId, text, page_number: page = null, parse_status: parseStatus = "readable" } = representation;
+    const complete = parseStatus === "readable";
+    if (!complete) current = null;
     const units = splitQuoteUnits({ representationId, text, ...unitOptions });
     const graph = adaptExtractionToGraph({
       caseId,
@@ -285,6 +289,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         written: current ? structuredClone(current) : null
       }]);
     }
+    if (!complete) current = null;
   }
   const byKey = ([left], [right]) => left.localeCompare(right);
   const sorted = new Map([...quoteMeta.entries()].sort(byKey));

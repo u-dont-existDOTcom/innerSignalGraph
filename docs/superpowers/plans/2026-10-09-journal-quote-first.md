@@ -30,7 +30,9 @@ the fidelity checks have nothing left to guard.
    - Each page is split into exact, paragraph-sized quotes. A long paragraph is cut after a sentence. A short line
      that opens with a date is a quote of its own.
    - Every quote records the date line it was written under: the nearest line above it that opens with a date,
-     carried across pages in source order.
+     carried across pages in source order. A page whose text wasn't fully read (one waiting for visual reading, say)
+     may hide a newer date line, so no date is carried into or past it: those quotes stay undated until a date line
+     that can be read.
    - The words index finds quotes by their words. Rare words count more. A time window keeps the quotes written in
      it.
    - No model reads or writes any of it, so the index can't paraphrase.
@@ -165,6 +167,7 @@ journal corpora, so the connector goes first.
   - returns exact text;
   - reads part of the index, not all of it.
 - Time windows keep dated quotes inside them, and undated ones only when asked.
+- No date is carried into or past a page whose text wasn't fully read.
 - A long text journal stored in chunks is quoted from only the chunks a span touches, including a paragraph that
   crosses a chunk boundary, and is never reassembled whole.
 - `findQuotes` works on a generation without the quote indexes.
