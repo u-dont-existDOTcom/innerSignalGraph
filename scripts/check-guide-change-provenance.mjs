@@ -24,7 +24,7 @@ function entries(queue) {
     const next=matches.find(x=>x.index>match.index)?.index ?? queue.length;
     const h=queue.indexOf("\n## ",match.index+match[0].length);
     const end=h>=0?Math.min(next,h):next;
-    return {id:match[1],body:queue.slice(match.index+match[0].length,end)};
+    return {id:match[1],body:queue.slice(match.index+match[0].length,end).trim()};
   });
 }
 export function assessGuideChangeProvenance({changedPaths,oldQueue="",newQueue="",prBody=""}) {
