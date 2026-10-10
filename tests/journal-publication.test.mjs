@@ -72,6 +72,34 @@ test('a case:write-only operator publishes a generation and keeps the rest of th
  assert.equal((await real.getJournalCorpus(CASE_ID,CORPUS_ID,reader)).reference.active_generation,graph.generation);
 });
 
+test('a new generation replaces only the active generation it names, which stays among the previous ones',async t=>{
+ const {service,sourceStore,graph,persisted,representations}=await environment(t);
+ const auth={bearerToken:WRITER};
+ const publish=(staged,supersedes)=>publishJournalGenerationFromStaging({service,sourceStore,persisted:staged,auth,authorize:async()=>{},
+  ...(supersedes===undefined?{}:{supersedes})});
+ const inspect=async()=>(await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},auth)).reference;
+ await publish(persisted);
+ const next=structuredClone(graph);next.generation=`${graph.generation}-next`;
+ const staged=await persistGraphGeneration({corpusStore:sourceStore,graph:next,sourceRepresentations:representations,
+  permittedUses:['archive','organize_search','session_use'],archiveReferences:persisted.manifest.archive_references});
+ await assert.rejects(publish(staged),{code:'JOURNAL_PUBLICATION_GENERATION_CONFLICT'});
+ await assert.rejects(publish(staged,'generation-published-elsewhere'),{code:'JOURNAL_PUBLICATION_GENERATION_CONFLICT'});
+ await assert.rejects(publish(staged,next.generation),{code:'JOURNAL_PUBLICATION_SUPERSEDES_INVALID'});
+ await assert.rejects(publish(staged,''),{code:'JOURNAL_PUBLICATION_SUPERSEDES_INVALID'});
+ assert.equal((await inspect()).active_generation,graph.generation);
+ const receipt=await publish(staged,graph.generation);
+ assert.equal(receipt.prior_reference.active_generation,graph.generation);
+ assert.equal(receipt.legacy_state_unchanged,true);
+ const reference=await inspect();
+ assert.equal(reference.active_generation,next.generation);
+ assert.deepEqual(reference.previous_generations.at(-1),{generation:graph.generation,manifest_object_id:persisted.manifest_object_id});
+ // Publishing it again changes nothing, and the replaced generation can't come back through supersedes.
+ await publish(staged,graph.generation);
+ assert.equal((await inspect()).active_generation,next.generation);
+ await assert.rejects(publish(persisted,graph.generation),{code:'JOURNAL_PUBLICATION_SUPERSEDES_INVALID'});
+ await assert.rejects(publish(persisted),{code:'JOURNAL_PUBLICATION_GENERATION_CONFLICT'});
+});
+
 test('the write inspection carries no case content and needs the named scope and purpose',async t=>{
  const {service}=await environment(t);
  const inspection=await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},{bearerToken:WRITER});
