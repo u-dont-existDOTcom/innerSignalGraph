@@ -113,7 +113,7 @@ test("the quote generation validates, dates quotes from the line above across pa
 async function persistedQuotes(t, { quoteIndexes = true } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "quote-index-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  const caseId = "quote-case", corpusId = "quote-corpus:quotes", key = randomBytes(32);
+  const caseId = "quote-case", corpusId = "quote-corpus:quotes", key = randomBytes(32), cursorSecret = randomBytes(32);
   const store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key });
   const sources = Object.fromEntries(representations.map((item) => [item.representation_id, item.text]));
   let persisted;
@@ -137,9 +137,17 @@ async function persistedQuotes(t, { quoteIndexes = true } = {}) {
       sourceRepresentations: sources, permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096 });
   }
   const open = () => openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId, corpusId,
-    generation: persisted.manifest.generation, visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+    generation: persisted.manifest.generation, visibilityEpoch: 0, purpose: "session_use", cursorSecret });
   const objects = (await fs.readdir(path.join(root, ".journal-corpora"), { recursive: true })).filter((name) => name.endsWith(".journal-object.json")).length;
-  return { open, objects };
+  // A second generation in the same corpus, read with the same cursor secret.
+  const openGeneration = async (generation) => {
+    const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: "original:test", mediaType: "application/pdf", representations });
+    const second = await persistGraphGeneration({ corpusStore: store, graph: built.graph, sourceRepresentations: sources, permittedUses: ["archive", "organize_search", "session_use"],
+      shardTargetBytes: 4096, extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
+    return openPrivateJournalGraph({ corpusStore: store, manifestObjectId: second.manifest_object_id, caseId, corpusId,
+      generation, visibilityEpoch: 0, purpose: "session_use", cursorSecret });
+  };
+  return { open, objects, openGeneration };
 }
 
 test("find quotes ranks the person's exact words by rare words first and pages without overlap", async (t) => {
@@ -165,17 +173,35 @@ test("find quotes ranks the person's exact words by rare words first and pages w
     assert.ok(either.quotes.some(({ text }) => text.startsWith("Mara said")));
     assert.ok(either.quotes.some(({ text }) => text.startsWith("I dreamt")));
 
-    // Pages concatenate to the same order as one larger page.
-    const whole = await reader.findQuotes({ query: "Mara cardamom running harbour", limit: 6 });
-    const first = await reader.findQuotes({ query: "Mara cardamom running harbour", limit: 2 });
-    const second = await reader.findQuotes({ query: "Mara cardamom running harbour", limit: 2, offset: first.next_offset });
-    assert.equal(first.more_available, true);
-    assert.deepEqual([...first.quotes, ...second.quotes].map(({ quote_id: id }) => id), whole.quotes.slice(0, 4).map(({ quote_id: id }) => id));
+    // Pages from the cursor concatenate to the whole ranking, each quote once.
+    const query = "Mara cardamom running harbour sentence";
+    const whole = await reader.findQuotes({ query, limit: 40, byteBudget: 48_000 });
+    assert.equal(whole.more_available, false);
+    assert.equal(whole.next_cursor, null);
+    const paged = [];
+    let cursor = null;
+    do {
+      const page = await reader.findQuotes({ query, limit: 1, cursor });
+      assert.equal(page.quotes.length, 1);
+      paged.push(page.quotes[0].quote_id);
+      cursor = page.next_cursor;
+      assert.equal(page.more_available, cursor !== null);
+    } while (cursor);
+    assert.deepEqual(paged, whole.quotes.map(({ quote_id: id }) => id));
+    assert.equal(new Set(paged).size, paged.length);
+    // A cursor belongs to its query and filters.
+    const first = await reader.findQuotes({ query, limit: 1 });
+    await assert.rejects(reader.findQuotes({ query: "cardamom", cursor: first.next_cursor }), { code: "CURSOR_QUERY_MISMATCH" });
+    await assert.rejects(reader.findQuotes({ query, from: "2019", cursor: first.next_cursor }), { code: "CURSOR_QUERY_MISMATCH" });
+    await assert.rejects(reader.findQuotes({ query, cursor: "not-a-cursor" }), { code: "CURSOR_INVALID" });
 
-    // A small byte budget still returns one quote and says more remain.
+    // A small byte budget still returns one quote, and the next page starts with the quote that didn't fit.
     const budget = await reader.findQuotes({ query: "harbour", byteBudget: 1000 });
     assert.equal(budget.quotes.length, 1);
     assert.equal(budget.more_available, true);
+    const afterBudget = await reader.findQuotes({ query: "harbour", byteBudget: 1000, cursor: budget.next_cursor });
+    const harbour = await reader.findQuotes({ query: "harbour", byteBudget: 48_000 });
+    assert.equal(afterBudget.quotes[0].quote_id, harbour.quotes[1].quote_id);
 
     // A query of only common words still searches by them.
     const common = await reader.findQuotes({ query: "the and of" });
@@ -199,6 +225,17 @@ test("a time window keeps quotes written inside it, and undated ones only when a
     await assert.rejects(reader.findQuotes({ query: "Mara", limit: 41 }), { code: "QUOTE_LIMIT_INVALID" });
     await assert.rejects(reader.findQuotes({ query: "...", limit: 1 }), { code: "SEARCH_QUERY_HAS_NO_TERMS" });
   } finally { reader.close(); }
+});
+
+test("a quote cursor is refused on a different snapshot", async (t) => {
+  const quotes = await persistedQuotes(t);
+  const reader = await quotes.open();
+  let cursor;
+  try { cursor = (await reader.findQuotes({ query: "Mara cardamom", limit: 1 })).next_cursor; } finally { reader.close(); }
+  assert.ok(cursor);
+  const other = await quotes.openGeneration("quote-generation-2");
+  try { await assert.rejects(other.findQuotes({ query: "Mara cardamom", limit: 1, cursor }), { code: "CURSOR_SNAPSHOT_INVALID" }); }
+  finally { other.close(); }
 });
 
 test("find quotes also works on a generation without the quote indexes", async (t) => {
@@ -281,6 +318,13 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   assert.equal(corpora.length, 1, "only the quote corpus is active");
   assert.match(corpora[0].corpus_id, /:quotes$/u);
   assert.match(corpora[0].active_generation, /:quotes:quote-index-v1$/u);
+  // The published quote corpus carries the archived original its locators name.
+  await f.service.withJournalCorpus(CASE_ID, corpora[0].corpus_id, { requiredScope: "case:write", requiredPurpose: "archive" }, async ({ corpusStore, reference }) => {
+    const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
+    assert.equal(manifest.archive_references.length, 1);
+    const original = await corpusStore.reassembleOriginal(manifest.archive_references[0]);
+    try { assert.equal(original.toString("utf8"), PAGES.join("\n")); } finally { original.fill(0); }
+  }, { bearerToken: WRITER });
 
   // A reader finds the person's words through the connector's API and through the MCP tool.
   const api = createJournalPrivateApi({ caseAccessService: f.service });

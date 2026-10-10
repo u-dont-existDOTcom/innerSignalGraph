@@ -10,10 +10,10 @@ export const QUOTE_SEARCH_LIMITS = Object.freeze({
   byteBudgetDefault: 12_000,
   byteBudgetMin: 1_000,
   byteBudgetMax: 48_000,
-  offsetMax: 2_000,
   termsMax: 24,
-  // How many ranked matches a time filter may look through before it says it stopped early.
-  filterScanMax: 5_000
+  // How many ranked matches one call looks through at most. A call that stops here returns a cursor
+  // past what it looked at, so paging always moves on.
+  scanMax: 5_000
 });
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -537,21 +537,28 @@ export async function openPrivateJournalGraph({
    * of the ranking unless the query has nothing else. A time window keeps the quotes written under a
    * date line inside it,
    * and undated ones only when asked to. A page stops at its quote limit or byte budget, and always
-   * holds at least one quote when any match. Each quote comes with its page, the date line it was
+   * holds at least one quote when any match. Later pages come from a cursor bound, like search's, to
+   * the snapshot, query and filters, and holding the position in the ranking where the next page
+   * starts. Each quote comes with its page, the date line it was
    * written under, and the wording cues found in it (`quoteCues`). Works on any generation. On a
    * quote index, the `quote_meta` index gives each quote's span, page and date line, so no record is
    * decrypted; elsewhere the passage record supplies the span and there are no dates.
    */
   const findQuotes = async ({ query, from = null, to = null, includeUndated = true, limit = QUOTE_SEARCH_LIMITS.limitDefault,
-    byteBudget = QUOTE_SEARCH_LIMITS.byteBudgetDefault, offset = 0 } = {}) => {
+    byteBudget = QUOTE_SEARCH_LIMITS.byteBudgetDefault, cursor = null } = {}) => {
     await assertCurrent();
     invariant(typeof query === "string" && query.length > 0 && query.length <= 4_000, "QUOTE_QUERY_INVALID");
     invariant((from === null || isJournalTimeBound(from)) && (to === null || isJournalTimeBound(to)) && typeof includeUndated === "boolean", "QUOTE_FILTERS_INVALID");
     invariant(Number.isSafeInteger(limit) && limit >= 1 && limit <= QUOTE_SEARCH_LIMITS.limitMax, "QUOTE_LIMIT_INVALID");
     invariant(Number.isSafeInteger(byteBudget) && byteBudget >= QUOTE_SEARCH_LIMITS.byteBudgetMin && byteBudget <= QUOTE_SEARCH_LIMITS.byteBudgetMax, "QUOTE_BUDGET_INVALID");
-    invariant(Number.isSafeInteger(offset) && offset >= 0 && offset <= QUOTE_SEARCH_LIMITS.offsetMax, "QUOTE_OFFSET_INVALID");
     const allTerms = lexicalTerms(query);
     invariant(allTerms.length > 0, "SEARCH_QUERY_HAS_NO_TERMS");
+    const expected = {
+      query_sha256: sha256(Buffer.from(allTerms.join("\0"), "utf8")),
+      filters_sha256: sha256(Buffer.from(JSON.stringify({ from, to, includeUndated }), "utf8")),
+      sort: "quotes"
+    };
+    const start = cursor ? parseCursor(cursor, expected).offset : 0;
     const content = allTerms.filter((term) => !QUOTE_STOPWORDS.has(term));
     const terms = (content.length ? content : allTerms).slice(0, QUOTE_SEARCH_LIMITS.termsMax);
     const ignored = allTerms.filter((term) => !terms.includes(term));
@@ -584,16 +591,17 @@ export async function openPrivateJournalGraph({
       candidates = ranked.filter((id) => allowed.has(id));
     }
     const quotes = [];
-    let passed = 0, visited = 0, bytes = 0, more = false, scanCapped = false;
-    for (const id of candidates) {
-      if (windowed && visited >= QUOTE_SEARCH_LIMITS.filterScanMax) { scanCapped = true; more = true; break; }
+    let visited = 0, bytes = 0, scanCapped = false;
+    // `position` ends at the first match this page didn't take: the next page starts there.
+    let position = start;
+    for (; position < candidates.length; position += 1) {
+      if (quotes.length >= limit) break;
+      if (visited >= QUOTE_SEARCH_LIMITS.scanMax) { scanCapped = true; break; }
       visited += 1;
+      const id = candidates[position];
       const [meta = null] = quoteIndex ? await readIndex("quote_meta", id) : [];
       const date = meta?.written ?? null;
       if (windowed && !inTimeWindow(date ? [[date.from, date.to]] : [], { from, to, include_unknown: includeUndated })) continue;
-      passed += 1;
-      if (passed <= offset) continue;
-      if (quotes.length >= limit) { more = true; break; }
       let text, page;
       if (meta) {
         text = await exactText({ representationId: meta.representation_id, startByte: meta.start_byte, endByte: meta.end_byte, expectedSha256: meta.sha256 });
@@ -609,7 +617,7 @@ export async function openPrivateJournalGraph({
       const line = date?.line ? await exactText({ representationId: date.line.representation_id, startByte: date.line.start_byte,
         endByte: date.line.end_byte, expectedSha256: date.line.sha256 }) : null;
       const size = Buffer.byteLength(text, "utf8") + (line ? Buffer.byteLength(line, "utf8") : 0);
-      if (quotes.length > 0 && bytes + size > byteBudget) { more = true; break; }
+      if (quotes.length > 0 && bytes + size > byteBudget) break;
       bytes += size;
       quotes.push(Object.freeze({
         quote_id: id,
@@ -627,16 +635,27 @@ export async function openPrivateJournalGraph({
         score: Math.round(scores.get(id) * 1000) / 1000
       }));
     }
+    const more = position < candidates.length;
     const result = Object.freeze({
       quotes: Object.freeze(quotes),
-      next_offset: more ? offset + quotes.length : null,
       more_available: more,
+      next_cursor: more ? signCursor({
+        schema_version: "1.0",
+        case_id: caseId,
+        corpus_id: corpusId,
+        purpose,
+        generation,
+        visibility_epoch: visibilityEpoch,
+        ...expected,
+        offset: position,
+        expires_at: now() + cursorTtlMs
+      }) : null,
       coverage: Object.freeze({
         terms_ranked: Object.freeze([...terms]),
         terms_ignored: Object.freeze(ignored),
         matching_quotes: windowed ? null : ranked.length,
         quotes_examined: visited,
-        filter_scan_capped: scanCapped,
+        scan_capped: scanCapped,
         quote_index: quoteIndex,
         encrypted_objects_read: objectReads - beforeReads,
         full_archive_loaded: false

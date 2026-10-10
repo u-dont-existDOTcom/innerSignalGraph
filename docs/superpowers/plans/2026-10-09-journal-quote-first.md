@@ -102,13 +102,17 @@ Three changes brought it down to the figures above:
   - optionally indexes where each representation is stored (`representation_objects`);
   - writes representations before indexes, so that index can name them.
 - **`findQuotes` on the journal reader.** It works on any generation. Without the quote indexes, a whole partition
-  unit is the quote and there are no dates.
+  unit is the quote and there are no dates. Later pages come from a signed cursor bound, like search's, to the snapshot,
+  the query and the filters. The cursor holds the position in the ranking where the next page starts, so paging never
+  skips or repeats a quote, even if a new generation is published between pages. One call looks through at most 5,000
+  matches; one that stops there returns a cursor past them.
 - **The connector tool `find_journal_quotes`.** It's read-only like the other journal tools, and its description carries
   the answering rules above.
 - **Two import commands: `build-quotes` and `publish-quotes`.**
   - `build-quotes` stages the quote generation in the execution root.
   - `publish-quotes` builds it if needed, then publishes it to the case as its own corpus, `<corpus>:quotes`, with
     generation `<generation>:quotes:quote-index-v1`.
+  - The quote corpus carries a copy of the archived original, which its locators name, so it's complete on its own.
   - The import's own corpus, generation and calibration are untouched, so its later commit can't conflict with this
     publication.
 
@@ -152,8 +156,9 @@ journal corpora, so the connector goes first.
 - `findQuotes`:
   - ranks rarer words first;
   - finds a quote holding either word;
-  - pages without overlap;
-  - keeps one quote under a small budget and says more remain;
+  - pages through the whole ranking with its cursor, each quote once;
+  - refuses a cursor from another query, other filters or another snapshot;
+  - keeps one quote under a small budget, and starts the next page with the quote that didn't fit;
   - still searches a query made only of common words;
   - returns exact text;
   - reads part of the index, not all of it.
@@ -164,6 +169,7 @@ journal corpora, so the connector goes first.
   - stages without publishing;
   - keeps only the quote manifest's reference in the run state, which is rewritten on every save.
 - `publish-quotes`:
+  - publishes a corpus that holds the archived original;
   - publishes only the quote corpus;
   - leaves the import's run unchanged;
   - is a no-op the second time.

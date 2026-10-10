@@ -88,7 +88,7 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
         limit: { type: "integer", minimum: 1, maximum: QUOTE_SEARCH_LIMITS.limitMax, default: QUOTE_SEARCH_LIMITS.limitDefault },
         byte_budget: { type: "integer", minimum: QUOTE_SEARCH_LIMITS.byteBudgetMin, maximum: QUOTE_SEARCH_LIMITS.byteBudgetMax,
           default: QUOTE_SEARCH_LIMITS.byteBudgetDefault, description: "Most quote text to return, in bytes." },
-        offset: { type: "integer", minimum: 0, maximum: QUOTE_SEARCH_LIMITS.offsetMax, default: 0, description: "Skip this many ranked quotes: the previous call's next_offset." }
+        cursor: { type: ["string", "null"], description: "The previous call's next_cursor, for the next quotes of the same query." }
       }
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
@@ -286,7 +286,7 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
           includeUndated: input.includeUndated ?? true,
           limit: input.limit ?? QUOTE_SEARCH_LIMITS.limitDefault,
           byteBudget: input.byteBudget ?? QUOTE_SEARCH_LIMITS.byteBudgetDefault,
-          offset: input.offset ?? 0
+          cursor: input.cursor ?? null
         });
         return Object.freeze({ ...result, snapshot: { generation: snapshot.generation, visibility_epoch: snapshot.visibility_epoch } });
       });

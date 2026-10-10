@@ -2631,9 +2631,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           });
           const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: state.original.object_id,
             mediaType: plan.parsed.source.mime_type, representations });
+          // The quote corpus carries the archived original its locators name, so it is complete on its own.
+          const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
+            objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
+          invariant(original.byte_length === state.original.byte_length && original.sha256 === state.original.sha256, "QUOTE_ARCHIVE_COPY_MISMATCH");
           const persisted = await persistGraphGeneration({ corpusStore: quoteStore, graph: built.graph,
             sourceRepresentations: Object.fromEntries(representations.map((item) => [item.representation_id, item.text])),
-            permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: QUOTE_SHARD_BYTES,
+            permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
             extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
           // The manifest stays in the store, not in the run state, which is rewritten on every save.
           state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
