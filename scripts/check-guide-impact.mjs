@@ -8,7 +8,10 @@
 //
 //   Guide impact: app-only — <why nothing changes for a reader>
 //
-// Every queue entry the pull request adds must carry the five fields of a teaching point.
+// The teaching point is a queue entry the pull request adds, or an existing entry whose heading it
+// changes (to update an entry, change its heading too, for example with the pull request number). Any
+// such entry must carry the five fields of a teaching point. One whose "Already covered:" says nothing
+// close comes with a change to canonical guide text, since the AI guide has nothing that says it yet.
 //
 // CI runs it with GUIDE_IMPACT_BASE_SHA, GUIDE_IMPACT_HEAD_SHA and GUIDE_IMPACT_PR_BODY. It prints
 // repository paths and field names only.
@@ -59,23 +62,32 @@ export function missingFields(entryBody) {
   return TEACHING_POINT_FIELDS.filter((field) => !new RegExp(`^${field}[ \\t]*\\S`, "mu").test(entryBody));
 }
 
+const GUIDE_TEXT = /^guides\/[^/]+\.txt$/u;
+const NOTHING_CLOSE = /^Already covered:[ \t]*nothing close\b/imu;
+
 /**
  * The verdict for one pull request: the files it changes, its description, and the queue entries it
- * adds (heading and body). Returns { ok, problems, map_files, queue_changed, app_only }.
+ * adds or re-heads (heading and body). Returns { ok, problems, map_files, queue_changed, app_only }.
  */
 export function guideImpactVerdict({ changedFiles, prBody, addedEntries = [] }) {
   const mapFiles = changedFiles.filter(isMapPath).sort();
   const queueChanged = changedFiles.includes(GUIDE_QUEUE_PATH);
+  const guideTextChanged = changedFiles.some((file) => GUIDE_TEXT.test(file));
   const reason = appOnlyReason(prBody);
   const problems = [];
   for (const entry of addedEntries) {
+    const title = entry.heading.replace(/^###\s*/u, "");
     const missing = missingFields(entry.body);
-    if (missing.length) problems.push(`${GUIDE_QUEUE_PATH}: "${entry.heading.replace(/^###\s*/u, "")}" is missing ${missing.join(", ")}`);
+    if (missing.length) problems.push(`${GUIDE_QUEUE_PATH}: "${title}" is missing ${missing.join(", ")}`);
+    else if (NOTHING_CLOSE.test(entry.body) && !guideTextChanged) {
+      problems.push(`${GUIDE_QUEUE_PATH}: "${title}" says nothing in the guide covers it, so the AI guide text (guides/*.txt) changes in the same pull request`);
+    }
   }
-  if (mapFiles.length && !queueChanged && !reason) {
+  // A queue edit alone (consuming an entry, fixing prose) is not a teaching point.
+  if (mapFiles.length && addedEntries.length === 0 && !reason) {
     problems.push(`This pull request changes the map (${mapFiles.join(", ")}) without a teaching point. Add one to ${GUIDE_QUEUE_PATH} `
-      + `with the fields ${TEACHING_POINT_FIELDS.join(" ")}, or, if nothing changes for a reader, put this line in the pull request `
-      + "description: Guide impact: app-only — <why nothing changes for a reader>");
+      + `with the fields ${TEACHING_POINT_FIELDS.join(" ")} (to update an existing entry, change its heading too), or, if nothing changes `
+      + "for a reader, put this line in the pull request description: Guide impact: app-only — <why nothing changes for a reader>");
   }
   return Object.freeze({ ok: problems.length === 0, problems: Object.freeze(problems), map_files: Object.freeze(mapFiles),
     queue_changed: queueChanged, app_only: reason !== null });

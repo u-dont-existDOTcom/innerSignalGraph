@@ -15,7 +15,7 @@ A humanizer continuing the Inner Child public guide must reconcile every entry b
 - After all entries are consumed and `authoring/public-guide-sync.json` is updated for the affected obligations, reset this file to the EMPTY sentinel at the bottom. Do not delete the file.
 - A later approved map/source/rule change that affects reader-facing meaning must change the sentinel back to `PENDING` and append the new obligation in the same reviewed change.
 - Runtime-only mechanics do not belong here.
-- A new entry is a teaching point with five fields (`docs/PUBLIC-GUIDE-HUMANIZATION.md`, "Teaching points for map changes"): `Caused by:`, `Teaching point:`, `Reader need:`, `Already covered:` and `Where:`. The `workflow-policy` check refuses a new entry without them. Older entries gain the fields when their heading is next changed.
+- A new entry is a teaching point with five fields (`docs/PUBLIC-GUIDE-HUMANIZATION.md`, "Teaching points for map changes"): `Caused by:`, `Teaching point:`, `Reader need:`, `Already covered:` and `Where:`. The `workflow-policy` check refuses a new entry without them. To update an entry for a new map change, change its heading too (with the pull request number, say), and bring it up to the five fields.
 
 ## Pending bundle A — experience, checking, social authenticity, and adverse-state lessons
 

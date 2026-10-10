@@ -153,7 +153,13 @@ Every change to the map gets one of two things, in the same reviewed change. The
 
 The AI guide's text for a teaching point is written from it, in the reader's voice, in the same change. Notes about the app's own behavior belong in the prompts and rules, or in a passage clearly marked as app-only. They don't belong in prose a person reads: a planner's no-re-offer rule addressed to the reader, or the app named inside reader advice, is the kind of line this keeps out. App-only is declared, never inferred from a missing queue entry.
 
-The `workflow-policy` check enforces this on every pull request (`scripts/check-guide-impact.mjs`). A change to a map file must also change the queue or carry the app-only line, and every queue entry it adds must have the five fields. An older entry gets the missing fields when its heading is next changed.
+The `workflow-policy` check enforces this on every pull request (`scripts/check-guide-impact.mjs`). A change to a map file needs one of these, and a queue edit that adds no teaching point (consuming an entry, fixing prose) doesn't count:
+
+- a new teaching point on the queue;
+- for an existing entry, a change to its heading (with the pull request number, say), which also brings it up to the five fields;
+- the app-only line.
+
+Every entry a change adds or re-heads must have all five fields. One whose `Already covered:` says nothing close must come with a change to canonical guide text (`guides/*.txt`), since the AI guide doesn't say it yet. Whether that text says what the teaching point says is for review; the check can't read meaning.
 
 ## Humanization workflow
 

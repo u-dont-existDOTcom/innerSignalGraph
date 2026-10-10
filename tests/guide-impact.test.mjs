@@ -55,9 +55,23 @@ test("the verdict asks a map change for a teaching point or an app-only reason",
   assert.equal(appOnly.ok, true);
   assert.equal(appOnly.app_only, true);
 
-  const withEntry = guideImpactVerdict({ changedFiles: ["guides/owner-amendments.json", GUIDE_QUEUE_PATH], prBody: "",
+  const withEntry = guideImpactVerdict({ changedFiles: ["guides/owner-amendments.json", GUIDE_QUEUE_PATH, "guides/inner-child-guide-2026-10-10-r1.txt"], prBody: "",
     addedEntries: [{ heading: "### PGQ-901 — A sample teaching point", body: ENTRY.split("\n").slice(1).join("\n") }] });
   assert.equal(withEntry.ok, true);
+
+  // A queue edit that adds no teaching point doesn't count.
+  const queueEditOnly = guideImpactVerdict({ changedFiles: ["guides/owner-amendments.json", GUIDE_QUEUE_PATH], prBody: "" });
+  assert.equal(queueEditOnly.ok, false);
+  assert.match(queueEditOnly.problems[0], /without a teaching point/u);
+
+  // "Nothing close" in the guide means the AI guide text changes too.
+  const noGuideText = guideImpactVerdict({ changedFiles: ["guides/owner-amendments.json", GUIDE_QUEUE_PATH], prBody: "",
+    addedEntries: [{ heading: "### PGQ-901 — A sample teaching point", body: ENTRY.split("\n").slice(1).join("\n") }] });
+  assert.equal(noGuideText.ok, false);
+  assert.match(noGuideText.problems[0], /says nothing in the guide covers it, so the AI guide text \(guides\/\*\.txt\) changes/u);
+  const alreadyCovered = guideImpactVerdict({ changedFiles: ["guides/owner-amendments.json", GUIDE_QUEUE_PATH], prBody: "",
+    addedEntries: [{ heading: "### PGQ-904 — Covered", body: ENTRY.split("\n").slice(1).join("\n").replace("Already covered: nothing close", "Already covered: the AI guide's \"Small steps\" section says the same") }] });
+  assert.equal(alreadyCovered.ok, true);
 
   const thinEntry = guideImpactVerdict({ changedFiles: ["guides/owner-amendments.json", GUIDE_QUEUE_PATH], prBody: "",
     addedEntries: [{ heading: "### PGQ-903 — Thin", body: "Preserve the distinction." }] });
@@ -98,8 +112,18 @@ test("the CLI reads a pull request's change from Git and fails a map change with
   assert.deepEqual(JSON.parse(bare.stdout).map_files, ["guide-graphs/candidates/inner-child.graph.json"]);
   assert.equal(run(mapHead, "Guide impact: app-only — only internal routing metadata changes").status, 0);
 
-  await fs.appendFile(path.join(root, GUIDE_QUEUE_PATH), `\n${ENTRY.replace("PGQ-901", "PGQ-002")}\n`);
-  git("commit", "-q", "-am", "teaching point");
+  // A queue edit alone, such as consuming an entry, is not a teaching point.
+  await fs.writeFile(path.join(root, GUIDE_QUEUE_PATH), "# Pending public guide changes\n\nStatus: **EMPTY**\n");
+  git("commit", "-q", "-am", "consume the old entry");
+  const consumed = run(git("rev-parse", "HEAD"), "");
+  assert.equal(consumed.status, 1);
+  assert.match(consumed.stderr, /without a teaching point/u);
+
+  await fs.writeFile(path.join(root, GUIDE_QUEUE_PATH), `# Pending public guide changes\n\nStatus: **PENDING**\n\n${ENTRY.replace("PGQ-901", "PGQ-002")}\n`);
+  await fs.mkdir(path.join(root, "guides"), { recursive: true });
+  await fs.writeFile(path.join(root, "guides/inner-child-guide-2026-10-10-r1.txt"), "Small steps count.\n");
+  git("add", "-A");
+  git("commit", "-q", "-m", "teaching point and guide text");
   const entryHead = git("rev-parse", "HEAD");
   const withEntry = run(entryHead, "");
   assert.equal(withEntry.status, 0, withEntry.stderr);
