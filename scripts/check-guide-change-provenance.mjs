@@ -29,8 +29,10 @@ function entries(queue) {
 }
 export function assessGuideChangeProvenance({changedPaths,oldQueue="",newQueue="",prBody=""}) {
   const affected=changedPaths.filter(p=>SEMANTIC_SOURCE.test(p));
-  if(!affected.length)return [];
-  const errors=[],queueChanged=changedPaths.includes(queuePath);
+  const queueChanged=changedPaths.includes(queuePath);
+  // Queue consumption is a first-class change even without a map/guide edit.
+  if(!affected.length&&!queueChanged)return [];
+  const errors=[];
   const guideChanged=changedPaths.some(p=>GUIDE_SOURCE.test(p));
   const appOnly=/^Guide impact: app-only\s*[—-]\s*\S.{10,}$/mi.test(prBody);
   if(!queueChanged){

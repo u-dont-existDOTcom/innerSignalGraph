@@ -32,7 +32,7 @@ export function applyPendingReplyEdits({draftText, status, operations}) {
     if (!operation || !["replace", "insert_after", "delete"].includes(operation.kind)) throw new ValidationError(`Invalid edit operation ${index}.`);
     const anchor = requiredString(operation.anchor, `operation[${index}].anchor`);
     const first = text.indexOf(anchor);
-    if (first < 0 || text.indexOf(anchor, first + anchor.length) >= 0) throw new ValidationError(`Edit anchor ${index} must occur exactly once in the current full draft.`);
+    if (first < 0 || text.indexOf(anchor, first + 1) >= 0) throw new ValidationError(`Edit anchor ${index} must occur exactly once in the current full draft.`);
     if (operation.kind === "replace") text = text.slice(0, first) + requiredString(operation.text, "replacement") + text.slice(first + anchor.length);
     else if (operation.kind === "insert_after") text = text.slice(0, first + anchor.length) + insertionText(operation.text) + text.slice(first + anchor.length);
     else text = text.slice(0, first) + text.slice(first + anchor.length);

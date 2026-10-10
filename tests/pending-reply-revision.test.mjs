@@ -92,3 +92,11 @@ test("an insertion of a paragraph break is allowed; omission and reordering of u
   assert.throws(()=>assertUnchangedReplyPassages({oldDraft:draft,newDraft:draft.split("\n\n").reverse().join("\n\n"),unchangedPassages:saved}),/reordered/);
   assert.equal(assertUnchangedReplyPassages({oldDraft:draft,newDraft:inserted,unchangedPassages:saved}),true);
 });
+
+test("overlapping occurrences do not pass the unique-anchor guard", () => {
+  assert.throws(() => applyPendingReplyEdits({
+    draftText: 'He said "no no no" and paused.',
+    status: "unsent",
+    operations: [{kind:"replace",anchor:"no no",text:"yes"}]
+  }),/exactly once/);
+});

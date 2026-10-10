@@ -74,3 +74,15 @@ test("Nothing close with punctuation cannot masquerade as prior canonical covera
   const errs=assessGuideChangeProvenance({changedPaths:["guide-graphs/candidates/cross-guide.graph.json","authoring/PENDING-PUBLIC-GUIDE-CHANGES.md"],oldQueue:"# Queue",newQueue:revised});
   assert.ok(errs.some(e=>e.includes("specific already-covered anchor")));
 });
+
+test("queue-only consumption is blocked without public-guide sync even when no map source changes", () => {
+  const errors=assessGuideChangeProvenance({changedPaths:["authoring/PENDING-PUBLIC-GUIDE-CHANGES.md"],oldQueue:full,newQueue:"# Queue\n"});
+  assert.ok(errors.some(x=>x.includes("sync-manifest")));
+  const accepted=assessGuideChangeProvenance({changedPaths:["authoring/PENDING-PUBLIC-GUIDE-CHANGES.md","authoring/public-guide-sync.json"],oldQueue:full,newQueue:"# Queue\n"});
+  assert.deepEqual(accepted,[]);
+});
+test("queue-only malformed addition fails even if no source file changed", () => {
+  const malformed=full.replace("Reader need: A reader would misunderstand.", "Reader need:");
+  const errors=assessGuideChangeProvenance({changedPaths:["authoring/PENDING-PUBLIC-GUIDE-CHANGES.md"],oldQueue:"# Queue",newQueue:malformed});
+  assert.ok(errors.some(x=>x.includes("missing Reader need")));
+});
