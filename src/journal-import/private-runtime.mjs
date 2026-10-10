@@ -2632,11 +2632,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
       try {
         if (state.quote_index?.generation !== generation) {
-          // A run state from before `quote_published` names its published generation only in the build
-          // record this build replaces, so it is kept first.
+          // A run state from before `quote_published` names the published generation only in the build
+          // record this build replaces: as that build's own generation once it was published, or as the
+          // one it was going to replace before then. It is kept first.
           if (!state.quote_published && state.quote_index?.published) {
             state.quote_published = { generation: state.quote_index.generation, manifest_object_id: state.quote_index.manifest_object_id,
               at: state.quote_index.published.at };
+          } else if (!state.quote_published && state.quote_index?.supersedes) {
+            state.quote_published = { generation: state.quote_index.supersedes, manifest_object_id: null, at: null };
           }
           const published = state.quote_published?.generation ?? null;
           const supersedes = published === generation ? null : published;
