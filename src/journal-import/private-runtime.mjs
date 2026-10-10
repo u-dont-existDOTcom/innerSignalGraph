@@ -20,6 +20,7 @@ import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "./graph.mjs";
+import { QUOTE_INDEX_VERSION, buildQuoteGeneration } from "./quote-index.mjs";
 import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibration, referenceScorePasses,
   reviewAfterWithholding, reviewFindingTargets, reviewStatusFromContent, scopeReviewAfterRepair,
   sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
@@ -46,6 +47,9 @@ const invariant = (v, code) => { if (!v) throw new ValidationError(code, { code 
 // this many bytes; an answered context request widens a unit's window to at most EXPANDED_CONTEXT_BYTES a side.
 const SEMANTIC_PACKET_BYTES = 180_000;
 const EXPANDED_CONTEXT_BYTES = 32_000;
+// The quote index's records and index pieces are stored in small objects, so a search decrypts only
+// what it touches (scripts/journal-quote-benchmark.mjs measures the difference).
+const QUOTE_SHARD_BYTES = 128 * 1024;
 // Calibration windows over native-text units. A scanned or image-only source has none at intake;
 // its visual units get windows once the page reader has produced them, so none is a valid start.
 const nativeCalibration = (units) => units.length ? selectCalibrationWindows(units) : [];
@@ -377,6 +381,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       ...(state.semantic_disposition === "archive_only" ? { next_action: state.next_action } : {}),
       completion: structuredClone(state.completion), blocker: state.blocker,
       residuals: structuredClone(state.residuals ?? {}),
+      ...(state.quote_index ? { quote_index: { ...structuredClone(state.quote_index.stats), corpus_id: state.quote_index.corpus_id,
+        generation: state.quote_index.generation, built_at: state.quote_index.built_at, published_at: state.quote_index.published?.at ?? null } } : {}),
       hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0,
       lookahead: semanticConcurrency === 1
         ? { concurrency: 1, sent: 0, used: 0, unused: 0 }
@@ -2603,6 +2609,64 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       await save(); return summary();
     }
 
+    // The quote index (plan 2026-10-09-journal-quote-first.md): the staged source split into exact
+    // paragraph quotes with the date lines they were written under, kept as its own corpus so
+    // InnerSignal can answer from the person's own words while the semantic import goes on. It is
+    // mechanical: no model reads or writes it, and the import's corpus, generation and calibration
+    // are untouched. `build-quotes` stages it in the execution root; `publish-quotes` also publishes
+    // it to the case. Publish only once the connector serves the journal read tools: a case with a
+    // journal corpus is not continuation-safe for a consumer that can't read one.
+    async function buildQuotes() {
+      invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
+      const corpusId = `${state.corpus_id}:quotes`;
+      const generation = `${state.generation}:quotes:${QUOTE_INDEX_VERSION}`;
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
+      try {
+        if (state.quote_index?.generation !== generation) {
+          const plan = await readLarge(state.parsed_ref);
+          const representations = plan.parsed.representations.map((representation) => {
+            const page = plan.parsed.pages.find((p) => p.representation_id === representation.representation_id);
+            return { representation_id: representation.representation_id, text: representation.text,
+              page_number: page?.page_number ?? null, parse_status: parseStatus(page, plan.parsed.source.mime_type) };
+          });
+          const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: state.original.object_id,
+            mediaType: plan.parsed.source.mime_type, representations });
+          // The quote corpus carries the archived original its locators name, so it is complete on its own.
+          const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
+            objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
+          invariant(original.byte_length === state.original.byte_length && original.sha256 === state.original.sha256, "QUOTE_ARCHIVE_COPY_MISMATCH");
+          const persisted = await persistGraphGeneration({ corpusStore: quoteStore, graph: built.graph,
+            sourceRepresentations: Object.fromEntries(representations.map((item) => [item.representation_id, item.text])),
+            permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
+            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
+          // The manifest stays in the store, not in the run state, which is rewritten on every save.
+          state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
+            manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null };
+          await save();
+        }
+        return quoteStore;
+      } catch (error) { quoteStore.close(); throw error; }
+    }
+
+    async function publishQuotes() {
+      const quoteStore = await buildQuotes();
+      try {
+        // The transfer checks every object it copies, the manifest included, against these references.
+        const { manifest_object_id: manifestObjectId, manifest_reference: manifestReference } = state.quote_index;
+        const persisted = { manifest: await quoteStore.readJsonObject({ objectId: manifestObjectId }), manifest_reference: manifestReference,
+          manifest_object_id: manifestObjectId };
+        await authorize();
+        const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize });
+        const receipt = typeof service.rootDir === "string"
+          ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
+          : await publish();
+        state.quote_index.published = { at: now().toISOString(), legacy_state_unchanged: receipt.legacy_state_unchanged,
+          objects_verified: receipt.transfer.objects_verified };
+        await save();
+        return summary();
+      } finally { quoteStore.close(); }
+    }
+
     const executeSemantic = async (action) => {
       lookahead = createRunLookahead();
       try { await action(); }
@@ -2621,6 +2685,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (["inventory", "stage"].includes(command)) return stage();
         if (command === "recalibrate") return recalibrate();
         if (command === "resume-calibration") return resumeCalibration();
+        if (command === "build-quotes") { (await buildQuotes()).close(); return summary(); }
+        if (command === "publish-quotes") return publishQuotes();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();

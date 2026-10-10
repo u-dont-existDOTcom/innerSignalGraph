@@ -411,7 +411,13 @@ export async function persistGraphGeneration({
   permittedUses = ["archive", "organize_search"],
   archiveReferences = [],
   shardTargetBytes = DEFAULT_SHARD_TARGET_BYTES,
-  manifestMaximumBytes = JOURNAL_OBJECT_PAYLOAD_MAX_BYTES
+  manifestMaximumBytes = JOURNAL_OBJECT_PAYLOAD_MAX_BYTES,
+  // Further indexes a generation's builder adds, by name: a Map from key to an array of values,
+  // stored and read like the built-in ones. The quote index uses it for `quote_meta` and `quote_months`.
+  extraIndexes = {},
+  // Also index where each representation is stored (`representation_objects`), so a reader can open
+  // one page without reading every page's descriptor. Readers fall back to the directory without it.
+  indexRepresentations = false
 }) {
   invariant(corpusStore && typeof corpusStore.writeJsonObject === "function", "CORPUS_STORE_INVALID");
   invariant(Number.isSafeInteger(visibilityEpoch) && visibilityEpoch >= 0, "VISIBILITY_EPOCH_INVALID");
@@ -434,18 +440,6 @@ export async function persistGraphGeneration({
     recordShards.push(contentRef(reference, { record_count: shard.length }));
     for (const record of shard) recordLookup.set(record.id, [{ object_id: objectId, ...recordLookupFacts(record, orderOf) }]);
   }
-  const indexes = { ...buildGraphIndexes(graph), record_lookup: recordLookup };
-  const indexDirectories = {};
-  for (const [name, index] of Object.entries(indexes)) {
-    const descriptors = [];
-    for (const [shardIndex, entries] of packIndex(index, shardTargetBytes).entries()) {
-      const objectId = `graph:${generationTag}:index:${name}:${String(shardIndex).padStart(6, "0")}`;
-      const reference = await corpusStore.writeJsonObject({ objectId, value: { schema_version: "1.0", name, entries } });
-      const keys = entries.map(([key]) => key).sort((left, right) => left.localeCompare(right));
-      descriptors.push(contentRef(reference, { first_key: keys[0], last_key: keys.at(-1), entry_count: entries.length }));
-    }
-    indexDirectories[name] = descriptors;
-  }
   const sourceRepresentationObjects = {};
   for (const [index, [representationId, text]] of Object.entries(sourceRepresentations).sort(([left], [right]) => left.localeCompare(right)).entries()) {
     const objectId = `graph:${generationTag}:representation:${String(index).padStart(6, "0")}`;
@@ -465,6 +459,32 @@ export async function persistGraphGeneration({
     invariant(typeof corpusStore.writeChunkedOriginal === "function", "CORPUS_STORE_INVALID");
     const chunked = await corpusStore.writeChunkedOriginal({ objectId, bytes: Buffer.from(text, "utf8") });
     sourceRepresentationObjects[representationId] = { ...structuredClone(chunked), representation_id: representationId, encoding: "utf8_chunks" };
+  }
+  const indexes = { ...buildGraphIndexes(graph), record_lookup: recordLookup };
+  invariant(extraIndexes && typeof extraIndexes === "object" && !Array.isArray(extraIndexes), "GRAPH_EXTRA_INDEX_INVALID");
+  for (const [name, index] of Object.entries(extraIndexes)) {
+    invariant(/^[a-z][a-z0-9_]{0,39}$/u.test(name) && !Object.hasOwn(indexes, name) && name !== "representation_objects" && index instanceof Map
+      && [...index].every(([key, values]) => typeof key === "string" && key.length > 0 && Array.isArray(values)), "GRAPH_EXTRA_INDEX_INVALID");
+    indexes[name] = index;
+  }
+  if (indexRepresentations) {
+    indexes.representation_objects = new Map(Object.entries(sourceRepresentationObjects).sort(([left], [right]) => left.localeCompare(right))
+      .map(([representationId, descriptor]) => [representationId, [{
+        descriptor,
+        utf8_byte_length: Buffer.byteLength(sourceRepresentations[representationId], "utf8"),
+        sha256: sha256(Buffer.from(sourceRepresentations[representationId], "utf8"))
+      }]]));
+  }
+  const indexDirectories = {};
+  for (const [name, index] of Object.entries(indexes)) {
+    const descriptors = [];
+    for (const [shardIndex, entries] of packIndex(index, shardTargetBytes).entries()) {
+      const objectId = `graph:${generationTag}:index:${name}:${String(shardIndex).padStart(6, "0")}`;
+      const reference = await corpusStore.writeJsonObject({ objectId, value: { schema_version: "1.0", name, entries } });
+      const keys = entries.map(([key]) => key).sort((left, right) => left.localeCompare(right));
+      descriptors.push(contentRef(reference, { first_key: keys[0], last_key: keys.at(-1), entry_count: entries.length }));
+    }
+    indexDirectories[name] = descriptors;
   }
   const manifestObjectId = `graph:${generationTag}:manifest`;
   const manifest = {

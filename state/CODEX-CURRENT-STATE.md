@@ -3,12 +3,19 @@
 Updated: 2026-10-09
 
 
-## Journal calibration round 5 stopped on one critical miss; the critical-miss design fixed (2026-10-09, awaiting the owner's deploy)
+## Journal quote-first: answer from the person's own words (2026-10-09, awaiting review, merge and the owner's deploy)
+
+- **Owner request:** "i'd rather have it now so we can actually test it now ... make sure first this is actually scalable ... if it takes like a few minutes to do each reply that's not good" (9 Oct, 22:32 UTC). Plan: `docs/superpowers/plans/2026-10-09-journal-quote-first.md`.
+- **Change:** a mechanical quote index (`src/journal-import/quote-index.mjs`: exact paragraph quotes, the date line each was written under, wording cues for dream, wish, plan, hypothetical, negation, hedge and reported speech); `findQuotes` on the journal reader; the read-only connector tool `find_journal_quotes`, whose description carries the answering rules; import commands `build-quotes` and `publish-quotes`, which publish the quote corpus as `<corpus>:quotes` and leave the import's corpus, generation and calibration untouched; `persistGraphGeneration` extra indexes and a representation index; `scripts/journal-quote-benchmark.mjs`.
+- **Measured:** on a synthetic journal of the real size (2 CPUs, fresh reader per call): median 81 ms and slowest 136 ms per quote search, about 2,700 tokens per result. At ten times that size, see the plan. Real server: the import's `verify` resolved all 1,117 native passages plus three searches in 1.24 s.
+- **Next:** Codex review; the owner merges; on the owner's `deploy`: deploy to the import server, rebuild the hosted connector with the journal read tools on for the owner's case, then stop the worker, run `publish-quotes`, and restart it. The connector must serve the journal tools before publication, or the case stops being continuation-safe for it.
+
+## Journal calibration round 5 stopped on one critical miss; the critical-miss design fixed (2026-10-09, deployed and merged)
 
 - **Stop:** round 5 (epoch 5) stopped at about 04:23 UTC on 8 Oct after 93 of 162 calibration units: pooled recall 864/872 (99.1%, target 0.95), 6 failed units, 1 critical miss (blocker `CALIBRATION_REFERENCE_MISSED`). Content-free counts only; the per-unit diagnostics stay in the private runtime.
 - **Owner decision:** "fix it" (9 Oct, after the owner page explained the critical miss). Part 1, the recommended option of question 15: optional `calibration_critical_miss_limit` (default 0; 3 recommended) and the operator command `resume-calibration`, which reopens a stopped round in the same epoch only when the current config wouldn't have stopped it. Part 2: the reference reader defines critical by the fidelity auditor's list; a critical miss on a kept attempt counts only when a second judge (hardest tier when on, else a fresh standard audit) confirms it; a review's status is read from what it names (`reviewStatusFromContent`). Plan: `docs/superpowers/plans/2026-10-08-journal-calibration-critical-miss-limit.md`.
 - **Evidence:** every new test in `journal-recalibrate`, `journal-review-convergence` and `journal-contracts` fails without the source change; the pinned reference-reader job ID changes only with the reader's text.
-- **Next:** on the owner's `deploy`: deploy, restart the import worker, set the limit to 3, run `resume-calibration`, then check the next import run. The owner merges when Codex's review of the final commit is clean.
+- **Done:** deployed on the owner's `deploy` (9 Oct, about 20:34 UTC): worker stopped, commit deployed, limit set to 3, `resume-calibration` run, worker restarted; round 5 continued from unit 94. Merged by the owner at 21:42 UTC (#144).
 
 
 ## Inner-speech question asked before the first inner dialogue (2026-10-06, awaiting owner merge and deploy)

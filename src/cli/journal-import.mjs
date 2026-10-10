@@ -23,6 +23,8 @@ export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
   "run",
   "recalibrate",
   "resume-calibration",
+  "build-quotes",
+  "publish-quotes",
   "visual-only",
   "status",
   "verify",

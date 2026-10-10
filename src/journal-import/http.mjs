@@ -1,6 +1,6 @@
 import { ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES } from "../storage/private-case-access.mjs";
-import { createJournalResultCache, openPrivateJournalGraph, readJournalCursorSnapshot } from "./retrieval.mjs";
+import { QUOTE_SEARCH_LIMITS, createJournalResultCache, openPrivateJournalGraph, readJournalCursorSnapshot } from "./retrieval.mjs";
 
 const ID = /^[A-Za-z0-9:_-]{1,160}$/;
 const READ_PURPOSES = new Set([PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH, PRIVATE_JOURNAL_PURPOSES.SESSION_USE]);
@@ -64,6 +64,35 @@ async function recheckSnapshot(caseStore, caseId, corpusId, snapshot) {
 const TIME_BOUND_DESCRIPTION = "ISO 8601 calendar value without an offset: YYYY, YYYY-MM, YYYY-MM-DD or YYYY-MM-DDTHH:MM[:SS[.sss]], optionally ending in Z. The window includes the whole period a bound names.";
 
 export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
+  Object.freeze({
+    name: "find_journal_quotes",
+    title: "Find the person's own words in their journal",
+    description: "Find exact, integrity-checked quotes from an authorized journal snapshot, ranked by the query's words "
+      + "(rarer words count more), each with its page, the date line it was written under when there is one, and wording "
+      + "cues found in it: dream, wish, plan, hypothetical, negation, hedge, reported speech. Answer from these quotes. Quote "
+      + "the exact words you rely on. Keep the person's own qualifiers. Treat anything under a dream, wish, plan or "
+      + "hypothetical cue as that, never as something that happened, and say who said reported speech. Give the date a "
+      + "quote was written under when you say what it shows, and don't present an old quote as still true. If no quote "
+      + "answers the question, say so; don't infer what the journal says. Use the case's journal corpus whose ID ends in "
+      + "\":quotes\" when there is one.",
+    inputSchema: {
+      type: "object", additionalProperties: false, required: ["case_id", "corpus_id", "query"],
+      properties: {
+        case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" },
+        corpus_id: { type: "string", pattern: "^[A-Za-z0-9:_-]{1,160}$" },
+        query: { type: "string", minLength: 1, maxLength: 4_000, description: "Words the quotes should contain: names, places, topics, feelings. Words match exactly, so add the variants and synonyms the person might have written (dream dreamt dreamed nightmare)." },
+        purpose: { enum: [...READ_PURPOSES] },
+        from: { type: ["string", "null"], description: `Keep quotes written on or after this. ${TIME_BOUND_DESCRIPTION}` },
+        to: { type: ["string", "null"], description: `Keep quotes written on or before this. ${TIME_BOUND_DESCRIPTION}` },
+        include_undated: { type: "boolean", default: true, description: "Whether quotes with no date line above them stay in a time window." },
+        limit: { type: "integer", minimum: 1, maximum: QUOTE_SEARCH_LIMITS.limitMax, default: QUOTE_SEARCH_LIMITS.limitDefault },
+        byte_budget: { type: "integer", minimum: QUOTE_SEARCH_LIMITS.byteBudgetMin, maximum: QUOTE_SEARCH_LIMITS.byteBudgetMax,
+          default: QUOTE_SEARCH_LIMITS.byteBudgetDefault, description: "Most quote text to return, in bytes." },
+        cursor: { type: ["string", "null"], description: "The previous call's next_cursor, for the next quotes of the same query." }
+      }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }),
   Object.freeze({
     name: "search_journal_graph",
     title: "Search private journal evidence",
@@ -245,6 +274,21 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
           coverage: result.read_receipt,
           more_available: result.more_available
         });
+      });
+    },
+
+    async findQuotes(input, authContext) {
+      return withReader(input, authContext, async (reader, snapshot) => {
+        const result = await reader.findQuotes({
+          query: input.query,
+          from: input.from ?? null,
+          to: input.to ?? null,
+          includeUndated: input.includeUndated ?? true,
+          limit: input.limit ?? QUOTE_SEARCH_LIMITS.limitDefault,
+          byteBudget: input.byteBudget ?? QUOTE_SEARCH_LIMITS.byteBudgetDefault,
+          cursor: input.cursor ?? null
+        });
+        return Object.freeze({ ...result, snapshot: { generation: snapshot.generation, visibility_epoch: snapshot.visibility_epoch } });
       });
     },
 
