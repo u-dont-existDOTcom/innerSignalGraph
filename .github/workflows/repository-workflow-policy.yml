@@ -4,6 +4,8 @@ on:
   push:
     branches: [main, stable]
   pull_request:
+    # "edited" reruns the guide-impact check when a description gains or loses its app-only line.
+    types: [opened, synchronize, reopened, edited]
   schedule:
     - cron: "17 4 * * 1"
   workflow_dispatch:
@@ -24,6 +26,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node
@@ -36,3 +39,13 @@ jobs:
 
       - name: Enforce repository and workflow policy
         run: npm run audit:repository
+
+      # Owner request, 8-9 Oct 2026 (docs/PUBLIC-GUIDE-HUMANIZATION.md, "Teaching points for map changes").
+      # The description reaches the script through the environment, never through the shell.
+      - name: Require a teaching point or an app-only reason for map changes
+        if: github.event_name == 'pull_request'
+        env:
+          GUIDE_IMPACT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GUIDE_IMPACT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GUIDE_IMPACT_PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/check-guide-impact.mjs

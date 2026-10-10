@@ -21,6 +21,13 @@ test("public-guide humanization bootstrap always points to the durable pending q
   assert.match(humanization, /Runtime-only mechanics do not require/);
   assert.match(humanization, /remove only those consumed items/);
   assert.match(humanization, /reset the queue to its `EMPTY` sentinel/);
+  // Teaching points for map changes (owner request, 8-9 Oct 2026), enforced by scripts/check-guide-impact.mjs.
+  assert.match(humanization, /## Teaching points for map changes/);
+  assert.match(humanization, /Guide impact: app-only — /);
+  for (const field of ["Caused by:", "Teaching point:", "Reader need:", "Already covered:", "Where:"]) {
+    assert.ok(humanization.includes(field), field);
+    assert.ok(queue.includes(`\`${field}\``), field);
+  }
 
   const statusLine = queue.split(/\r?\n/).find((line) => line.startsWith("Status:")) ?? "";
   const pending = statusLine === "Status: **PENDING**";

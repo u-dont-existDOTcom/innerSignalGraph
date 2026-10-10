@@ -128,6 +128,33 @@ Consumption is transactional:
 
 This prevents a map/rule fix from being semantically correct at runtime while silently disappearing from the later reader-facing guide.
 
+## Teaching points for map changes
+
+Owner request, 8 and 9 Oct 2026: guide additions must say what map change caused them and why a reader needs them, and the AI guide should follow from the map side.
+
+Every change to the map gets one of two things, in the same reviewed change. The map here means an owner amendment, a graph candidate node or route, a gate, a prompt or realization rule, or canonical guide text.
+
+- **A teaching point.** One or two plain sentences from the person's side: what someone should understand or do differently. It goes on the queue as an entry with five fields:
+
+  ```markdown
+  ### PGQ-0NN — <title>
+  Caused by: <pull request>, <amendment and node or route IDs>; owner outcome: "<one line>"
+  Teaching point: <one or two plain sentences, from the person's side>
+  Reader need: <what a reader would miss or get wrong without it>
+  Already covered: <where the AI guide, and the humanized guide when known, says something close, and what this adds | nothing close>
+  Where: <the guide section it belongs in>
+  ```
+
+- **App-only.** This is for a change only to how the app behaves toward a client (routing, state, re-offers, labels) that changes nothing a person should understand or do. The pull request's description says so on a line of its own:
+
+  ```markdown
+  Guide impact: app-only — <one line on why nothing changes for a reader>
+  ```
+
+The AI guide's text for a teaching point is written from it, in the reader's voice, in the same change. Notes about the app's own behavior belong in the prompts and rules, or in a passage clearly marked as app-only. They don't belong in prose a person reads: a planner's no-re-offer rule addressed to the reader, or the app named inside reader advice, is the kind of line this keeps out. App-only is declared, never inferred from a missing queue entry.
+
+The `workflow-policy` check enforces this on every pull request (`scripts/check-guide-impact.mjs`). A change to a map file must also change the queue or carry the app-only line, and every queue entry it adds must have the five fields. An older entry gets the missing fields when its heading is next changed.
+
 ## Humanization workflow
 
 For a large public pass, work section by section rather than rewriting the entire guide and reconciling afterward:

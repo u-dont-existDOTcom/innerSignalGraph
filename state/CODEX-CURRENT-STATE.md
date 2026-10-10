@@ -1,14 +1,22 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-09
+Updated: 2026-10-10
 
 
-## Journal quote-first: answer from the person's own words (2026-10-09, awaiting review, merge and the owner's deploy)
+## A teaching point for every map change (2026-10-10, awaiting review and merge)
+
+- **Owner request:** "yes teaching points makes sense altho the ai guide is then updated where, from the map side? automatically hopefully when map is updated if need be? can that be set up?" (9 Oct), filed in UDA's suggestion lane for this repository.
+- **Change:** `docs/PUBLIC-GUIDE-HUMANIZATION.md`, "Teaching points for map changes". Every map change carries a teaching point (five fields, on the queue) or a `Guide impact: app-only — <reason>` line in its pull request. The AI guide is written from the teaching point in the same change. `scripts/check-guide-impact.mjs` enforces it in the required `workflow-policy` check, which now also runs when a description is edited.
+- **Open:** the backfill of the nine teaching points approved for the October 4 change. They're in `u-dont-existDOTcom/joel-articles`, which this session can't open (see `docs/suggested-fixes-ledger.md`).
+
+## Journal quote-first: answer from the person's own words (2026-10-09, deployed 10 Oct and merged)
 
 - **Owner request:** "i'd rather have it now so we can actually test it now ... make sure first this is actually scalable ... if it takes like a few minutes to do each reply that's not good" (9 Oct, 22:32 UTC). Plan: `docs/superpowers/plans/2026-10-09-journal-quote-first.md`.
 - **Change:** a mechanical quote index (`src/journal-import/quote-index.mjs`: exact paragraph quotes, the date line each was written under, wording cues for dream, wish, plan, hypothetical, negation, hedge and reported speech); `findQuotes` on the journal reader; the read-only connector tool `find_journal_quotes`, whose description carries the answering rules; import commands `build-quotes` and `publish-quotes`, which publish the quote corpus as `<corpus>:quotes` and leave the import's corpus, generation and calibration untouched; `persistGraphGeneration` extra indexes and a representation index; `scripts/journal-quote-benchmark.mjs`.
 - **Measured:** on a synthetic journal of the real size (2 CPUs, fresh reader per call): median 81 ms and slowest 136 ms per quote search, about 2,700 tokens per result. At ten times that size, see the plan. Real server: the import's `verify` resolved all 1,117 native passages plus three searches in 1.24 s.
-- **Next:** Codex review; the owner merges; on the owner's `deploy`: deploy to the import server, rebuild the hosted connector with the journal read tools on for the owner's case, then stop the worker, run `publish-quotes`, and restart it. The connector must serve the journal tools before publication, or the case stops being continuation-safe for it.
+- **Done:** deployed on the owner's `deploy` (10 Oct, 01:13 UTC) at d1cc18d: the import server at 01:25, the hosted connector rebuilt with the journal purposes `organize_search` and `session_use` on the case grant at 01:36 (18 tools, `find_journal_quotes` advertised; protocol 0.2.1 `efd2ef4274d0`, which also put the inner-speech change live), and `publish-quotes` at 01:39 (1,122 pages, 1,804 quotes). The import worker was stopped from 01:25 to 01:39. Merged by the owner at 01:50 UTC (#145).
+- **Deploy incident:** the first connector rebuild crashed on start and rolled itself back within a minute. The deploy script had run `git checkout` through sudo under umask 077 in the server user's source tree, so the files it rewrote were root-owned mode 600 and the image's `node` user couldn't read them. Fixed by running git as the tree's owner and giving those files back; the script now also captures the container's output before any rollback.
+- **Open: dates.** Only 1 line in the readable text opened with a date the v1 reader knows (it was ambiguous), so 1,349 quotes are undated and 455 carry that one date, probably wrongly. The owner says the journal is French and day-first (10 Oct, 01:49 UTC). Next, quote index v2 (started, not yet in the repository): read French month and weekday names, day-first numeric dates (a run-config setting), dates without a year, year lines and weekday lines; end a date at the next entry line; cap its carry at two pages. Publishing v2 needs `publish-quotes` to supersede the published v1 generation (`publishJournalGenerationFromStaging` refuses a second generation today) and one more owner `deploy`.
 
 ## Journal calibration round 5 stopped on one critical miss; the critical-miss design fixed (2026-10-09, deployed and merged)
 

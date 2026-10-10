@@ -44,3 +44,11 @@
 
 - Live lane read on 2026-10-09 (default branch of `u-dont-existDOTcom/universal-dev-architecture`): `suggested-fixes/innerSignalGraph/` holds `2026-09-30-claim-integrity-checks.md`, deferred above until the polish and ship phase, and a new item, `2026-10-09-teaching-points-for-map-changes.md`.
 - `2026-10-09-teaching-points-for-map-changes.md`: DEFER to its own change, the next one after this journal change. The owner asked for it (2026-10-08 and 2026-10-09), so it needs no owner question. It changes the map and guide workflow and its audit check, a separate surface from the journal importer. Keeping it out of this change keeps both reviews small. Trigger: this change is handed over for review.
+
+## 2026-10-10: teaching points for map changes
+
+- Live lane read on 2026-10-10 (default branch of `u-dont-existDOTcom/universal-dev-architecture`): `suggested-fixes/innerSignalGraph/` holds `2026-09-30-claim-integrity-checks.md`, deferred until the polish and ship phase, and `2026-10-09-teaching-points-for-map-changes.md`.
+- `2026-10-09-teaching-points-for-map-changes.md`: ADOPT steps 1 to 4 in this change.
+  - The teaching-point rule, its five fields and the app-only line are in `docs/PUBLIC-GUIDE-HUMANIZATION.md`, "Teaching points for map changes", and in the queue's contract.
+  - The automatic check is `scripts/check-guide-impact.mjs`, run by the required `workflow-policy` check on every pull request. It reruns when a description is edited.
+- Step 5, the backfill of the nine teaching points the owner approved for the October 4 change, stays open. They're in section 7 of the design file in `u-dont-existDOTcom/joel-articles`, and this session can't open that repository. Either the humanization lane adds the queue entries with their five fields, or the owner pastes them for this lane to add. Otherwise they're recorded as consumed once the humanized guide carries them.
