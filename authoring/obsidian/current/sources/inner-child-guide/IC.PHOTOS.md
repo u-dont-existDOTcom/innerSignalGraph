@@ -7,21 +7,21 @@ source_id: IC.PHOTOS
 guide_id: inner-child-guide
 heading: Use Childhood Photographs Without Interrogating Them
 source_role: primary-framework
-source_hash: 281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b
+source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
 section_hash: 0defff175f1394ced6c9ed6d5f77b158f2cbda1af1ed9a45f7044fef5e382db1
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.PHOTO_EPISTEMIC_CAUTION
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Use Childhood Photographs Without Interrogating Them
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-04-r4.txt`
+Authority path: `guides/inner-child-guide-2026-10-10-r5.txt`
 
-Locator: Lines 703–732
+Locator: Lines 705–734
 
 ```text
 Use Childhood Photographs Without Interrogating Them

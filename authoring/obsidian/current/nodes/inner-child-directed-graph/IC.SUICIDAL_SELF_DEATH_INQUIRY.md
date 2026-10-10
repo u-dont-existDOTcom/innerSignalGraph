@@ -22,11 +22,17 @@ source_refs:
   - AMEND.IC.EXISTENTIAL_LOVE_ROUTING
   - AMEND.IC.WELLBEING_HORIZON
   - ASSET.IC.SUICIDE.COSMIC_JACKPOT
+  - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 regression_refs:
   - G069
-base_record_sha256: cd1e500d04f6a9dab711e0ee036536b391a8a7598d118819fa2efb8e99d2d2f9
-base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+  - G094
+  - G095
+  - G096
+  - G097
+  - G098
+base_record_sha256: dd60c4dbac1cdb8b7e266f27f7ec69a9a4341adccc290fcecc4318689cda47da
+base_graph_sha256: 4848af3f8e7938ad315a9a1b3e138768cd2d6a5d9c67530b520de13963130a83
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Examine the self/death assumption before an irreversible act
@@ -82,7 +88,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
     "Do not shame or condemn the person, claim punitive divine certainty, assign postmortem odds, or say that a spiritual motive makes suicide safer.",
     "Do not present dreams, NDEs, rebirth reports, or religious teachings as empirical proof of a specific individual’s postmortem outcome.",
     "Do not claim psychology proves postmortem mental continuity.",
-    "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent."
+    "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent.",
+    "Do not replace urgent pain evaluation with philosophical death/rebirth questioning merely because transient thoughts of death appear during extreme pain; address the concrete pain problem first, and return to reflective inquiry only when relevant, wanted, and safe."
   ],
   "defaultQuestion": "What exactly is the self you want to kill, and what makes you think killing this body ends that self or the suffering you are trying to escape?",
   "effects": {
@@ -135,3 +142,5 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
 [[current/governance/amendments/AMEND.IC.WELLBEING_HORIZON]]
 
 [[current/sources/semantic-assets/ASSET.IC.SUICIDE.COSMIC_JACKPOT]]
+
+[[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]

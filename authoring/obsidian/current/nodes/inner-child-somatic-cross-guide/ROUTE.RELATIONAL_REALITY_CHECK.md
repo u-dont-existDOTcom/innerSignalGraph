@@ -22,6 +22,7 @@ source_refs:
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
   - AMEND.IC.WISDOM_CORE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
+  - AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
 regression_refs:
   - G013
   - G014
@@ -29,9 +30,9 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: dcbb8d0f454eea54bd6b152fc2e485e09dd80cc3e431bb924fe516a003f571b2
-base_graph_sha256: aaa58c6795d8fb057d4167add2cd04c37377850b68247fbf9cf5bb99866963dd
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+base_record_sha256: 6402c41bc507769f621c6cfd64e18c9046f9d0f284e8a635f872245a78b22079
+base_graph_sha256: 21ba5908ecea2cb8008f88676aa266cb288abb06e6ee68205264232bd84bd560
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -97,7 +98,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
     "Do not recommend cutoff by default; calibrate trust, access, distance, requests, and investment to the actual evidence and safety needs.",
     "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.",
     "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
-    "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available."
+    "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
+    "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships."
   ],
   "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
   "effects": {
@@ -117,7 +119,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
       "Authenticity is graded and relational: selective privacy can coexist with honesty, while deep intimacy built on a maintained false persona creates a different problem.",
       "Acceptance, attachment relief, attraction, romantic love, compatibility and trust are separable observations that should not be collapsed into one another.",
       "Support and mutual co-regulation are healthy relational functions; the restriction targets using another person as a certainty test, reassurance machine or diagnostic instrument.",
-      "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability."
+      "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability.",
+      "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy."
     ]
   },
   "questionPolicy": {
@@ -136,7 +139,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
     "Keep social practice reciprocal rather than performative: notice the other person, allow them their own purposes, and do not turn contact into a verdict about whether the user is normal, attractive, lovable or capable of intimacy.",
     "Calibrate vulnerability to demonstrated trust. Privacy with strangers or low-trust contacts is not fakery and total disclosure is not required; when closeness deepens beyond the level at which the person can be meaningfully honest, either increase truthful contact at a safe pace or reduce the depth.",
     "Treat the relief of being accepted or not judged as important relational information without automatically calling it romantic love, compatibility or earned trust.",
-    "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure."
+    "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure.",
+    "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection."
   ],
   "successSignals": [
     "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
@@ -159,3 +163,5 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
 [[current/governance/amendments/AMEND.IC.WISDOM_CORE]]
 
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
+
+[[current/governance/amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS]]

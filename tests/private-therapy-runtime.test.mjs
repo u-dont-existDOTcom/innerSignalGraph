@@ -386,3 +386,18 @@ test("private runtime authorizes before key access or any model inference", asyn
   assert.equal(keyRequests, 0);
   assert.equal(inferenceCalls, 0);
 });
+
+test("private therapy runtime rejects an unsent supervisor edit before persisting or invoking a candidate model", async (t) => {
+  const {store}=await makeStore(t);
+  const modelRuntime=scriptedRuntime();
+  const controller=createPrivateTherapyTurnController({privateCaseSource:store,modelRuntime});
+  const request=input("editor-not-client");
+  request.userInput.pendingReplyRevision={
+    status:"unsent",
+    draftText:"Opening.\n\nExisting advice.\n\nClosing?",
+    ownerFeedback:"Replace only the existing advice.",
+    operations:[{kind:"replace",anchor:"Existing advice.",text:"New advice."}]
+  };
+  await assert.rejects(controller.run(request),/Supervisor reply revision cannot be submitted/);
+  assert.equal(modelRuntime.calls.length,0);
+});

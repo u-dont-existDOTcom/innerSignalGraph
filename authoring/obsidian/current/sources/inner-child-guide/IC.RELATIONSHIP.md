@@ -7,28 +7,28 @@ source_id: IC.RELATIONSHIP
 guide_id: inner-child-guide
 heading: Borrowed Adulthood in Relationship
 source_role: primary-framework
-source_hash: 281422bbdb7833bc43ca8598bfe645b529d94c1791caafad7fbb3a988a9a897b
-section_hash: 15f2d8d307e5062f120074ace50ace28ef8269f460795a1c25409a47b5b2c59c
+source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
+section_hash: 9f393be80523bdb37eddb12a53e1b74184c719a6c882043b68e562f716bbce3d
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
   - IC.REALIZATION_LOVE_INTEGRATION
   - ROUTE.COMMUNITY_SUPPORT
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Borrowed Adulthood in Relationship
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-04-r4.txt`
+Authority path: `guides/inner-child-guide-2026-10-10-r5.txt`
 
-Locator: Lines 943–984
+Locator: Lines 945–988
 
 ```text
 Borrowed Adulthood in Relationship
 
 Reparenting is usually framed as something you do alone or with a therapist. The child was wounded in relationship, though, and a relational injury can only heal so far in isolation.
 
-Sometimes one person ends up carrying many borrowed-adult functions at once: food, planning, health decisions, transport, social connection, reassurance, protection, companionship, or simply the sense that somebody competent is beside you. Having somebody who can care for you whe
+Supportive company, friendship, and romantic or sexual intimacy are different relationships. Real intimacy emerges between people who can meet one another honestly, with mutual interest and consent; nobody owes it as a reward for suffering or doing self-work. If you're desperate
 ```

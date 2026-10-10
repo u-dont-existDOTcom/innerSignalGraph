@@ -1,0 +1,32 @@
+{
+  "id": "G094",
+  "title": "urgent bodily pain with suicidal ideation prioritizes medical triage over reflective death inquiry",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "ideation",
+    "medical_urgency": "urgent",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation"
+  },
+  "expected": {
+    "primary": "ROUTE.MEDICAL_RED_FLAG",
+    "selectedIncludes": [
+      "ROUTE.MEDICAL_RED_FLAG"
+    ],
+    "selectedExcludes": [
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "Do not promise an ambulance"
+    ],
+    "deferredIncludes": [
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY"
+    ]
+  }
+}

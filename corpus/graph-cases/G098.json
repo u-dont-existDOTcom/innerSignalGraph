@@ -1,0 +1,24 @@
+{
+  "id": "G098",
+  "title": "urgent medical issue without ideation does not invoke a suicidal route",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "medical_urgency": "urgent",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation"
+  },
+  "expected": {
+    "primary": "ROUTE.MEDICAL_RED_FLAG",
+    "selectedExcludes": [
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+      "IC.SUICIDAL_ADULT_SEAT"
+    ]
+  }
+}

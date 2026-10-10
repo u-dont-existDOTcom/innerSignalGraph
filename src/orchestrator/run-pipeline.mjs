@@ -9,6 +9,7 @@ import { writeLedger } from "./ledger.mjs";
 import { RuntimeError } from "../core/errors.mjs";
 import { enforceResponseContract } from "./response-contract.mjs";
 import { randomUUID } from "node:crypto";
+import { rejectSupervisorRevisionInTherapyPipeline } from "./pending-reply-revision.mjs";
 
 async function structuredCall(provider, prompt, metadata, validator, outputSchema, onProgress) {
   const started = Date.now();
@@ -22,6 +23,7 @@ async function structuredCall(provider, prompt, metadata, validator, outputSchem
 }
 
 export async function realizeAdjudication({ context, adjudication, provider, onProgress, fixtureKey = "realization" }) {
+  rejectSupervisorRevisionInTherapyPipeline(context);
   const attempts = [];
   if (context.interventionContract?.protectiveCompatibilityContract?.forceFallback === true) {
     const enforced = enforceResponseContract({ answer: "", next_question: "", realized_nodes: [] }, {
@@ -160,6 +162,7 @@ function compactAdjudicationPacket(context, candidate, critique) {
 }
 
 export async function runCompactAdversarialPipeline({ context, providers, config, caseId = null, onProgress }) {
+  rejectSupervisorRevisionInTherapyPipeline(context);
   const startedAt = new Date().toISOString();
   const thinker = providers.anthropic;
   const critic = providers.openai;
@@ -227,6 +230,7 @@ export async function runCompactAdversarialPipeline({ context, providers, config
 }
 
 export async function runAdversarialPipeline({ context, providers, config, caseId = null, onProgress }) {
+  rejectSupervisorRevisionInTherapyPipeline(context);
   const startedAt = new Date().toISOString();
   const openaiCandidatePrompt = candidatePrompt(context, "OpenAI");
   const anthropicCandidatePrompt = candidatePrompt(context, "Anthropic");

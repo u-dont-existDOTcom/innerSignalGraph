@@ -41,7 +41,7 @@ test("reconciled love-horizon authority preserves all proposal regressions and i
 
   const suicidalAdultSeat = nodeById(bundle, "IC.SUICIDAL_ADULT_SEAT");
   assert.equal(suicidalAdultSeat.tier, 1);
-  assert.equal(suicidalAdultSeat.priority, 100);
+  assert.equal(suicidalAdultSeat.priority, 99, "medical red-flag triage has priority 100 when urgent; adult safety support remains reachable");
   assert.ok(suicidalAdultSeat.effects.deferNodes.includes("IC.SUICIDAL_SELF_DEATH_INQUIRY"));
   assert.ok(suicidalAdultSeat.effects.forbiddenOverclaims.some((item) => /every suicidal state/i.test(item)));
 

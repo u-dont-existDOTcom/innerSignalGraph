@@ -1,0 +1,23 @@
+{
+  "id": "G096",
+  "title": "urgent medical danger plus unsafe present safety requires orientation and protection",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "imminent",
+    "medical_urgency": "urgent",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation"
+  },
+  "expected": {
+    "selectedIncludes": [
+      "IC.SAFETY_ORIENTATION",
+      "ROUTE.MEDICAL_RED_FLAG"
+    ]
+  }
+}

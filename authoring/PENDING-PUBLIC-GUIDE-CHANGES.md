@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-06-r2`
+Queue version: `2026-10-09-r3`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -101,6 +101,90 @@ Preserve the distinction between meaning-making journals and low-interpretation 
 
 ### PGQ-017 — One blocked problem should not block the whole life
 Preserve the reader-facing distinction between separate practical lanes. When several real problems coexist, one can be externally blocked while another still has a useful next step. Choose the current practical focus from the person's stated goal, impact, urgency, leverage, and what can actually move now; keep the blocked lane's reopening condition visible without letting it suppress an independent actionable priority. When overwhelm makes everything feel scrambled, reduce the sorting burden: one short organizing statement, one prioritized next step, and only a clarification whose answer would genuinely change that next step. Do not make the person define ordinary words or listen to a long recap when the practical implication is already clear enough.
+
+
+## Pending bundle E — approved October 4 teaching-point backfill
+
+The following nine ideas were approved by the owner on 2026-10-09 and reportedly drafted into the current working humanized article. Preserve the queue as an upstream handoff until the humanization lane verifies each exact passage and records it as consumed; do not duplicate any existing article text.
+
+### PGQ-018 — Gentler depth without technique-hopping
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T1 from the humanization design (section 7).
+Teaching point: If going deeper is too much, take a smaller step in the same caring relationship instead of forcing another intense technique or giving up on the child.
+Reader need: A reader may equate determination with pushing through or repeatedly switching techniques.
+Already covered: 'When to Change the Strategy' and the depth/continuity paragraphs partly cover pacing; adds the warning against technique-hopping.
+Where: When to Change the Strategy
+
+### PGQ-019 — Come outward before re-entering
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T2 from the humanization design (section 7).
+Teaching point: If you cannot stop and return or inward attention is worsening stability, come back to the room first; later re-enter gently if you want and can do so safely.
+Reader need: Without the distinction a reader may follow another inward exercise when the current problem is inability to stop and orient.
+Already covered: Present safety and titration paragraphs cover parts; the explicit sequence is not cleanly reader-facing.
+Where: Before Deeper Work / When to Change the Strategy
+
+### PGQ-020 — A paused practice has a remembered starting point
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T3 from the humanization design (section 7).
+Teaching point: If you take a real break from child contact, remember what prompted it and the last tolerable level; if you choose to return, begin there or gentler.
+Reader need: Readers otherwise may restart a previously overwhelming practice at full depth.
+Already covered: The Oct 4 AI guide contains pause and re-entry information; omit app bookkeeping from humanized prose.
+Where: When to Change the Strategy
+
+### PGQ-021 — Difficulty and harm differ
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T4 from the humanization design (section 7).
+Teaching point: A difficult session is not automatically harmful, and a pleasant session is not automatically safe or sufficient; consider willingness and what happens afterward.
+Reader need: Readers may measure practice entirely by emotional intensity or pleasantness.
+Already covered: Existing guide warns intensity does not equal progress; adds actual aftereffects and willingness.
+Where: When to Change the Strategy
+
+### PGQ-022 — Look at recovery over the next days
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T5 from the humanization design (section 7).
+Teaching point: Consider sleep, ordinary functioning, willingness to return, and whether the challenge felt workable or overwhelming—not merely how the session felt.
+Reader need: Without this, immediate relief or distress can be mistaken for lasting benefit or damage.
+Already covered: Outcome-horizon paragraph already warns against overclaiming; the specific delayed-recovery criteria add substance.
+Where: When to Change the Strategy / difficult dreams
+
+### PGQ-023 — Adapt before escalating
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T6 from the humanization design (section 7).
+Teaching point: When the effect is unclear, make the next session a little easier and adjust one dimension; when functioning is deteriorating, reduce several demands and seek appropriate support.
+Reader need: Readers need a proportional next step, not an all-or-nothing verdict.
+Already covered: Existing strategy-review and depth-titration material partially covers adjustment; adds the multiple-dimension exception.
+Where: When to Change the Strategy
+
+### PGQ-024 — Dreams are present experience, not reconstructed facts
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T7 from the humanization design (section 7).
+Teaching point: Dreams and imagery may show current needs, feelings or symbols but are not evidence that a depicted historical event happened.
+Reader need: Vivid imagery may otherwise be mistaken for recovered factual memory.
+Already covered: Guide discusses false-memory hazards and altered-state experiences; preserve applicability to ordinary dreams.
+Where: Difficult dreams / memory-source cautions
+
+### PGQ-025 — Reach toward real human connection
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T8 from the humanization design (section 7).
+Teaching point: If isolation itself contributes to suffering, reaching toward supportive people can be a caring act; connection does not have to wait for a finished self-healing project.
+Reader need: People may treat all healing as solitary and defer every form of support.
+Already covered: Community and borrowed-adulthood paragraphs cover support; distinguish it explicitly from romantic readiness.
+Where: Borrowed Adulthood in Relationship
+
+### PGQ-026 — More than one safe place to belong
+Caused by: October 4 continuity/scaffolded challenge/community map-and-rule changes (#126); owner-approved teaching points T9 from the humanization design (section 7).
+Teaching point: Keep worthwhile existing relationships while gradually adding other suitable communities and forms of support; check for coercive groups demanding exclusive allegiance.
+Reader need: Readers may exchange one dependency for another or think diversification means abandoning a valued person.
+Already covered: Existing community support and borrowed-adulthood paragraphs partly cover diversification; adds the warning about exclusivity and fit.
+Where: Borrowed Adulthood in Relationship / Community
+
+## Pending bundle F — crisis-relevant care and relationship distinctions
+
+### PGQ-027 — Short relief must not perpetuate severe pain
+Caused by: `AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM`, `ROUTE.MEDICAL_RED_FLAG`, `ROUTE.ACT_OUTWARD`, and `IC.SUICIDAL_ADULT_SEAT`; owner outcome: offer a feasible acute-pain alternative when previous care did not settle the cause and known self-medication causes further harm.
+Teaching point: During an unbearable physical-pain episode, caring for yourself may mean contacting local urgent medical services for assessment and possible pain relief—even when earlier investigations found no clear answer—rather than relying on a short-lived strategy known to worsen your condition.
+Reader need: A reader could otherwise hear "use whatever helps" as permission to repeat dangerous self-medication, or mistake severe pain-triggered escape thoughts for a problem solvable only by psychological crisis counselling.
+Already covered: "When the Urge to Escape Arrives" addresses soothing and substances; "Match the claim to the duration" distinguishes brief relief from durable benefit. The new canonical AI-guide paragraph adds the explicit medical-analgesia alternative and known-harm boundary. Keep ordinary immediate-safety safeguards when intent or incapacity changes.
+Where: "When the Urge to Escape Arrives", immediately after the note about seeking support when the material exceeds capacity.
+
+### PGQ-028 — Support is not a shortcut to romantic intimacy
+Caused by: `AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS`, `ROUTE.RELATIONAL_REALITY_CHECK`; owner outcome: preserve a case-specific choice to defer romance while building honest reciprocal connection, without implying intimacy is owed or healing guarantees it.
+Teaching point: Friendship and reliable support can grow while active romance-seeking is paused. Romantic or sexual intimacy arises through mutually wanted, genuine connection—not as rescue from suffering, a badge of worth, or a reward for healing.
+Reader need: A reader could mistake "human connection helps" for advice to date or seek sex during a period when acting on intimacy urgently is destabilizing; another reader might wrongly infer everyone must become perfectly healed before ever dating.
+Already covered: Existing reciprocal-practice and earned-trust guidance warns against romantic self-testing. The added canonical AI-guide passage makes the support/romance distinction and mutual consent explicit.
+Where: "Borrowed Adulthood in Relationship", after the introductory paragraph.
 
 ## EMPTY sentinel
 

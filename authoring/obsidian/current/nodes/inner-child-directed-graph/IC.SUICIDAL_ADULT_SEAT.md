@@ -8,7 +8,7 @@ node_id: IC.SUICIDAL_ADULT_SEAT
 title: Bring a second adult or witness seat into the room
 kind: decision-node
 tier: 1
-priority: 100
+priority: 99
 authority: author-framework
 graph_tags:
   - suicide-prevention
@@ -21,10 +21,14 @@ source_refs:
   - AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY
   - IC.NEUTRAL_WITNESS
   - IC.BORROW_ONE_FUNCTION
-regression_refs: []
-base_record_sha256: 5e78ce47d2eb8608ffc30c1e4117ca2a7e745a559d76c96291c9d5a0de95957a
-base_graph_sha256: 59e9031700393f6690fe52b1dcb84bd5cf49747665172ae1d7a12a79b285a1e0
-projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd5399beb44
+  - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
+regression_refs:
+  - G094
+  - G095
+  - G098
+base_record_sha256: 7af2c4706ff3437bc6200143593cdb11131825fb02297d90cec51879ba675ce4
+base_graph_sha256: 4848af3f8e7938ad315a9a1b3e138768cd2d6a5d9c67530b520de13963130a83
+projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
 ---
 
 # Bring a second adult or witness seat into the room
@@ -102,7 +106,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
   "avoid": [
     "Do not announce that the suicidal voice is the inner child or impose a parts model the person has not endorsed.",
     "Do not make the borrowed adult into a new external authority over memories, medicine, relationships, or spiritual conclusions.",
-    "Do not use the adult position to lecture, shame, suppress, or outvote the suicidal state."
+    "Do not use the adult position to lecture, shame, suppress, or outvote the suicidal state.",
+    "Do not infer a suicide plan, enduring desire to die, substance dependence, or unavailable prior care from pain-triggered ideation alone. Remain responsive to new intent, inability to stay safe, and other supported acute danger."
   ],
   "defaultQuestion": "Before we decide anything, can we invite any part of you that can observe, protect the body, or simply postpone the decision to sit beside the part that wants to die—even if we have to borrow that adult position from someone you trust?",
   "effects": {
@@ -130,7 +135,8 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
     "First discriminate fusion: ask whether the wish to die feels like the whole self right now or whether any observing/protective position can sit beside it.",
     "Invite one second seat rather than a complete ideal parent: neutral witness, Nurturer, Protector, future self, trusted person, spiritual figure, written plan, or another bounded source of adult capacity.",
     "If no internal adult position is available, borrow one function only: keep the body safe, listen without retaliation, and postpone irreversible action while the suicidal state speaks.",
-    "Once the person can hold the suicidal state and an observing/protective position at the same time, continue to the strict self/death/rebirth inquiry rather than remaining indefinitely in preparatory soothing."
+    "Once the person can hold the suicidal state and an observing/protective position at the same time, continue to the strict self/death/rebirth inquiry rather than remaining indefinitely in preparatory soothing.",
+    "When thoughts of death are reported as episodic reactions to severe physical pain without expressed intent, preserve that context and prioritize a workable medical pain-crisis plan and real-world protection over repetitive psychiatric intake scripts."
   ],
   "successSignals": [
     "The person can distinguish the suicidal state from at least one observing or protective position, even if that adult capacity is weak, borrowed, or temporary."
@@ -148,3 +154,5 @@ projection_input_sha256: ef6e5e42246d9e7ee8a0985e0275933f76a95ef15038e6658d678fd
 [[current/sources/inner-child-guide/IC.NEUTRAL_WITNESS]]
 
 [[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]
+
+[[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
