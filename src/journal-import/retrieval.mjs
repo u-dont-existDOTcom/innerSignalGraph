@@ -146,6 +146,9 @@ export async function openPrivateJournalGraph({
   const indexMaps = new Map();
   const recordMaps = new Map();
   const representationTexts = new Map();
+  // Span reads: decoded single-object representations and checked chunks, zeroed when the reader closes.
+  const representationBytes = new Map();
+  const heldBuffers = [];
   let objectReads = 0;
   const assertCurrent = async () => invariant((await assertSnapshotCurrent()) !== false, "CURSOR_STALE");
   const memoized = (map, id, load) => {
@@ -518,13 +521,45 @@ export async function openPrivateJournalGraph({
     return descriptor ? { descriptor, digest: null } : null;
   };
 
-  // A span's exact text, read from its representation and checked against the digest recorded for it,
-  // as resolveEvidence checks a passage.
-  const exactText = async ({ representationId, startByte, endByte, expectedSha256 }) => {
+  // The bytes of a span. A representation stored as one object is decoded once per reader. One
+  // stored as UTF-8 chunks (a long text journal) is read only in the chunks the span touches, each
+  // checked against the digest its descriptor records, so a quote never loads the whole source.
+  const spanBytes = async (representationId, startByte, endByte) => {
     const location = await representationLocation(representationId);
     invariant(location?.descriptor?.object_id, "SOURCE_REPRESENTATION_UNAVAILABLE");
-    const sourceBytes = Buffer.from(await representationText(representationId, location.descriptor, location.digest), "utf8");
-    const slice = sourceBytes.subarray(startByte, endByte);
+    const { descriptor } = location;
+    invariant(Number.isSafeInteger(startByte) && Number.isSafeInteger(endByte) && startByte >= 0 && endByte > startByte, "SOURCE_SPAN_OUT_OF_RANGE");
+    if (!Array.isArray(descriptor.chunks)) {
+      const bytes = await memoized(representationBytes, descriptor.object_id, async () => {
+        const decoded = Buffer.from(await representationText(representationId, descriptor, location.digest), "utf8");
+        heldBuffers.push(decoded);
+        return decoded;
+      });
+      return bytes.subarray(startByte, endByte);
+    }
+    invariant(descriptor.representation_id === representationId && descriptor.encoding === "utf8_chunks"
+      && Number.isSafeInteger(descriptor.chunk_bytes) && descriptor.chunk_bytes > 0, "SOURCE_REPRESENTATION_MISMATCH");
+    const pieces = [];
+    for (let index = Math.floor(startByte / descriptor.chunk_bytes); index * descriptor.chunk_bytes < endByte; index += 1) {
+      const ref = descriptor.chunks.find((chunk) => chunk.chunk_index === index);
+      invariant(ref, "SOURCE_SPAN_OUT_OF_RANGE");
+      const chunk = await memoized(representationBytes, `${descriptor.object_id}\0${index}`, async () => {
+        const read = await corpusStore.readObject({ objectId: descriptor.object_id, objectVersion: descriptor.object_version, chunkIndex: index });
+        objectReads += 1;
+        invariant(read.byteLength === ref.byte_length && sha256(read) === ref.sha256, "SOURCE_REPRESENTATION_MISMATCH");
+        heldBuffers.push(read);
+        return read;
+      });
+      const offset = index * descriptor.chunk_bytes;
+      pieces.push(chunk.subarray(Math.max(0, startByte - offset), Math.min(chunk.byteLength, endByte - offset)));
+    }
+    return pieces.length === 1 ? pieces[0] : Buffer.concat(pieces);
+  };
+
+  // A span's exact text, checked against the digest recorded for it, as resolveEvidence checks a
+  // passage.
+  const exactText = async ({ representationId, startByte, endByte, expectedSha256 }) => {
+    const slice = await spanBytes(representationId, startByte, endByte);
     invariant(slice.byteLength === endByte - startByte, "SOURCE_SPAN_OUT_OF_RANGE");
     invariant(sha256(slice) === expectedSha256, "SOURCE_SPAN_DIGEST_MISMATCH");
     return slice.toString("utf8");
@@ -535,12 +570,11 @@ export async function openPrivateJournalGraph({
    * hold, rarer words counting more (each word adds the log of how rare it is), with ties in a fixed
    * order so the same query pages the same way. Common function words (`QUOTE_STOPWORDS`) are left out
    * of the ranking unless the query has nothing else. A time window keeps the quotes written under a
-   * date line inside it,
-   * and undated ones only when asked to. A page stops at its quote limit or byte budget, and always
-   * holds at least one quote when any match. Later pages come from a cursor bound, like search's, to
-   * the snapshot, query and filters, and holding the position in the ranking where the next page
-   * starts. Each quote comes with its page, the date line it was
-   * written under, and the wording cues found in it (`quoteCues`). Works on any generation. On a
+   * date line inside it, and undated ones only when asked to. A page stops at its quote limit or byte
+   * budget, and always holds at least one quote when any match. Later pages come from a cursor bound,
+   * like search's, to the snapshot, query and filters, holding the position in the ranking where the
+   * next page starts. Each quote comes with its page, the date line it was written under, and the
+   * wording cues found in it (`quoteCues`). Works on any generation. On a
    * quote index, the `quote_meta` index gives each quote's span, page and date line, so no record is
    * decrypted; elsewhere the passage record supplies the span and there are no dates.
    */
@@ -687,6 +721,9 @@ export async function openPrivateJournalGraph({
       await assertCurrent();
       return records;
     },
-    close() { secret.fill(0); cache.clear(); indexMaps.clear(); recordMaps.clear(); representationTexts.clear(); }
+    close() {
+      secret.fill(0); cache.clear(); indexMaps.clear(); recordMaps.clear(); representationTexts.clear();
+      representationBytes.clear(); heldBuffers.splice(0).forEach((buffer) => buffer.fill(0));
+    }
   });
 }

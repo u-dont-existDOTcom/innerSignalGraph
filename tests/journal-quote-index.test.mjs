@@ -238,6 +238,55 @@ test("a quote cursor is refused on a different snapshot", async (t) => {
   finally { other.close(); }
 });
 
+test("a long text journal stored in chunks is quoted from only the chunks a span touches", async (t) => {
+  const boundary = 4 * 1024 * 1024; // the store's chunk size
+  const filler = (index) => `Filler paragraph ${String(index).padStart(6, "0")} ${"about the long walk ".repeat(24)}`.slice(0, 500);
+  const parts = [];
+  let length = 0, index = 0;
+  while (length + 502 < boundary - 200) { const piece = filler(index++); parts.push(piece); length += Buffer.byteLength(piece) + 2; }
+  const straddle = `Straddleword ${"crosses the chunk boundary ".repeat(36)}`.slice(0, 1000).trim();
+  parts.push(straddle);
+  for (let more = 0; more < 400; more += 1) parts.push(filler(index++));
+  parts.push("The very end holds the tailword.");
+  const text = parts.join("\n\n");
+  const start = Buffer.byteLength(text.slice(0, text.indexOf("Straddleword")));
+  assert.ok(start < boundary && start + Buffer.byteLength(straddle) > boundary, "the test paragraph crosses the chunk boundary");
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "quote-chunked-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const caseId = "quote-case", corpusId = "quote-corpus:quotes";
+  const store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: randomBytes(32) });
+  const representations = [{ representation_id: "text:whole", text, page_number: null, parse_status: "readable" }];
+  const built = buildQuoteGeneration({ caseId, corpusId, generation: "chunked-generation", originalObjectId: "original:test", mediaType: "text/plain", representations });
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph: built.graph, sourceRepresentations: { "text:whole": text },
+    permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 128 * 1024,
+    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
+  // Count how the reader opens the long representation: chunk by chunk, never whole.
+  const representation = persisted.manifest.source_representation_objects["text:whole"];
+  assert.equal(representation.encoding, "utf8_chunks");
+  const chunkReads = [];
+  let wholeReads = 0;
+  const counted = {
+    ...store,
+    readObject: async (input) => { if (input.objectId === representation.object_id) chunkReads.push(input.chunkIndex); return store.readObject(input); },
+    reassembleOriginal: async (descriptor) => { if (descriptor.object_id === representation.object_id) wholeReads += 1; return store.reassembleOriginal(descriptor); }
+  };
+  const open = () => openPrivateJournalGraph({ corpusStore: counted, manifestObjectId: persisted.manifest_object_id, caseId, corpusId,
+    generation: "chunked-generation", visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+  let reader = await open();
+  try {
+    const tail = await reader.findQuotes({ query: "tailword" });
+    assert.equal(tail.quotes[0].text, "The very end holds the tailword.");
+    assert.deepEqual(chunkReads, [1], "only the last chunk");
+  } finally { reader.close(); }
+  reader = await open();
+  try {
+    const crossing = await reader.findQuotes({ query: "straddleword" });
+    assert.equal(crossing.quotes[0].text, straddle);
+    assert.deepEqual(chunkReads, [1, 0, 1], "both chunks the paragraph crosses");
+  } finally { reader.close(); }
+  assert.equal(wholeReads, 0, "the whole journal is never reassembled for a quote");
+});
+
 test("find quotes also works on a generation without the quote indexes", async (t) => {
   const { open } = await persistedQuotes(t, { quoteIndexes: false });
   const reader = await open();

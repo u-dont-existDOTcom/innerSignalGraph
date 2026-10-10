@@ -71,7 +71,7 @@ them, if a journal ever grows that large.
 
 | Journal | Text | Quotes | Median call | 95th percentile | Slowest | Objects decrypted |
 | --- | --- | --- | --- | --- | --- | --- |
-| Synthetic, the owner's journal's size (1,122 pages) | 10.6 MB | 17,478 | 98 ms | 196 ms | 203 ms | 33 (median) |
+| Synthetic, the owner's journal's size (1,122 pages) | 10.6 MB | 17,478 | 81 ms | 135 ms | 136 ms | 32 (median) |
 | Synthetic, ten times larger (11,220 pages) | 106 MB | 174,982 | 254 ms | 1.6 s | 2.0 s | 46 (median) |
 
 - **The real journal, on the server.** The import's own `verify` run recorded, without content, that resolving all 1,117
@@ -80,7 +80,7 @@ them, if a journal ever grows that large.
   at thousands of tokens a second, so this adds about a second to a reply.
 - **Tool call overhead (an estimate).** Each tool call costs the chat a round trip of a second or two.
 - **Altogether.** One quote search adds a few seconds to a reply, not minutes.
-- **The import side.** No model calls at all. Building the index took about 22 seconds at the real journal's size and
+- **The import side.** No model calls at all. Building the index took about 20 seconds at the real journal's size and
   under five minutes at ten times it.
 
 The first version decrypted 1 MB index pieces and every quote's record, and took 691 ms per call at the real size.
@@ -105,7 +105,9 @@ Three changes brought it down to the figures above:
   unit is the quote and there are no dates. Later pages come from a signed cursor bound, like search's, to the snapshot,
   the query and the filters. The cursor holds the position in the ranking where the next page starts, so paging never
   skips or repeats a quote, even if a new generation is published between pages. One call looks through at most 5,000
-  matches; one that stops there returns a cursor past them.
+  matches; one that stops there returns a cursor past them. A quote is read from only the part of the source it sits
+  in: a page decoded once per call, or, for a long text journal stored in 4 MB chunks, just the chunks its span
+  touches.
 - **The connector tool `find_journal_quotes`.** It's read-only like the other journal tools, and its description carries
   the answering rules above.
 - **Two import commands: `build-quotes` and `publish-quotes`.**
@@ -163,6 +165,8 @@ journal corpora, so the connector goes first.
   - returns exact text;
   - reads part of the index, not all of it.
 - Time windows keep dated quotes inside them, and undated ones only when asked.
+- A long text journal stored in chunks is quoted from only the chunks a span touches, including a paragraph that
+  crosses a chunk boundary, and is never reassembled whole.
 - `findQuotes` works on a generation without the quote indexes.
 - `build-quotes`:
   - refuses before staging;
