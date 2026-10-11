@@ -42,6 +42,25 @@ export function journalQuoteNumericDateOrder(config) {
   return value;
 }
 
+// The pointer pass's step deadlines, in minutes (plan 2026-10-09-journal-quote-first.md, Part 3, "Deadlines that
+// hold"): the reference step, each pass (the pilot, the full pass and a coverage pass, their event checks included)
+// and each measurement. Each step saves its deadline when it starts.
+export const POINTER_DEADLINE_DEFAULTS = Object.freeze({ reference: 180, pass: 180, measure: 300 });
+
+export function journalPointerDeadlines(config) {
+  const minutes = (name, fallback) => {
+    const value = config[name] ?? fallback;
+    if (!Number.isSafeInteger(value) || value < 1 || value > 24 * 60)
+      throw new ValidationError("JOURNAL_POINTER_DEADLINE_INVALID", { code: "JOURNAL_POINTER_DEADLINE_INVALID" });
+    return value;
+  };
+  return Object.freeze({
+    reference: minutes("pointer_reference_deadline_minutes", POINTER_DEADLINE_DEFAULTS.reference),
+    pass: minutes("pointer_deadline_minutes", POINTER_DEADLINE_DEFAULTS.pass),
+    measure: minutes("pointer_measure_deadline_minutes", POINTER_DEADLINE_DEFAULTS.measure)
+  });
+}
+
 export function normalizeJournalHardestLaneConfig(config) {
   return Object.freeze({
     enabled: config?.hardest_lane?.enabled === true,
