@@ -20,8 +20,8 @@ source_refs:
   - ALT.NO_RESCUE_IMPORT
 regression_refs: []
 base_record_sha256: 7844caea433336af24dceb7dac9cc9f546b22d65f3ebeec65e15e512aeace25e
-base_graph_sha256: 21ba5908ecea2cb8008f88676aa266cb288abb06e6ee68205264232bd84bd560
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_graph_sha256: 56b8cd4d3fdb8ceb2c08ddac32120eb1eaaaf0c33f8a2063e134b6bb2c915318
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # Treat medical danger or impaired capacity as a real-world safety problem

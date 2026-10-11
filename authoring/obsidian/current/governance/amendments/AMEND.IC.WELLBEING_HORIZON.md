@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WELLBEING_HORIZON
 status: owner-approved
 domain: inner-child
-base_record_sha256: 3e10cb34d163f0c6364fff7e7c06848614aae7d37e136adf45d95e8b7aa4f700
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: 3c2a916595666229438b84bfd67b7176fff88472a8ba69a9450124ae200209da
+source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.IC.WELLBEING_HORIZON
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Love includes wanting wellbeing for beings, and the horizon of that love can expand when a person directly learns that deeper happiness, peace, freedom, or unconditional love is possible. Ordinary practical love is real and important; profound spiritual realization may disclose a much larger horizon, but mystical intensity is not itself proof of deep love. Metta or loving-kindness meditation is one way to cultivate, stabilize, or extend love; it is not equivalent to the deepest love and is not a universal first step."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

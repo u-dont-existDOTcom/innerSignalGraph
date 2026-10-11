@@ -186,6 +186,23 @@ Reader need: A reader could mistake "human connection helps" for advice to date 
 Already covered: Existing reciprocal-practice and earned-trust guidance warns against romantic self-testing. The added canonical AI-guide passage makes the support/romance distinction and mutual consent explicit.
 Where: "Borrowed Adulthood in Relationship", after the introductory paragraph.
 
+
+## Pending bundle G — enduring pain care and treatment trust
+
+### PGQ-029 — A chronic pain pathway, not daily emergency calls
+Caused by: AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY, ROUTE.REFRACTORY_PAIN_NAVIGATION, ROUTE.MEDICAL_RED_FLAG and canonical AI guide October 11 r6. This corrects advice that treated nearly daily severe pain as though each familiar attack should be handled by an ambulance visit.
+Teaching point: Severe frequent pain deserves a continuing specialist treatment pathway and a written plan for predictable flares, with acute services as a proportionate backup. Prior normal tests need not make pain imaginary. In France a doctor can request SDC assessment and justify a priority referral if warranted; no guaranteed appointment or medication. Specialist-appropriate options are not diagnostic proofs.
+Reader need: Readers with recurrent debilitating pain after unsuccessful care need a feasible route to specialty help rather than repeated emergency attendance or another generic referral.
+Already covered: The r5 section When the Urge to Escape Arrives covered acute medical assessment and harmful brief relief; r6 adds specialist access, prioritization, and written crisis planning while preserving the urgent-risk exception.
+Where: When the Urge to Escape Arrives, immediately following the paragraph on severe physical pain; compress any France-only example without losing the conditional status.
+
+### PGQ-030 — Protective medical agency after coercive or harmful care
+Caused by: AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST, IC.SUICIDAL_ADULT_SEAT and canonical AI guide October 11 r6. The owner clarified that previous psychiatric care can create real anticipated harm.
+Teaching point: A history of harmful treatment changes who is safe to approach and what information to share. Trusted voluntary support and a chosen advocate may be better than default family involvement or repeated psychiatric pathways. Pain-triggered fleeting thoughts must not be presented as a plan or a bargaining strategy for analgesia; actual imminent danger still warrants immediate protection.
+Reader need: People with prior involuntary or traumatic care may be harmed by uncritical instructions to disclose everything or return to the same treatment setting, while absolute concealment of genuine immediate danger also creates risk.
+Already covered: Also Look Outward already distinguishes privacy from dishonesty in unsafe relationships; r6 extends that principle to medical settings while retaining the existing concrete-safety floor.
+Where: Also Look Outward, following the paragraph on safe graded disclosure and before general relationship/community support.
+
 ## EMPTY sentinel
 
 When every pending entry above has been consumed and the public-guide sync bookkeeping is updated, replace all pending bundles with exactly:

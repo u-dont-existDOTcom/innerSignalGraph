@@ -561,6 +561,26 @@
       "excerpt": "Distinguish friendship and ordinary human support from romantic or sexual readiness. When a person has chosen to pause active romance-seeking for current severe distress, self-testing or inability to relate authentically, support that bounded decision and cultivate honest, reciprocal connection without promising that romantic intimacy is earned, owed or curative, or imposing a universal perfect-healing prerequisite.",
       "status": "owner-approved",
       "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
+      "heading": "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "9c2a7c807203b69bcf381ce4c178ef38ff2671ac6c720fc3490d578e5db38de0",
+      "excerpt": "With frequent debilitating chronic pain despite substantial workups or unsatisfactory treatment, prioritize a feasible referral to specialist chronic pain care, a clinician-justified urgency request when local policy allows, and a written flare protocol instead of treating repeated emergency visits as a long-term strategy. Emergency assessment remains available for genuinely urgent or unmanageable acute episodes. Preserve prior harmful treatment, whether drugs were taken or only prescribed, real access barriers and outcomes. Do not promise triage, ambulance, fast appointment, medicine, diagnosis or cure; evaluate tDCS/rTMS only as evidence-limited specialist options, not diagnostic confirmation or repair.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST",
+      "heading": "AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "3e6f4d63ebf55a058e12d8ba39d7e72bfc7e1b1f2e2fbe051dd1d30dee390979",
+      "excerpt": "When prior psychiatric or medical care was experienced as coercive or traumatic, weigh the real potential for iatrogenic harm and preserve choice of a trusted voluntary advocate, rather than treating psychiatric referral or indiscriminate disclosure as an automatic route to physical pain relief. Distinguish brief pain-triggered thoughts of escape from present suicidal intent or inability to remain safe. Never recommend suicidal disclosure as a tactic for analgesia, but do not coach lying about imminent danger or claim disclosure or nondisclosure is universally safe. Maintain proportionate real-world protection when acute danger actually appears.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
     }
   ]
 }

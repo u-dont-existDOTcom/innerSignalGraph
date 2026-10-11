@@ -7,23 +7,23 @@ source_id: IC.ESCAPE_URGE
 guide_id: inner-child-guide
 heading: When the Urge to Escape Arrives
 source_role: primary-framework
-source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
-section_hash: 3e60d3ff6d1e6e65d486a9c1bb9ac60610056549c0cf051988f85c8c154298e6
+source_hash: e9284589535a7c8406362a13ac2d015b92fff2315a724ab660c7db2b8bf2197d
+section_hash: 3cf6c7262538cc8b74d835f0c084b6018b9b9d7c3a655ebd66249b195fc65f52
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ALTERED_STATE_GATE
   - IC.GENTLE_SELF_HYPNOSIS
   - IC.MEET_GUARD
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # When the Urge to Escape Arrives
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-10-r5.txt`
+Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
 
-Locator: Lines 497–512
+Locator: Lines 499–516
 
 ```text
 When the Urge to Escape Arrives

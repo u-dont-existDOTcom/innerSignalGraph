@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
 status: owner-approved
 domain: somatic
-base_record_sha256: 8de4f75070d6ae7e4046723890801f68ecbba81668a91fcff012e5565962f37c
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: fa8d797228476da4cb2715a803a1a7c9d101c7fcdd4401c1c51eb2a6a2704766
+source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "For diffuse developmental or relational trauma, EMDR may fit better after some basic inner-child reparenting and access to Nurturer/Protector capacity. This is not universal: a stable person with one discrete traumatic event may be ready earlier."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

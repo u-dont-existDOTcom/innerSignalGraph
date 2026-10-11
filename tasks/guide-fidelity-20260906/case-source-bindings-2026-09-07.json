@@ -1,8 +1,8 @@
 {
-  "version": 9,
-  "sourceFile": "guides/inner-child-guide-2026-10-10-r5.txt",
-  "sourceSha256": "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31",
-  "purpose": "Pin historical synthetic fidelity scenarios to the current October 10 r5 canonical guide while preserving all frozen cases, source refs, and grading controls; the original October 4 r4 remains immutable in history.",
+  "version": 10,
+  "sourceFile": "guides/inner-child-guide-2026-10-11-r6.txt",
+  "sourceSha256": "e9284589535a7c8406362a13ac2d015b92fff2315a724ab660c7db2b8bf2197d",
+  "purpose": "Historical source-fidelity cases and graders remain frozen; the current verified guide is October 11 r6, with the exact October 10 r5 retained as immutable predecessor.",
   "additionalSourceRefs": {
     "GF01": [
       "IC.CHECKING_LOOP"

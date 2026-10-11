@@ -27,8 +27,8 @@ source_refs:
   - AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
 regression_refs: []
 base_record_sha256: d330ec1b4eaa008d5dc984be4c651481c242e40a2e11b1853eac56f5c7787c89
-base_graph_sha256: 4848af3f8e7938ad315a9a1b3e138768cd2d6a5d9c67530b520de13963130a83
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_graph_sha256: 58439bcc4e830851cc6aebfab354346013c78aa2ee7f321f4358653ab035e9a3
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # Move from receiving care to doing five percent

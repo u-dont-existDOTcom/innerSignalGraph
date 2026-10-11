@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 guide_id: owner-amendments
 heading: AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 source_role: owner-approved-extension
-source_hash: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
+source_hash: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
 section_hash: a586431f27520f369a069e2897048ec786a2de6d7f2a10905e3fd24a86ea2e18
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -16,7 +16,8 @@ cited_by_node_ids:
   - IC.SUICIDAL_SELF_DEATH_INQUIRY
   - ROUTE.ACT_OUTWARD
   - ROUTE.MEDICAL_RED_FLAG
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+  - ROUTE.REFRACTORY_PAIN_NAVIGATION
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM

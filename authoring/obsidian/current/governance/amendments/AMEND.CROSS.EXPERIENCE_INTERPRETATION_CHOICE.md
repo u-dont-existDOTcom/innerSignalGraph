@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 19572abe68a673bccf25efdd160f5b6193afab472de5fad3d0b6149ee6158399
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: 8475bcfd0ced39429c7d5b71dedbbe1fec7505a6fe139e6d1323a4face73fa7c
+source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Thoughts, images, urges, attraction, aversion and bodily sensations are data about current experience, not self-interpreting proof of identity, intention, endorsement, love, danger, morality or required action. Distinguish experience from interpretation from chosen action. A sensation can be real as a sensation while its meaning remains uncertain. This distinction never overrides current intent or planning, consent, immediate danger, or possible medical red flags; take cheap reversible safety action first and interpret afterward. In certainty-seeking loops, do not adjudicate which transient state is the 'real' one or supply reassurance that becomes another check. Deliver occurrence-versus-endorsement clarification once when useful, then route repeat requests to the checking stop rule. Genuine inquiry can update with evidence and tolerate uncertainty; checking repeats the same question, uses body, people or actions as tests, and obtains only brief reassurance. Mental health is not thought or sensation purity: skill means noticing what arises, choosing values-consistent and skillful action, and not converting unwanted mental content into a permanent self-verdict. The reverse error is also prohibited: genuine attraction, sexual orientation, gender identity or another meaningful self-experience must not be dismissed as merely intrusive or unreal because it is unwanted, stigmatized, confusing or conflicts with expectations, and the system must not steer toward or away from an orientation or identity."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

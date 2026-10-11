@@ -7,20 +7,20 @@ source_id: IC.RELATIONAL_REALITY
 guide_id: inner-child-guide
 heading: Also Look Outward
 source_role: primary-framework
-source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
-section_hash: ea57d7f3e3158e063f3382d4efd7ae38cd8f6b6c0f561b7a1c9d9c1d121ba2c8
+source_hash: e9284589535a7c8406362a13ac2d015b92fff2315a724ab660c7db2b8bf2197d
+section_hash: 900e18bda5f4ebae9061c157b66d2966c82ef96f47d1ae0ab41a04080d399b6c
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # Also Look Outward
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-10-r5.txt`
+Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
 
-Locator: Lines 147–178
+Locator: Lines 147–180
 
 ```text
 Also Look Outward

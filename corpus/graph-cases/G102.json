@@ -1,0 +1,28 @@
+{
+  "id": "G102",
+  "title": "Current suicidal intent is not downclassified as outpatient-only chronic pain",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "intent",
+    "medical_urgency": "nonurgent",
+    "refractory_pain_care": "indicated",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "inner_adult_access": "low",
+    "witness_capacity": "absent"
+  },
+  "expected": {
+    "selectedIncludes": [
+      "IC.SUICIDAL_ADULT_SEAT"
+    ],
+    "selectedExcludes": [
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION"
+    ]
+  }
+}

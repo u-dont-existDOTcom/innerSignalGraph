@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_CRITICISM_KERNEL
 status: owner-approved
 domain: inner-child
-base_record_sha256: 5779cc6e82447f45587a851696bd1a3bcea168cd116b36e7e52b273fdd5d65bd
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: 7832d5b29a1bb0d9015261519c7314e25f5f3c2f206fd70df4bdfb40942b9618
+source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.IC.WISDOM_CRITICISM_KERNEL
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "After appropriate present-day assessment, separate a specific supported point in criticism from contempt, exaggeration and coercive demands. A charitable reconstruction is a hypothesis, not an obligation to concede. Accept accurate responsibility while retaining boundaries; no useful kernel needs to be manufactured. Clarification and nonresponse are both possible. This is owner-reported and Rogers-inspired; the exact maxim was not verified as a Fred Rogers quotation. Noticing good qualities is not a replacement for assessment of safety or demonstrated capacity."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

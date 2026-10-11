@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
 guide_id: owner-amendments
 heading: AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
 source_role: owner-approved-extension
-source_hash: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
+source_hash: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
 section_hash: 945e2f5552ccb7c7fddc81c8f774b7fb8896f5edee29101de58716bd7ec7fb52
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -18,7 +18,7 @@ cited_by_node_ids:
   - ROUTE.LEAVE_ALONE
   - ROUTE.RELATIONAL_REALITY_CHECK
   - ROUTE.THREE_WAY_GATE
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.CROSS.THREE_WAY_THERAPY_ROUTING

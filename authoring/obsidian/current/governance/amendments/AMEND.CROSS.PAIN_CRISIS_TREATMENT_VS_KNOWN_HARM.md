@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 status: owner-approved
 domain: cross-guide
-base_record_sha256: fca2179d01331db860a58006a1cd60c0b7e487a6d838f2a82832e6ac411213d7
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: 21b5e308bcbd81d9b4b5ef36fb71452fee94679f87f728acb242a5385136870c
+source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Distinguish thoughts of escape precipitated by an unbearable physical-pain attack from unsupported assumptions of suicidal planning, without disabling concrete safety action when intent or inability to stay safe appears. Respect established unsuccessful medical consultations, never re-offer harmful short-term self-medication, and consider appropriate live emergency/urgent pain-care triage without promising transport, drugs or cure."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

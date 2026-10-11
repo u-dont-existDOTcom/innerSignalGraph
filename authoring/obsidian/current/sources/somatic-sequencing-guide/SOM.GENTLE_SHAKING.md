@@ -12,7 +12,7 @@ section_hash: a16d84154ad741b35e18db84283d9b0b7e0bf9663518ea8d24c40bfd7358c00c
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.GENTLE_SHAKING
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # Secondary Support: Gentle Shaking / TRE

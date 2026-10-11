@@ -7,14 +7,14 @@ source_id: AMEND.SOM.ADVANCED_RELEASE_PARALLEL
 guide_id: owner-amendments
 heading: AMEND.SOM.ADVANCED_RELEASE_PARALLEL
 source_role: owner-approved-extension
-source_hash: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
+source_hash: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
 section_hash: 22a84115771ca01a605cf97216f442b4c4973e1a4218b6a8349ea7698304a06b
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.GO_INWARD
   - SOM.ADVANCED_RELEASE_BLOCK
   - SOM.ADVANCED_RELEASE_OPTIONAL
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
 ---
 
 # AMEND.SOM.ADVANCED_RELEASE_PARALLEL
