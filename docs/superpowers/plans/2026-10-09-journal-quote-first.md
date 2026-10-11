@@ -320,6 +320,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - one or more anchors: exact text from a named quote unit, as extraction anchors are now.
 - **No statements.** The pass writes no assertions, so it can't restate what happened. An event tag's label names the
   event; the quote says what happened.
+- **An event is something the quote reports as happening.** A dream, wish, plan, hypothetical or denial isn't an event:
+  the tagger tags what it is about as a topic instead, and the judges count an event tag on such a quote as the wrong
+  kind. So the timeline never lists a dream as something that happened.
 - **No coreference.** A tag never claims that "he", "she", "there" or a different name means a named person, place or
   organization. A pronoun-only mention isn't tagged, and this part has no aliases: telling that two names mean the
   same person is a later part with its own measurement. So every quote a name tag points at contains that name.
@@ -420,9 +423,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   server and reports counts only.
 - **No unit drops out.** A sampled unit's reference is complete when the reader doesn't list the unit as unassessed;
   every answerable or partly answerable question names at least one evidence item; every item named exists in the
-  reference and every one of its anchors resolves exactly in the unit; every critical item is named by at least one
-  such question, so no critical item goes unmeasured (the reader's instructions ask for this); and the unit has at
-  least one such question. An incomplete or failed reference gets one retry, and so does a search-writing answer that fails or leaves
+  reference and every one of its anchors resolves exactly in the unit; every reference item, critical or not, is named
+  by at least one such question, so no item the reader found goes unmeasured (the reader's instructions ask for this);
+  and the unit has at least one such question. An incomplete or failed reference gets one retry, and so does a search-writing answer that fails or leaves
   a question without a search. A unit still without a complete reference or its searches is a nonresponse: recall is
   then unknown, the recall floor fails, and the report lists the unit. So a hard page can't leave the sample and lift
   the bound.
@@ -445,10 +448,13 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     the design. Recall is the weighted ratio of questions found to questions asked, with weights from the inclusion
     probabilities; its standard error comes from how the sampled units vary within each stretch (linearized); and
     Student's t has as many degrees of freedom as there are sampled units less the number of stretches, counted in the
-    sample as drawn (84 for the owner's journal: 96 units in 12 stretches). A shorter journal can have stretches with
-    fewer than 8 units; a stretch with a single sampled unit is merged with its neighbor for the variance, which can
-    overstate it but never understates it, and with fewer than two sampled units in all the bound can't be computed
-    and the recall floor fails.
+    sample as drawn and only over stretches that add variance (84 for the owner's journal: 96 units in 12 stretches).
+  - A shorter journal can have stretches with fewer than 8 units. Such a stretch is taken whole (each unit with
+    inclusion probability 1), so it adds no sampling variance and no degree of freedom, and it stays on its own. A
+    stretch with a single sampled unit drawn with probability below 1, which can't happen with 8 units drawn per
+    stretch, would be merged with its nearest such neighbor (the standard collapsed-strata estimator, conservative in
+    expectation). When every sampled unit was taken with certainty, recall is exact and its bound is the estimate;
+    with fewer than two sampled units in all, the bound can't be computed and the recall floor fails.
   - No loss and gain use the same weights as recall.
 - **Tag precision.** It is measured on tag–quote pairs, the way search uses tags: each quote a kept tag is anchored in
   makes one pair, so a tag on a hundred quotes is a hundred pairs, and a wrong one weighs as much as the wrong hits it
@@ -543,26 +549,28 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Measurement.** Recall and precision on synthetic data with known answers. The unit sample is the import's
   probability sample (12 stretches, 8 units each) from a recorded seed, only from units with quotes, and every sampled
   unit gets a new reference. A reference that lists the unit as unassessed, has an answerable question with no
-  evidence item, names an item that doesn't exist or has an anchor that doesn't resolve in the unit, leaves a critical
-  item out of every question, or has no evidence-backed question gets one retry and then makes recall unknown and the
-  recall floor fail; so does a search-writing answer that leaves a question without a search. The pilot's pages never
-  overlap the sample; the search-writing packet holds the questions and nothing of the unit's text or expected
-  answers, and the tagger's packet holds journal text and nothing from the semantic import. Recall's weighted estimate
-  and design-based bound match a hand-worked example; units whose questions all fail together widen the bound; degrees
-  of freedom come from the sample as drawn, a single-unit stretch is merged with its neighbor, and fewer than two
-  units fail the floor. A question is found only when every quote holding an anchor of its evidence items is in the
-  first 12 results of one of its searches, so an item whose second anchor holds its negation isn't found from the
-  first alone; unanswerable questions stay out of recall and are reported; a sample with no critical question is
-  reported and judged for no loss on all questions alone. Precision samples tag–quote pairs, so a wrong tag on many
-  quotes counts once for each; each kind is gated on its own sample of 150, so pairs of one kind can't carry another,
-  and a name of the wrong kind fails its kind; a kind with fewer than 29 pairs is left out of the generation before
-  measuring, by its count alone; a kind with no pairs has nothing to gate; the Clopper-Pearson arithmetic; each
-  sample's size is fixed before scoring and its bound computed once; a pair counts as correct only when both judges
-  say so, and a pair left unscored after a retry counts as wrong; kappa is reported as undefined when the judges give
-  one answer throughout. A pass with no tags fails the coverage floor, and the gain floor whenever word search misses
-  a question; the gain floor is reported as not applicable when word search misses nothing; a page whose valid answer
-  gave it no tag, or whose tags were all dropped, counts as untagged; an untagged share over 2% blocks publication,
-  and the generation a new pass builds is measured again from the start; the words-only baseline is the same
-  generation with tag matching off; publishing refuses a generation whose digest isn't the measured one.
+  evidence item, names an item that doesn't exist or has an anchor that doesn't resolve in the unit, leaves a
+  reference item, critical or not, out of every question, or has no evidence-backed question gets one retry and then
+  makes recall unknown and the recall floor fail; so does a search-writing answer that leaves a question without a
+  search. The pilot's pages never overlap the sample; the search-writing packet holds the questions and nothing of the
+  unit's text or expected answers, and the tagger's packet holds journal text and nothing from the semantic import.
+  Recall's weighted estimate and design-based bound match a hand-worked example; units whose questions all fail
+  together widen the bound; degrees of freedom come from the sample as drawn; a stretch taken whole adds no variance
+  or degree of freedom and stays separate; a single-unit stretch drawn with probability below 1 is merged with its
+  nearest such neighbor; a sample taken entirely with certainty gives an exact recall whose bound is the estimate; and
+  fewer than two units fail the floor. A question is found only when every quote holding an anchor of its evidence
+  items is in the first 12 results of one of its searches, so an item whose second anchor holds its negation isn't
+  found from the first alone; unanswerable questions stay out of recall and are reported; a sample with no critical
+  question is reported and judged for no loss on all questions alone. Precision samples tag–quote pairs, so a wrong
+  tag on many quotes counts once for each; each kind is gated on its own sample of 150, so pairs of one kind can't
+  carry another, and a name of the wrong kind fails its kind; a kind with fewer than 29 pairs is left out of the
+  generation before measuring, by its count alone; a kind with no pairs has nothing to gate; the Clopper-Pearson
+  arithmetic; each sample's size is fixed before scoring and its bound computed once; a pair counts as correct only
+  when both judges say so, and a pair left unscored after a retry counts as wrong; kappa is reported as undefined when
+  the judges give one answer throughout. A pass with no tags fails the coverage floor, and the gain floor whenever
+  word search misses a question; the gain floor is reported as not applicable when word search misses nothing; a page
+  whose valid answer gave it no tag, or whose tags were all dropped, counts as untagged; an untagged share over 2%
+  blocks publication, and the generation a new pass builds is measured again from the start; the words-only baseline
+  is the same generation with tag matching off; publishing refuses a generation whose digest isn't the measured one.
 
 All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
