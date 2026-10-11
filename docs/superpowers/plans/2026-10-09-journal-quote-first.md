@@ -58,9 +58,11 @@ the fidelity checks have nothing left to guard.
      would cite?
    - The sample is drawn at random from a recorded seed and checked in random order, with hazard pages reported
      separately.
-   - It stops as soon as a confidence bound settles pass or fail.
+   - It stops as soon as a confidence bound settles pass or fail. (Part 3 fixes the sample's size in advance
+     instead, so its bound is computed once.)
    - Before any gate rests on a model judge, two independent judges score the same items and their agreement is
-     recorded. A gate uses a judge only at a measured agreement, and otherwise uses both judges or a person.
+     recorded. A gate uses a judge only at a measured agreement, and otherwise uses both judges or a person. (Part 3
+     has both judges score every sampled item.)
 
 ## Reply time
 
@@ -325,9 +327,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - Every anchor of a person, place or organization tag must itself contain the tag's label, ignoring case and
     accents. An anchor that doesn't is dropped, so no quote is filed under a name it doesn't use, and a name can't be
     invented.
-  - An event or topic label may name a person, place or organization only where every one of its anchors contains
-    that name. Code checks each capitalized word after a label's first word this way, as a stand-in for names, and
-    drops an anchor that lacks one.
+  - Event and topic labels are written in lower case except for names. Every capitalized word in a label, the first
+    one included, must appear in each of the label's anchors, ignoring case and accents; an anchor that lacks one is
+    dropped. So a label can't name someone its quotes don't. Who an event involves comes from the name tags on the
+    same quotes, never from its label.
   - Labels have length limits; duplicate tags in a batch merge.
   - A tag left with no anchor is dropped. Every drop is counted. No model call repairs a tag.
 - **Failures stay small and visible.** A batch whose answer doesn't fit the schema gets one retry. A batch that fails
@@ -389,20 +392,26 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   answers and exact anchors for each calibration unit they reach (116 of 162 so far). Each reference is frozen before
   any extraction is shown, and no reader has seen a tag, so they measure the pass independently. The measurement runs
   on the import server and reports counts only.
-- **Retrieval recall.** For each reference question, a model writes the searches an answering model would run, without
-  seeing the expected answer. Code runs them with `find_journal_quotes` and checks whether the anchored quotes come
-  back in the first 12. Recall is reported twice, with words only (the live index) and with words and tags, each with
+- **What is measured.** The generation the full pass built, the same one that would be published, never a separate
+  trial run: the tagger's answers vary from run to run.
+- **Retrieval recall.** For every reference question, once, a model writes the searches an answering model would run,
+  without seeing the expected answer. Code runs them with `find_journal_quotes` on that generation and checks whether
+  the anchored quotes come back in the first 12. Recall is reported twice, with words only (the live index) and with words and tags, each with
   a one-sided 95% lower bound, and critical questions are reported on their own line.
-- **Tag precision.** Two independent judges, one Codex and one Claude, score a random sample of kept tags drawn from a
-  recorded seed: does the quote really mention or concern what the tag's label names, and is the kind right? Their
-  agreement on the same tags is recorded first. One judge decides alone only at a measured agreement; otherwise both must agree, or the owner
-  decides. The sample grows in recorded steps and stops when the bound settles pass or fail.
+- **Tag precision.** A fixed sample of 300 kept tags (all of them, if there are fewer), drawn from that generation with
+  a recorded seed, is scored by two independent judges, one Codex and one Claude: does the quote really mention or
+  concern what the tag's label names, and is the kind right?
+  - Both judges score every sampled tag, and a tag counts as correct only when both say so. Their agreement (raw
+    agreement and Cohen's kappa) and the number of disagreements are reported; agreement is never a gate.
+  - The sample's size is fixed before scoring and the sample is scored once, so its one-sided 95% Clopper-Pearson
+    bound is computed once, with no stopping early.
 - **Floors** (stated now; the owner can change them; nothing else can). The pass is published only when every one
   holds, so a nearly empty pass can't pass:
   - **recall:** the one-sided 95% lower bound of recall with words and tags is at least 85%;
   - **no loss:** recall with tags is at least recall without them, on all questions and on critical ones;
   - **gain:** of the questions word search alone misses, tags bring back at least a quarter, reported with its bound;
-  - **precision:** the lower bound of tag precision is at least 90%, each kind also reported on its own;
+  - **precision:** the one-sided 95% lower bound of tag precision is at least 90%, each kind also reported on its
+    own;
   - **coverage:** at most 2% of the full pass's pages are untagged, each one listed. Above that, the untagged
     batches go into a new pass before anything is published;
   - **anchors:** no kept tag whose anchor doesn't resolve or lacks its name, which holds by construction and is
@@ -414,10 +423,12 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
    the tests below. Codex review; the owner merges.
 2. **Pilot** on 20 pages drawn from a recorded seed: seconds per batch, tokens, tags kept and dropped, failed batches.
    Nothing published.
-3. **Measure** on the calibration units' pages that have a reference, against the floors. Nothing published.
-4. **Full pass** on the whole journal, timed, held to the coverage floor. Built, not published.
-5. **Publish** on the owner's `deploy`, only when every floor holds, with the connector rebuild that ships the tool
-   descriptions.
+3. **Full pass** on the whole journal, timed. Built, not published.
+4. **Measure** that generation against every floor: recall on the reference questions, precision on a sample of its
+   own tags, coverage of its pages. Nothing published. If a floor fails, the generation is discarded and the counts
+   go on the owner page.
+5. **Publish** on the owner's `deploy` exactly the measured generation, identified by its digest, and only when every
+   floor holds, with the connector rebuild that ships the tool descriptions.
 
 ### Out of this part
 
@@ -433,8 +444,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Anchors.** A tag whose anchor isn't in the named unit is dropped; one whose anchor is there is kept; kinds and
   length limits hold; duplicates merge.
 - **Names.** An anchor of a person, place or organization tag that lacks the name, case and accents ignored, is
-  dropped, so a quote that says only "he" is never filed under a name; an event or topic label that names someone
-  absent from one of its anchors loses that anchor; a tag left with no anchor is dropped; every drop is counted.
+  dropped, so a quote that says only "he" is never filed under a name; an event or topic label with a capitalized
+  word, the first one included ("Jean's birthday"), loses each anchor that lacks it; a tag left with no anchor is
+  dropped; every drop is counted.
 - **Failures.** A malformed answer gets one retry; a second failure leaves its batch untagged and listed, and the run
   finishes.
 - **Deadline.** The deadline is saved when the pass starts and kept on resume; batch items expire at it; a batch
@@ -448,7 +460,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   quote that matches only through a tag ranks after quotes that match by their own words; a kind filter keeps only
   the quotes with a tag of that kind; the quote's text, date and cues are unchanged.
 - **Supersede.** The pointer generation replaces version 2 exactly as version 2 replaced version 1.
-- **Measurement.** Recall and precision on synthetic data with known answers; the bound arithmetic; the sample stops
-  when the bound settles; a pass with no tags fails the gain floor; an untagged share over 2% blocks publication.
+- **Measurement.** Recall and precision on synthetic data with known answers; the Clopper-Pearson arithmetic; the
+  precision sample's size is fixed before scoring and its bound computed once; a tag counts as correct only when both
+  judges say so; a pass with no tags fails the gain floor; an untagged share over 2% blocks publication; publishing
+  refuses a generation whose digest isn't the measured one.
 
 All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
