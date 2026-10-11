@@ -4,7 +4,8 @@ import { JOURNAL_ROLE_DEFINITIONS } from "./provider-port.mjs";
 import { pointerCallCounts, runDeadlineCalls } from "./pointer-calls.mjs";
 import { applyPointerEventCheck, buildPointerGeneration, checkPointerBatches, keepPointerPages, overlayPointerRepass, pointerCoverage,
   pointerEventCheckCalls, pointerEventPairs, pointerPassInput, pointerPassReport, pointerRepassBatches, pointerTaggerPacket } from "./pointer-pass.mjs";
-import { batchPointerQuotes, pointerTagIndexes } from "./pointer-tags.mjs";
+import { POINTER_FLOORS, POINTER_PRECISION_SAMPLES, cohenKappa, designRatioBound, pointerFloors } from "./pointer-measure.mjs";
+import { batchPointerQuotes, checkPointerTags, pointerTagIndexes } from "./pointer-tags.mjs";
 import { POINTER_REFERENCE_NONRESPONSE_REASONS, checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls,
   pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
 import { buildQuoteGeneration } from "./quote-index.mjs";
@@ -387,5 +388,229 @@ export async function runPointerPilot({ quoteGeneration, excludeUnitIds, seed, s
     report: pointerPassReport({ checked: own.checked, eventCheck, indexes, coverage }),
     calls: Object.freeze({ tagger: pointerCallCounts(own.taggerOutcomes), event_check: pointerCallCounts(own.eventOutcomes) }),
     tagger_answered_at: answeredAt(own.taggerOutcomes)
+  });
+}
+
+/** A question is found when its quote is among the first this many results of one of its searches (plan Part 3). */
+export const POINTER_RECALL_TOP = 12;
+/** The measurement's samples: one for each kind's pairs, then the event pairs the event check dropped. */
+export const POINTER_MEASURE_SAMPLE_NAMES = Object.freeze([...POINTER_PRECISION_SAMPLES.kinds, "dropped_events"]);
+// Pairs to a judge's call, as for the event check.
+const MEASURE_PAIRS_PER_CALL = 50;
+// The judges: the Codex one on the standard tier and the Claude one on the hardest.
+const JUDGE_TIERS = Object.freeze(["standard", "hardest"]);
+
+const digest = (parts) => sha256(JSON.stringify(parts)).slice(0, 32);
+const byRank = (left, right) => (left.rank < right.rank ? -1 : (left.rank > right.rank ? 1 : 0));
+
+/**
+ * Recall, critical recall, no loss, gain and event coverage on the reference sample (plan Part 3, "Retrieval recall"
+ * and the floors), from which questions the searches found with tags (`foundWithTags`) and with words only
+ * (`foundWordsOnly`), and which quotes have a kept event tag (`eventTaggedUnitIds`). Each is the design-based ratio
+ * over every sampled unit, weighted by its inclusion probability: a unit with no critical question, or no question
+ * word search misses, or no quote that reports an event, adds nothing to that ratio but stays in the design. A sample
+ * with a nonresponse can't be measured: the run stopped before the pilot. Returns pointerFloors' recall inputs and
+ * each unit's counts, content-free.
+ */
+export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds } = {}) {
+  invariant(reference && Array.isArray(reference.units) && reference.units.length > 0 && foundWithTags instanceof Set
+    && foundWordsOnly instanceof Set && eventTaggedUnitIds instanceof Set, "POINTER_RECALL_INPUT_INVALID");
+  invariant(reference.units.every((unit) => unit.status === "complete" && Array.isArray(unit.questions) && unit.questions.length > 0),
+    "POINTER_REFERENCE_INCOMPLETE");
+  const count = (questions, found) => questions.filter((question) => found.has(question.question_id)).length;
+  const critical = (unit) => unit.questions.filter((question) => question.critical);
+  const missed = (unit) => unit.questions.filter((question) => !foundWordsOnly.has(question.question_id));
+  const eventQuotes = (unit) => [...new Set(unit.questions.filter((question) => question.event).map((question) => question.unit_id))];
+  const rows = (pick) => reference.units.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
+    inclusion_probability: unit.inclusion_probability, ...pick(unit) }));
+  const bound = (pick) => designRatioBound({ units: rows(pick), confidence: POINTER_FLOORS.confidence });
+  const recall = bound((unit) => ({ asked: unit.questions.length, found: count(unit.questions, foundWithTags) }));
+  const wordsOnly = bound((unit) => ({ asked: unit.questions.length, found: count(unit.questions, foundWordsOnly) }));
+  const criticalRecall = bound((unit) => ({ asked: critical(unit).length, found: count(critical(unit), foundWithTags) }));
+  const criticalWordsOnly = bound((unit) => ({ asked: critical(unit).length, found: count(critical(unit), foundWordsOnly) }));
+  const gain = bound((unit) => ({ asked: missed(unit).length, found: count(missed(unit), foundWithTags) }));
+  const eventCoverage = bound((unit) => ({ asked: eventQuotes(unit).length,
+    found: eventQuotes(unit).filter((unitId) => eventTaggedUnitIds.has(unitId)).length }));
+  return deepFreeze({
+    recall,
+    recall_estimate: recall.estimate,
+    recall_words_only_estimate: wordsOnly.estimate,
+    critical_recall: criticalRecall.estimate === null ? null : criticalRecall,
+    critical_recall_estimate: criticalRecall.estimate,
+    critical_recall_words_only_estimate: criticalRecall.estimate === null ? null : criticalWordsOnly.estimate,
+    gain: gain.estimate === null ? null : gain,
+    event_coverage: eventCoverage.estimate === null ? null : eventCoverage,
+    words_only: wordsOnly,
+    units: reference.units.map((unit) => ({ unit_id: unit.unit_id, questions: unit.questions.length,
+      found_with_tags: count(unit.questions, foundWithTags), found_words_only: count(unit.questions, foundWordsOnly),
+      critical_questions: critical(unit).length, event_quotes: eventQuotes(unit).length }))
+  });
+}
+
+/**
+ * The measurement's fixed samples (plan Part 3, "Tag precision" and "event-check recall"): for each kind, 150 of the
+ * generation's pairs of that kind, or all of them when there are no more, and 150 of the event pairs the event check
+ * dropped, rejected or unanswered, or all of them; each drawn by the SHA-256 of the seed, the sample and the pair. Each
+ * item is what a judge sees (a fresh content-free ID, the kind, the label and the exact quote) and its quote's unit.
+ * The record holds the seed's digest, never the seed.
+ */
+export function pointerMeasureSamples({ pairs, dropped, unitsById, seed } = {}) {
+  invariant(Array.isArray(pairs) && Array.isArray(dropped) && unitsById instanceof Map && typeof seed === "string" && seed.length > 0,
+    "POINTER_MEASURE_SAMPLES_INVALID");
+  const draw = (name, population, size) => {
+    invariant(new Set(population.map((pair) => pair.pair_id)).size === population.length, "POINTER_MEASURE_PAIR_DUPLICATE");
+    const chosen = population.map((pair) => ({ pair, rank: sha256(`${seed}\0${name}\0${pair.pair_id}`) })).sort(byRank).slice(0, size);
+    return { name, pairs: population.length, items: chosen.map(({ pair }) => {
+      const unit = unitsById.get(pair.unit_id);
+      invariant(unit && typeof pair.label === "string", "POINTER_MEASURE_UNIT_MISSING");
+      return { pair_id: `measure-pair:${digest([name, pair.pair_id])}`, kind: pair.kind, label: pair.label, quote: unit.text, unit_id: pair.unit_id };
+    }) };
+  };
+  return deepFreeze({
+    seed_sha256: sha256(seed),
+    samples: [
+      ...POINTER_PRECISION_SAMPLES.kinds.map((kind) => draw(kind, pairs.filter((pair) => pair.kind === kind), POINTER_PRECISION_SAMPLES.pairs_per_kind)),
+      draw("dropped_events", dropped.map((pair) => ({ ...pair, kind: "event" })), POINTER_PRECISION_SAMPLES.dropped_event_pairs)
+    ]
+  });
+}
+
+/**
+ * Anchors that don't hold: every kept tag checked again by code against its batch's quotes, as the tagger's answer
+ * was, counting each anchor or tag the check would drop once (a tag left without anchors is their consequence, not
+ * counted again). It holds by construction, so this counts zero unless something broke between the check and the build.
+ */
+export function pointerBrokenAnchors({ checked, unitsById } = {}) {
+  invariant(Array.isArray(checked) && unitsById instanceof Map, "POINTER_ANCHORS_INPUT_INVALID");
+  let broken = 0;
+  for (const result of checked) {
+    if (result.kept.length === 0) continue;
+    const units = result.unit_ids.map((unitId) => unitsById.get(unitId));
+    invariant(units.every(Boolean), "POINTER_ANCHORS_INPUT_INVALID");
+    const { dropped } = checkPointerTags({ units, answer: { schema_version: "1.0", tags: result.kept } });
+    broken += Object.entries(dropped).filter(([reason]) => reason !== "tag_without_anchor").reduce((total, [, value]) => total + value, 0);
+  }
+  return broken;
+}
+
+// Questions found by their searches: a question is found when its quote's passage is among the first POINTER_RECALL_TOP
+// results of one of its searches. The same search runs once.
+async function foundQuestions({ units, passageIdForUnit, search, matchTags }) {
+  const results = new Map();
+  const found = new Set();
+  for (const unit of units) {
+    for (const question of unit.questions) {
+      const passageId = passageIdForUnit(question.unit_id);
+      invariant(typeof passageId === "string", "POINTER_MEASURE_QUOTE_UNKNOWN");
+      for (const query of question.queries) {
+        if (!results.has(query)) {
+          const ranked = await search({ query, matchTags });
+          invariant(Array.isArray(ranked) && ranked.every((id) => typeof id === "string"), "POINTER_MEASURE_SEARCH_INVALID");
+          results.set(query, ranked.slice(0, POINTER_RECALL_TOP));
+        }
+        if (results.get(query).includes(passageId)) { found.add(question.question_id); break; }
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * The measurement (plan Part 3, "Measuring it" and step 5) of a pass's generation, as it would be published: recall
+ * and its relatives on the reference sample, through `search({ query, matchTags })` (the first results of
+ * find_journal_quotes on that generation, as passage IDs in rank order); both judges on every fixed sample, the Codex
+ * one (standard tier) and the Claude one (hardest tier) each in calls of their own, 50 pairs to a call, with one retry,
+ * all sent at once and expiring at `deadline`; and then every floor. A pair counts as correct only when both judges
+ * accept it, and one either leaves unscored counts as wrong; a dropped event pair counts as real when either accepts it
+ * or leaves it unscored. `pass` is the measured pass's result (its checked results, event-check ledger counts, dropped
+ * event pairs and coverage), and `quoteGeneration` its generation's input, which gives each quote's passage and text.
+ * Returns the floors, a content-free report, and each sample's items with both verdicts for the private store.
+ */
+export async function runPointerMeasure({ quoteGeneration, pass, reference, search, seed, stepId, deadline, port, grant,
+  now = () => new Date(), beforeHardestSend = null } = {}) {
+  invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
+  invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string"
+    && typeof search === "function", "POINTER_STEP_INPUT_INVALID");
+  invariant(pass && Array.isArray(pass.checked) && Array.isArray(pass.dropped_event_pairs) && pass.event_check && pass.coverage,
+    "POINTER_STEP_INPUT_INVALID");
+  const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
+  // The generation's tag pairs, as its build indexed them.
+  const indexes = pointerTagIndexes({ batches: pass.checked.map((result) => ({ units: result.unit_ids.map((unitId) => input.unitsById.get(unitId)),
+    kept: result.kept, passageIdForUnit: input.passageIdForUnit })) });
+
+  // Recall, words with tags and words only, on the generation itself.
+  const eventTagged = new Set(indexes.pairs.filter((pair) => pair.kind === "event").map((pair) => pair.unit_id));
+  const recall = measurePointerRecall({ reference,
+    foundWithTags: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
+    foundWordsOnly: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }),
+    eventTaggedUnitIds: eventTagged });
+
+  // Both judges on every sample.
+  const { seed_sha256: seedSha256, samples } = pointerMeasureSamples({ pairs: indexes.pairs, dropped: pass.dropped_event_pairs,
+    unitsById: input.unitsById, seed });
+  const calls = [];
+  for (const tier of JUDGE_TIERS) {
+    for (const sample of samples) {
+      for (let start = 0; start < sample.items.length; start += MEASURE_PAIRS_PER_CALL) {
+        const items = sample.items.slice(start, start + MEASURE_PAIRS_PER_CALL);
+        calls.push({ key: `${stepId}:judge:${tier}:${sample.name}:${start / MEASURE_PAIRS_PER_CALL}`, role: "pair_judge", tier, grant,
+          outputSchema: JOURNAL_ROLE_DEFINITIONS.pair_judge.outputSchema,
+          packet: rolePacket("pair_judge", { generation: input.generation, grantPurpose: grant.purpose, assigned: [...new Set(items.map((item) => item.unit_id))],
+            tag: `pointer:pair_judge:${stepId}`, fields: { pairs: items.map((item) => ({ pair_id: item.pair_id, kind: item.kind, label: item.label, quote: item.quote })) } }) });
+      }
+    }
+  }
+  const outcomes = calls.length > 0 ? await runDeadlineCalls({ calls, port, deadline, now, retries: 1, check: pairAnswerCheck, beforeHardestSend }) : [];
+  const verdicts = Object.fromEntries(JUDGE_TIERS.map((tier) => [tier, new Map()]));
+  outcomes.forEach((outcome, index) => {
+    if (outcome.status === "answered") for (const judgment of outcome.output.judgments) verdicts[calls[index].tier].set(judgment.pair_id, judgment);
+  });
+  const accepts = (judgment) => judgment.mentions === true && judgment.kind_right === true;
+  const scored = samples.map((sample) => {
+    const items = sample.items.map((item) => ({ ...item, codex: verdicts.standard.get(item.pair_id) ?? null, claude: verdicts.hardest.get(item.pair_id) ?? null }));
+    const both = items.filter((item) => item.codex && item.claude);
+    const counts = { name: sample.name, pairs: sample.pairs, sampled: items.length,
+      correct: items.filter((item) => item.codex && item.claude && accepts(item.codex) && accepts(item.claude)).length,
+      real: items.filter((item) => !item.codex || !item.claude || accepts(item.codex) || accepts(item.claude)).length,
+      unscored_codex: items.filter((item) => !item.codex).length, unscored_claude: items.filter((item) => !item.claude).length,
+      agreement: cohenKappa(both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) }))) };
+    return { items, counts, both };
+  });
+  const byName = new Map(scored.map((sample) => [sample.counts.name, sample.counts]));
+  const precision = Object.fromEntries(POINTER_PRECISION_SAMPLES.kinds.map((kind) => {
+    const { pairs, sampled, correct } = byName.get(kind);
+    return [kind, { pairs, sampled, correct }];
+  }));
+  const dropped = byName.get("dropped_events");
+  const floors = pointerFloors({
+    recall: recall.recall,
+    recall_estimate: recall.recall_estimate,
+    recall_words_only_estimate: recall.recall_words_only_estimate,
+    critical_recall: recall.critical_recall,
+    critical_recall_estimate: recall.critical_recall_estimate,
+    critical_recall_words_only_estimate: recall.critical_recall_words_only_estimate,
+    gain: recall.gain,
+    precision,
+    event_check: { pairs: pass.event_check.pairs, unanswered: pass.event_check.unanswered },
+    event_recall: { kept: { pairs: precision.event.pairs, sampled: precision.event.sampled, real: precision.event.correct },
+      dropped: { pairs: dropped.pairs, sampled: dropped.sampled, real: dropped.real } },
+    event_coverage: recall.event_coverage,
+    coverage: { untagged_pages: pass.coverage.untagged.length, pages_with_quotes: pass.coverage.pages_with_quotes },
+    anchors: { broken: pointerBrokenAnchors({ checked: pass.checked, unitsById: input.unitsById }) }
+  });
+  return deepFreeze({
+    generation: input.generation,
+    step_id: stepId,
+    seed_sha256: seedSha256,
+    publish: floors.publish,
+    floors: floors.floors,
+    report: {
+      recall_units: recall.units,
+      words_only: { estimate: recall.words_only.estimate, lower_bound: recall.words_only.lower_bound },
+      samples: scored.map((sample) => sample.counts),
+      agreement: cohenKappa(scored.flatMap((sample) => sample.both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) })))),
+      calls: pointerCallCounts(outcomes)
+    },
+    samples: scored.map((sample) => ({ name: sample.counts.name, items: sample.items }))
   });
 }

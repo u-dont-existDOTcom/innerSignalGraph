@@ -6,7 +6,8 @@ import { pointerCallKey } from "../src/journal-import/pointer-calls.mjs";
 import { applyPointerEventCheck, checkPointerBatches, pointerEventCheckCalls, pointerEventPairs, pointerPassInput,
   pointerTaggerPacket } from "../src/journal-import/pointer-pass.mjs";
 import { pointerReferenceSample } from "../src/journal-import/pointer-reference.mjs";
-import { POINTER_PILOT_PAGES, pointerPilotPages, pointerReferenceCounts, runPointerPass, runPointerPilot,
+import { POINTER_MEASURE_SAMPLE_NAMES, POINTER_PILOT_PAGES, POINTER_RECALL_TOP, measurePointerRecall, pointerBrokenAnchors,
+  pointerMeasureSamples, pointerPilotPages, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
   runPointerReference } from "../src/journal-import/pointer-steps.mjs";
 import { buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
 
@@ -47,12 +48,13 @@ function taggerAnswer(packet, operationKey) {
     if (unit.text.includes("concert")) {
       tags.push({ kind: coverage && unit.text.includes("rêvais") ? "topic" : "event", label: "concert", anchors: [anchor("concert")] });
     }
+    if (unit.text.includes("plu ")) tags.push({ kind: "topic", label: "pluie", anchors: [anchor("plu")] });
   }
   return { schema_version: "1.0", tags };
 }
 
 // A judge that knows a dream is no event.
-const judgment = (pair) => ({ pair_id: pair.pair_id, mentions: true, kind_right: !pair.quote.includes("rêvais") });
+const judgment = (pair) => ({ pair_id: pair.pair_id, mentions: true, kind_right: !(pair.kind === "event" && pair.quote.includes("rêvais")) });
 
 // Answers each role from its packet, as the exchange would after its schema check, and keeps an invalid answer as
 // invalid. `script` changes single answers: by the writer's call key, by "tier:quote" for a coverage judge (round 0
@@ -390,4 +392,176 @@ test("the pilot tags only pages drawn outside the reference sample, in batches o
   assert.equal(pilot.calls.tagger.answered, pilot.calls.tagger.calls);
   const shown = JSON.stringify(pilot);
   for (const word of ["Jean", "marché", "concert"]) assert.equal(shown.includes(word), false);
+});
+
+// A reference for the pass's journal, as the reference step leaves it: the sample drawn from its quotes in 3 stretches
+// of 2 pages, and for each quote one question with one search. The market and concert questions search their quote's
+// own words, the dream's too; the rain question searches "pluie", which only the rain quotes' tags hold.
+const MEASURE_SAMPLE = pointerReferenceSample({ units: PASS_INPUT.units, seed: "measure-seed", strata: 3, unitsPerStratum: 2 });
+function questionFor(unit, index) {
+  const base = { question_id: `question:${index}`, unit_id: unit.unit_id };
+  if (unit.text.includes("marché")) return { ...base, question: "Who went to the market?", critical: false, event: false, queries: ["marché"] };
+  if (unit.text.includes("rêvais")) return { ...base, question: "What did they dream of?", critical: true, event: false, queries: ["plage"] };
+  if (unit.text.includes("concert")) return { ...base, question: "What happened last night?", critical: true, event: true, queries: ["concert"] };
+  return { ...base, question: "What was the weather like?", critical: false, event: false, queries: ["pluie"] };
+}
+const REFERENCE = Object.freeze({ units: MEASURE_SAMPLE.units.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
+  inclusion_probability: unit.inclusion_probability, quote_ids: unit.quote_ids, status: "complete", reason: null,
+  questions: unit.quote_ids.map((quoteId) => questionFor(PASS_INPUT.unitsById.get(quoteId), quoteId)) })) });
+
+// Search as find_journal_quotes ranks it, simplified: quotes holding a query word, in journal order, then, with tags,
+// quotes found only by a topic or event label.
+function searchOn(result) {
+  return async ({ query, matchTags }) => {
+    const word = query.toLowerCase();
+    const byWords = PASS_INPUT.units.filter((unit) => unit.text.toLowerCase().includes(word)).map((unit) => PASS_INPUT.passageIdForUnit(unit.unit_id));
+    if (!matchTags) return byWords;
+    const byTags = [...result.indexes.quote_tags].filter(([, tags]) => tags.some((tag) => ["topic", "event"].includes(tag.kind)
+      && tag.label.toLowerCase().includes(word))).map(([passageId]) => passageId).filter((passageId) => !byWords.includes(passageId));
+    return [...byWords, ...byTags];
+  };
+}
+
+const measure = (port, clock, result, extra = {}) => runPointerMeasure({ quoteGeneration: QUOTE_GENERATION, pass: result, reference: REFERENCE,
+  search: searchOn(result), seed: "precision-seed", stepId: "measure:synthetic", deadline: DEADLINE, port,
+  grant: Object.freeze({ ...grant, allowed_roles: ["pair_judge"] }), now: () => new Date(clock.now), ...extra });
+
+// The pass, then the coverage pass that tags page 5 again.
+async function coveredPass(port, clock) {
+  const first = await pass(port, clock);
+  const second = await pass(port, clock, { stepId: "pass:coverage", pages: first.coverage.untagged.map((item) => item.page),
+    first: { checked: first.checked, event_pairs: first.event_pairs, dropped_event_pairs: first.dropped_event_pairs } });
+  return { first, second };
+}
+
+test("the measurement scores the generation against every floor: recall by its searches, both judges on each kind's sample", async () => {
+  const clock = { now: START };
+  const port = scriptedPort({ clock });
+  const { second } = await coveredPass(port, clock);
+  const sentBefore = port.sent.length;
+  const slots = [];
+  const result = await measure(port, clock, second, { beforeHardestSend: async ({ operationKey }) => { slots.push(operationKey); } });
+  assert.equal(result.publish, true);
+  assert.ok(Object.values(result.floors).every((floor) => floor.holds));
+  // Every question is found with tags; the rain questions only through their tags, so words alone miss them.
+  const rain = REFERENCE.units.flatMap((unit) => unit.questions).filter((question) => question.queries[0] === "pluie").length;
+  assert.ok(rain > 0);
+  assert.equal(result.floors.recall.estimate, 1);
+  assert.ok(result.floors.no_loss.recall_words_only_estimate < 1);
+  assert.deepEqual([result.floors.gain.applicable, result.floors.gain.estimate], [true, 1]);
+  assert.deepEqual([result.floors.critical_recall.applicable, result.floors.critical_recall.estimate], [true, 1]);
+  assert.deepEqual([result.floors.event_coverage.applicable, result.floors.event_coverage.estimate], [true, 1]);
+  // Each kind's sample is judged in full here, both judges in calls of their own, and every pair is correct.
+  const judged = port.sent.slice(sentBefore);
+  assert.ok(judged.every((item) => item.role === "pair_judge" && item.expiresAt === DEADLINE));
+  assert.deepEqual(judged.map((item) => item.operationKey), ["standard", "hardest"].flatMap((tier) => ["person", "topic", "event"]
+    .map((name) => `measure:synthetic:judge:${tier}:${name}:0`)));
+  assert.equal(slots.length, 3, "each Claude call counts one daily slot");
+  assert.deepEqual(Object.keys(judged[0].packet.pairs[0]), ["pair_id", "kind", "label", "quote"]);
+  assert.match(judged[0].packet.pairs[0].pair_id, /^measure-pair:[0-9a-f]{32}$/);
+  const counts = Object.fromEntries(result.report.samples.map((sample) => [sample.name, [sample.pairs, sample.sampled, sample.correct]]));
+  assert.deepEqual(counts, { person: [11, 11, 11], place: [0, 0, 0], organization: [0, 0, 0], topic: [19, 19, 19], event: [4, 4, 4],
+    dropped_events: [0, 0, 0] });
+  assert.deepEqual(result.floors.precision.topic.census, true);
+  assert.deepEqual([result.report.agreement.items, result.report.agreement.disagreements], [34, 0]);
+  assert.deepEqual(result.report.calls, { calls: 6, answered: 6, failed: 0, deadline: 0, retried: 0 });
+  assert.equal(result.floors.anchors.broken, 0);
+  // The report holds counts; the samples hold what the judges saw, for the private store only.
+  const shown = JSON.stringify({ floors: result.floors, report: result.report });
+  for (const word of ["Jean", "marché", "concert", "pluie", "plage"]) assert.equal(shown.includes(word), false);
+  assert.equal(result.samples.find((sample) => sample.name === "person").items[0].label, "Jean");
+  assert.deepEqual(POINTER_MEASURE_SAMPLE_NAMES, ["person", "place", "organization", "topic", "event", "dropped_events"]);
+  assert.equal(POINTER_RECALL_TOP, 12);
+});
+
+test("the first pass's measurement judges the event pairs its check dropped, and its untagged page fails coverage", async () => {
+  const clock = { now: START };
+  const port = scriptedPort({ clock });
+  const first = await pass(port, clock);
+  const result = await measure(port, clock, first);
+  const dropped = result.report.samples.find((sample) => sample.name === "dropped_events");
+  assert.deepEqual([dropped.pairs, dropped.sampled, dropped.real], [1, 1, 0], "both judges reject the dream as an event");
+  assert.deepEqual([result.floors.event_check_recall.applicable, result.floors.event_check_recall.estimate], [true, 1]);
+  assert.equal(result.floors.coverage.holds, false);
+  assert.equal(result.publish, false);
+  assert.deepEqual(Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name), ["coverage"]);
+  assert.ok(port.sent.some((item) => item.operationKey === "measure:synthetic:judge:hardest:dropped_events:0"));
+});
+
+test("a pair a judge leaves unscored at the deadline counts as wrong, and as real among the dropped", async () => {
+  const clock = { now: START };
+  const port = scriptedPort({ clock });
+  const { first, second } = await coveredPass(port, clock);
+  const open = { now: START };
+  const opened = scriptedPort({ clock: open, script: { "measure:synthetic:judge:hardest:topic:0": "open" } });
+  const result = await measure(opened, open, second);
+  const topic = result.report.samples.find((sample) => sample.name === "topic");
+  assert.deepEqual([topic.correct, topic.unscored_claude, topic.unscored_codex], [0, 19, 0]);
+  const event = result.report.samples.find((sample) => sample.name === "event");
+  assert.deepEqual([event.correct, event.unscored_claude], [0, 4], "the call after the open one was never sent");
+  assert.equal(result.floors.precision.holds, false);
+  assert.equal(result.publish, false);
+  assert.deepEqual([result.report.calls.deadline, result.report.calls.answered], [2, 4]);
+  // Among the dropped, a pair one judge leaves unscored counts as real.
+  const lateClock = { now: START };
+  const late = scriptedPort({ clock: lateClock, script: { "measure:synthetic:judge:hardest:dropped_events:0": "open" } });
+  const lateResult = await measure(late, lateClock, first);
+  const dropped = lateResult.report.samples.find((sample) => sample.name === "dropped_events");
+  assert.deepEqual([dropped.real, dropped.unscored_claude], [1, 1]);
+  assert.equal(lateResult.floors.event_check_recall.estimate, 0.8);
+});
+
+test("run again with the stored answers, the measurement gives the same result and sends nothing new", async () => {
+  const clock = { now: START };
+  const port = scriptedPort({ clock });
+  const { second } = await coveredPass(port, clock);
+  const result = await measure(port, clock, second);
+  const sent = port.sent.length;
+  clock.now = Date.parse(DEADLINE) + 60_000;
+  assert.deepEqual(await measure(port, clock, second), result);
+  assert.equal(port.sent.length, sent);
+});
+
+test("recall is measured over every sampled unit, and a floor with nothing to measure says so", () => {
+  const all = new Set(REFERENCE.units.flatMap((unit) => unit.questions.map((question) => question.question_id)));
+  const none = new Set();
+  const events = new Set(PASS_INPUT.units.map((unit) => unit.unit_id));
+  const full = measurePointerRecall({ reference: REFERENCE, foundWithTags: all, foundWordsOnly: all, eventTaggedUnitIds: events });
+  assert.deepEqual([full.recall_estimate, full.gain, full.critical_recall_estimate], [1, null, 1], "word search misses nothing: no gain to measure");
+  const missed = measurePointerRecall({ reference: REFERENCE, foundWithTags: none, foundWordsOnly: none, eventTaggedUnitIds: new Set() });
+  assert.deepEqual([missed.recall_estimate, missed.gain.estimate, missed.event_coverage.estimate], [0, 0, 0]);
+  const plain = { units: REFERENCE.units.map((unit) => ({ ...unit, questions: unit.questions.map((question) => ({ ...question, critical: false, event: false })) })) };
+  const flat = measurePointerRecall({ reference: plain, foundWithTags: all, foundWordsOnly: none, eventTaggedUnitIds: events });
+  assert.deepEqual([flat.critical_recall, flat.critical_recall_estimate, flat.critical_recall_words_only_estimate, flat.event_coverage], [null, null, null, null]);
+  assert.equal(full.units.length, REFERENCE.units.length);
+  assert.deepEqual(Object.keys(full.units[0]), ["unit_id", "questions", "found_with_tags", "found_words_only", "critical_questions", "event_quotes"]);
+  const incomplete = { units: [{ ...REFERENCE.units[0], status: "nonresponse", questions: [] }, ...REFERENCE.units.slice(1)] };
+  assert.throws(() => measurePointerRecall({ reference: incomplete, foundWithTags: all, foundWordsOnly: all, eventTaggedUnitIds: events }),
+    { code: "POINTER_REFERENCE_INCOMPLETE" });
+});
+
+test("each sample is fixed by its seed, 150 pairs at most, and its items are what a judge sees", () => {
+  const pairs = Array.from({ length: 400 }, (_, index) => ({ pair_id: `pair:${index}`, kind: index % 2 ? "topic" : "person", label: `label ${index}`,
+    unit_id: PASS_INPUT.units[index % PASS_INPUT.units.length].unit_id }));
+  const dropped = [{ pair_id: "event-pair:a", kind: "event", label: "concert", unit_id: PASS_INPUT.units[1].unit_id }];
+  const drawn = pointerMeasureSamples({ pairs, dropped, unitsById: PASS_INPUT.unitsById, seed: "seed-one" });
+  const sizes = Object.fromEntries(drawn.samples.map((sample) => [sample.name, [sample.pairs, sample.items.length]]));
+  assert.deepEqual(sizes, { person: [200, 150], place: [0, 0], organization: [0, 0], topic: [200, 150], event: [0, 0], dropped_events: [1, 1] });
+  assert.deepEqual(pointerMeasureSamples({ pairs, dropped, unitsById: PASS_INPUT.unitsById, seed: "seed-one" }), drawn);
+  const other = pointerMeasureSamples({ pairs, dropped, unitsById: PASS_INPUT.unitsById, seed: "seed-two" });
+  assert.notDeepEqual(other.samples[0].items.map((item) => item.label), drawn.samples[0].items.map((item) => item.label));
+  const items = drawn.samples.flatMap((sample) => sample.items);
+  assert.equal(new Set(items.map((item) => item.pair_id)).size, items.length);
+  assert.equal(items[0].quote, PASS_INPUT.unitsById.get(items[0].unit_id).text);
+  assert.equal(JSON.stringify(drawn).includes("seed-one"), false);
+  assert.throws(() => pointerMeasureSamples({ pairs: [pairs[0], pairs[0]], dropped, unitsById: PASS_INPUT.unitsById, seed: "s" }), { code: "POINTER_MEASURE_PAIR_DUPLICATE" });
+});
+
+test("anchors are checked again by code, and one that no longer holds is counted", async () => {
+  const clock = { now: START };
+  const result = await pass(scriptedPort({ clock }), clock);
+  assert.equal(pointerBrokenAnchors({ checked: result.checked, unitsById: PASS_INPUT.unitsById }), 0);
+  const tampered = result.checked.map((item, index) => (index === 0 ? { ...item, kept: [{ ...item.kept[0],
+    anchors: [{ ...item.kept[0].anchors[0], quote: "Marie" }] }, ...item.kept.slice(1)] } : item));
+  assert.equal(pointerBrokenAnchors({ checked: tampered, unitsById: PASS_INPUT.unitsById }), 1);
 });
