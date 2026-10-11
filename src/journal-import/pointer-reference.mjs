@@ -6,12 +6,13 @@ import { POINTER_PAGELESS_STRETCH, pointerPagelessStretches } from "./pointer-ta
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3, "Questions
 // that cover every sampled quote", "Two independent checks that the questions cover each quote" and "No unit drops
 // out"). For each sampled unit the question writer writes one question for each thing a quote says; code checks that
-// every quote has a question and every question names one of the unit's quotes; two coverage judges, one Codex and one
-// Claude, each see the quotes with their questions, 25 quotes to a call, and list questions that repeat, combine or
-// copy; and code, not either judge alone, confirms a quote only when both do. A unit gets one writer retry in all, with
-// both judges' notes when a quote was left unconfirmed; a unit still incomplete after it is a nonresponse, which fails
-// the recall floor. The model calls and the deadline are the runtime's. Nothing returned for a log or a report holds
-// journal text: notes go only into the writer's retry packet.
+// every quote has a question, every question names one of the unit's quotes, and each quote with its questions fits one
+// coverage call; two coverage judges, one Codex and one Claude, each see the quotes with their questions, at most 25
+// quotes to a call (fewer when the questions are long), and list questions that repeat, combine or copy; and code, not
+// either judge alone, confirms a quote only when both do. A unit gets one writer retry in all, with both judges' notes
+// when a quote was left unconfirmed; a unit still incomplete after it is a nonresponse, which fails the recall floor.
+// The model calls and the deadline are the runtime's. Nothing returned for a log or a report holds journal text: notes
+// go only into the writer's retry packet.
 
 /** Quotes to a coverage-judge call, at most. */
 export const POINTER_COVERAGE_QUOTES_PER_CALL = 25;

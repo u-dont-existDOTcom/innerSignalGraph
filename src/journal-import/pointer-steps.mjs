@@ -95,7 +95,8 @@ export async function runPointerReference({ units, seed = null, sample: given = 
             texts: new Map(unit.quote_ids.map((id) => [id, quoteById.get(id).text])), answer: outcome.output }) : null, coverage: null });
       });
     }
-    // Both coverage judges, on every quote whose unit's questions are complete, 25 quotes to a call.
+    // Both coverage judges, on every quote whose unit's questions are complete, at most 25 quotes to a call (fewer when
+    // the questions are long; coverageJudgeCalls).
     const judging = sampled.filter((unit) => { const step = next(unit); return step.step === "judge" && step.attempt === round; });
     if (judging.length > 0) {
       const quotes = judging.flatMap((unit) => {
