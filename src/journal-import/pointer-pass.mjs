@@ -163,19 +163,22 @@ export function pointerEventCheckCalls(pairs, perCall = POINTER_EVENT_CHECK_PAIR
  * quote mentions what the label names (`mentions`) and reports it as happening (`kind_right`). A pair it rejected or
  * left unanswered (no judgment in `judgments`, a map from pair ID) loses those anchors, and a tag left with none is
  * dropped. Returns the new results, the counts (the event-check floor reads `pairs` and `unanswered`) and the pairs it
- * dropped, rejected or unanswered, which event-check recall samples.
+ * dropped, rejected or unanswered, which event-check recall samples, and a content-free ledger of how each pair ended.
  */
 export function applyPointerEventCheck({ checked, pairs, judgments } = {}) {
   invariant(Array.isArray(checked) && Array.isArray(pairs) && judgments instanceof Map, "POINTER_EVENT_INPUT_INVALID");
   const counts = { pairs: pairs.length, accepted: 0, rejected: 0, unanswered: 0, tags_dropped: 0 };
   const dropped = [];
+  const ledger = [];
   // The quotes each event tag loses, by batch and tag.
   const losing = new Map();
   for (const pair of pairs) {
     const judgment = judgments.get(pair.pair_id);
-    if (!isObject(judgment)) counts.unanswered += 1;
-    else if (judgment.mentions === true && judgment.kind_right === true) { counts.accepted += 1; continue; }
-    else counts.rejected += 1;
+    const status = !isObject(judgment) ? "unanswered"
+      : (judgment.mentions === true && judgment.kind_right === true ? "accepted" : "rejected");
+    counts[status] += 1;
+    ledger.push(Object.freeze({ pair_id: pair.pair_id, batch_id: pair.batch_id, tag_index: pair.tag_index, unit_id: pair.unit_id, status }));
+    if (status === "accepted") continue;
     dropped.push(pair);
     const key = `${pair.batch_id}\0${pair.tag_index}`;
     if (!losing.has(key)) losing.set(key, new Set());
@@ -192,7 +195,8 @@ export function applyPointerEventCheck({ checked, pairs, judgments } = {}) {
     });
     return deepFreeze({ ...structuredClone(result), kept: structuredClone(kept) });
   });
-  return Object.freeze({ checked: Object.freeze(results), counts: Object.freeze(counts), dropped: Object.freeze(dropped) });
+  return Object.freeze({ checked: Object.freeze(results), counts: Object.freeze(counts), dropped: Object.freeze(dropped),
+    ledger: Object.freeze(ledger) });
 }
 
 // The tag indexes of checked results.

@@ -1,8 +1,13 @@
+import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_ROLE_DEFINITIONS } from "./provider-port.mjs";
-import { runDeadlineCalls } from "./pointer-calls.mjs";
+import { pointerCallCounts, runDeadlineCalls } from "./pointer-calls.mjs";
+import { applyPointerEventCheck, buildPointerGeneration, checkPointerBatches, keepPointerPages, overlayPointerRepass, pointerCoverage,
+  pointerEventCheckCalls, pointerEventPairs, pointerPassInput, pointerPassReport, pointerRepassBatches, pointerTaggerPacket } from "./pointer-pass.mjs";
+import { batchPointerQuotes, pointerTagIndexes } from "./pointer-tags.mjs";
 import { POINTER_REFERENCE_NONRESPONSE_REASONS, checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls,
   pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
+import { buildQuoteGeneration } from "./quote-index.mjs";
 
 // The pointer pass's steps as sequences of deadline-bound call rounds (plan 2026-10-09-journal-quote-first.md, Part
 // 3). Each step is deterministic given its inputs and the answers the durable port has stored, so a resumed step runs
@@ -197,4 +202,190 @@ export function pointerReferenceCounts(reference) {
   return Object.freeze({ sampled_units: reference.units.length, complete_units: complete, nonresponse_units: reference.units.length - complete,
     nonresponse_by_reason: Object.freeze(reasons), deadline_units_with_a_call_unanswered: unanswered, units_retried: retried, questions,
     critical_questions: critical, event_questions: events });
+}
+
+
+/** Pages a pilot tags (plan Part 3, "Steps"). */
+export const POINTER_PILOT_PAGES = 20;
+
+const sha256 = (value) => createHash("sha256").update(value, "utf8").digest("hex");
+// A quote's page: its page number, or its representation when it has none (as pointer-pass reads pages).
+const pageOf = (unit) => (unit.page === null || unit.page === undefined ? unit.representation_id : unit.page);
+
+// A pair judge's answer must judge every pair of its call once and nothing else; otherwise its call uses its retry.
+function pairAnswerCheck(spec, output) {
+  const wanted = new Set(spec.packet.pairs.map((pair) => pair.pair_id));
+  const seen = new Set();
+  for (const judgment of output.judgments) {
+    if (!wanted.has(judgment.pair_id) || seen.has(judgment.pair_id)) return "PAIR_ANSWER_INVALID";
+    seen.add(judgment.pair_id);
+  }
+  return seen.size === wanted.size ? null : "PAIR_ANSWER_INCOMPLETE";
+}
+
+// The event check's counts over a ledger: its pairs by how they ended, and the event tags left with no accepted pair
+// (a tag is its pass, batch and place in the tagger's answer).
+function eventCheckCounts(ledger) {
+  const counts = { pairs: ledger.length, accepted: 0, rejected: 0, unanswered: 0, tags_dropped: 0 };
+  const kept = new Map();
+  for (const entry of ledger) {
+    counts[entry.status] += 1;
+    const tag = `${entry.pass}\0${entry.batch_id}\0${entry.tag_index}`;
+    kept.set(tag, kept.get(tag) === true || entry.status === "accepted");
+  }
+  counts.tags_dropped = [...kept.values()].filter((value) => !value).length;
+  return Object.freeze(counts);
+}
+
+// The times the answers used came in, sorted, for the runtime's timings; content-free.
+const answeredAt = (outcomes) => Object.freeze(outcomes.filter((outcome) => outcome.status === "answered")
+  .map((outcome) => outcome.receipt?.provider_route_receipt?.received_at).filter((value) => typeof value === "string").sort());
+
+// Tags `batches` and checks what comes back: the tagger for every batch at once, with one retry for an invalid answer,
+// each answer checked by code, and then the event check for every kept event tag and quote it is anchored in, 50 pairs
+// to a call, with one retry for an answer that doesn't judge each of its pairs once. With `pages`, only the tags
+// anchored on those pages are kept before the event check. `pass` names the pass in the ledger.
+async function tagBatches({ input, batches, pages = null, pass, stepId, deadline, port, grant, now }) {
+  const call = (role, key, assigned, fields) => ({ key, role, tier: "standard", grant, outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
+    packet: rolePacket(role, { generation: input.generation, grantPurpose: grant.purpose, assigned, tag: `pointer:${role}:${stepId}`, fields }) });
+  const taggerCalls = batches.map((batch) => call("pointer_tagger", `${stepId}:tagger:${batch.batch_id}`, [...batch.unit_ids],
+    { quote_units: pointerTaggerPacket({ batch, unitsById: input.unitsById }).quote_units }));
+  const taggerOutcomes = await runDeadlineCalls({ calls: taggerCalls, port, deadline, now, retries: 1 });
+  const outcomes = new Map(batches.map((batch, index) => {
+    const outcome = taggerOutcomes[index];
+    return [batch.batch_id, outcome.status === "answered" ? { status: "answered", answer: outcome.output } : { status: outcome.status }];
+  }));
+  const tagged = checkPointerBatches({ batches, unitsById: input.unitsById, outcomes });
+  const checked = pages ? keepPointerPages({ checked: tagged, unitsById: input.unitsById, pages }) : tagged;
+
+  const pairs = pointerEventPairs({ checked, unitsById: input.unitsById });
+  const pairById = new Map(pairs.map((pair) => [pair.pair_id, pair]));
+  const eventCalls = pointerEventCheckCalls(pairs).map((eventCall) => call("pair_judge", `${stepId}:${eventCall.call_id}`,
+    [...new Set(eventCall.packet.pairs.map((pair) => pairById.get(pair.pair_id).unit_id))], { pairs: eventCall.packet.pairs }));
+  const eventOutcomes = eventCalls.length > 0
+    ? await runDeadlineCalls({ calls: eventCalls, port, deadline, now, retries: 1, check: pairAnswerCheck }) : [];
+  const judgments = new Map();
+  for (const outcome of eventOutcomes) {
+    if (outcome.status === "answered") for (const judgment of outcome.output.judgments) judgments.set(judgment.pair_id, judgment);
+  }
+  const eventCheck = applyPointerEventCheck({ checked, pairs, judgments });
+  const ledger = eventCheck.ledger.map((entry) => Object.freeze({ ...entry, pass, page: pageOf(input.unitsById.get(entry.unit_id)) }));
+  return { checked: eventCheck.checked, ledger, dropped: eventCheck.dropped, taggerOutcomes, eventOutcomes };
+}
+
+/**
+ * A pointer pass (plan Part 3, "Running it in hours", "Failures", "Event check", "Deadlines" and the coverage floor's
+ * one new pass). It rebuilds the quote generation from `quoteGeneration` (buildQuoteGeneration's input, under the
+ * generation ID the pass builds), sends every batch to the tagger at once, checks each answer by code, sends every kept
+ * event tag and quote it is anchored in to the event check, and builds the pointer generation with its tag indexes,
+ * its coverage and a counts-only report. With `pages` and `first` it is the coverage pass: it sends only the batches
+ * with those untagged pages, keeps only its tags on them, checks their events, and lays its results over `first` (the
+ * first pass's `checked`, `event_pairs` and `dropped_event_pairs`) on those pages alone; its event-check ledger, counts
+ * and dropped pairs are then the generation's, the first pass's on the other pages and its own on the retried ones.
+ * Every call is keyed under `stepId` and expires at `deadline`: a batch still unanswered then is untagged for the
+ * deadline, and an event check still unanswered drops its pairs, which count against the event-check floor. `maxBytes`
+ * is the batch size, left at the plan's except in tests.
+ */
+export async function runPointerPass({ quoteGeneration, stepId, deadline, port, grant, now = () => new Date(), pages = null, first = null,
+  maxBytes } = {}) {
+  invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
+  invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string", "POINTER_STEP_INPUT_INVALID");
+  invariant((pages === null) === (first === null), "POINTER_STEP_INPUT_INVALID");
+  invariant(pages === null || (Array.isArray(pages) && pages.length > 0 && first && Array.isArray(first.checked)
+    && Array.isArray(first.event_pairs) && Array.isArray(first.dropped_event_pairs)), "POINTER_STEP_INPUT_INVALID");
+  const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration), ...(maxBytes === undefined ? {} : { maxBytes }) });
+  const batches = pages ? pointerRepassBatches({ batches: input.batches, unitsById: input.unitsById, pages }) : input.batches;
+  const own = await tagBatches({ input, batches, pages, pass: pages ? "coverage" : "first", stepId, deadline, port, grant, now });
+
+  let { checked, ledger, dropped } = own;
+  if (pages) {
+    const retried = new Set(pages.map(String));
+    const elsewhere = (page) => !retried.has(String(page));
+    checked = overlayPointerRepass({ first: first.checked, second: own.checked, unitsById: input.unitsById, pages });
+    ledger = [...first.event_pairs.filter((entry) => elsewhere(entry.page)), ...own.ledger];
+    dropped = [...first.dropped_event_pairs.filter((pair) => {
+      const unit = input.unitsById.get(pair.unit_id);
+      invariant(unit, "POINTER_STEP_INPUT_INVALID");
+      return elsewhere(pageOf(unit));
+    }), ...own.dropped];
+  }
+  const eventCheck = eventCheckCounts(ledger);
+  const { built, indexes } = buildPointerGeneration({ quoteGeneration, input, checked });
+  const coverage = pointerCoverage({ input, checked, indexes });
+  return Object.freeze({
+    generation: input.generation,
+    step_id: stepId,
+    pages: pages ? Object.freeze([...pages]) : null,
+    checked,
+    event_pairs: Object.freeze(ledger),
+    dropped_event_pairs: Object.freeze(dropped),
+    event_check: eventCheck,
+    built,
+    indexes,
+    coverage,
+    report: pointerPassReport({ checked, eventCheck, indexes, coverage }),
+    calls: Object.freeze({ tagger: pointerCallCounts(own.taggerOutcomes), event_check: pointerCallCounts(own.eventOutcomes) }),
+    tagger_answered_at: answeredAt(own.taggerOutcomes)
+  });
+}
+
+/**
+ * Draws a pilot's pages (plan Part 3, "Steps"): `count` pages with quotes, none holding a quote in `excludeUnitIds`
+ * (the reference sample's quotes), ordered by the SHA-256 of the seed and the page and returned in journal order. The
+ * record holds the seed's digest, never the seed.
+ */
+export function pointerPilotPages({ quotes, excludeUnitIds, seed, count = POINTER_PILOT_PAGES } = {}) {
+  invariant(Array.isArray(quotes) && Array.isArray(excludeUnitIds) && typeof seed === "string" && seed.length > 0
+    && Number.isSafeInteger(count) && count > 0, "POINTER_PILOT_INPUT_INVALID");
+  const excluded = new Set(excludeUnitIds);
+  const closed = new Set(quotes.filter((quote) => excluded.has(quote.unit_id)).map((quote) => String(pageOf(quote))));
+  const order = [];
+  const seen = new Set();
+  for (const quote of quotes) {
+    const page = pageOf(quote);
+    if (seen.has(String(page)) || closed.has(String(page))) continue;
+    seen.add(String(page));
+    order.push(page);
+  }
+  const rank = new Map(order.map((page, index) => [String(page), index]));
+  const draw = new Map(order.map((page) => [String(page), sha256(`${seed}\0${String(page)}`)]));
+  const drawn = [...order].sort((left, right) => {
+    const [a, b] = [draw.get(String(left)), draw.get(String(right))];
+    return a < b ? -1 : (a > b ? 1 : 0);
+  }).slice(0, count).sort((left, right) => rank.get(String(left)) - rank.get(String(right)));
+  return Object.freeze({ seed_sha256: sha256(seed), candidate_pages: order.length, pages: Object.freeze(drawn) });
+}
+
+/**
+ * The pilot (plan Part 3, "Steps"): the tagger and the event check on the quotes of a few pages drawn outside the
+ * reference sample, in batches of their own so no other page is sent, under the same rules and deadline as a pass.
+ * It never looks at a reference and builds nothing to publish: it returns its pages and the counts-only report a pass
+ * gives (pages by how their batch ended, tags kept and dropped, pairs by kind, the event check and the pilot pages left
+ * untagged), its calls' counts, and when the answers came in, for the runtime's timings and the worker log's tokens.
+ */
+export async function runPointerPilot({ quoteGeneration, excludeUnitIds, seed, stepId, deadline, port, grant, now = () => new Date(),
+  count = POINTER_PILOT_PAGES, maxBytes } = {}) {
+  invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
+  invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string", "POINTER_STEP_INPUT_INVALID");
+  const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
+  const draw = pointerPilotPages({ quotes: input.quotes, excludeUnitIds, seed, count });
+  const wanted = new Set(draw.pages.map(String));
+  const quotes = input.quotes.filter((quote) => wanted.has(String(pageOf(quote))));
+  const batches = batchPointerQuotes({ quotes, ...(maxBytes === undefined ? {} : { maxBytes }) });
+  const own = await tagBatches({ input, batches, pass: "pilot", stepId, deadline, port, grant, now });
+  const eventCheck = eventCheckCounts(own.ledger);
+  const indexes = pointerTagIndexes({ batches: own.checked.map((result) => ({ units: result.unit_ids.map((unitId) => input.unitsById.get(unitId)),
+    kept: result.kept, passageIdForUnit: input.passageIdForUnit })) });
+  const coverage = pointerCoverage({ input: { quotes, unitsById: input.unitsById }, checked: own.checked, indexes });
+  return Object.freeze({
+    generation: input.generation,
+    step_id: stepId,
+    seed_sha256: draw.seed_sha256,
+    candidate_pages: draw.candidate_pages,
+    pages: draw.pages,
+    event_check: eventCheck,
+    report: pointerPassReport({ checked: own.checked, eventCheck, indexes, coverage }),
+    calls: Object.freeze({ tagger: pointerCallCounts(own.taggerOutcomes), event_check: pointerCallCounts(own.eventOutcomes) }),
+    tagger_answered_at: answeredAt(own.taggerOutcomes)
+  });
 }
