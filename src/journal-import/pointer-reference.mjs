@@ -17,6 +17,8 @@ export const POINTER_COVERAGE_QUOTES_PER_CALL = 25;
 /** Why a sampled unit ended without its reference. */
 export const POINTER_REFERENCE_NONRESPONSE_REASONS = Object.freeze(["questions_incomplete", "coverage_unconfirmed",
   "coverage_check_failed", "searches_incomplete", "deadline"]);
+/** How much quote text a sampling unit holds in a representation without pages: about a page's worth. */
+export const POINTER_PAGELESS_UNIT_BYTES = 4096;
 /** The sample's design: the journal cut into 12 stretches in order, 8 units drawn from each. */
 export const POINTER_REFERENCE_SAMPLE = Object.freeze({ strata: 12, units_per_stratum: 8 });
 
@@ -203,11 +205,37 @@ export function referenceUnitStep({ quoteIds, attempts } = {}) {
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
+// The units the sample is drawn from, each with its quotes in journal order, ordered by their first quote. A unit is a
+// page; in a representation without page numbers (a plain-text journal is one) it is a stretch of consecutive quotes
+// holding at most POINTER_PAGELESS_UNIT_BYTES of their text, so no unit holds more than a page's worth and no question
+// writer's answer has to cover a whole journal. The challenge set names its units the same way.
+function samplingUnits(quotes) {
+  const units = new Map();
+  const open = new Map();
+  for (const quote of [...quotes].sort((left, right) => left.source_order - right.source_order)) {
+    let unitId;
+    if (Number.isSafeInteger(quote.page)) unitId = `page:${quote.page}`;
+    else {
+      const bytes = Buffer.byteLength(quote.text, "utf8");
+      let stretch = open.get(quote.representation_id);
+      if (!stretch || stretch.bytes + bytes > POINTER_PAGELESS_UNIT_BYTES) {
+        stretch = { index: stretch ? stretch.index + 1 : 0, bytes: 0 };
+        open.set(quote.representation_id, stretch);
+      }
+      stretch.bytes += bytes;
+      unitId = `representation:${sha256(quote.representation_id).slice(0, 32)}:${stretch.index}`;
+    }
+    if (!units.has(unitId)) units.set(unitId, { unit_id: unitId, source_order: quote.source_order, quotes: [] });
+    units.get(unitId).quotes.push(quote);
+  }
+  return units;
+}
+
 /**
  * The reference sample (plan Part 3, "A random sample of the journal"): the import's probability sample
- * (`createDeterministicAuditSample`), drawn with a recorded seed from every unit that has quotes. A unit is a page,
- * or a representation without page numbers, and its quotes are the quote units on it, in journal order; units are
- * ordered by their first quote, and units with the same quotes count once. Returns the sample's record (the seed's
+ * (`createDeterministicAuditSample`), drawn with a recorded seed from every unit that has quotes. A unit is a page, or
+ * in a representation without page numbers a stretch of about a page (samplingUnits), and its quotes are the quote
+ * units in it, in journal order; units are ordered by their first quote, and units with the same quotes count once. Returns the sample's record (the seed's
  * digest, never the seed) and the sampled units in draw order, each with its stretch, inclusion probability and quote
  * IDs. Quote text stays out of it.
  */
@@ -218,12 +246,7 @@ export function pointerReferenceSample({ units, seed, strata = POINTER_REFERENCE
     && (unit.page === null || unit.page === undefined || Number.isSafeInteger(unit.page))
     && typeof unit.representation_id === "string" && unit.representation_id.length > 0), "POINTER_REFERENCE_SAMPLE_INPUT_INVALID");
   invariant(typeof seed === "string" && seed.length > 0, "POINTER_REFERENCE_SAMPLE_INPUT_INVALID");
-  const pages = new Map();
-  for (const unit of [...units].sort((left, right) => left.source_order - right.source_order)) {
-    const pageId = Number.isSafeInteger(unit.page) ? `page:${unit.page}` : `representation:${sha256(unit.representation_id).slice(0, 32)}`;
-    if (!pages.has(pageId)) pages.set(pageId, { unit_id: pageId, source_order: unit.source_order, quotes: [] });
-    pages.get(pageId).quotes.push(unit);
-  }
+  const pages = samplingUnits(units);
   const candidates = [...pages.values()].map((page) => ({ unit_id: page.unit_id, source_order: page.source_order,
     duplicate_group_id: `duplicate:${sha256(page.quotes.map((quote) => quote.text).join("\u0000"))}` }));
   const sample = createDeterministicAuditSample({ units: candidates, seed, strata, unitsPerStratum });
@@ -239,47 +262,51 @@ export function pointerReferenceSample({ units, seed, strata = POINTER_REFERENCE
 }
 
 /**
- * Calibration's units as a challenge set (plan Part 3, "Calibration as a challenge set"): the pages of the import's
- * calibration units, each once, with its quotes in journal order, the hazard types of the calibration units on it, and
- * an inclusion probability of 1, since they were chosen, not drawn. A calibration unit on a page with no quote yet (a
- * page that needs visual reading) is counted and left out, as in the random sample. `calibration` gives each
- * calibration unit's representation, page number and hazard types; nothing of its text. The result has the reference
- * step's sample shape, so the same step writes and checks its questions.
+ * Calibration's units as a challenge set (plan Part 3, "Calibration as a challenge set"): the sampling units the
+ * import's calibration units lie on, each once, with its quotes in journal order, the hazard types of the calibration
+ * units on it, and an inclusion probability of 1, since they were chosen, not drawn. A calibration unit lies on its
+ * page or, in a representation without pages, on every stretch (samplingUnits) holding a quote that overlaps its bytes.
+ * One with no quote there yet (a page that needs visual reading) is counted and left out, as in the random sample.
+ * `calibration` gives each calibration unit's representation, page number or byte range, and hazard types; nothing of
+ * its text. The result has the reference step's sample shape, so the same step writes and checks its questions.
  */
 export function pointerChallengeUnits({ units, calibration } = {}) {
+  const isRange = (value) => Number.isSafeInteger(value.start_byte) && Number.isSafeInteger(value.end_byte)
+    && value.start_byte >= 0 && value.start_byte < value.end_byte;
   invariant(Array.isArray(units) && units.every((unit) => isObject(unit) && isId(unit.unit_id) && Number.isSafeInteger(unit.source_order)
-    && typeof unit.representation_id === "string" && unit.representation_id.length > 0), "POINTER_CHALLENGE_INPUT_INVALID");
+    && typeof unit.representation_id === "string" && unit.representation_id.length > 0
+    && (Number.isSafeInteger(unit.page) || (typeof unit.text === "string" && isRange(unit)))), "POINTER_CHALLENGE_INPUT_INVALID");
   invariant(Array.isArray(calibration) && calibration.every((item) => isObject(item) && typeof item.unit_id === "string"
     && typeof item.representation_id === "string" && item.representation_id.length > 0
-    && (item.page_number === null || item.page_number === undefined || Number.isSafeInteger(item.page_number))
+    && (Number.isSafeInteger(item.page_number) || isRange(item))
     && (item.hazard_types === undefined || (Array.isArray(item.hazard_types) && item.hazard_types.every((hazard) => typeof hazard === "string")))),
   "POINTER_CHALLENGE_INPUT_INVALID");
-  // A page as the random sample names it: its number, or its representation's digest.
-  const pageId = (page, representationId) => (Number.isSafeInteger(page) ? `page:${page}` : `representation:${sha256(representationId).slice(0, 32)}`);
-  const quotesByPage = new Map();
-  for (const quote of [...units].sort((left, right) => left.source_order - right.source_order)) {
-    const id = pageId(quote.page, quote.representation_id);
-    if (!quotesByPage.has(id)) quotesByPage.set(id, []);
-    quotesByPage.get(id).push(quote);
-  }
-  const pages = new Map();
+  const sampling = samplingUnits(units);
+  const lyingOn = (item) => (Number.isSafeInteger(item.page_number)
+    ? [`page:${item.page_number}`].filter((unitId) => sampling.has(unitId))
+    : [...sampling.values()].filter((unit) => unit.quotes.some((quote) => !Number.isSafeInteger(quote.page)
+      && quote.representation_id === item.representation_id && quote.start_byte < item.end_byte && quote.end_byte > item.start_byte))
+      .map((unit) => unit.unit_id));
+  const chosen = new Map();
   let withoutQuotes = 0;
   for (const item of calibration) {
-    const id = pageId(item.page_number, item.representation_id);
-    if (!quotesByPage.has(id)) {
+    const unitIds = lyingOn(item);
+    if (unitIds.length === 0) {
       withoutQuotes += 1;
       continue;
     }
-    if (!pages.has(id)) pages.set(id, new Set());
-    for (const hazard of item.hazard_types ?? []) pages.get(id).add(hazard);
+    for (const unitId of unitIds) {
+      if (!chosen.has(unitId)) chosen.set(unitId, new Set());
+      for (const hazard of item.hazard_types ?? []) chosen.get(unitId).add(hazard);
+    }
   }
-  const ordered = [...pages.keys()].sort((left, right) => quotesByPage.get(left)[0].source_order - quotesByPage.get(right)[0].source_order);
+  const ordered = [...chosen.keys()].sort((left, right) => sampling.get(left).source_order - sampling.get(right).source_order);
   return deepFreeze({
     calibration_units: calibration.length,
     units_without_quotes: withoutQuotes,
     candidate_units: ordered.length,
-    units: ordered.map((id) => ({ unit_id: id, stratum: 0, inclusion_probability: 1, quote_ids: quotesByPage.get(id).map((quote) => quote.unit_id),
-      hazards: [...pages.get(id)].sort() }))
+    units: ordered.map((unitId) => ({ unit_id: unitId, stratum: 0, inclusion_probability: 1,
+      quote_ids: sampling.get(unitId).quotes.map((quote) => quote.unit_id), hazards: [...chosen.get(unitId)].sort() }))
   });
 }
 

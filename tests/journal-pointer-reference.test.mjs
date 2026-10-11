@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { POINTER_COVERAGE_QUOTES_PER_CALL, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE, checkCoverageJudgments,
-  checkQuestionSet, checkSearchPlan, coverageJudgeCalls, pointerReferenceSample, referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
+  checkQuestionSet, checkSearchPlan, coverageJudgeCalls, POINTER_PAGELESS_UNIT_BYTES, pointerChallengeUnits, pointerReferenceSample,
+  referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3). All text here
 // is invented.
@@ -208,7 +209,7 @@ test("a short journal's stretches are taken whole, pages without numbers are the
   assert.ok(short.units.every((unit) => unit.inclusion_probability === 1));
   const text = pointerReferenceSample({ units: quoteUnits(5, { pageNumbers: false }), seed: "synthetic-seed" });
   assert.equal(text.units.length, 5);
-  assert.ok(text.units.every((unit) => /^representation:[0-9a-f]{32}$/.test(unit.unit_id)));
+  assert.ok(text.units.every((unit) => /^representation:[0-9a-f]{32}:0$/.test(unit.unit_id)));
   const units = quoteUnits(4);
   // Page 4's two quotes repeat page 1's two, word for word: the two pages count once.
   const repeated = units.map((unit) => (unit.page === 4 ? { ...unit, text: unit.text.replace("of page 4", "of page 1") } : unit));
@@ -237,4 +238,39 @@ test("a search plan is complete when every question has one to three searches an
     assert.deepEqual([checkSearchPlan({ questionIds, answer }).answer_valid, checkSearchPlan({ questionIds, answer }).complete], [false, false]);
   }
   assert.throws(() => checkSearchPlan({ questionIds: [], answer: plan([]) }), { code: "POINTER_SEARCH_PLAN_INPUT_INVALID" });
+});
+
+// A journal without pages: one representation holding `count` quotes of `bytes` bytes each, in journal order.
+function pagelessQuotes(count, bytes) {
+  return Array.from({ length: count }, (_, index) => ({ unit_id: `unit:t${index}`, page: null, representation_id: "representation:plain-text",
+    text: `${String(index).padStart(4, "0")} ${"w".repeat(bytes - 5)}`, start_byte: index * (bytes + 2), end_byte: index * (bytes + 2) + bytes,
+    source_order: index }));
+}
+
+test("a journal without pages is drawn in stretches of about a page, so no question writer gets the whole journal", () => {
+  assert.equal(POINTER_PAGELESS_UNIT_BYTES, 4096);
+  const quotes = pagelessQuotes(40, 1000);
+  const sample = pointerReferenceSample({ units: quotes, seed: "synthetic-seed" });
+  // Four quotes of 1,000 bytes fit in 4,096; a fifth starts the next stretch.
+  assert.equal(sample.candidate_units, 10);
+  const stretches = [...sample.units].sort((left, right) => Number(left.unit_id.split(":")[2]) - Number(right.unit_id.split(":")[2]));
+  stretches.forEach((unit, index) => {
+    assert.match(unit.unit_id, new RegExp(`^representation:[0-9a-f]{32}:${index}$`, "u"));
+    assert.deepEqual(unit.quote_ids, [0, 1, 2, 3].map((offset) => `unit:t${index * 4 + offset}`));
+  });
+  // A quote longer than a stretch stands alone.
+  const long = pagelessQuotes(3, 1000).map((quote, index) => (index === 1 ? { ...quote, text: "l".repeat(5000) } : quote));
+  assert.deepEqual(pointerReferenceSample({ units: long, seed: "s" }).units.map((unit) => unit.quote_ids.length).sort(), [1, 1, 1]);
+
+  // A calibration unit without a page lies on every stretch holding a quote that overlaps its bytes.
+  const challenge = pointerChallengeUnits({ units: quotes, calibration: [
+    { unit_id: "calibration:a", representation_id: "representation:plain-text", page_number: null, start_byte: 8 * 1002 + 10, end_byte: 12 * 1002 + 10,
+      hazard_types: ["declared_source_hazard"] },
+    { unit_id: "calibration:b", representation_id: "representation:other", page_number: null, start_byte: 0, end_byte: 100, hazard_types: [] }
+  ] });
+  assert.deepEqual(challenge.units.map((unit) => [unit.unit_id.split(":")[2], unit.quote_ids.length, unit.hazards]),
+    [["2", 4, ["declared_source_hazard"]], ["3", 4, ["declared_source_hazard"]]]);
+  assert.deepEqual([challenge.calibration_units, challenge.units_without_quotes, challenge.candidate_units], [2, 1, 2]);
+  assert.throws(() => pointerChallengeUnits({ units: quotes, calibration: [{ unit_id: "c", representation_id: "representation:plain-text",
+    page_number: null }] }), { code: "POINTER_CHALLENGE_INPUT_INVALID" });
 });

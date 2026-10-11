@@ -2831,7 +2831,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const unit = planUnits.get(item.unit_id);
         invariant(unit, "POINTER_CHALLENGE_UNIT_MISSING");
         return { unit_id: unit.unit_id, representation_id: unit.representation_id, page_number: unit.page_number ?? null,
-          hazard_types: [...(unit.hazard_types ?? [])] };
+          start_byte: unit.start_byte, end_byte: unit.end_byte, hazard_types: [...(unit.hazard_types ?? [])] };
       });
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
       const sample = pointerChallengeUnits({ units: input.units, calibration });
