@@ -1,6 +1,7 @@
 import { ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES } from "../storage/private-case-access.mjs";
 import { QUOTE_SEARCH_LIMITS, createJournalResultCache, openPrivateJournalGraph, readJournalCursorSnapshot } from "./retrieval.mjs";
+import { POINTER_TAG_KINDS } from "./pointer-tags.mjs";
 
 const ID = /^[A-Za-z0-9:_-]{1,160}$/;
 const READ_PURPOSES = new Set([PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH, PRIVATE_JOURNAL_PURPOSES.SESSION_USE]);
@@ -77,7 +78,13 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
       + "it, so that year is probable, not certain; one marked ambiguous could be read the other way round, so check its "
       + "date_line. A null written means the date is unknown: don't guess it. If no quote "
       + "answers the question, say so; don't infer what the journal says. Use the case's journal corpus whose ID ends in "
-      + "\":quotes\" when there is one.",
+      + "\":quotes\" when there is one. On a tagged journal (coverage.tags true), query words also match the labels of "
+      + "topic and event tags, so a quote can be found by what it is about in words it doesn't use. Tags and their labels are "
+      + "pointers a model wrote and code checked, never the journal's words: matched_by says how each quote matched (words, "
+      + "tag or both), and a quote matched only by a tag (matched_by \"tag\") is listed after every word match and must be "
+      + "checked against its own words before you use it; it may not be about what you asked. Never quote a tag or a label "
+      + "as what the person wrote. kinds keeps only quotes with a tag of those kinds: a person, place or organization tag "
+      + "means the quote names it; an event tag means the quote reports it as happening.",
     inputSchema: {
       type: "object", additionalProperties: false, required: ["case_id", "corpus_id", "query"],
       properties: {
@@ -91,7 +98,10 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
         limit: { type: "integer", minimum: 1, maximum: QUOTE_SEARCH_LIMITS.limitMax, default: QUOTE_SEARCH_LIMITS.limitDefault },
         byte_budget: { type: "integer", minimum: QUOTE_SEARCH_LIMITS.byteBudgetMin, maximum: QUOTE_SEARCH_LIMITS.byteBudgetMax,
           default: QUOTE_SEARCH_LIMITS.byteBudgetDefault, description: "Most quote text to return, in bytes." },
-        cursor: { type: ["string", "null"], description: "The previous call's next_cursor, for the next quotes of the same query." }
+        cursor: { type: ["string", "null"], description: "The previous call's next_cursor, for the next quotes of the same query." },
+        kinds: { type: ["array", "null"], minItems: 1, maxItems: POINTER_TAG_KINDS.length, uniqueItems: true,
+          items: { enum: [...POINTER_TAG_KINDS] },
+          description: "Keep only quotes with a tag of one of these kinds. Only on a tagged journal (coverage.tags true)." }
       }
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
@@ -289,7 +299,8 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
           includeUndated: input.includeUndated ?? true,
           limit: input.limit ?? QUOTE_SEARCH_LIMITS.limitDefault,
           byteBudget: input.byteBudget ?? QUOTE_SEARCH_LIMITS.byteBudgetDefault,
-          cursor: input.cursor ?? null
+          cursor: input.cursor ?? null,
+          kinds: input.kinds ?? null
         });
         return Object.freeze({ ...result, snapshot: { generation: snapshot.generation, visibility_epoch: snapshot.visibility_epoch } });
       });

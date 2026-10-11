@@ -3,6 +3,7 @@ import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
 import { compareSourceOrder, knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
 import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_UNDATED_KEY, quoteCues } from "./quote-index.mjs";
+import { POINTER_TAG_KINDS } from "./pointer-tags.mjs";
 
 export const QUOTE_SEARCH_LIMITS = Object.freeze({
   limitDefault: 12,
@@ -579,19 +580,31 @@ export async function openPrivateJournalGraph({
    * any generation. On a
    * quote index, the `quote_meta` index gives each quote's span, page and date line, so no record is
    * decrypted; elsewhere the passage record supplies the span and there are no dates.
+   *
+   * On a generation the pointer pass tagged (plan Part 3), query words also match the words of topic and
+   * event labels (`tag_terms`). Quotes that match by their own words keep exactly the order they have
+   * without tags, and quotes found only through a tag come after all of them, so tags can't push a word
+   * match down. Each quote says how it matched (`matched_by`: words, tag or both) and, when a tag
+   * matched, which tags (`matched_tags`). `kinds` keeps only quotes with a tag of one of those kinds
+   * (`quote_tags`). Tags never change a quote's text, date or cues.
    */
   const findQuotes = async ({ query, from = null, to = null, includeUndated = true, limit = QUOTE_SEARCH_LIMITS.limitDefault,
-    byteBudget = QUOTE_SEARCH_LIMITS.byteBudgetDefault, cursor = null } = {}) => {
+    byteBudget = QUOTE_SEARCH_LIMITS.byteBudgetDefault, cursor = null, kinds = null } = {}) => {
     await assertCurrent();
     invariant(typeof query === "string" && query.length > 0 && query.length <= 4_000, "QUOTE_QUERY_INVALID");
     invariant((from === null || isJournalTimeBound(from)) && (to === null || isJournalTimeBound(to)) && typeof includeUndated === "boolean", "QUOTE_FILTERS_INVALID");
     invariant(Number.isSafeInteger(limit) && limit >= 1 && limit <= QUOTE_SEARCH_LIMITS.limitMax, "QUOTE_LIMIT_INVALID");
     invariant(Number.isSafeInteger(byteBudget) && byteBudget >= QUOTE_SEARCH_LIMITS.byteBudgetMin && byteBudget <= QUOTE_SEARCH_LIMITS.byteBudgetMax, "QUOTE_BUDGET_INVALID");
+    invariant(kinds === null || (Array.isArray(kinds) && kinds.length > 0 && new Set(kinds).size === kinds.length
+      && kinds.every((kind) => POINTER_TAG_KINDS.includes(kind))), "QUOTE_KINDS_INVALID");
+    const tagged = Array.isArray(manifest.indexes.tag_terms) && Array.isArray(manifest.indexes.quote_tags);
+    invariant(kinds === null || tagged, "QUOTE_TAGS_NOT_AVAILABLE");
     const allTerms = lexicalTerms(query);
     invariant(allTerms.length > 0, "SEARCH_QUERY_HAS_NO_TERMS");
     const expected = {
       query_sha256: sha256(Buffer.from(allTerms.join("\0"), "utf8")),
-      filters_sha256: sha256(Buffer.from(JSON.stringify({ from, to, includeUndated }), "utf8")),
+      filters_sha256: sha256(Buffer.from(JSON.stringify(kinds === null ? { from, to, includeUndated }
+        : { from, to, includeUndated, kinds: [...kinds].sort() }), "utf8")),
       sort: "quotes"
     };
     const start = cursor ? parseCursor(cursor, expected).offset : 0;
@@ -613,8 +626,29 @@ export async function openPrivateJournalGraph({
         matched.get(id).push(term);
       }
     });
-    const ranked = [...scores.keys()].sort((left, right) => scores.get(right) - scores.get(left)
-      || matched.get(right).length - matched.get(left).length || left.localeCompare(right));
+    const byScore = (scoreMap, termMap) => (left, right) => scoreMap.get(right) - scoreMap.get(left)
+      || termMap.get(right).length - termMap.get(left).length || left.localeCompare(right);
+    const wordRanked = [...scores.keys()].sort(byScore(scores, matched));
+    // Tags: the same terms against topic and event labels, weighted the same way. A quote found only through a
+    // tag ranks after every quote its own words match.
+    const tagScores = new Map();
+    const tagMatched = new Map();
+    if (tagged) {
+      const tagPostings = await Promise.all(terms.map((term) => readIndex("tag_terms", term)));
+      terms.forEach((term, index) => {
+        const ids = [...new Set(tagPostings[index])].filter((id) => id.startsWith("passage:"));
+        if (!ids.length) return;
+        const weight = Math.log(1 + population / ids.length);
+        for (const id of ids) {
+          tagScores.set(id, (tagScores.get(id) ?? 0) + weight);
+          if (!tagMatched.has(id)) tagMatched.set(id, []);
+          tagMatched.get(id).push(term);
+        }
+      });
+    }
+    const tagOnly = [...tagScores.keys()].filter((id) => !scores.has(id)).sort(byScore(tagScores, tagMatched));
+    const ranked = [...wordRanked, ...tagOnly];
+    const matchedBy = (id) => (scores.has(id) ? (tagScores.has(id) ? "both" : "words") : "tag");
     const quoteIndex = Array.isArray(manifest.indexes.quote_meta);
     const windowed = from !== null || to !== null;
     // A quote index lists its quotes by the month they were written, so a time window first keeps the
@@ -638,6 +672,9 @@ export async function openPrivateJournalGraph({
       const [meta = null] = quoteIndex ? await readIndex("quote_meta", id) : [];
       const date = meta?.written ?? null;
       if (windowed && !inTimeWindow(date ? [[date.from, date.to]] : [], { from, to, include_unknown: includeUndated })) continue;
+      // The quote's tags, read only when a tag matched or a kind filter needs them.
+      const quoteTags = tagged && (tagScores.has(id) || kinds !== null) ? await readIndex("quote_tags", id) : [];
+      if (kinds !== null && !quoteTags.some((tag) => kinds.includes(tag.kind))) continue;
       let text, page;
       if (meta) {
         text = await exactText({ representationId: meta.representation_id, startByte: meta.start_byte, endByte: meta.end_byte, expectedSha256: meta.sha256 });
@@ -668,8 +705,13 @@ export async function openPrivateJournalGraph({
           ...(date.year_inferred ? { year_inferred: true } : {})
         }) : null,
         cues: quoteCues(text),
-        matched_terms: Object.freeze([...matched.get(id)]),
-        score: Math.round(scores.get(id) * 1000) / 1000
+        matched_by: matchedBy(id),
+        matched_terms: Object.freeze([...(matched.get(id) ?? [])]),
+        ...(tagScores.has(id) ? { matched_tags: Object.freeze(quoteTags
+          .filter((tag) => ["topic", "event"].includes(tag.kind)
+            && lexicalTerms(tag.label).some((term) => tagMatched.get(id).includes(term)))
+          .map((tag) => Object.freeze({ kind: tag.kind, label: tag.label }))) } : {}),
+        score: Math.round((scores.get(id) ?? tagScores.get(id)) * 1000) / 1000
       }));
     }
     const more = position < candidates.length;
@@ -691,6 +733,8 @@ export async function openPrivateJournalGraph({
         terms_ranked: Object.freeze([...terms]),
         terms_ignored: Object.freeze(ignored),
         matching_quotes: windowed ? null : ranked.length,
+        tags: tagged,
+        ...(tagged ? { matching_only_by_tag: windowed ? null : tagOnly.length } : {}),
         quotes_examined: visited,
         scan_capped: scanCapped,
         quote_index: quoteIndex,
