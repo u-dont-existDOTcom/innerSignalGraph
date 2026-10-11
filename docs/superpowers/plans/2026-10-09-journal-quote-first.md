@@ -311,14 +311,20 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   It lists the people, places, organizations, topics and events the quotes mention. Each tag has:
   - a kind from that fixed list;
   - a short label in the journal's own language;
-  - optional aliases (a translation, a nickname, a fuller name), which only help search;
+  - optional aliases: other names the journal itself uses for the same person, place or thing (a nickname, a
+    fuller name);
   - one or more anchors: exact text from a named quote unit, as extraction anchors are now.
 - **No statements.** The pass writes no assertions, so it can't restate what happened. An event tag's label names the
   event; the quote says what happened.
+- **Topic and event labels are a model's words.** A wrong one can't change a quote, but it can bring up a quote that
+  isn't about what was searched for. Search therefore says when a quote matched only through a tag and ranks such
+  quotes after the ones that match by their own words, and the precision floor below covers these labels.
 - **Code checks every tag.**
   - Each anchor must resolve exactly in the unit it names (`resolveUnitQuote`, the check extraction anchors pass).
   - A person, place or organization label must appear in one of its anchors, ignoring case and accents, so a name
-    can't be invented. Aliases are exempt; they never appear in an answer as the journal's words.
+    can't be invented.
+  - Every alias must appear the same way in one of its tag's anchors. An alias the journal never uses, such as a
+    translation, is dropped, so a search for it can't bring up quotes that never say it.
   - Labels and aliases have length limits; duplicate tags in a batch merge.
   - A tag that fails is dropped and counted. No model call repairs it.
 - **Failures stay small and visible.** A batch whose answer doesn't fit the schema gets one retry. A batch that fails
@@ -335,10 +341,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **The graph tools work unchanged.** `search_journal_graph`, `get_journal_subgraph` and `resolve_journal_evidence`
   read the new nodes as they read any generation.
 - **Quote search uses the tags.** `find_journal_quotes` also matches query words against tag labels and aliases, so a
-  search can find a quote by who or what it's about, in words the journal doesn't use. Tags never change a quote's
-  text, date or cues.
-- **The answering rules stay.** Tool descriptions say that tags, labels and aliases are pointers a model wrote, and
-  that an answer quotes the journal, never a tag.
+  search can find a quote by who or what it's about even where the quote says "he" or "that place". Each result says
+  how it matched (`matched_by`: its words, a tag, or both). Tags never change a quote's text, date or cues.
+- **The answering rules stay.** Tool descriptions say that tags, labels and aliases are pointers a model wrote, that
+  a quote matched only by a tag must be checked against its own words before it's used, and that an answer quotes
+  the journal, never a tag.
 - **A new index version.** The pass builds a new quote generation that names the one it replaces (`supersedes`), as
   version 2 does.
 
@@ -350,8 +357,14 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   cycles, no review loops.
 - **Full width.** The Codex worker runs at its maximum of eight slots. The semantic import is paused for the pass, so
   the two don't compete for the subscription.
-- **No stops for a person.** A batch not answered by the pass's deadline stays untagged and listed. Publishing the
-  result is still the owner's `deploy`.
+- **A deadline that holds.** The deadline is a run setting, `pointer_deadline_minutes` (default 180). When the pass
+  starts it saves the deadline as a time in its own state, so a resumed pass keeps the same one. Every batch's
+  exchange item expires at that time, so no worker starts a batch after it. At the deadline the pass stops waiting:
+  every batch still unanswered is recorded as untagged with the reason `deadline`, an answer stored after it is
+  ignored, and the pass builds from what it has. Sending those batches again is a new pass, not a resume. The pass
+  doesn't rely on the worker's `--once` mode, which waits out usage-limit backoff.
+- **No stops for a person.** Nothing in the pass waits for the owner. Publishing the result is still the owner's
+  `deploy`.
 
 ### Time and cost
 
@@ -377,7 +390,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   back in the first 12. Recall is reported twice, with words only (the live index) and with words and tags, each with
   a one-sided 95% lower bound, and critical questions are reported on their own line.
 - **Tag precision.** Two independent judges, one Codex and one Claude, score a random sample of kept tags drawn from a
-  recorded seed: does the quote really mention what the tag names, and is the kind right? Their agreement on the same
+  recorded seed: does the quote really mention or concern what the tag's label and aliases name, and is the kind
+  right? Their agreement on the same
   tags is recorded first. One judge decides alone only at a measured agreement; otherwise both must agree, or the owner
   decides. The sample grows in recorded steps and stops when the bound settles pass or fail.
 - **Floors** (the owner can change them; nothing else can):
@@ -409,13 +423,19 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 
 - **Anchors.** A tag whose anchor isn't in the named unit is dropped; one whose anchor is there is kept; a person label
   absent from its anchors is dropped, with case and accents ignored; kinds and length limits hold; duplicates merge.
+- **Aliases.** An alias found in one of its tag's anchors is kept; one that isn't, such as a translation, is dropped
+  and counted.
 - **Failures.** A malformed answer gets one retry; a second failure leaves its batch untagged and listed, and the run
   finishes.
+- **Deadline.** The deadline is saved when the pass starts and kept on resume; batch items expire at it; a batch
+  unanswered at the deadline ends untagged with the reason `deadline`; an answer stored after it is ignored; the pass
+  then builds, and no resume sends the batch again.
 - **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
   page that is.
 - **Graph.** A pointer-only extraction yields entity and episode nodes linked to their passages, authored times from
   `quote_meta`, and no assertions.
-- **Search.** A query word that matches a tag label or alias finds the tagged quote; the quote's text, date and cues
+- **Search.** A query word that matches a tag label or alias finds the tagged quote and reports `matched_by`; a quote
+  that matches only through a tag ranks after quotes that match by their own words; the quote's text, date and cues
   are unchanged.
 - **Supersede.** The pointer generation replaces version 2 exactly as version 2 replaced version 1.
 - **Measurement.** Recall and precision on synthetic data with known answers; the bound arithmetic; the sample stops
