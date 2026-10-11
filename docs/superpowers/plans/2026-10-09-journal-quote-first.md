@@ -321,8 +321,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **No statements.** The pass writes no assertions, so it can't restate what happened. An event tag's label names the
   event; the quote says what happened.
 - **An event is something the quote reports as happening.** A dream, wish, plan, hypothetical or denial isn't an event:
-  the tagger tags what it is about as a topic instead, and the judges count an event tag on such a quote as the wrong
-  kind. So the timeline never lists a dream as something that happened.
+  the tagger tags what it is about as a topic instead. Before the generation is built, every event tag–quote pair goes
+  to an event check (the `pair_judge` role on the Codex lane, 50 pairs to a call, one retry), which asks whether that
+  quote reports it as happening; a pair it rejects or leaves unanswered is dropped and counted. So a dream reaches the
+  timeline as something that happened only if both the tagger and the check get it wrong, and the precision floor on
+  events measures what is left.
 - **No coreference.** A tag never claims that "he", "she", "there" or a different name means a named person, place or
   organization. A pronoun-only mention isn't tagged, and this part has no aliases: telling that two names mean the
   same person is a later part with its own measurement. So every quote a name tag points at contains that name.
@@ -406,7 +409,7 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Measuring.** 96 reference answers and 96 search-writing answers on the same Codex slots, about half an hour,
   which can run while the pass does. The precision check is at most 750 pairs, 15 calls for each judge; the Claude
   judge's 15, one at a time at the Claude lane's current seven minutes or so a call, take under two hours and fit in a
-  day's 40.
+  day's 40. The event check is one call per 50 event pairs on the Codex slots, minutes for a journal this size.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
@@ -453,8 +456,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     inclusion probability 1), so it adds no sampling variance and no degree of freedom, and it stays on its own. A
     stretch with a single sampled unit drawn with probability below 1, which can't happen with 8 units drawn per
     stretch, would be merged with its nearest such neighbor (the standard collapsed-strata estimator, conservative in
-    expectation). When every sampled unit was taken with certainty, recall is exact and its bound is the estimate;
-    with fewer than two sampled units in all, the bound can't be computed and the recall floor fails.
+    expectation). When every sampled unit was taken with certainty (in a journal this short, possibly a single
+    unit), recall is exact and its bound is the estimate. Otherwise, when the units drawn with probability below 1
+    leave no degree of freedom, the bound can't be computed and the recall floor fails.
   - No loss and gain use the same weights as recall.
 - **Tag precision.** It is measured on tag–quote pairs, the way search uses tags: each quote a kept tag is anchored in
   makes one pair, so a tag on a hundred quotes is a hundred pairs, and a wrong one weighs as much as the wrong hits it
@@ -470,7 +474,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - Each sampled pair is scored by two independent judges, one Codex and one Claude. Each judge is shown the exact
     quote, the tag's label and kind, and asked whether that quote really mentions or concerns what the label names,
     and whether the kind is right. Pairs go 50 to a call.
-  - Both judges score every sampled pair, and a pair counts as correct only when both say so. A judge call that fails
+  - Both judges score every sampled pair, and a pair counts as correct only when both say so. For events, the Codex
+    lane's event check has already accepted every pair left, so the Claude judge is the one independent of that
+    filter; since both must agree, the event bound can rest only on it, never on the filter agreeing with itself. A judge call that fails
     gets one retry, and a pair still unscored by either judge counts as wrong, which can only lower the bound. Their
     agreement (raw agreement and Cohen's kappa, reported as undefined when the judges give one answer throughout) and
     the number of disagreements are reported; agreement is never a gate.
@@ -492,9 +498,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - **coverage:** at most 2% of the pages with quotes are untagged, each one listed with its reason. A page is
     untagged when it ends with no kept tag, whatever the reason: its batch failed twice or ran out of time, the answer
     gave it no tag, or every tag on it was dropped. So a pass whose answers are valid but nearly empty fails here.
-    Above 2%, the untagged pages' batches go into one new pass, and the whole measurement runs again on the generation
-    it builds before anything is published; the reference sample and its references stay as they are. If coverage
-    still fails after that pass, the generation is discarded like any other that fails a floor;
+    Above 2%, the untagged pages' batches go into one new pass. Its generation keeps every tag the first one kept on
+    the other pages, exactly, and replaces only the retried pages' tags; the whole measurement then runs again on it
+    before anything is published, with the reference sample and its references as they are. If coverage still fails
+    after that pass, the generation is discarded like any other that fails a floor;
   - **anchors:** no kept tag whose anchor doesn't resolve or breaks a name rule above, which holds by construction
     and is checked anyway.
 
@@ -534,6 +541,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   dropped; every drop is counted.
 - **Failures.** A malformed answer gets one retry; a second failure leaves its batch untagged and listed, and the run
   finishes.
+- **Event check.** Before the generation is built, every event pair goes to the check; a pair it rejects, or leaves
+  unanswered after a retry, is dropped and counted, and an accepted pair stays.
 - **Deadline.** The deadline is saved when the pass starts and kept on resume; batch items expire at it; a batch
   unanswered at the deadline ends untagged with the reason `deadline`; an answer stored after it is ignored; the pass
   then builds, and no resume sends the batch again.
@@ -557,20 +566,22 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   Recall's weighted estimate and design-based bound match a hand-worked example; units whose questions all fail
   together widen the bound; degrees of freedom come from the sample as drawn; a stretch taken whole adds no variance
   or degree of freedom and stays separate; a single-unit stretch drawn with probability below 1 is merged with its
-  nearest such neighbor; a sample taken entirely with certainty gives an exact recall whose bound is the estimate; and
-  fewer than two units fail the floor. A question is found only when every quote holding an anchor of its evidence
-  items is in the first 12 results of one of its searches, so an item whose second anchor holds its negation isn't
-  found from the first alone; unanswerable questions stay out of recall and are reported; a sample with no critical
-  question is reported and judged for no loss on all questions alone. Precision samples tag–quote pairs, so a wrong
-  tag on many quotes counts once for each; each kind is gated on its own sample of 150, so pairs of one kind can't
-  carry another, and a name of the wrong kind fails its kind; a kind with fewer than 29 pairs is left out of the
-  generation before measuring, by its count alone; a kind with no pairs has nothing to gate; the Clopper-Pearson
-  arithmetic; each sample's size is fixed before scoring and its bound computed once; a pair counts as correct only
-  when both judges say so, and a pair left unscored after a retry counts as wrong; kappa is reported as undefined when
-  the judges give one answer throughout. A pass with no tags fails the coverage floor, and the gain floor whenever
-  word search misses a question; the gain floor is reported as not applicable when word search misses nothing; a page
-  whose valid answer gave it no tag, or whose tags were all dropped, counts as untagged; an untagged share over 2%
-  blocks publication, and the generation a new pass builds is measured again from the start; the words-only baseline
-  is the same generation with tag matching off; publishing refuses a generation whose digest isn't the measured one.
+  nearest such neighbor; a sample taken entirely with certainty, even a single unit, gives an exact recall whose bound
+  is the estimate; and units drawn with probability below 1 that leave no degree of freedom fail the floor. A question
+  is found only when every quote holding an anchor of its evidence items is in the first 12 results of one of its
+  searches, so an item whose second anchor holds its negation isn't found from the first alone; unanswerable questions
+  stay out of recall and are reported; a sample with no critical question is reported and judged for no loss on all
+  questions alone. Precision samples tag–quote pairs, so a wrong tag on many quotes counts once for each; each kind is
+  gated on its own sample of 150, so pairs of one kind can't carry another, and a name of the wrong kind fails its
+  kind; a kind with fewer than 29 pairs is left out of the generation before measuring, by its count alone; a kind
+  with no pairs has nothing to gate; the Clopper-Pearson arithmetic; each sample's size is fixed before scoring and
+  its bound computed once; a pair counts as correct only when both judges say so, and a pair left unscored after a
+  retry counts as wrong; kappa is reported as undefined when the judges give one answer throughout. A pass with no
+  tags fails the coverage floor, and the gain floor whenever word search misses a question; the gain floor is reported
+  as not applicable when word search misses nothing; a page whose valid answer gave it no tag, or whose tags were all
+  dropped, counts as untagged; an untagged share over 2% blocks publication, and the generation a new pass builds
+  keeps the first generation's tags on the pages it didn't retry, exactly, replaces only the retried pages' tags, and
+  is measured again from the start; the words-only baseline is the same generation with tag matching off; publishing
+  refuses a generation whose digest isn't the measured one.
 
 All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
