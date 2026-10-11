@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "unit_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "critical": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "unit_id",
+          "question",
+          "critical"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 200
+    }
+  },
+  "required": [
+    "schema_version",
+    "questions"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:question-set:1.0"
+}

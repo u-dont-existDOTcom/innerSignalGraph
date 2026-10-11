@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { POINTER_FLOORS, POINTER_PRECISION_SAMPLES, clopperPearsonLower, cohenKappa, designRatioBound, pointerFloors, regularizedIncompleteBeta,
+import { POINTER_FLOORS, POINTER_PRECISION_SAMPLES, clopperPearsonLower, clopperPearsonUpper, cohenKappa, designRatioBound, eventCheckRecall,
+  pointerFloors, regularizedIncompleteBeta,
   studentTQuantile } from "../src/journal-import/pointer-measure.mjs";
 
 // The pointer pass's measurement (plan 2026-10-09-journal-quote-first.md, Part 3, "Measuring it, with the floors
@@ -349,22 +350,29 @@ function passingInput() {
       event: { pairs: 300, correct: 145, sampled: 150 }
     },
     coverage: { untagged_pages: 2, pages_with_quotes: 1122 },
-    anchors: { broken: 0 }
+    anchors: { broken: 0 },
+    event_check: { pairs: 400, unanswered: 2 },
+    // The kept pairs are the event kind's precision sample; 100 dropped pairs, all judged, 1 of them real.
+    event_recall: { kept: { pairs: 300, sampled: 150, real: 145 }, dropped: { pairs: 100, sampled: 100, real: 1 } }
   };
 }
+// The precision samples with one kind changed, and the event-recall sample of kept pairs kept in step with the events.
+const withPrecision = (kinds) => {
+  const input = passingInput();
+  const precision = { ...input.precision, ...kinds };
+  const kept = kinds.event ? { pairs: kinds.event.pairs, sampled: kinds.event.sampled, real: kinds.event.correct } : input.event_recall.kept;
+  return { ...input, precision, event_recall: { ...input.event_recall, kept } };
+};
 
 const failing = (result) => Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name);
 
 test("the floors are the plan's", () => {
   assert.deepEqual(POINTER_FLOORS, { recall_lower_bound: 0.85, gain_point_estimate: 0.25, precision_lower_bound: 0.90,
-    max_untagged_share: 0.02, confidence: 0.95 });
+    max_untagged_share: 0.02, event_check_max_unanswered_share: 0.02, event_check_recall_lower_bound: 0.90, confidence: 0.95 });
   assert.ok(Object.isFrozen(POINTER_FLOORS));
   assert.deepEqual(POINTER_PRECISION_SAMPLES, { kinds: ["person", "place", "organization", "topic", "event"],
-    pairs_per_kind: 150, minimum_kind_pairs: 29 });
+    pairs_per_kind: 150, dropped_event_pairs: 150 });
   assert.ok(Object.isFrozen(POINTER_PRECISION_SAMPLES) && Object.isFrozen(POINTER_PRECISION_SAMPLES.kinds));
-  // 29 is the fewest pairs whose bound can reach the floor when every pair is right.
-  assert.ok(clopperPearsonLower({ successes: 29, trials: 29 }) >= 0.9);
-  assert.ok(clopperPearsonLower({ successes: 28, trials: 28 }) < 0.9);
 });
 
 test("a pass is published when every floor holds", () => {
@@ -372,7 +380,7 @@ test("a pass is published when every floor holds", () => {
   near(GAIN.estimate, 0.5, 1e-15, "gain");
   const result = pointerFloors(passingInput());
   assert.equal(result.publish, true);
-  assert.deepEqual(Object.keys(result.floors), ["recall", "no_loss", "gain", "precision", "coverage", "anchors"]);
+  assert.deepEqual(Object.keys(result.floors), ["recall", "no_loss", "gain", "precision", "event_check", "event_check_recall", "coverage", "anchors"]);
   assert.deepEqual(failing(result), []);
   const { recall, no_loss: noLoss, gain, precision, coverage, anchors } = result.floors;
   assert.ok(recall.lower_bound >= 0.85 && recall.lower_bound < recall.estimate);
@@ -384,6 +392,11 @@ test("a pass is published when every floor holds", () => {
   near(precision.topic.lower_bound, 0.958625, 1e-6, "148 of 150");
   near(precision.event.lower_bound, 0.931195, 1e-6, "145 of 150");
   assert.equal(precision.organization.sampled, 60, "all of a kind's pairs when it has fewer than 150");
+  assert.equal(precision.organization.census, true);
+  assert.equal(precision.organization.lower_bound, 1, "a census is exact");
+  assert.equal(precision.topic.census, false);
+  assert.equal(result.floors.event_check.unanswered_share, 2 / 400);
+  assert.ok(result.floors.event_check_recall.lower_bound >= 0.9);
   assert.deepEqual(Object.keys(precision), ["holds", "minimum", "person", "place", "organization", "topic", "event"]);
   assert.equal(coverage.untagged_share, 2 / 1122);
   assert.deepEqual(anchors, { holds: true, broken: 0 });
@@ -402,10 +415,11 @@ test("each floor fails on its own", () => {
       "precision"],
     ["places 135 of 150", { precision: { ...passingInput().precision, place: { pairs: 400, correct: 135, sampled: 150 } } },
       "precision"],
-    ["events 140 of 150", { precision: { ...passingInput().precision, event: { pairs: 300, correct: 140, sampled: 150 } } },
-      "precision"],
-    ["a kind with too few pairs", { precision: { ...passingInput().precision, event: { pairs: 20, correct: 20, sampled: 20 } } },
-      "precision"],
+    ["events 140 of 150", withPrecision({ event: { pairs: 300, correct: 140, sampled: 150 } }), "precision"],
+    ["a small kind under 90%, judged in full", withPrecision({ organization: { pairs: 20, correct: 17, sampled: 20 } }), "precision"],
+    ["3% of event checks unanswered", { event_check: { pairs: 400, unanswered: 12 } }, "event_check"],
+    ["real events dropped", { event_recall: { ...passingInput().event_recall, dropped: { pairs: 300, sampled: 150, real: 30 } } },
+      "event_check_recall"],
     ["3% of pages untagged", { coverage: { untagged_pages: 3, pages_with_quotes: 100 } }, "coverage"],
     ["no page with quotes", { coverage: { untagged_pages: 0, pages_with_quotes: 0 } }, "coverage"],
     ["a broken anchor", { anchors: { broken: 1 } }, "anchors"]
@@ -461,7 +475,7 @@ test("gain is on the point estimate, and not applicable when word search misses 
 });
 
 test("precision is gated for every kind, each on its own sample", () => {
-  const withKinds = (kinds) => pointerFloors({ ...passingInput(), precision: { ...passingInput().precision, ...kinds } }).floors.precision;
+  const withKinds = (kinds) => pointerFloors(withPrecision(kinds)).floors.precision;
   // Perfect pairs of other kinds can't carry a failing kind.
   const carried = withKinds({ topic: { pairs: 800, correct: 130, sampled: 150 } });
   assert.equal(carried.holds, false);
@@ -475,16 +489,22 @@ test("precision is gated for every kind, each on its own sample", () => {
   // A kind the generation has no pairs of has nothing to gate.
   const noEvents = withKinds({ event: { pairs: 0, correct: 0, sampled: 0 } });
   assert.equal(noEvents.holds, true);
-  assert.deepEqual(noEvents.event, { holds: true, applicable: false, pairs: 0, correct: 0, sampled: 0, lower_bound: null,
+  assert.deepEqual(noEvents.event, { holds: true, applicable: false, pairs: 0, correct: 0, sampled: 0, census: true, lower_bound: null,
     reason: "no pairs of this kind" });
-  // A kind with fewer than 29 pairs should have been left out of the generation, so it fails even when all are right.
-  const tooFew = withKinds({ event: { pairs: 20, correct: 20, sampled: 20 } });
-  assert.equal(tooFew.event.holds, false);
-  assert.match(tooFew.event.reason, /should have been left out/);
-  near(tooFew.event.lower_bound, 0.860892, 1e-6, "20 of 20");
-  // A kind with fewer pairs than its sample size is judged on all of them.
-  const small = withKinds({ event: { pairs: 40, correct: 40, sampled: 40 } });
-  assert.equal(small.event.holds, true);
+  // A kind with 150 pairs or fewer is judged in full and gated on its exact share: a small kind is kept when its pairs
+  // are right, even 20 of 20, whose Clopper-Pearson bound would be 0.86.
+  const small = withKinds({ organization: { pairs: 20, correct: 20, sampled: 20 } });
+  assert.equal(small.organization.holds, true);
+  assert.equal(small.organization.census, true);
+  assert.equal(small.organization.lower_bound, 1);
+  assert.ok(clopperPearsonLower({ successes: 20, trials: 20 }) < 0.9);
+  assert.equal(withKinds({ organization: { pairs: 10, correct: 9, sampled: 10 } }).organization.holds, true, "exactly 90%");
+  const under = withKinds({ organization: { pairs: 10, correct: 8, sampled: 10 } }).organization;
+  assert.deepEqual([under.holds, under.lower_bound], [false, 0.8]);
+  // A kind with more pairs than its sample is gated on the sample's bound.
+  const sampled = withKinds({ event: { pairs: 151, correct: 150, sampled: 150 } });
+  assert.equal(sampled.event.census, false);
+  near(sampled.event.lower_bound, clopperPearsonLower({ successes: 150, trials: 150 }), 0, "150 of 150 sampled");
 });
 
 test("coverage allows at most 2% of the pages with quotes untagged", () => {
@@ -499,13 +519,15 @@ test("coverage allows at most 2% of the pages with quotes untagged", () => {
 
 test("a pass with no tags fails", () => {
   const none = { pairs: 0, correct: 0, sampled: 0 };
-  const result = pointerFloors({ ...passingInput(), recall_estimate: 0.8, gain: { ...GAIN, estimate: 0, lower_bound: 0 },
+  const noEvents = { event_check: { pairs: 0, unanswered: 0 },
+    event_recall: { kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 0, sampled: 0, real: 0 } } };
+  const result = pointerFloors({ ...passingInput(), ...noEvents, recall_estimate: 0.8, gain: { ...GAIN, estimate: 0, lower_bound: 0 },
     precision: { person: none, place: none, organization: none, topic: none, event: none },
     coverage: { untagged_pages: 1122, pages_with_quotes: 1122 } });
   assert.equal(result.publish, false);
   // Coverage catches it even when word search misses nothing.
   assert.deepEqual(failing(result), ["gain", "coverage"]);
-  assert.deepEqual(failing(pointerFloors({ ...passingInput(), gain: null,
+  assert.deepEqual(failing(pointerFloors({ ...passingInput(), ...noEvents, gain: null,
     precision: { person: none, place: none, organization: none, topic: none, event: none },
     coverage: { untagged_pages: 1122, pages_with_quotes: 1122 } })), ["coverage"]);
 });
@@ -521,13 +543,86 @@ test("the floors refuse malformed input", () => {
     [{ precision: { ...passingInput().precision, topic: { pairs: 800, correct: 151, sampled: 150 } } }, "POINTER_FLOORS_PRECISION_INVALID"],
     // The sample is 150 of a kind's pairs, or all of them when there are fewer.
     [{ precision: { ...passingInput().precision, topic: { pairs: 800, correct: 100, sampled: 100 } } }, "POINTER_FLOORS_PRECISION_INVALID"],
-    [{ precision: { ...passingInput().precision, event: { pairs: 40, correct: 30, sampled: 30 } } }, "POINTER_FLOORS_PRECISION_INVALID"],
+    [{ precision: { ...passingInput().precision, organization: { pairs: 40, correct: 30, sampled: 30 } } }, "POINTER_FLOORS_PRECISION_INVALID"],
     [{ precision: { ...passingInput().precision, person: { pairs: 2000, correct: 40, sampled: 40 } } }, "POINTER_FLOORS_PRECISION_INVALID"],
     [{ precision: { topic: { pairs: 0, correct: 0, sampled: 0 }, event: { pairs: 0, correct: 0, sampled: 0 } } }, "POINTER_FLOORS_PRECISION_INVALID"],
     [{ precision: null }, "POINTER_FLOORS_PRECISION_INVALID"],
     [{ coverage: { untagged_pages: 5, pages_with_quotes: 4 } }, "POINTER_FLOORS_COVERAGE_INVALID"],
-    [{ anchors: { broken: -1 } }, "POINTER_FLOORS_ANCHORS_INVALID"]
+    [{ anchors: { broken: -1 } }, "POINTER_FLOORS_ANCHORS_INVALID"],
+    [{ event_check: { pairs: 2, unanswered: 3 } }, "POINTER_FLOORS_EVENT_CHECK_INVALID"],
+    [{ event_check: null }, "POINTER_FLOORS_EVENT_CHECK_INVALID"],
+    [{ event_recall: null }, "POINTER_FLOORS_EVENT_RECALL_INVALID"],
+    // The kept event pairs must be the event kind's own precision sample.
+    [{ event_recall: { ...passingInput().event_recall, kept: { pairs: 290, sampled: 150, real: 145 } } }, "POINTER_FLOORS_EVENT_RECALL_INVALID"],
+    [{ event_recall: { ...passingInput().event_recall, kept: { pairs: 300, sampled: 150, real: 146 } } }, "POINTER_FLOORS_EVENT_RECALL_INVALID"],
+    [{ event_recall: { ...passingInput().event_recall, dropped: { pairs: 400, sampled: 100, real: 1 } } }, "EVENT_CHECK_RECALL_INPUT_INVALID"]
   ];
   for (const [change, code] of cases) assert.throws(() => pointerFloors({ ...passingInput(), ...change }), { code }, code);
   assert.throws(() => pointerFloors(null), { code: "POINTER_FLOORS_INPUT_INVALID" });
+});
+
+test("the Clopper-Pearson upper bound is one less the lower bound for the other outcome", () => {
+  near(clopperPearsonUpper({ successes: 0, trials: 10 }), 1 - 0.05 ** (1 / 10), 1e-11, "none of 10");
+  assert.equal(clopperPearsonUpper({ successes: 10, trials: 10 }), 1);
+  assert.equal(clopperPearsonUpper({ successes: 0, trials: 0 }), 1);
+  for (const [successes, trials] of [[1, 20], [6, 150], [140, 150]]) {
+    near(clopperPearsonUpper({ successes, trials, confidence: 0.975 }),
+      1 - clopperPearsonLower({ successes: trials - successes, trials, confidence: 0.975 }), 0, `${successes} of ${trials}`);
+    assert.ok(clopperPearsonUpper({ successes, trials }) > successes / trials);
+  }
+  assert.throws(() => clopperPearsonUpper({ successes: 3, trials: 2 }), { code: "CLOPPER_PEARSON_INPUT_INVALID" });
+});
+
+test("event-check recall combines the kept and the dropped event pairs, and fails a check that drops real events", () => {
+  // A hand-worked example with both samples taken whole: 36 of 40 kept pairs real, 4 of 20 dropped ones real.
+  const whole = eventCheckRecall({ kept: { pairs: 40, sampled: 40, real: 36 }, dropped: { pairs: 20, sampled: 20, real: 4 } });
+  assert.equal(whole.applicable, true);
+  near(whole.estimate, 36 / 40, 1e-15, "36 real kept, 4 real dropped");
+  near(whole.lower_bound, 36 / 40, 1e-15, "a census uses its exact share");
+  // Sampled: 140 of 150 kept real (of 1,000) and 6 of 150 dropped real (of 500). The bound puts p's 97.5% lower bound
+  // and q's 97.5% upper bound into A·p / (A·p + R·q).
+  const sampled = eventCheckRecall({ kept: { pairs: 1000, sampled: 150, real: 140 }, dropped: { pairs: 500, sampled: 150, real: 6 } });
+  const p = clopperPearsonLower({ successes: 140, trials: 150, confidence: 0.975 });
+  const q = clopperPearsonUpper({ successes: 6, trials: 150, confidence: 0.975 });
+  near(sampled.estimate, (1000 * 140 / 150) / (1000 * 140 / 150 + 500 * 6 / 150), 1e-15, "estimate");
+  near(sampled.lower_bound, (1000 * p) / (1000 * p + 500 * q), 1e-15, "bound");
+  assert.ok(sampled.lower_bound < sampled.estimate);
+  // The dropped pairs are those the check rejected or left unanswered: 8 real events kept, 2 left unanswered and 90 false
+  // ones rejected give 80%, which fails, though only 2 of 100 checks went unanswered.
+  const unanswered = eventCheckRecall({ kept: { pairs: 8, sampled: 8, real: 8 }, dropped: { pairs: 92, sampled: 92, real: 2 } });
+  assert.deepEqual([unanswered.estimate, unanswered.lower_bound], [0.8, 0.8]);
+  const lost = pointerFloors({ ...withPrecision({ event: { pairs: 8, correct: 8, sampled: 8 } }), event_check: { pairs: 100, unanswered: 2 },
+    event_recall: { kept: { pairs: 8, sampled: 8, real: 8 }, dropped: { pairs: 92, sampled: 92, real: 2 } } }).floors;
+  assert.deepEqual([lost.event_check.holds, lost.event_check_recall.holds], [true, false]);
+  // A check that keeps only false events and drops the real ones fails, however many false ones it drops.
+  const allDropped = eventCheckRecall({ kept: { pairs: 5, sampled: 5, real: 0 }, dropped: { pairs: 3000, sampled: 150, real: 60 } });
+  assert.deepEqual([allDropped.applicable, allDropped.estimate, allDropped.lower_bound], [true, 0, 0]);
+  const purity = eventCheckRecall({ kept: { pairs: 10, sampled: 10, real: 9 }, dropped: { pairs: 990, sampled: 150, real: 15 } });
+  assert.ok(purity.lower_bound < 0.9, "99 false dropped for each real one still drops most real events");
+  // Nothing to gate: no event pair, or both samples whole with no pair judged real.
+  assert.deepEqual(eventCheckRecall({ kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 0, sampled: 0, real: 0 } }).reason, "no event pair");
+  const noneReal = eventCheckRecall({ kept: { pairs: 3, sampled: 3, real: 0 }, dropped: { pairs: 10, sampled: 10, real: 0 } });
+  assert.deepEqual([noneReal.applicable, noneReal.reason], [false, "no event pair judged real"]);
+  // A sample of the dropped pairs that happens to hold no real one still bounds them, so nothing kept fails.
+  const unseen = eventCheckRecall({ kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 300, sampled: 150, real: 0 } });
+  assert.deepEqual([unseen.applicable, unseen.estimate, unseen.lower_bound], [true, null, 0]);
+  assert.ok(Object.isFrozen(whole));
+  for (const input of [{}, { kept: { pairs: 10, sampled: 9, real: 1 }, dropped: { pairs: 0, sampled: 0, real: 0 } },
+    { kept: { pairs: 10, sampled: 10, real: 11 }, dropped: { pairs: 0, sampled: 0, real: 0 } }]) {
+    assert.throws(() => eventCheckRecall(input), { code: "EVENT_CHECK_RECALL_INPUT_INVALID" });
+  }
+});
+
+test("the event-check floors: at most 2% of checks unanswered, and recall of real events at least 90%", () => {
+  const floors = (change) => pointerFloors({ ...passingInput(), ...change }).floors;
+  assert.equal(floors({ event_check: { pairs: 100, unanswered: 2 } }).event_check.holds, true, "2% exactly");
+  assert.equal(floors({ event_check: { pairs: 100, unanswered: 3 } }).event_check.holds, false);
+  const none = floors({ event_check: { pairs: 0, unanswered: 0 } }).event_check;
+  assert.deepEqual([none.holds, none.applicable, none.reason], [true, false, "no event pair to check"]);
+  const low = floors({ event_recall: { ...passingInput().event_recall, dropped: { pairs: 300, sampled: 150, real: 30 } } }).event_check_recall;
+  assert.equal(low.holds, false);
+  assert.equal(low.minimum, 0.9);
+  const notApplicable = pointerFloors({ ...withPrecision({ event: { pairs: 0, correct: 0, sampled: 0 } }), event_check: { pairs: 0, unanswered: 0 },
+    event_recall: { kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 0, sampled: 0, real: 0 } } }).floors.event_check_recall;
+  assert.deepEqual([notApplicable.holds, notApplicable.applicable], [true, false]);
 });

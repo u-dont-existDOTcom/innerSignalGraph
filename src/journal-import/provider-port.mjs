@@ -29,7 +29,13 @@ export const JOURNAL_ROLE_DEFINITIONS = Object.freeze({
   // also runs on the hardest tier, since precision is scored by a Codex judge and a Claude judge.
   pointer_tagger: Object.freeze({ outputSchema: "pointer-result", fields: ["quote_units"], tiers: Object.freeze(["standard"]) }),
   search_writer: Object.freeze({ outputSchema: "search-plan-result", fields: ["questions"], tiers: Object.freeze(["standard"]) }),
-  pair_judge: Object.freeze({ outputSchema: "pair-judgment-result", fields: ["pairs"] })
+  pair_judge: Object.freeze({ outputSchema: "pair-judgment-result", fields: ["pairs"] }),
+  // The measurement's reference: the question writer (standard tier) writes questions covering every quote of a
+  // sampled unit, sees that unit's quotes and, on its one retry, the coverage judge's notes; the coverage judge (the
+  // Claude lane only, so it is independent of the writer) sees each quote with its questions and their marks.
+  question_writer: Object.freeze({ outputSchema: "question-set-result", fields: ["quote_units", "coverage_notes"],
+    tiers: Object.freeze(["standard"]) }),
+  coverage_judge: Object.freeze({ outputSchema: "coverage-judgment-result", fields: ["quotes"], tiers: Object.freeze(["hardest"]) })
 });
 
 // A role runs on the work tiers its definition names, or on both when it names none.
@@ -52,7 +58,9 @@ const installedInstructions = Object.freeze(Object.fromEntries([
   "cold_consumer",
   "pointer_tagger",
   "search_writer",
-  "pair_judge"
+  "pair_judge",
+  "question_writer",
+  "coverage_judge"
 ].map((role) => [
   role,
   readFileSync(new URL(`./provider-port-roles/${role}.md`, import.meta.url), "utf8")

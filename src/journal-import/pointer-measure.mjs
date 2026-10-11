@@ -12,16 +12,18 @@ export const POINTER_FLOORS = Object.freeze({
   gain_point_estimate: 0.25,
   precision_lower_bound: 0.90,
   max_untagged_share: 0.02,
+  event_check_max_unanswered_share: 0.02,
+  event_check_recall_lower_bound: 0.90,
   confidence: 0.95
 });
 
 // Precision is gated for every tag kind, each on its own fixed sample, so pairs of one kind can't carry another. A
-// kind with fewer than `minimum_kind_pairs` pairs can't reach the floor even when every pair is right, so the pass
-// leaves it out of its generation, by count alone, before anything is measured.
+// kind with no more pairs than a sample holds is judged in full: that census gives its exact precision, so it needs no
+// bound, and no kind is left out for being small. The event pairs the event check dropped get a sample of the same size.
 export const POINTER_PRECISION_SAMPLES = Object.freeze({
   kinds: Object.freeze(["person", "place", "organization", "topic", "event"]),
   pairs_per_kind: 150,
-  minimum_kind_pairs: 29
+  dropped_event_pairs: 150
 });
 
 const HALF_LOG_TWO_PI = 0.5 * Math.log(2 * Math.PI);
@@ -135,6 +137,15 @@ export function clopperPearsonLower({ successes, trials, confidence = 0.95 } = {
     else high = middle;
   }
   return low;
+}
+
+// The one-sided upper confidence bound for a binomial proportion: one less the lower bound for the other outcome. All
+// successes, or no trials, give 1.
+export function clopperPearsonUpper({ successes, trials, confidence = 0.95 } = {}) {
+  invariant(Number.isSafeInteger(successes) && Number.isSafeInteger(trials) && successes >= 0 && successes <= trials,
+    "CLOPPER_PEARSON_INPUT_INVALID");
+  if (trials === 0) return 1;
+  return 1 - clopperPearsonLower({ successes: trials - successes, trials, confidence });
 }
 
 // Whether t ≥ 0 is below the point whose upper tail under Student's t is `tail`. Above t² = df it compares
@@ -280,27 +291,77 @@ export function designRatioBound({ units, confidence = 0.95 } = {}) {
   return Object.freeze({ ...result, standard_error: standardError, lower_bound: Math.min(estimate, Math.max(0, bound)) });
 }
 
+// A sample's counts: the population it was drawn from (`pairs`), how many were judged (`sampled`, all of them up to
+// the sample's size) and how many of those were judged real or correct (`real`).
+const sampleShaped = (sample, size, field) => isObject(sample) && isCount(sample.pairs) && isCount(sample.sampled)
+  && isCount(sample[field]) && sample[field] <= sample.sampled && sample.sampled === Math.min(size, sample.pairs);
+
+/**
+ * Event-check recall: of the event pairs the tagger kept that are real events, the share the event check kept. `kept`
+ * is the event kind's precision sample of the pairs the check kept, where a pair is real only when both judges say so;
+ * `dropped` is the sample of the pairs it rejected or left unanswered, where a pair is real when either judge accepts
+ * it or one leaves it unscored. With A kept and R dropped, and shares p and q real among them, recall is
+ * A·p / (A·p + R·q). Its lower bound puts p's lower bound and q's upper bound, each one-sided at 1 − (1 − confidence) / 2
+ * (Clopper-Pearson), into the formula, so the two hold together at `confidence`; a sample that is a census uses its
+ * exact share. It is not applicable with no event pair, or when both samples are censuses with no pair judged real:
+ * then there is no real event to keep.
+ */
+export function eventCheckRecall({ kept, dropped, confidence = 0.95 } = {}) {
+  const size = POINTER_PRECISION_SAMPLES.pairs_per_kind;
+  invariant(sampleShaped(kept, size, "real") && sampleShaped(dropped, POINTER_PRECISION_SAMPLES.dropped_event_pairs, "real"),
+    "EVENT_CHECK_RECALL_INPUT_INVALID");
+  invariant(isOpenProbability(confidence), "EVENT_CHECK_RECALL_CONFIDENCE_INVALID");
+  const side = 1 - (1 - confidence) / 2;
+  const census = (sample) => sample.sampled === sample.pairs;
+  const share = (sample) => (sample.sampled === 0 ? 0 : sample.real / sample.sampled);
+  const lower = census(kept) ? share(kept) : clopperPearsonLower({ successes: kept.real, trials: kept.sampled, confidence: side });
+  const upper = census(dropped) ? share(dropped)
+    : clopperPearsonUpper({ successes: dropped.real, trials: dropped.sampled, confidence: side });
+  const base = { kept_pairs: kept.pairs, dropped_pairs: dropped.pairs, kept_real: kept.real, kept_sampled: kept.sampled,
+    dropped_real: dropped.real, dropped_sampled: dropped.sampled };
+  if (kept.pairs + dropped.pairs === 0) {
+    return Object.freeze({ ...base, applicable: false, estimate: null, lower_bound: null, reason: "no event pair" });
+  }
+  const pointKept = kept.pairs * share(kept);
+  const pointDropped = dropped.pairs * share(dropped);
+  if (census(kept) && census(dropped) && kept.real === 0 && dropped.real === 0) {
+    return Object.freeze({ ...base, applicable: false, estimate: null, lower_bound: null, reason: "no event pair judged real" });
+  }
+  const estimate = pointKept + pointDropped === 0 ? null : pointKept / (pointKept + pointDropped);
+  const boundKept = kept.pairs * lower;
+  const boundDropped = dropped.pairs * upper;
+  const lowerBound = boundKept + boundDropped === 0 ? 0 : boundKept / (boundKept + boundDropped);
+  return Object.freeze({ ...base, applicable: true, estimate, lower_bound: lowerBound, reason: null });
+}
+
 const isEstimate = (value) => value === null || isProbability(value);
 const isRatioResult = (value) => isObject(value) && isEstimate(value.estimate) && isEstimate(value.lower_bound);
 
 // The publication floors. `recall` and `gain` are designRatioBound results at POINTER_FLOORS.confidence (`recall` is
 // null when a sampled unit is a nonresponse; `gain` is null when word search misses no sampled question). The four
-// recall estimates use the same weights; the critical pair is null when the sample has no critical question. The pass
-// is published only when every floor holds.
+// recall estimates use the same weights; the critical pair is null when the sample has no critical question.
+// `precision` holds each kind's sample (`pairs`, `sampled`, `correct`); `event_check` the event pairs checked and how
+// many went unanswered; `event_recall` the samples eventCheckRecall takes, the kept one being the event kind's
+// precision sample. The pass is published only when every floor holds.
 export function pointerFloors(input) {
   invariant(isObject(input), "POINTER_FLOORS_INPUT_INVALID");
-  const { recall, gain, precision, coverage, anchors } = input;
+  const { recall, gain, precision, coverage, anchors, event_check: eventCheck, event_recall: eventRecall } = input;
   invariant(recall === null || isRatioResult(recall), "POINTER_FLOORS_RECALL_INVALID");
   invariant(isEstimate(input.recall_estimate) && isEstimate(input.recall_words_only_estimate),
     "POINTER_FLOORS_NO_LOSS_INVALID");
   const critical = [input.critical_recall_estimate, input.critical_recall_words_only_estimate];
   invariant(critical.every((value) => value === null) || critical.every(isProbability), "POINTER_FLOORS_NO_LOSS_INVALID");
   invariant(gain === null || isRatioResult(gain), "POINTER_FLOORS_GAIN_INVALID");
-  const precisionSample = (sample, size) => isObject(sample) && isCount(sample.pairs) && isCount(sample.correct)
-    && isCount(sample.sampled) && sample.correct <= sample.sampled && sample.sampled === Math.min(size, sample.pairs);
   invariant(isObject(precision)
-    && POINTER_PRECISION_SAMPLES.kinds.every((kind) => precisionSample(precision[kind], POINTER_PRECISION_SAMPLES.pairs_per_kind)),
+    && POINTER_PRECISION_SAMPLES.kinds.every((kind) => sampleShaped(precision[kind], POINTER_PRECISION_SAMPLES.pairs_per_kind, "correct")),
     "POINTER_FLOORS_PRECISION_INVALID");
+  invariant(isObject(eventCheck) && isCount(eventCheck.pairs) && isCount(eventCheck.unanswered) && eventCheck.unanswered <= eventCheck.pairs,
+    "POINTER_FLOORS_EVENT_CHECK_INVALID");
+  invariant(isObject(eventRecall), "POINTER_FLOORS_EVENT_RECALL_INVALID");
+  // The kept event pairs are the event kind's precision sample, and a kept pair is real exactly when it is correct there:
+  // when both judges say so.
+  invariant(isObject(eventRecall.kept) && eventRecall.kept.pairs === precision.event.pairs && eventRecall.kept.sampled === precision.event.sampled
+    && eventRecall.kept.real === precision.event.correct, "POINTER_FLOORS_EVENT_RECALL_INVALID");
   invariant(isObject(coverage) && isCount(coverage.untagged_pages) && isCount(coverage.pages_with_quotes)
     && coverage.untagged_pages <= coverage.pages_with_quotes, "POINTER_FLOORS_COVERAGE_INVALID");
   invariant(isObject(anchors) && isCount(anchors.broken), "POINTER_FLOORS_ANCHORS_INVALID");
@@ -338,18 +399,16 @@ export function pointerFloors(input) {
       estimate: gain.estimate, lower_bound: gain.lower_bound, minimum: POINTER_FLOORS.gain_point_estimate,
       reason: gain.estimate === null ? gain.reason ?? "no estimate" : null });
 
-  // Pairs both judges marked correct, of each kind's fixed sample. A kind with no pairs has nothing to gate; one with
-  // fewer than the minimum should have been left out of the generation, so it fails.
-  const bound = (sample) => clopperPearsonLower({ successes: sample.correct, trials: sample.sampled,
-    confidence: POINTER_FLOORS.confidence });
+  // Pairs both judges marked correct, of each kind's fixed sample. A kind with no pairs has nothing to gate; a kind
+  // judged in full (a census) is gated on its exact share, and a sampled one on its Clopper-Pearson lower bound.
   const kindFloor = (sample) => {
     if (sample.pairs === 0) return Object.freeze({ holds: true, applicable: false, pairs: 0, correct: 0, sampled: 0,
-      lower_bound: null, reason: "no pairs of this kind" });
-    const lowerBound = bound(sample);
-    const tooFew = sample.pairs < POINTER_PRECISION_SAMPLES.minimum_kind_pairs;
-    return Object.freeze({ holds: !tooFew && lowerBound >= POINTER_FLOORS.precision_lower_bound, applicable: true,
-      pairs: sample.pairs, correct: sample.correct, sampled: sample.sampled, lower_bound: lowerBound,
-      reason: tooFew ? "fewer pairs than the floor can be met with: the kind should have been left out" : null });
+      census: true, lower_bound: null, reason: "no pairs of this kind" });
+    const census = sample.sampled === sample.pairs;
+    const lowerBound = census ? sample.correct / sample.sampled
+      : clopperPearsonLower({ successes: sample.correct, trials: sample.sampled, confidence: POINTER_FLOORS.confidence });
+    return Object.freeze({ holds: lowerBound >= POINTER_FLOORS.precision_lower_bound, applicable: true,
+      pairs: sample.pairs, correct: sample.correct, sampled: sample.sampled, census, lower_bound: lowerBound, reason: null });
   };
   const kinds = Object.fromEntries(POINTER_PRECISION_SAMPLES.kinds.map((kind) => [kind, kindFloor(precision[kind])]));
   const precisionFloor = Object.freeze({
@@ -369,11 +428,32 @@ export function pointerFloors(input) {
 
   const anchorsFloor = Object.freeze({ holds: anchors.broken === 0, broken: anchors.broken });
 
+  // Event checks left unanswered, after their retry or at the deadline, of the event pairs the tagger kept.
+  const unansweredShare = eventCheck.pairs === 0 ? null : eventCheck.unanswered / eventCheck.pairs;
+  const eventCheckFloor = Object.freeze({
+    holds: unansweredShare === null || unansweredShare <= POINTER_FLOORS.event_check_max_unanswered_share,
+    applicable: eventCheck.pairs > 0,
+    pairs: eventCheck.pairs,
+    unanswered: eventCheck.unanswered,
+    unanswered_share: unansweredShare,
+    maximum: POINTER_FLOORS.event_check_max_unanswered_share,
+    reason: eventCheck.pairs === 0 ? "no event pair to check" : null
+  });
+
+  const recallOfEvents = eventCheckRecall({ kept: eventRecall.kept, dropped: eventRecall.dropped, confidence: POINTER_FLOORS.confidence });
+  const eventRecallFloor = Object.freeze({
+    holds: !recallOfEvents.applicable || recallOfEvents.lower_bound >= POINTER_FLOORS.event_check_recall_lower_bound,
+    minimum: POINTER_FLOORS.event_check_recall_lower_bound,
+    ...recallOfEvents
+  });
+
   const floors = Object.freeze({
     recall: recallFloor,
     no_loss: noLossFloor,
     gain: gainFloor,
     precision: precisionFloor,
+    event_check: eventCheckFloor,
+    event_check_recall: eventRecallFloor,
     coverage: coverageFloor,
     anchors: anchorsFloor
   });

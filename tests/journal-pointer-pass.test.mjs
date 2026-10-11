@@ -1,9 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
-import { POINTER_PRECISION_SAMPLES } from "../src/journal-import/pointer-measure.mjs";
 import { POINTER_BATCH_OUTCOMES, POINTER_EVENT_CHECK_PAIRS_PER_CALL, POINTER_UNTAGGED_REASONS, applyPointerEventCheck, buildPointerGeneration,
-  checkPointerBatches, keepPointerPages, leaveOutSmallKinds, overlayPointerRepass, pointerCoverage, pointerEventCheckCalls, pointerEventPairs,
+  checkPointerBatches, keepPointerPages, overlayPointerRepass, pointerCoverage, pointerEventCheckCalls, pointerEventPairs,
   pointerPassInput, pointerPassReport, pointerRepassBatches, pointerTaggerPacket } from "../src/journal-import/pointer-pass.mjs";
 import { POINTER_DROP_REASONS } from "../src/journal-import/pointer-tags.mjs";
 import { buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
@@ -145,8 +144,11 @@ test("the event check sees each event pair whole, 50 to a call, and keeps a pair
     [pairs[1].pair_id, { mentions: true, kind_right: false }],
     [pairs[3].pair_id, { mentions: false, kind_right: false }]
   ]);
-  const { checked: after, counts } = applyPointerEventCheck({ checked, pairs, judgments });
+  const { checked: after, counts, dropped } = applyPointerEventCheck({ checked, pairs, judgments });
   assert.deepEqual(counts, { pairs: 4, accepted: 1, rejected: 2, unanswered: 1, tags_dropped: 3 });
+  // The pairs it dropped, rejected or unanswered, are what event-check recall samples.
+  assert.deepEqual(dropped.map((pair) => pair.pair_id), [pairs[1], pairs[2], pairs[3]].map((pair) => pair.pair_id));
+  assert.ok(Object.isFrozen(dropped));
   const events = after.flatMap((result) => result.kept.filter((tag) => tag.kind === "event"));
   assert.deepEqual(events.map((tag) => tag.anchors.map((anchor) => input.unitsById.get(anchor.unit_id).page)), [[4]]);
   // Nothing else changes.
@@ -164,22 +166,19 @@ test("the event check sees each event pair whole, 50 to a call, and keeps a pair
   assert.equal(kept.counts.tags_dropped, 0);
 });
 
-test("a kind with too few pairs to reach its floor is left out before anything is measured, by its count alone", () => {
+test("every kind is kept whatever its count: no kind is left out for being small", () => {
   const input = passInput();
   const checked = checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes: answered(input) });
-  const { checked: kinds, left_out: leftOut, pairs_by_kind: before } = leaveOutSmallKinds({ checked, unitsById: input.unitsById,
-    passageIdForUnit: input.passageIdForUnit });
-  // 40 Jean and 40 marché pairs, 33 pluie (topic, so 73 topic pairs), 3 Lyon, 4 concert.
-  assert.deepEqual(before, { person: 40, place: 3, organization: 0, topic: 73, event: 4 });
-  assert.ok(POINTER_PRECISION_SAMPLES.minimum_kind_pairs === 29);
-  assert.deepEqual(leftOut, ["place", "event"], "an empty kind isn't left out: it has nothing to gate");
-  assert.ok(kinds.every((result) => result.kept.every((tag) => !["place", "event"].includes(tag.kind))));
-  assert.equal(kinds.flatMap((result) => result.kept).length, checked.flatMap((result) => result.kept).filter((tag) => !["place", "event"].includes(tag.kind)).length);
-  // A coverage pass keeps out what the first pass left out, whatever its counts.
-  assert.deepEqual(leaveOutSmallKinds({ checked, unitsById: input.unitsById, passageIdForUnit: input.passageIdForUnit, alsoLeaveOut: ["person"] }).left_out,
-    ["person", "place", "event"]);
-  assert.throws(() => leaveOutSmallKinds({ checked, unitsById: input.unitsById, passageIdForUnit: input.passageIdForUnit, alsoLeaveOut: ["mood"] }),
-    { code: "POINTER_KINDS_INPUT_INVALID" });
+  const { built, indexes } = buildPointerGeneration({ quoteGeneration: QUOTE_GENERATION, input, checked });
+  // 40 Jean and 40 marché pairs, 33 pluie (topic, so 73 topic pairs), 3 Lyon, 4 concert: the 3 places stay.
+  const counts = Object.fromEntries(["person", "place", "organization", "topic", "event"]
+    .map((kind) => [kind, indexes.pairs.filter((pair) => pair.kind === kind).length]));
+  assert.deepEqual(counts, { person: 40, place: 3, organization: 0, topic: 73, event: 4 });
+  assert.equal(built.graph.nodes.filter((node) => node.kind === "entity" && node.data.entity_kind === "place").length, 3);
+  const report = pointerPassReport({ checked, eventCheck: { pairs: 0, accepted: 0, rejected: 0, unanswered: 0, tags_dropped: 0 }, indexes,
+    coverage: pointerCoverage({ input, checked, indexes }) });
+  assert.deepEqual(report.pairs_by_kind, counts);
+  assert.equal(Object.hasOwn(report, "kinds_left_out"), false);
 });
 
 test("the generation is built again under the same ID with each page's tags, and its untagged pages are listed with why", () => {
@@ -198,8 +197,7 @@ test("the generation is built again under the same ID with each page's tags, and
     ...taggerAnswer({ quote_units: packet.quote_units.filter((unit) => input.unitsById.get(unit.unit_id).page !== 35) }).tags,
     { kind: "person", label: "Marie", anchors: [{ unit_id: unitOn(input, 35, "Jean"), quote: "Jean", occurrence: null }] }
   ] } });
-  const checked = leaveOutSmallKinds({ checked: checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes }),
-    unitsById: input.unitsById, passageIdForUnit: input.passageIdForUnit }).checked;
+  const checked = checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes });
   const { built, indexes } = buildPointerGeneration({ quoteGeneration: QUOTE_GENERATION, input, checked });
   validateJournalGraph(built.graph, Object.fromEntries(PAGES.map((page) => [page.representation_id, page.text])));
   const plain = buildQuoteGeneration(QUOTE_GENERATION);
@@ -209,7 +207,8 @@ test("the generation is built again under the same ID with each page's tags, and
   const people = built.graph.nodes.filter((node) => node.kind === "entity" && node.data.label === "Jean");
   assert.equal(people.length, indexes.pairs.filter((pair) => pair.kind === "person").length, "one node per tag and quote");
   for (const node of people) assert.ok(input.units.some((unit) => node.data.evidence_ids[0] === input.passageIdForUnit(unit.unit_id)));
-  assert.equal(built.graph.nodes.filter((node) => node.kind === "episode").length, 0, "the event kind was left out");
+  assert.equal(built.graph.nodes.filter((node) => node.kind === "episode").length, indexes.pairs.filter((pair) => pair.kind === "event").length,
+    "one episode per event pair: no kind is left out");
   assert.deepEqual([...indexes.quote_tags.keys()].every((passageId) => built.quoteMeta.has(passageId)), true);
 
   const coverage = pointerCoverage({ input, checked, indexes });
@@ -228,8 +227,7 @@ test("the generation is built again under the same ID with each page's tags, and
   assert.equal(coverage.untagged_by_reason.tags_dropped, 1);
 
   // Every batch answered: coverage holds. No tag at all: it fails, however few pages there are.
-  const full = leaveOutSmallKinds({ checked: checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes: answered(input) }),
-    unitsById: input.unitsById, passageIdForUnit: input.passageIdForUnit }).checked;
+  const full = checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes: answered(input) });
   const fullBuild = buildPointerGeneration({ quoteGeneration: QUOTE_GENERATION, input, checked: full });
   assert.equal(pointerCoverage({ input, checked: full, indexes: fullBuild.indexes }).holds, true);
   const none = checkPointerBatches({ batches: input.batches, unitsById: input.unitsById,
@@ -241,7 +239,7 @@ test("the generation is built again under the same ID with each page's tags, and
 
   // A report of counts and page numbers, without a word of the journal.
   const report = pointerPassReport({ checked, eventCheck: { pairs: 0, accepted: 0, rejected: 0, unanswered: 0, tags_dropped: 0 },
-    kinds: { left_out: ["place", "event"] }, indexes, coverage });
+    indexes, coverage });
   assert.equal(report.batches, input.batches.length);
   assert.equal(report.page_outcomes.failed, failed.pages.length);
   assert.equal(report.page_outcomes.deadline, late.pages.length);
@@ -267,9 +265,7 @@ test("a coverage pass sends the untagged pages' batches again and changes only t
   const skipped = partial.pages.at(-1);
   outcomes.set(partial.batch_id, { status: "answered", answer: taggerAnswer({ quote_units: partialPacket.quote_units
     .filter((unit) => input.unitsById.get(unit.unit_id).page !== skipped) }) });
-  const kinds = leaveOutSmallKinds({ checked: checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes }),
-    unitsById: input.unitsById, passageIdForUnit: input.passageIdForUnit });
-  const first = kinds.checked;
+  const first = checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes });
   const firstBuild = buildPointerGeneration({ quoteGeneration: QUOTE_GENERATION, input, checked: first });
   const firstCoverage = pointerCoverage({ input, checked: first, indexes: firstBuild.indexes });
   const retried = firstCoverage.untagged.map((item) => item.page);
@@ -293,8 +289,7 @@ test("a coverage pass sends the untagged pages' batches again and changes only t
     for (const tag of result.kept) for (const anchor of tag.anchors) assert.ok(retried.includes(input.unitsById.get(anchor.unit_id).page));
   }
   const overlay = overlayPointerRepass({ first, second, unitsById: input.unitsById, pages: retried });
-  const final = leaveOutSmallKinds({ checked: overlay, unitsById: input.unitsById, passageIdForUnit: input.passageIdForUnit, alsoLeaveOut: kinds.left_out });
-  assert.deepEqual(final.left_out, kinds.left_out);
+  const final = { checked: overlay };
 
   // Every tag the first pass kept stays exactly, on every page it didn't retry.
   const anchorsOff = (results) => results.flatMap((result) => result.kept.flatMap((tag) => tag.anchors
