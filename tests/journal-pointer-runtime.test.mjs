@@ -52,6 +52,14 @@ function handlers({ refuse = () => false } = {}) {
   };
 }
 
+// A port whose capabilities add the hardest tier's attestations, as the work exchange's do.
+function attestedPort(port) {
+  const wrapped = Object.fromEntries(Object.entries(port).map(([name, value]) => [name, typeof value === "function" ? value.bind(port) : value]));
+  wrapped.capabilities = () => Object.freeze({ ...port.capabilities(), hardest_fresh_context_per_generate: true,
+    hardest_authenticated_execution_profile_per_generate: true });
+  return Object.freeze(wrapped);
+}
+
 async function runtimeEnvironment(t, options = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "pointer-runtime-"));
   await fs.chmod(root, 0o700);
@@ -80,7 +88,9 @@ async function runtimeEnvironment(t, options = {}) {
     representations: PAGES.map((page, index) => ({ representation_id: `synthetic:page:${index}`, text: page, utf8_byte_length: Buffer.byteLength(page) }))
   });
   const mock = createMockJournalInferencePort({ handlers: handlers(options) });
-  const port = options.wrapPort ? options.wrapPort(mock) : mock;
+  // The mock stands in for the work exchange, whose hardest tier attests a fresh context and the model it ran.
+  const exchangeLike = options.attested === false ? mock : attestedPort(mock);
+  const port = options.wrapPort ? options.wrapPort(exchangeLike) : exchangeLike;
   const open = () => openJournalExecutionRuntime({ config, configPath, service, inferencePort: port, sourceParser,
     environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER, ...(options.environment ?? {}) } });
   // Runs commands in one runtime and closes it.
@@ -243,25 +253,18 @@ function countingPort(port) {
 }
 const route = (provider) => ({ INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify({ provider }) });
 
-test("on a direct browser route every pointer step sends one call at a time; the exchange takes them at once", async (t) => {
-  // A browser route with the hardest lane off: both tiers share the one page, through every step.
+test("on a direct browser route every pointer step sends its standard calls one at a time; the exchange takes them at once", async (t) => {
+  // A browser route, its hardest lane on the exchange: the standard tier takes turns on the one page through every
+  // step, and hardest calls go out together.
   let counted = null;
   const browser = await runtimeEnvironment(t, { environment: route("chatgpt_subscription_browser"),
     wrapPort: (port) => { counted = countingPort(port); return counted.port; } });
+  browser.config.hardest_lane = { enabled: true, daily_limit: 40 };
   await browser.run("stage", "publish-quotes", "pointer-reference", "pointer-challenge", "pointer-pilot", "pointer-pass");
   const measured = await browser.run("pointer-measure");
   assert.equal(measured.pointer.measure.status, "done");
-  assert.ok(counted.most.standard >= 1 && counted.most.hardest >= 1, "both tiers were called");
-  assert.equal(counted.most.all, 1);
-
-  // With the hardest lane on, hardest calls go to the exchange at once, and the standard tier still takes turns.
-  let lanes = null;
-  const hybrid = await runtimeEnvironment(t, { environment: route("chatgpt_subscription_browser"),
-    wrapPort: (port) => { lanes = countingPort(port); return lanes.port; } });
-  hybrid.config.hardest_lane = { enabled: true, daily_limit: 40 };
-  await hybrid.run("stage", "build-quotes", "pointer-reference");
-  assert.equal(lanes.most.standard, 1);
-  assert.ok(lanes.most.hardest > 1, "hardest calls went out together");
+  assert.equal(counted.most.standard, 1);
+  assert.ok(counted.most.hardest > 1, "hardest calls went out together");
 
   // The Codex exchange queues every call at once.
   let exchange = null;
@@ -299,18 +302,17 @@ test("a pointer step that reaches the Claude daily limit stops and resumes, and 
   assert.ok(state.hardest_lane.sent > 2);
 });
 
-test("hardest-tier pointer calls count against the Claude limit wherever they reach the exchange, and only there", async (t) => {
-  // A direct browser route with the hardest lane off: they go to the browser's model with the other tier's calls, so a
-  // limit of 1 stops nothing and nothing is counted.
-  const browser = await runtimeEnvironment(t, { environment: route("chatgpt_subscription_browser") });
-  browser.config.hardest_lane = { enabled: false, daily_limit: 1 };
-  const referenced = await browser.run("stage", "build-quotes", "pointer-reference");
-  assert.equal(referenced.pointer.reference.status, "done");
-  assert.equal(referenced.pointer.reference.counts.complete_units, 96);
-  const state = JSON.parse(await fs.readFile(browser.stateFile, "utf8"));
-  assert.equal(state.hardest_lane?.sent ?? 0, 0);
+test("the steps that use Claude's judge need an attested hardest route, and its calls count against the Claude limit, the lane on or off", async (t) => {
+  // A route whose hardest tier attests nothing (a browser route without the hardest lane, or the connector exchange):
+  // the reference step refuses before it starts, and so do the challenge set and the measurement.
+  const unattested = await runtimeEnvironment(t, { environment: route("chatgpt_subscription_browser"), attested: false });
+  await unattested.run("stage", "build-quotes");
+  await assert.rejects(unattested.run("pointer-reference"), { code: "POINTER_HARDEST_ROUTE_UNATTESTED" });
+  assert.equal(JSON.parse(await fs.readFile(unattested.stateFile, "utf8")).pointer.reference, undefined, "the step never started");
+  await assert.rejects(unattested.run("pointer-challenge"), { code: "POINTER_HARDEST_ROUTE_UNATTESTED" });
+  await assert.rejects(unattested.run("pointer-measure"), { code: "POINTER_HARDEST_ROUTE_UNATTESTED" });
 
-  // The Codex exchange with the lane off still sends them to its hardest model, Claude, so the limit holds there.
+  // The Codex exchange with the lane off still sends hardest calls to its hardest model, Claude, so the limit holds.
   const exchange = await runtimeEnvironment(t, { environment: route("codex_exec_exchange") });
   exchange.config.hardest_lane = { enabled: false, daily_limit: 1 };
   await exchange.run("stage", "build-quotes");

@@ -365,16 +365,23 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       await save();
     };
+    // The pointer pass's second judge is the hardest tier, which the plan makes Claude. A step that sends hardest-tier
+    // calls (the reference step, the challenge set and the measurement) needs the route that serves them to attest a
+    // fresh context and the model it ran for each call, as the hardest lane's own check does when the lane is on, so no
+    // supposed second judge counts without that evidence. Only the work exchange's hardest tier attests both.
+    const pointerHardestAttested = () => {
+      const capabilities = semanticPort.capabilities();
+      invariant(capabilities.hardest_fresh_context_per_generate === true
+        && capabilities.hardest_authenticated_execution_profile_per_generate === true, "POINTER_HARDEST_ROUTE_UNATTESTED");
+    };
     // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the
-    // work exchange queues any number for its workers' slots. The hardest lane, when it's on, runs on the exchange.
+    // work exchange queues any number for its workers' slots. Hardest-tier calls always reach the exchange.
     const directRoute = route !== null && ![JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER].includes(route.provider);
-    const hardestOnDirectRoute = directRoute && !hardestLane.enabled;
-    const pointerTurns = directRoute ? (hardestOnDirectRoute ? ["standard", "hardest"] : ["standard"]) : [];
-    // The pointer pass's hardest-tier calls count against the same daily limit wherever they reach the exchange, whose
-    // hardest model is Claude, but a step that reaches it stops on its own (it resumes with its saved deadline): the
-    // import's blocker, which says why the import stopped, stays as it was. Only on a direct route with the hardest lane
-    // off do they go to that route's own model instead, and then nothing is counted.
-    const pointerBeforeHardestSend = hardestOnDirectRoute ? null : async () => {
+    const pointerTurns = directRoute ? ["standard"] : [];
+    // Those hardest-tier calls, Claude's, count against the hardest lane's daily limit, the lane on or off, but a step
+    // that reaches it stops on its own (it resumes with its saved deadline): the import's blocker, which says why the
+    // import stopped, stays as it was.
+    const pointerBeforeHardestSend = async () => {
       const importBlocker = state.blocker;
       const allowed = applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit });
       state.blocker = importBlocker;
@@ -2802,6 +2809,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Step 2: the reference sample's questions, both coverage judges and the searches. A nonresponse stops the run.
     async function pointerReference() {
       const run = await pointerRun();
+      pointerHardestAttested();
       const step = await pointerStep(run, "reference", pointerDeadlines.reference, { seed: true });
       if (step.status === "done") return summary();
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
@@ -2822,6 +2830,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // under the same rules and with the reference step's time limit. A nonresponse here is counted and stops nothing.
     async function pointerChallenge() {
       const run = await pointerRun();
+      pointerHardestAttested();
       invariant(run.reference?.status === "done", "POINTER_REFERENCE_NOT_DONE");
       const step = await pointerStep(run, "challenge", pointerDeadlines.reference);
       if (step.status === "done") return summary();
@@ -2890,6 +2899,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // the searches run on it. A floor that fails stops the run.
     async function pointerMeasure() {
       const run = await pointerRun();
+      pointerHardestAttested();
       invariant(run.pass?.status === "done" && (run.pass.coverage_holds || run.coverage_pass?.status === "done"), "POINTER_PASS_NOT_DONE");
       // Calibration's set is reported with every measurement, so its questions must be ready first.
       invariant(run.challenge?.status === "done", "POINTER_CHALLENGE_NOT_DONE");
