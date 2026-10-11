@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4c51577cf075e5323087b63932ea3776f32cc87554a7c98f25cedbaa06ba0e20
-source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_record_sha256: 6a2c9b7efedb1c3c024cc4249fa719ccffaf47915e92c4fe4b2e583367510ef8
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
@@ -17,7 +17,7 @@ projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560
 
 ```json
 {
-  "approvedAt": "2026-10-11",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",

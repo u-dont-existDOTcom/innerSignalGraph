@@ -21,7 +21,8 @@
   "expected": {
     "primary": "ROUTE.REFRACTORY_PAIN_NAVIGATION",
     "selectedIncludes": [
-      "ROUTE.REFRACTORY_PAIN_NAVIGATION"
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION",
+      "IC.SUICIDAL_ADULT_SEAT"
     ],
     "selectedExcludes": [
       "IC.SUICIDAL_SELF_DEATH_INQUIRY"

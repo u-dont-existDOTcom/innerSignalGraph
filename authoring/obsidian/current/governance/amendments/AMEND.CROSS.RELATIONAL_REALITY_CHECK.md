@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.RELATIONAL_REALITY_CHECK
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 47827528b40722e258153ea968ead25a583863356d9e564925ecfbb001a27714
-source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_record_sha256: 77962ce52d0630aa744bc3c68d42d3c7cf38bebac1093c1bd24ae32437225cdd
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # AMEND.CROSS.RELATIONAL_REALITY_CHECK
@@ -17,7 +17,7 @@ projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560
 
 ```json
 {
-  "approvedAt": "2026-10-11",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.RELATIONAL_REALITY_CHECK",

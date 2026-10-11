@@ -9,8 +9,8 @@ graph_id: inner-child-somatic-cross-guide
 from_node_id: ROUTE.INFLUENCE_LOVE_CAPACITY
 to_node_id: ROUTE.GO_INWARD
 relation: builds-nurturer-protector-guide
-base_graph_sha256: 6f1d824ba12d3264c07afabcf15097235f9c85d06a3817da0c662d2bb37dc4fb
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # ROUTE.INFLUENCE_LOVE_CAPACITY builds-nurturer-protector-guide ROUTE.GO_INWARD

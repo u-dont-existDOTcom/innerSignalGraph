@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
 status: owner-approved
 domain: cross-guide
-base_record_sha256: e33a3142c026db928c74f0a1d9da0ae7fe5295572ada6fe29695db3f6cd00b65
-source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_record_sha256: baa684d7ecd9751db4ee01c6921a694bf1e95fdb2689c0acd5330ee76cb88cf5
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
@@ -17,7 +17,7 @@ projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560
 
 ```json
 {
-  "approvedAt": "2026-10-11",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",

@@ -10,7 +10,7 @@ from_node_id: SOM.GENTLE_REGULATION
 to_node_id: SOM.SIBAM_TRACKING
 relation: supports-channel-tracking
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # SOM.GENTLE_REGULATION supports-channel-tracking SOM.SIBAM_TRACKING

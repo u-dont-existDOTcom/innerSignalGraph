@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.LITERATURE_TASK_PROGRESS
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 48f827a1bb41e4fbf27953c8903094fdeb9394ccba205ab1024338407115cd87
-source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_record_sha256: f74f620d80e77acc00f37ff811ad3ebe3fc6416283976726a219676a1a90e2b4
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # AMEND.CROSS.LITERATURE_TASK_PROGRESS
@@ -17,7 +17,7 @@ projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560
 
 ```json
 {
-  "approvedAt": "2026-10-11",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",

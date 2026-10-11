@@ -29,9 +29,11 @@ regression_refs:
   - G104
   - G105
   - G106
-base_record_sha256: 8fff2c4046b225c43d829bb66da27666d596fa5626ed2944ece40e93aa472904
-base_graph_sha256: 6f1d824ba12d3264c07afabcf15097235f9c85d06a3817da0c662d2bb37dc4fb
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+  - G107
+  - G108
+base_record_sha256: d2874e88ae6e03713063249ab9df7fe7af4db21f2a90fa6fc71964d1f5ae2781
+base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # Coordinate a specialist chronic-pain pathway and flare plan
@@ -125,7 +127,8 @@ projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560
       "The immediate safety route remains available if intent or inability to stay safe emerges, even if the person has been harmed by coercive treatment.",
       "The primary solution to predictable recurring pain is continuity of specialist care and flare planning, not repeated emergency contact alone.",
       "Trusted voluntary advocacy is valuable when prior coercive encounters limit trust; an unsafe family member is not an automatic support.",
-      "Referral urgency and access remain clinically and locally determined."
+      "Referral urgency and access remain clinically and locally determined.",
+      "Unknown stopping/return capacity or present safety is not, by itself, evidence of impairment; the referral action is reversible, and concern about danger must be based on concrete evidence. For reported pain-triggered suicidal ideation, keep the observing/adult safety-support node selected alongside chronic-pain coordination, and never overrule actual present_safety unsafe, demonstrated lost capacity, suicidal intent or new medical red flags."
     ]
   },
   "questionPolicy": {

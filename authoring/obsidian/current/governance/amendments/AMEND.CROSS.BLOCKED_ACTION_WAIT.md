@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.BLOCKED_ACTION_WAIT
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 1526eefe0fc3fe6909bf76a0ae8bd0009fd4c9222522b8fd2734ef53f8805da1
-source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_record_sha256: e832b7befea472aa803f3c1defa60437f6060c00505c597587bd6f0554fb6b64
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # AMEND.CROSS.BLOCKED_ACTION_WAIT
@@ -17,7 +17,7 @@ projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560
 
 ```json
 {
-  "approvedAt": "2026-10-11",
+  "approvedAt": "2026-10-06",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.BLOCKED_ACTION_WAIT",

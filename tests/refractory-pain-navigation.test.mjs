@@ -21,6 +21,7 @@ test("specialist pain route survives pain-related ideation without taking over i
   const chronic=planFromGraphs({graphs:bundle.graphs,variables:base});
   assert.equal(chronic.primaryJob.id,"ROUTE.REFRACTORY_PAIN_NAVIGATION");
   assert.ok(chronic.avoid.some(v=>/daily|ambulance/i.test(v)));
+  assert.ok(chronic.selectedNodes.some(v=>v.id==="IC.SUICIDAL_ADULT_SEAT"),"trusted protective support must stay selected for ideation");
   assert.ok(chronic.recommendations?.some(v=>/referral/i.test(v)) ||
     chronic.selectedNodes.some(v=>v.recommendations.some(r=>/referral/i.test(r))));
   const danger=planFromGraphs({graphs:bundle.graphs,variables:{...base,suicidal_state:"intent"}});

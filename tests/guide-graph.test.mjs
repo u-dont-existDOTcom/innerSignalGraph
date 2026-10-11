@@ -29,7 +29,7 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 76);
+  assert.equal(result.count, 78);
 });
 
 test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {

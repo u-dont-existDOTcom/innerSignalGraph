@@ -30,8 +30,8 @@ regression_refs:
   - G054
   - G055
 base_record_sha256: a6d1b3debcdd132a2e3698b7f116f00933a6f3f634d6d1dda1f5121bc567f560
-base_graph_sha256: 6f1d824ba12d3264c07afabcf15097235f9c85d06a3817da0c662d2bb37dc4fb
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # Separate inner experience from interpretation before routing

@@ -23,8 +23,8 @@ regression_refs:
   - G092
   - G093
 base_record_sha256: f7d0e06615193b82a423958adc64bb7b1bf13e3aa53ee8c6c94ee783b3f2bd02
-base_graph_sha256: 6f1d824ba12d3264c07afabcf15097235f9c85d06a3817da0c662d2bb37dc4fb
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # Hold a real problem at a defined external blocker

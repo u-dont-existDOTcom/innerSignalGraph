@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.STATE_DEPENDENT_TRANSFER
 guide_id: owner-amendments
 heading: AMEND.CROSS.STATE_DEPENDENT_TRANSFER
 source_role: owner-approved-extension
-source_hash: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
+source_hash: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
 section_hash: 4d961182586685374399ddb00e1442dcf02cfbcac88fc98618aae6b5aecc1f60
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -15,7 +15,7 @@ cited_by_node_ids:
   - ROUTE.ALTERED_PREPARATION
   - ROUTE.ALTERED_STABLE_THERAPY
   - ROUTE.ALTERED_STATE_TRANSFER
-projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
+projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
 ---
 
 # AMEND.CROSS.STATE_DEPENDENT_TRANSFER
