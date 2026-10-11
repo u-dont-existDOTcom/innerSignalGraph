@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { createDeterministicAuditSample } from "./audit.mjs";
+import { pointerPagelessStretches } from "./pointer-tags.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3, "Questions
 // that cover every sampled quote", "Two independent checks that the questions cover each quote" and "No unit drops
@@ -17,8 +18,6 @@ export const POINTER_COVERAGE_QUOTES_PER_CALL = 25;
 /** Why a sampled unit ended without its reference. */
 export const POINTER_REFERENCE_NONRESPONSE_REASONS = Object.freeze(["questions_incomplete", "coverage_unconfirmed",
   "coverage_check_failed", "searches_incomplete", "deadline"]);
-/** How much quote text a sampling unit holds in a representation without pages: about a page's worth. */
-export const POINTER_PAGELESS_UNIT_BYTES = 4096;
 /** The sample's design: the journal cut into 12 stretches in order, 8 units drawn from each. */
 export const POINTER_REFERENCE_SAMPLE = Object.freeze({ strata: 12, units_per_stratum: 8 });
 
@@ -207,24 +206,14 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 // The units the sample is drawn from, each with its quotes in journal order, ordered by their first quote. A unit is a
 // page; in a representation without page numbers (a plain-text journal is one) it is a stretch of consecutive quotes
-// holding at most POINTER_PAGELESS_UNIT_BYTES of their text, so no unit holds more than a page's worth and no question
+// (pointerPagelessStretches, the pass's pages there too), so no unit holds more than about a page and no question
 // writer's answer has to cover a whole journal. The challenge set names its units the same way.
 function samplingUnits(quotes) {
   const units = new Map();
-  const open = new Map();
+  const stretches = pointerPagelessStretches(quotes);
   for (const quote of [...quotes].sort((left, right) => left.source_order - right.source_order)) {
-    let unitId;
-    if (Number.isSafeInteger(quote.page)) unitId = `page:${quote.page}`;
-    else {
-      const bytes = Buffer.byteLength(quote.text, "utf8");
-      let stretch = open.get(quote.representation_id);
-      if (!stretch || stretch.bytes + bytes > POINTER_PAGELESS_UNIT_BYTES) {
-        stretch = { index: stretch ? stretch.index + 1 : 0, bytes: 0 };
-        open.set(quote.representation_id, stretch);
-      }
-      stretch.bytes += bytes;
-      unitId = `representation:${sha256(quote.representation_id).slice(0, 32)}:${stretch.index}`;
-    }
+    const unitId = Number.isSafeInteger(quote.page) ? `page:${quote.page}`
+      : `representation:${sha256(quote.representation_id).slice(0, 32)}:${stretches.get(quote.unit_id)}`;
     if (!units.has(unitId)) units.set(unitId, { unit_id: unitId, source_order: quote.source_order, quotes: [] });
     units.get(unitId).quotes.push(quote);
   }

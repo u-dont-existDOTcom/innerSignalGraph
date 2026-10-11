@@ -49,17 +49,58 @@ function deepFreeze(value) {
   return value;
 }
 
-// A quote's page: its page number, or its representation when it has none.
-const pageOf = (quote) => (quote.page === null ? quote.representation_id : quote.page);
+/**
+ * The pointer pass's page in a representation without page numbers (a plain-text journal is one): a stretch of
+ * consecutive quotes holding at most `bytes` of their text and at most `quotes` of them, about a page, so batching,
+ * coverage, the pilot's draw and the reference sample all count such a journal in pages, and one question writer's
+ * answer (200 questions at most, one or more for each quote) can cover a stretch.
+ */
+export const POINTER_PAGELESS_STRETCH = Object.freeze({ bytes: 4096, quotes: 40 });
 
-// Quotes as batching and the untagged count read them: each with its unit, page (a number or null), representation
-// and length in bytes, and each unit once.
+/**
+ * The stretches of the representations without page numbers: for each such quote (given in any order, each with its
+ * unit, representation, place in the journal and text or byte length), the index of its stretch within its
+ * representation, counting in journal order. A stretch closes before a quote that would take it past either bound, so
+ * a quote longer than a stretch stands alone.
+ */
+export function pointerPagelessStretches(quotes) {
+  invariant(Array.isArray(quotes), "POINTER_PAGELESS_INPUT_INVALID");
+  const stretches = new Map();
+  const open = new Map();
+  const pageless = quotes.filter((quote) => isObject(quote) && (quote.page === null || quote.page === undefined));
+  for (const quote of [...pageless].sort((left, right) => left.source_order - right.source_order)) {
+    invariant(isText(quote.unit_id) && isText(quote.representation_id) && Number.isSafeInteger(quote.source_order)
+      && (Number.isSafeInteger(quote.utf8_byte_length) || typeof quote.text === "string"), "POINTER_PAGELESS_INPUT_INVALID");
+    const bytes = Number.isSafeInteger(quote.utf8_byte_length) ? quote.utf8_byte_length : Buffer.byteLength(quote.text, "utf8");
+    let stretch = open.get(quote.representation_id);
+    if (!stretch || stretch.bytes + bytes > POINTER_PAGELESS_STRETCH.bytes || stretch.quotes >= POINTER_PAGELESS_STRETCH.quotes) {
+      stretch = { index: stretch ? stretch.index + 1 : 0, bytes: 0, quotes: 0 };
+      open.set(quote.representation_id, stretch);
+    }
+    stretch.bytes += bytes;
+    stretch.quotes += 1;
+    stretches.set(quote.unit_id, stretch.index);
+  }
+  return stretches;
+}
+
+/**
+ * A quote's page as the pointer pass counts pages: its page number, or, without one, its stretch (`pageless_stretch`,
+ * from pointerPagelessStretches), named by its representation and the stretch's index, padded so names sort in order.
+ */
+export const pointerPageOf = (quote) => (Number.isSafeInteger(quote.page) ? quote.page
+  : `${quote.representation_id}#${String(quote.pageless_stretch).padStart(6, "0")}`);
+const pageOf = pointerPageOf;
+
+// Quotes as batching and the untagged count read them: each with its unit, page (a number, or null with its
+// stretch), representation and length in bytes, and each unit once.
 function checkedQuotes(quotes, invalidCode, duplicateCode) {
   invariant(Array.isArray(quotes), invalidCode);
   const seen = new Set();
   for (const quote of quotes) {
     invariant(isObject(quote) && isText(quote.unit_id) && isText(quote.representation_id)
-      && (quote.page === null || (Number.isSafeInteger(quote.page) && quote.page >= 0))
+      && ((quote.page === null && Number.isSafeInteger(quote.pageless_stretch) && quote.pageless_stretch >= 0)
+        || (Number.isSafeInteger(quote.page) && quote.page >= 0))
       && Number.isSafeInteger(quote.utf8_byte_length) && quote.utf8_byte_length > 0, invalidCode);
     invariant(!seen.has(quote.unit_id), duplicateCode);
     seen.add(quote.unit_id);
@@ -70,8 +111,8 @@ function checkedQuotes(quotes, invalidCode, duplicateCode) {
 /**
  * Cuts the quotes, given in source order, into the tagger's batches: consecutive whole pages, while a batch holds at
  * most `maxBytes` of quote text. A page over the limit on its own is cut into consecutive groups of its quotes within
- * the limit, and a quote over the limit on its own is a batch by itself. Quotes without a page number are grouped by
- * representation. Every quote is in exactly one batch, in order. A batch's ID is a digest of its unit IDs, so the
+ * the limit, and a quote over the limit on its own is a batch by itself. Quotes without a page number are paged by
+ * their stretch (pointerPageOf). Every quote is in exactly one batch, in order. A batch's ID is a digest of its unit IDs, so the
  * same quotes always make the same batches.
  */
 export function batchPointerQuotes({ quotes, maxBytes = POINTER_TAG_LIMITS.batchMaxBytes } = {}) {
@@ -445,7 +486,7 @@ const pageOrder = (left, right) => {
 };
 
 /**
- * The pages none of whose quotes has a kept tag (a representation ID for a page without a number), in order: pages
+ * The pages none of whose quotes has a kept tag (a stretch's name for quotes without a page number), in order: pages
  * whose batch failed or ran out of time, whose answer gave them no tag, or whose every tag was dropped. Their quotes
  * are still found by their words. `quotes` are as batchPointerQuotes takes them.
  */

@@ -369,6 +369,31 @@ test("run again with the stored answers, a pass gives the same result and sends 
   assert.equal(port.sent.length, sentFirst);
 });
 
+test("in a journal without pages, the sample, the pilot and the pass all count stretches, so the sample closes only its own", () => {
+  // One plain-text representation of 60 paragraphs of about 280 bytes: stretches of about 14 paragraphs.
+  const text = Array.from({ length: 60 }, (_, index) => `Paragraphe ${index} ${"sur la longue marche de Jean au bord du lac ".repeat(6)}`.trim())
+    .join("\n\n");
+  const generation = { ...QUOTE_GENERATION, mediaType: "text/plain",
+    representations: [{ representation_id: "steps:text", text, page_number: null, parse_status: "readable" }] };
+  const input = pointerPassInput({ built: buildQuoteGeneration(generation), maxBytes: BATCH_BYTES });
+  assert.equal(input.quotes.length, 60);
+  assert.ok(input.quotes.every((quote) => quote.page === null && Number.isSafeInteger(quote.pageless_stretch)));
+  const stretches = [...new Set(input.quotes.map((quote) => quote.pageless_stretch))];
+  assert.deepEqual(stretches, [...stretches.keys()], "stretches in order from 0");
+  assert.ok(stretches.length >= 4);
+  // The sample's units are the same stretches: excluding the quotes of two of them closes exactly those two.
+  const sample = pointerReferenceSample({ units: input.units, seed: "synthetic-seed" });
+  assert.equal(sample.candidate_units, stretches.length);
+  const excluded = sample.units.slice(0, 2).flatMap((unit) => unit.quote_ids);
+  const draw = pointerPilotPages({ quotes: input.quotes, excludeUnitIds: excluded, seed: "pilot-seed" });
+  assert.equal(draw.candidate_pages, stretches.length - 2);
+  assert.equal(draw.pages.length, stretches.length - 2);
+  const closed = new Set(input.quotes.filter((quote) => excluded.includes(quote.unit_id)).map((quote) => quote.pageless_stretch));
+  assert.ok(draw.pages.every((page) => /^steps:text#\d{6}$/u.test(page) && !closed.has(Number(page.slice(-6)))));
+  // Batches hold whole stretches, as they hold whole pages.
+  for (const batch of input.batches) assert.ok(batch.pages.every((page) => typeof page === "string" && page.startsWith("steps:text#")));
+});
+
 test("the pilot tags only pages drawn outside the reference sample, in batches of their own, and builds nothing", async () => {
   const quotes = PASS_INPUT.quotes;
   const reference = quotes.filter((quote) => [2, 9].includes(quote.page)).map((quote) => quote.unit_id);

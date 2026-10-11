@@ -5,7 +5,7 @@ import { pointerCallCounts, runDeadlineCalls } from "./pointer-calls.mjs";
 import { applyPointerEventCheck, buildPointerGeneration, checkPointerBatches, keepPointerPages, overlayPointerRepass, pointerCoverage,
   pointerEventCheckCalls, pointerEventPairs, pointerPassInput, pointerPassReport, pointerRepassBatches, pointerTaggerPacket } from "./pointer-pass.mjs";
 import { POINTER_FLOORS, POINTER_PRECISION_SAMPLES, cohenKappa, designRatioBound, pointerFloors } from "./pointer-measure.mjs";
-import { batchPointerQuotes, checkPointerTags, pointerTagIndexes } from "./pointer-tags.mjs";
+import { batchPointerQuotes, checkPointerTags, pointerPageOf, pointerTagIndexes } from "./pointer-tags.mjs";
 import { POINTER_REFERENCE_NONRESPONSE_REASONS, checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls,
   pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
 import { buildQuoteGeneration } from "./quote-index.mjs";
@@ -217,8 +217,8 @@ export function pointerReferenceCounts(reference) {
 export const POINTER_PILOT_PAGES = 20;
 
 const sha256 = (value) => createHash("sha256").update(value, "utf8").digest("hex");
-// A quote's page: its page number, or its representation when it has none (as pointer-pass reads pages).
-const pageOf = (unit) => (unit.page === null || unit.page === undefined ? unit.representation_id : unit.page);
+// A quote's page: its page number, or its stretch when it has none (as pointer-pass reads pages).
+const pageOf = pointerPageOf;
 
 // A pair judge's answer must judge every pair of its call once and nothing else; otherwise its call uses its retry.
 function pairAnswerCheck(spec, output) {

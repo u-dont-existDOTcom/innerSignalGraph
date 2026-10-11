@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { POINTER_FLOORS } from "./pointer-measure.mjs";
-import { POINTER_DROP_REASONS, POINTER_TAG_KINDS, batchPointerQuotes, checkPointerTags, pointerExtraction, pointerTagIndexes,
-  untaggedPages } from "./pointer-tags.mjs";
+import { POINTER_DROP_REASONS, POINTER_TAG_KINDS, batchPointerQuotes, checkPointerTags, pointerExtraction, pointerPageOf,
+  pointerPagelessStretches, pointerTagIndexes, untaggedPages } from "./pointer-tags.mjs";
 import { buildQuoteGeneration } from "./quote-index.mjs";
 
 // The pointer pass's steps between the tagger's answers and the generation it builds (plan
@@ -38,7 +38,7 @@ function deepFreeze(value) {
 }
 
 // A quote's page: its page number, or its representation when it has none (as pointer-tags reads pages).
-const pageOf = (unit) => (unit.page === null ? unit.representation_id : unit.page);
+const pageOf = pointerPageOf;
 
 /**
  * The pass's input from the quote generation it tags (`buildQuoteGeneration`'s result): every quote with a passage,
@@ -48,9 +48,12 @@ const pageOf = (unit) => (unit.page === null ? unit.representation_id : unit.pag
 export function pointerPassInput({ built, maxBytes } = {}) {
   invariant(isObject(built) && Array.isArray(built.units) && isObject(built.graph) && Array.isArray(built.graph.nodes), "POINTER_PASS_INPUT_INVALID");
   const passageByUnit = new Map(built.graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.unit_id, node.id]));
-  const units = built.units.filter((unit) => passageByUnit.has(unit.unit_id));
+  // A quote without a page number is paged by its stretch (pointerPagelessStretches), which it carries from here on.
+  const withPassage = built.units.filter((unit) => passageByUnit.has(unit.unit_id));
+  const stretches = pointerPagelessStretches(withPassage);
+  const units = withPassage.map((unit) => (stretches.has(unit.unit_id) ? Object.freeze({ ...unit, page: null, pageless_stretch: stretches.get(unit.unit_id) }) : unit));
   const quotes = units.map((unit) => ({ unit_id: unit.unit_id, page: unit.page ?? null, representation_id: unit.representation_id,
-    utf8_byte_length: unit.utf8_byte_length }));
+    utf8_byte_length: unit.utf8_byte_length, ...(stretches.has(unit.unit_id) ? { pageless_stretch: stretches.get(unit.unit_id) } : {}) }));
   const batches = batchPointerQuotes({ quotes, ...(maxBytes === undefined ? {} : { maxBytes }) });
   const unitsById = new Map(units.map((unit) => [unit.unit_id, unit]));
   return Object.freeze({

@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { POINTER_COVERAGE_QUOTES_PER_CALL, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE, checkCoverageJudgments,
-  checkQuestionSet, checkSearchPlan, coverageJudgeCalls, POINTER_PAGELESS_UNIT_BYTES, pointerChallengeUnits, pointerReferenceSample,
+  checkQuestionSet, checkSearchPlan, coverageJudgeCalls, pointerChallengeUnits, pointerReferenceSample,
   referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
+import { POINTER_PAGELESS_STRETCH } from "../src/journal-import/pointer-tags.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3). All text here
 // is invented.
@@ -248,7 +249,7 @@ function pagelessQuotes(count, bytes) {
 }
 
 test("a journal without pages is drawn in stretches of about a page, so no question writer gets the whole journal", () => {
-  assert.equal(POINTER_PAGELESS_UNIT_BYTES, 4096);
+  assert.deepEqual(POINTER_PAGELESS_STRETCH, { bytes: 4096, quotes: 40 });
   const quotes = pagelessQuotes(40, 1000);
   const sample = pointerReferenceSample({ units: quotes, seed: "synthetic-seed" });
   // Four quotes of 1,000 bytes fit in 4,096; a fifth starts the next stretch.
@@ -258,9 +259,12 @@ test("a journal without pages is drawn in stretches of about a page, so no quest
     assert.match(unit.unit_id, new RegExp(`^representation:[0-9a-f]{32}:${index}$`, "u"));
     assert.deepEqual(unit.quote_ids, [0, 1, 2, 3].map((offset) => `unit:t${index * 4 + offset}`));
   });
-  // A quote longer than a stretch stands alone.
+  // A quote longer than a stretch stands alone, and a stretch of short quotes closes at 40, so its question writer's
+  // answer, one question or more for each quote and 200 at most, always fits.
   const long = pagelessQuotes(3, 1000).map((quote, index) => (index === 1 ? { ...quote, text: "l".repeat(5000) } : quote));
   assert.deepEqual(pointerReferenceSample({ units: long, seed: "s" }).units.map((unit) => unit.quote_ids.length).sort(), [1, 1, 1]);
+  const headings = pagelessQuotes(100, 20);
+  assert.deepEqual(pointerReferenceSample({ units: headings, seed: "s" }).units.map((unit) => unit.quote_ids.length).sort((a, b) => a - b), [20, 40, 40]);
 
   // A calibration unit without a page lies on every stretch holding a quote that overlaps its bytes.
   const challenge = pointerChallengeUnits({ units: quotes, calibration: [

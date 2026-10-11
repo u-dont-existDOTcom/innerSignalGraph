@@ -7,8 +7,8 @@ import path from "node:path";
 import { validateJournalGraph, validateJournalSchema } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { QUOTE_INDEX_VERSION, buildQuoteGeneration, splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
-import { POINTER_DROP_REASONS, POINTER_NAME_KINDS, POINTER_TAG_KINDS, POINTER_TAG_LIMITS, batchPointerQuotes, checkPointerTags,
-  normalizeForMatch, pointerExtraction, pointerTagIndexes, untaggedPages } from "../src/journal-import/pointer-tags.mjs";
+import { POINTER_DROP_REASONS, POINTER_NAME_KINDS, POINTER_PAGELESS_STRETCH, POINTER_TAG_KINDS, POINTER_TAG_LIMITS, batchPointerQuotes,
+  checkPointerTags, normalizeForMatch, pointerExtraction, pointerPagelessStretches, pointerTagIndexes, untaggedPages } from "../src/journal-import/pointer-tags.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { JOURNAL_READ_ONLY_MCP_TOOLS } from "../src/journal-import/http.mjs";
@@ -36,6 +36,12 @@ test("the kinds and limits are fixed", () => {
 
 const quote = (unitId, page, bytes, representationId = `rep:${page}`) => ({ unit_id: unitId, page, representation_id: representationId,
   utf8_byte_length: bytes });
+// Gives the quotes without a page number their stretches, as pointerPassInput does, taking the order given as the
+// journal's.
+const withStretches = (quotes) => {
+  const stretches = pointerPagelessStretches(quotes.map((item, index) => ({ ...item, source_order: index })));
+  return quotes.map((item) => (stretches.has(item.unit_id) ? { ...item, pageless_stretch: stretches.get(item.unit_id) } : item));
+};
 const layout = (batches) => batches.map(({ unit_ids: unitIds, pages, bytes }) => ({ unit_ids: [...unitIds], pages: [...pages], bytes }));
 
 test("batches hold consecutive whole pages within the limit", () => {
@@ -81,6 +87,7 @@ test("every quote is in exactly one batch, in order, and only a page too long by
   }
   quotes.push(quote("unit:huge", 121, 7000));
   for (let index = 0; index < 8; index += 1) quotes.push(quote(`unit:text:${index}`, null, next(1600), "rep:text"));
+  quotes.splice(0, quotes.length, ...withStretches(quotes));
   const batches = batchPointerQuotes({ quotes });
   assert.deepEqual(batches.flatMap((batch) => batch.unit_ids), quotes.map((item) => item.unit_id), "each quote once, in order");
   const bytes = new Map(quotes.map((item) => [item.unit_id, item.utf8_byte_length]));
@@ -89,7 +96,7 @@ test("every quote is in exactly one batch, in order, and only a page too long by
     assert.equal(batch.bytes, batch.unit_ids.reduce((total, unitId) => total + bytes.get(unitId), 0));
     if (batch.bytes > POINTER_TAG_LIMITS.batchMaxBytes) assert.deepEqual(batch.unit_ids, ["unit:huge"], "only a quote alone is over the limit");
   }
-  const pageOf = (item) => item.page ?? item.representation_id;
+  const pageOf = (item) => item.page ?? `${item.representation_id}#${item.pageless_stretch}`;
   for (const page of new Set(quotes.map(pageOf))) {
     const members = quotes.filter((item) => pageOf(item) === page);
     const total = members.reduce((sum, item) => sum + item.utf8_byte_length, 0);
@@ -113,17 +120,26 @@ test("batch IDs are digests of their quotes, the same every time", () => {
   assert.ok(Object.isFrozen(first) && Object.isFrozen(first[0]) && Object.isFrozen(first[0].unit_ids) && Object.isFrozen(first[0].pages));
 });
 
-test("quotes without a page number are grouped by representation", () => {
-  const quotes = [quote("t1", null, 200, "rep:a"), quote("t2", null, 200, "rep:a"), quote("t3", null, 300, "rep:b"), quote("t4", 7, 100, "rep:c"),
-    quote("t5", null, 100, "rep:d")];
+test("quotes without a page number are paged by their stretch, about a page of consecutive quotes", () => {
+  assert.deepEqual(POINTER_PAGELESS_STRETCH, { bytes: 4096, quotes: 40 });
+  const quotes = withStretches([quote("t1", null, 200, "rep:a"), quote("t2", null, 200, "rep:a"), quote("t3", null, 300, "rep:b"),
+    quote("t4", 7, 100, "rep:c"), quote("t5", null, 100, "rep:d")]);
   assert.deepEqual(layout(batchPointerQuotes({ quotes, maxBytes: 500 })), [
-    { unit_ids: ["t1", "t2"], pages: ["rep:a"], bytes: 400 },
-    { unit_ids: ["t3", "t4", "t5"], pages: ["rep:b", 7, "rep:d"], bytes: 500 }
+    { unit_ids: ["t1", "t2"], pages: ["rep:a#000000"], bytes: 400 },
+    { unit_ids: ["t3", "t4", "t5"], pages: ["rep:b#000000", 7, "rep:d#000000"], bytes: 500 }
   ]);
-  // A long text journal is one representation without pages: its quotes go in consecutive groups.
-  const journal = Array.from({ length: 7 }, (_, index) => quote(`j${index}`, null, 200, "rep:journal"));
-  assert.deepEqual(batchPointerQuotes({ quotes: journal, maxBytes: 500 }).map((batch) => [...batch.unit_ids]),
+  // A long text journal is one representation without pages: a stretch closes before 4,096 bytes or 40 quotes, and a
+  // stretch longer than a batch goes in consecutive groups, like a long page.
+  const journal = withStretches(Array.from({ length: 30 }, (_, index) => quote(`j${index}`, null, 200, "rep:journal")));
+  assert.deepEqual([...new Set(journal.map((item) => item.pageless_stretch))], [0, 1]);
+  assert.equal(journal.filter((item) => item.pageless_stretch === 0).length, 20);
+  assert.deepEqual(batchPointerQuotes({ quotes: journal.slice(0, 7), maxBytes: 500 }).map((batch) => [...batch.unit_ids]),
     [["j0", "j1"], ["j2", "j3"], ["j4", "j5"], ["j6"]]);
+  const headings = withStretches(Array.from({ length: 90 }, (_, index) => quote(`h${index}`, null, 12, "rep:headings")));
+  assert.deepEqual([0, 1, 2].map((stretch) => headings.filter((item) => item.pageless_stretch === stretch).length), [40, 40, 10]);
+  // Every page untagged is named by its stretch, so one tagged quote can't make a whole text journal count as tagged.
+  assert.deepEqual(untaggedPages({ quotes: journal, taggedUnitIds: ["j0"] }), ["rep:journal#000001"]);
+  assert.throws(() => batchPointerQuotes({ quotes: [quote("t1", null, 200, "rep:a")] }), { code: "POINTER_BATCH_INPUT_INVALID" });
 });
 
 test("malformed batching input is refused", () => {
@@ -550,11 +566,11 @@ test("the tag indexes give each quote its tags and each topic or event word its 
   assert.deepEqual(pointerTagIndexes({ batches: [{ units, kept, passageIdForUnit }] }).pairs, indexes.pairs);
   assert.ok(Object.isFrozen(indexes) && Object.isFrozen(indexes.pairs[0]) && Object.isFrozen(indexes.quote_tags.get(passageOf("Promenade"))));
 
-  // A page whose answer gave it no tag, and one whose every tag was dropped. A page without a number is named by its
-  // representation.
+  // A page whose answer gave it no tag, and one whose every tag was dropped. A quote without a page number is paged by
+  // its stretch, named by its representation and index.
   assert.deepEqual(untaggedPages({ quotes, taggedUnitIds: indexes.tagged_unit_ids }), [4, 5]);
-  const notes = { unit_id: "unit:notes", page: null, representation_id: "rep:notes", utf8_byte_length: 12 };
-  assert.deepEqual(untaggedPages({ quotes: [...quotes, notes], taggedUnitIds: new Set(indexes.tagged_unit_ids) }), [4, 5, "rep:notes"]);
+  const notes = { unit_id: "unit:notes", page: null, representation_id: "rep:notes", utf8_byte_length: 12, pageless_stretch: 0 };
+  assert.deepEqual(untaggedPages({ quotes: [...quotes, notes], taggedUnitIds: new Set(indexes.tagged_unit_ids) }), [4, 5, "rep:notes#000000"]);
   assert.deepEqual(untaggedPages({ quotes: [...quotes, notes], taggedUnitIds: [...indexes.tagged_unit_ids, "unit:notes"] }), [4, 5]);
   assert.throws(() => untaggedPages({ quotes, taggedUnitIds: "unit:notes" }), { code: "POINTER_PAGES_INPUT_INVALID" });
   assert.throws(() => untaggedPages({ quotes: [notes, notes], taggedUnitIds: [] }), { code: "POINTER_PAGES_INPUT_INVALID" });
