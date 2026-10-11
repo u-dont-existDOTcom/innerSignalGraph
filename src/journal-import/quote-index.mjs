@@ -396,11 +396,20 @@ const EMPTY_EXTRACTION = (units) => ({
  *
  * `stats` counts all of it without content: the entry lines of each kind, the quotes left undated by
  * the carry limit, and the line openings that look like a date but weren't read as one.
+ *
+ * Each quote unit carries its place in the whole journal (`source_order`), so anything an extraction
+ * makes from it is ordered across pages. `extractionFor({ representation, units, quoteMeta,
+ * passageIdForUnit })`, when given, supplies a page's extraction in place of the empty one, once the
+ * page's quotes and their dates are known (the pointer pass's tags, plan Part 3). It may add entities
+ * and episodes, but no passage: the page's passages stay exactly its quotes.
  */
-export function buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId, mediaType, representations, unitOptions = {}, dateOptions = {} }) {
+export function buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId, mediaType, representations, unitOptions = {}, dateOptions = {},
+  extractionFor = null }) {
   invariant(typeof caseId === "string" && typeof corpusId === "string" && typeof generation === "string", "QUOTE_GENERATION_IDENTITY_INVALID");
   invariant(typeof originalObjectId === "string" && originalObjectId.length > 0 && typeof mediaType === "string", "QUOTE_GENERATION_SOURCE_INVALID");
   invariant(Array.isArray(representations), "QUOTE_GENERATION_REPRESENTATIONS_INVALID");
+  invariant(extractionFor === null || typeof extractionFor === "function", "QUOTE_GENERATION_EXTRACTION_INVALID");
+  let sourceOrder = 0;
   const { numericOrder, carryPages, carryQuotes } = quoteDateOptions(dateOptions);
   const nodes = [], edges = [];
   const quoteMeta = new Map();
@@ -417,9 +426,10 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
     // A page not fully read may hide a date line or a new year: nothing carries into it, and no date
     // after it takes its year from before it.
     if (!complete) { current = null; context = null; }
-    const units = splitQuoteUnits({ representationId, text, ...unitOptions, numericOrder });
+    const units = splitQuoteUnits({ representationId, text, ...unitOptions, numericOrder })
+      .map((unit) => Object.freeze({ ...unit, source_order: sourceOrder++ }));
     countUnreadDateShapes(text, numericOrder, unread);
-    const graph = adaptExtractionToGraph({
+    const adapt = (extraction) => adaptExtractionToGraph({
       caseId,
       corpusId,
       generation,
@@ -433,12 +443,11 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         page
       },
       units,
-      extraction: EMPTY_EXTRACTION(units),
+      extraction,
       producerRef: QUOTE_INDEX_VERSION,
       localIdNamespace: QUOTE_INDEX_VERSION
     });
-    nodes.push(...graph.nodes);
-    edges.push(...graph.edges);
+    let graph = adapt(EMPTY_EXTRACTION(units));
     const passageByUnit = new Map(graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.unit_id, node.id]));
     const textBytes = Buffer.from(text, "utf8");
     for (const unit of units) {
@@ -493,6 +502,15 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         written
       }]);
     }
+    if (extractionFor) {
+      const passages = (pageGraph) => pageGraph.nodes.filter((node) => node.kind === "passage").map((node) => node.id).sort();
+      const quotePassages = passages(graph);
+      graph = adapt(extractionFor({ representation, units, quoteMeta, passageIdForUnit: (unitId) => passageByUnit.get(unitId) ?? null }));
+      const extracted = passages(graph);
+      invariant(extracted.length === quotePassages.length && extracted.every((id, index) => id === quotePassages[index]), "QUOTE_GENERATION_EXTRACTION_ADDS_PASSAGE");
+    }
+    nodes.push(...graph.nodes);
+    edges.push(...graph.edges);
     if (!complete) { current = null; context = null; }
   }
   const byKey = ([left], [right]) => left.localeCompare(right);
