@@ -46,35 +46,49 @@ function deepFreeze(value) {
   return value;
 }
 
+// One quote as a coverage-judge call sends it, with its questions, and the characters it takes there (its JSON).
+const sentQuote = (quote) => ({ unit_id: quote.unit_id, text: quote.text,
+  questions: quote.questions.map(({ question_id: questionId, question, critical, event }) => ({ question_id: questionId,
+    question, critical, event })) });
+const sentChars = (sent) => JSON.stringify(sent).length;
+
 /**
- * Checks the question writer's answer for one sampled unit. `quoteIds` are the unit's quotes; `sampleIndex` is the
- * unit's place in the sample and `attempt` 0 or 1 (its retry), which together make each question's ID,
- * `question:<sampleIndex>:<attempt>:<n>` in the answer's order, unique across the reference and its retries. The set is
- * complete when every question names one of the unit's quotes and every quote has at least one question; only then are
- * its questions returned, each with the writer's `critical` and `event` marks. Counts say what is wrong otherwise.
+ * Checks the question writer's answer for one sampled unit. `quoteIds` are the unit's quotes and `texts` their text
+ * (a Map from quote ID); `sampleIndex` is the unit's place in the sample and `attempt` 0 or 1 (its retry), which
+ * together make each question's ID, `question:<sampleIndex>:<attempt>:<n>` in the answer's order, unique across the
+ * reference and its retries. The set is complete when every question names one of the unit's quotes, every quote has
+ * at least one question, and each quote with its questions, exactly as a coverage-judge call sends them (its JSON,
+ * escapes and all), fits one call (POINTER_COVERAGE_CALL_CHARS), since a quote's questions are never split across
+ * calls; only then are its questions returned, each with the writer's `critical` and `event` marks. Counts say what is
+ * wrong otherwise. A set with a quote too long to judge is checked here, before any call, like a set that misses a
+ * quote: the unit gets the writer's one retry, and a retry still too long leaves the unit a nonresponse.
  */
-export function checkQuestionSet({ sampleIndex, attempt, quoteIds, answer } = {}) {
-  invariant(isCount(sampleIndex) && (attempt === 0 || attempt === 1) && isDistinctIds(quoteIds) && quoteIds.length > 0,
-    "POINTER_QUESTION_SET_INPUT_INVALID");
+export function checkQuestionSet({ sampleIndex, attempt, quoteIds, texts, answer } = {}) {
+  invariant(isCount(sampleIndex) && (attempt === 0 || attempt === 1) && isDistinctIds(quoteIds) && quoteIds.length > 0
+    && texts instanceof Map && quoteIds.every((id) => typeof texts.get(id) === "string"), "POINTER_QUESTION_SET_INPUT_INVALID");
   const shaped = isObject(answer) && Array.isArray(answer.questions) && answer.questions.length > 0
     && answer.questions.every((item) => isObject(item) && isId(item.unit_id) && typeof item.question === "string"
       && item.question.length > 0 && typeof item.critical === "boolean" && typeof item.event === "boolean");
   if (!shaped) {
     return deepFreeze({ complete: false, answer_valid: false, questions: [], foreign_questions: 0,
-      quotes_without_question: quoteIds.length });
+      quotes_without_question: quoteIds.length, quotes_too_long: 0 });
   }
   const known = new Set(quoteIds);
   const asked = new Set(answer.questions.map((item) => item.unit_id));
   const foreign = answer.questions.filter((item) => !known.has(item.unit_id)).length;
   const without = quoteIds.filter((id) => !asked.has(id)).length;
-  const complete = foreign === 0 && without === 0;
+  const questions = answer.questions.map((item, index) => ({ question_id: `question:${sampleIndex}:${attempt}:${index}`,
+    unit_id: item.unit_id, question: item.question, critical: item.critical, event: item.event }));
+  const tooLong = foreign === 0 && without === 0 ? quoteIds.filter((id) => 2 + sentChars(sentQuote({ unit_id: id, text: texts.get(id),
+    questions: questions.filter((item) => item.unit_id === id) })) > POINTER_COVERAGE_CALL_CHARS).length : 0;
+  const complete = foreign === 0 && without === 0 && tooLong === 0;
   return deepFreeze({
     complete,
     answer_valid: true,
-    questions: complete ? answer.questions.map((item, index) => ({ question_id: `question:${sampleIndex}:${attempt}:${index}`,
-      unit_id: item.unit_id, question: item.question, critical: item.critical, event: item.event })) : [],
+    questions: complete ? questions : [],
     foreign_questions: foreign,
-    quotes_without_question: without
+    quotes_without_question: without,
+    quotes_too_long: tooLong
   });
 }
 
@@ -84,9 +98,10 @@ const isMarkedQuestion = (item) => isObject(item) && isId(item.question_id) && t
 /**
  * A coverage judge's calls: every quote with its questions (`question_id`, `question` and the writer's `critical` and
  * `event` marks), in the order given. A call closes before a quote that would take it past 25 quotes or past
- * POINTER_COVERAGE_CALL_CHARS of quotes and questions. A quote's questions are never split across calls, and a unit's
- * question set holds at most 800 questions, so one quote with all 800 at the longest a question may be still fits a call
- * of its own. Each of the two judges, the Codex one in calls of its own and the Claude one, gets the same calls.
+ * POINTER_COVERAGE_CALL_CHARS of quotes and questions as the call sends them. A quote's questions are never split across
+ * calls, so each quote must fit a call of its own; checkQuestionSet holds back any set with a quote that doesn't, and a
+ * quote that doesn't is refused here rather than sent to a route that would refuse it. Each of the two judges, the Codex
+ * one in calls of its own and the Claude one, gets the same calls.
  */
 export function coverageJudgeCalls({ quotes } = {}) {
   invariant(Array.isArray(quotes) && quotes.every((quote) => isObject(quote) && isId(quote.unit_id) && typeof quote.text === "string"
@@ -98,11 +113,10 @@ export function coverageJudgeCalls({ quotes } = {}) {
   const calls = [];
   let open = null;
   for (const quote of quotes) {
-    const sent = { unit_id: quote.unit_id, text: quote.text,
-      questions: quote.questions.map(({ question_id: questionId, question, critical, event }) => ({ question_id: questionId,
-        question, critical, event })) };
+    const sent = sentQuote(quote);
     // The call's quotes as JSON: its brackets, each quote, and a comma between two.
-    const chars = JSON.stringify(sent).length;
+    const chars = sentChars(sent);
+    invariant(2 + chars <= POINTER_COVERAGE_CALL_CHARS, "POINTER_COVERAGE_QUOTE_TOO_LARGE");
     if (!open || open.quotes.length >= POINTER_COVERAGE_QUOTES_PER_CALL || open.chars + 1 + chars > POINTER_COVERAGE_CALL_CHARS) {
       open = { call_index: calls.length, quotes: [], chars: 1 };
       calls.push(open);

@@ -11,6 +11,7 @@ import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket } from "../src/journal
 // is invented.
 
 const QUOTES = ["unit:one", "unit:two"];
+const TEXTS = new Map([["unit:one", "My sister came for the weekend; it rained in the mountains."], ["unit:two", "I want to move back to the village."]]);
 const writerAnswer = () => ({
   schema_version: "1.0",
   questions: [
@@ -23,31 +24,60 @@ const judgment = (unitId, change = {}) => ({ unit_id: unitId, covered: true, mis
   event_question_ids: [], repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [], ...change });
 
 test("a question set is complete when every quote has a question and every question names one of the unit's quotes", () => {
-  const set = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: writerAnswer() });
+  const set = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: writerAnswer() });
   assert.equal(set.complete, true);
   assert.deepEqual(set.questions.map((item) => [item.question_id, item.unit_id, item.critical, item.event]), [
     ["question:7:0:0", "unit:one", false, true], ["question:7:0:1", "unit:one", false, false], ["question:7:0:2", "unit:two", true, false]]);
   assert.ok(Object.isFrozen(set) && Object.isFrozen(set.questions[0]));
   // A retry's questions have their own IDs.
-  assert.equal(checkQuestionSet({ sampleIndex: 7, attempt: 1, quoteIds: QUOTES, answer: writerAnswer() }).questions[0].question_id,
+  assert.equal(checkQuestionSet({ sampleIndex: 7, attempt: 1, quoteIds: QUOTES, texts: TEXTS, answer: writerAnswer() }).questions[0].question_id,
     "question:7:1:0");
 
   const withoutTwo = { ...writerAnswer(), questions: writerAnswer().questions.slice(0, 2) };
-  assert.deepEqual(checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: withoutTwo }),
-    { complete: false, answer_valid: true, questions: [], foreign_questions: 0, quotes_without_question: 1 });
+  assert.deepEqual(checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: withoutTwo }),
+    { complete: false, answer_valid: true, questions: [], foreign_questions: 0, quotes_without_question: 1, quotes_too_long: 0 });
   const foreign = { ...writerAnswer(), questions: [...writerAnswer().questions,
     { unit_id: "unit:three", question: "Where?", critical: false, event: false }] };
-  const foreignSet = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: foreign });
+  const foreignSet = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: foreign });
   assert.deepEqual([foreignSet.complete, foreignSet.foreign_questions, foreignSet.questions.length], [false, 1, 0]);
   for (const answer of [null, {}, { questions: [] }, { questions: [{ unit_id: "unit:one", question: "", critical: false, event: false }] },
     { questions: [{ unit_id: "unit:one", question: "What happened?", critical: false }] }]) {
-    const checked = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer });
+    const checked = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer });
     assert.deepEqual([checked.complete, checked.answer_valid, checked.quotes_without_question], [false, false, 2]);
   }
-  for (const input of [{ sampleIndex: -1, attempt: 0, quoteIds: QUOTES }, { sampleIndex: 0, attempt: 2, quoteIds: QUOTES },
-    { sampleIndex: 0, attempt: 0, quoteIds: [] }, { sampleIndex: 0, attempt: 0, quoteIds: ["unit:one", "unit:one"] }]) {
+  for (const input of [{ sampleIndex: -1, attempt: 0, quoteIds: QUOTES, texts: TEXTS }, { sampleIndex: 0, attempt: 2, quoteIds: QUOTES, texts: TEXTS },
+    { sampleIndex: 0, attempt: 0, quoteIds: [], texts: TEXTS }, { sampleIndex: 0, attempt: 0, quoteIds: ["unit:one", "unit:one"], texts: TEXTS },
+    { sampleIndex: 0, attempt: 0, quoteIds: QUOTES }, { sampleIndex: 0, attempt: 0, quoteIds: QUOTES, texts: new Map([["unit:one", "Text."]]) }]) {
     assert.throws(() => checkQuestionSet({ ...input, answer: writerAnswer() }), { code: "POINTER_QUESTION_SET_INPUT_INVALID" });
   }
+});
+
+test("a question set with a quote too long to judge in one call is held back before any call, so the unit gets its retry", () => {
+  // One quote with 800 questions of 400 characters: plain, it fits a call; with 100 double quotes in each question,
+  // which the call escapes, it doesn't.
+  const text = new Map([["unit:one", "t".repeat(1600)]]);
+  const answer = (question) => ({ schema_version: "1.0", questions: Array.from({ length: 800 }, () => ({ unit_id: "unit:one", question,
+    critical: false, event: false })) });
+  const plain = checkQuestionSet({ sampleIndex: 999, attempt: 1, quoteIds: ["unit:one"], texts: text, answer: answer("q".repeat(400)) });
+  assert.deepEqual([plain.complete, plain.quotes_too_long, plain.questions.length], [true, 0, 800]);
+  const escaped = checkQuestionSet({ sampleIndex: 999, attempt: 1, quoteIds: ["unit:one"], texts: text,
+    answer: answer(`${"q".repeat(300)}${'"'.repeat(100)}`) });
+  assert.deepEqual([escaped.complete, escaped.answer_valid, escaped.quotes_too_long, escaped.questions.length], [false, true, 1, 0]);
+  // The plain set's quote fits one call, and that call fits Claude's packet limit; the escaped one, past both limits, is
+  // refused rather than sent.
+  const quote = (set) => ({ unit_id: "unit:one", text: text.get("unit:one"), questions: set.questions.map((item) => ({ question_id: item.question_id,
+    question: item.question, critical: item.critical, event: item.event })) });
+  const calls = coverageJudgeCalls({ quotes: [quote(plain)] });
+  assert.equal(calls.length, 1);
+  assert.equal(hardestJournalPacketFits("coverage_judge", coveragePacket(calls[0].quotes)), true);
+  const escapedQuote = { ...quote(plain), questions: quote(plain).questions.map((item) => ({ ...item, question: `${"q".repeat(300)}${'"'.repeat(100)}` })) };
+  assert.ok(JSON.stringify([escapedQuote]).length > POINTER_COVERAGE_CALL_CHARS);
+  assert.equal(hardestJournalPacketFits("coverage_judge", coveragePacket([escapedQuote])), false);
+  assert.throws(() => coverageJudgeCalls({ quotes: [escapedQuote] }), { code: "POINTER_COVERAGE_QUOTE_TOO_LARGE" });
+  // A set held back this way is an incomplete set: the unit's one retry, then a nonresponse.
+  assert.deepEqual(referenceUnitStep({ quoteIds: ["unit:one"], attempts: [{ set: escaped, coverage: null }] }), { step: "write", attempt: 1, notes: [] });
+  assert.deepEqual(referenceUnitStep({ quoteIds: ["unit:one"], attempts: [{ set: escaped, coverage: null }, { set: escaped, coverage: null }] }),
+    { step: "nonresponse", reason: "questions_incomplete" });
 });
 
 test("the coverage judge gets 25 quotes to a call, each with all its questions", () => {
@@ -160,8 +190,8 @@ test("a coverage answer that misses a quote, judges one twice or lists another q
 test("a unit gets one writer retry in all, and a unit still incomplete after it is a nonresponse", () => {
   assert.deepEqual(POINTER_REFERENCE_NONRESPONSE_REASONS, ["questions_incomplete", "coverage_unconfirmed", "coverage_check_failed",
     "searches_incomplete", "deadline"]);
-  const set = (attempt) => checkQuestionSet({ sampleIndex: 7, attempt, quoteIds: QUOTES, answer: writerAnswer() });
-  const incomplete = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: { questions: writerAnswer().questions.slice(0, 1) } });
+  const set = (attempt) => checkQuestionSet({ sampleIndex: 7, attempt, quoteIds: QUOTES, texts: TEXTS, answer: writerAnswer() });
+  const incomplete = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: { questions: writerAnswer().questions.slice(0, 1) } });
   const judge = (confirmed, notes = [], marks = {}) => ({ quotes: [
     { unit_id: "unit:one", confirmed: confirmed[0], critical_question_ids: [], event_question_ids: marks.event ?? ["question:7:0:0"] },
     { unit_id: "unit:two", confirmed: confirmed[1], critical_question_ids: marks.critical ?? ["question:7:0:2"], event_question_ids: [] }], notes });

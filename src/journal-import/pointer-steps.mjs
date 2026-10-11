@@ -91,7 +91,8 @@ export async function runPointerReference({ units, seed = null, sample: given = 
         const outcome = outcomes[position];
         noteLate(unit, outcome);
         unit.attempts.push({ set: outcome.status === "answered"
-          ? checkQuestionSet({ sampleIndex: unit.index, attempt: round, quoteIds: unit.quote_ids, answer: outcome.output }) : null, coverage: null });
+          ? checkQuestionSet({ sampleIndex: unit.index, attempt: round, quoteIds: unit.quote_ids,
+            texts: new Map(unit.quote_ids.map((id) => [id, quoteById.get(id).text])), answer: outcome.output }) : null, coverage: null });
       });
     }
     // Both coverage judges, on every quote whose unit's questions are complete, 25 quotes to a call.
