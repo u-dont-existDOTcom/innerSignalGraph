@@ -409,6 +409,11 @@ test("the question set and the coverage judgment hold their fields and nothing e
     assert.throws(() => validateJournalSchema("question-set-result", mutate(questions, change)), invalid, name);
   }
   validateJournalSchema("question-set-result", mutate(questions, (copy) => { copy.questions[0].question = "é".repeat(400); }));
+  // A unit of 40 short quotes that say many things each needs room: 1,000 questions fit one answer, 1,001 don't.
+  const many = (count) => mutate(questions, (copy) => { copy.questions = Array.from({ length: count }, (_, index) => ({ ...questions.questions[0],
+    question: `Synthetic question ${index}?` })); });
+  assert.equal(validateJournalSchema("question-set-result", many(1000)).questions.length, 1000);
+  assert.throws(() => validateJournalSchema("question-set-result", many(1001)), invalid);
   const coverage = coverageAnswer();
   for (const [name, change] of [
     ["no judgment", (copy) => { copy.judgments = []; }],
@@ -430,6 +435,11 @@ test("the question set and the coverage judgment hold their fields and nothing e
   ]) {
     assert.throws(() => validateJournalSchema("coverage-judgment-result", mutate(coverage, change)), invalid, name);
   }
+  // A judge can list every question of a quote that has as many as one answer may hold, and no more.
+  const listing = (count) => mutate(coverage, (copy) => { copy.judgments[0].critical_question_ids = Array.from({ length: count },
+    (_, index) => `question:${index}`); });
+  assert.equal(validateJournalSchema("coverage-judgment-result", listing(1000)).judgments[0].critical_question_ids.length, 1000);
+  assert.throws(() => validateJournalSchema("coverage-judgment-result", listing(1001)), invalid);
 });
 
 test("the reference roles' packets carry only their own fields", () => {

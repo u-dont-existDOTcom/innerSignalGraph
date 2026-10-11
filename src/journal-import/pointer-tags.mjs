@@ -53,7 +53,7 @@ function deepFreeze(value) {
  * The pointer pass's page in a representation without page numbers (a plain-text journal is one): a stretch of
  * consecutive quotes holding at most `bytes` of their text and at most `quotes` of them, about a page, so batching,
  * coverage, the pilot's draw and the reference sample all count such a journal in pages, and one question writer's
- * answer (200 questions at most, one or more for each quote) can cover a stretch.
+ * answer (1,000 questions at most, one or more for each quote) can cover a stretch.
  */
 export const POINTER_PAGELESS_STRETCH = Object.freeze({ bytes: 4096, quotes: 40 });
 

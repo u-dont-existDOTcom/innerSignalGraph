@@ -260,7 +260,7 @@ test("a journal without pages is drawn in stretches of about a page, so no quest
     assert.deepEqual(unit.quote_ids, [0, 1, 2, 3].map((offset) => `unit:t${index * 4 + offset}`));
   });
   // A quote longer than a stretch stands alone, and a stretch of short quotes closes at 40, so its question writer's
-  // answer, one question or more for each quote and 200 at most, always fits.
+  // answer, one question or more for each quote and 1,000 at most, always fits.
   const long = pagelessQuotes(3, 1000).map((quote, index) => (index === 1 ? { ...quote, text: "l".repeat(5000) } : quote));
   assert.deepEqual(pointerReferenceSample({ units: long, seed: "s" }).units.map((unit) => unit.quote_ids.length).sort(), [1, 1, 1]);
   const headings = pagelessQuotes(100, 20);
@@ -279,7 +279,7 @@ test("a journal without pages is drawn in stretches of about a page, so no quest
     page_number: null }] }), { code: "POINTER_CHALLENGE_INPUT_INVALID" });
 });
 
-test("a page denser than a stretch is sampled in parts of at most 40 quotes, and its calibration unit lies on every part", () => {
+test("a page denser than a stretch is sampled in parts of at most 40 quotes and 4 KB, and its calibration unit lies on every part", () => {
   // Page 2 holds 90 short date headings; pages 1 and 3 one paragraph each.
   const units = [{ page: 1, count: 1 }, { page: 2, count: 90 }, { page: 3, count: 1 }].flatMap(({ page, count }) => Array.from({ length: count },
     (_, index) => ({ page, index }))).map(({ page, index }, order) => ({ unit_id: `unit:p${page}h${index}`, page, representation_id: `pdf:page:${page}`,
@@ -291,6 +291,19 @@ test("a page denser than a stretch is sampled in parts of at most 40 quotes, and
     hazard_types: ["parser_warning"] }] });
   assert.deepEqual(challenge.units.map((unit) => [unit.unit_id, unit.hazards]),
     [["page:2:0", ["parser_warning"]], ["page:2:1", ["parser_warning"]], ["page:2:2", ["parser_warning"]]]);
+
+  // A page of long paragraphs is cut by their bytes: two of 1,500 bytes fit in 4,096, a third starts the next part,
+  // so no question writer gets more of a page's facts than a stretch holds. A page within both bounds stays whole.
+  const long = [1, 2, 3, 4].map((index) => ({ unit_id: `unit:long${index}`, page: 7, representation_id: "pdf:page:7",
+    text: `${index} ${"w".repeat(1498)}`, source_order: index }));
+  assert.deepEqual(pointerReferenceSample({ units: long, seed: "s" }).units.map((unit) => [unit.unit_id, unit.quote_ids]).sort(),
+    [["page:7:0", ["unit:long1", "unit:long2"]], ["page:7:1", ["unit:long3", "unit:long4"]]]);
+  assert.deepEqual(pointerReferenceSample({ units: long.slice(0, 2), seed: "s" }).units.map((unit) => unit.unit_id), ["page:7"]);
+  // A paged quote needs its text, or its length, to be placed in a part.
+  assert.throws(() => pointerChallengeUnits({ units: [{ unit_id: "unit:x", page: 7, representation_id: "pdf:page:7", source_order: 0 }],
+    calibration: [] }), { code: "POINTER_CHALLENGE_INPUT_INVALID" });
+  assert.equal(pointerChallengeUnits({ units: [{ unit_id: "unit:x", page: 7, representation_id: "pdf:page:7", source_order: 0,
+    utf8_byte_length: 12 }], calibration: [{ unit_id: "c", representation_id: "pdf:page:7", page_number: 7 }] }).units[0].unit_id, "page:7");
 });
 
 test("a calibration unit read from a page's visual transcription lies on that transcription's quotes, never on the native page's", () => {

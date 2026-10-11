@@ -207,22 +207,31 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 // The units the sample is drawn from, each with its quotes in journal order, ordered by their first quote. A unit is a
 // page; in a representation without page numbers (a plain-text journal is one) it is a stretch of consecutive quotes
 // (pointerPagelessStretches, the pass's pages there too), so no unit holds more than about a page and no question
-// writer's answer has to cover a whole journal. A page holding more quotes than a stretch may (a dense page of short
-// date headings, say) is cut the same way, into parts of consecutive quotes, so every unit's questions, one or more a
-// quote, fit one answer of at most 200. The challenge set names its units the same way.
+// writer's answer has to cover a whole journal. A page holding more than a stretch may, more than 40 quotes (a dense
+// page of short date headings, say) or more than 4 KB of their text, is cut the same way, into parts of consecutive
+// quotes. Every unit then holds at most 40 quotes and 4 KB of their text, or a single longer quote, so its questions,
+// one for each thing each of its quotes says, fit one answer of at most 1,000, one for every four bytes of text. The
+// challenge set names its units the same way.
 function samplingUnits(quotes) {
   const units = new Map();
   const stretches = pointerPagelessStretches(quotes);
   const ordered = [...quotes].sort((left, right) => left.source_order - right.source_order);
-  const onPage = new Map();
-  for (const quote of ordered) if (Number.isSafeInteger(quote.page)) onPage.set(quote.page, (onPage.get(quote.page) ?? 0) + 1);
-  const placed = new Map();
-  const pageUnit = (quote) => {
-    if (onPage.get(quote.page) <= POINTER_PAGELESS_STRETCH.quotes) return `page:${quote.page}`;
-    const index = placed.get(quote.page) ?? 0;
-    placed.set(quote.page, index + 1);
-    return `page:${quote.page}:${Math.floor(index / POINTER_PAGELESS_STRETCH.quotes)}`;
-  };
+  // Each page's parts, cut like stretches: a part closes before a quote that would take it past either bound.
+  const parts = new Map();
+  const open = new Map();
+  for (const quote of ordered) {
+    if (!Number.isSafeInteger(quote.page)) continue;
+    const bytes = Number.isSafeInteger(quote.utf8_byte_length) ? quote.utf8_byte_length : Buffer.byteLength(quote.text, "utf8");
+    let part = open.get(quote.page);
+    if (!part || part.bytes + bytes > POINTER_PAGELESS_STRETCH.bytes || part.quotes >= POINTER_PAGELESS_STRETCH.quotes) {
+      part = { index: part ? part.index + 1 : 0, bytes: 0, quotes: 0 };
+      open.set(quote.page, part);
+    }
+    part.bytes += bytes;
+    part.quotes += 1;
+    parts.set(quote.unit_id, part.index);
+  }
+  const pageUnit = (quote) => (open.get(quote.page).index === 0 ? `page:${quote.page}` : `page:${quote.page}:${parts.get(quote.unit_id)}`);
   for (const quote of ordered) {
     const unitId = Number.isSafeInteger(quote.page) ? pageUnit(quote)
       : `representation:${sha256(quote.representation_id).slice(0, 32)}:${stretches.get(quote.unit_id)}`;
@@ -279,7 +288,8 @@ export function pointerChallengeUnits({ units, calibration } = {}) {
     && value.start_byte >= 0 && value.start_byte < value.end_byte;
   invariant(Array.isArray(units) && units.every((unit) => isObject(unit) && isId(unit.unit_id) && Number.isSafeInteger(unit.source_order)
     && typeof unit.representation_id === "string" && unit.representation_id.length > 0
-    && (Number.isSafeInteger(unit.page) || (typeof unit.text === "string" && isRange(unit)))), "POINTER_CHALLENGE_INPUT_INVALID");
+    && (Number.isSafeInteger(unit.page) ? typeof unit.text === "string" || Number.isSafeInteger(unit.utf8_byte_length)
+      : typeof unit.text === "string" && isRange(unit))), "POINTER_CHALLENGE_INPUT_INVALID");
   invariant(Array.isArray(calibration) && calibration.every((item) => isObject(item) && typeof item.unit_id === "string"
     && typeof item.representation_id === "string" && item.representation_id.length > 0
     && (Number.isSafeInteger(item.page_number) || isRange(item))
