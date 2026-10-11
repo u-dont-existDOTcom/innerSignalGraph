@@ -398,8 +398,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   of dollars for a journal this size, depending on the model. The pilot measures tokens per page, and the provider's
   price list at that time gives the cost.
 - **Measuring.** 96 reference answers and 96 search-writing answers on the same Codex slots, about half an hour,
-  which can run while the pass does. The precision check is 12 calls for each judge; the Claude judge's 12, one at a
-  time at the Claude lane's current seven minutes or so a call, take about an hour and a half and fit in a day's 40.
+  which can run while the pass does. The precision check is at most 350 pairs, 14 calls for each judge; the Claude
+  judge's 14, one at a time at the Claude lane's current seven minutes or so a call, take under two hours and fit in a
+  day's 40.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
@@ -449,16 +450,23 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Tag precision.** It is measured on tag–quote pairs, the way search uses tags: each quote a kept tag is anchored in
   makes one pair, so a tag on a hundred quotes is a hundred pairs, and a wrong one weighs as much as the wrong hits it
   causes.
-  - A fixed sample of 300 pairs (all of them, if there are fewer), drawn from that generation with a recorded seed, is
-    scored by two independent judges, one Codex and one Claude. Each judge is shown the exact quote, the tag's label
-    and kind, and asked whether that quote really mentions or concerns what the label names, and whether the kind is
-    right. Pairs go 25 to a call.
+  - It is gated for each kind that adds meaning the words don't carry, topics and events: those labels are what
+    `tag_terms` adds to search and what the timeline shows. Each of the two gets its own fixed sample of 150 of its
+    pairs (all of them, if there are fewer), drawn from that generation with a recorded seed, so pairs of one kind
+    can't carry another. Name pairs (people, places, organizations), which code grounds by requiring the name in every
+    anchor, get a sample of 50 that is reported with its bound but not gated.
+  - A kind with fewer than 29 pairs can't reach the floor even if every pair is right, so the pass builds its
+    generation without that kind's tags, before anything is measured, and the report says so. The rule looks only at
+    counts, never at judgments.
+  - Each sampled pair is scored by two independent judges, one Codex and one Claude. Each judge is shown the exact
+    quote, the tag's label and kind, and asked whether that quote really mentions or concerns what the label names,
+    and whether the kind is right. Pairs go 25 to a call.
   - Both judges score every sampled pair, and a pair counts as correct only when both say so. A judge call that fails
     gets one retry, and a pair still unscored by either judge counts as wrong, which can only lower the bound. Their
     agreement (raw agreement and Cohen's kappa, reported as undefined when the judges give one answer throughout) and
     the number of disagreements are reported; agreement is never a gate.
-  - The sample's size is fixed before scoring and the sample is scored once, so its one-sided 95% Clopper-Pearson
-    bound is computed once, with no stopping early. With no pairs at all, the bound is 0.
+  - Each sample's size is fixed before scoring and each is scored once, so its one-sided 95% Clopper-Pearson bound is
+    computed once, with no stopping early.
 - **Floors** (stated now; the owner approves them by merging this plan, and only the owner can change them). The pass
   is published only when every one holds. A pass with no tags fails, and so does one that leaves more than 2% of the
   pages without a kept tag:
@@ -470,8 +478,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     is on the point estimate, with its lower bound reported: it is there to stop a pass that adds nothing, and a pass
     with no tags finds none of them. If word search misses no sampled question, there is nothing to gain, and the
     report says so in place of this floor;
-  - **precision:** the one-sided 95% lower bound of pair precision is at least 90%, each kind also reported on its
-    own;
+  - **precision:** for topics and for events, each on its own sample, the one-sided 95% lower bound of pair precision
+    is at least 90%. A kind the generation has no pairs of has nothing to gate, and the report says so;
   - **coverage:** at most 2% of the pages with quotes are untagged, each one listed with its reason. A page is
     untagged when it ends with no kept tag, whatever the reason: its batch failed twice or ran out of time, the answer
     gave it no tag, or every tag on it was dropped. So a pass whose answers are valid but nearly empty fails here.
@@ -489,8 +497,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 3. **Pilot** on 20 pages drawn from a recorded seed outside the reference sample: seconds per batch, tokens, tags kept
    and dropped, failed batches. It never looks at a reference, and nothing is published.
 4. **Full pass** on the whole journal, timed. Built, not published.
-5. **Measure** that generation against every floor: recall on the random sample, precision on a sample of its own
-   tag–quote pairs, coverage of its pages, with calibration's set reported apart. Nothing published. If coverage
+5. **Measure** that generation against every floor: recall on the random sample, precision on samples of its own
+   topic and event pairs, coverage of its pages, with calibration's set reported apart. Nothing published. If coverage
    fails, one new pass tags the untagged pages and this step runs again on its generation. If any floor fails after
    that, the generation is discarded and the counts go on the owner page.
 6. **Publish** on the owner's `deploy` exactly the measured generation, identified by its digest, and only when every
@@ -542,11 +550,13 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   first 12 results of one of its searches, so an item whose second anchor holds its negation isn't found from the
   first alone; unanswerable questions stay out of recall and are reported; a sample with no critical question is
   reported and judged for no loss on all questions alone. Precision samples tag–quote pairs, so a wrong tag on many
-  quotes counts once for each; the Clopper-Pearson arithmetic, with a bound of 0 for no pairs; the sample's size is
-  fixed before scoring and its bound computed once; a pair counts as correct only when both judges say so, and a pair
-  left unscored after a retry counts as wrong; kappa is reported as undefined when the judges give one answer
-  throughout. A pass with no tags fails the precision floor, and the gain floor whenever word search misses a
-  question; the gain floor is reported as not applicable when word search misses nothing; a page whose valid answer
+  quotes counts once for each; topics and events are each gated on their own sample of 150, so name pairs can't carry
+  a failing kind; name pairs are reported, not gated; a kind with fewer than 29 pairs is left out of the generation
+  before measuring, by its count alone; a kind with no pairs has nothing to gate; the Clopper-Pearson arithmetic; each
+  sample's size is fixed before scoring and its bound computed once; a pair counts as correct only when both judges
+  say so, and a pair left unscored after a retry counts as wrong; kappa is reported as undefined when the judges give
+  one answer throughout. A pass with no tags fails the coverage floor, and the gain floor whenever word search misses
+  a question; the gain floor is reported as not applicable when word search misses nothing; a page whose valid answer
   gave it no tag, or whose tags were all dropped, counts as untagged; an untagged share over 2% blocks publication,
   and the generation a new pass builds is measured again from the start; the words-only baseline is the same
   generation with tag matching off; publishing refuses a generation whose digest isn't the measured one.
