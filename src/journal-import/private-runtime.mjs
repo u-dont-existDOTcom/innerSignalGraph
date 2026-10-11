@@ -254,14 +254,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       capabilities: () => semanticPort.capabilities(),
       // Check immediately before the send, including after the durable intent was written.
       // A denial there is recorded as not submitted so resume cannot mistake it for a sent call.
-      async invoke(input) {
+      async invoke(input, options) {
         try { await authorize(); }
         catch (error) { error.submissionStatus = "not_submitted"; throw error; }
         if (lookaheadSupported) {
           lookahead?.markUsed(input.operationKey);
           lookaheadUsed.add(input.operationKey);
         }
-        const result = await semanticPort.invoke(input);
+        const result = await semanticPort.invoke(input, options);
         // A grant may change during a long application call. Recheck before the
         // durable port admits its result or a dependent role receives it.
         await authorize();

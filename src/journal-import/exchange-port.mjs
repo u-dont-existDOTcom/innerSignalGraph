@@ -283,7 +283,7 @@ export function createExchangeJournalInferencePort({
     return { status: "pending", workId };
   }
 
-  const checkedInput = ({ role, packet, outputSchema, operationKey, grant, tier = "standard" }, prefetch = false) => {
+  const checkedInput = ({ role, packet, outputSchema, operationKey, grant, tier = "standard", expiresAt = null }, prefetch = false) => {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
     // An invalid tier is refused below, as before; a valid one must be one the role runs on.
@@ -295,15 +295,17 @@ export function createExchangeJournalInferencePort({
     assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
     invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+    // A step with a saved deadline (the pointer pass) has its items expire then, instead of after the usual TTL.
+    invariant(expiresAt === null || (typeof expiresAt === "string" && Number.isFinite(Date.parse(expiresAt))), "JOURNAL_WORK_EXPIRY_INVALID");
     if (tier === "hardest" && !hardestJournalPacketFits(role, checkedPacket)) {
       throw new JournalInferencePortError("JOURNAL_WORK_PACKET_TOO_LARGE", { submissionStatus: "not_submitted" });
     }
-    return { role, packet: checkedPacket, outputSchema, operationKey, grant, tier,
+    return { role, packet: checkedPacket, outputSchema, operationKey, grant, tier, expiresAt,
       digest: inputDigest(role, checkedPacket, outputSchema, grant) };
   };
 
   async function publish(input, { dispatchNew = false } = {}) {
-    const { role, packet, outputSchema, operationKey, grant, tier, digest } = input;
+    const { role, packet, outputSchema, operationKey, grant, tier, expiresAt, digest } = input;
     let selected = await current(operationKey);
     // A speculative item carries no durable caller intent. Replace it on the same operation key
     // before the sequential caller creates an intent or spends a controller attempt.
@@ -346,13 +348,18 @@ export function createExchangeJournalInferencePort({
         throw new JournalInferencePortError(completion.code, { submissionStatus: "exhausted" });
       }
       const issuedAt = now();
+      const usualExpiry = issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs);
+      // Nothing is sent once a step's deadline has passed: the item could only expire unanswered.
+      if (expiresAt !== null && Date.parse(expiresAt) <= issuedAt.getTime()) {
+        throw new JournalInferencePortError("JOURNAL_STEP_DEADLINE_PASSED", { submissionStatus: "not_submitted" });
+      }
       const entry = {
         schema_version: 1, work_id: workId, case_id: caseId, role, tier,
         instruction: journalRoleInstruction(role), packet,
         output_schema_name: outputSchema, output_schema: journalSchema(outputSchema),
         expected_generation: packet.expected_generation ?? null,
         issued_at: issuedAt.toISOString(),
-        expires_at: new Date(issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs)).toISOString(),
+        expires_at: new Date(expiresAt === null ? usualExpiry : Math.min(usualExpiry, Date.parse(expiresAt))).toISOString(),
         input_sha256: digest, grant_id: grant.grant_id, grant_purpose: grant.purpose, route_ref: routeRef,
         ...(dispatchNew ? { origin: "lookahead" } : {})
       };
@@ -424,11 +431,15 @@ export function createExchangeJournalInferencePort({
     return { status: entry ? "pending" : "not_submitted" };
   }
 
-  const invoke = async (request) => {
+  // `options.waitMs` overrides the port's wait for this call: 0 sends the item without waiting, and a step with a
+  // deadline waits until then. The item stays open after the wait either way.
+  const invoke = async (request, options = {}) => {
     const { operationKey, tier = "standard" } = request;
+    const callWaitMs = options.waitMs ?? waitMs;
+    invariant(Number.isSafeInteger(callWaitMs) && callWaitMs >= 0, "JOURNAL_EXCHANGE_TIMING_INVALID");
     await publish(checkedInput(request));
 
-    const deadline = Date.now() + waitMs;
+    const deadline = Date.now() + callWaitMs;
     for (;;) {
       const observed = await observe(operationKey, { tier });
       if (observed.status === "completed") return { output: observed.output, receipt: observed.receipt };

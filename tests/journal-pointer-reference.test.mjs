@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { POINTER_COVERAGE_QUOTES_PER_CALL, POINTER_REFERENCE_NONRESPONSE_REASONS, checkCoverageJudgments, checkQuestionSet,
-  coverageJudgeCalls, referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
+import { POINTER_COVERAGE_QUOTES_PER_CALL, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE, checkCoverageJudgments,
+  checkQuestionSet, checkSearchPlan, coverageJudgeCalls, pointerReferenceSample, referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3). All text here
 // is invented.
@@ -120,7 +120,8 @@ test("a coverage answer that misses a quote, judges one twice or lists another q
 });
 
 test("a unit gets one writer retry in all, and a unit still incomplete after it is a nonresponse", () => {
-  assert.deepEqual(POINTER_REFERENCE_NONRESPONSE_REASONS, ["questions_incomplete", "coverage_unconfirmed", "coverage_check_failed", "deadline"]);
+  assert.deepEqual(POINTER_REFERENCE_NONRESPONSE_REASONS, ["questions_incomplete", "coverage_unconfirmed", "coverage_check_failed",
+    "searches_incomplete", "deadline"]);
   const set = (attempt) => checkQuestionSet({ sampleIndex: 7, attempt, quoteIds: QUOTES, answer: writerAnswer() });
   const incomplete = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: { questions: writerAnswer().questions.slice(0, 1) } });
   const judge = (confirmed, notes = [], marks = {}) => ({ quotes: [
@@ -167,4 +168,73 @@ test("a unit gets one writer retry in all, and a unit still incomplete after it 
   assert.throws(() => step([{ set: set(0), coverage: [judge([true, true]), { quotes: judge([true, true]).quotes.slice(0, 1), notes: [] }] }]),
     { code: "POINTER_REFERENCE_STEP_COVERAGE_MISMATCH" });
   assert.throws(() => step([{}, {}, {}]), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
+});
+
+// Synthetic quote units: `pages` pages, page n holding (n % 3) + 1 quotes, in journal order.
+function quoteUnits(pages, { pageNumbers = true } = {}) {
+  const units = [];
+  for (let page = 1; page <= pages; page += 1) {
+    for (let quote = 0; quote <= page % 3; quote += 1) {
+      units.push({ unit_id: `unit:p${page}q${quote}`, page: pageNumbers ? page : null, representation_id: pageNumbers ? "representation:pdf" : `representation:text-${page}`,
+        text: `Synthetic paragraph ${quote} of page ${page}.`, source_order: units.length });
+    }
+  }
+  return units;
+}
+
+test("the reference sample draws 8 pages from each of 12 stretches, with a recorded seed and each page's quotes", () => {
+  assert.deepEqual(POINTER_REFERENCE_SAMPLE, { strata: 12, units_per_stratum: 8 });
+  const units = quoteUnits(240);
+  const sample = pointerReferenceSample({ units, seed: "synthetic-seed" });
+  assert.equal(sample.candidate_units, 240);
+  assert.equal(sample.units.length, 96);
+  assert.equal(sample.seed_sha256.length, 64);
+  assert.equal(JSON.stringify(sample).includes("synthetic-seed"), false, "the seed itself isn't recorded");
+  assert.deepEqual([...new Set(sample.units.map((unit) => unit.stratum))].sort((a, b) => a - b), [...Array(12).keys()]);
+  for (const unit of sample.units) {
+    assert.equal(unit.inclusion_probability, 8 / 20);
+    const page = Number(unit.unit_id.slice("page:".length));
+    assert.deepEqual(unit.quote_ids, Array.from({ length: (page % 3) + 1 }, (_, quote) => `unit:p${page}q${quote}`));
+  }
+  // The same seed draws the same sample; another seed another one.
+  assert.deepEqual(pointerReferenceSample({ units, seed: "synthetic-seed" }), sample);
+  assert.notDeepEqual(pointerReferenceSample({ units, seed: "another-seed" }).units.map((unit) => unit.unit_id), sample.units.map((unit) => unit.unit_id));
+  assert.equal(JSON.stringify(sample).includes("Synthetic paragraph"), false, "no quote text");
+});
+
+test("a short journal's stretches are taken whole, pages without numbers are their own units, and repeats count once", () => {
+  const short = pointerReferenceSample({ units: quoteUnits(30), seed: "synthetic-seed" });
+  assert.equal(short.units.length, 30);
+  assert.ok(short.units.every((unit) => unit.inclusion_probability === 1));
+  const text = pointerReferenceSample({ units: quoteUnits(5, { pageNumbers: false }), seed: "synthetic-seed" });
+  assert.equal(text.units.length, 5);
+  assert.ok(text.units.every((unit) => /^representation:[0-9a-f]{32}$/.test(unit.unit_id)));
+  const units = quoteUnits(4);
+  // Page 4's two quotes repeat page 1's two, word for word: the two pages count once.
+  const repeated = units.map((unit) => (unit.page === 4 ? { ...unit, text: unit.text.replace("of page 4", "of page 1") } : unit));
+  assert.equal(pointerReferenceSample({ units: repeated, seed: "s" }).units.length, 3);
+  assert.equal(pointerReferenceSample({ units, seed: "s" }).units.length, 4);
+  assert.throws(() => pointerReferenceSample({ units: [], seed: "s" }), { code: "POINTER_REFERENCE_SAMPLE_INPUT_INVALID" });
+  assert.throws(() => pointerReferenceSample({ units, seed: "" }), { code: "POINTER_REFERENCE_SAMPLE_INPUT_INVALID" });
+});
+
+test("a search plan is complete when every question has one to three searches and nothing else is named", () => {
+  const questionIds = ["question:7:0:0", "question:7:0:1"];
+  const plan = (searches) => ({ schema_version: "1.0", searches });
+  const complete = checkSearchPlan({ questionIds, answer: plan([{ question_id: "question:7:0:1", queries: ["weekend weather"] },
+    { question_id: "question:7:0:0", queries: ["visit weekend", "came to stay"] }]) });
+  assert.equal(complete.complete, true);
+  assert.deepEqual(complete.searches.map((item) => [item.question_id, item.queries.length]), [["question:7:0:0", 2], ["question:7:0:1", 1]]);
+  const missing = checkSearchPlan({ questionIds, answer: plan([{ question_id: "question:7:0:0", queries: ["visit"] }]) });
+  assert.deepEqual([missing.complete, missing.questions_without_search, missing.searches], [false, 1, []]);
+  const foreign = checkSearchPlan({ questionIds, answer: plan([{ question_id: "question:7:0:0", queries: ["visit"] },
+    { question_id: "question:7:0:1", queries: ["weather"] }, { question_id: "question:8:0:0", queries: ["other"] }]) });
+  assert.deepEqual([foreign.complete, foreign.foreign_or_repeated], [false, 1]);
+  const repeated = checkSearchPlan({ questionIds, answer: plan([{ question_id: "question:7:0:0", queries: ["visit"] },
+    { question_id: "question:7:0:0", queries: ["stay"] }, { question_id: "question:7:0:1", queries: ["weather"] }]) });
+  assert.deepEqual([repeated.complete, repeated.foreign_or_repeated], [false, 1]);
+  for (const answer of [null, plan("none"), plan([{ question_id: "question:7:0:0", queries: [] }])]) {
+    assert.deepEqual([checkSearchPlan({ questionIds, answer }).answer_valid, checkSearchPlan({ questionIds, answer }).complete], [false, false]);
+  }
+  assert.throws(() => checkSearchPlan({ questionIds: [], answer: plan([]) }), { code: "POINTER_SEARCH_PLAN_INPUT_INVALID" });
 });

@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
+import { createDeterministicAuditSample } from "./audit.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3, "Questions
 // that cover every sampled quote", "Two independent checks that the questions cover each quote" and "No unit drops
@@ -14,7 +16,9 @@ import { ValidationError } from "../core/errors.mjs";
 export const POINTER_COVERAGE_QUOTES_PER_CALL = 25;
 /** Why a sampled unit ended without its reference. */
 export const POINTER_REFERENCE_NONRESPONSE_REASONS = Object.freeze(["questions_incomplete", "coverage_unconfirmed",
-  "coverage_check_failed", "deadline"]);
+  "coverage_check_failed", "searches_incomplete", "deadline"]);
+/** The sample's design: the journal cut into 12 stretches in order, 8 units drawn from each. */
+export const POINTER_REFERENCE_SAMPLE = Object.freeze({ strata: 12, units_per_stratum: 8 });
 
 const ID_PATTERN = /^[A-Za-z0-9:_-]+$/;
 const isId = (value) => typeof value === "string" && value.length > 0 && value.length <= 160 && ID_PATTERN.test(value);
@@ -195,4 +199,70 @@ export function referenceUnitStep({ quoteIds, attempts } = {}) {
   }
   if (index === 0) return retry(judges.flatMap((judge) => judge.notes));
   return deepFreeze({ step: "nonresponse", reason: "coverage_unconfirmed" });
+}
+
+const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+
+/**
+ * The reference sample (plan Part 3, "A random sample of the journal"): the import's probability sample
+ * (`createDeterministicAuditSample`), drawn with a recorded seed from every unit that has quotes. A unit is a page,
+ * or a representation without page numbers, and its quotes are the quote units on it, in journal order; units are
+ * ordered by their first quote, and units with the same quotes count once. Returns the sample's record (the seed's
+ * digest, never the seed) and the sampled units in draw order, each with its stretch, inclusion probability and quote
+ * IDs. Quote text stays out of it.
+ */
+export function pointerReferenceSample({ units, seed, strata = POINTER_REFERENCE_SAMPLE.strata,
+  unitsPerStratum = POINTER_REFERENCE_SAMPLE.units_per_stratum } = {}) {
+  invariant(Array.isArray(units) && units.length > 0 && units.every((unit) => isObject(unit) && isId(unit.unit_id)
+    && typeof unit.text === "string" && Number.isSafeInteger(unit.source_order)
+    && (unit.page === null || unit.page === undefined || Number.isSafeInteger(unit.page))
+    && typeof unit.representation_id === "string" && unit.representation_id.length > 0), "POINTER_REFERENCE_SAMPLE_INPUT_INVALID");
+  invariant(typeof seed === "string" && seed.length > 0, "POINTER_REFERENCE_SAMPLE_INPUT_INVALID");
+  const pages = new Map();
+  for (const unit of [...units].sort((left, right) => left.source_order - right.source_order)) {
+    const pageId = Number.isSafeInteger(unit.page) ? `page:${unit.page}` : `representation:${sha256(unit.representation_id).slice(0, 32)}`;
+    if (!pages.has(pageId)) pages.set(pageId, { unit_id: pageId, source_order: unit.source_order, quotes: [] });
+    pages.get(pageId).quotes.push(unit);
+  }
+  const candidates = [...pages.values()].map((page) => ({ unit_id: page.unit_id, source_order: page.source_order,
+    duplicate_group_id: `duplicate:${sha256(page.quotes.map((quote) => quote.text).join("\u0000"))}` }));
+  const sample = createDeterministicAuditSample({ units: candidates, seed, strata, unitsPerStratum });
+  const sampled = sample.inclusion_ledger.map((entry) => Object.freeze({ unit_id: entry.unit_id, stratum: entry.stratum,
+    inclusion_probability: entry.inclusion_probability, quote_ids: Object.freeze(pages.get(entry.unit_id).quotes.map((quote) => quote.unit_id)) }));
+  return Object.freeze({
+    seed_sha256: sample.seed_sha256,
+    strata: sample.strata,
+    units_per_stratum: sample.units_per_stratum,
+    candidate_units: candidates.length,
+    units: Object.freeze(sampled)
+  });
+}
+
+/**
+ * Checks the search writer's answer for one sampled unit: one entry for each of its questions, naming only its
+ * questions, each with one to three searches. Only a complete plan's searches are returned.
+ */
+export function checkSearchPlan({ questionIds, answer } = {}) {
+  invariant(isDistinctIds(questionIds) && questionIds.length > 0, "POINTER_SEARCH_PLAN_INPUT_INVALID");
+  const shaped = isObject(answer) && Array.isArray(answer.searches) && answer.searches.every((item) => isObject(item)
+    && isId(item.question_id) && Array.isArray(item.queries) && item.queries.length >= 1 && item.queries.length <= 3
+    && item.queries.every((query) => typeof query === "string" && query.length > 0));
+  if (!shaped) return deepFreeze({ complete: false, answer_valid: false, searches: [], questions_without_search: questionIds.length, foreign_or_repeated: 0 });
+  const known = new Set(questionIds);
+  const seen = new Set();
+  let foreignOrRepeated = 0;
+  for (const item of answer.searches) {
+    if (!known.has(item.question_id) || seen.has(item.question_id)) foreignOrRepeated += 1;
+    seen.add(item.question_id);
+  }
+  const without = questionIds.filter((id) => !seen.has(id)).length;
+  const complete = without === 0 && foreignOrRepeated === 0;
+  const byQuestion = new Map(answer.searches.map((item) => [item.question_id, item.queries]));
+  return deepFreeze({
+    complete,
+    answer_valid: true,
+    searches: complete ? questionIds.map((questionId) => ({ question_id: questionId, queries: [...byQuestion.get(questionId)] })) : [],
+    questions_without_search: without,
+    foreign_or_repeated: foreignOrRepeated
+  });
 }
