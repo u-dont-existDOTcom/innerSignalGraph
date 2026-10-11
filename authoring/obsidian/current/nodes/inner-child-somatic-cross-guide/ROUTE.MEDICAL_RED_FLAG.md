@@ -18,6 +18,7 @@ graph_tags:
 source_refs:
   - AMEND.CROSS.FOCUS_PRIORITY_BASELINE
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
+  - AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
 regression_refs:
   - G069
   - G079
@@ -25,9 +26,13 @@ regression_refs:
   - G095
   - G096
   - G098
-base_record_sha256: bafc1f355371ae618ddeeadc246bfa78038696779a8bcc7f8639950964065573
-base_graph_sha256: 21ba5908ecea2cb8008f88676aa266cb288abb06e6ee68205264232bd84bd560
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+  - G099
+  - G101
+  - G102
+  - G105
+base_record_sha256: 0615ccf90882d97a5a6e6cc58583f0809e375cfd78a9a0917373b6945adaaa85
+base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # Handle an urgent medical red flag before therapy interpretation
@@ -51,7 +56,9 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
   "avoid": [
     "Do not park a clearly urgent medical or neurological red flag because the person mentioned it as an aside.",
     "Do not diagnose the cause from chat, and do not turn an urgent medical turn into inner-child continuity messaging.",
-    "Do not substitute a generic suicide-hotline script or repeat 'see a doctor' as new advice when thoughts of death are reported as pain-triggered and the actionable problem is unbearable bodily pain. Do not weaken immediate protective action if current self-harm intent or inability to remain safe is supported."
+    "Do not substitute a generic suicide-hotline script or repeat 'see a doctor' as new advice when thoughts of death are reported as pain-triggered and the actionable problem is unbearable bodily pain. Do not weaken immediate protective action if current self-harm intent or inability to remain safe is supported.",
+    "Do not recommend daily ambulance calls simply to force recognition of an inadequately treated chronic condition, and never promise that repeat emergency visits cause specialist referral.",
+    "Do not call a flare nonurgent solely because similar crises have occurred before; reassess new pattern, severity and other red flags on current evidence."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -74,7 +81,9 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
   "recommendations": [
     "Give direct, proportionate guidance for urgent medical assessment or emergency help before continuing therapeutic interpretation.",
     "Do not delay an urgent red flag with baseline-history questions. Once immediate safety is handled, return to the person's therapeutic focus when appropriate.",
-    "For severe recurrent pain after prior unrevealing assessments, preserve that history. During an unbearable attack, an appropriate local medical emergency/urgent-care triage service can assess the live episode and consider pain relief despite diagnostic uncertainty; do not promise an ambulance, admission, a particular medicine, or zero cost."
+    "For severe recurrent pain after prior unrevealing assessments, preserve that history. During an unbearable attack, an appropriate local medical emergency/urgent-care triage service can assess the live episode and consider pain relief despite diagnostic uncertainty; do not promise an ambulance, admission, a particular medicine, or zero cost.",
+    "Near-daily familiar severe pain calls for a sustainable specialist pain-care pathway and written flare plan in addition to proportionate urgent care for dangerous or truly unmanageable episodes.",
+    "A known chronic-pain condition does not excuse overlooking new, changed or atypical urgent features; red flags take priority regardless of previous symptom frequency."
   ],
   "successSignals": [
     "The response prioritizes immediate medical safety without unnecessary diagnostic speculation and leaves therapy work for after the urgent issue is addressed."
@@ -88,3 +97,5 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
 [[current/governance/amendments/AMEND.CROSS.FOCUS_PRIORITY_BASELINE]]
 
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
+
+[[current/governance/amendments/AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY]]
