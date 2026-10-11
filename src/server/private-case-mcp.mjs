@@ -505,7 +505,8 @@ async function callTool(service, name, args, authContext, journalApi = null) {
       includeUndated: args.include_undated,
       limit: args.limit,
       byteBudget: args.byte_budget,
-      cursor: args.cursor
+      cursor: args.cursor,
+      kinds: args.kinds ?? null
     }, authContext);
   }
   if (name === "search_journal_graph" && journalApi) {
