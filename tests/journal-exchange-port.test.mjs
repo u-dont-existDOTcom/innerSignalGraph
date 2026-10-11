@@ -674,3 +674,40 @@ test("a worker's terminal unanswered tombstone immediately exhausts the durable 
   assert.equal(publications, 0);
   assert.equal(sleeps, 0);
 });
+
+test("a step's deadline sets its items' expiry, nothing is sent after it, and a call can wait less than the port", async (t) => {
+  const environment = await setup(t);
+  let clock = Date.now();
+  const now = () => new Date(clock);
+  const store = memoryStore();
+  // The port would wait 5 seconds; this call sends its item and returns at once.
+  const port = environment.makePort({ ttlMs: 24 * 60 * 60_000, now });
+  const durable = createDurableJournalInferencePort({ port, corpusStore: store });
+  const deadline = new Date(clock + 30 * 60_000).toISOString();
+  const started = Date.now();
+  await assert.rejects(durable.invoke({ ...referenceCall(), expiresAt: deadline }, { waitMs: 0 }),
+    (error) => error.code === "COMPLETION_UNKNOWN" && error.submissionStatus === "unknown");
+  assert.ok(Date.now() - started < 2_000, "no wait");
+  const [record] = await environment.connector.listDispatch();
+  assert.equal(record.expires_at, deadline, "the item expires at the step's deadline, not after the port's day");
+
+  // An answer before the deadline completes the same call, which now waits for it.
+  const stop = environment.answerInBackground();
+  let answered;
+  try { answered = await durable.invoke({ ...referenceCall(), expiresAt: deadline }, { waitMs: 5_000 }); } finally { await stop(); }
+  assert.deepEqual(answered.output, referenceAnswer);
+
+  // Once the deadline has passed, a new call is not published at all.
+  clock += 31 * 60_000;
+  await assert.rejects(port.invoke({ ...referenceCall({ operationKey: `${KEY}:late` }), expiresAt: deadline }, { waitMs: 0 }),
+    (error) => error.code === "JOURNAL_STEP_DEADLINE_PASSED" && error.submissionStatus === "not_submitted");
+  assert.equal((await environment.connector.listDispatch()).length, 0);
+  // A deadline later than the port's usual expiry doesn't extend it.
+  const far = new Date(clock + 3 * 24 * 60 * 60_000).toISOString();
+  await assert.rejects(port.invoke({ ...referenceCall({ operationKey: `${KEY}:far` }), expiresAt: far }, { waitMs: 0 }), { code: "COMPLETION_UNKNOWN" });
+  const [farRecord] = await environment.connector.listDispatch();
+  assert.equal(Date.parse(farRecord.expires_at), clock + 24 * 60 * 60_000);
+  await assert.rejects(port.invoke({ ...referenceCall({ operationKey: `${KEY}:bad` }), expiresAt: "soon" }, { waitMs: 0 }),
+    { code: "JOURNAL_WORK_EXPIRY_INVALID" });
+  await assert.rejects(port.invoke(referenceCall({ operationKey: `${KEY}:negative` }), { waitMs: -1 }), { code: "JOURNAL_EXCHANGE_TIMING_INVALID" });
+});

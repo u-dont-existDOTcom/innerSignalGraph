@@ -39,9 +39,10 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
   const release = async (key) => {
     try { await port.release?.(key); } catch { /* the answer is already durable */ }
   };
-  async function settle(key, attempt, input) {
+  // `options` (a wait override) go to the port only; they are no part of the call's identity.
+  async function settle(key, attempt, input, options) {
     try {
-      const output = await port.invoke(input);
+      const output = await port.invoke(input, options);
       await writeResult(key, attempt, { status: "completed", ...output });
       await release(key);
       return output;
@@ -57,7 +58,7 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
   }
   return Object.freeze({
     capabilities: () => port.capabilities(),
-    async invoke(input) {
+    async invoke(input, options = {}) {
       const { grant, role, packet } = input;
       if (grant?.revoked || (grant?.expires_at && Date.now() > Date.parse(grant.expires_at))) throw new JournalInferencePortError("GRANT_REVOKED");
       if (grant?.purpose !== packet?.grant_purpose || !grant?.allowed_roles?.includes(role)) throw new JournalInferencePortError("GRANT_ROLE_DENIED");
@@ -72,7 +73,7 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       if (intent) {
         // Resume the same submission; the port neither sends it twice nor loses its answer.
         const completionIsAuthoritative = await authoritative(input.operationKey, input, intent);
-        if (completionIsAuthoritative) return settle(input.operationKey, attempt, input);
+        if (completionIsAuthoritative) return settle(input.operationKey, attempt, input, options);
         const completion = await port.getCompletion(input.operationKey, { authoritativeCompletion: completionIsAuthoritative });
         if (completion.status !== "completed") throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
         await writeResult(input.operationKey, attempt, completion);
@@ -86,7 +87,7 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
         authoritative_completion: authoritativeCompletion,
         recorded_at: new Date().toISOString()
       } });
-      return settle(input.operationKey, attempt, input);
+      return settle(input.operationKey, attempt, input, options);
     },
     async getCompletion(key, options = {}) {
       const { attempt, intent, result } = await latest(key);
@@ -126,6 +127,8 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       return { status: "unknown" };
     },
     isAuthoritativeCompletion: authoritative,
+    // Whether this key's call was ever sent: its first intent is recorded before any send. Content-free.
+    async wasSent(key) { return Boolean(await read(id(key, 1, "intent"))); },
     close() { return port.close?.(); }
   });
 }
