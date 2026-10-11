@@ -326,11 +326,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   the full pair: the quote really mentions what the label names, and reports it as happening. A pair it rejects or
   leaves unanswered is dropped and counted, and neither can lose events silently: the event-check floor below fails
   the pass when more than 2% are left unanswered, and the event-check recall floor has both judges score a sample of
-  the rejected pairs as well as the kept ones, so a check that throws out real events fails the pass. Event-check
-  items expire at the pass's saved deadline like the tagger's batches; a check still unanswered then counts as
-  unanswered, so its pair is dropped, and a resumed pass keeps the same deadline. So a dream reaches the timeline as
-  something that happened only if both the tagger and the check get it wrong, and the precision floor on events
-  measures what is left.
+  the dropped pairs, rejected or unanswered, as well as the kept ones, so a check that throws out real events, or
+  leaves them unanswered, fails the pass. Event-check items expire at the pass's saved deadline like the tagger's
+  batches; a check still unanswered then counts as unanswered, so its pair is dropped, and a resumed pass keeps the
+  same deadline. So a dream reaches the timeline as something that happened only if both the tagger and the check get
+  it wrong, and the precision floor on events measures what is left.
 - **No coreference.** A tag never claims that "he", "she", "there" or a different name means a named person, place or
   organization. A pronoun-only mention isn't tagged, and this part has no aliases: telling that two names mean the
   same person is a later part with its own measurement. So every quote a name tag points at contains that name.
@@ -398,7 +398,7 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - `pointer_deadline_minutes` (default 180) for each pass, its event checks included: the pilot, the full pass and a
     coverage pass;
   - `pointer_measure_deadline_minutes` (default 300) for each measurement's two judges: the precision samples and the
-    sample of rejected events.
+    sample of dropped events.
 - **Saved and kept.** When a step starts it saves its deadline as a time in its own state, so a resumed step keeps the
   same one. Every exchange item the step sends, retries included, expires at that time instead of the exchange's
   usual day, so no worker starts one after it. The step keeps waiting on its items until each is answered or the
@@ -411,7 +411,7 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     confirmed, is a nonresponse (see the measurement below), so the recall floor fails, and the run stops before the
     pilot;
   - a sampled pair a judge hasn't scored counts against the floor it was sampled for (as wrong for precision, as a
-    real event in the sample of rejected events), which can only lower its bound, and the measurement reports.
+    real event in the sample of dropped events), which can only lower its bound, and the measurement reports.
 - **Never resumed past it.** Sending any of those again is a new step, never a resume, and a generation that fails a
   floor this way is discarded like any other. No step relies on the worker's `--once` mode, which waits out
   usage-limit backoff.
@@ -430,10 +430,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   price list at that time gives the cost.
 - **Measuring.** 96 question-writing answers and 96 search-writing answers on the same Codex slots, about half an
   hour, and the coverage check, about 6 calls on the Claude lane, all before the pilot. The precision check is at most
-  750 pairs, 15 calls for each judge, and the sample of rejected events at most 150 pairs, 3 calls for each. The
-  Claude lane's 24 calls or so, one at a time at its current seven minutes or so a call, take under three hours and
-  fit in a day's 40. The event check is one call per 50 event pairs on the Codex slots, minutes for a journal this
-  size.
+  750 pairs, 15 calls for each judge, and the sample of dropped events at most 150 pairs, 3 calls for each. The Claude
+  lane's 24 calls or so, one at a time at its current seven minutes or so a call, take under three hours and fit in a
+  day's 40. The event check is one call per 50 event pairs on the Codex slots, minutes for a journal this size.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
@@ -447,22 +446,27 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   reports counts only.
 - **Questions that cover every sampled quote.** What is measured is everything the sampled units say, not what a
   reader chose to ask about. A new role, `question_writer`, gets one call per sampled unit with that unit's quotes,
-  and writes for each quote as many questions as it takes to ask about everything the quote says: each event, feeling,
-  plan, wish, dream, denial and qualifier, and who did or said what. Each quote gets at least one question, each
-  question names its quote, and each is asked in the words a person might later use rather than the quote's. The
-  writer also marks a question critical when missing it could mislead about who did or said something, whether it
-  happened or was a dream, wish or plan, whether it is still true, or a cause or treatment (the critical distortions
-  the fidelity auditor checks for). These questions are the sample's frozen reference. Calibration's references aren't
-  reused: the import's repairs were checked against them. No writer is ever shown a tag, so the questions measure the
-  pass independently.
+  and writes for each quote one question for each thing it says: each event, feeling, thought, fact, plan, wish, dream
+  or denial. A thing's qualifiers (a "not", "maybe", "only" or "but"), who did or said it and when, if the quote says,
+  go in that thing's question, not in questions of their own. No two questions ask about the same thing and no
+  question asks about two, so how many questions a quote gets is set by what it says, not by the writer: each question
+  weighs the same in recall, and the writer can't give easy content more weight by splitting or repeating it, or hard
+  content less by folding it into another question. Each quote gets at least one question, each question names its
+  quote, and each is asked in the words a person might later use rather than the quote's. The writer also marks a
+  question critical when missing it could mislead about who did or said something, whether it happened or was a dream,
+  wish or plan, whether it is still true, or a cause or treatment (the critical distortions the fidelity auditor
+  checks for). These questions are the sample's frozen reference. Calibration's references aren't reused: the import's
+  repairs were checked against them. No writer is ever shown a tag, so the questions measure the pass independently.
 - **An independent check that the questions cover each quote.** A Claude judge that writes no questions
   (`coverage_judge`, on the Claude lane) sees each sampled quote with its questions, 25 quotes to a call, and says
-  whether together they ask about everything the quote says; when they don't, it says in a few words what they leave
-  out. The question writer then gets one retry for that unit, with those notes, and the judge checks the new
-  questions. A quote still not confirmed, after that retry or at the reference step's deadline, makes its unit a
-  nonresponse (below), so the recall floor fails and the run stops before the pilot: a question set that leaves the
-  hard part of a quote unasked can't be measured around. The judge also checks each question's critical mark against
-  the definition above, and a question is critical when the writer or the judge marks it so.
+  whether together they ask about everything the quote says. It also lists each question that asks about the same
+  thing as an earlier question of that quote, and each that asks about two things or more. Code confirms a quote only
+  when the judge says nothing is left out and lists no question; otherwise the judge says in a few words what is
+  missing, repeated or combined. The question writer then gets one retry for that unit, with those notes, and the
+  judge checks the new questions. A quote still not confirmed, after that retry or at the reference step's deadline,
+  makes its unit a nonresponse (below), so the recall floor fails and the run stops before the pilot: a question set
+  that leaves the hard part of a quote unasked can't be measured around. The judge also checks each question's
+  critical mark against the definition above, and a question is critical when the writer or the judge marks it so.
 - **No unit drops out.** A unit's questions are complete when every one of its quotes has at least one question naming
   it, every question names one of its quotes, and the coverage check confirmed every one of its quotes. An incomplete
   or failed answer gets one retry, and so does a search-writing answer that fails or leaves a question without a
@@ -476,8 +480,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   hazards apart, and never stands in for a floor.
 - **What is measured.** The generation the full pass built, the same one that would be published, never a separate
   trial run: the tagger's answers vary from run to run.
-- **Retrieval recall.** It counts the sampled questions; a question is critical when the writer or the coverage judge
-  marked it so.
+- **Retrieval recall.** It counts the sampled questions, one for each thing a sampled quote says, each counting once;
+  a question is critical when the writer or the coverage judge marked it so.
   - One call per sampled unit writes, once for each of its questions, up to three searches an answering model would
     run. It sees only the questions, never the unit's text, as an answering model would. These calls are part of the
     reference step, so the searches are fixed before any generation exists.
@@ -542,15 +546,17 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - **event-check recall:** of the event pairs the tagger kept that are real events, the share the event check kept,
     with its one-sided 95% lower bound at least 90%. It combines two samples. The event kind's precision sample covers
     the pairs the check kept, and there a pair is real only when both judges say so. Its own fixed sample of 150 of
-    the pairs the check rejected (all of them, if fewer), drawn with a recorded seed and scored by both judges as the
-    precision samples are, covers the rest, and there a pair counts as real when either judge accepts it or one leaves
-    it unscored. With A pairs kept, R rejected, and shares p real among the kept and q among the rejected, recall is
-    A·p / (A·p + R·q); its lower bound puts the 97.5% lower bound of p and the 97.5% upper bound of q (Clopper-Pearson)
-    into that formula, so the two hold together at 95%, and a sample that is a census uses its exact share. So a check
-    that throws out real events fails, however many false ones it rightly removes. A pass with no event pair has
-    nothing to gate, and neither has one whose two samples are both censuses with no pair judged real, since it then
-    has no real event to keep; the report says so. Otherwise the bound applies, and it is zero when no kept pair is
-    judged real;
+    the pairs the check dropped, the ones it rejected or left unanswered (all of them, if fewer), drawn with a
+    recorded seed and scored by both judges as the precision samples are, covers the rest, and there a pair counts as
+    real when either judge accepts it or one leaves it unscored. With A pairs kept, R dropped, and shares p real among
+    the kept and q among the dropped, recall is A·p / (A·p + R·q); its lower bound puts the 97.5% lower bound of p and
+    the 97.5% upper bound of q (Clopper-Pearson) into that formula, so the two hold together at 95%, and a sample that
+    is a census uses its exact share. An unanswered pair is in the dropped sample like a rejected one, so real events
+    the check leaves unanswered count as lost here even when they are under the event-check floor's 2%. So a check
+    that throws out real events, or leaves them unanswered, fails, however many false ones it rightly removes. A pass
+    with no event pair has nothing to gate, and neither has one whose two samples are both censuses with no pair
+    judged real, since it then has no real event to keep; the report says so. Otherwise the bound applies, and it is
+    zero when no kept pair is judged real;
   - **coverage:** at most 2% of the pages with quotes are untagged, each one listed with its reason. A page is
     untagged when it ends with no kept tag, whatever the reason: its batch failed twice or ran out of time, the answer
     gave it no tag, or every tag on it was dropped. So a pass whose answers are valid but nearly empty fails here.
@@ -571,10 +577,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
    and dropped, failed batches. It never looks at a reference, and nothing is published.
 4. **Full pass** on the whole journal, timed. Built, not published.
 5. **Measure** that generation against every floor: recall on the random sample, precision on a sample of its own
-   pairs of each kind, a sample of the event pairs its check rejected, its event checks left unanswered and the
-   coverage of its pages, with calibration's set reported apart. Nothing published. If coverage
-   fails, one new pass tags the untagged pages and this step runs again on its generation. If any floor fails after
-   that, the generation is discarded and the counts go on the owner page.
+   pairs of each kind, a sample of the event pairs its check dropped, its event checks left unanswered and the
+   coverage of its pages, with calibration's set reported apart. Nothing published. If coverage fails, one new pass
+   tags the untagged pages and this step runs again on its generation. If any floor fails after that, the generation
+   is discarded and the counts go on the owner page.
 6. **Publish** on the owner's `deploy` exactly the measured generation, identified by its digest, and only when every
    floor holds, with the connector rebuild that ships the tool descriptions.
 
@@ -602,13 +608,14 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Event check.** Before the generation is built, every event pair goes to the check, which scores the full pair
   (what the label names and that it happened); a pair it rejects, or leaves unanswered after a retry, is dropped and
   counted, and an accepted pair stays; more than 2% of the pairs unanswered fails the event-check floor, and a pass
-  with no event pair passes it with nothing to check. A fixed sample of the rejected pairs is scored by both judges,
-  and a rejected pair counts as a real event when either judge accepts it or one leaves it unscored, while a kept pair
-  is real only when both accept it; event-check recall, A·p / (A·p + R·q), matches a hand-worked example, its lower
-  bound uses the 97.5% lower bound of p and the 97.5% upper bound of q (a census uses its exact share), a check that
-  rejects every real event fails however many false ones it rejects, and a pass with no event pair, or with two census
-  samples and no pair judged real, has nothing to gate. The measurement's Codex judge scores sampled event pairs in
-  new calls.
+  with no event pair passes it with nothing to check. A fixed sample of the dropped pairs, rejected or unanswered, is
+  scored by both judges, and a dropped pair counts as a real event when either judge accepts it or one leaves it
+  unscored, while a kept pair is real only when both accept it; event-check recall, A·p / (A·p + R·q), matches a
+  hand-worked example, its lower bound uses the 97.5% lower bound of p and the 97.5% upper bound of q (a census uses
+  its exact share), a check that rejects every real event fails however many false ones it rejects, real events left
+  unanswered count as lost (8 real events kept, 2 left unanswered and 90 false ones rejected give 80%, which fails,
+  though only 2% went unanswered), and a pass with no event pair, or with two census samples and no pair judged real,
+  has nothing to gate. The measurement's Codex judge scores sampled event pairs in new calls.
 - **Deadlines.** Each step's deadline is saved when it starts and kept on resume, and every item it sends, retries
   included, expires at it; a wait that returns without an answer before the deadline doesn't end the step; an answer
   stored after the deadline is ignored, and no resume sends the item again. At the pass's deadline a batch still
@@ -616,7 +623,7 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   builds; at the reference step's deadline a unit without its questions or its searches, or with a quote the coverage
   check hasn't confirmed, is a nonresponse, the recall floor fails and the run stops before the pilot; at the
   measurement's deadline a pair a judge hasn't scored counts against its floor (as wrong for precision, as a real
-  event in the sample of rejected events), and the measurement reports.
+  event in the sample of dropped events), and the measurement reports.
 - **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
   page that is.
 - **Graph.** A pointer-only extraction yields entity and episode nodes linked to their quotes' existing passages, with
@@ -639,7 +646,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   single-unit stretch drawn with probability below 1 is merged with its nearest such neighbor; a sample taken entirely
   with certainty, even a single unit, gives an exact recall whose bound is the estimate; and units drawn with
   probability below 1 that leave no degree of freedom fail the floor. A question is found only when its quote is in
-  the first 12 results of one of its searches; a quote the coverage check doesn't confirm sends its unit back to the
+  the first 12 results of one of its searches; a quote the coverage check doesn't confirm, because its questions leave
+  something out or the judge lists one as repeating another or asking about two things, sends its unit back to the
   question writer once with the judge's notes, and one still not confirmed makes the unit a nonresponse; a question is
   critical when the writer or the judge marks it so; a sample with no critical question is reported and judged for no
   loss on all questions alone. Precision samples tag–quote pairs, so a wrong tag on many quotes counts once for each;
