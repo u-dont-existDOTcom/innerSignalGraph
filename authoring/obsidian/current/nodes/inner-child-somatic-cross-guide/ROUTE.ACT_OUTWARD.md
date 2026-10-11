@@ -26,6 +26,7 @@ source_refs:
   - AMEND.CROSS.BLOCKED_ACTION_WAIT
   - AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
+  - AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
 regression_refs:
   - G013
   - G014
@@ -38,9 +39,12 @@ regression_refs:
   - G092
   - G093
   - G098
-base_record_sha256: 4b3a7f051aac8dc3d256b50edb15d7ee65ce075529764b36431572689014f7ed
-base_graph_sha256: 21ba5908ecea2cb8008f88676aa266cb288abb06e6ee68205264232bd84bd560
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+  - G099
+  - G101
+  - G105
+base_record_sha256: 2688eac08be228b1e51c1d3604890a60f1134c29f72cf48bef67a5799ab5c34b
+base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # Act on the concrete problem
@@ -99,7 +103,8 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate.",
     "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
     "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step.",
-    "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied."
+    "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
+    "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -135,7 +140,8 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "For deliberate social or relationship practice, name the life-serving purpose first—connection, curiosity, communication, skill, play or another chosen value. If the action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation.",
     "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
     "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language.",
-    "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure."
+    "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure.",
+    "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -166,3 +172,5 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
 [[current/governance/amendments/AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING]]
 
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
+
+[[current/governance/amendments/AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY]]

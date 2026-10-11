@@ -1502,6 +1502,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.REFRACTORY_PAIN_NAVIGATION.md",
+      "height": 140,
+      "id": "f25e0717d06d844cca2be55e7db8b6d8a25432249accb38c89737ab04369bcd9",
+      "type": "file",
+      "width": 300,
+      "x": 4200,
+      "y": 440
+    },
+    {
       "file": "current/nodes/somatic-directed-graph/SOM.DISCHARGE_SETTLE_STACK.md",
       "height": 140,
       "id": "f623c3a763dcce1056f2474536e5822476a1fee405ce6bede3a7eedbe654915b",

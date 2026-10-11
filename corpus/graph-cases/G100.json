@@ -1,0 +1,34 @@
+{
+  "id": "G100",
+  "title": "Pain-triggered suicidal thoughts without current intent keep specialist pain pathway primary",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "ideation",
+    "medical_urgency": "nonurgent",
+    "refractory_pain_care": "indicated",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "inner_adult_access": "low",
+    "witness_capacity": "unknown",
+    "suicidal_ideation_context": "pain_episode"
+  },
+  "expected": {
+    "primary": "ROUTE.REFRACTORY_PAIN_NAVIGATION",
+    "selectedIncludes": [
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION",
+      "IC.SUICIDAL_ADULT_SEAT"
+    ],
+    "selectedExcludes": [
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY"
+    ],
+    "deferredIncludes": [
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY"
+    ]
+  }
+}

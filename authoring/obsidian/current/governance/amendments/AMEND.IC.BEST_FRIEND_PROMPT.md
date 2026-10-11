@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.BEST_FRIEND_PROMPT
 status: owner-approved
 domain: inner-child
-base_record_sha256: f781d7ebd09d0ee3ddf17a512a18514dcf66ba98d5f8e538964c8470d946fae4
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: cb8dd3a0ea023da79c432573e38ec1d71f2a2b61edccea3fcb9cc31a8fe8d85d
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # AMEND.IC.BEST_FRIEND_PROMPT
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Ask: 'What would I tell my best friend in this exact situation?' Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action for the self."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

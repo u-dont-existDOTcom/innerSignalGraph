@@ -7,7 +7,7 @@ source_id: IC.GUIDE_LATER
 guide_id: inner-child-guide
 heading: The Inner Guide Comes Later
 source_role: primary-framework
-source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
+source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
 section_hash: c26b76d382b2a97c6301f3060a149d2f48930a7a6e9c929d33e1a68932b2f9c2
 locator_kind: text-lines
 cited_by_node_ids:
@@ -15,16 +15,16 @@ cited_by_node_ids:
   - IC.INTUITION_TRUST_CALIBRATION
   - IC.LOVE_HORIZON_EXPLORATION
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # The Inner Guide Comes Later
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-10-r5.txt`
+Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
 
-Locator: Lines 603–654
+Locator: Lines 607–658
 
 ```text
 The Inner Guide Comes Later

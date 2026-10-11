@@ -7,22 +7,22 @@ source_id: IC.LOVE_MISSING
 guide_id: inner-child-guide
 heading: When Love Still Feels Missing
 source_role: primary-framework
-source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
+source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
 section_hash: eca5dd42b9fe81133386193bdd22ffc93c52a7849978efd490ba48122fa866ad
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.BORROW_LOVE
   - IC.MUSIC_EMOTIONAL_ACCESS
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # When Love Still Feels Missing
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-10-r5.txt`
+Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
 
-Locator: Lines 751–784
+Locator: Lines 755–788
 
 ```text
 When Love Still Feels Missing
