@@ -398,7 +398,7 @@ const EMPTY_EXTRACTION = (units) => ({
  * the carry limit, and the line openings that look like a date but weren't read as one.
  *
  * Each quote unit carries its place in the whole journal (`source_order`), so anything an extraction
- * makes from it is ordered across pages. `extractionFor({ representation, units, quoteMeta,
+ * makes from it is ordered across pages; `units` lists them all, in that order, each with its page. `extractionFor({ representation, units, quoteMeta,
  * passageIdForUnit })`, when given, supplies a page's extraction in place of the empty one, once the
  * page's quotes and their dates are known (the pointer pass's tags, plan Part 3). It may add entities
  * and episodes, but no passage: the page's passages stay exactly its quotes.
@@ -410,6 +410,8 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   invariant(Array.isArray(representations), "QUOTE_GENERATION_REPRESENTATIONS_INVALID");
   invariant(extractionFor === null || typeof extractionFor === "function", "QUOTE_GENERATION_EXTRACTION_INVALID");
   let sourceOrder = 0;
+  // Every quote unit in journal order, with its page, for the passes that read the quotes (plan Part 3).
+  const allUnits = [];
   const { numericOrder, carryPages, carryQuotes } = quoteDateOptions(dateOptions);
   const nodes = [], edges = [];
   const quoteMeta = new Map();
@@ -449,6 +451,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
     });
     let graph = adapt(EMPTY_EXTRACTION(units));
     const passageByUnit = new Map(graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.unit_id, node.id]));
+    for (const unit of units) if (passageByUnit.has(unit.unit_id)) allUnits.push(Object.freeze({ ...unit, page }));
     const textBytes = Buffer.from(text, "utf8");
     for (const unit of units) {
       const passageId = passageByUnit.get(unit.unit_id);
@@ -529,6 +532,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
     .slice(0, UNREAD_SHAPES_SHOWN).map(([shape, count]) => Object.freeze({ shape, count }));
   return Object.freeze({
     graph: Object.freeze({ schema_version: "1.0", case_id: caseId, corpus_id: corpusId, generation, nodes, edges }),
+    units: Object.freeze(allUnits),
     quoteMeta: sorted,
     quoteMonths,
     stats: Object.freeze({
