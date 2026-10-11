@@ -365,21 +365,22 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       await save();
     };
-    // The pointer pass's Claude calls count against the same daily limit, but a step that reaches it stops on its own
-    // (it resumes with its saved deadline): the import's blocker, which says why the import stopped, stays as it was.
-    // With the hardest lane off, a hardest-tier pointer call goes to the standard route, which isn't Claude's, so
-    // nothing is counted.
-    const pointerBeforeHardestSend = hardestLane.enabled ? async () => {
+    // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the
+    // work exchange queues any number for its workers' slots. The hardest lane, when it's on, runs on the exchange.
+    const directRoute = route !== null && ![JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER].includes(route.provider);
+    const hardestOnDirectRoute = directRoute && !hardestLane.enabled;
+    const pointerTurns = directRoute ? (hardestOnDirectRoute ? ["standard", "hardest"] : ["standard"]) : [];
+    // The pointer pass's hardest-tier calls count against the same daily limit wherever they reach the exchange, whose
+    // hardest model is Claude, but a step that reaches it stops on its own (it resumes with its saved deadline): the
+    // import's blocker, which says why the import stopped, stays as it was. Only on a direct route with the hardest lane
+    // off do they go to that route's own model instead, and then nothing is counted.
+    const pointerBeforeHardestSend = hardestOnDirectRoute ? null : async () => {
       const importBlocker = state.blocker;
       const allowed = applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit });
       state.blocker = importBlocker;
       await save();
       if (!allowed) throw new ValidationError("HARDEST_DAILY_LIMIT", { code: "HARDEST_DAILY_LIMIT" });
-    } : null;
-    // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the
-    // work exchange queues any number for its workers' slots. The hardest lane, when it's on, runs on the exchange.
-    const directRoute = route !== null && ![JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER].includes(route.provider);
-    const pointerTurns = directRoute ? (hardestLane.enabled ? ["standard"] : ["standard", "hardest"]) : [];
+    };
     const lookaheadSummary = () => {
       const sent = new Set([...lookaheadSent, ...(lookahead?.sentOperationKeys() ?? [])]);
       let used = 0;

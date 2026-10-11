@@ -299,13 +299,21 @@ test("a pointer step that reaches the Claude daily limit stops and resumes, and 
   assert.ok(state.hardest_lane.sent > 2);
 });
 
-test("with the hardest lane off, the pointer steps' hardest-tier calls count against no Claude limit", async (t) => {
-  // They go to the standard route with the other tier's calls, so a limit of 1 stops nothing and nothing is counted.
-  const f = await runtimeEnvironment(t);
-  f.config.hardest_lane = { enabled: false, daily_limit: 1 };
-  const referenced = await f.run("stage", "build-quotes", "pointer-reference");
+test("hardest-tier pointer calls count against the Claude limit wherever they reach the exchange, and only there", async (t) => {
+  // A direct browser route with the hardest lane off: they go to the browser's model with the other tier's calls, so a
+  // limit of 1 stops nothing and nothing is counted.
+  const browser = await runtimeEnvironment(t, { environment: route("chatgpt_subscription_browser") });
+  browser.config.hardest_lane = { enabled: false, daily_limit: 1 };
+  const referenced = await browser.run("stage", "build-quotes", "pointer-reference");
   assert.equal(referenced.pointer.reference.status, "done");
   assert.equal(referenced.pointer.reference.counts.complete_units, 96);
-  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  const state = JSON.parse(await fs.readFile(browser.stateFile, "utf8"));
   assert.equal(state.hardest_lane?.sent ?? 0, 0);
+
+  // The Codex exchange with the lane off still sends them to its hardest model, Claude, so the limit holds there.
+  const exchange = await runtimeEnvironment(t, { environment: route("codex_exec_exchange") });
+  exchange.config.hardest_lane = { enabled: false, daily_limit: 1 };
+  await exchange.run("stage", "build-quotes");
+  await assert.rejects(exchange.run("pointer-reference"), { code: "HARDEST_DAILY_LIMIT" });
+  assert.equal(JSON.parse(await fs.readFile(exchange.stateFile, "utf8")).hardest_lane.sent, 1);
 });
