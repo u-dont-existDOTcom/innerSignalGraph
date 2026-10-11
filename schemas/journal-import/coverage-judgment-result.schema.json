@@ -30,7 +30,7 @@
               "maxLength": 160,
               "pattern": "^[A-Za-z0-9:_-]+$"
             },
-            "maxItems": 1000,
+            "maxItems": 800,
             "uniqueItems": true
           },
           "event_question_ids": {
@@ -41,7 +41,7 @@
               "maxLength": 160,
               "pattern": "^[A-Za-z0-9:_-]+$"
             },
-            "maxItems": 1000,
+            "maxItems": 800,
             "uniqueItems": true
           },
           "repeated_question_ids": {
@@ -52,7 +52,7 @@
               "maxLength": 160,
               "pattern": "^[A-Za-z0-9:_-]+$"
             },
-            "maxItems": 1000,
+            "maxItems": 800,
             "uniqueItems": true
           },
           "combined_question_ids": {
@@ -63,7 +63,7 @@
               "maxLength": 160,
               "pattern": "^[A-Za-z0-9:_-]+$"
             },
-            "maxItems": 1000,
+            "maxItems": 800,
             "uniqueItems": true
           },
           "copied_question_ids": {
@@ -74,7 +74,7 @@
               "maxLength": 160,
               "pattern": "^[A-Za-z0-9:_-]+$"
             },
-            "maxItems": 1000,
+            "maxItems": 800,
             "uniqueItems": true
           }
         },

@@ -13,8 +13,14 @@ import { POINTER_PAGELESS_STRETCH, pointerPagelessStretches } from "./pointer-ta
 // the recall floor. The model calls and the deadline are the runtime's. Nothing returned for a log or a report holds
 // journal text: notes go only into the writer's retry packet.
 
-/** Quotes to a coverage-judge call. */
+/** Quotes to a coverage-judge call, at most. */
 export const POINTER_COVERAGE_QUOTES_PER_CALL = 25;
+/**
+ * Characters of quotes and questions to a coverage-judge call, at most, as the call sends them (their JSON): with the
+ * role's instruction, schema and the packet's other fields (about 7,000 characters) the call stays within the 450,000
+ * characters Claude's route takes (packet-bounds.mjs), whatever the questions' number or length.
+ */
+export const POINTER_COVERAGE_CALL_CHARS = 400_000;
 /** Why a sampled unit ended without its reference. */
 export const POINTER_REFERENCE_NONRESPONSE_REASONS = Object.freeze(["questions_incomplete", "coverage_unconfirmed",
   "coverage_check_failed", "searches_incomplete", "deadline"]);
@@ -77,8 +83,10 @@ const isMarkedQuestion = (item) => isObject(item) && isId(item.question_id) && t
 
 /**
  * A coverage judge's calls: every quote with its questions (`question_id`, `question` and the writer's `critical` and
- * `event` marks), in the order given, 25 quotes to a call. A quote's questions are never split across calls. Each of
- * the two judges, the Codex one in calls of its own and the Claude one, gets the same calls.
+ * `event` marks), in the order given. A call closes before a quote that would take it past 25 quotes or past
+ * POINTER_COVERAGE_CALL_CHARS of quotes and questions. A quote's questions are never split across calls, and a unit's
+ * question set holds at most 800 questions, so one quote with all 800 at the longest a question may be still fits a call
+ * of its own. Each of the two judges, the Codex one in calls of its own and the Claude one, gets the same calls.
  */
 export function coverageJudgeCalls({ quotes } = {}) {
   invariant(Array.isArray(quotes) && quotes.every((quote) => isObject(quote) && isId(quote.unit_id) && typeof quote.text === "string"
@@ -88,14 +96,21 @@ export function coverageJudgeCalls({ quotes } = {}) {
   invariant(isDistinctIds(quotes.map((quote) => quote.unit_id))
     && isDistinctIds(quotes.flatMap((quote) => quote.questions.map((item) => item.question_id))), "POINTER_COVERAGE_CALLS_DUPLICATE");
   const calls = [];
-  for (let start = 0; start < quotes.length; start += POINTER_COVERAGE_QUOTES_PER_CALL) {
-    calls.push({ call_index: calls.length, quotes: quotes.slice(start, start + POINTER_COVERAGE_QUOTES_PER_CALL).map((quote) => ({
-      unit_id: quote.unit_id, text: quote.text,
+  let open = null;
+  for (const quote of quotes) {
+    const sent = { unit_id: quote.unit_id, text: quote.text,
       questions: quote.questions.map(({ question_id: questionId, question, critical, event }) => ({ question_id: questionId,
-        question, critical, event }))
-    })) });
+        question, critical, event })) };
+    // The call's quotes as JSON: its brackets, each quote, and a comma between two.
+    const chars = JSON.stringify(sent).length;
+    if (!open || open.quotes.length >= POINTER_COVERAGE_QUOTES_PER_CALL || open.chars + 1 + chars > POINTER_COVERAGE_CALL_CHARS) {
+      open = { call_index: calls.length, quotes: [], chars: 1 };
+      calls.push(open);
+    }
+    open.chars += 1 + chars;
+    open.quotes.push(sent);
   }
-  return deepFreeze(calls);
+  return deepFreeze(calls.map((call) => ({ call_index: call.call_index, quotes: call.quotes })));
 }
 
 // A quote is confirmed by a judge only when it is covered and no question is listed as repeated, combined or copied.
@@ -210,7 +225,7 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 // writer's answer has to cover a whole journal. A page holding more than a stretch may, more than 40 quotes (a dense
 // page of short date headings, say) or more than 4 KB of their text, is cut the same way, into parts of consecutive
 // quotes. Every unit then holds at most 40 quotes and 4 KB of their text, or a single longer quote, so its questions,
-// one for each thing each of its quotes says, fit one answer of at most 1,000, one for every four bytes of text. The
+// one for each thing each of its quotes says, fit one answer of at most 800, one for every five bytes of text. The
 // challenge set names its units the same way.
 function samplingUnits(quotes) {
   const units = new Map();

@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { POINTER_COVERAGE_QUOTES_PER_CALL, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE, checkCoverageJudgments,
-  checkQuestionSet, checkSearchPlan, coverageJudgeCalls, pointerChallengeUnits, pointerReferenceSample,
+import { POINTER_COVERAGE_CALL_CHARS, POINTER_COVERAGE_QUOTES_PER_CALL, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE,
+  checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls, pointerChallengeUnits, pointerReferenceSample,
   referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
 import { POINTER_PAGELESS_STRETCH } from "../src/journal-import/pointer-tags.mjs";
+import { MAX_HARDEST_PACKET_CHARS, hardestJournalPacketFits } from "../src/journal-import/packet-bounds.mjs";
+import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket } from "../src/journal-import/provider-port.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3). All text here
 // is invented.
@@ -59,6 +61,40 @@ test("the coverage judge gets 25 quotes to a call, each with all its questions",
   assert.deepEqual(coverageJudgeCalls({ quotes: [] }), []);
   assert.throws(() => coverageJudgeCalls({ quotes: [quotes[0], quotes[0]] }), { code: "POINTER_COVERAGE_CALLS_DUPLICATE" });
   assert.throws(() => coverageJudgeCalls({ quotes: [{ ...quotes[0], questions: [] }] }), { code: "POINTER_COVERAGE_CALLS_INPUT_INVALID" });
+});
+
+// A coverage call's packet as the reference step sends it (pointer-steps.mjs), with the longest IDs and names it can have.
+const coveragePacket = (quotes) => buildJournalRolePacket("coverage_judge", { protocol_version: "1.0",
+  output_schema_id: JOURNAL_ROLE_DEFINITIONS.coverage_judge.outputSchema, assigned_core_ids: quotes.map((quote) => quote.unit_id),
+  source_locators: [], expected_generation: `generation:${"g".repeat(150)}`, controller_provenance_tag: `pointer:coverage_judge:${"s".repeat(120)}`,
+  grant_purpose: "organize_search", quotes });
+// `count` quotes of 1,600 characters, each with `questions` questions of 400 characters and the longest unit IDs.
+const heavyQuotes = (count, questions) => Array.from({ length: count }, (_, index) => ({ unit_id: `unit:${String(index).padStart(155, "0")}`,
+  text: "t".repeat(1600), questions: Array.from({ length: questions }, (_, item) => ({ question_id: `question:999:1:${index}:${item}`,
+    question: "q".repeat(400), critical: false, event: false })) }));
+
+test("a coverage call closes at 25 quotes or 400,000 characters, so every call fits Claude's packet limit", () => {
+  assert.equal(POINTER_COVERAGE_CALL_CHARS, 400_000);
+  // 24 quotes with 100 long questions each, about 50,000 characters a quote: by count alone one call, far past the limit.
+  const dense = heavyQuotes(24, 100);
+  assert.ok(JSON.stringify(dense).length > MAX_HARDEST_PACKET_CHARS);
+  const calls = coverageJudgeCalls({ quotes: dense });
+  assert.deepEqual(calls.map((call) => call.quotes.length), [7, 7, 7, 3]);
+  assert.deepEqual(calls.flatMap((call) => call.quotes.map((quote) => quote.unit_id)), dense.map((quote) => quote.unit_id));
+  for (const call of calls) {
+    assert.ok(call.quotes.length <= 25 && JSON.stringify(call.quotes).length <= POINTER_COVERAGE_CALL_CHARS);
+    assert.equal(hardestJournalPacketFits("coverage_judge", coveragePacket(call.quotes)), true);
+  }
+  // Each call is filled before the next opens: one more quote would have passed the limit.
+  for (const [index, call] of calls.slice(0, -1).entries()) {
+    assert.ok(JSON.stringify([...call.quotes, calls[index + 1].quotes[0]]).length > POINTER_COVERAGE_CALL_CHARS);
+  }
+  // One quote with as many questions as a unit may have, each as long as a question may be, fits a call of its own.
+  const one = coverageJudgeCalls({ quotes: heavyQuotes(1, 800) });
+  assert.equal(one.length, 1);
+  assert.ok(JSON.stringify(one[0].quotes).length <= POINTER_COVERAGE_CALL_CHARS);
+  assert.equal(hardestJournalPacketFits("coverage_judge", coveragePacket(one[0].quotes)), true);
+  assert.ok(MAX_HARDEST_PACKET_CHARS - POINTER_COVERAGE_CALL_CHARS >= 20_000);
 });
 
 const callQuotes = () => [
@@ -260,7 +296,7 @@ test("a journal without pages is drawn in stretches of about a page, so no quest
     assert.deepEqual(unit.quote_ids, [0, 1, 2, 3].map((offset) => `unit:t${index * 4 + offset}`));
   });
   // A quote longer than a stretch stands alone, and a stretch of short quotes closes at 40, so its question writer's
-  // answer, one question or more for each quote and 1,000 at most, always fits.
+  // answer, one question or more for each quote and 800 at most, always fits.
   const long = pagelessQuotes(3, 1000).map((quote, index) => (index === 1 ? { ...quote, text: "l".repeat(5000) } : quote));
   assert.deepEqual(pointerReferenceSample({ units: long, seed: "s" }).units.map((unit) => unit.quote_ids.length).sort(), [1, 1, 1]);
   const headings = pagelessQuotes(100, 20);
