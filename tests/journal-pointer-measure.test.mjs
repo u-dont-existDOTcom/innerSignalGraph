@@ -273,20 +273,25 @@ test("the bound stays between 0 and the estimate, and a stretch taken whole adds
   assert.equal(census.degrees_of_freedom, 0);
   assert.deepEqual(census.census_strata, [0, 1]);
   assert.equal(census.reason, null);
+  // A census of a single unit is exact too.
+  const single = designRatioBound({ units: [unit("a", 0, 1, 4, 3)] });
+  assert.equal(single.lower_bound, 0.75);
+  assert.equal(single.estimate, 0.75);
+  assert.equal(single.reason, null);
   const lowConfidence = designRatioBound({ units: [unit("a", 0, 0.5, 5, 3), unit("b", 0, 0.5, 5, 5)], confidence: 0.3 });
   assert.equal(lowConfidence.lower_bound, lowConfidence.estimate);
 });
 
-test("the bound can't be computed from fewer than two units, and nothing asked has no estimate", () => {
+test("a single unit drawn with probability below 1 gives no bound, and nothing asked has no estimate", () => {
   const one = designRatioBound({ units: [unit("a", 0, 0.5, 3, 2)] });
   assert.equal(one.estimate, 2 / 3);
   assert.equal(one.standard_error, null);
   assert.equal(one.lower_bound, null);
   assert.equal(one.degrees_of_freedom, 0);
-  assert.equal(one.reason, "fewer than two sampled units");
+  assert.equal(one.reason, "no degrees of freedom");
   const none = designRatioBound({ units: [] });
   assert.deepEqual(none, { estimate: null, standard_error: null, degrees_of_freedom: 0, lower_bound: null, sampled_units: 0,
-    strata: 0, census_strata: [], collapsed_strata: [], reason: "fewer than two sampled units" });
+    strata: 0, census_strata: [], collapsed_strata: [], reason: "no sampled unit" });
   const nothingAsked = designRatioBound({ units: [unit("a", 0, 0.5, 0, 0), unit("b", 0, 0.5, 0, 0), unit("c", 1, 0.5, 0, 0),
     unit("d", 1, 0.5, 0, 0)] });
   assert.equal(nothingAsked.estimate, null);
@@ -420,7 +425,7 @@ test("recall fails when it is unknown or its bound is below the floor", () => {
   assert.equal(low.holds, false);
   assert.equal(low.lower_bound, 0.84);
   const single = pointerFloors({ ...passingInput(), recall: designRatioBound({ units: [unit("a", 0, 0.5, 3, 3)] }) }).floors.recall;
-  assert.equal(single.reason, "fewer than two sampled units");
+  assert.equal(single.reason, "no degrees of freedom");
   assert.equal(pointerFloors({ ...passingInput(), recall: { ...RECALL, lower_bound: 0.85 } }).floors.recall.holds, true);
 });
 
