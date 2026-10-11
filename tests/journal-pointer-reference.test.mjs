@@ -10,19 +10,19 @@ const QUOTES = ["unit:one", "unit:two"];
 const writerAnswer = () => ({
   schema_version: "1.0",
   questions: [
-    { unit_id: "unit:one", question: "Who came to stay for the weekend?", critical: false },
-    { unit_id: "unit:one", question: "What was the weather like in the mountains that weekend?", critical: false },
-    { unit_id: "unit:two", question: "Do I want to move back to the mountain village, or did I move?", critical: true }
+    { unit_id: "unit:one", question: "Who came to stay for the weekend?", critical: false, event: true },
+    { unit_id: "unit:one", question: "What was the weather like in the mountains that weekend?", critical: false, event: false },
+    { unit_id: "unit:two", question: "Do I want to move back to the mountain village, or did I move?", critical: true, event: false }
   ]
 });
 const judgment = (unitId, change = {}) => ({ unit_id: unitId, covered: true, missing: "", critical_question_ids: [],
-  repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [], ...change });
+  event_question_ids: [], repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [], ...change });
 
 test("a question set is complete when every quote has a question and every question names one of the unit's quotes", () => {
   const set = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: writerAnswer() });
   assert.equal(set.complete, true);
-  assert.deepEqual(set.questions.map((item) => [item.question_id, item.unit_id, item.critical]), [
-    ["question:7:0:0", "unit:one", false], ["question:7:0:1", "unit:one", false], ["question:7:0:2", "unit:two", true]]);
+  assert.deepEqual(set.questions.map((item) => [item.question_id, item.unit_id, item.critical, item.event]), [
+    ["question:7:0:0", "unit:one", false, true], ["question:7:0:1", "unit:one", false, false], ["question:7:0:2", "unit:two", true, false]]);
   assert.ok(Object.isFrozen(set) && Object.isFrozen(set.questions[0]));
   // A retry's questions have their own IDs.
   assert.equal(checkQuestionSet({ sampleIndex: 7, attempt: 1, quoteIds: QUOTES, answer: writerAnswer() }).questions[0].question_id,
@@ -31,10 +31,12 @@ test("a question set is complete when every quote has a question and every quest
   const withoutTwo = { ...writerAnswer(), questions: writerAnswer().questions.slice(0, 2) };
   assert.deepEqual(checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: withoutTwo }),
     { complete: false, answer_valid: true, questions: [], foreign_questions: 0, quotes_without_question: 1 });
-  const foreign = { ...writerAnswer(), questions: [...writerAnswer().questions, { unit_id: "unit:three", question: "Where?", critical: false }] };
+  const foreign = { ...writerAnswer(), questions: [...writerAnswer().questions,
+    { unit_id: "unit:three", question: "Where?", critical: false, event: false }] };
   const foreignSet = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: foreign });
   assert.deepEqual([foreignSet.complete, foreignSet.foreign_questions, foreignSet.questions.length], [false, 1, 0]);
-  for (const answer of [null, {}, { questions: [] }, { questions: [{ unit_id: "unit:one", question: "", critical: false }] }]) {
+  for (const answer of [null, {}, { questions: [] }, { questions: [{ unit_id: "unit:one", question: "", critical: false, event: false }] },
+    { questions: [{ unit_id: "unit:one", question: "What happened?", critical: false }] }]) {
     const checked = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer });
     assert.deepEqual([checked.complete, checked.answer_valid, checked.quotes_without_question], [false, false, 2]);
   }
@@ -46,28 +48,30 @@ test("a question set is complete when every quote has a question and every quest
 
 test("the coverage judge gets 25 quotes to a call, each with all its questions", () => {
   const quotes = Array.from({ length: 53 }, (_, index) => ({ unit_id: `unit:${index}`, text: `Synthetic quote ${index}.`,
-    questions: [{ question_id: `question:${index}:0:0`, question: "What happened?", critical: index % 2 === 0, extra: "dropped" }] }));
+    questions: [{ question_id: `question:${index}:0:0`, question: "What happened?", critical: index % 2 === 0, event: true, extra: "dropped" }] }));
   const calls = coverageJudgeCalls({ quotes });
   assert.equal(POINTER_COVERAGE_QUOTES_PER_CALL, 25);
   assert.deepEqual(calls.map((call) => [call.call_index, call.quotes.length]), [[0, 25], [1, 25], [2, 3]]);
   assert.deepEqual(calls[2].quotes[2], { unit_id: "unit:52", text: "Synthetic quote 52.",
-    questions: [{ question_id: "question:52:0:0", question: "What happened?", critical: true }] });
+    questions: [{ question_id: "question:52:0:0", question: "What happened?", critical: true, event: true }] });
   assert.deepEqual(coverageJudgeCalls({ quotes: [] }), []);
   assert.throws(() => coverageJudgeCalls({ quotes: [quotes[0], quotes[0]] }), { code: "POINTER_COVERAGE_CALLS_DUPLICATE" });
   assert.throws(() => coverageJudgeCalls({ quotes: [{ ...quotes[0], questions: [] }] }), { code: "POINTER_COVERAGE_CALLS_INPUT_INVALID" });
 });
 
 const callQuotes = () => [
-  { unit_id: "unit:one", questions: [{ question_id: "question:7:0:0", critical: false }, { question_id: "question:7:0:1", critical: false }] },
-  { unit_id: "unit:two", questions: [{ question_id: "question:7:0:2", critical: true }] }
+  { unit_id: "unit:one", questions: [{ question_id: "question:7:0:0", critical: false, event: true },
+    { question_id: "question:7:0:1", critical: false, event: false }] },
+  { unit_id: "unit:two", questions: [{ question_id: "question:7:0:2", critical: true, event: false }] }
 ];
 
 test("code confirms a quote only when the judge says it is covered and lists no repeated, combined or copied question", () => {
   const checked = checkCoverageJudgments({ quotes: callQuotes(), answer: { schema_version: "1.0", judgments: [
-    judgment("unit:one", { critical_question_ids: ["question:7:0:1"] }), judgment("unit:two")] } });
+    judgment("unit:one", { critical_question_ids: ["question:7:0:1"] }), judgment("unit:two", { event_question_ids: ["question:7:0:2"] })] } });
   assert.equal(checked.valid, true);
-  assert.deepEqual(checked.quotes.map((quote) => [quote.unit_id, quote.confirmed, quote.critical_question_ids]), [
-    ["unit:one", true, ["question:7:0:1"]], ["unit:two", true, ["question:7:0:2"]]]);
+  // Marks are the writer's and the judge's together.
+  assert.deepEqual(checked.quotes.map((quote) => [quote.unit_id, quote.confirmed, quote.critical_question_ids, quote.event_question_ids]), [
+    ["unit:one", true, ["question:7:0:1"], ["question:7:0:0"]], ["unit:two", true, ["question:7:0:2"], ["question:7:0:2"]]]);
   assert.deepEqual(checked.notes, []);
 
   // Covered, but one question repeats another: not confirmed, and the note goes to the writer's retry.
@@ -102,6 +106,7 @@ test("a coverage answer that misses a quote, judges one twice or lists another q
     ["question_outside_quote", { judgments: [judgment("unit:one", { critical_question_ids: ["question:7:0:2"] }), judgment("unit:two")] }],
     ["question_outside_quote", { judgments: [judgment("unit:one"), judgment("unit:two", { repeated_question_ids: ["question:7:0:0"] })] }],
     ["question_outside_quote", { judgments: [judgment("unit:one", { copied_question_ids: ["question:7:0:2"], missing: "copied" }), judgment("unit:two")] }],
+    ["question_outside_quote", { judgments: [judgment("unit:one", { event_question_ids: ["question:7:0:2"] }), judgment("unit:two")] }],
     ["answer_invalid", { judgments: [judgment("unit:one", { copied_question_ids: undefined }), judgment("unit:two")] }],
     ["answer_invalid", { judgments: [judgment("unit:one", { combined_question_ids: ["question:7:0:0", "question:7:0:0"] }), judgment("unit:two")] }],
     ["answer_invalid", { judgments: [judgment("unit:one", { covered: "yes" }), judgment("unit:two")] }],
@@ -118,9 +123,11 @@ test("a unit gets one writer retry in all, and a unit still incomplete after it 
   assert.deepEqual(POINTER_REFERENCE_NONRESPONSE_REASONS, ["questions_incomplete", "coverage_unconfirmed", "coverage_check_failed", "deadline"]);
   const set = (attempt) => checkQuestionSet({ sampleIndex: 7, attempt, quoteIds: QUOTES, answer: writerAnswer() });
   const incomplete = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: { questions: writerAnswer().questions.slice(0, 1) } });
-  const coverage = (confirmed, notes = []) => ({ quotes: [
-    { unit_id: "unit:one", confirmed: confirmed[0], critical_question_ids: [] },
-    { unit_id: "unit:two", confirmed: confirmed[1], critical_question_ids: ["question:7:0:2"] }], notes });
+  const judge = (confirmed, notes = [], marks = {}) => ({ quotes: [
+    { unit_id: "unit:one", confirmed: confirmed[0], critical_question_ids: [], event_question_ids: marks.event ?? ["question:7:0:0"] },
+    { unit_id: "unit:two", confirmed: confirmed[1], critical_question_ids: marks.critical ?? ["question:7:0:2"], event_question_ids: [] }], notes });
+  // Both judges' results, the Codex one first.
+  const coverage = (confirmed, notes = []) => [judge(confirmed, notes), judge(confirmed)];
   const step = (attempts) => referenceUnitStep({ quoteIds: QUOTES, attempts });
 
   assert.deepEqual(step([]), { step: "write", attempt: 0, notes: [] });
@@ -128,8 +135,18 @@ test("a unit gets one writer retry in all, and a unit still incomplete after it 
   // Confirmed at once: the questions, critical when the writer or the judge marked them.
   const done = step([{ set: set(0), coverage: coverage([true, true]) }]);
   assert.equal(done.step, "complete");
-  assert.deepEqual(done.questions.map((item) => [item.question_id, item.critical]), [["question:7:0:0", false], ["question:7:0:1", false],
-    ["question:7:0:2", true]]);
+  assert.deepEqual(done.questions.map((item) => [item.question_id, item.critical, item.event]), [["question:7:0:0", false, true],
+    ["question:7:0:1", false, false], ["question:7:0:2", true, false]]);
+  // Either judge's mark counts.
+  const marked = step([{ set: set(0), coverage: [judge([true, true], [], { critical: [], event: ["question:7:0:1"] }),
+    judge([true, true], [], { event: [] })] }]);
+  assert.deepEqual(marked.questions.map((item) => [item.critical, item.event]), [[false, false], [false, true], [true, false]]);
+  // One judge's confirmation isn't enough, and the writer's retry gets both judges' notes.
+  const codexNote = { unit_id: "unit:two", missing: "the call from the workshop" };
+  const claudeNote = { unit_id: "unit:one", missing: "one question copies the quote's turn of phrase" };
+  assert.deepEqual(step([{ set: set(0), coverage: [judge([true, false], [codexNote]), judge([false, true], [claudeNote])] }]),
+    { step: "write", attempt: 1, notes: [codexNote, claudeNote] });
+  assert.deepEqual(step([{ set: set(0), coverage: [judge([true, true]), judge([true, false], [codexNote])] }]).notes, [codexNote]);
   // An incomplete answer, or a failed call, uses the retry without notes.
   assert.deepEqual(step([{ set: incomplete, coverage: null }]), { step: "write", attempt: 1, notes: [] });
   assert.deepEqual(step([{ set: null, coverage: null }]), { step: "write", attempt: 1, notes: [] });
@@ -144,9 +161,10 @@ test("a unit gets one writer retry in all, and a unit still incomplete after it 
   assert.equal(step([{ set: set(0), coverage: coverage([false, true], notes) }, { set: set(1), coverage: coverage([true, true]) }]).step,
     "complete");
   // A judge call that failed after its retry ends the unit: a writer retry can't help it.
-  assert.deepEqual(step([{ set: set(0), coverage: { failed: true } }]), { step: "nonresponse", reason: "coverage_check_failed" });
-  // The coverage must be for exactly the unit's quotes.
-  assert.throws(() => step([{ set: set(0), coverage: { quotes: coverage([true, true]).quotes.slice(0, 1), notes: [] } }]),
+  assert.deepEqual(step([{ set: set(0), coverage: [judge([true, true]), { failed: true }] }]), { step: "nonresponse", reason: "coverage_check_failed" });
+  // Both judges' results, each for exactly the unit's quotes.
+  assert.throws(() => step([{ set: set(0), coverage: [judge([true, true])] }]), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
+  assert.throws(() => step([{ set: set(0), coverage: [judge([true, true]), { quotes: judge([true, true]).quotes.slice(0, 1), notes: [] }] }]),
     { code: "POINTER_REFERENCE_STEP_COVERAGE_MISMATCH" });
   assert.throws(() => step([{}, {}, {}]), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
 });

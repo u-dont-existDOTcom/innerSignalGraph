@@ -22,12 +22,16 @@
           },
           "critical": {
             "type": "boolean"
+          },
+          "event": {
+            "type": "boolean"
           }
         },
         "required": [
           "unit_id",
           "question",
-          "critical"
+          "critical",
+          "event"
         ],
         "additionalProperties": false
       },

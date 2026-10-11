@@ -338,19 +338,19 @@ test("a Codex route may set the effort of each pointer role", () => {
 const questionAnswer = () => ({
   schema_version: "1.0",
   questions: [
-    { unit_id: "unit:one", question: "Who came to stay for the weekend?", critical: false },
-    { unit_id: "unit:one", question: "What was the weather like in the mountains that weekend?", critical: false },
-    { unit_id: "unit:two", question: "Do I want to move back to the mountain village, or did I move?", critical: true }
+    { unit_id: "unit:one", question: "Who came to stay for the weekend?", critical: false, event: true },
+    { unit_id: "unit:one", question: "What was the weather like in the mountains that weekend?", critical: false, event: false },
+    { unit_id: "unit:two", question: "Do I want to move back to the mountain village, or did I move?", critical: true, event: false }
   ]
 });
 
 const coverageAnswer = () => ({
   schema_version: "1.0",
   judgments: [
-    { unit_id: "unit:one", covered: true, missing: "", critical_question_ids: [], repeated_question_ids: [], combined_question_ids: [],
-      copied_question_ids: [] },
+    { unit_id: "unit:one", covered: true, missing: "", critical_question_ids: [], event_question_ids: ["question:one"],
+      repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [] },
     { unit_id: "unit:two", covered: false, missing: "the phone call from the workshop; one question asks about two things",
-      critical_question_ids: ["question:three"], repeated_question_ids: [], combined_question_ids: ["question:three"],
+      critical_question_ids: ["question:three"], event_question_ids: [], repeated_question_ids: [], combined_question_ids: ["question:three"],
       copied_question_ids: [] }
   ]
 });
@@ -363,11 +363,11 @@ function referencePacket(role, extra = {}) {
     ] },
     coverage_judge: { quotes: [
       { unit_id: "unit:one", text: "Odile came for the weekend. Valloire was cold.", questions: [
-        { question_id: "question:one", question: "Who came to stay for the weekend?", critical: false },
-        { question_id: "question:two", question: "What was the weather like that weekend?", critical: false }
+        { question_id: "question:one", question: "Who came to stay for the weekend?", critical: false, event: true },
+        { question_id: "question:two", question: "What was the weather like that weekend?", critical: false, event: false }
       ] },
       { unit_id: "unit:two", text: "I wish we could move back to Valloire. Atelier Brun called.", questions: [
-        { question_id: "question:three", question: "Do I want to move back to the village?", critical: false }
+        { question_id: "question:three", question: "Do I want to move back to the village?", critical: false, event: false }
       ] }
     ] }
   }[role];
@@ -382,11 +382,12 @@ test("the question writer and the coverage judge are defined, with registered sc
   assert.deepEqual(JOURNAL_ROLE_DEFINITIONS.coverage_judge.fields, ["quotes"]);
   assert.equal(JOURNAL_ROLE_DEFINITIONS.coverage_judge.outputSchema, "coverage-judgment-result");
   for (const schema of ["question-set-result", "coverage-judgment-result"]) assert.ok(JOURNAL_SCHEMA_NAMES.includes(schema), schema);
-  // The writer is Codex's; the judge is the Claude lane's alone, so it is independent of the writer.
+  // The writer is Codex's; the judge runs on both lanes, since a Codex judge, in calls of its own, and a Claude judge
+  // must both confirm each quote.
   assert.equal(journalRoleRunsOnTier("question_writer", "standard"), true);
   assert.equal(journalRoleRunsOnTier("question_writer", "hardest"), false);
   assert.equal(journalRoleRunsOnTier("coverage_judge", "hardest"), true);
-  assert.equal(journalRoleRunsOnTier("coverage_judge", "standard"), false);
+  assert.equal(journalRoleRunsOnTier("coverage_judge", "standard"), true);
   assert.deepEqual(validateJournalSchema("question-set-result", questionAnswer()), questionAnswer());
   assert.deepEqual(validateJournalSchema("coverage-judgment-result", coverageAnswer()), coverageAnswer());
 });
@@ -397,6 +398,8 @@ test("the question set and the coverage judgment hold their fields and nothing e
     ["no question", (copy) => { copy.questions = []; }],
     ["a missing critical mark", (copy) => { delete copy.questions[0].critical; }],
     ["a critical mark that is not a boolean", (copy) => { copy.questions[0].critical = "yes"; }],
+    ["a missing event mark", (copy) => { delete copy.questions[0].event; }],
+    ["an event mark that is not a boolean", (copy) => { copy.questions[0].event = 1; }],
     ["an empty question", (copy) => { copy.questions[0].question = ""; }],
     ["a question over 400 characters", (copy) => { copy.questions[0].question = "a".repeat(401); }],
     ["a malformed unit ID", (copy) => { copy.questions[0].unit_id = "unit one"; }],
@@ -420,6 +423,8 @@ test("the question set and the coverage judgment hold their fields and nothing e
     ["a combined question listed twice", (copy) => { copy.judgments[1].combined_question_ids = ["question:three", "question:three"]; }],
     ["a malformed repeated question ID", (copy) => { copy.judgments[0].repeated_question_ids = ["question two"]; }],
     ["no list of copied questions", (copy) => { delete copy.judgments[0].copied_question_ids; }],
+    ["no list of event questions", (copy) => { delete copy.judgments[0].event_question_ids; }],
+    ["an event question listed twice", (copy) => { copy.judgments[0].event_question_ids = ["question:one", "question:one"]; }],
     ["a copied question listed twice", (copy) => { copy.judgments[1].copied_question_ids = ["question:three", "question:three"]; }],
     ["a question written by the judge", (copy) => { copy.judgments[1].questions = ["What did the workshop say?"]; }]
   ]) {
@@ -468,6 +473,9 @@ test("the reference roles' instructions are installed, and each call goes only t
   // No question may copy its quote's wording, or word search would find the quote by its own phrasing.
   assert.match(journalRoleInstruction("coverage_judge"), /`copied_question_ids` lists each question that copies the quote's wording/);
   assert.match(journalRoleInstruction("question_writer"), /Don't copy distinctive words or phrases from the quote; the names of people/);
+  // Event marks, which event coverage is measured against.
+  assert.match(journalRoleInstruction("question_writer"), /Set `event` to true when the question asks about something the quote reports as happening/);
+  assert.match(journalRoleInstruction("coverage_judge"), /`event_question_ids` lists every question of that quote that asks about something the quote reports as happening/);
   assert.match(journalRoleInstruction("question_writer"), /When `coverage_notes` is present/);
   assert.match(journalRoleInstruction("coverage_judge"), /Judge each question against that definition yourself, whatever the writer marked/);
   assert.match(journalRoleInstruction("coverage_judge"), /You don't write questions/);
@@ -476,15 +484,16 @@ test("the reference roles' instructions are installed, and each call goes only t
   const port = codexPort(exchange);
   const reference = (role, tier) => ({ role, packet: referenceInput(role), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
     operationKey: `job:synthetic-${role}-${tier}`, grant: { ...grant, allowed_roles: ["question_writer", "coverage_judge"] }, tier });
-  await assert.rejects(port.invoke(reference("coverage_judge", "standard")), { code: "JOURNAL_EXCHANGE_ROLE_UNSUPPORTED", submissionStatus: "not_submitted" });
   await assert.rejects(port.invoke(reference("question_writer", "hardest")), { code: "JOURNAL_EXCHANGE_ROLE_UNSUPPORTED", submissionStatus: "not_submitted" });
   assert.equal(exchange.work.size, 0);
   await assert.rejects(port.invoke(reference("coverage_judge", "hardest")), { code: "COMPLETION_UNKNOWN" });
+  await assert.rejects(port.invoke(reference("coverage_judge", "standard")), { code: "COMPLETION_UNKNOWN" });
   await assert.rejects(port.invoke(reference("question_writer", "standard")), { code: "COMPLETION_UNKNOWN" });
   assert.deepEqual(exchange.dispatch.map(({ role, tier, model }) => [role, tier, model]),
-    [["coverage_judge", "hardest", "claude-opus-5-5"], ["question_writer", "standard", "gpt-6-sol"]]);
+    [["coverage_judge", "hardest", "claude-opus-5-5"], ["coverage_judge", "standard", "gpt-6-sol"], ["question_writer", "standard", "gpt-6-sol"]]);
   const capabilities = port.capabilities();
   assert.equal(capabilities.roles.question_writer.available, true);
+  assert.equal(capabilities.roles.coverage_judge.available, true);
   assert.equal(capabilities.hardest_roles.coverage_judge.available, true);
   assert.equal(capabilities.hardest_roles.question_writer.available, false);
 });

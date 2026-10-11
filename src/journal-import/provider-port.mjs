@@ -31,11 +31,12 @@ export const JOURNAL_ROLE_DEFINITIONS = Object.freeze({
   search_writer: Object.freeze({ outputSchema: "search-plan-result", fields: ["questions"], tiers: Object.freeze(["standard"]) }),
   pair_judge: Object.freeze({ outputSchema: "pair-judgment-result", fields: ["pairs"] }),
   // The measurement's reference: the question writer (standard tier) writes questions covering every quote of a
-  // sampled unit, sees that unit's quotes and, on its one retry, the coverage judge's notes; the coverage judge (the
-  // Claude lane only, so it is independent of the writer) sees each quote with its questions and their marks.
+  // sampled unit, sees that unit's quotes and, on its one retry, the coverage judges' notes; the coverage judge sees
+  // each quote with its questions and their marks, and runs on both tiers, since every quote is checked by a Codex judge
+  // in calls of its own and by a Claude judge, and both must confirm it.
   question_writer: Object.freeze({ outputSchema: "question-set-result", fields: ["quote_units", "coverage_notes"],
     tiers: Object.freeze(["standard"]) }),
-  coverage_judge: Object.freeze({ outputSchema: "coverage-judgment-result", fields: ["quotes"], tiers: Object.freeze(["hardest"]) })
+  coverage_judge: Object.freeze({ outputSchema: "coverage-judgment-result", fields: ["quotes"] })
 });
 
 // A role runs on the work tiers its definition names, or on both when it names none.
