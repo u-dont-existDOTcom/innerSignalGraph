@@ -347,9 +347,11 @@ const questionAnswer = () => ({
 const coverageAnswer = () => ({
   schema_version: "1.0",
   judgments: [
-    { unit_id: "unit:one", covered: true, missing: "", critical_question_ids: [], repeated_question_ids: [], combined_question_ids: [] },
+    { unit_id: "unit:one", covered: true, missing: "", critical_question_ids: [], repeated_question_ids: [], combined_question_ids: [],
+      copied_question_ids: [] },
     { unit_id: "unit:two", covered: false, missing: "the phone call from the workshop; one question asks about two things",
-      critical_question_ids: ["question:three"], repeated_question_ids: [], combined_question_ids: ["question:three"] }
+      critical_question_ids: ["question:three"], repeated_question_ids: [], combined_question_ids: ["question:three"],
+      copied_question_ids: [] }
   ]
 });
 
@@ -417,6 +419,8 @@ test("the question set and the coverage judgment hold their fields and nothing e
     ["no list of combined questions", (copy) => { delete copy.judgments[0].combined_question_ids; }],
     ["a combined question listed twice", (copy) => { copy.judgments[1].combined_question_ids = ["question:three", "question:three"]; }],
     ["a malformed repeated question ID", (copy) => { copy.judgments[0].repeated_question_ids = ["question two"]; }],
+    ["no list of copied questions", (copy) => { delete copy.judgments[0].copied_question_ids; }],
+    ["a copied question listed twice", (copy) => { copy.judgments[1].copied_question_ids = ["question:three", "question:three"]; }],
     ["a question written by the judge", (copy) => { copy.judgments[1].questions = ["What did the workshop say?"]; }]
   ]) {
     assert.throws(() => validateJournalSchema("coverage-judgment-result", mutate(coverage, change)), invalid, name);
@@ -461,6 +465,9 @@ test("the reference roles' instructions are installed, and each call goes only t
   assert.match(journalRoleInstruction("question_writer"), /Don't ask about the same thing twice, and don't fold two things into one question/);
   assert.match(journalRoleInstruction("coverage_judge"), /`repeated_question_ids` lists each question that asks about the same thing as an earlier question/);
   assert.match(journalRoleInstruction("coverage_judge"), /`combined_question_ids` each question that asks about two things or more/);
+  // No question may copy its quote's wording, or word search would find the quote by its own phrasing.
+  assert.match(journalRoleInstruction("coverage_judge"), /`copied_question_ids` lists each question that copies the quote's wording/);
+  assert.match(journalRoleInstruction("question_writer"), /Don't copy distinctive words or phrases from the quote; the names of people/);
   assert.match(journalRoleInstruction("question_writer"), /When `coverage_notes` is present/);
   assert.match(journalRoleInstruction("coverage_judge"), /Judge each question against that definition yourself, whatever the writer marked/);
   assert.match(journalRoleInstruction("coverage_judge"), /You don't write questions/);
