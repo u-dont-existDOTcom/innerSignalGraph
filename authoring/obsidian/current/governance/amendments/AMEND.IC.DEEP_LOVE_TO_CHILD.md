@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.DEEP_LOVE_TO_CHILD
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4f8dd5a387b5c18b42fb04e49115de1633da41c381ae8521560a829c877a9d92
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: d6ddfe686a1c25e82992c8d935e898556b38ea56268594ed88547130f7c3de4c
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # AMEND.IC.DEEP_LOVE_TO_CHILD
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Classify deep or transpersonal love by actual experience and present access, not by theism, religion, doctrine, or identity. When profound love is genuinely accessible, contact that real love first and then see whether the younger self can be included in it—the feast must reach the hungry child. If the child recoils, goes numb, distrusts the source, or cannot receive it, do not intensify the spiritual exercise; hear the guard or credibility problem and continue Nurturer or Protector repair without forcing transfer."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 626e3d65f0e03acc9325eae593765980728684e0c5f5b5bf4ef575d87502a49a
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: 45520553bde55a72fd3aa10244d26f2bb5a63e36cc6688b248f98a33c6ea5a59
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Separate reflective journaling from external memory support. If narrative, interpretive, or meaning-making journaling increases confusion, do not assume the answer is more journaling or more interpretation. Preserve the useful memory and continuity function in the least cognitively demanding format that fits the person—for example brief dated facts, what helped, what needs remembering, one next step, or a voice note—while leaving interpretation and pattern-finding optional for later. A memory aid does not need to explain the person's life in order to be useful."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

@@ -7,21 +7,21 @@ source_id: IC.IDENTITY_PLAY
 guide_id: inner-child-guide
 heading: From Survival to Experimental Play
 source_role: primary-framework
-source_hash: 96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31
+source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
 section_hash: 669b5f1500e2d426854b92d6d99a65e06640f63bc374299a25e874136577d2a9
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.IDENTITY_FORMATION
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # From Survival to Experimental Play
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-10-r5.txt`
+Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
 
-Locator: Lines 521–548
+Locator: Lines 525–552
 
 ```text
 From Survival to Experimental Play

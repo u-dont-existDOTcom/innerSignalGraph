@@ -1,0 +1,27 @@
+{
+  "id": "G106",
+  "title": "Lost stopping capacity blocks the specialist-first cognitive route",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "no",
+    "ability_to_return": "yes",
+    "suicidal_state": "ideation",
+    "medical_urgency": "nonurgent",
+    "refractory_pain_care": "indicated",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "suicidal_ideation_context": "pain_episode"
+  },
+  "expected": {
+    "selectedExcludes": [
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION"
+    ],
+    "selectedIncludes": [
+      "IC.SAFETY_ORIENTATION"
+    ]
+  }
+}

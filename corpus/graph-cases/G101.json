@@ -1,0 +1,28 @@
+{
+  "id": "G101",
+  "title": "Urgent actual medical red flag keeps acute care ahead of ongoing pain navigation",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "medical_urgency": "urgent",
+    "refractory_pain_care": "indicated",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "suicidal_ideation_context": "not_in_play"
+  },
+  "expected": {
+    "primary": "ROUTE.MEDICAL_RED_FLAG",
+    "selectedIncludes": [
+      "ROUTE.MEDICAL_RED_FLAG"
+    ],
+    "selectedExcludes": [
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION"
+    ]
+  }
+}

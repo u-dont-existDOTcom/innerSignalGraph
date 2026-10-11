@@ -2,6 +2,15 @@
 
 Updated: 2026-10-11
 
+
+## Refractory chronic pain pathway and clinical trust (2026-10-11, development candidate)
+
+- Owner outcome: replace routine repeated ambulance/psychiatric-disclosure suggestions for disabling recurrent pain after prior failed or harmful interventions with sustained access to a chronic-pain specialist and a written flare plan. Use a justified national urgent-referral channel where available, with SAMU as acute backup.
+- General safety boundary: pain-triggered ideation is not a demonstrated plan; prior coercion and unsafe family are real context, not a universal prediction. Do not frame suicide disclosure as analgesia leverage, but do not instruct concealment or false denial of imminent self-harm danger or inability to remain safe.
+- Implementation candidate: AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY and AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST, explicit refractory_pain_care and suicidal_ideation_context variables, priority specialist-navigation route restricted against unrelated ideation or active danger, G099-G106, case extraction/prompt/served therapy rule changes, immutable guide r6, queue PGQ-029/030. Independent Opus review raised safety/overclaim gaps; targeted changes address current intent/plan, changed medical red flags, locally verified services, conditional French HAS guidance, and stable parent source history. Clinical review is diagnostic, not owner policy authority.
+- No client transcript, diagnosis, private case identifier, or personal experience is published in the repo. No deployment/stable promotion/publication is claimed before independent review and exact-head gates.
+
+
 ## Journal pointer pass: an import in hours (2026-10-11, plan awaiting review)
 
 - **Owner request:** "i do want to make this journal import just happen in a few hours for the public, not weeks. but i also don't want so many gaps and errors and failures..." (11 Oct, 01:03 UTC). Plan: `docs/superpowers/plans/2026-10-09-journal-quote-first.md`, "Part 3".
