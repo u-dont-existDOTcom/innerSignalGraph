@@ -279,3 +279,21 @@ test("a route that takes one call at a time gets its tier's calls in turn, and a
   await assert.rejects(runDeadlineCalls({ calls: [call("x")], port: { invoke() {}, getCompletion() {} }, deadline: DEADLINE, oneAtATime: ["visual"] }),
     { code: "POINTER_CALL_TURNS_INVALID" });
 });
+
+test("a call that stops the step lets every call under way finish and keep its answer before the stop is thrown", async () => {
+  const clock = { now: START };
+  const finished = [];
+  const port = {
+    async invoke(request) {
+      // The tagger's answer takes a few turns of the event loop to arrive and be stored.
+      for (let turn = 0; turn < 3; turn += 1) await new Promise((resolve) => { setImmediate(resolve); });
+      finished.push(request.operationKey);
+      return { output: { ok: true }, receipt: { provider_route_receipt: { received_at: new Date(clock.now).toISOString() } } };
+    },
+    async getCompletion() { return { status: "not_submitted" }; }
+  };
+  const beforeHardestSend = async () => { throw new JournalInferencePortError("HARDEST_DAILY_LIMIT"); };
+  await assert.rejects(runDeadlineCalls({ calls: [call("page:1"), call("judge:1", "hardest"), call("page:2")], port, deadline: DEADLINE,
+    now: () => new Date(clock.now), beforeHardestSend }), { code: "HARDEST_DAILY_LIMIT" });
+  assert.deepEqual(finished.sort(), ["page:1", "page:2"], "the calls under way ended before the stop");
+});

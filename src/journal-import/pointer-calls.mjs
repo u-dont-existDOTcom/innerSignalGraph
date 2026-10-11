@@ -63,7 +63,8 @@ function classify(error) {
  * whose turn comes after the deadline is never sent. An answer counts only when it is known to have come by the deadline: by its
  * route's own time (the exchange's `received_at`, the browser route's `observed_at`) or, with none, by when the port
  * handed it over; one read after the deadline with no time fails closed. An error that is no call's outcome (a revoked
- * grant, an unreachable store) is thrown, and the step resumes later with the same deadline.
+ * grant, an unreachable store, the Claude lane's daily limit) is thrown once every other call has ended, so no call
+ * under way is cut off and each keeps its answer, and the step resumes later with the same deadline.
  */
 export async function runDeadlineCalls({ calls, port, deadline, now = () => new Date(), retries = 1, beforeHardestSend = null,
   check = null, pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }), deadlineGraceMs = DEADLINE_GRACE_MS,
@@ -192,7 +193,12 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
     }
     return { key: call.key, status: "failed", attempts: retries + 1, reason };
   };
-  return deepFreeze(await Promise.all(calls.map(outcomeOf)));
+  // A call that stops the step doesn't cut the others off: each finishes and its answer is stored, and then the first
+  // stop is thrown.
+  const settled = await Promise.allSettled(calls.map(outcomeOf));
+  const stop = settled.find((result) => result.status === "rejected");
+  if (stop) throw stop.reason;
+  return deepFreeze(settled.map((result) => result.value));
 }
 
 /** Counts of the outcomes, content-free, for reports. */

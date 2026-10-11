@@ -365,6 +365,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       await save();
     };
+    // The pointer pass's Claude calls count against the same daily limit, but a step that reaches it stops on its own
+    // (it resumes with its saved deadline): the import's blocker, which says why the import stopped, stays as it was.
+    const pointerBeforeHardestSend = async () => {
+      const importBlocker = state.blocker;
+      const allowed = applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit });
+      state.blocker = importBlocker;
+      await save();
+      if (!allowed) throw new ValidationError("HARDEST_DAILY_LIMIT", { code: "HARDEST_DAILY_LIMIT" });
+    };
     // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the
     // work exchange queues any number for its workers' slots. The hardest lane, when it's on, runs on the exchange.
     const directRoute = route !== null && ![JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER].includes(route.provider);
@@ -2794,7 +2803,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (step.status === "done") return summary();
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
       const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant,
-        generation: run.generation, now, beforeHardestSend, oneAtATime: pointerTurns });
+        generation: run.generation, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns });
       const nonresponse = reference.units.filter((unit) => unit.status !== "complete")
         .map((unit) => ({ unit_id: unit.unit_id, reason: unit.reason, deadline_cause: unit.deadline_cause ?? null }));
       await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:reference`, reference), counts: pointerReferenceCounts(reference),
@@ -2825,7 +2834,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const sample = pointerChallengeUnits({ units: input.units, calibration });
       const reference = sample.units.length > 0
         ? await runPointerReference({ units: input.units, sample, stepId: step.step_id, deadline: step.deadline, port, grant,
-          generation: run.generation, now, beforeHardestSend, oneAtATime: pointerTurns })
+          generation: run.generation, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns })
         : { step_id: step.step_id, deadline: step.deadline, sample: { kind: "calibration", candidate_units: 0 }, units: [] };
       await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:challenge`, reference),
         counts: pointerReferenceCounts(reference), calibration_units: sample.calibration_units, units_without_quotes: sample.units_without_quotes });
@@ -2926,7 +2935,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
           };
           const result = await runPointerMeasure({ quoteGeneration, pass: stored, reference, challenge, search, seed: step.seed, stepId: step.step_id,
-            deadline: step.deadline, port, grant, now, beforeHardestSend, oneAtATime: pointerTurns });
+            deadline: step.deadline, port, grant, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns });
           await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:measure`, result), publish: result.publish,
             failed_floors: Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name),
             floors: result.floors, report: result.report });

@@ -270,3 +270,31 @@ test("on a direct browser route every pointer step sends one call at a time; the
   await queued.run("stage", "build-quotes", "pointer-reference");
   assert.ok(exchange.most.standard > 1, "standard calls went out together");
 });
+
+test("a pointer step that reaches the Claude daily limit stops and resumes, and the import's own blocker stays as it was", async (t) => {
+  const f = await runtimeEnvironment(t);
+  f.config.hardest_lane = { daily_limit: 2 };
+  await f.run("stage", "build-quotes");
+  // The import stopped for its own reason.
+  const stopped = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  stopped.blocker = "CALIBRATION_REFERENCE_MISSED";
+  await fs.writeFile(f.stateFile, JSON.stringify(stopped), { mode: 0o600 });
+
+  await assert.rejects(f.run("pointer-reference"), { code: "HARDEST_DAILY_LIMIT" });
+  let state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  assert.equal(state.blocker, "CALIBRATION_REFERENCE_MISSED");
+  assert.equal(state.hardest_lane.sent, 2);
+  assert.equal(state.pointer.reference.status, "running");
+  assert.equal(state.pointer.blocker, null);
+
+  // With room again, the step resumes with its saved deadline and finishes; the import's blocker is still its own.
+  const deadline = state.pointer.reference.deadline;
+  f.config.hardest_lane = { daily_limit: 40 };
+  const resumed = await f.run("pointer-reference");
+  assert.equal(resumed.pointer.reference.status, "done");
+  assert.equal(resumed.pointer.reference.deadline, deadline);
+  assert.equal(resumed.pointer.reference.counts.complete_units, 96);
+  state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  assert.equal(state.blocker, "CALIBRATION_REFERENCE_MISSED");
+  assert.ok(state.hardest_lane.sent > 2);
+});
