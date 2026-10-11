@@ -48,13 +48,18 @@ function rolePacket(role, { generation, grantPurpose, assigned, tag, fields }) {
  * call is keyed under `stepId` and expires at `deadline`. A unit without confirmed questions or complete searches is a
  * nonresponse, with its reason; one that ran out of time is a nonresponse for the deadline. Returns the frozen
  * reference: the sample's record, and for each sampled unit its stretch, inclusion probability, quotes and, when
- * complete, its questions with their critical and event marks and their searches.
+ * complete, its questions with their critical and event marks and their searches. With `sample` (calibration's units,
+ * from pointerChallengeUnits) in place of a seed, the same step runs on those units, and each keeps its hazards.
  */
-export async function runPointerReference({ units, seed, stepId, deadline, port, grant, generation, now = () => new Date(),
-  beforeHardestSend = null } = {}) {
+export async function runPointerReference({ units, seed = null, sample: given = null, stepId, deadline, port, grant, generation,
+  now = () => new Date(), beforeHardestSend = null } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && typeof generation === "string" && generation.length > 0, "POINTER_STEP_INPUT_INVALID");
-  const sample = pointerReferenceSample({ units, seed });
+  invariant((seed === null) !== (given === null) && (given === null || (Array.isArray(given.units) && given.units.every((unit) => unit
+    && typeof unit.unit_id === "string" && Number.isSafeInteger(unit.stratum) && unit.inclusion_probability > 0 && unit.inclusion_probability <= 1
+    && Array.isArray(unit.quote_ids) && unit.quote_ids.length > 0))), "POINTER_STEP_INPUT_INVALID");
+  const sample = given ? { seed_sha256: null, strata: null, units_per_stratum: null, candidate_units: given.candidate_units ?? given.units.length,
+    units: given.units } : pointerReferenceSample({ units, seed });
   const quoteById = new Map(units.map((unit) => [unit.unit_id, unit]));
   // `late` records how time ran out for a unit: a call of its own left unanswered, or one never sent because the
   // deadline had passed (another call's wait used the time up).
@@ -157,7 +162,7 @@ export async function runPointerReference({ units, seed, stepId, deadline, port,
     const step = next(unit);
     const plan = searches.get(unit.index);
     const base = { unit_id: unit.unit_id, stratum: unit.stratum, inclusion_probability: unit.inclusion_probability,
-      quote_ids: [...unit.quote_ids], writer_attempts: unit.attempts.length };
+      quote_ids: [...unit.quote_ids], ...(Array.isArray(unit.hazards) ? { hazards: [...unit.hazards] } : {}), writer_attempts: unit.attempts.length };
     if (step.step === "complete" && plan) {
       const queries = new Map(plan.map((item) => [item.question_id, item.queries]));
       return { ...base, status: "complete", reason: null, deadline_cause: null, questions: step.questions.map((question) => ({ ...question,
@@ -171,8 +176,8 @@ export async function runPointerReference({ units, seed, stepId, deadline, port,
   return deepFreeze({
     step_id: stepId,
     deadline,
-    sample: { seed_sha256: sample.seed_sha256, strata: sample.strata, units_per_stratum: sample.units_per_stratum,
-      candidate_units: sample.candidate_units },
+    sample: { kind: given ? "calibration" : "random", seed_sha256: sample.seed_sha256, strata: sample.strata,
+      units_per_stratum: sample.units_per_stratum, candidate_units: sample.candidate_units },
     units: reference
   });
 }
@@ -448,6 +453,36 @@ export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly,
 }
 
 /**
+ * Recall on calibration's units, reported on its own (plan Part 3, "Calibration as a challenge set"): they were chosen,
+ * not drawn, so the counts are plain, unweighted, and never stand in for a floor. Over the units whose questions are
+ * complete (a nonresponse is counted), all questions and the critical ones, with tags and with words only, for every
+ * unit, for the units chosen only by their place, and for each hazard type apart. Content-free.
+ */
+export function measurePointerChallenge({ reference, foundWithTags, foundWordsOnly } = {}) {
+  invariant(reference && Array.isArray(reference.units) && foundWithTags instanceof Set && foundWordsOnly instanceof Set,
+    "POINTER_CHALLENGE_INPUT_INVALID");
+  const complete = reference.units.filter((unit) => unit.status === "complete");
+  const share = (found, asked) => (asked === 0 ? null : found / asked);
+  const tally = (units) => {
+    const questions = units.flatMap((unit) => unit.questions);
+    const critical = questions.filter((question) => question.critical);
+    const found = (list, set) => list.filter((question) => set.has(question.question_id)).length;
+    return { units: units.length, questions: questions.length, found_with_tags: found(questions, foundWithTags),
+      found_words_only: found(questions, foundWordsOnly), recall_with_tags: share(found(questions, foundWithTags), questions.length),
+      recall_words_only: share(found(questions, foundWordsOnly), questions.length), critical_questions: critical.length,
+      critical_found_with_tags: found(critical, foundWithTags), critical_found_words_only: found(critical, foundWordsOnly) };
+  };
+  const hazards = [...new Set(complete.flatMap((unit) => unit.hazards ?? []))].sort();
+  return deepFreeze({
+    units: reference.units.length,
+    nonresponse_units: reference.units.length - complete.length,
+    all: tally(complete),
+    by_place_only: tally(complete.filter((unit) => (unit.hazards ?? []).length === 0)),
+    by_hazard: Object.fromEntries(hazards.map((hazard) => [hazard, tally(complete.filter((unit) => (unit.hazards ?? []).includes(hazard)))]))
+  });
+}
+
+/**
  * The measurement's fixed samples (plan Part 3, "Tag precision" and "event-check recall"): for each kind, 150 of the
  * generation's pairs of that kind, or all of them when there are no more, and 150 of the event pairs the event check
  * dropped, rejected or unanswered, or all of them; each drawn by the SHA-256 of the seed, the sample and the pair. Each
@@ -524,9 +559,11 @@ async function foundQuestions({ units, passageIdForUnit, search, matchTags }) {
  * accept it, and one either leaves unscored counts as wrong; a dropped event pair counts as real when either accepts it
  * or leaves it unscored. `pass` is the measured pass's result (its checked results, event-check ledger counts, dropped
  * event pairs and coverage), and `quoteGeneration` its generation's input, which gives each quote's passage and text.
- * Returns the floors, a content-free report, and each sample's items with both verdicts for the private store.
+ * `challenge`, the reference step's result on calibration's units, is searched the same way and reported apart
+ * (`report.challenge`); it never decides. Returns the floors, a content-free report, and each sample's items with both
+ * verdicts for the private store.
  */
-export async function runPointerMeasure({ quoteGeneration, pass, reference, search, seed, stepId, deadline, port, grant,
+export async function runPointerMeasure({ quoteGeneration, pass, reference, challenge = null, search, seed, stepId, deadline, port, grant,
   now = () => new Date(), beforeHardestSend = null } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string"
@@ -544,6 +581,11 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, sear
     foundWithTags: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
     foundWordsOnly: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }),
     eventTaggedUnitIds: eventTagged });
+  // Calibration's units, reported apart.
+  const challengeUnits = challenge ? challenge.units.filter((unit) => unit.status === "complete") : [];
+  const challengeReport = challenge ? measurePointerChallenge({ reference: challenge,
+    foundWithTags: await foundQuestions({ units: challengeUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
+    foundWordsOnly: await foundQuestions({ units: challengeUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }) }) : null;
 
   // Both judges on every sample.
   const { seed_sha256: seedSha256, samples } = pointerMeasureSamples({ pairs: indexes.pairs, dropped: pass.dropped_event_pairs,
@@ -609,7 +651,8 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, sear
       words_only: { estimate: recall.words_only.estimate, lower_bound: recall.words_only.lower_bound },
       samples: scored.map((sample) => sample.counts),
       agreement: cohenKappa(scored.flatMap((sample) => sample.both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) })))),
-      calls: pointerCallCounts(outcomes)
+      calls: pointerCallCounts(outcomes),
+      challenge: challengeReport
     },
     samples: scored.map((sample) => ({ name: sample.counts.name, items: sample.items }))
   });

@@ -239,6 +239,51 @@ export function pointerReferenceSample({ units, seed, strata = POINTER_REFERENCE
 }
 
 /**
+ * Calibration's units as a challenge set (plan Part 3, "Calibration as a challenge set"): the pages of the import's
+ * calibration units, each once, with its quotes in journal order, the hazard types of the calibration units on it, and
+ * an inclusion probability of 1, since they were chosen, not drawn. A calibration unit on a page with no quote yet (a
+ * page that needs visual reading) is counted and left out, as in the random sample. `calibration` gives each
+ * calibration unit's representation, page number and hazard types; nothing of its text. The result has the reference
+ * step's sample shape, so the same step writes and checks its questions.
+ */
+export function pointerChallengeUnits({ units, calibration } = {}) {
+  invariant(Array.isArray(units) && units.every((unit) => isObject(unit) && isId(unit.unit_id) && Number.isSafeInteger(unit.source_order)
+    && typeof unit.representation_id === "string" && unit.representation_id.length > 0), "POINTER_CHALLENGE_INPUT_INVALID");
+  invariant(Array.isArray(calibration) && calibration.every((item) => isObject(item) && typeof item.unit_id === "string"
+    && typeof item.representation_id === "string" && item.representation_id.length > 0
+    && (item.page_number === null || item.page_number === undefined || Number.isSafeInteger(item.page_number))
+    && (item.hazard_types === undefined || (Array.isArray(item.hazard_types) && item.hazard_types.every((hazard) => typeof hazard === "string")))),
+  "POINTER_CHALLENGE_INPUT_INVALID");
+  // A page as the random sample names it: its number, or its representation's digest.
+  const pageId = (page, representationId) => (Number.isSafeInteger(page) ? `page:${page}` : `representation:${sha256(representationId).slice(0, 32)}`);
+  const quotesByPage = new Map();
+  for (const quote of [...units].sort((left, right) => left.source_order - right.source_order)) {
+    const id = pageId(quote.page, quote.representation_id);
+    if (!quotesByPage.has(id)) quotesByPage.set(id, []);
+    quotesByPage.get(id).push(quote);
+  }
+  const pages = new Map();
+  let withoutQuotes = 0;
+  for (const item of calibration) {
+    const id = pageId(item.page_number, item.representation_id);
+    if (!quotesByPage.has(id)) {
+      withoutQuotes += 1;
+      continue;
+    }
+    if (!pages.has(id)) pages.set(id, new Set());
+    for (const hazard of item.hazard_types ?? []) pages.get(id).add(hazard);
+  }
+  const ordered = [...pages.keys()].sort((left, right) => quotesByPage.get(left)[0].source_order - quotesByPage.get(right)[0].source_order);
+  return deepFreeze({
+    calibration_units: calibration.length,
+    units_without_quotes: withoutQuotes,
+    candidate_units: ordered.length,
+    units: ordered.map((id) => ({ unit_id: id, stratum: 0, inclusion_probability: 1, quote_ids: quotesByPage.get(id).map((quote) => quote.unit_id),
+      hazards: [...pages.get(id)].sort() }))
+  });
+}
+
+/**
  * Checks the search writer's answer for one sampled unit: one entry for each of its questions, naming only its
  * questions, each with one to three searches. Only a complete plan's searches are returned.
  */

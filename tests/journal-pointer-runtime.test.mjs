@@ -128,8 +128,19 @@ test("the pointer run goes from the reference sample to publication, each step w
   assert.deepEqual(passed.pointer.pass.report.untagged_pages, []);
 
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_NOT_READY_TO_PUBLISH" });
+  // Calibration's set is measured alongside, so its questions come first.
+  await assert.rejects(f.run("pointer-measure"), { code: "POINTER_CHALLENGE_NOT_DONE" });
+  const challenged = (await f.run("pointer-challenge")).pointer.challenge;
+  assert.deepEqual([challenged.status, challenged.calibration_units, challenged.units_without_quotes, challenged.counts.nonresponse_units],
+    ["done", 12, 0, 0]);
+  assert.ok(challenged.counts.sampled_units >= 1 && challenged.counts.sampled_units <= 12);
   const measured = await f.run("pointer-measure");
   const { measure } = measured.pointer;
+  // Reported apart, never a floor: with tags every calibration question is found, with words only the half that
+  // asks in the quotes' own words.
+  assert.deepEqual([measure.report.challenge.all.recall_with_tags, measure.report.challenge.all.recall_words_only, measure.report.challenge.by_hazard],
+    [1, 0.5, {}]);
+  assert.equal(measure.report.challenge.units, challenged.counts.sampled_units);
   assert.equal(measure.publish, true);
   assert.deepEqual(measure.failed_floors, []);
   assert.equal(measure.floors.recall.estimate, 1);

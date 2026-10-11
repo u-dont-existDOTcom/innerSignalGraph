@@ -30,6 +30,7 @@ import { QUOTE_SEARCH_LIMITS, openPrivateJournalGraph } from "./retrieval.mjs";
 import { buildPointerGeneration, pointerPassInput } from "./pointer-pass.mjs";
 import { POINTER_RECALL_TOP, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
   runPointerReference } from "./pointer-steps.mjs";
+import { pointerChallengeUnits } from "./pointer-reference.mjs";
 import { lexicalTerms } from "./graph.mjs";
 import { applyReconciliationResult, validateReconciliationResult } from "./reconcile.mjs";
 import { createAuditScopeIndex, createReconciledAuditScope, summarizeFidelityCoverage } from "./audit-scope.mjs";
@@ -403,8 +404,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return { ...structuredClone(rest), ...(seed ? { seed_sha256: hash(seed) } : {}) };
     };
     const pointerSummary = () => {
-      const { reference, pilot, pass, coverage_pass: coveragePass, measure, persisted, published, ...run } = state.pointer;
-      return { ...structuredClone(run), reference: pointerStepSummary(reference), pilot: pointerStepSummary(pilot), pass: pointerStepSummary(pass),
+      const { reference, challenge, pilot, pass, coverage_pass: coveragePass, measure, persisted, published, ...run } = state.pointer;
+      return { ...structuredClone(run), reference: pointerStepSummary(reference), challenge: pointerStepSummary(challenge),
+        pilot: pointerStepSummary(pilot), pass: pointerStepSummary(pass),
         coverage_pass: pointerStepSummary(coveragePass), measure: pointerStepSummary(measure),
         persisted: persisted ? { step_id: persisted.step_id, generation: persisted.generation, graph_sha256: persisted.graph_sha256,
           built_at: persisted.built_at } : null,
@@ -2799,6 +2801,32 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return summary();
     }
 
+    // Calibration's units as a challenge set, for the measurement to report apart: the reference step on their pages,
+    // under the same rules and with the reference step's time limit. A nonresponse here is counted and stops nothing.
+    async function pointerChallenge() {
+      const run = await pointerRun();
+      invariant(run.reference?.status === "done", "POINTER_REFERENCE_NOT_DONE");
+      const step = await pointerStep(run, "challenge", pointerDeadlines.reference);
+      if (step.status === "done") return summary();
+      const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
+      const planUnits = new Map(plan.units.map((unit) => [unit.unit_id, unit]));
+      const calibration = (plan.calibration ?? []).map((item) => {
+        const unit = planUnits.get(item.unit_id);
+        invariant(unit, "POINTER_CHALLENGE_UNIT_MISSING");
+        return { unit_id: unit.unit_id, representation_id: unit.representation_id, page_number: unit.page_number ?? null,
+          hazard_types: [...(unit.hazard_types ?? [])] };
+      });
+      const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
+      const sample = pointerChallengeUnits({ units: input.units, calibration });
+      const reference = sample.units.length > 0
+        ? await runPointerReference({ units: input.units, sample, stepId: step.step_id, deadline: step.deadline, port, grant,
+          generation: run.generation, now, beforeHardestSend })
+        : { step_id: step.step_id, deadline: step.deadline, sample: { kind: "calibration", candidate_units: 0 }, units: [] };
+      await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:challenge`, reference),
+        counts: pointerReferenceCounts(reference), calibration_units: sample.calibration_units, units_without_quotes: sample.units_without_quotes });
+      return summary();
+    }
+
     // Step 3: the pilot, on pages outside the reference sample. It builds nothing.
     async function pointerPilot() {
       const run = await pointerRun();
@@ -2845,6 +2873,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     async function pointerMeasure() {
       const run = await pointerRun();
       invariant(run.pass?.status === "done" && (run.pass.coverage_holds || run.coverage_pass?.status === "done"), "POINTER_PASS_NOT_DONE");
+      // Calibration's set is reported with every measurement, so its questions must be ready first.
+      invariant(run.challenge?.status === "done", "POINTER_CHALLENGE_NOT_DONE");
       const measured = run.coverage_pass?.status === "done" ? run.coverage_pass : run.pass;
       const quoteGeneration = await quoteGenerationInput(run.generation);
       const stored = await readLarge(measured.result_ref);
@@ -2874,6 +2904,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         invariant(step.measured_step_id === measured.step_id, "POINTER_MEASURED_GENERATION_CHANGED");
         const reference = await readLarge(run.reference.result_ref);
+        const challenge = await readLarge(run.challenge.result_ref);
         const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId: run.persisted.manifest_object_id, caseId,
           corpusId: quoteGeneration.corpusId, generation: run.generation, visibilityEpoch: 0, cursorSecret: key });
         try {
@@ -2888,7 +2919,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               throw error;
             }
           };
-          const result = await runPointerMeasure({ quoteGeneration, pass: stored, reference, search, seed: step.seed, stepId: step.step_id,
+          const result = await runPointerMeasure({ quoteGeneration, pass: stored, reference, challenge, search, seed: step.seed, stepId: step.step_id,
             deadline: step.deadline, port, grant, now, beforeHardestSend });
           await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:measure`, result), publish: result.publish,
             failed_floors: Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name),
@@ -2949,6 +2980,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "build-quotes") { (await buildQuotes()).close(); return summary(); }
         if (command === "publish-quotes") return publishQuotes();
         if (command === "pointer-reference") return pointerReference();
+        if (command === "pointer-challenge") return pointerChallenge();
         if (command === "pointer-pilot") return pointerPilot();
         if (command === "pointer-pass") return pointerPass();
         if (command === "pointer-measure") return pointerMeasure();

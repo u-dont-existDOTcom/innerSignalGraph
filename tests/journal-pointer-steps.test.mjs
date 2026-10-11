@@ -5,8 +5,8 @@ import { validateJournalSchema } from "../src/journal-import/contracts.mjs";
 import { pointerCallKey } from "../src/journal-import/pointer-calls.mjs";
 import { applyPointerEventCheck, checkPointerBatches, pointerEventCheckCalls, pointerEventPairs, pointerPassInput,
   pointerTaggerPacket } from "../src/journal-import/pointer-pass.mjs";
-import { pointerReferenceSample } from "../src/journal-import/pointer-reference.mjs";
-import { POINTER_MEASURE_SAMPLE_NAMES, POINTER_PILOT_PAGES, POINTER_RECALL_TOP, measurePointerRecall, pointerBrokenAnchors,
+import { pointerChallengeUnits, pointerReferenceSample } from "../src/journal-import/pointer-reference.mjs";
+import { POINTER_MEASURE_SAMPLE_NAMES, POINTER_PILOT_PAGES, POINTER_RECALL_TOP, measurePointerChallenge, measurePointerRecall, pointerBrokenAnchors,
   pointerMeasureSamples, pointerPilotPages, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
   runPointerReference } from "../src/journal-import/pointer-steps.mjs";
 import { buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
@@ -564,4 +564,49 @@ test("anchors are checked again by code, and one that no longer holds is counted
   const tampered = result.checked.map((item, index) => (index === 0 ? { ...item, kept: [{ ...item.kept[0],
     anchors: [{ ...item.kept[0].anchors[0], quote: "Marie" }] }, ...item.kept.slice(1)] } : item));
   assert.equal(pointerBrokenAnchors({ checked: tampered, unitsById: PASS_INPUT.unitsById }), 1);
+});
+
+test("calibration's units are a challenge set: the reference step runs on their pages, and the measurement reports them apart", async () => {
+  const calibration = [
+    { unit_id: "calibration:a", representation_id: "steps:page:2", page_number: 2, hazard_types: [] },
+    { unit_id: "calibration:b", representation_id: "steps:page:5", page_number: 5, hazard_types: ["declared_source_hazard"] },
+    { unit_id: "calibration:c", representation_id: "steps:page:5", page_number: 5, hazard_types: ["parser_warning"] },
+    { unit_id: "calibration:d", representation_id: "visual:page:13", page_number: 13, hazard_types: ["visual_representation"] }
+  ];
+  const sample = pointerChallengeUnits({ units: PASS_INPUT.units, calibration });
+  // Each page once, chosen with certainty, with every hazard of its calibration units; a page without quotes is counted.
+  assert.deepEqual(sample.units.map((unit) => [unit.unit_id, unit.stratum, unit.inclusion_probability, unit.hazards, unit.quote_ids.length]),
+    [["page:2", 0, 1, [], 2], ["page:5", 0, 1, ["declared_source_hazard", "parser_warning"], 1]]);
+  assert.deepEqual([sample.calibration_units, sample.units_without_quotes, sample.candidate_units], [4, 1, 2]);
+  assert.equal(JSON.stringify(sample).includes("Jean"), false);
+  assert.throws(() => pointerChallengeUnits({ units: PASS_INPUT.units, calibration: [{ unit_id: "c", page_number: 2 }] }),
+    { code: "POINTER_CHALLENGE_INPUT_INVALID" });
+
+  const clock = { now: START };
+  const port = scriptedPort({ clock });
+  const challenge = await runPointerReference({ units: PASS_INPUT.units, sample, stepId: "challenge:synthetic", deadline: DEADLINE, port,
+    grant, generation: "steps-generation", now: () => new Date(clock.now) });
+  assert.equal(challenge.sample.kind, "calibration");
+  assert.deepEqual(challenge.units.map((unit) => [unit.unit_id, unit.status, unit.hazards, unit.questions.length]),
+    [["page:2", "complete", [], 2], ["page:5", "complete", ["declared_source_hazard", "parser_warning"], 1]]);
+  assert.ok(port.sent.every((item) => item.operationKey.startsWith("challenge:synthetic:")));
+  await assert.rejects(runPointerReference({ units: PASS_INPUT.units, seed: "s", sample, stepId: "challenge:synthetic", deadline: DEADLINE, port,
+    grant, generation: "g" }), { code: "POINTER_STEP_INPUT_INVALID" });
+
+  // The measurement searches the challenge's questions too and reports them apart: here their searches find nothing.
+  const { second } = await coveredPass(port, clock);
+  const measured = await measure(port, clock, second, { challenge });
+  assert.equal(measured.publish, true, "the challenge set never decides");
+  assert.deepEqual(measured.report.challenge.all, { units: 2, questions: 3, found_with_tags: 0, found_words_only: 0, recall_with_tags: 0,
+    recall_words_only: 0, critical_questions: 2, critical_found_with_tags: 0, critical_found_words_only: 0 });
+  assert.deepEqual([measured.report.challenge.by_place_only.units, measured.report.challenge.by_place_only.questions], [1, 2]);
+  assert.deepEqual(Object.keys(measured.report.challenge.by_hazard), ["declared_source_hazard", "parser_warning"]);
+  assert.equal(measured.report.challenge.by_hazard.parser_warning.questions, 1);
+  assert.equal((await measure(port, clock, second)).report.challenge, null);
+
+  // Counted plainly: found questions over asked, all and critical, with nonresponses counted and left out.
+  const found = new Set([challenge.units[0].questions[0].question_id]);
+  const report = measurePointerChallenge({ reference: { units: [...challenge.units, { unit_id: "page:9", status: "nonresponse", questions: [], hazards: [] }] },
+    foundWithTags: found, foundWordsOnly: new Set() });
+  assert.deepEqual([report.units, report.nonresponse_units, report.all.found_with_tags, report.all.recall_with_tags], [3, 1, 1, 1 / 3]);
 });

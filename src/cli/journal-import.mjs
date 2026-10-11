@@ -26,6 +26,7 @@ export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
   "build-quotes",
   "publish-quotes",
   "pointer-reference",
+  "pointer-challenge",
   "pointer-pilot",
   "pointer-pass",
   "pointer-measure",
