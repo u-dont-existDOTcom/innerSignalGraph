@@ -10,8 +10,8 @@ const START = Date.parse("2026-10-11T06:00:00Z");
 const DEADLINE = "2026-10-11T09:00:00.000Z";
 
 // Each operation key answers as scripted: an output (received at a given time), "invalid", "expired" (closed
-// unanswered), "open" (no answer before the wait ends), "exhausted" or "revoked". A key reports its answer only once
-// it was sent, in this run or, for the keys in `earlier`, before it.
+// unanswered), "open" (no answer before the wait ends, which lasts as long as it was asked to), "exhausted" or
+// "revoked". A key reports its answer only once it was sent, in this run or, for the keys in `earlier`, before it.
 function fakePort(script, { clock, earlier = [] }) {
   const sent = [];
   const wasSent = (operationKey) => earlier.includes(operationKey) || sent.some((item) => item.operationKey === operationKey);
@@ -28,6 +28,11 @@ function fakePort(script, { clock, earlier = [] }) {
     sent,
     async invoke(request, options) {
       sent.push({ operationKey: request.operationKey, expiresAt: request.expiresAt, waitMs: options.waitMs, tier: request.tier });
+      // An open item's wait runs alongside the other calls' and lasts as long as it was asked to.
+      if ((script[request.operationKey] ?? "open") === "open") {
+        await new Promise((resolve) => { setImmediate(resolve); });
+        clock.now += options.waitMs;
+      }
       return reply(request.operationKey);
     },
     async getCompletion(operationKey) {
@@ -123,6 +128,7 @@ test("a hardest call counts its daily slot only when it has no open item, and a 
     beforeHardestSend: async ({ operationKey }) => { before.push(operationKey); } });
   assert.deepEqual(before, []);
   const full = Object.assign(new Error("daily limit"), { code: "HARDEST_DAILY_LIMIT" });
+  clock.now = START;
   await assert.rejects(runDeadlineCalls({ calls: [call("judge:3", "hardest")], port: fakePort({}, { clock }), deadline: DEADLINE,
     now: () => new Date(clock.now), beforeHardestSend: async () => { throw full; } }), { code: "HARDEST_DAILY_LIMIT" });
 });
@@ -161,4 +167,37 @@ test("an answer that fails the step's own check uses the call's retry, before an
   const again = await runDeadlineCalls({ calls: [call("search:1")], port: resumed, deadline: DEADLINE, now: () => new Date(clock.now), check });
   assert.deepEqual([again[0].status, again[0].attempts, resumed.sent.length], ["answered", 2, 0]);
   await assert.rejects(runDeadlineCalls({ calls: [call("a")], port, deadline: DEADLINE, check: "yes" }), { code: "POINTER_CALL_CHECK_INVALID" });
+});
+
+test("a wait that ends early with the item still open is followed by another, until an answer or the deadline", async () => {
+  const clock = { now: START };
+  // A port that waits ten minutes at most, whatever it is asked, and answers on its third wait.
+  let waits = 0;
+  const port = {
+    sent: [],
+    async invoke(request, options) {
+      port.sent.push(options.waitMs);
+      waits += 1;
+      if (waits < 3) {
+        clock.now += Math.min(options.waitMs, 10 * 60_000);
+        throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
+      }
+      return { output: { n: 1 }, receipt: { provider_route_receipt: { received_at: new Date(clock.now).toISOString() } } };
+    },
+    async getCompletion() { return { status: "unknown" }; }
+  };
+  const paused = [];
+  const pause = async (ms) => { paused.push(ms); clock.now += ms; };
+  const [outcome] = await runDeadlineCalls({ calls: [call("batch:1")], port, deadline: DEADLINE, now: () => new Date(clock.now), pause });
+  assert.deepEqual([outcome.status, outcome.attempts, outcome.output.n], ["answered", 1, 1]);
+  assert.equal(port.sent.length, 3, "the same item, waited on three times");
+  assert.deepEqual(paused, [5000, 5000]);
+  assert.ok(port.sent[1] < port.sent[0], "each wait asks for the time left");
+  // With the same port near the deadline, the waits end there: the call ends open at the deadline, not before.
+  waits = -100;
+  clock.now = Date.parse(DEADLINE) - 25 * 60_000;
+  const [late] = await runDeadlineCalls({ calls: [call("batch:2")], port, deadline: DEADLINE, now: () => new Date(clock.now), pause });
+  assert.deepEqual([late.status, late.reason], ["deadline", "deadline"]);
+  assert.ok(clock.now >= Date.parse(DEADLINE));
+  await assert.rejects(runDeadlineCalls({ calls: [call("batch:3")], port, deadline: DEADLINE, pause: "soon" }), { code: "POINTER_CALL_PAUSE_INVALID" });
 });

@@ -364,6 +364,20 @@ test("runtime binds subscription browser without API credentials and hard-requir
   await assert.rejects(combined.invoke({ role: "visual_reader", packet, outputSchema: "visual-result",
     operationKey: "operation:hardest-visual:synthetic", grant, tier: "hardest" }),
   { code: "JOURNAL_EXCHANGE_ROLE_UNSUPPORTED" });
+  // A step's wait reaches the exchange through the combined port: asked not to wait, the call sends its hardest item
+  // and returns at once with it still open, instead of waiting out the exchange's usual wait; its completion is read
+  // on its tier.
+  const judgeGrant = { ...grant, allowed_roles: ["pair_judge"] };
+  const judgePacket = buildJournalRolePacket("pair_judge", { protocol_version: "1.0", output_schema_id: "pair-judgment-result",
+    assigned_core_ids: ["unit:synthetic"], source_locators: [], expected_generation: "generation:synthetic",
+    controller_provenance_tag: "pointer:pair_judge:synthetic", grant_purpose: "organize_search",
+    pairs: [{ pair_id: "measure-pair:synthetic", kind: "topic", label: "garden", quote: "A synthetic line about the garden." }] });
+  const started = Date.now();
+  await assert.rejects(combined.invoke({ role: "pair_judge", packet: judgePacket, outputSchema: "pair-judgment-result",
+    operationKey: "operation:hardest-judge:synthetic", grant: judgeGrant, tier: "hardest" }, { waitMs: 0 }),
+  { code: "COMPLETION_UNKNOWN" });
+  assert.ok(Date.now() - started < 30_000, "the call did not wait");
+  assert.equal((await combined.getCompletion("operation:hardest-judge:synthetic", { tier: "hardest" })).status, "unknown");
   combined.close();
 
   assert.throws(() => loadJournalInferencePortFromEnvironment({

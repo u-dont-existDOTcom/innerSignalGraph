@@ -198,17 +198,19 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
         });
       },
       async prepare() { await exchangePort.prepare?.(); },
-      async invoke(input) {
+      // A call's options (a step's wait until its deadline) and a completion's tier reach the port that serves it.
+      async invoke(input, options) {
         const selected = portFor(input);
         operations.set(input.operationKey, selected);
-        return selected.invoke(input);
+        return selected.invoke(input, options);
       },
-      async getCompletion(operationKey, { authoritativeCompletion } = {}) {
+      async getCompletion(operationKey, options = {}) {
+        const { authoritativeCompletion } = options;
         const selected = operations.get(operationKey)
           ?? (typeof authoritativeCompletion === "boolean" ? (authoritativeCompletion ? exchangePort : providerPort) : null);
-        if (selected) return selected.getCompletion(operationKey);
+        if (selected) return selected.getCompletion(operationKey, options);
         const [exchange, browser] = await Promise.all([
-          exchangePort.getCompletion(operationKey), providerPort.getCompletion(operationKey)
+          exchangePort.getCompletion(operationKey, options), providerPort.getCompletion(operationKey, options)
         ]);
         return exchange.status !== "not_submitted" ? exchange : browser;
       },

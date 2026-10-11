@@ -17,6 +17,8 @@ export const POINTER_CALL_OUTCOMES = Object.freeze(["answered", "failed", "deadl
 // stops the step instead, since sending again can't help.
 const RESENDABLE = new Set(["JOURNAL_WORK_EXPIRED", "INFERENCE_NOT_SUBMITTED", "JOURNAL_EXCHANGE_UNAVAILABLE",
   "JOURNAL_STEP_DEADLINE_PASSED", "INFERENCE_RETRY_LIMIT"]);
+// How long a call pauses before waiting again on an item a wait left open before the deadline.
+const REWAIT_PAUSE_MS = 5000;
 
 function invariant(condition, code) {
   if (!condition) throw new ValidationError(code, { code });
@@ -51,11 +53,13 @@ function classify(error) {
  * uses its retry the same way. `beforeHardestSend` runs before a hardest-tier call that has no open item, so the
  * runtime can count its daily slot; it may throw to stop the step. Returns one outcome per call, in order: "answered"
  * with its output and receipt, "failed" with a code, or "deadline" (its reason "deadline_unsent" when the call was never
- * sent because the deadline had passed). An error that is no call's outcome (a revoked
- * grant, an unreachable store) is thrown, and the step resumes later with the same deadline.
+ * sent because the deadline had passed). A wait that ends before the deadline with the item still open (a port that
+ * waits less than it was asked to) is followed, after `pause`, by another wait on the same item, so a call only ends
+ * open at the deadline. An error that is no call's outcome (a revoked grant, an unreachable store) is thrown, and the
+ * step resumes later with the same deadline.
  */
 export async function runDeadlineCalls({ calls, port, deadline, now = () => new Date(), retries = 1, beforeHardestSend = null,
-  check = null } = {}) {
+  check = null, pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }) } = {}) {
   invariant(Array.isArray(calls) && calls.every((call) => call && typeof call.key === "string" && call.key.length > 0
     && typeof call.role === "string" && (call.tier === "standard" || call.tier === "hardest")), "POINTER_CALLS_INVALID");
   invariant(new Set(calls.map((call) => call.key)).size === calls.length, "POINTER_CALL_KEY_DUPLICATE");
@@ -64,6 +68,7 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
   invariant(typeof deadline === "string" && Number.isFinite(end), "POINTER_CALL_DEADLINE_INVALID");
   invariant(retries === 0 || retries === 1, "POINTER_CALL_RETRIES_INVALID");
   invariant(check === null || typeof check === "function", "POINTER_CALL_CHECK_INVALID");
+  invariant(typeof pause === "function", "POINTER_CALL_PAUSE_INVALID");
   // Why an answer can't be used, or null; a check that throws stops the step.
   const failedCheck = (call, output) => (check ? check(call, output) ?? null : null);
   const remaining = () => end - now().getTime();
@@ -101,16 +106,27 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
         const completion = await port.getCompletion(operationKey, { tier: call.tier });
         if (completion.status === "not_submitted") await beforeHardestSend({ key: call.key, operationKey });
       }
-      try {
-        const result = await port.invoke(request, { waitMs: Math.max(0, remaining()) });
+      // Waits on the item until it is answered or the deadline passes, whatever a single wait returns.
+      const wait = async () => {
+        for (;;) {
+          try {
+            return { result: await port.invoke(request, { waitMs: Math.max(0, remaining()) }) };
+          } catch (error) {
+            if (classify(error) !== "open" || remaining() <= 0) return { error };
+          }
+          await pause(Math.max(0, Math.min(remaining(), REWAIT_PAUSE_MS)));
+        }
+      };
+      const { result, error } = await wait();
+      if (result) {
         if (!inTime(result.receipt)) return { key: call.key, status: "deadline", attempts: attempt + 1, reason: "deadline" };
         const failure = failedCheck(call, result.output);
         if (!failure) return { key: call.key, status: "answered", attempts: attempt + 1, output: result.output, receipt: result.receipt };
         reason = failure;
-      } catch (error) {
+      } else {
         const kind = classify(error);
         if (kind === "stop") throw error;
-        // The wait reached the deadline with the item still open.
+        // The waits reached the deadline with the item still open.
         if (kind === "open") return { key: call.key, status: "deadline", attempts: attempt + 1, reason: "deadline" };
         if (kind === "exhausted") return { key: call.key, status: "failed", attempts: attempt + 1, reason: error.code };
         reason = kind === "invalid" ? "INVALID_STRUCTURED_OUTPUT" : error.code;
