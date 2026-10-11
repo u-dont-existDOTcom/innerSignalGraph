@@ -19,6 +19,8 @@ const RESENDABLE = new Set(["JOURNAL_WORK_EXPIRED", "INFERENCE_NOT_SUBMITTED", "
   "JOURNAL_STEP_DEADLINE_PASSED", "INFERENCE_RETRY_LIMIT"]);
 // How long a call pauses before waiting again on an item a wait left open before the deadline.
 const REWAIT_PAUSE_MS = 5000;
+// How long past the deadline a call still waits on a port that doesn't end its own wait there, before letting it go.
+const DEADLINE_GRACE_MS = 60_000;
 
 function invariant(condition, code) {
   if (!condition) throw new ValidationError(code, { code });
@@ -55,11 +57,14 @@ function classify(error) {
  * with its output and receipt, "failed" with a code, or "deadline" (its reason "deadline_unsent" when the call was never
  * sent because the deadline had passed). A wait that ends before the deadline with the item still open (a port that
  * waits less than it was asked to) is followed, after `pause`, by another wait on the same item, so a call only ends
- * open at the deadline. An error that is no call's outcome (a revoked grant, an unreachable store) is thrown, and the
- * step resumes later with the same deadline.
+ * open at the deadline, and a port that doesn't end its wait there (a browser route that answers when it is done) is
+ * let go `deadlineGraceMs` after it. An answer counts only when it is known to have come by the deadline: by its
+ * route's own time (the exchange's `received_at`, the browser route's `observed_at`) or, with none, by when the port
+ * handed it over; one read after the deadline with no time fails closed. An error that is no call's outcome (a revoked
+ * grant, an unreachable store) is thrown, and the step resumes later with the same deadline.
  */
 export async function runDeadlineCalls({ calls, port, deadline, now = () => new Date(), retries = 1, beforeHardestSend = null,
-  check = null, pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }) } = {}) {
+  check = null, pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }), deadlineGraceMs = DEADLINE_GRACE_MS } = {}) {
   invariant(Array.isArray(calls) && calls.every((call) => call && typeof call.key === "string" && call.key.length > 0
     && typeof call.role === "string" && (call.tier === "standard" || call.tier === "hardest")), "POINTER_CALLS_INVALID");
   invariant(new Set(calls.map((call) => call.key)).size === calls.length, "POINTER_CALL_KEY_DUPLICATE");
@@ -69,13 +74,38 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
   invariant(retries === 0 || retries === 1, "POINTER_CALL_RETRIES_INVALID");
   invariant(check === null || typeof check === "function", "POINTER_CALL_CHECK_INVALID");
   invariant(typeof pause === "function", "POINTER_CALL_PAUSE_INVALID");
+  invariant(Number.isSafeInteger(deadlineGraceMs) && deadlineGraceMs >= 0, "POINTER_CALL_PAUSE_INVALID");
   // Why an answer can't be used, or null; a check that throws stops the step.
   const failedCheck = (call, output) => (check ? check(call, output) ?? null : null);
   const remaining = () => end - now().getTime();
-  // An answer stored after the deadline is ignored, as if it had never come.
-  const inTime = (receipt) => {
-    const received = Date.parse(receipt?.provider_route_receipt?.received_at ?? "");
-    return !Number.isFinite(received) || received <= end;
+  // When the route received an answer, by its own record, or null when the receipt holds no time.
+  const receivedAt = (receipt) => {
+    const route = receipt?.provider_route_receipt;
+    for (const value of [route?.received_at, route?.observed_at]) {
+      const time = Date.parse(typeof value === "string" ? value : "");
+      if (Number.isFinite(time)) return time;
+    }
+    return null;
+  };
+  // An answer received after the deadline is ignored, as if it had never come. One with no time counts when the port
+  // handed it over by the deadline (`handedAt`, on the waiting path); read later, it fails closed.
+  const inTime = (receipt, handedAt = null) => {
+    const received = receivedAt(receipt);
+    if (received !== null) return received <= end;
+    return handedAt !== null && handedAt <= end;
+  };
+  // Lets a wait go at the deadline (and a grace for a port that ends its own wait there), as if the item were still
+  // open; the call itself may finish later, and its answer is then stored and ignored as late.
+  const untilDeadline = (invocation) => {
+    let timer = null;
+    const expiry = new Promise((resolve, reject) => {
+      timer = setTimeout(() => reject(new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" })),
+        Math.max(0, remaining()) + deadlineGraceMs);
+      timer.unref?.();
+    });
+    expiry.catch(() => {});
+    invocation.catch(() => {});
+    return Promise.race([invocation, expiry]).finally(() => clearTimeout(timer));
   };
 
   const outcomeOf = async (call) => {
@@ -110,16 +140,17 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
       const wait = async () => {
         for (;;) {
           try {
-            return { result: await port.invoke(request, { waitMs: Math.max(0, remaining()) }) };
+            const result = await untilDeadline(Promise.resolve().then(() => port.invoke(request, { waitMs: Math.max(0, remaining()) })));
+            return { result, handedAt: now().getTime() };
           } catch (error) {
             if (classify(error) !== "open" || remaining() <= 0) return { error };
           }
           await pause(Math.max(0, Math.min(remaining(), REWAIT_PAUSE_MS)));
         }
       };
-      const { result, error } = await wait();
+      const { result, handedAt, error } = await wait();
       if (result) {
-        if (!inTime(result.receipt)) return { key: call.key, status: "deadline", attempts: attempt + 1, reason: "deadline" };
+        if (!inTime(result.receipt, handedAt)) return { key: call.key, status: "deadline", attempts: attempt + 1, reason: "deadline" };
         const failure = failedCheck(call, result.output);
         if (!failure) return { key: call.key, status: "answered", attempts: attempt + 1, output: result.output, receipt: result.receipt };
         reason = failure;

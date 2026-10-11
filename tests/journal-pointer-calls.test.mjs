@@ -201,3 +201,43 @@ test("a wait that ends early with the item still open is followed by another, un
   assert.ok(clock.now >= Date.parse(DEADLINE));
   await assert.rejects(runDeadlineCalls({ calls: [call("batch:3")], port, deadline: DEADLINE, pause: "soon" }), { code: "POINTER_CALL_PAUSE_INVALID" });
 });
+
+test("an answer counts by its route's own time, the browser route's too, and one with no time fails closed once read late", async () => {
+  const clock = { now: START };
+  // The browser route records `observed_at`; an answer with no time at all counts when it is handed over in time.
+  const receipt = (route) => ({ provider_route_receipt: route });
+  const port = {
+    async invoke(request) {
+      if (request.operationKey === "browser:early") return { output: { n: 1 }, receipt: receipt({ observed_at: "2026-10-11T08:00:00.000Z" }) };
+      if (request.operationKey === "browser:late") return { output: { n: 2 }, receipt: receipt({ observed_at: "2026-10-11T09:00:01.000Z" }) };
+      return { output: { n: 3 }, receipt: { provider_route_receipt: null } };
+    },
+    async getCompletion(operationKey) {
+      if (operationKey === "untimed") return { status: "completed", output: { n: 3 }, receipt: { provider_route_receipt: null } };
+      return { status: "completed", output: { n: 1 }, receipt: receipt({ observed_at: "2026-10-11T08:00:00.000Z" }) };
+    }
+  };
+  const outcomes = await runDeadlineCalls({ calls: [call("browser:early"), call("browser:late"), call("untimed")], port, deadline: DEADLINE,
+    now: () => new Date(clock.now) });
+  assert.deepEqual(outcomes.map((outcome) => outcome.status), ["answered", "deadline", "answered"]);
+  // Read after the deadline, an answer with no time of its own can't be shown to have come in time.
+  clock.now = Date.parse(DEADLINE) + 1_000;
+  const late = await runDeadlineCalls({ calls: [call("browser:early"), call("untimed")], port, deadline: DEADLINE, now: () => new Date(clock.now) });
+  assert.deepEqual(late.map((outcome) => outcome.status), ["answered", "deadline"]);
+});
+
+test("a port that doesn't end its wait at the deadline is let go there, and the call ends open", async () => {
+  const clock = { now: Date.parse(DEADLINE) - 20 };
+  let calls = 0;
+  const port = {
+    // Never answers, whatever the wait asked.
+    invoke() { calls += 1; return new Promise(() => {}); },
+    async getCompletion() { return { status: "unknown" }; }
+  };
+  const pause = async (ms) => { clock.now += ms; };
+  const [outcome] = await runDeadlineCalls({ calls: [call("browser:stuck")], port, deadline: DEADLINE, now: () => new Date(clock.now), pause,
+    deadlineGraceMs: 5 });
+  assert.deepEqual([outcome.status, outcome.reason], ["deadline", "deadline"]);
+  assert.ok(calls >= 1);
+  await assert.rejects(runDeadlineCalls({ calls: [call("x")], port, deadline: DEADLINE, deadlineGraceMs: -1 }), { code: "POINTER_CALL_PAUSE_INVALID" });
+});

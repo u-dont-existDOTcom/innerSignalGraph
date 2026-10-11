@@ -67,10 +67,6 @@ function scriptedPort({ clock, script = {} }) {
   const answer = (request) => {
     const packet = buildJournalRolePacket(request.role, request.packet);
     const custom = script[request.operationKey];
-    if (custom === "open") {
-      clock.now = Date.parse(request.expiresAt);
-      throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
-    }
     if (request.role === "pointer_tagger") return taggerAnswer(packet, request.operationKey);
     if (request.role === "pair_judge") {
       const judgments = packet.pairs.map(judgment);
@@ -101,6 +97,12 @@ function scriptedPort({ clock, script = {} }) {
     sent,
     async invoke(request) {
       sent.push({ operationKey: request.operationKey, role: request.role, tier: request.tier, packet: request.packet, expiresAt: request.expiresAt });
+      // An open call's wait runs alongside the others' and ends at the deadline.
+      if (script[request.operationKey] === "open") {
+        await new Promise((resolve) => { setImmediate(resolve); });
+        clock.now = Math.max(clock.now, Date.parse(request.expiresAt));
+        throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
+      }
       if (!answers.has(request.operationKey)) {
         const at = new Date(clock.now).toISOString();
         let stored = { invalid: true, at };
@@ -314,14 +316,15 @@ test("a batch still open at the deadline is untagged for it, and the event check
   const second = PASS_INPUT.batches[1];
   const port = scriptedPort({ clock, script: { [`pass:first:tagger:${second.batch_id}`]: "open" } });
   const result = await pass(port, clock);
-  const later = PASS_INPUT.batches.slice(1).flatMap((batch) => batch.pages);
-  assert.deepEqual(result.coverage.untagged, later.map((page) => ({ page, reason: "deadline" })));
-  assert.deepEqual(result.calls.tagger, { calls: PASS_INPUT.batches.length, answered: 1, failed: 0, deadline: PASS_INPUT.batches.length - 1, retried: 0 });
-  assert.equal(port.sent.filter((item) => item.role === "pointer_tagger").length, 2, "nothing is sent after the deadline");
-  assert.equal(port.sent.filter((item) => item.role === "pair_judge").length, 0);
-  const firstEvents = PASS_INPUT.batches[0].pages.filter((page) => page <= 4).length;
-  assert.deepEqual(result.event_check, { pairs: firstEvents, accepted: 0, rejected: 0, unanswered: firstEvents, tags_dropped: firstEvents });
-  assert.equal(result.report.page_outcomes.deadline, later.length);
+  // Every batch went out at once; the others answered, and the open one kept the step waiting until the deadline.
+  assert.deepEqual(result.coverage.untagged, second.pages.map((page) => ({ page, reason: "deadline" })));
+  assert.deepEqual(result.calls.tagger, { calls: PASS_INPUT.batches.length, answered: PASS_INPUT.batches.length - 1, failed: 0, deadline: 1, retried: 0 });
+  assert.equal(port.sent.filter((item) => item.role === "pointer_tagger").length, PASS_INPUT.batches.length);
+  assert.equal(port.sent.filter((item) => item.role === "pair_judge").length, 0, "nothing is sent after the deadline");
+  const events = PASS_INPUT.units.filter((unit) => unit.text.includes("concert") && !second.pages.includes(unit.page)).length;
+  assert.ok(events > 0);
+  assert.deepEqual(result.event_check, { pairs: events, accepted: 0, rejected: 0, unanswered: events, tags_dropped: events });
+  assert.equal(result.report.page_outcomes.deadline, second.pages.length);
 });
 
 test("a coverage pass sends the untagged pages' batches again, changes only their tags, and its ledger is the generation's", async () => {
@@ -498,10 +501,10 @@ test("a pair a judge leaves unscored at the deadline counts as wrong, and as rea
   const topic = result.report.samples.find((sample) => sample.name === "topic");
   assert.deepEqual([topic.correct, topic.unscored_claude, topic.unscored_codex], [0, 19, 0]);
   const event = result.report.samples.find((sample) => sample.name === "event");
-  assert.deepEqual([event.correct, event.unscored_claude], [0, 4], "the call after the open one was never sent");
+  assert.deepEqual([event.correct, event.unscored_claude], [4, 0], "the other calls went out at once and were answered");
   assert.equal(result.floors.precision.holds, false);
   assert.equal(result.publish, false);
-  assert.deepEqual([result.report.calls.deadline, result.report.calls.answered], [2, 4]);
+  assert.deepEqual([result.report.calls.deadline, result.report.calls.answered], [1, 5]);
   // Among the dropped, a pair one judge leaves unscored counts as real.
   const lateClock = { now: START };
   const late = scriptedPort({ clock: lateClock, script: { "measure:synthetic:judge:hardest:dropped_events:0": "open" } });
