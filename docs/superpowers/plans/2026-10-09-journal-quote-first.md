@@ -345,9 +345,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **A pointer-only extraction.** Tags go through `adaptExtractionToGraph` in place of today's empty extraction:
   entities for people, places, organizations and topics; episodes for events; no assertions. The quote generation
   then carries entity and episode nodes linked to the passages that mention them.
-- **Dates come from the journal.** An episode's authored time is the date line its first anchor's quote was written
-  under, from `quote_meta`. Its event time stays unknown; no model guesses it. `get_journal_timeline` then lists
-  events by the date they were written, and its description says so.
+- **Dates come from the journal.** An episode's authored time is the date line of the first quote, in journal order,
+  that its anchors are in, from `quote_meta`. Its event time stays unknown; no model guesses it.
+  `get_journal_timeline` then lists events by the date they were first written about, and its description says so.
 - **The graph tools work unchanged.** `search_journal_graph`, `get_journal_subgraph` and `resolve_journal_evidence`
   read the new nodes as they read any generation.
 - **Quote search uses the tags.** `find_journal_quotes` also matches query words against topic and event labels, so a
@@ -387,9 +387,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   first call; the tags and reasoning perhaps as much again. On pay-per-use API keys that is a few dollars to a few tens
   of dollars for a journal this size, depending on the model. The pilot measures tokens per page, and the provider's
   price list at that time gives the cost.
-- **Measuring.** 96 reference answers and 96 search-writing answers on the same Codex slots, about half an hour, which can run while the pass does. The precision check is 12
-  calls for each judge; the Claude judge's 12, one at a time at the Claude lane's current seven minutes or so a call,
-  take about an hour and a half and fit in a day's 40.
+- **Measuring.** 96 reference answers and 96 search-writing answers on the same Codex slots, about half an hour,
+  which can run while the pass does. The precision check is 12 calls for each judge; the Claude judge's 12, one at a
+  time at the Claude lane's current seven minutes or so a call, take about an hour and a half and fit in a day's 40.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
@@ -404,10 +404,13 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   anchors. Calibration's references aren't reused: the import's repairs were checked against them. No reader is ever
   shown a tag, so the references measure the pass independently. The measurement runs on the import
   server and reports counts only.
-- **No unit drops out.** A sampled unit's reference is complete when the reader doesn't list the unit as unassessed and
-  gives it at least one answerable or partly answerable question. An incomplete or failed reference gets one retry.
-  A unit still without a complete reference is a nonresponse: recall is then unknown, the recall floor fails, and the
-  report lists the unit. So a hard page can't leave the sample and lift the bound.
+- **No unit drops out.** A sampled unit's reference is complete when the reader doesn't list the unit as unassessed;
+  every answerable or partly answerable question names at least one evidence item; every item named exists in the
+  reference and has at least one anchor that resolves exactly in the unit; and the unit has at least one such
+  question. An incomplete or failed reference gets one retry, and so does a search-writing answer that fails or leaves
+  a question without a search. A unit still without a complete reference or its searches is a nonresponse: recall is
+  then unknown, the recall floor fails, and the report lists the unit. So a hard page can't leave the sample and lift
+  the bound.
 - **Calibration as a challenge set.** Calibration's units were chosen by their place in the journal plus every hazard
   (dreams, wishes, plans, hypotheticals), so they aren't a random sample. Recall on them is reported on its own, with
   hazards apart, and never stands in for a floor.
@@ -421,8 +424,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - Code runs the searches with `find_journal_quotes` on that generation. A question is found when, for each of its
     evidence items, a quote holding one of that item's anchors comes back in the first 12 results of one of its
     searches.
-  - Recall is reported with words only (the live index) and with words and tags, and critical questions on their own
-    line.
+  - Recall is reported with words only (the same generation searched with tag matching switched off, which is how
+    the live index searches) and with words and tags, and critical questions on their own line.
   - A unit's questions move together and the sample is drawn by stretch, so each one-sided 95% lower bound follows
     the design. Recall is the weighted ratio of questions found to questions asked, with weights from the inclusion
     probabilities; its standard error comes from how the sampled units vary within each stretch (linearized); and
@@ -439,8 +442,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     scored by two independent judges, one Codex and one Claude. Each judge is shown the exact quote, the tag's label
     and kind, and asked whether that quote really mentions or concerns what the label names, and whether the kind is
     right. Pairs go 25 to a call.
-  - Both judges score every sampled pair, and a pair counts as correct only when both say so. Their agreement (raw
-    agreement and Cohen's kappa) and the number of disagreements are reported; agreement is never a gate.
+  - Both judges score every sampled pair, and a pair counts as correct only when both say so. A judge call that fails
+    gets one retry, and a pair still unscored by either judge counts as wrong, which can only lower the bound. Their
+    agreement (raw agreement and Cohen's kappa, reported as undefined when the judges give one answer throughout) and
+    the number of disagreements are reported; agreement is never a gate.
   - The sample's size is fixed before scoring and the sample is scored once, so its one-sided 95% Clopper-Pearson
     bound is computed once, with no stopping early. With no pairs at all, the bound is 0.
 - **Floors** (stated now; the owner approves them by merging this plan, and only the owner can change them). The pass
@@ -448,17 +453,19 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   search misses a sampled question:
   - **recall:** the one-sided 95% lower bound of recall with words and tags, on the random sample, is at least 85%;
   - **no loss:** recall with words and tags is at least recall with words only, on the same sampled questions, all of
-    them and the critical ones (point estimates);
+    them and the critical ones (point estimates). If the sample has no critical question, the report says so and this
+    floor is judged on all questions alone;
   - **gain:** of the sampled questions word search alone misses, words and tags find at least a quarter. This floor
     is on the point estimate, with its lower bound reported: it is there to stop a pass that adds nothing, and a pass
     with no tags finds none of them. If word search misses no sampled question, there is nothing to gain, and the
     report says so in place of this floor;
   - **precision:** the one-sided 95% lower bound of pair precision is at least 90%, each kind also reported on its
     own;
-  - **coverage:** at most 2% of the full pass's pages are untagged, each one listed. Above that, the untagged
-    batches go into a new pass before anything is published;
-  - **anchors:** no kept tag whose anchor doesn't resolve or lacks its name, which holds by construction and is
-    checked anyway.
+  - **coverage:** at most 2% of the full pass's pages are untagged (their batch failed twice or ran out of time),
+    each one listed. Above that, the untagged batches go into a new pass, and the whole measurement runs again on the
+    generation it builds before anything is published; the reference sample and its references stay as they are;
+  - **anchors:** no kept tag whose anchor doesn't resolve or breaks a name rule above, which holds by construction
+    and is checked anyway.
 
 ### Steps
 
@@ -507,18 +514,23 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Supersede.** The pointer generation replaces version 2 exactly as version 2 replaced version 1.
 - **Measurement.** Recall and precision on synthetic data with known answers. The unit sample is the import's
   probability sample (12 stretches, 8 units each) from a recorded seed, only from units with quotes, and every sampled
-  unit gets a new reference; a unit listed as unassessed, or with no answerable question, gets one retry and then
-  makes recall unknown and the recall floor fail; the pilot's pages never overlap the sample; the search-writing
-  packet holds the questions and nothing of the unit's text or expected answers, and the tagger's packet holds journal
-  text and nothing from the semantic import. Recall's weighted estimate and design-based bound match a hand-worked
-  example; units whose questions all fail together widen the bound; degrees of freedom come from the sample as drawn,
-  a single-unit stretch is merged with its neighbor, and fewer than two units fail the floor. A question is found only
-  when each of its evidence items has a quote in the first 12 results of one of its searches; unanswerable questions
-  stay out of recall and are reported. Precision samples tag–quote pairs, so a wrong tag on many quotes counts once
-  for each; the Clopper-Pearson arithmetic, with a bound of 0 for no pairs; the sample's size is fixed before scoring
-  and its bound computed once; a pair counts as correct only when both judges say so. A pass with no tags fails the
-  precision floor, and the gain floor whenever word search misses a question; the gain floor is reported as not
-  applicable when word search misses nothing; an untagged share over 2% blocks publication; publishing refuses a
-  generation whose digest isn't the measured one.
+  unit gets a new reference. A reference that lists the unit as unassessed, has an answerable question with no
+  evidence item, names an item that doesn't exist or whose anchors don't resolve in the unit, or has no
+  evidence-backed question gets one retry and then makes recall unknown and the recall floor fail; so does a
+  search-writing answer that leaves a question without a search. The pilot's pages never overlap the sample; the
+  search-writing packet holds the questions and nothing of the unit's text or expected answers, and the tagger's
+  packet holds journal text and nothing from the semantic import. Recall's weighted estimate and design-based bound
+  match a hand-worked example; units whose questions all fail together widen the bound; degrees of freedom come from
+  the sample as drawn, a single-unit stretch is merged with its neighbor, and fewer than two units fail the floor. A
+  question is found only when each of its evidence items has a quote in the first 12 results of one of its searches;
+  unanswerable questions stay out of recall and are reported; a sample with no critical question is reported and
+  judged for no loss on all questions alone. Precision samples tag–quote pairs, so a wrong tag on many quotes counts
+  once for each; the Clopper-Pearson arithmetic, with a bound of 0 for no pairs; the sample's size is fixed before
+  scoring and its bound computed once; a pair counts as correct only when both judges say so, and a pair left unscored
+  after a retry counts as wrong; kappa is reported as undefined when the judges give one answer throughout. A pass
+  with no tags fails the precision floor, and the gain floor whenever word search misses a question; the gain floor is
+  reported as not applicable when word search misses nothing; an untagged share over 2% blocks publication, and the
+  generation a new pass builds is measured again from the start; the words-only baseline is the same generation with
+  tag matching off; publishing refuses a generation whose digest isn't the measured one.
 
 All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
