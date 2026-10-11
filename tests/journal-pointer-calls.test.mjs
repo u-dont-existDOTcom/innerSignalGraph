@@ -241,3 +241,41 @@ test("a port that doesn't end its wait at the deadline is let go there, and the 
   assert.ok(calls >= 1);
   await assert.rejects(runDeadlineCalls({ calls: [call("x")], port, deadline: DEADLINE, deadlineGraceMs: -1 }), { code: "POINTER_CALL_PAUSE_INVALID" });
 });
+
+test("a route that takes one call at a time gets its tier's calls in turn, and a call whose turn comes after the deadline is never sent", async () => {
+  // Each standard call keeps the route ten minutes; hardest calls go to a queue that takes any number at once.
+  const run = async (oneAtATime) => {
+    const clock = { now: Date.parse(DEADLINE) - 25 * 60_000 };
+    const inFlight = { standard: 0, hardest: 0 }, most = { standard: 0, hardest: 0 }, sent = [];
+    const port = {
+      async invoke(request) {
+        sent.push(request.operationKey);
+        inFlight[request.tier] += 1;
+        most[request.tier] = Math.max(most[request.tier], inFlight[request.tier]);
+        await new Promise((resolve) => { setImmediate(resolve); });
+        if (request.tier === "standard") clock.now += 10 * 60_000;
+        inFlight[request.tier] -= 1;
+        return { output: { key: request.operationKey }, receipt: { provider_route_receipt: { observed_at: new Date(clock.now).toISOString() } } };
+      },
+      async getCompletion() { return { status: "not_submitted" }; },
+      async wasSent(operationKey) { return sent.includes(operationKey); }
+    };
+    const calls = [call("page:1"), call("page:2"), call("judge:1", "hardest"), call("page:3"), call("judge:2", "hardest"), call("page:4")];
+    const outcomes = await runDeadlineCalls({ calls, port, deadline: DEADLINE, now: () => new Date(clock.now), oneAtATime });
+    return { outcomes: Object.fromEntries(outcomes.map((outcome) => [outcome.key, [outcome.status, outcome.reason ?? null]])), most, sent };
+  };
+  const turns = await run(["standard"]);
+  assert.deepEqual(turns.most, { standard: 1, hardest: 2 });
+  assert.deepEqual(turns.outcomes, {
+    "page:1": ["answered", null], "page:2": ["answered", null], "judge:1": ["answered", null], "judge:2": ["answered", null],
+    // Its turn began five minutes before the deadline, and its answer came five minutes after it.
+    "page:3": ["deadline", "deadline"],
+    // Its turn came after the deadline, so it was never sent.
+    "page:4": ["deadline", "deadline_unsent"]
+  });
+  assert.deepEqual(turns.sent.filter((key) => key.startsWith("page:")), ["page:1", "page:2", "page:3"]);
+  // Without turns, every call goes out at once.
+  assert.deepEqual((await run([])).most, { standard: 4, hardest: 2 });
+  await assert.rejects(runDeadlineCalls({ calls: [call("x")], port: { invoke() {}, getCompletion() {} }, deadline: DEADLINE, oneAtATime: ["visual"] }),
+    { code: "POINTER_CALL_TURNS_INVALID" });
+});

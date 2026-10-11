@@ -12,6 +12,7 @@ import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../stor
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
+import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { createJournalLookahead } from "./lookahead.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket, journalRoleInstruction } from "./provider-port.mjs";
@@ -364,6 +365,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       await save();
     };
+    // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the
+    // work exchange queues any number for its workers' slots. The hardest lane, when it's on, runs on the exchange.
+    const directRoute = route !== null && ![JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER].includes(route.provider);
+    const pointerTurns = directRoute ? (hardestLane.enabled ? ["standard"] : ["standard", "hardest"]) : [];
     const lookaheadSummary = () => {
       const sent = new Set([...lookaheadSent, ...(lookahead?.sentOperationKeys() ?? [])]);
       let used = 0;
@@ -2789,7 +2794,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (step.status === "done") return summary();
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
       const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant,
-        generation: run.generation, now, beforeHardestSend });
+        generation: run.generation, now, beforeHardestSend, oneAtATime: pointerTurns });
       const nonresponse = reference.units.filter((unit) => unit.status !== "complete")
         .map((unit) => ({ unit_id: unit.unit_id, reason: unit.reason, deadline_cause: unit.deadline_cause ?? null }));
       await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:reference`, reference), counts: pointerReferenceCounts(reference),
@@ -2820,7 +2825,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const sample = pointerChallengeUnits({ units: input.units, calibration });
       const reference = sample.units.length > 0
         ? await runPointerReference({ units: input.units, sample, stepId: step.step_id, deadline: step.deadline, port, grant,
-          generation: run.generation, now, beforeHardestSend })
+          generation: run.generation, now, beforeHardestSend, oneAtATime: pointerTurns })
         : { step_id: step.step_id, deadline: step.deadline, sample: { kind: "calibration", candidate_units: 0 }, units: [] };
       await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:challenge`, reference),
         counts: pointerReferenceCounts(reference), calibration_units: sample.calibration_units, units_without_quotes: sample.units_without_quotes });
@@ -2835,7 +2840,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (step.status === "done") return summary();
       const reference = await readLarge(run.reference.result_ref);
       const pilot = await runPointerPilot({ quoteGeneration: await quoteGenerationInput(run.generation),
-        excludeUnitIds: reference.units.flatMap((unit) => unit.quote_ids), seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant, now });
+        excludeUnitIds: reference.units.flatMap((unit) => unit.quote_ids), seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant, now,
+        oneAtATime: pointerTurns });
       await finishPointerStep(step, { pages: pilot.pages, candidate_pages: pilot.candidate_pages, event_check: pilot.event_check, report: pilot.report,
         calls: pilot.calls, answered_at: pilot.tagger_answered_at });
       return summary();
@@ -2849,7 +2855,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const quoteGeneration = await quoteGenerationInput(run.generation);
       const first = await pointerStep(run, "pass", pointerDeadlines.pass);
       if (first.status !== "done") {
-        const result = await runPointerPass({ quoteGeneration, stepId: first.step_id, deadline: first.deadline, port, grant, now });
+        const result = await runPointerPass({ quoteGeneration, stepId: first.step_id, deadline: first.deadline, port, grant, now, oneAtATime: pointerTurns });
         await finishPointerStep(first, { result_ref: await writeLarge(`pointer:${run.run_id}:pass`, storedPointerPass(result)), report: result.report,
           calls: result.calls, coverage_holds: result.coverage.holds, answered_at: result.tagger_answered_at });
       }
@@ -2860,7 +2866,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const step = await pointerStep(run, "coverage_pass", pointerDeadlines.pass);
         if (step.status !== "done") {
           const result = await runPointerPass({ quoteGeneration, stepId: step.step_id, deadline: step.deadline, port, grant, now, pages,
-            first: { checked: stored.checked, event_pairs: stored.event_pairs, dropped_event_pairs: stored.dropped_event_pairs } });
+            first: { checked: stored.checked, event_pairs: stored.event_pairs, dropped_event_pairs: stored.dropped_event_pairs }, oneAtATime: pointerTurns });
           await finishPointerStep(step, { pages, result_ref: await writeLarge(`pointer:${run.run_id}:coverage_pass`, storedPointerPass(result)),
             report: result.report, calls: result.calls, coverage_holds: result.coverage.holds, answered_at: result.tagger_answered_at });
         }
@@ -2920,7 +2926,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
           };
           const result = await runPointerMeasure({ quoteGeneration, pass: stored, reference, challenge, search, seed: step.seed, stepId: step.step_id,
-            deadline: step.deadline, port, grant, now, beforeHardestSend });
+            deadline: step.deadline, port, grant, now, beforeHardestSend, oneAtATime: pointerTurns });
           await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:measure`, result), publish: result.publish,
             failed_floors: Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name),
             floors: result.floors, report: result.report });

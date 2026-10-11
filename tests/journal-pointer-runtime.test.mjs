@@ -79,9 +79,10 @@ async function runtimeEnvironment(t, options = {}) {
     pages: PAGES.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
     representations: PAGES.map((page, index) => ({ representation_id: `synthetic:page:${index}`, text: page, utf8_byte_length: Buffer.byteLength(page) }))
   });
-  const port = createMockJournalInferencePort({ handlers: handlers(options) });
+  const mock = createMockJournalInferencePort({ handlers: handlers(options) });
+  const port = options.wrapPort ? options.wrapPort(mock) : mock;
   const open = () => openJournalExecutionRuntime({ config, configPath, service, inferencePort: port, sourceParser,
-    environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER } });
+    environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER, ...(options.environment ?? {}) } });
   // Runs commands in one runtime and closes it.
   const run = async (...commands) => {
     const runtime = await open();
@@ -223,4 +224,49 @@ test("a run reads dates as the setting said when it started: a changed setting n
   assert.match(second.generation, /:quotes:quote-index-v2-day-first:pointer-[0-9a-f]{8}$/u);
   assert.notEqual(second.reference.seed_sha256, first.reference.seed_sha256);
   assert.equal(second.reference.status, "done");
+});
+
+// The mock port, counting the calls it holds at once, by tier and in all.
+function countingPort(port) {
+  const inFlight = { standard: 0, hardest: 0, all: 0 };
+  const most = { standard: 0, hardest: 0, all: 0 };
+  const wrapped = Object.fromEntries(Object.entries(port).map(([name, value]) => [name, typeof value === "function" ? value.bind(port) : value]));
+  wrapped.invoke = async (input, options) => {
+    const tier = input.tier ?? "standard";
+    for (const key of [tier, "all"]) { inFlight[key] += 1; most[key] = Math.max(most[key], inFlight[key]); }
+    try {
+      await new Promise((resolve) => { setImmediate(resolve); });
+      return await port.invoke(input, options);
+    } finally { for (const key of [tier, "all"]) inFlight[key] -= 1; }
+  };
+  return { port: Object.freeze(wrapped), most };
+}
+const route = (provider) => ({ INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify({ provider }) });
+
+test("on a direct browser route every pointer step sends one call at a time; the exchange takes them at once", async (t) => {
+  // A browser route with the hardest lane off: both tiers share the one page, through every step.
+  let counted = null;
+  const browser = await runtimeEnvironment(t, { environment: route("chatgpt_subscription_browser"),
+    wrapPort: (port) => { counted = countingPort(port); return counted.port; } });
+  await browser.run("stage", "publish-quotes", "pointer-reference", "pointer-challenge", "pointer-pilot", "pointer-pass");
+  const measured = await browser.run("pointer-measure");
+  assert.equal(measured.pointer.measure.status, "done");
+  assert.ok(counted.most.standard >= 1 && counted.most.hardest >= 1, "both tiers were called");
+  assert.equal(counted.most.all, 1);
+
+  // With the hardest lane on, hardest calls go to the exchange at once, and the standard tier still takes turns.
+  let lanes = null;
+  const hybrid = await runtimeEnvironment(t, { environment: route("chatgpt_subscription_browser"),
+    wrapPort: (port) => { lanes = countingPort(port); return lanes.port; } });
+  hybrid.config.hardest_lane = { enabled: true, daily_limit: 40 };
+  await hybrid.run("stage", "build-quotes", "pointer-reference");
+  assert.equal(lanes.most.standard, 1);
+  assert.ok(lanes.most.hardest > 1, "hardest calls went out together");
+
+  // The Codex exchange queues every call at once.
+  let exchange = null;
+  const queued = await runtimeEnvironment(t, { environment: route("codex_exec_exchange"),
+    wrapPort: (port) => { exchange = countingPort(port); return exchange.port; } });
+  await queued.run("stage", "build-quotes", "pointer-reference");
+  assert.ok(exchange.most.standard > 1, "standard calls went out together");
 });

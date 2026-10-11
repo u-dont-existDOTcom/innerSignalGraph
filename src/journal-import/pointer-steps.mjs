@@ -50,9 +50,11 @@ function rolePacket(role, { generation, grantPurpose, assigned, tag, fields }) {
  * reference: the sample's record, and for each sampled unit its stretch, inclusion probability, quotes and, when
  * complete, its questions with their critical and event marks and their searches. With `sample` (calibration's units,
  * from pointerChallengeUnits) in place of a seed, the same step runs on those units, and each keeps its hazards.
+ * Every step here passes `oneAtATime` (the tiers whose route takes one call at a time) to runDeadlineCalls, so those
+ * tiers' calls take turns.
  */
 export async function runPointerReference({ units, seed = null, sample: given = null, stepId, deadline, port, grant, generation,
-  now = () => new Date(), beforeHardestSend = null } = {}) {
+  now = () => new Date(), beforeHardestSend = null, oneAtATime = [] } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && typeof generation === "string" && generation.length > 0, "POINTER_STEP_INPUT_INVALID");
   invariant((seed === null) !== (given === null) && (given === null || (Array.isArray(given.units) && given.units.every((unit) => unit
@@ -84,7 +86,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
           ...(notes.length > 0 ? { coverage_notes: notes.map(({ unit_id: unitId, missing }) => ({ unit_id: unitId, missing })) } : {})
         });
       });
-      const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 0 });
+      const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 0, oneAtATime });
       writing.forEach((unit, position) => {
         const outcome = outcomes[position];
         noteLate(unit, outcome);
@@ -109,7 +111,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
         const checked = checkCoverageJudgments({ quotes: spec.packet.quotes, answer: output });
         return checked.valid ? null : `COVERAGE_ANSWER_${checked.reason.toUpperCase()}`;
       };
-      const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 1, beforeHardestSend, check });
+      const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 1, beforeHardestSend, check, oneAtATime });
       const judges = COVERAGE_TIERS.map((tier, tierIndex) => {
         const results = new Map();
         const notes = new Map();
@@ -148,7 +150,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   const searchCheck = (spec, output) => (checkSearchPlan({ questionIds: spec.packet.questions.map((item) => item.question_id), answer: output }).complete
     ? null : "SEARCH_PLAN_INCOMPLETE");
   const searchOutcomes = searchCalls.length > 0
-    ? await runDeadlineCalls({ calls: searchCalls, port, deadline, now, retries: 1, check: searchCheck }) : [];
+    ? await runDeadlineCalls({ calls: searchCalls, port, deadline, now, retries: 1, check: searchCheck, oneAtATime }) : [];
   const searches = new Map();
   confirmed.forEach(({ unit, step }, position) => {
     const outcome = searchOutcomes[position];
@@ -251,12 +253,12 @@ const answeredAt = (outcomes) => Object.freeze(outcomes.filter((outcome) => outc
 // each answer checked by code, and then the event check for every kept event tag and quote it is anchored in, 50 pairs
 // to a call, with one retry for an answer that doesn't judge each of its pairs once. With `pages`, only the tags
 // anchored on those pages are kept before the event check. `pass` names the pass in the ledger.
-async function tagBatches({ input, batches, pages = null, pass, stepId, deadline, port, grant, now }) {
+async function tagBatches({ input, batches, pages = null, pass, stepId, deadline, port, grant, now, oneAtATime }) {
   const call = (role, key, assigned, fields) => ({ key, role, tier: "standard", grant, outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
     packet: rolePacket(role, { generation: input.generation, grantPurpose: grant.purpose, assigned, tag: `pointer:${role}:${stepId}`, fields }) });
   const taggerCalls = batches.map((batch) => call("pointer_tagger", `${stepId}:tagger:${batch.batch_id}`, [...batch.unit_ids],
     { quote_units: pointerTaggerPacket({ batch, unitsById: input.unitsById }).quote_units }));
-  const taggerOutcomes = await runDeadlineCalls({ calls: taggerCalls, port, deadline, now, retries: 1 });
+  const taggerOutcomes = await runDeadlineCalls({ calls: taggerCalls, port, deadline, now, retries: 1, oneAtATime });
   const outcomes = new Map(batches.map((batch, index) => {
     const outcome = taggerOutcomes[index];
     return [batch.batch_id, outcome.status === "answered" ? { status: "answered", answer: outcome.output } : { status: outcome.status }];
@@ -269,7 +271,7 @@ async function tagBatches({ input, batches, pages = null, pass, stepId, deadline
   const eventCalls = pointerEventCheckCalls(pairs).map((eventCall) => call("pair_judge", `${stepId}:${eventCall.call_id}`,
     [...new Set(eventCall.packet.pairs.map((pair) => pairById.get(pair.pair_id).unit_id))], { pairs: eventCall.packet.pairs }));
   const eventOutcomes = eventCalls.length > 0
-    ? await runDeadlineCalls({ calls: eventCalls, port, deadline, now, retries: 1, check: pairAnswerCheck }) : [];
+    ? await runDeadlineCalls({ calls: eventCalls, port, deadline, now, retries: 1, check: pairAnswerCheck, oneAtATime }) : [];
   const judgments = new Map();
   for (const outcome of eventOutcomes) {
     if (outcome.status === "answered") for (const judgment of outcome.output.judgments) judgments.set(judgment.pair_id, judgment);
@@ -293,7 +295,7 @@ async function tagBatches({ input, batches, pages = null, pass, stepId, deadline
  * is the batch size, left at the plan's except in tests.
  */
 export async function runPointerPass({ quoteGeneration, stepId, deadline, port, grant, now = () => new Date(), pages = null, first = null,
-  maxBytes } = {}) {
+  maxBytes, oneAtATime = [] } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string", "POINTER_STEP_INPUT_INVALID");
   invariant((pages === null) === (first === null), "POINTER_STEP_INPUT_INVALID");
@@ -301,7 +303,7 @@ export async function runPointerPass({ quoteGeneration, stepId, deadline, port, 
     && Array.isArray(first.event_pairs) && Array.isArray(first.dropped_event_pairs)), "POINTER_STEP_INPUT_INVALID");
   const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration), ...(maxBytes === undefined ? {} : { maxBytes }) });
   const batches = pages ? pointerRepassBatches({ batches: input.batches, unitsById: input.unitsById, pages }) : input.batches;
-  const own = await tagBatches({ input, batches, pages, pass: pages ? "coverage" : "first", stepId, deadline, port, grant, now });
+  const own = await tagBatches({ input, batches, pages, pass: pages ? "coverage" : "first", stepId, deadline, port, grant, now, oneAtATime });
 
   let { checked, ledger, dropped } = own;
   if (pages) {
@@ -370,7 +372,7 @@ export function pointerPilotPages({ quotes, excludeUnitIds, seed, count = POINTE
  * untagged), its calls' counts, and when the answers came in, for the runtime's timings and the worker log's tokens.
  */
 export async function runPointerPilot({ quoteGeneration, excludeUnitIds, seed, stepId, deadline, port, grant, now = () => new Date(),
-  count = POINTER_PILOT_PAGES, maxBytes } = {}) {
+  count = POINTER_PILOT_PAGES, maxBytes, oneAtATime = [] } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string", "POINTER_STEP_INPUT_INVALID");
   const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
@@ -378,7 +380,7 @@ export async function runPointerPilot({ quoteGeneration, excludeUnitIds, seed, s
   const wanted = new Set(draw.pages.map(String));
   const quotes = input.quotes.filter((quote) => wanted.has(String(pageOf(quote))));
   const batches = batchPointerQuotes({ quotes, ...(maxBytes === undefined ? {} : { maxBytes }) });
-  const own = await tagBatches({ input, batches, pass: "pilot", stepId, deadline, port, grant, now });
+  const own = await tagBatches({ input, batches, pass: "pilot", stepId, deadline, port, grant, now, oneAtATime });
   const eventCheck = eventCheckCounts(own.ledger);
   const indexes = pointerTagIndexes({ batches: own.checked.map((result) => ({ units: result.unit_ids.map((unitId) => input.unitsById.get(unitId)),
     kept: result.kept, passageIdForUnit: input.passageIdForUnit })) });
@@ -564,7 +566,7 @@ async function foundQuestions({ units, passageIdForUnit, search, matchTags }) {
  * verdicts for the private store.
  */
 export async function runPointerMeasure({ quoteGeneration, pass, reference, challenge = null, search, seed, stepId, deadline, port, grant,
-  now = () => new Date(), beforeHardestSend = null } = {}) {
+  now = () => new Date(), beforeHardestSend = null, oneAtATime = [] } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string"
     && typeof search === "function", "POINTER_STEP_INPUT_INVALID");
@@ -602,7 +604,7 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
       }
     }
   }
-  const outcomes = calls.length > 0 ? await runDeadlineCalls({ calls, port, deadline, now, retries: 1, check: pairAnswerCheck, beforeHardestSend }) : [];
+  const outcomes = calls.length > 0 ? await runDeadlineCalls({ calls, port, deadline, now, retries: 1, check: pairAnswerCheck, beforeHardestSend, oneAtATime }) : [];
   const verdicts = Object.fromEntries(JUDGE_TIERS.map((tier) => [tier, new Map()]));
   outcomes.forEach((outcome, index) => {
     if (outcome.status === "answered") for (const judgment of outcome.output.judgments) verdicts[calls[index].tier].set(judgment.pair_id, judgment);
