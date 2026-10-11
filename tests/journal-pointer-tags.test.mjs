@@ -10,6 +10,8 @@ import { QUOTE_INDEX_VERSION, buildQuoteGeneration, splitQuoteUnits } from "../s
 import { POINTER_DROP_REASONS, POINTER_NAME_KINDS, POINTER_TAG_KINDS, POINTER_TAG_LIMITS, batchPointerQuotes, checkPointerTags,
   normalizeForMatch, pointerExtraction, pointerTagIndexes, untaggedPages } from "../src/journal-import/pointer-tags.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
+import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
+import { JOURNAL_READ_ONLY_MCP_TOOLS } from "../src/journal-import/http.mjs";
 
 // The pointer pass's mechanical core (plan 2026-10-09-journal-quote-first.md, Part 3): batches of whole pages, every
 // tag the tagger returns checked by code, and the kept tags as a pointer-only extraction and two indexes. All text here
@@ -589,4 +591,142 @@ test("tags in different batches stay apart in the indexes, and each anchor must 
   assert.throws(() => pointerTagIndexes({ batches: [{ ...first, kept: [{ kind: "mood", label: "calme", anchors: [] }] }] }),
     { code: "POINTER_INDEX_INPUT_INVALID" });
   assert.throws(() => pointerTagIndexes({}), { code: "POINTER_INDEX_INPUT_INVALID" });
+});
+
+// Quote search on the tagged generation (plan Part 3, "Quote search uses the tags").
+
+async function taggedReader(t, { extraTags = [], tagIndexes = true } = {}) {
+  const journal = pointerJournal();
+  const { built, units, passageIdForUnit } = journal;
+  const kept = [...journal.kept, ...extraTags(journal)];
+  const indexes = pointerTagIndexes({ batches: [{ units, kept, passageIdForUnit }] });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "pointer-search-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const store = createPrivateJournalCorpusStore({ rootDir: root, caseId: CASE, corpusId: CORPUS, corpusKey: randomBytes(32) });
+  t.after(() => store.close());
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph: tagIndexes ? pointerGraph({ ...journal, kept }).graph : built.graph,
+    sourceRepresentations: sources(), permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096, indexRepresentations: true,
+    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths,
+      ...(tagIndexes ? { quote_tags: indexes.quote_tags, tag_terms: indexes.tag_terms } : {}) } });
+  const reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId: CASE, corpusId: CORPUS,
+    generation: GENERATION, visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+  t.after(() => reader.close());
+  return { reader, journal };
+}
+
+// Topics whose words the tagged quotes don't use, so only their tags can find them.
+const unspokenTopics = ({ unitOf }) => [
+  tag("topic", "musique entre amis", anchor(unitOf("L'anniversaire"), "Élodie a chanté")),
+  tag("topic", "amis", anchor(unitOf("Jean est venu"), "Jean est venu dîner"))
+];
+const texts = (result) => result.quotes.map((quote) => quote.text);
+
+test("quote search finds a quote by a topic or event label in words the quote doesn't use, and says how it matched", async (t) => {
+  const { reader } = await taggedReader(t, { extraTags: unspokenTopics });
+  const sung = await reader.findQuotes({ query: "musique" });
+  assert.deepEqual(texts(sung), ["L'anniversaire de Jean était bruyant ; Élodie a chanté."]);
+  assert.equal(sung.quotes[0].matched_by, "tag");
+  assert.deepEqual(plain(sung.quotes[0].matched_terms), []);
+  assert.deepEqual(plain(sung.quotes[0].matched_tags), [{ kind: "topic", label: "musique entre amis" }]);
+  assert.equal(sung.coverage.tags, true);
+  assert.equal(sung.coverage.matching_only_by_tag, 1);
+  // The same quote found by its own words: the same text, page, date and cues. Tags change none of them.
+  const [own] = (await reader.findQuotes({ query: "bruyant" })).quotes;
+  assert.equal(own.matched_by, "words");
+  assert.equal(own.matched_tags, undefined);
+  for (const field of ["quote_id", "text", "page", "written", "cues"]) assert.deepEqual(sung.quotes[0][field], own[field], field);
+  assert.equal(own.written.from, "2020-03-03");
+
+  // Words and a tag together, and only the tags a query word is in are listed.
+  const wine = await reader.findQuotes({ query: "vin" });
+  assert.deepEqual(texts(wine), ["Jean est venu dîner avec Élodie. Il a apporté du vin de Lyon."]);
+  assert.equal(wine.quotes[0].matched_by, "both");
+  assert.deepEqual(plain(wine.quotes[0].matched_tags), [{ kind: "topic", label: "vin" }]);
+  assert.equal(wine.coverage.matching_only_by_tag, 0);
+  // A name label isn't searched as a tag: the quote has to use the name.
+  const lyon = await reader.findQuotes({ query: "Lyon" });
+  assert.ok(lyon.quotes.every((quote) => quote.matched_by === "words" && quote.text.includes("Lyon")));
+});
+
+test("a quote found only through a tag ranks after every quote its own words match, which keep their order", async (t) => {
+  const { reader } = await taggedReader(t, { extraTags: unspokenTopics });
+  // The tagged quote matches two of the words, more than the quote that says "calme", and still comes after it.
+  const query = "calme musique amis";
+  const found = await reader.findQuotes({ query });
+  assert.deepEqual(texts(found), ["Une journée calme, rien à signaler.", "L'anniversaire de Jean était bruyant ; Élodie a chanté.",
+    "Jean est venu dîner avec Élodie. Il a apporté du vin de Lyon."]);
+  assert.deepEqual(found.quotes.map((quote) => quote.matched_by), ["words", "tag", "tag"]);
+  assert.ok(found.quotes[1].score > found.quotes[0].score, "the tag match scores higher and still ranks lower");
+  assert.equal(found.coverage.matching_quotes, 3);
+  assert.equal(found.coverage.matching_only_by_tag, 2);
+  // Words alone on the same generation: the measurement's baseline, the word matches in the same order.
+  const words = await reader.findQuotes({ query, matchTags: false });
+  assert.deepEqual(texts(words), [texts(found)[0]]);
+  assert.equal(words.coverage.tags, false);
+  assert.equal(Object.hasOwn(words.coverage, "matching_only_by_tag"), false);
+  assert.deepEqual(texts(await reader.findQuotes({ query: "musique", matchTags: false })), []);
+  // A tag on a quote its words already match doesn't move it.
+  const many = await reader.findQuotes({ query: "Jean Élodie parc musique" });
+  assert.ok(many.quotes.some((quote) => quote.matched_by === "both" && quote.text.startsWith("L'anniversaire")));
+  assert.deepEqual(texts(await reader.findQuotes({ query: "Jean Élodie parc musique", matchTags: false })), texts(many));
+
+  // Pages cross from the word matches to the tag matches without a gap or a repeat.
+  const paged = [];
+  let cursor = null;
+  do {
+    const page = await reader.findQuotes({ query, limit: 1, cursor });
+    paged.push(...texts(page));
+    cursor = page.next_cursor;
+  } while (cursor);
+  assert.deepEqual(paged, texts(found));
+  // A time window still applies, and a windowed search doesn't count its matches.
+  const march = await reader.findQuotes({ query, from: "2020-03", to: "2020-03", includeUndated: false });
+  assert.deepEqual(texts(march), texts(found).slice(1));
+  assert.equal(march.coverage.matching_only_by_tag, null);
+});
+
+test("a kind filter keeps only the quotes with a tag of those kinds, and is refused where there are no tags", async (t) => {
+  const { reader } = await taggedReader(t, { extraTags: unspokenTopics });
+  const events = await reader.findQuotes({ query: "Jean", kinds: ["event"] });
+  assert.deepEqual(texts(events).sort(), ["Jean's birthday party in Lyon was loud. He left early.", "L'anniversaire de Jean était bruyant ; Élodie a chanté.",
+    "Promenade au parc avec Élodie et Jean."]);
+  const places = await reader.findQuotes({ query: "Jean", kinds: ["place", "organization"] });
+  assert.deepEqual(texts(places).sort(), ["Jean est venu dîner avec Élodie. Il a apporté du vin de Lyon.", "Jean's birthday party in Lyon was loud. He left early."]);
+  assert.deepEqual(texts(await reader.findQuotes({ query: "Jean", kinds: ["organization"] })), []);
+  assert.deepEqual(texts(await reader.findQuotes({ query: "calme", kinds: ["person"] })), [], "an untagged quote has no kind");
+  // The filter also works on a words-only search.
+  assert.deepEqual(texts(await reader.findQuotes({ query: "Jean", kinds: ["event"], matchTags: false })).sort(), texts(events).sort());
+
+  // A cursor belongs to its kinds and to how it matched.
+  const first = await reader.findQuotes({ query: "Jean", kinds: ["event"], limit: 1 });
+  await assert.rejects(reader.findQuotes({ query: "Jean", limit: 1, cursor: first.next_cursor }), { code: "CURSOR_QUERY_MISMATCH" });
+  await assert.rejects(reader.findQuotes({ query: "Jean", kinds: ["place"], limit: 1, cursor: first.next_cursor }), { code: "CURSOR_QUERY_MISMATCH" });
+  const sorted = await reader.findQuotes({ query: "Jean", kinds: ["place", "event"], limit: 1 });
+  assert.ok((await reader.findQuotes({ query: "Jean", kinds: ["event", "place"], limit: 1, cursor: sorted.next_cursor })).quotes.length > 0,
+    "the order the kinds are given in doesn't matter");
+  const wordsOnly = await reader.findQuotes({ query: "Jean", matchTags: false, limit: 1 });
+  await assert.rejects(reader.findQuotes({ query: "Jean", limit: 1, cursor: wordsOnly.next_cursor }), { code: "CURSOR_QUERY_MISMATCH" });
+
+  for (const kinds of [[], ["mood"], ["person", "person"], "person", [null]]) {
+    await assert.rejects(reader.findQuotes({ query: "Jean", kinds }), { code: "QUOTE_KINDS_INVALID" }, JSON.stringify(kinds));
+  }
+  await assert.rejects(reader.findQuotes({ query: "Jean", matchTags: "no" }), { code: "QUOTE_FILTERS_INVALID" });
+});
+
+test("on a generation without tags, search is by words and a kind filter is refused", async (t) => {
+  const { reader } = await taggedReader(t, { extraTags: () => [], tagIndexes: false });
+  const found = await reader.findQuotes({ query: "Jean vin" });
+  assert.ok(found.quotes.length > 0);
+  assert.ok(found.quotes.every((quote) => quote.matched_by === "words" && quote.matched_tags === undefined));
+  assert.equal(found.coverage.tags, false);
+  assert.equal(Object.hasOwn(found.coverage, "matching_only_by_tag"), false);
+  await assert.rejects(reader.findQuotes({ query: "Jean", kinds: ["person"] }), { code: "QUOTE_TAGS_NOT_AVAILABLE" });
+});
+
+test("the quote search tool offers the kinds filter and says what a tag match is", () => {
+  const tool = JOURNAL_READ_ONLY_MCP_TOOLS.find((candidate) => candidate.name === "find_journal_quotes");
+  assert.deepEqual(tool.inputSchema.properties.kinds.items.enum, POINTER_TAG_KINDS);
+  assert.equal(tool.inputSchema.properties.kinds.uniqueItems, true);
+  assert.equal(Object.hasOwn(tool.inputSchema.properties, "match_tags"), false, "words-only search is the measurement's, not a tool's");
+  for (const words of ["matched_by", "checked against its own words", "Never quote a tag"]) assert.ok(tool.description.includes(words), words);
 });
