@@ -323,5 +323,11 @@ test("a page cut across batches ends as the worst of them", () => {
     : { status: "answered", answer: { schema_version: "1.0", tags: [] } }]));
   const checked = checkPointerBatches({ batches: input.batches, unitsById: input.unitsById, outcomes });
   const { indexes } = buildPointerGeneration({ quoteGeneration: generation, input, checked });
-  assert.deepEqual(pointerCoverage({ input, checked, indexes }).untagged, [{ page: 1, reason: "batch_failed" }]);
+  const coverage = pointerCoverage({ input, checked, indexes });
+  assert.deepEqual(coverage.untagged, [{ page: 1, reason: "batch_failed" }]);
+  // The report counts the page once, as failed, however many batches it was cut into.
+  const report = pointerPassReport({ checked, eventCheck: { pairs: 0, accepted: 0, rejected: 0, unanswered: 0, tags_dropped: 0 }, indexes, coverage });
+  assert.equal(report.batches, input.batches.length);
+  assert.deepEqual(report.page_outcomes, { answered: 0, failed: 1, deadline: 0 });
+  assert.equal(report.pages_with_quotes, 1);
 });

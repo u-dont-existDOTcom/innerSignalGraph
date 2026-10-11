@@ -298,21 +298,29 @@ export function buildPointerGeneration({ quoteGeneration, input, checked } = {})
  * gave it no tag, or every tag it was given was dropped (by a check, the event check or its kind being left out).
  * `holds` is the coverage floor: at most `POINTER_FLOORS.max_untagged_share` of the pages untagged, and some tag kept.
  */
+// How each page's batches ended, one status a page: a page cut across batches ends as the worst of them (failed, then
+// out of time, then answered), so it is counted once.
+function statusByPage(checked) {
+  const rank = { answered: 0, deadline: 1, failed: 2 };
+  const statuses = new Map();
+  for (const result of checked) {
+    for (const [page, status] of Object.entries(result.status_by_page)) {
+      if (!statuses.has(page) || rank[status] > rank[statuses.get(page)]) statuses.set(page, status);
+    }
+  }
+  return statuses;
+}
+
 export function pointerCoverage({ input, checked, indexes } = {}) {
   invariant(isObject(input) && Array.isArray(checked) && isObject(indexes), "POINTER_COVERAGE_INPUT_INVALID");
   const pages = untaggedPages({ quotes: input.quotes, taggedUnitIds: indexes.tagged_unit_ids });
-  // A page cut across batches ends as the worst of them: failed, then out of time, then answered.
-  const rank = { answered: 0, deadline: 1, failed: 2 };
-  const statusByPage = new Map();
+  const statuses = statusByPage(checked);
   const givenPages = new Set();
   for (const result of checked) {
-    for (const [page, status] of Object.entries(result.status_by_page)) {
-      if (!statusByPage.has(page) || rank[status] > rank[statusByPage.get(page)]) statusByPage.set(page, status);
-    }
     for (const unitId of result.given_unit_ids) givenPages.add(String(pageOf(input.unitsById.get(unitId))));
   }
   const untagged = pages.map((page) => {
-    const status = statusByPage.get(String(page));
+    const status = statuses.get(String(page));
     invariant(POINTER_BATCH_OUTCOMES.includes(status), "POINTER_COVERAGE_PAGE_UNKNOWN");
     const reason = BATCH_REASON[status] ?? (givenPages.has(String(page)) ? "tags_dropped" : "answer_gave_none");
     return Object.freeze({ page, reason });
@@ -331,13 +339,13 @@ export function pointerCoverage({ input, checked, indexes } = {}) {
 }
 
 /**
- * What a pass did, in counts and page numbers only: batches, pages by how their batch ended, tags kept and dropped by
- * reason, pairs by kind, the event check and the untagged pages.
+ * What a pass did, in counts and page numbers only: batches, pages by how their batches ended (each page once, as the
+ * worst of them), tags kept and dropped by reason, pairs by kind, the event check and the untagged pages.
  */
 export function pointerPassReport({ checked, eventCheck, indexes, coverage } = {}) {
   invariant(Array.isArray(checked) && isObject(eventCheck) && isObject(indexes) && isObject(coverage), "POINTER_REPORT_INPUT_INVALID");
   const pageOutcomes = Object.fromEntries(POINTER_BATCH_OUTCOMES.map((outcome) => [outcome, 0]));
-  for (const result of checked) for (const status of Object.values(result.status_by_page)) pageOutcomes[status] += 1;
+  for (const status of statusByPage(checked).values()) pageOutcomes[status] += 1;
   const dropped = zeroDrops();
   for (const result of checked) for (const reason of POINTER_DROP_REASONS) dropped[reason] += result.dropped[reason];
   return deepFreeze({
