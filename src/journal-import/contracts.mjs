@@ -10,11 +10,14 @@ export const JOURNAL_SCHEMA_NAMES = Object.freeze([
   "checkpoint",
   "extraction-result",
   "graph",
+  "pair-judgment-result",
   "pattern-result",
+  "pointer-result",
   "reconciliation-result",
   "reference-result",
   "restricted-anchor",
   "review-result",
+  "search-plan-result",
   "visual-result"
 ]);
 

@@ -191,7 +191,8 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
         const hardest = exchangePort.capabilities();
         return Object.freeze({
           ...providerPort.capabilities(),
-          hardest_roles: hardest.roles,
+          // The exchange's hardest-tier map: a role that runs only on the standard tier is unavailable there.
+          hardest_roles: hardest.hardest_roles,
           hardest_fresh_context_per_generate: hardest.fresh_context_per_generate,
           hardest_authenticated_execution_profile_per_generate: hardest.authenticated_execution_profile_per_generate
         });

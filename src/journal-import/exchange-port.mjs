@@ -6,7 +6,8 @@ import {
   JournalInferencePortError,
   assertJournalInferenceGrant,
   buildJournalRolePacket,
-  journalRoleInstruction
+  journalRoleInstruction,
+  journalRoleRunsOnTier
 } from "./provider-port.mjs";
 import { JOURNAL_WORK_TRANSPORT, journalWorkFileKey } from "./work-exchange.mjs";
 import { hardestJournalPacketFits } from "./packet-bounds.mjs";
@@ -28,7 +29,9 @@ const DEFAULT_WAIT_MS = 45 * 60_000;
 const DEFAULT_POLL_MS = 5_000;
 const DEFAULT_TTL_MS = 24 * 60 * 60_000;
 const MAX_SUCCESSORS = 8;
-// Images reach ChatGPT only as attachments, which the connector cannot deliver yet.
+// Images reach ChatGPT only as attachments, which the connector cannot deliver yet. Apart from these, a role runs
+// on the tiers its definition allows (journalRoleRunsOnTier): the pointer pass's tagger and search writer never
+// reach the hardest lane.
 const UNSUPPORTED_ROLES = new Set(["visual_reader"]);
 const CASE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const REQUEST_CONTEXT_ID_PATTERN = /^[\x21-\x7e]{1,256}$/u;
@@ -110,7 +113,8 @@ export function createExchangeJournalInferencePort({
     authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
     ...(executionAttestation === "codex_exec" ? { execution_profile_evidence: "codex_exec_request_pinned" } : {}),
     hardest_roles: Object.fromEntries(Object.entries(JOURNAL_ROLE_DEFINITIONS).map(([role, definition]) => [role, {
-      output_schema_id: definition.outputSchema, instruction_installed: true, available: !UNSUPPORTED_ROLES.has(role)
+      output_schema_id: definition.outputSchema, instruction_installed: true,
+      available: !UNSUPPORTED_ROLES.has(role) && journalRoleRunsOnTier(role, "hardest")
     }])),
     hardest_fresh_context_per_generate: executionAttestation === "codex_exec",
     hardest_authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
@@ -124,7 +128,7 @@ export function createExchangeJournalInferencePort({
     roles: Object.fromEntries(Object.entries(JOURNAL_ROLE_DEFINITIONS).map(([role, definition]) => [role, {
       output_schema_id: definition.outputSchema,
       instruction_installed: true,
-      available: !UNSUPPORTED_ROLES.has(role)
+      available: !UNSUPPORTED_ROLES.has(role) && journalRoleRunsOnTier(role, "standard")
     }]))
   });
 
@@ -282,7 +286,8 @@ export function createExchangeJournalInferencePort({
   const checkedInput = ({ role, packet, outputSchema, operationKey, grant, tier = "standard" }, prefetch = false) => {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
-    if (UNSUPPORTED_ROLES.has(role))
+    // An invalid tier is refused below, as before; a valid one must be one the role runs on.
+    if (UNSUPPORTED_ROLES.has(role) || ((tier === "standard" || tier === "hardest") && !journalRoleRunsOnTier(role, tier)))
       throw new JournalInferencePortError("JOURNAL_EXCHANGE_ROLE_UNSUPPORTED", { submissionStatus: "not_submitted" });
     if (prefetch && tier === "hardest")
       throw new JournalInferencePortError("JOURNAL_PREFETCH_TIER_UNSUPPORTED", { submissionStatus: "not_submitted" });

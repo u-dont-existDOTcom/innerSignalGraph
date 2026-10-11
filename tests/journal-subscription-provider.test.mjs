@@ -340,6 +340,11 @@ test("runtime binds subscription browser without API credentials and hard-requir
   });
   assert.equal(combined.capabilities().roles.visual_reader.available, true);
   assert.equal(combined.capabilities().hardest_roles.visual_reader.available, false);
+  // The pointer pass's judge also runs on the hardest lane; its tagger and search writer run only on the standard one.
+  assert.equal(combined.capabilities().hardest_roles.pair_judge.available, true);
+  assert.equal(combined.capabilities().hardest_roles.pointer_tagger.available, false);
+  assert.equal(combined.capabilities().hardest_roles.search_writer.available, false);
+  assert.equal(combined.capabilities().roles.pointer_tagger.available, true);
   assert.equal(combined.capabilities().hardest_fresh_context_per_generate, false);
   assert.equal(combined.capabilities().hardest_authenticated_execution_profile_per_generate, false);
   const image = Buffer.from("synthetic-hardest-visual", "utf8");

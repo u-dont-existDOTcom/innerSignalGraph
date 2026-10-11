@@ -221,6 +221,33 @@ test("a stretch with a single sampled unit is merged with its neighbour for the 
   assert.equal(twoSingles.degrees_of_freedom, 4 - 2);
 });
 
+test("a stretch taken whole stays on its own and adds no variance or degree of freedom", () => {
+  // Stretch 0 is a census of one unit (a short journal): it is never merged. Stretch 1 is sampled with three units.
+  const units = [unit("a", 0, 1, 4, 1), unit("b", 1, 0.5, 4, 4), unit("c", 1, 0.5, 3, 1), unit("d", 1, 0.5, 5, 4)];
+  const result = designRatioBound({ units });
+  assert.deepEqual(result.census_strata, [0]);
+  assert.deepEqual(result.collapsed_strata, []);
+  assert.equal(result.degrees_of_freedom, 3 - 1, "only the sampled stretch counts");
+  const askedTotal = 4 + 2 * 4 + 2 * 3 + 2 * 5;
+  const R = (1 + 2 * 4 + 2 * 1 + 2 * 4) / askedTotal;
+  near(result.estimate, R, 1e-15, "estimate, the census unit included");
+  // The census unit's z is left out of the variance entirely.
+  const z = [2 * (4 - R * 4), 2 * (1 - R * 3), 2 * (4 - R * 5)];
+  near(result.standard_error, Math.sqrt(stratumPart(z, 0.5)) / askedTotal, 1e-14, "standard error");
+  near(result.lower_bound, R - studentTQuantile(0.95, 2) * result.standard_error, 1e-12, "lower bound");
+  // A census stretch between two sampled singletons doesn't stop them merging with each other.
+  const around = designRatioBound({ units: [unit("a", 0, 0.5, 2, 2), unit("b", 1, 1, 2, 1), unit("c", 1, 1, 2, 2),
+    unit("d", 2, 0.5, 2, 0)] });
+  assert.deepEqual(around.census_strata, [1]);
+  assert.deepEqual(around.collapsed_strata, [[0, 2]]);
+  assert.equal(around.degrees_of_freedom, 1);
+  // A lone sampled unit beside census stretches leaves no degree of freedom, so no bound.
+  const lone = designRatioBound({ units: [unit("a", 0, 1, 3, 3), unit("b", 1, 0.5, 3, 1), unit("c", 2, 1, 3, 2)] });
+  assert.equal(lone.degrees_of_freedom, 0);
+  assert.equal(lone.lower_bound, null);
+  assert.equal(lone.reason, "no degrees of freedom");
+});
+
 test("units whose questions all fail together widen the bound", () => {
   // Two stretches of four units, five questions each, 30 of 40 found either way. Together: a unit finds all its
   // questions or none. Spread: every unit misses one or two.
@@ -239,9 +266,13 @@ test("the bound stays between 0 and the estimate, and a stretch taken whole adds
   assert.equal(wide.estimate, 0.5);
   assert.ok(wide.estimate - studentTQuantile(0.95, 1) * wide.standard_error < 0);
   assert.equal(wide.lower_bound, 0);
+  // Every unit taken with certainty: nothing was sampled, so recall is exact and its bound is the estimate.
   const census = designRatioBound({ units: [unit("a", 0, 1, 5, 2), unit("b", 0, 1, 5, 5), unit("c", 1, 1, 4, 4)] });
   assert.equal(census.standard_error, 0);
   assert.equal(census.lower_bound, census.estimate);
+  assert.equal(census.degrees_of_freedom, 0);
+  assert.deepEqual(census.census_strata, [0, 1]);
+  assert.equal(census.reason, null);
   const lowConfidence = designRatioBound({ units: [unit("a", 0, 0.5, 5, 3), unit("b", 0, 0.5, 5, 5)], confidence: 0.3 });
   assert.equal(lowConfidence.lower_bound, lowConfidence.estimate);
 });
@@ -255,7 +286,7 @@ test("the bound can't be computed from fewer than two units, and nothing asked h
   assert.equal(one.reason, "fewer than two sampled units");
   const none = designRatioBound({ units: [] });
   assert.deepEqual(none, { estimate: null, standard_error: null, degrees_of_freedom: 0, lower_bound: null, sampled_units: 0,
-    strata: 0, collapsed_strata: [], reason: "fewer than two sampled units" });
+    strata: 0, census_strata: [], collapsed_strata: [], reason: "fewer than two sampled units" });
   const nothingAsked = designRatioBound({ units: [unit("a", 0, 0.5, 0, 0), unit("b", 0, 0.5, 0, 0), unit("c", 1, 0.5, 0, 0),
     unit("d", 1, 0.5, 0, 0)] });
   assert.equal(nothingAsked.estimate, null);

@@ -194,32 +194,39 @@ export function cohenKappa(scores) {
   });
 }
 
-// Strata in order, each as a group of units. A stratum with a single sampled unit is merged with the next stratum
-// (the previous one, if it is the last), until no group has a single unit. That can overstate the variance, never
-// understate it.
+// Strata in order, each as a group of units, split in two. A stratum whose units were all taken (inclusion
+// probability 1, as when a journal is too short to give a stretch its full draw) is a census: it adds no sampling
+// variance and no degree of freedom, and it is never merged. Among the other strata, one with a single sampled unit is
+// merged with its nearest such neighbour (the next one, or the previous one when it is the last), until none has a
+// single unit: the standard collapsed-strata estimator, conservative in expectation. A lone single-unit stratum with
+// no such neighbour stays as it is, and the bound then can't be computed.
 function collapseStrata(units) {
   const byStratum = new Map();
   for (const unit of units) {
     if (!byStratum.has(unit.stratum)) byStratum.set(unit.stratum, []);
     byStratum.get(unit.stratum).push(unit);
   }
-  const groups = [...byStratum.keys()].sort((left, right) => left - right)
+  const ordered = [...byStratum.keys()].sort((left, right) => left - right)
     .map((stratum) => ({ strata: [stratum], units: byStratum.get(stratum) }));
+  const census = ordered.filter((group) => group.units.every((unit) => unit.inclusion_probability === 1));
+  const sampled = ordered.filter((group) => !census.includes(group));
   for (;;) {
-    const single = groups.findIndex((group) => group.units.length === 1);
-    if (single === -1 || groups.length === 1) return groups;
-    const first = single + 1 < groups.length ? single : single - 1;
-    const [left, right] = [groups[first], groups[first + 1]];
-    groups.splice(first, 2, { strata: [...left.strata, ...right.strata], units: [...left.units, ...right.units] });
+    const single = sampled.findIndex((group) => group.units.length === 1);
+    if (single === -1 || sampled.length === 1) return { census, sampled };
+    const first = single + 1 < sampled.length ? single : single - 1;
+    const [left, right] = [sampled[first], sampled[first + 1]];
+    sampled.splice(first, 2, { strata: [...left.strata, ...right.strata], units: [...left.units, ...right.units] });
   }
 }
 
 // The design-based ratio estimate for a stratified sample of clusters (sampled units, whose questions move together)
 // and its one-sided lower bound. Each unit is weighted by 1 / inclusion_probability; the estimate is weighted found
 // over weighted asked. The variance is linearized, z = w · (found − R · asked), from how z varies within each stratum,
-// with each stratum's finite population correction from its units' mean inclusion probability, and Student's t has
-// as many degrees of freedom as sampled units less strata after collapsing. `strata` counts the strata as drawn;
-// `collapsed_strata` lists each group of strata merged for the variance.
+// with each stratum's finite population correction from its units' mean inclusion probability. Census strata add
+// nothing to it. Student's t has as many degrees of freedom as sampled units less strata, over the strata that add
+// variance, after collapsing. When every unit was taken with certainty the estimate is exact and the bound is the
+// estimate. `strata` counts the strata as drawn; `census_strata` lists the ones taken whole; `collapsed_strata` lists
+// each group of strata merged for the variance.
 export function designRatioBound({ units, confidence = 0.95 } = {}) {
   invariant(Array.isArray(units), "DESIGN_RATIO_UNITS_INVALID");
   invariant(isOpenProbability(confidence), "DESIGN_RATIO_CONFIDENCE_INVALID");
@@ -237,30 +244,34 @@ export function designRatioBound({ units, confidence = 0.95 } = {}) {
   const weightedAsked = sum(units.map((unit) => weight(unit) * unit.asked));
   const weightedFound = sum(units.map((unit) => weight(unit) * unit.found));
   const estimate = weightedAsked > 0 ? weightedFound / weightedAsked : null;
-  const groups = collapseStrata(units);
+  const { census, sampled } = collapseStrata(units);
   const result = {
     estimate,
     standard_error: null,
-    degrees_of_freedom: units.length - groups.length,
+    degrees_of_freedom: sum(sampled.map((group) => group.units.length - 1)),
     lower_bound: null,
     sampled_units: units.length,
     strata: new Set(units.map((unit) => unit.stratum)).size,
-    collapsed_strata: Object.freeze(groups.filter((group) => group.strata.length > 1)
+    census_strata: Object.freeze(census.map((group) => group.strata[0])),
+    collapsed_strata: Object.freeze(sampled.filter((group) => group.strata.length > 1)
       .map((group) => Object.freeze([...group.strata]))),
     reason: null
   };
   if (units.length < 2) return Object.freeze({ ...result, reason: "fewer than two sampled units" });
   if (estimate === null) return Object.freeze({ ...result, reason: "no question asked" });
+  // Every unit taken with certainty: nothing was sampled, so the estimate is exact.
+  if (sampled.length === 0) return Object.freeze({ ...result, standard_error: 0, lower_bound: estimate });
   let spread = 0;
-  for (const group of groups) {
+  for (const group of sampled) {
     const size = group.units.length;
+    if (size < 2) continue;
     const z = group.units.map((unit) => weight(unit) * (unit.found - estimate * unit.asked));
     const mean = sum(z) / size;
     const sampledFraction = sum(group.units.map((unit) => unit.inclusion_probability)) / size;
     spread += (1 - sampledFraction) * size / (size - 1) * sum(z.map((value) => (value - mean) ** 2));
   }
   const standardError = Math.sqrt(spread) / weightedAsked;
-  // Collapsing leaves every group with at least two units, so this holds by construction and is checked anyway.
+  // A lone sampled stratum with a single unit leaves no degree of freedom: its variance can't be estimated.
   if (result.degrees_of_freedom < 1) {
     return Object.freeze({ ...result, standard_error: standardError, reason: "no degrees of freedom" });
   }
