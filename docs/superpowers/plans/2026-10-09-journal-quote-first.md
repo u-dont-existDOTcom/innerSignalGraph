@@ -336,8 +336,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     one included, must appear in each of the label's anchors, ignoring case and accents; an anchor that lacks one is
     dropped. So a label can't name someone its quotes don't. Who an event involves comes from the name tags on the
     same quotes, never from its label.
-  - Labels have length limits; duplicate tags in a batch merge. Across batches, tags of the same kind and label stay
-    separate, since two people can share a name, and search by label finds all of them.
+  - Labels have length limits. Tags are never merged by their label, in a batch or across batches, since two people
+    or two meetings can share one; a repeat of the same tag on the same anchor is dropped.
   - A tag left with no anchor is dropped. Every drop is counted. No model call repairs a tag.
 - **Failures stay small and visible.** A batch whose answer doesn't fit the schema gets one retry. A batch that fails
   twice stays untagged and is listed by page, without content, as is any page that ends with no kept tag. Word search
@@ -348,8 +348,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **A pointer-only extraction.** Tags go through `adaptExtractionToGraph` in place of today's empty extraction:
   entities for people, places and organizations, with that `entity_kind`; episodes for events; no assertions. A tag's
   evidence in the graph is the whole quote each anchor is in, the quote's existing passage, so no new passage is made
-  and a search still returns each quote once; the exact anchors stay in the tag index. The quote generation then
-  carries entity and episode nodes linked to the quotes that mention them.
+  and a search still returns each quote once; the exact anchors stay in the tag index.
+- **Identity never crosses a quote.** Nothing here shows that two mentions are the same person or the same event, so a
+  tag anchored in several quotes becomes one entity or episode for each quote. The graph then claims only that a
+  quote mentions someone or something by that name; telling which mentions are the same is a later part with its own
+  measurement. Search by label still finds every quote.
 - **Topics stay out of the graph.** The extraction schema has no topic kind, and a topic is neither someone nor
   something that happened, so topic tags live only in the tag index.
 - **A tag index.** Two new indexes in the quote generation, stored like `quote_meta`: `quote_tags` gives each quote its
@@ -398,8 +401,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   of dollars for a journal this size, depending on the model. The pilot measures tokens per page, and the provider's
   price list at that time gives the cost.
 - **Measuring.** 96 reference answers and 96 search-writing answers on the same Codex slots, about half an hour,
-  which can run while the pass does. The precision check is at most 350 pairs, 14 calls for each judge; the Claude
-  judge's 14, one at a time at the Claude lane's current seven minutes or so a call, take under two hours and fit in a
+  which can run while the pass does. The precision check is at most 750 pairs, 15 calls for each judge; the Claude
+  judge's 15, one at a time at the Claude lane's current seven minutes or so a call, take under two hours and fit in a
   day's 40.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
@@ -450,17 +453,17 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Tag precision.** It is measured on tag–quote pairs, the way search uses tags: each quote a kept tag is anchored in
   makes one pair, so a tag on a hundred quotes is a hundred pairs, and a wrong one weighs as much as the wrong hits it
   causes.
-  - It is gated for each kind that adds meaning the words don't carry, topics and events: those labels are what
-    `tag_terms` adds to search and what the timeline shows. Each of the two gets its own fixed sample of 150 of its
-    pairs (all of them, if there are fewer), drawn from that generation with a recorded seed, so pairs of one kind
-    can't carry another. Name pairs (people, places, organizations), which code grounds by requiring the name in every
-    anchor, get a sample of 50 that is reported with its bound but not gated.
+  - It is gated for every kind on its own: people, places, organizations, topics and events. A name in an anchor can
+    still be the wrong kind ("Apple" the fruit tagged as an organization), and topic and event labels are what
+    `tag_terms` adds to search and what the timeline shows. Each kind gets its own fixed sample of 150 of its pairs (all
+    of them, if there are fewer), drawn from that generation with a recorded seed, so pairs of one kind can't carry
+    another.
   - A kind with fewer than 29 pairs can't reach the floor even if every pair is right, so the pass builds its
     generation without that kind's tags, before anything is measured, and the report says so. The rule looks only at
     counts, never at judgments.
   - Each sampled pair is scored by two independent judges, one Codex and one Claude. Each judge is shown the exact
     quote, the tag's label and kind, and asked whether that quote really mentions or concerns what the label names,
-    and whether the kind is right. Pairs go 25 to a call.
+    and whether the kind is right. Pairs go 50 to a call.
   - Both judges score every sampled pair, and a pair counts as correct only when both say so. A judge call that fails
     gets one retry, and a pair still unscored by either judge counts as wrong, which can only lower the bound. Their
     agreement (raw agreement and Cohen's kappa, reported as undefined when the judges give one answer throughout) and
@@ -478,8 +481,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     is on the point estimate, with its lower bound reported: it is there to stop a pass that adds nothing, and a pass
     with no tags finds none of them. If word search misses no sampled question, there is nothing to gain, and the
     report says so in place of this floor;
-  - **precision:** for topics and for events, each on its own sample, the one-sided 95% lower bound of pair precision
-    is at least 90%. A kind the generation has no pairs of has nothing to gate, and the report says so;
+  - **precision:** for each kind, on its own sample, the one-sided 95% lower bound of pair precision is at least 90%.
+    A kind the generation has no pairs of has nothing to gate, and the report says so;
   - **coverage:** at most 2% of the pages with quotes are untagged, each one listed with its reason. A page is
     untagged when it ends with no kept tag, whatever the reason: its batch failed twice or ran out of time, the answer
     gave it no tag, or every tag on it was dropped. So a pass whose answers are valid but nearly empty fails here.
@@ -497,8 +500,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 3. **Pilot** on 20 pages drawn from a recorded seed outside the reference sample: seconds per batch, tokens, tags kept
    and dropped, failed batches. It never looks at a reference, and nothing is published.
 4. **Full pass** on the whole journal, timed. Built, not published.
-5. **Measure** that generation against every floor: recall on the random sample, precision on samples of its own
-   topic and event pairs, coverage of its pages, with calibration's set reported apart. Nothing published. If coverage
+5. **Measure** that generation against every floor: recall on the random sample, precision on a sample of its own
+   pairs of each kind, coverage of its pages, with calibration's set reported apart. Nothing published. If coverage
    fails, one new pass tags the untagged pages and this step runs again on its generation. If any floor fails after
    that, the generation is discarded and the counts go on the owner page.
 6. **Publish** on the owner's `deploy` exactly the measured generation, identified by its digest, and only when every
@@ -517,7 +520,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 ### Tests
 
 - **Anchors.** A tag whose anchor isn't in the named unit, or names a unit outside its batch, is dropped; one whose
-  anchor is there is kept; kinds and length limits hold; duplicates in a batch merge.
+  anchor is there is kept; kinds and length limits hold; a repeat of the same tag on the same anchor is dropped, and
+  two tags with the same label are never merged.
 - **Names.** An anchor of a person, place or organization tag that lacks the name, case and accents ignored, is
   dropped, so a quote that says only "he" is never filed under a name; an event or topic label with a capitalized
   word, the first one included ("Jean's birthday"), loses each anchor that lacks it; a tag left with no anchor is
@@ -530,8 +534,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
   page that is.
 - **Graph.** A pointer-only extraction yields entity and episode nodes linked to their quotes' existing passages, with
-  no new passage, authored times from `quote_meta` and no assertions; topic tags appear only in the tag index; tags of
-  the same kind and label in two batches stay two nodes.
+  no new passage, authored times from `quote_meta` and no assertions; topic tags appear only in the tag index; a tag
+  anchored in two quotes makes two nodes, and two tags with the same label make two nodes.
 - **Search.** A query word in a topic or event label (`tag_terms`) finds the tagged quote and reports `matched_by`; a
   quote that matches only through a tag ranks after quotes that match by their own words; a kind filter keeps only
   the quotes with a tag of that kind; the quote's text, date and cues are unchanged.
@@ -550,9 +554,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   first 12 results of one of its searches, so an item whose second anchor holds its negation isn't found from the
   first alone; unanswerable questions stay out of recall and are reported; a sample with no critical question is
   reported and judged for no loss on all questions alone. Precision samples tag–quote pairs, so a wrong tag on many
-  quotes counts once for each; topics and events are each gated on their own sample of 150, so name pairs can't carry
-  a failing kind; name pairs are reported, not gated; a kind with fewer than 29 pairs is left out of the generation
-  before measuring, by its count alone; a kind with no pairs has nothing to gate; the Clopper-Pearson arithmetic; each
+  quotes counts once for each; each kind is gated on its own sample of 150, so pairs of one kind can't carry another,
+  and a name of the wrong kind fails its kind; a kind with fewer than 29 pairs is left out of the generation before
+  measuring, by its count alone; a kind with no pairs has nothing to gate; the Clopper-Pearson arithmetic; each
   sample's size is fixed before scoring and its bound computed once; a pair counts as correct only when both judges
   say so, and a pair left unscored after a retry counts as wrong; kappa is reported as undefined when the judges give
   one answer throughout. A pass with no tags fails the coverage floor, and the gain floor whenever word search misses
