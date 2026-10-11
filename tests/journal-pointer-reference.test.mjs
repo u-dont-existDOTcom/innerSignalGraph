@@ -16,7 +16,7 @@ const writerAnswer = () => ({
   ]
 });
 const judgment = (unitId, change = {}) => ({ unit_id: unitId, covered: true, missing: "", critical_question_ids: [],
-  repeated_question_ids: [], combined_question_ids: [], ...change });
+  repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [], ...change });
 
 test("a question set is complete when every quote has a question and every question names one of the unit's quotes", () => {
   const set = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, answer: writerAnswer() });
@@ -62,7 +62,7 @@ const callQuotes = () => [
   { unit_id: "unit:two", questions: [{ question_id: "question:7:0:2", critical: true }] }
 ];
 
-test("code confirms a quote only when the judge says it is covered and lists no repeated or combined question", () => {
+test("code confirms a quote only when the judge says it is covered and lists no repeated, combined or copied question", () => {
   const checked = checkCoverageJudgments({ quotes: callQuotes(), answer: { schema_version: "1.0", judgments: [
     judgment("unit:one", { critical_question_ids: ["question:7:0:1"] }), judgment("unit:two")] } });
   assert.equal(checked.valid, true);
@@ -78,6 +78,12 @@ test("code confirms a quote only when the judge says it is covered and lists no 
   const combined = checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
     judgment("unit:one"), judgment("unit:two", { combined_question_ids: ["question:7:0:2"], missing: "one question asks two things" })] } });
   assert.deepEqual(combined.quotes.map((quote) => quote.confirmed), [true, false]);
+  // A question that copies its quote's wording would let word search find the quote by its own phrasing.
+  const copied = checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
+    judgment("unit:one", { copied_question_ids: ["question:7:0:0"], missing: "one question copies the quote's turn of phrase" }),
+    judgment("unit:two")] } });
+  assert.deepEqual(copied.quotes.map((quote) => [quote.confirmed, quote.copied]), [[false, 1], [true, 0]]);
+  assert.deepEqual(copied.notes, [{ unit_id: "unit:one", missing: "one question copies the quote's turn of phrase" }]);
   const uncovered = checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
     judgment("unit:one", { covered: false, missing: "the call from the workshop" }), judgment("unit:two")] } });
   assert.deepEqual(uncovered.quotes.map((quote) => quote.confirmed), [false, true]);
@@ -95,6 +101,8 @@ test("a coverage answer that misses a quote, judges one twice or lists another q
     ["quote_outside_call", { judgments: [judgment("unit:one"), judgment("unit:two"), judgment("unit:three")] }],
     ["question_outside_quote", { judgments: [judgment("unit:one", { critical_question_ids: ["question:7:0:2"] }), judgment("unit:two")] }],
     ["question_outside_quote", { judgments: [judgment("unit:one"), judgment("unit:two", { repeated_question_ids: ["question:7:0:0"] })] }],
+    ["question_outside_quote", { judgments: [judgment("unit:one", { copied_question_ids: ["question:7:0:2"], missing: "copied" }), judgment("unit:two")] }],
+    ["answer_invalid", { judgments: [judgment("unit:one", { copied_question_ids: undefined }), judgment("unit:two")] }],
     ["answer_invalid", { judgments: [judgment("unit:one", { combined_question_ids: ["question:7:0:0", "question:7:0:0"] }), judgment("unit:two")] }],
     ["answer_invalid", { judgments: [judgment("unit:one", { covered: "yes" }), judgment("unit:two")] }],
     ["unconfirmed_without_note", { judgments: [judgment("unit:one", { covered: false, missing: " " }), judgment("unit:two")] }]

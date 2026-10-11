@@ -341,6 +341,7 @@ function passingInput() {
     recall_words_only_estimate: 0.8,
     critical_recall_estimate: 1,
     critical_recall_words_only_estimate: 0.9,
+    critical_recall: { estimate: 1, lower_bound: 0.96 },
     gain: GAIN,
     precision: {
       person: { pairs: 1500, correct: 150, sampled: 150 },
@@ -367,7 +368,8 @@ const withPrecision = (kinds) => {
 const failing = (result) => Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name);
 
 test("the floors are the plan's", () => {
-  assert.deepEqual(POINTER_FLOORS, { recall_lower_bound: 0.85, gain_point_estimate: 0.25, precision_lower_bound: 0.90,
+  assert.deepEqual(POINTER_FLOORS, { recall_lower_bound: 0.85, critical_recall_point_estimate: 0.85, gain_point_estimate: 0.25,
+    precision_lower_bound: 0.90,
     max_untagged_share: 0.02, event_check_max_unanswered_share: 0.02, event_check_recall_lower_bound: 0.90, confidence: 0.95 });
   assert.ok(Object.isFrozen(POINTER_FLOORS));
   assert.deepEqual(POINTER_PRECISION_SAMPLES, { kinds: ["person", "place", "organization", "topic", "event"],
@@ -380,7 +382,8 @@ test("a pass is published when every floor holds", () => {
   near(GAIN.estimate, 0.5, 1e-15, "gain");
   const result = pointerFloors(passingInput());
   assert.equal(result.publish, true);
-  assert.deepEqual(Object.keys(result.floors), ["recall", "no_loss", "gain", "precision", "event_check", "event_check_recall", "coverage", "anchors"]);
+  assert.deepEqual(Object.keys(result.floors), ["recall", "no_loss", "critical_recall", "gain", "precision", "event_check",
+    "event_check_recall", "coverage", "anchors"]);
   assert.deepEqual(failing(result), []);
   const { recall, no_loss: noLoss, gain, precision, coverage, anchors } = result.floors;
   assert.ok(recall.lower_bound >= 0.85 && recall.lower_bound < recall.estimate);
@@ -409,7 +412,13 @@ test("each floor fails on its own", () => {
     ["recall bound 0.84", { recall: { ...RECALL, lower_bound: 0.84 } }, "recall"],
     ["recall bound not computable", { recall: designRatioBound({ units: [unit("a", 0, 0.5, 3, 3)] }) }, "recall"],
     ["a loss on all questions", { recall_words_only_estimate: RECALL.estimate + 0.01 }, "no_loss"],
-    ["a loss on critical questions only", { critical_recall_estimate: 0.85 }, "no_loss"],
+    ["a loss on critical questions only", { critical_recall_estimate: 0.85, critical_recall: { estimate: 0.85, lower_bound: 0.75 } },
+      "no_loss"],
+    // Words and tags miss every critical question, as word search does, while the other questions carry recall.
+    ["no critical question found", { critical_recall_estimate: 0, critical_recall_words_only_estimate: 0,
+      critical_recall: { estimate: 0, lower_bound: 0 } }, "critical_recall"],
+    ["critical recall 0.84", { critical_recall_estimate: 0.84, critical_recall_words_only_estimate: 0.8,
+      critical_recall: { estimate: 0.84, lower_bound: 0.7 } }, "critical_recall"],
     ["gain 0.24", { gain: { ...GAIN, estimate: 0.24 } }, "gain"],
     ["topics 130 of 150", { precision: { ...passingInput().precision, topic: { pairs: 800, correct: 130, sampled: 150 } } },
       "precision"],
@@ -444,14 +453,15 @@ test("recall fails when it is unknown or its bound is below the floor", () => {
 });
 
 test("no loss is judged on all questions alone when the sample has no critical question", () => {
-  const noCritical = { ...passingInput(), critical_recall_estimate: null, critical_recall_words_only_estimate: null };
+  const noCritical = { ...passingInput(), critical_recall_estimate: null, critical_recall_words_only_estimate: null, critical_recall: null };
   const holds = pointerFloors(noCritical).floors.no_loss;
   assert.equal(holds.holds, true);
   assert.equal(holds.critical, "no critical question in the sample");
   const loss = pointerFloors({ ...noCritical, recall_words_only_estimate: RECALL.estimate + 0.01 }).floors.no_loss;
   assert.equal(loss.holds, false);
   assert.equal(loss.critical, "no critical question in the sample");
-  const critical = pointerFloors({ ...passingInput(), critical_recall_estimate: 0.85 }).floors.no_loss;
+  const critical = pointerFloors({ ...passingInput(), critical_recall_estimate: 0.85,
+    critical_recall: { estimate: 0.85, lower_bound: 0.75 } }).floors.no_loss;
   assert.deepEqual(critical, { holds: false, recall_estimate: RECALL.estimate, recall_words_only_estimate: 0.8,
     critical_recall_estimate: 0.85, critical_recall_words_only_estimate: 0.9, critical: null, reason: null });
   // Equal is no loss; unknown estimates can't show there is none.
@@ -539,6 +549,9 @@ test("the floors refuse malformed input", () => {
     [{ recall_estimate: 1.2 }, "POINTER_FLOORS_NO_LOSS_INVALID"],
     [{ recall_words_only_estimate: undefined }, "POINTER_FLOORS_NO_LOSS_INVALID"],
     [{ critical_recall_estimate: null }, "POINTER_FLOORS_NO_LOSS_INVALID"],
+    [{ critical_recall: null }, "POINTER_FLOORS_CRITICAL_RECALL_INVALID"],
+    [{ critical_recall: { estimate: 0.9, lower_bound: 0.8 } }, "POINTER_FLOORS_CRITICAL_RECALL_INVALID"],
+    [{ critical_recall_estimate: null, critical_recall_words_only_estimate: null }, "POINTER_FLOORS_CRITICAL_RECALL_INVALID"],
     [{ gain: undefined }, "POINTER_FLOORS_GAIN_INVALID"],
     [{ precision: { ...passingInput().precision, topic: { pairs: 800, correct: 151, sampled: 150 } } }, "POINTER_FLOORS_PRECISION_INVALID"],
     // The sample is 150 of a kind's pairs, or all of them when there are fewer.
@@ -625,4 +638,16 @@ test("the event-check floors: at most 2% of checks unanswered, and recall of rea
   const notApplicable = pointerFloors({ ...withPrecision({ event: { pairs: 0, correct: 0, sampled: 0 } }), event_check: { pairs: 0, unanswered: 0 },
     event_recall: { kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 0, sampled: 0, real: 0 } } }).floors.event_check_recall;
   assert.deepEqual([notApplicable.holds, notApplicable.applicable], [true, false]);
+});
+
+test("critical recall is gated on its point estimate, at the recall floor's level, with its bound reported", () => {
+  const floor = (estimate, lowerBound) => pointerFloors({ ...passingInput(), critical_recall_estimate: estimate,
+    critical_recall_words_only_estimate: Math.min(estimate, 0.8), critical_recall: { estimate, lower_bound: lowerBound } }).floors.critical_recall;
+  assert.deepEqual(floor(0.85, 0.7), { holds: true, applicable: true, estimate: 0.85, lower_bound: 0.7, minimum: 0.85, reason: null });
+  assert.equal(floor(0.849, 0.8).holds, false);
+  // A wide bound alone doesn't fail it: the critical questions are a fraction of the sample.
+  assert.equal(floor(0.9, 0.6).holds, true);
+  const none = pointerFloors({ ...passingInput(), critical_recall_estimate: null, critical_recall_words_only_estimate: null,
+    critical_recall: null }).floors.critical_recall;
+  assert.deepEqual([none.holds, none.applicable, none.reason], [true, false, "no critical question in the sample"]);
 });

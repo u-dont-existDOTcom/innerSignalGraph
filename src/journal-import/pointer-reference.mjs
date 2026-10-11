@@ -1,13 +1,14 @@
 import { ValidationError } from "../core/errors.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3, "Questions
-// that cover every sampled quote", "An independent check that the questions cover each quote" and "No unit drops
-// out"). For each sampled unit the question writer writes one question for each thing a quote says; code checks that
-// every quote has a question and every question names one of the unit's quotes; the coverage judge sees the quotes
-// with their questions, 25 quotes to a call; and code, not the judge alone, decides which quotes are confirmed. A unit
-// gets one writer retry in all, with the judge's notes when the check left a quote unconfirmed; a unit still
-// incomplete after it is a nonresponse, which fails the recall floor. The model calls and the deadline are the
-// runtime's. Nothing returned for a log or a report holds journal text: notes go only into the writer's retry packet.
+// that cover every sampled quote", "An independent check that the questions cover each quote" and "No unit drops out").
+// For each sampled unit the question writer writes one question for each thing a quote says; code checks that every
+// quote has a question and every question names one of the unit's quotes; the coverage judge sees the quotes with their
+// questions, 25 quotes to a call, and lists questions that repeat, combine or copy; and code, not the judge alone,
+// decides which quotes are confirmed. A unit gets one writer retry in all, with the judge's notes when the check left a
+// quote unconfirmed; a unit still incomplete after it is a nonresponse, which fails the recall floor. The model calls
+// and the deadline are the runtime's. Nothing returned for a log or a report holds journal text: notes go only into the
+// writer's retry packet.
 
 /** Quotes to a coverage-judge call. */
 export const POINTER_COVERAGE_QUOTES_PER_CALL = 25;
@@ -87,12 +88,16 @@ export function coverageJudgeCalls({ quotes } = {}) {
   return deepFreeze(calls);
 }
 
+// A quote is confirmed only when it is covered and no question is listed as repeated, combined or copied.
+const confirmedBy = (judgment) => judgment.covered && judgment.repeated_question_ids.length === 0
+  && judgment.combined_question_ids.length === 0 && judgment.copied_question_ids.length === 0;
+
 /**
  * Checks the coverage judge's answer for one call against the call's quotes. The answer is valid when it judges every
  * quote of the call once and nothing else, every question it lists is one of that quote's, and it says what is wrong
  * with every quote it doesn't confirm; an invalid answer gets the call's one retry. A quote is confirmed only when the
- * judge says it is covered and lists no question as repeating another or asking about two things. A question is
- * critical when the writer or the judge marks it so. `notes` are the judge's words for the writer's retry packet, and
+ * judge says it is covered and lists no question as repeating another, asking about two things or copying the quote's
+ * wording. A question is critical when the writer or the judge marks it so. `notes` are the judge's words for the writer's retry packet, and
  * never go into a log or a report.
  */
 export function checkCoverageJudgments({ quotes, answer } = {}) {
@@ -109,13 +114,13 @@ export function checkCoverageJudgments({ quotes, answer } = {}) {
     if (seen.has(judgment.unit_id)) return invalid("quote_judged_twice");
     seen.add(judgment.unit_id);
     const own = new Set(byQuote.get(judgment.unit_id).questions.map((item) => item.question_id));
-    const lists = [judgment.critical_question_ids, judgment.repeated_question_ids, judgment.combined_question_ids];
+    const lists = [judgment.critical_question_ids, judgment.repeated_question_ids, judgment.combined_question_ids,
+      judgment.copied_question_ids];
     if (typeof judgment.covered !== "boolean" || typeof judgment.missing !== "string" || !lists.every(isDistinctIds)) {
       return invalid("answer_invalid");
     }
     if (!lists.every((list) => list.every((id) => own.has(id)))) return invalid("question_outside_quote");
-    const confirmed = judgment.covered && judgment.repeated_question_ids.length === 0 && judgment.combined_question_ids.length === 0;
-    if (!confirmed && judgment.missing.trim().length === 0) return invalid("unconfirmed_without_note");
+    if (!confirmedBy(judgment) && judgment.missing.trim().length === 0) return invalid("unconfirmed_without_note");
   }
   if (seen.size !== quotes.length) return invalid("quote_not_judged");
   const judgmentFor = new Map(answer.judgments.map((judgment) => [judgment.unit_id, judgment]));
@@ -124,10 +129,11 @@ export function checkCoverageJudgments({ quotes, answer } = {}) {
     const judgeCritical = new Set(judgment.critical_question_ids);
     return {
       unit_id: quote.unit_id,
-      confirmed: judgment.covered && judgment.repeated_question_ids.length === 0 && judgment.combined_question_ids.length === 0,
+      confirmed: confirmedBy(judgment),
       covered: judgment.covered,
       repeated: judgment.repeated_question_ids.length,
       combined: judgment.combined_question_ids.length,
+      copied: judgment.copied_question_ids.length,
       critical_question_ids: quote.questions.filter((item) => item.critical || judgeCritical.has(item.question_id))
         .map((item) => item.question_id)
     };

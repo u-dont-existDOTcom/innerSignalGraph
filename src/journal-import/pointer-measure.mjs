@@ -9,6 +9,7 @@ import { ValidationError } from "../core/errors.mjs";
 // The floors, stated in the plan before anything is measured. Only the owner can change them.
 export const POINTER_FLOORS = Object.freeze({
   recall_lower_bound: 0.85,
+  critical_recall_point_estimate: 0.85,
   gain_point_estimate: 0.25,
   precision_lower_bound: 0.90,
   max_untagged_share: 0.02,
@@ -337,9 +338,11 @@ export function eventCheckRecall({ kept, dropped, confidence = 0.95 } = {}) {
 const isEstimate = (value) => value === null || isProbability(value);
 const isRatioResult = (value) => isObject(value) && isEstimate(value.estimate) && isEstimate(value.lower_bound);
 
-// The publication floors. `recall` and `gain` are designRatioBound results at POINTER_FLOORS.confidence (`recall` is
-// null when a sampled unit is a nonresponse; `gain` is null when word search misses no sampled question). The four
-// recall estimates use the same weights; the critical pair is null when the sample has no critical question.
+// The publication floors. `recall`, `critical_recall` and `gain` are designRatioBound results at
+// POINTER_FLOORS.confidence (`recall` is null when a sampled unit is a nonresponse; `critical_recall`, recall with words
+// and tags on the critical questions, is null when the sample has none; `gain` is null when word search misses no
+// sampled question). The four recall estimates use the same weights; the critical pair is null when the sample has no
+// critical question, and its first is `critical_recall`'s estimate.
 // `precision` holds each kind's sample (`pairs`, `sampled`, `correct`); `event_check` the event pairs checked and how
 // many went unanswered; `event_recall` the samples eventCheckRecall takes, the kept one being the event kind's
 // precision sample. The pass is published only when every floor holds.
@@ -351,6 +354,9 @@ export function pointerFloors(input) {
     "POINTER_FLOORS_NO_LOSS_INVALID");
   const critical = [input.critical_recall_estimate, input.critical_recall_words_only_estimate];
   invariant(critical.every((value) => value === null) || critical.every(isProbability), "POINTER_FLOORS_NO_LOSS_INVALID");
+  const criticalRecall = input.critical_recall;
+  invariant((criticalRecall === null && input.critical_recall_estimate === null)
+    || (isRatioResult(criticalRecall) && criticalRecall.estimate === input.critical_recall_estimate), "POINTER_FLOORS_CRITICAL_RECALL_INVALID");
   invariant(gain === null || isRatioResult(gain), "POINTER_FLOORS_GAIN_INVALID");
   invariant(isObject(precision)
     && POINTER_PRECISION_SAMPLES.kinds.every((kind) => sampleShaped(precision[kind], POINTER_PRECISION_SAMPLES.pairs_per_kind, "correct")),
@@ -390,6 +396,15 @@ export function pointerFloors(input) {
     critical: hasCritical ? null : "no critical question in the sample",
     reason: known ? null : "recall unknown"
   });
+
+  // Recall on the critical questions, on the point estimate with the lower bound reported, so the other questions can't
+  // carry a pass that misses them, even when word search misses the same ones.
+  const criticalFloor = Object.freeze(criticalRecall === null
+    ? { holds: true, applicable: false, estimate: null, lower_bound: null, minimum: POINTER_FLOORS.critical_recall_point_estimate,
+      reason: "no critical question in the sample" }
+    : { holds: criticalRecall.estimate >= POINTER_FLOORS.critical_recall_point_estimate, applicable: true,
+      estimate: criticalRecall.estimate, lower_bound: criticalRecall.lower_bound, minimum: POINTER_FLOORS.critical_recall_point_estimate,
+      reason: null });
 
   // On the point estimate; the lower bound is only reported.
   const gainFloor = Object.freeze(gain === null
@@ -450,6 +465,7 @@ export function pointerFloors(input) {
   const floors = Object.freeze({
     recall: recallFloor,
     no_loss: noLossFloor,
+    critical_recall: criticalFloor,
     gain: gainFloor,
     precision: precisionFloor,
     event_check: eventCheckFloor,
