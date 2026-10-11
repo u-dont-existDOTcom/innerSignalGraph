@@ -51,8 +51,10 @@ the fidelity checks have nothing left to guard.
    event, say who said reported speech, and give the date a quote was written.
 3. **Model-written pointers, not records (next).** An index pass tags quotes with the people, places, topics and events
    they mention. Each tag is anchored to exact words in its quote, and a mechanical check drops any tag whose anchor
-   isn't there. Tags only help find quotes: the answer still reads the quote, never the tag. A wrong tag costs a missed
-   quote, not a distortion. The extraction the current import has already done can seed these tags.
+   isn't there. Tags only help find quotes: the answer still reads the quote, never the tag. A missing tag costs a
+   missed quote; a wrong one can bring up an off-topic quote, which is marked as found by a tag and checked against
+   its own words before it's used. Neither changes what a quote says. The extraction the current import has already
+   done can seed these tags.
 4. **Measured judges and a random sample (next, for the pointer pass).**
    - The pass is checked on retrieval recall: for sampled questions, does search find the quotes a careful reader
      would cite?
