@@ -1,12 +1,20 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-10
+Updated: 2026-10-11
 
-## Journal quote index v2: the journal's own dates (2026-10-10, awaiting review, merge and the owner's deploy)
+## Journal pointer pass: an import in hours (2026-10-11, plan awaiting review)
+
+- **Owner request:** "i do want to make this journal import just happen in a few hours for the public, not weeks. but i also don't want so many gaps and errors and failures..." (11 Oct, 01:03 UTC). Plan: `docs/superpowers/plans/2026-10-09-journal-quote-first.md`, "Part 3".
+- **Measured:** from the Codex worker's content-free log, 1 to 11 Oct, the Codex lane was busy between 0% and 10% of its three slots each day; since round 5 began on 4 Oct, about 1,400 answers of about 99,000 input tokens each finished 116 units. The semantic import mostly waits, and even without waiting its full run is about 20 hours on eight slots.
+- **Plan:** one `pointer_tagger` answer per batch of pages tags the people, places, organizations, topics and events the quotes mention, each anchored to exact text and checked by code (a name must appear in its anchor); failed tags are dropped and counted, never repaired. Tags become a pointer-only extraction (entities and episodes, no assertions) in a new quote generation, so the graph and timeline tools have data and quote search matches tags. All batches run at once on the Codex lane's eight slots: under an hour for the owner's journal, to be measured. Recall is measured against calibration's frozen reference questions, tag precision by two judges with measured agreement, against floors stated in the plan.
+- **Next:** Codex review of the plan; then build, pilot on 20 pages, measure on the calibration units that have a reference, full pass, and publish on the owner's `deploy`.
+
+## Journal quote index v2: the journal's own dates (2026-10-10, merged; awaiting the owner's deploy)
 
 - **Owner answer:** question 17, 10 Oct, 01:49 UTC: "the dates are in euro format since he's french / day first". Plan: `docs/superpowers/plans/2026-10-09-journal-quote-first.md`, "Version 2". Version 1 read one date line in the owner's journal, so 1,349 of 1,804 quotes were undated and 455 carried that one date.
 - **Change:** `quote-index-v2` reads French month and weekday names, marks before a date, year-first dates, all-numeric dates in the journal's order (run setting `quote_numeric_date_order`, checked by `doctor` and when a run opens), dates without a year (year from the dates before, marked `year_inferred`), and years and weekdays alone on a line. Every entry line ends the date before it; a date reaches its own page and the next two (24 quotes without page numbers). Builds report content-free counts of the dates read and of date-like lines not read. Search returns `year_inferred`, and the tool description says what it means. `publish-quotes` replaces exactly the published generation it recorded (`supersedes`) and keeps it among the previous generations.
-- **Next:** Codex review; the owner merges; on the owner's `deploy`: set `quote_numeric_date_order` to `day_first` in the private run config (with a backup), deploy to the import server, rebuild the connector, stop the worker, run `publish-quotes`, start the worker, and read the date counts.
+- **Merged:** by the owner on 10 Oct at 15:06 UTC (#149), after Codex's fifth review found nothing and all required checks passed.
+- **Next:** on the owner's `deploy`: set `quote_numeric_date_order` to `day_first` in the private run config (with a backup), deploy to the import server, rebuild the connector, stop the worker, run `publish-quotes`, start the worker, and read the date counts.
 
 ## Unsent supervisor-reply editing and guide provenance gate (2026-10-10, development PR in final review)
 

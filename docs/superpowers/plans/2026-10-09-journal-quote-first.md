@@ -277,3 +277,148 @@ wrong or self-naming `supersedes` is refused; publishing again changes nothing.
 `tests/journal-continuity.test.mjs`: the journal tools list includes `find_journal_quotes`.
 
 Each new test fails without the source change.
+
+## Part 3: the pointer pass, built to finish in hours (plan, 11 Oct 2026)
+
+Owner request, 11 Oct 2026, 01:03 UTC: "i do want to make this journal import just happen in a few hours for the
+public, not weeks. but i also don't want so many gaps and errors and failures..."
+
+Outcome: a journal the size of the owner's is searchable by its words and by the people, places, topics and events
+it mentions within a few hours of upload. Its errors are measured, and none of them can change what the journal says.
+
+This part builds steps 3 and 4 of the design above. Nothing in it is built yet.
+
+### Why the semantic import can't get there
+
+Measured from the Codex worker's content-free log, 1 to 11 Oct:
+
+- **It mostly waits.** Each day the Codex lane was busy between 0% and 10% of its three slots. Its best day answered
+  503 jobs in 7 model-hours out of 72. The rest of the time the import waited: on one step at a time per unit, on the
+  hardest lane's daily limit and on usage limits, and on stops that needed the owner.
+- **Each unit costs many large answers.** Since round 5 began on 4 Oct, about 1,400 answers (each reading about
+  99,000 input tokens) finished 116 units: about 12 per unit, counting the calibration's own reference reading.
+- **Even without waiting it takes about a day.** The full run's roughly 1,100 units at about 11 answers each, the
+  calibration's rate without its reference reading, is about 160 model-hours at 0.8 minutes an answer: 20 hours on
+  all eight slots of one worker.
+- **And its checks don't converge.** Its review loops are what stopped calibration and sent it back (plans
+  `2026-10-03-journal-review-convergence.md` and `2026-10-08-journal-calibration-critical-miss-limit.md`).
+
+### What the pass does
+
+- **Input.** The quote generation's quotes in source order, cut into batches of consecutive pages of at most about
+  6 KB of quote text. A page is never split across batches unless the page alone is over the limit.
+- **One answer per batch.** A new role, `pointer_tagger`, with the schema `schemas/journal-import/pointer-result.schema.json`.
+  It lists the people, places, organizations, topics and events the quotes mention. Each tag has:
+  - a kind from that fixed list;
+  - a short label in the journal's own language;
+  - optional aliases (a translation, a nickname, a fuller name), which only help search;
+  - one or more anchors: exact text from a named quote unit, as extraction anchors are now.
+- **No statements.** The pass writes no assertions, so it can't restate what happened. An event tag's label names the
+  event; the quote says what happened.
+- **Code checks every tag.**
+  - Each anchor must resolve exactly in the unit it names (`resolveUnitQuote`, the check extraction anchors pass).
+  - A person, place or organization label must appear in one of its anchors, ignoring case and accents, so a name
+    can't be invented. Aliases are exempt; they never appear in an answer as the journal's words.
+  - Labels and aliases have length limits; duplicate tags in a batch merge.
+  - A tag that fails is dropped and counted. No model call repairs it.
+- **Failures stay small and visible.** A batch whose answer doesn't fit the schema gets one retry. A batch that fails
+  twice stays untagged and is listed by page, without content. Word search still finds its quotes.
+
+### Into the graph and the tools
+
+- **A pointer-only extraction.** Tags go through `adaptExtractionToGraph` in place of today's empty extraction:
+  entities for people, places, organizations and topics; episodes for events; no assertions. The quote generation
+  then carries entity and episode nodes linked to the passages that mention them.
+- **Dates come from the journal.** An episode's authored time is the date line its first anchor's quote was written
+  under, from `quote_meta`. Its event time stays unknown; no model guesses it. `get_journal_timeline` then lists
+  events by the date they were written, and its description says so.
+- **The graph tools work unchanged.** `search_journal_graph`, `get_journal_subgraph` and `resolve_journal_evidence`
+  read the new nodes as they read any generation.
+- **Quote search uses the tags.** `find_journal_quotes` also matches query words against tag labels and aliases, so a
+  search can find a quote by who or what it's about, in words the journal doesn't use. Tags never change a quote's
+  text, date or cues.
+- **The answering rules stay.** Tool descriptions say that tags, labels and aliases are pointers a model wrote, and
+  that an answer quotes the journal, never a tag.
+- **A new index version.** The pass builds a new quote generation that names the one it replaces (`supersedes`), as
+  version 2 does.
+
+### Running it in hours
+
+- **All batches at once.** The pass puts every batch in the work exchange together. Batches don't depend on each
+  other, so a batch waits only for a free slot.
+- **Codex only, one tier.** Standard tier, at the model and effort the pilot picks. No hardest tier, no repair
+  cycles, no review loops.
+- **Full width.** The Codex worker runs at its maximum of eight slots. The semantic import is paused for the pass, so
+  the two don't compete for the subscription.
+- **No stops for a person.** A batch not answered by the pass's deadline stays untagged and listed. Publishing the
+  result is still the owner's `deploy`.
+
+### Time and cost
+
+- **The owner's journal.** 1,122 pages, at most 2.9 MB of text: version 1 held it in 1,804 quotes of at most 1.6 KB
+  each. At about 6 KB a batch that is at most about 500 batches, and fewer in practice.
+- **Time.** At the Codex lane's current 0.8 minutes an answer on eight slots, 500 batches take under an hour.
+  Subscription usage limits could slow that; the pilot measures it.
+- **Tokens.** About 0.9 million input tokens of journal text at most, plus the instructions, which are cached after the
+  first call; the tags and reasoning perhaps as much again. On pay-per-use API keys that is a few dollars to a few tens
+  of dollars for a journal this size, depending on the model. The pilot measures tokens per page, and the provider's
+  price list at that time gives the cost.
+- **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
+  size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
+
+### Measuring it, with the floors fixed in advance
+
+- **An answer key that already exists.** Calibration's reference readers write source-grounded questions with expected
+  answers and exact anchors for each calibration unit they reach (116 of 162 so far). Each reference is frozen before
+  any extraction is shown, and no reader has seen a tag, so they measure the pass independently. The measurement runs
+  on the import server and reports counts only.
+- **Retrieval recall.** For each reference question, a model writes the searches an answering model would run, without
+  seeing the expected answer. Code runs them with `find_journal_quotes` and checks whether the anchored quotes come
+  back in the first 12. Recall is reported twice, with words only (the live index) and with words and tags, each with
+  a one-sided 95% lower bound, and critical questions are reported on their own line.
+- **Tag precision.** Two independent judges, one Codex and one Claude, score a random sample of kept tags drawn from a
+  recorded seed: does the quote really mention what the tag names, and is the kind right? Their agreement on the same
+  tags is recorded first. One judge decides alone only at a measured agreement; otherwise both must agree, or the owner
+  decides. The sample grows in recorded steps and stops when the bound settles pass or fail.
+- **Floors** (the owner can change them; nothing else can):
+  - recall with tags at least recall without them, on all questions and on critical ones;
+  - the lower bound of tag precision at least 90%;
+  - no kept tag whose anchor doesn't resolve, which holds by construction and is checked anyway;
+  - every untagged page listed, with the share of pages untagged reported beside the totals.
+
+### Steps
+
+1. **Build** the role, schema, batching, checks, graph adaptation, search on tags and the measurement command, with
+   the tests below. Codex review; the owner merges.
+2. **Pilot** on 20 pages drawn from a recorded seed: seconds per batch, tokens, tags kept and dropped, failed batches.
+   Nothing published.
+3. **Measure** on the calibration units' pages that have a reference, against the floors. Nothing published.
+4. **Full pass** on the whole journal, timed. Built, not published.
+5. **Publish** on the owner's `deploy`, with the connector rebuild that ships the tool descriptions.
+
+### Out of this part
+
+- **Public runs.** Provider, model, spend per journal, and a queue that runs many journals at once with per-journal
+  limits.
+- **Pictures and handwriting.** Pages that need visual reading have no quotes until their transcription is verified.
+  Their reading pass uses the same design: one call per page, all at once, checked by code.
+- **The semantic import.** It keeps running until this pass is measured: the owner chose to keep its Claude lane for
+  now (question 20, 10 Oct). Whether it is still needed is an owner decision after the measurement.
+
+### Tests
+
+- **Anchors.** A tag whose anchor isn't in the named unit is dropped; one whose anchor is there is kept; a person label
+  absent from its anchors is dropped, with case and accents ignored; kinds and length limits hold; duplicates merge.
+- **Failures.** A malformed answer gets one retry; a second failure leaves its batch untagged and listed, and the run
+  finishes.
+- **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
+  page that is.
+- **Graph.** A pointer-only extraction yields entity and episode nodes linked to their passages, authored times from
+  `quote_meta`, and no assertions.
+- **Search.** A query word that matches a tag label or alias finds the tagged quote; the quote's text, date and cues
+  are unchanged.
+- **Supersede.** The pointer generation replaces version 2 exactly as version 2 replaced version 1.
+- **Measurement.** Recall and precision on synthetic data with known answers; the bound arithmetic; the sample stops
+  when the bound settles.
+
+All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
