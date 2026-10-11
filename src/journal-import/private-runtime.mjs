@@ -2828,6 +2828,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
 
     // Calibration's units as a challenge set, for the measurement to report apart: the reference step on their pages,
     // under the same rules and with the reference step's time limit. A nonresponse here is counted and stops nothing.
+    // The pass reads the parsed source's text, as the quote index does (quoteSource): a page's visual transcription
+    // isn't the journal's exact words and stays out of quote search until visual reading is planned (plan Part 3), so a
+    // calibration unit read from one is counted among the units without quotes.
     async function pointerChallenge() {
       const run = await pointerRun();
       pointerHardestAttested();

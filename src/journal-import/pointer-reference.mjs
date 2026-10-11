@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { createDeterministicAuditSample } from "./audit.mjs";
-import { pointerPagelessStretches } from "./pointer-tags.mjs";
+import { POINTER_PAGELESS_STRETCH, pointerPagelessStretches } from "./pointer-tags.mjs";
 
 // The measurement's reference step, its mechanical part (plan 2026-10-09-journal-quote-first.md, Part 3, "Questions
 // that cover every sampled quote", "Two independent checks that the questions cover each quote" and "No unit drops
@@ -207,12 +207,24 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 // The units the sample is drawn from, each with its quotes in journal order, ordered by their first quote. A unit is a
 // page; in a representation without page numbers (a plain-text journal is one) it is a stretch of consecutive quotes
 // (pointerPagelessStretches, the pass's pages there too), so no unit holds more than about a page and no question
-// writer's answer has to cover a whole journal. The challenge set names its units the same way.
+// writer's answer has to cover a whole journal. A page holding more quotes than a stretch may (a dense page of short
+// date headings, say) is cut the same way, into parts of consecutive quotes, so every unit's questions, one or more a
+// quote, fit one answer of at most 200. The challenge set names its units the same way.
 function samplingUnits(quotes) {
   const units = new Map();
   const stretches = pointerPagelessStretches(quotes);
-  for (const quote of [...quotes].sort((left, right) => left.source_order - right.source_order)) {
-    const unitId = Number.isSafeInteger(quote.page) ? `page:${quote.page}`
+  const ordered = [...quotes].sort((left, right) => left.source_order - right.source_order);
+  const onPage = new Map();
+  for (const quote of ordered) if (Number.isSafeInteger(quote.page)) onPage.set(quote.page, (onPage.get(quote.page) ?? 0) + 1);
+  const placed = new Map();
+  const pageUnit = (quote) => {
+    if (onPage.get(quote.page) <= POINTER_PAGELESS_STRETCH.quotes) return `page:${quote.page}`;
+    const index = placed.get(quote.page) ?? 0;
+    placed.set(quote.page, index + 1);
+    return `page:${quote.page}:${Math.floor(index / POINTER_PAGELESS_STRETCH.quotes)}`;
+  };
+  for (const quote of ordered) {
+    const unitId = Number.isSafeInteger(quote.page) ? pageUnit(quote)
       : `representation:${sha256(quote.representation_id).slice(0, 32)}:${stretches.get(quote.unit_id)}`;
     if (!units.has(unitId)) units.set(unitId, { unit_id: unitId, source_order: quote.source_order, quotes: [] });
     units.get(unitId).quotes.push(quote);

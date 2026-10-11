@@ -736,9 +736,11 @@ export async function openPrivateJournalGraph({
       coverage: Object.freeze({
         terms_ranked: Object.freeze([...terms]),
         terms_ignored: Object.freeze(ignored),
-        matching_quotes: windowed ? null : ranked.length,
+        // Exact only when every match counts: a time window or a kind filter is checked quote by quote while scanning,
+        // so with either the counts are unknown (null) rather than the unfiltered ones.
+        matching_quotes: windowed || kinds !== null ? null : ranked.length,
         tags: tagged,
-        ...(tagged ? { matching_only_by_tag: windowed ? null : tagOnly.length } : {}),
+        ...(tagged ? { matching_only_by_tag: windowed || kinds !== null ? null : tagOnly.length } : {}),
         quotes_examined: visited,
         scan_capped: scanCapped,
         quote_index: quoteIndex,

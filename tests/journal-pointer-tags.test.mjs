@@ -708,7 +708,11 @@ test("a kind filter keeps only the quotes with a tag of those kinds, and is refu
     "Promenade au parc avec Élodie et Jean."]);
   const places = await reader.findQuotes({ query: "Jean", kinds: ["place", "organization"] });
   assert.deepEqual(texts(places).sort(), ["Jean est venu dîner avec Élodie. Il a apporté du vin de Lyon.", "Jean's birthday party in Lyon was loud. He left early."]);
-  assert.deepEqual(texts(await reader.findQuotes({ query: "Jean", kinds: ["organization"] })), []);
+  const organizations = await reader.findQuotes({ query: "Jean", kinds: ["organization"] });
+  assert.deepEqual(texts(organizations), []);
+  // With a kind filter the counts are unknown, as with a time window, never the unfiltered ones.
+  assert.deepEqual([events.coverage.matching_quotes, events.coverage.matching_only_by_tag], [null, null]);
+  assert.deepEqual([organizations.coverage.matching_quotes, organizations.coverage.matching_only_by_tag], [null, null]);
   assert.deepEqual(texts(await reader.findQuotes({ query: "calme", kinds: ["person"] })), [], "an untagged quote has no kind");
   // The filter also works on a words-only search.
   assert.deepEqual(texts(await reader.findQuotes({ query: "Jean", kinds: ["event"], matchTags: false })).sort(), texts(events).sort());

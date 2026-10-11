@@ -279,6 +279,20 @@ test("a journal without pages is drawn in stretches of about a page, so no quest
     page_number: null }] }), { code: "POINTER_CHALLENGE_INPUT_INVALID" });
 });
 
+test("a page denser than a stretch is sampled in parts of at most 40 quotes, and its calibration unit lies on every part", () => {
+  // Page 2 holds 90 short date headings; pages 1 and 3 one paragraph each.
+  const units = [{ page: 1, count: 1 }, { page: 2, count: 90 }, { page: 3, count: 1 }].flatMap(({ page, count }) => Array.from({ length: count },
+    (_, index) => ({ page, index }))).map(({ page, index }, order) => ({ unit_id: `unit:p${page}h${index}`, page, representation_id: `pdf:page:${page}`,
+    text: `Heading ${index} of page ${page}.`, source_order: order }));
+  const sample = pointerReferenceSample({ units, seed: "s" });
+  assert.deepEqual(sample.units.map((unit) => [unit.unit_id, unit.quote_ids.length]).sort(),
+    [["page:1", 1], ["page:2:0", 40], ["page:2:1", 40], ["page:2:2", 10], ["page:3", 1]]);
+  const challenge = pointerChallengeUnits({ units, calibration: [{ unit_id: "calibration:dense", representation_id: "pdf:page:2", page_number: 2,
+    hazard_types: ["parser_warning"] }] });
+  assert.deepEqual(challenge.units.map((unit) => [unit.unit_id, unit.hazards]),
+    [["page:2:0", ["parser_warning"]], ["page:2:1", ["parser_warning"]], ["page:2:2", ["parser_warning"]]]);
+});
+
 test("a calibration unit read from a page's visual transcription lies on that transcription's quotes, never on the native page's", () => {
   // Page 3's native text, and its visual transcription, which has no page entry of its own, so its quotes have no page.
   const native = [0, 1].map((index) => ({ unit_id: `unit:n${index}`, page: 3, representation_id: "pdf:page:3", text: `Native paragraph ${index}.`,
