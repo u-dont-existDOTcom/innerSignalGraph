@@ -311,22 +311,25 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   It lists the people, places, organizations, topics and events the quotes mention. Each tag has:
   - a kind from that fixed list;
   - a short label in the journal's own language;
-  - optional aliases: other names the journal itself uses for the same person, place or thing (a nickname, a
-    fuller name);
   - one or more anchors: exact text from a named quote unit, as extraction anchors are now.
 - **No statements.** The pass writes no assertions, so it can't restate what happened. An event tag's label names the
   event; the quote says what happened.
+- **No coreference.** A tag never claims that "he", "she", "there" or a different name means a named person, place or
+  organization. A pronoun-only mention isn't tagged, and this part has no aliases: telling that two names mean the
+  same person is a later part with its own measurement. So every quote a name tag points at contains that name.
 - **Topic and event labels are a model's words.** A wrong one can't change a quote, but it can bring up a quote that
   isn't about what was searched for. Search therefore says when a quote matched only through a tag and ranks such
   quotes after the ones that match by their own words, and the precision floor below covers these labels.
 - **Code checks every tag.**
   - Each anchor must resolve exactly in the unit it names (`resolveUnitQuote`, the check extraction anchors pass).
-  - A person, place or organization label must appear in one of its anchors, ignoring case and accents, so a name
-    can't be invented.
-  - Every alias must appear the same way in one of its tag's anchors. An alias the journal never uses, such as a
-    translation, is dropped, so a search for it can't bring up quotes that never say it.
-  - Labels and aliases have length limits; duplicate tags in a batch merge.
-  - A tag that fails is dropped and counted. No model call repairs it.
+  - Every anchor of a person, place or organization tag must itself contain the tag's label, ignoring case and
+    accents. An anchor that doesn't is dropped, so no quote is filed under a name it doesn't use, and a name can't be
+    invented.
+  - An event or topic label may name a person, place or organization only where every one of its anchors contains
+    that name. Code checks each capitalized word after a label's first word this way, as a stand-in for names, and
+    drops an anchor that lacks one.
+  - Labels have length limits; duplicate tags in a batch merge.
+  - A tag left with no anchor is dropped. Every drop is counted. No model call repairs a tag.
 - **Failures stay small and visible.** A batch whose answer doesn't fit the schema gets one retry. A batch that fails
   twice stays untagged and is listed by page, without content. Word search still finds its quotes.
 
@@ -340,12 +343,13 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   events by the date they were written, and its description says so.
 - **The graph tools work unchanged.** `search_journal_graph`, `get_journal_subgraph` and `resolve_journal_evidence`
   read the new nodes as they read any generation.
-- **Quote search uses the tags.** `find_journal_quotes` also matches query words against tag labels and aliases, so a
-  search can find a quote by who or what it's about even where the quote says "he" or "that place". Each result says
-  how it matched (`matched_by`: its words, a tag, or both). Tags never change a quote's text, date or cues.
-- **The answering rules stay.** Tool descriptions say that tags, labels and aliases are pointers a model wrote, that
-  a quote matched only by a tag must be checked against its own words before it's used, and that an answer quotes
-  the journal, never a tag.
+- **Quote search uses the tags.** `find_journal_quotes` also matches query words against topic and event labels, so a
+  search can find a quote by what it's about in words the quote doesn't use, and a kind filter keeps, say, only the
+  quotes that name a person. Each result says how it matched (`matched_by`: its words, a tag, or both). Tags never
+  change a quote's text, date or cues.
+- **The answering rules stay.** Tool descriptions say that tags and labels are pointers a model wrote, that a quote
+  matched only by a tag must be checked against its own words before it's used, and that an answer quotes the
+  journal, never a tag.
 - **A new index version.** The pass builds a new quote generation that names the one it replaces (`supersedes`), as
   version 2 does.
 
@@ -390,15 +394,19 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   back in the first 12. Recall is reported twice, with words only (the live index) and with words and tags, each with
   a one-sided 95% lower bound, and critical questions are reported on their own line.
 - **Tag precision.** Two independent judges, one Codex and one Claude, score a random sample of kept tags drawn from a
-  recorded seed: does the quote really mention or concern what the tag's label and aliases name, and is the kind
-  right? Their agreement on the same
-  tags is recorded first. One judge decides alone only at a measured agreement; otherwise both must agree, or the owner
+  recorded seed: does the quote really mention or concern what the tag's label names, and is the kind right? Their
+  agreement on the same tags is recorded first. One judge decides alone only at a measured agreement; otherwise both must agree, or the owner
   decides. The sample grows in recorded steps and stops when the bound settles pass or fail.
-- **Floors** (the owner can change them; nothing else can):
-  - recall with tags at least recall without them, on all questions and on critical ones;
-  - the lower bound of tag precision at least 90%;
-  - no kept tag whose anchor doesn't resolve, which holds by construction and is checked anyway;
-  - every untagged page listed, with the share of pages untagged reported beside the totals.
+- **Floors** (stated now; the owner can change them; nothing else can). The pass is published only when every one
+  holds, so a nearly empty pass can't pass:
+  - **recall:** the one-sided 95% lower bound of recall with words and tags is at least 85%;
+  - **no loss:** recall with tags is at least recall without them, on all questions and on critical ones;
+  - **gain:** of the questions word search alone misses, tags bring back at least a quarter, reported with its bound;
+  - **precision:** the lower bound of tag precision is at least 90%, each kind also reported on its own;
+  - **coverage:** at most 2% of the full pass's pages are untagged, each one listed. Above that, the untagged
+    batches go into a new pass before anything is published;
+  - **anchors:** no kept tag whose anchor doesn't resolve or lacks its name, which holds by construction and is
+    checked anyway.
 
 ### Steps
 
@@ -407,8 +415,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 2. **Pilot** on 20 pages drawn from a recorded seed: seconds per batch, tokens, tags kept and dropped, failed batches.
    Nothing published.
 3. **Measure** on the calibration units' pages that have a reference, against the floors. Nothing published.
-4. **Full pass** on the whole journal, timed. Built, not published.
-5. **Publish** on the owner's `deploy`, with the connector rebuild that ships the tool descriptions.
+4. **Full pass** on the whole journal, timed, held to the coverage floor. Built, not published.
+5. **Publish** on the owner's `deploy`, only when every floor holds, with the connector rebuild that ships the tool
+   descriptions.
 
 ### Out of this part
 
@@ -421,10 +430,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 
 ### Tests
 
-- **Anchors.** A tag whose anchor isn't in the named unit is dropped; one whose anchor is there is kept; a person label
-  absent from its anchors is dropped, with case and accents ignored; kinds and length limits hold; duplicates merge.
-- **Aliases.** An alias found in one of its tag's anchors is kept; one that isn't, such as a translation, is dropped
-  and counted.
+- **Anchors.** A tag whose anchor isn't in the named unit is dropped; one whose anchor is there is kept; kinds and
+  length limits hold; duplicates merge.
+- **Names.** An anchor of a person, place or organization tag that lacks the name, case and accents ignored, is
+  dropped, so a quote that says only "he" is never filed under a name; an event or topic label that names someone
+  absent from one of its anchors loses that anchor; a tag left with no anchor is dropped; every drop is counted.
 - **Failures.** A malformed answer gets one retry; a second failure leaves its batch untagged and listed, and the run
   finishes.
 - **Deadline.** The deadline is saved when the pass starts and kept on resume; batch items expire at it; a batch
@@ -434,11 +444,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   page that is.
 - **Graph.** A pointer-only extraction yields entity and episode nodes linked to their passages, authored times from
   `quote_meta`, and no assertions.
-- **Search.** A query word that matches a tag label or alias finds the tagged quote and reports `matched_by`; a quote
-  that matches only through a tag ranks after quotes that match by their own words; the quote's text, date and cues
-  are unchanged.
+- **Search.** A query word that matches a topic or event label finds the tagged quote and reports `matched_by`; a
+  quote that matches only through a tag ranks after quotes that match by their own words; a kind filter keeps only
+  the quotes with a tag of that kind; the quote's text, date and cues are unchanged.
 - **Supersede.** The pointer generation replaces version 2 exactly as version 2 replaced version 1.
 - **Measurement.** Recall and precision on synthetic data with known answers; the bound arithmetic; the sample stops
-  when the bound settles.
+  when the bound settles; a pass with no tags fails the gain floor; an untagged share over 2% blocks publication.
 
 All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
