@@ -33,6 +33,17 @@
             "maxItems": 200,
             "uniqueItems": true
           },
+          "event_question_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "maxItems": 200,
+            "uniqueItems": true
+          },
           "repeated_question_ids": {
             "type": "array",
             "items": {
@@ -72,6 +83,7 @@
           "covered",
           "missing",
           "critical_question_ids",
+          "event_question_ids",
           "repeated_question_ids",
           "combined_question_ids",
           "copied_question_ids"

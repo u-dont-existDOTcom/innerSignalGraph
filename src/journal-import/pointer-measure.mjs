@@ -15,6 +15,7 @@ export const POINTER_FLOORS = Object.freeze({
   max_untagged_share: 0.02,
   event_check_max_unanswered_share: 0.02,
   event_check_recall_lower_bound: 0.90,
+  event_coverage_point_estimate: 0.75,
   confidence: 0.95
 });
 
@@ -342,7 +343,8 @@ const isRatioResult = (value) => isObject(value) && isEstimate(value.estimate) &
 // POINTER_FLOORS.confidence (`recall` is null when a sampled unit is a nonresponse; `critical_recall`, recall with words
 // and tags on the critical questions, is null when the sample has none; `gain` is null when word search misses no
 // sampled question). The four recall estimates use the same weights; the critical pair is null when the sample has no
-// critical question, and its first is `critical_recall`'s estimate.
+// critical question, and its first is `critical_recall`'s estimate. `event_coverage`, also a designRatioBound result,
+// is the share of the sampled quotes that report an event with a kept event tag, null when no sampled quote reports one.
 // `precision` holds each kind's sample (`pairs`, `sampled`, `correct`); `event_check` the event pairs checked and how
 // many went unanswered; `event_recall` the samples eventCheckRecall takes, the kept one being the event kind's
 // precision sample. The pass is published only when every floor holds.
@@ -364,6 +366,7 @@ export function pointerFloors(input) {
   invariant(isObject(eventCheck) && isCount(eventCheck.pairs) && isCount(eventCheck.unanswered) && eventCheck.unanswered <= eventCheck.pairs,
     "POINTER_FLOORS_EVENT_CHECK_INVALID");
   invariant(isObject(eventRecall), "POINTER_FLOORS_EVENT_RECALL_INVALID");
+  invariant(input.event_coverage === null || isRatioResult(input.event_coverage), "POINTER_FLOORS_EVENT_COVERAGE_INVALID");
   // The kept event pairs are the event kind's precision sample, and a kept pair is real exactly when it is correct there:
   // when both judges say so.
   invariant(isObject(eventRecall.kept) && eventRecall.kept.pairs === precision.event.pairs && eventRecall.kept.sampled === precision.event.sampled
@@ -462,6 +465,17 @@ export function pointerFloors(input) {
     ...recallOfEvents
   });
 
+  // Event tags on the sampled quotes that report an event, measured against the reference, so a pass that tags no event
+  // fails even though the event floors above, which see only the tagger's pairs, have nothing to gate. On the point
+  // estimate, with the lower bound reported.
+  const eventCoverage = input.event_coverage;
+  const eventCoverageFloor = Object.freeze(eventCoverage === null
+    ? { holds: true, applicable: false, estimate: null, lower_bound: null, minimum: POINTER_FLOORS.event_coverage_point_estimate,
+      reason: "no sampled quote reports an event" }
+    : { holds: eventCoverage.estimate !== null && eventCoverage.estimate >= POINTER_FLOORS.event_coverage_point_estimate,
+      applicable: true, estimate: eventCoverage.estimate, lower_bound: eventCoverage.lower_bound,
+      minimum: POINTER_FLOORS.event_coverage_point_estimate, reason: eventCoverage.estimate === null ? "no estimate" : null });
+
   const floors = Object.freeze({
     recall: recallFloor,
     no_loss: noLossFloor,
@@ -470,6 +484,7 @@ export function pointerFloors(input) {
     precision: precisionFloor,
     event_check: eventCheckFloor,
     event_check_recall: eventRecallFloor,
+    event_coverage: eventCoverageFloor,
     coverage: coverageFloor,
     anchors: anchorsFloor
   });

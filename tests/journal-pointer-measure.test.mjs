@@ -353,6 +353,8 @@ function passingInput() {
     coverage: { untagged_pages: 2, pages_with_quotes: 1122 },
     anchors: { broken: 0 },
     event_check: { pairs: 400, unanswered: 2 },
+    // Of the sampled quotes the reference says report an event, the share with a kept event tag.
+    event_coverage: { estimate: 0.9, lower_bound: 0.82 },
     // The kept pairs are the event kind's precision sample; 100 dropped pairs, all judged, 1 of them real.
     event_recall: { kept: { pairs: 300, sampled: 150, real: 145 }, dropped: { pairs: 100, sampled: 100, real: 1 } }
   };
@@ -370,7 +372,8 @@ const failing = (result) => Object.entries(result.floors).filter(([, floor]) => 
 test("the floors are the plan's", () => {
   assert.deepEqual(POINTER_FLOORS, { recall_lower_bound: 0.85, critical_recall_point_estimate: 0.85, gain_point_estimate: 0.25,
     precision_lower_bound: 0.90,
-    max_untagged_share: 0.02, event_check_max_unanswered_share: 0.02, event_check_recall_lower_bound: 0.90, confidence: 0.95 });
+    max_untagged_share: 0.02, event_check_max_unanswered_share: 0.02, event_check_recall_lower_bound: 0.90,
+    event_coverage_point_estimate: 0.75, confidence: 0.95 });
   assert.ok(Object.isFrozen(POINTER_FLOORS));
   assert.deepEqual(POINTER_PRECISION_SAMPLES, { kinds: ["person", "place", "organization", "topic", "event"],
     pairs_per_kind: 150, dropped_event_pairs: 150 });
@@ -383,7 +386,7 @@ test("a pass is published when every floor holds", () => {
   const result = pointerFloors(passingInput());
   assert.equal(result.publish, true);
   assert.deepEqual(Object.keys(result.floors), ["recall", "no_loss", "critical_recall", "gain", "precision", "event_check",
-    "event_check_recall", "coverage", "anchors"]);
+    "event_check_recall", "event_coverage", "coverage", "anchors"]);
   assert.deepEqual(failing(result), []);
   const { recall, no_loss: noLoss, gain, precision, coverage, anchors } = result.floors;
   assert.ok(recall.lower_bound >= 0.85 && recall.lower_bound < recall.estimate);
@@ -429,6 +432,9 @@ test("each floor fails on its own", () => {
     ["3% of event checks unanswered", { event_check: { pairs: 400, unanswered: 12 } }, "event_check"],
     ["real events dropped", { event_recall: { ...passingInput().event_recall, dropped: { pairs: 300, sampled: 150, real: 30 } } },
       "event_check_recall"],
+    // A tagger that tags no event, or tags events only as topics: the event floors have no pair to see.
+    ["no sampled event tagged", { event_coverage: { estimate: 0, lower_bound: 0 } }, "event_coverage"],
+    ["event coverage 0.74", { event_coverage: { estimate: 0.74, lower_bound: 0.6 } }, "event_coverage"],
     ["3% of pages untagged", { coverage: { untagged_pages: 3, pages_with_quotes: 100 } }, "coverage"],
     ["no page with quotes", { coverage: { untagged_pages: 0, pages_with_quotes: 0 } }, "coverage"],
     ["a broken anchor", { anchors: { broken: 1 } }, "anchors"]
@@ -530,14 +536,15 @@ test("coverage allows at most 2% of the pages with quotes untagged", () => {
 test("a pass with no tags fails", () => {
   const none = { pairs: 0, correct: 0, sampled: 0 };
   const noEvents = { event_check: { pairs: 0, unanswered: 0 },
-    event_recall: { kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 0, sampled: 0, real: 0 } } };
+    event_recall: { kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 0, sampled: 0, real: 0 } },
+    event_coverage: { estimate: 0, lower_bound: 0 } };
   const result = pointerFloors({ ...passingInput(), ...noEvents, recall_estimate: 0.8, gain: { ...GAIN, estimate: 0, lower_bound: 0 },
     precision: { person: none, place: none, organization: none, topic: none, event: none },
     coverage: { untagged_pages: 1122, pages_with_quotes: 1122 } });
   assert.equal(result.publish, false);
-  // Coverage catches it even when word search misses nothing.
-  assert.deepEqual(failing(result), ["gain", "coverage"]);
-  assert.deepEqual(failing(pointerFloors({ ...passingInput(), ...noEvents, gain: null,
+  // Coverage catches it even when word search misses nothing, and event coverage whenever a sampled quote reports an event.
+  assert.deepEqual(failing(result), ["gain", "event_coverage", "coverage"]);
+  assert.deepEqual(failing(pointerFloors({ ...passingInput(), ...noEvents, gain: null, event_coverage: null,
     precision: { person: none, place: none, organization: none, topic: none, event: none },
     coverage: { untagged_pages: 1122, pages_with_quotes: 1122 } })), ["coverage"]);
 });
@@ -565,6 +572,8 @@ test("the floors refuse malformed input", () => {
     [{ event_check: { pairs: 2, unanswered: 3 } }, "POINTER_FLOORS_EVENT_CHECK_INVALID"],
     [{ event_check: null }, "POINTER_FLOORS_EVENT_CHECK_INVALID"],
     [{ event_recall: null }, "POINTER_FLOORS_EVENT_RECALL_INVALID"],
+    [{ event_coverage: undefined }, "POINTER_FLOORS_EVENT_COVERAGE_INVALID"],
+    [{ event_coverage: { estimate: 1.2, lower_bound: 0.9 } }, "POINTER_FLOORS_EVENT_COVERAGE_INVALID"],
     // The kept event pairs must be the event kind's own precision sample.
     [{ event_recall: { ...passingInput().event_recall, kept: { pairs: 290, sampled: 150, real: 145 } } }, "POINTER_FLOORS_EVENT_RECALL_INVALID"],
     [{ event_recall: { ...passingInput().event_recall, kept: { pairs: 300, sampled: 150, real: 146 } } }, "POINTER_FLOORS_EVENT_RECALL_INVALID"],
@@ -650,4 +659,19 @@ test("critical recall is gated on its point estimate, at the recall floor's leve
   const none = pointerFloors({ ...passingInput(), critical_recall_estimate: null, critical_recall_words_only_estimate: null,
     critical_recall: null }).floors.critical_recall;
   assert.deepEqual([none.holds, none.applicable, none.reason], [true, false, "no critical question in the sample"]);
+});
+
+test("event coverage is gated on its point estimate, and has nothing to gate when no sampled quote reports an event", () => {
+  const floor = (eventCoverage) => pointerFloors({ ...passingInput(), event_coverage: eventCoverage }).floors.event_coverage;
+  assert.deepEqual(floor({ estimate: 0.75, lower_bound: 0.6 }), { holds: true, applicable: true, estimate: 0.75, lower_bound: 0.6,
+    minimum: 0.75, reason: null });
+  assert.equal(floor({ estimate: 0.749, lower_bound: 0.7 }).holds, false);
+  const none = floor(null);
+  assert.deepEqual([none.holds, none.applicable, none.reason], [true, false, "no sampled quote reports an event"]);
+  // The event floors that see only the tagger's pairs have nothing to gate without an event pair; event coverage still does.
+  const noEventPairs = pointerFloors({ ...withPrecision({ event: { pairs: 0, correct: 0, sampled: 0 } }), event_check: { pairs: 0, unanswered: 0 },
+    event_recall: { kept: { pairs: 0, sampled: 0, real: 0 }, dropped: { pairs: 0, sampled: 0, real: 0 } },
+    event_coverage: { estimate: 0, lower_bound: 0 } }).floors;
+  assert.deepEqual([noEventPairs.event_check.applicable, noEventPairs.event_check_recall.applicable, noEventPairs.event_coverage.holds],
+    [false, false, false]);
 });
