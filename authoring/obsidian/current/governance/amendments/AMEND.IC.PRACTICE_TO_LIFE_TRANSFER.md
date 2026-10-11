@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: f34c75335003e136cad84e5c6bca4a41dfae0f64732863d9c07613bc65548409
 source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
-projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # AMEND.IC.PRACTICE_TO_LIFE_TRANSFER

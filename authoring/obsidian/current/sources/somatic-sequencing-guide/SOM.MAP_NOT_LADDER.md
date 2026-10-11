@@ -13,7 +13,7 @@ locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.EXTERNAL_EMBODIMENT
   - SOM.SAFETY_STABILIZATION
-projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # This is a Map, But You Are the Explorer

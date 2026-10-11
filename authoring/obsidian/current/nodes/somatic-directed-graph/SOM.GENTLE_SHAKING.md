@@ -39,7 +39,7 @@ regression_refs:
   - G104
 base_record_sha256: 9abd685a7a54c9265c03891516135ff34ba0fcbe17e24b3ed3bcea7eb54283d0
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # Use gentle shaking for regulation and judge benefit by carryover

@@ -22,7 +22,7 @@ regression_refs:
   - G036
 base_record_sha256: 79cec8b01e9a44345fa288dcf509e2b9d5fe6271aa94a926f3cf04e456d612cd
 base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
-projection_input_sha256: 03877676575df786d8b0bffbf65e1533a458131560c4f5e43a5536fd5e850bbe
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # Offer sincere goodwill without calling it warm love
