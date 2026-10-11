@@ -23,8 +23,22 @@ export const JOURNAL_ROLE_DEFINITIONS = Object.freeze({
   reconciler: Object.freeze({ outputSchema: "reconciliation-result", fields: ["candidates", "neighborhood_evidence", "target_generation"] }),
   pattern_builder: Object.freeze({ outputSchema: "pattern-result", fields: ["validated_graph", "episode_theme_matrix", "source_retrieval", "coverage_ledger", "target_generation", "producer_ref"] }),
   pattern_reviewer: Object.freeze({ outputSchema: "review-result", fields: ["phase", "candidate_patterns", "frozen_observations", "source_retrieval", "target_generation"] }),
-  cold_consumer: Object.freeze({ outputSchema: "answer-result", fields: ["frozen_question", "current_locator", "retrieved_evidence"] })
+  cold_consumer: Object.freeze({ outputSchema: "answer-result", fields: ["frozen_question", "current_locator", "retrieved_evidence"] }),
+  // The pointer pass (plan 2026-10-09-journal-quote-first.md, Part 3). The tagger sees only a batch of journal quotes
+  // and the search writer only questions, both on the standard tier. The pair judge sees only tag-quote pairs and
+  // also runs on the hardest tier, since precision is scored by a Codex judge and a Claude judge.
+  pointer_tagger: Object.freeze({ outputSchema: "pointer-result", fields: ["quote_units"], tiers: Object.freeze(["standard"]) }),
+  search_writer: Object.freeze({ outputSchema: "search-plan-result", fields: ["questions"], tiers: Object.freeze(["standard"]) }),
+  pair_judge: Object.freeze({ outputSchema: "pair-judgment-result", fields: ["pairs"] })
 });
+
+// A role runs on the work tiers its definition names, or on both when it names none.
+const JOURNAL_WORK_TIERS = Object.freeze(["standard", "hardest"]);
+
+export function journalRoleRunsOnTier(role, tier) {
+  return Object.hasOwn(JOURNAL_ROLE_DEFINITIONS, role) && JOURNAL_WORK_TIERS.includes(tier)
+    && (JOURNAL_ROLE_DEFINITIONS[role].tiers ?? JOURNAL_WORK_TIERS).includes(tier);
+}
 
 const installedInstructions = Object.freeze(Object.fromEntries([
   "visual_reader",
@@ -35,7 +49,10 @@ const installedInstructions = Object.freeze(Object.fromEntries([
   "fidelity_auditor",
   "pattern_builder",
   "pattern_reviewer",
-  "cold_consumer"
+  "cold_consumer",
+  "pointer_tagger",
+  "search_writer",
+  "pair_judge"
 ].map((role) => [
   role,
   readFileSync(new URL(`./provider-port-roles/${role}.md`, import.meta.url), "utf8")

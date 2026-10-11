@@ -617,13 +617,16 @@ test("the exchange route loads from the environment and checks its root before a
 
 test("every supported hardest role refuses an indivisible oversized complete packet before publication", async () => {
   const { JOURNAL_ROLE_DEFINITIONS } = await import("../src/journal-import/provider-port.mjs");
-  const roles = Object.keys(JOURNAL_ROLE_DEFINITIONS).filter(role => role !== "visual_reader");
   const port = createExchangeJournalInferencePort({ exchange: {
     async readWork() { throw new Error("oversized hardest work reached the exchange"); },
     async publishWork() { throw new Error("oversized hardest work was published"); }
   }, caseId: CASE_ID, receiptKey: Buffer.alloc(32, 41), routeRef: "route:synthetic",
     allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
     model: "gpt-6-sol", effort: "medium", waitMs: 0, executionAttestation: "codex_exec" });
+  // The hardest tier runs every role but visual_reader and the pointer pass's standard-tier tagger and search writer.
+  const roles = Object.keys(JOURNAL_ROLE_DEFINITIONS).filter(role => port.capabilities().hardest_roles[role].available);
+  assert.deepEqual(roles, Object.keys(JOURNAL_ROLE_DEFINITIONS)
+    .filter(role => !["visual_reader", "pointer_tagger", "search_writer"].includes(role)));
   for (const role of roles) {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     const request = referenceCall();

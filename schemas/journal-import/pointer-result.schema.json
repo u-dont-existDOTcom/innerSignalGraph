@@ -1,0 +1,83 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "person",
+              "place",
+              "organization",
+              "topic",
+              "event"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "anchors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/anchor"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "anchors"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 400
+    }
+  },
+  "required": [
+    "schema_version",
+    "tags"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:pointer:1.0",
+  "$defs": {
+    "anchor": {
+      "type": "object",
+      "properties": {
+        "unit_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "occurrence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "unit_id",
+        "quote",
+        "occurrence"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
