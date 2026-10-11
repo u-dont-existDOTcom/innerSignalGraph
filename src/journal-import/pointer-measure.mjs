@@ -257,9 +257,9 @@ export function designRatioBound({ units, confidence = 0.95 } = {}) {
       .map((group) => Object.freeze([...group.strata]))),
     reason: null
   };
-  if (units.length < 2) return Object.freeze({ ...result, reason: "fewer than two sampled units" });
+  if (units.length === 0) return Object.freeze({ ...result, reason: "no sampled unit" });
   if (estimate === null) return Object.freeze({ ...result, reason: "no question asked" });
-  // Every unit taken with certainty: nothing was sampled, so the estimate is exact.
+  // Every unit taken with certainty, however few: nothing was sampled, so the estimate is exact.
   if (sampled.length === 0) return Object.freeze({ ...result, standard_error: 0, lower_bound: estimate });
   let spread = 0;
   for (const group of sampled) {
@@ -271,9 +271,10 @@ export function designRatioBound({ units, confidence = 0.95 } = {}) {
     spread += (1 - sampledFraction) * size / (size - 1) * sum(z.map((value) => (value - mean) ** 2));
   }
   const standardError = Math.sqrt(spread) / weightedAsked;
-  // A lone sampled stratum with a single unit leaves no degree of freedom: its variance can't be estimated.
+  // Units drawn with probability below 1 that leave no degree of freedom (a single one, or a lone single-unit
+  // stratum): the variance can't be estimated, so there is no bound.
   if (result.degrees_of_freedom < 1) {
-    return Object.freeze({ ...result, standard_error: standardError, reason: "no degrees of freedom" });
+    return Object.freeze({ ...result, reason: "no degrees of freedom" });
   }
   const bound = estimate - studentTQuantile(confidence, result.degrees_of_freedom) * standardError;
   return Object.freeze({ ...result, standard_error: standardError, lower_bound: Math.min(estimate, Math.max(0, bound)) });
