@@ -13,7 +13,7 @@ anchors:
   - IC.PROTECTOR_ACTION
 reconciled_nodes: []
 base_record_sha256: 997e5a6db688e6e44bfc5357413fcf412fe9adf484df80e9020fdf444d085640
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # Pause an immediately unsafe impulse

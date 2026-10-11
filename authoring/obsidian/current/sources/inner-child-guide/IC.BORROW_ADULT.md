@@ -7,13 +7,13 @@ source_id: IC.BORROW_ADULT
 guide_id: inner-child-guide
 heading: Borrow the Adult Before You Can Be the Adult
 source_role: primary-framework
-source_hash: e9284589535a7c8406362a13ac2d015b92fff2315a724ab660c7db2b8bf2197d
+source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
 section_hash: 0169b0001f4b7b9384fd716b943920871fe7008e49d0d68abc963303c7f5169e
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
   - IC.NEUTRAL_WITNESS
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # Borrow the Adult Before You Can Be the Adult

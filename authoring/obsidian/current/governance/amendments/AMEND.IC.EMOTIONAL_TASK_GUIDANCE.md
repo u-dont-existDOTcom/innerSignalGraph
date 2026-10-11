@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 7bd6d262fa46874dbf7846384df9411dd8cd5cc2c9267989ac4a49dcf0e3e69e
-source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+base_record_sha256: b3edc9a21a34b5d08935b48bc8686c66082b9f3a9dfcb4aa6515c26020fd36b7
+source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # AMEND.IC.EMOTIONAL_TASK_GUIDANCE
@@ -17,7 +17,7 @@ projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f31
 
 ```json
 {
-  "approvedAt": "2026-10-06",
+  "approvedAt": "2026-10-11",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",

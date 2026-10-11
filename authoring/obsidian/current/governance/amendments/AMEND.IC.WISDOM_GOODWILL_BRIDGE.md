@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_GOODWILL_BRIDGE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 6e1d6b5f2965d1b489cd626d1a68446ed2de4fb677604bfecfdc10a63975315c
-source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+base_record_sha256: 9d5aa73872c1bb8c9c3a47a7406102b18e10c0f6c4939573aa4cab2c00a35265
+source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # AMEND.IC.WISDOM_GOODWILL_BRIDGE
@@ -17,7 +17,7 @@ projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f31
 
 ```json
 {
-  "approvedAt": "2026-10-06",
+  "approvedAt": "2026-10-11",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_GOODWILL_BRIDGE",

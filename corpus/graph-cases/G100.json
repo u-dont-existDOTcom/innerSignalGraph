@@ -15,7 +15,8 @@
     "altered_state": "sober",
     "current_intent": "conversation",
     "inner_adult_access": "low",
-    "witness_capacity": "unknown"
+    "witness_capacity": "unknown",
+    "suicidal_ideation_context": "pain_episode"
   },
   "expected": {
     "primary": "ROUTE.REFRACTORY_PAIN_NAVIGATION",

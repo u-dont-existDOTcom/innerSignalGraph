@@ -60,6 +60,7 @@ const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
   "ic_real_world_transfer",
   "medical_urgency",
   "refractory_pain_care",
+  "suicidal_ideation_context",
   "other_person_central",
   "relational_capacity_evidence",
   "emotional_takeover_pressure",

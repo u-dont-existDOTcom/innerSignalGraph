@@ -7,13 +7,13 @@ source_id: AMEND.CROSS.RELATIONAL_REALITY_CHECK
 guide_id: owner-amendments
 heading: AMEND.CROSS.RELATIONAL_REALITY_CHECK
 source_role: owner-approved-extension
-source_hash: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
+source_hash: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
 section_hash: 7e9ff75eaa56c11dd52865f8362f5b2921ba56da705b1247afe993016ae2544b
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.INFLUENCE_SOCIAL_PROTECTION
   - ROUTE.RELATIONAL_REALITY_CHECK
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # AMEND.CROSS.RELATIONAL_REALITY_CHECK

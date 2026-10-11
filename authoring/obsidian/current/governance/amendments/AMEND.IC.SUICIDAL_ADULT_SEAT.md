@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SUICIDAL_ADULT_SEAT
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4d63b069614a5c8e136929bc56a34fa8f378cb688a93b9cfcb6fae50c3d4aae6
-source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+base_record_sha256: b7fa57ee4f4f7b90003622fcc99036d81907132f2d1b5b6a6bcd70c09643f45b
+source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # AMEND.IC.SUICIDAL_ADULT_SEAT
@@ -17,7 +17,7 @@ projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f31
 
 ```json
 {
-  "approvedAt": "2026-10-06",
+  "approvedAt": "2026-10-11",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.SUICIDAL_ADULT_SEAT",

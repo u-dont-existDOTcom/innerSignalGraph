@@ -13,7 +13,8 @@
     "activation": "high",
     "dissociation": "none",
     "altered_state": "sober",
-    "current_intent": "conversation"
+    "current_intent": "conversation",
+    "suicidal_ideation_context": "not_in_play"
   },
   "expected": {
     "primary": "ROUTE.MEDICAL_RED_FLAG",

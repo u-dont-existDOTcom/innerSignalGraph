@@ -7,14 +7,14 @@ source_id: IC.ESCAPE_URGE
 guide_id: inner-child-guide
 heading: When the Urge to Escape Arrives
 source_role: primary-framework
-source_hash: e9284589535a7c8406362a13ac2d015b92fff2315a724ab660c7db2b8bf2197d
-section_hash: 3cf6c7262538cc8b74d835f0c084b6018b9b9d7c3a655ebd66249b195fc65f52
+source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+section_hash: 185ab402b2799ce7e8b62c04be54a0e748002d00a54b11e0d24e714b174f32b0
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ALTERED_STATE_GATE
   - IC.GENTLE_SELF_HYPNOSIS
   - IC.MEET_GUARD
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # When the Urge to Escape Arrives

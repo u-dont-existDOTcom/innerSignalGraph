@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.ADVANCED_RELEASE_BYPASS
 status: owner-approved
 domain: somatic
-base_record_sha256: 606a364f40990fd3c7491185fe3ce5e2b20502f46a2a1592be61f551c9ea7e79
-source_file_sha256: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+base_record_sha256: d026da7c70b7e5062bc2d7709d0d807f845844d7ab54ae447eecd08b82eab054
+source_file_sha256: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # AMEND.SOM.ADVANCED_RELEASE_BYPASS
@@ -17,7 +17,7 @@ projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f31
 
 ```json
 {
-  "approvedAt": "2026-10-06",
+  "approvedAt": "2026-10-11",
   "item": {
     "domain": "somatic",
     "id": "AMEND.SOM.ADVANCED_RELEASE_BYPASS",

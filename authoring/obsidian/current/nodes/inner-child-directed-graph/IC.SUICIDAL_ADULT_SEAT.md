@@ -29,9 +29,10 @@ regression_refs:
   - G098
   - G100
   - G102
-base_record_sha256: 6d63c98f7942d257580208571598bd51aee7bdf65f0deb28b205cc9c7e55ee5e
-base_graph_sha256: 58439bcc4e830851cc6aebfab354346013c78aa2ee7f321f4358653ab035e9a3
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+  - G103
+base_record_sha256: 1437969437237264d7d066dccaf82c45b19c266b42589372f3c0c2f4ae04d9f1
+base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # Bring a second adult or witness seat into the room
@@ -111,7 +112,7 @@ projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f31
     "Do not make the borrowed adult into a new external authority over memories, medicine, relationships, or spiritual conclusions.",
     "Do not use the adult position to lecture, shame, suppress, or outvote the suicidal state.",
     "Do not infer a suicide plan, enduring desire to die, substance dependence, or unavailable prior care from pain-triggered ideation alone. Remain responsive to new intent, inability to stay safe, and other supported acute danger.",
-    "Do not recommend suicidal disclosure as a tactic for analgesia or assume previous psychiatric hospitalization was harmless; do not recommend misrepresenting imminent danger or an inability to remain safe."
+    "Do not recommend suicidal disclosure as a tactic for analgesia or assume previous psychiatric hospitalization was harmless; do not recommend falsely denying current intent, a plan, imminent danger or inability to remain safe."
   ],
   "defaultQuestion": "Before we decide anything, can we invite any part of you that can observe, protect the body, or simply postpone the decision to sit beside the part that wants to die—even if we have to borrow that adult position from someone you trust?",
   "effects": {

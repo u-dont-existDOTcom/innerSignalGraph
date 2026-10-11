@@ -7,7 +7,7 @@ source_id: IC.BEFORE_DEEP
 guide_id: inner-child-guide
 heading: Before You Try to Go Deep
 source_role: primary-framework
-source_hash: e9284589535a7c8406362a13ac2d015b92fff2315a724ab660c7db2b8bf2197d
+source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
 section_hash: 71199c0bed8dad23902962cf205ce41121bb9adfb758380ee69ceebbb6f7f776
 locator_kind: text-lines
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - IC.MUSIC_EMOTIONAL_ACCESS_STOP
   - IC.REACTIVATION
   - IC.SAFETY_ORIENTATION
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # Before You Try to Go Deep

@@ -95,7 +95,7 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
   assert.equal(active.version, "owner-approved-refractory-pain-navigation-and-care-trust-2026-10-11-r6");
   assert.equal(active.file, "inner-child-guide-2026-10-11-r6.txt");
-  assert.equal(active.sha256, "e9284589535a7c8406362a13ac2d015b92fff2315a724ab660c7db2b8bf2197d");
+  assert.equal(active.sha256, "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a");
   const r5 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
   assert.equal(hash(r5), "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-10-r5.txt" && item.sha256 === "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31"));

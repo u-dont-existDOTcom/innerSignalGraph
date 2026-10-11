@@ -72,6 +72,7 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   ic_real_world_transfer: ["not_in_play", "session_only", "emerging", "generalizing", "integrated", "unknown"],
   medical_urgency: ["none", "urgent", "nonurgent", "unknown"],
   refractory_pain_care: ["indicated", "not_indicated", "unknown"],
+  suicidal_ideation_context: ["pain_episode", "other_or_unclear", "not_in_play", "unknown"],
   other_person_central: ["yes", "no", "unknown"],
   relational_capacity_evidence: ["reciprocal", "limited", "mixed", "insufficient", "unknown"],
   emotional_takeover_pressure: ["present", "absent", "unknown"],

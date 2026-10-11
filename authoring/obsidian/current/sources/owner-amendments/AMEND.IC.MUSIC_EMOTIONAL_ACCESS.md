@@ -7,13 +7,13 @@ source_id: AMEND.IC.MUSIC_EMOTIONAL_ACCESS
 guide_id: owner-amendments
 heading: AMEND.IC.MUSIC_EMOTIONAL_ACCESS
 source_role: owner-approved-extension
-source_hash: 58648c35245403b1db63f1b68de2fe72cc319ea1dced23e775f26710202a8256
+source_hash: 490bf9edeb23762fee8f198ee2d24d9bf9e15aed2369078d187f943690cf8ed7
 section_hash: 30a60be53d038d54d5ece67dcb82ba94aea20708d9a6a901bdb1cf2e2157af9c
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.MUSIC_EMOTIONAL_ACCESS
   - IC.MUSIC_EMOTIONAL_ACCESS_STOP
-projection_input_sha256: 576865b8baa3e849e062d5ddd215ecabe4e84a4f6a78e75b6784f314e49bba57
+projection_input_sha256: d7c57ddb09d0f9c65f19726f53578663cc05f4adf41baf7c5d3d560c8457688b
 ---
 
 # AMEND.IC.MUSIC_EMOTIONAL_ACCESS
