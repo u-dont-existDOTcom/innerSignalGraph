@@ -389,12 +389,26 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   cycles, no review loops.
 - **Full width.** The Codex worker runs at its maximum of eight slots. If the semantic import is running, it is paused
   for the pass, so the two don't compete for the subscription.
-- **A deadline that holds.** The deadline is a run setting, `pointer_deadline_minutes` (default 180). When the pass
-  starts it saves the deadline as a time in its own state, so a resumed pass keeps the same one. Every batch's and
-  every event check's exchange item expires at that time, so no worker starts one after it. At the deadline the pass
-  stops waiting: every batch still unanswered is recorded as untagged with the reason `deadline`, every event check
-  still unanswered drops its pair, an answer stored after it is ignored, and the pass builds from what it has. Sending
-  those again is a new pass, not a resume. The pass doesn't rely on the worker's `--once` mode, which waits out
+- **Deadlines that hold.** Every step that calls a model has a deadline, a run setting:
+  - `pointer_reference_deadline_minutes` (default 120) for the reference step: the sample's references and their
+    searches;
+  - `pointer_deadline_minutes` (default 180) for each pass, its event checks included: the pilot, the full pass and a
+    coverage pass;
+  - `pointer_measure_deadline_minutes` (default 240) for each measurement's two judges.
+- **Saved and kept.** When a step starts it saves its deadline as a time in its own state, so a resumed step keeps the
+  same one. Every exchange item the step sends, retries included, expires at that time instead of the exchange's
+  usual day, so no worker starts one after it. The step keeps waiting on its items until each is answered or the
+  deadline passes, whatever a single wait returns.
+- **What a deadline leaves.** At its deadline a step stops waiting, ignores any answer stored after it, and finishes
+  with what it has:
+  - a batch still unanswered is untagged with the reason `deadline`, an event check still unanswered drops its pair,
+    and the pass builds;
+  - a sampled unit whose reference or searches aren't complete is a nonresponse (see the measurement below), so the
+    recall floor fails, and the run stops before the pilot;
+  - a sampled pair a judge hasn't scored counts as wrong, which can only lower its kind's bound, and the measurement
+    reports.
+- **Never resumed past it.** Sending any of those again is a new step, never a resume, and a generation that fails a
+  floor this way is discarded like any other. No step relies on the worker's `--once` mode, which waits out
   usage-limit backoff.
 - **No stops for a person.** Nothing in the pass waits for the owner. Publishing the result is still the owner's
   `deploy`.
@@ -410,9 +424,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   of dollars for a journal this size, depending on the model. The pilot measures tokens per page, and the provider's
   price list at that time gives the cost.
 - **Measuring.** 96 reference answers and 96 search-writing answers on the same Codex slots, about half an hour,
-  which can run while the pass does. The precision check is at most 750 pairs, 15 calls for each judge; the Claude
-  judge's 15, one at a time at the Claude lane's current seven minutes or so a call, take under two hours and fit in a
-  day's 40. The event check is one call per 50 event pairs on the Codex slots, minutes for a journal this size.
+  before the pilot. The precision check is at most 750 pairs, 15 calls for each judge; the Claude judge's 15, one at
+  a time at the Claude lane's current seven minutes or so a call, take under two hours and fit in a day's 40. The
+  event check is one call per 50 event pairs on the Codex slots, minutes for a journal this size.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
@@ -432,9 +446,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   reference and every one of its anchors resolves exactly in the unit; every reference item, critical or not, is named
   by at least one such question, so no item the reader found goes unmeasured (the reader's instructions ask for this);
   and the unit has at least one such question. An incomplete or failed reference gets one retry, and so does a search-writing answer that fails or leaves
-  a question without a search. A unit still without a complete reference or its searches is a nonresponse: recall is
-  then unknown, the recall floor fails, and the report lists the unit. So a hard page can't leave the sample and lift
-  the bound.
+  a question without a search. A unit still without a complete reference or its searches, after its retry or at the
+  reference step's deadline, is a nonresponse: recall is then unknown, the recall floor fails, and the report lists
+  the unit. So a hard page can't leave the sample and lift the bound. Since the references and searches are all done
+  before the pilot, a nonresponse stops the run there, with the units listed on the owner page, and no journal is
+  tagged for a generation that couldn't be published.
 - **Calibration as a challenge set.** Calibration's units were chosen by their place in the journal plus every hazard
   (dreams, wishes, plans, hypotheticals), so they aren't a random sample. Recall on them is reported on its own, with
   hazards apart, and never stands in for a floor.
@@ -445,6 +461,7 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   of recall and reported on their own: how many there are, and how many tag-only results their searches bring back.
   - One call per sampled unit writes, once for each of its questions, up to three searches an answering model would
     run. It sees only the questions, never the unit's text or the expected answers, as an answering model would.
+    These calls are part of the reference step, so the searches are fixed before any generation exists.
   - Code runs the searches with `find_journal_quotes` on that generation. A reference item's anchors are all needed
     (one may hold the event and another its negation or qualifier), so a question is found only when every quote
     holding an anchor of any of its evidence items comes back in the first 12 results of one of its searches.
@@ -481,9 +498,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     For events too, the Codex judge scores each sampled pair again in a new call; it never reuses the event check's
     answer. Since the check ran on the same lane, the Codex judge's verdicts on events may lean its way, but the Claude
     judge is independent of it, and a pair counts only when both agree. A judge call that fails
-    gets one retry, and a pair still unscored by either judge counts as wrong, which can only lower the bound. Their
-    agreement (raw agreement and Cohen's kappa, reported as undefined when the judges give one answer throughout) and
-    the number of disagreements are reported; agreement is never a gate.
+    gets one retry, and a pair still unscored by either judge, after that retry or at the measurement's deadline,
+    counts as wrong, which can only lower the bound. Their agreement (raw agreement and Cohen's kappa, reported as
+    undefined when the judges give one answer throughout) and the number of disagreements are reported; agreement is
+    never a gate.
   - Each sample's size is fixed before scoring and each is scored once, so its one-sided 95% Clopper-Pearson bound is
     computed once, with no stopping early.
 - **Floors** (stated now; the owner approves them by merging this plan, and only the owner can change them). The pass
@@ -504,8 +522,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     gave it no tag, or every tag on it was dropped. So a pass whose answers are valid but nearly empty fails here.
     Above 2%, the untagged pages' batches go into one new pass. Its generation keeps every tag the first one kept on
     the other pages, exactly, and replaces only the retried pages' tags; the whole measurement then runs again on it
-    before anything is published, with the reference sample and its references as they are. If coverage still fails
-    after that pass, the generation is discarded like any other that fails a floor;
+    before anything is published, with the reference sample, its references and its searches as they are. If
+    coverage still fails after that pass, the generation is discarded like any other that fails a floor;
   - **anchors:** no kept tag whose anchor doesn't resolve or breaks a name rule above, which holds by construction
     and is checked anyway.
 
@@ -513,7 +531,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 
 1. **Build** the role, schema, batching, checks, graph adaptation, search on tags and the measurement command, with
    the tests below. Codex review; the owner merges.
-2. **Reference sample:** draw the 96 units with a recorded seed and give each a new frozen reference.
+2. **Reference sample:** draw the 96 units with a recorded seed and give each a new frozen reference and its
+   searches, by the reference step's deadline. A nonresponse stops the run here.
 3. **Pilot** on 20 pages drawn from a recorded seed outside the reference sample: seconds per batch, tokens, tags kept
    and dropped, failed batches. It never looks at a reference, and nothing is published.
 4. **Full pass** on the whole journal, timed. Built, not published.
@@ -548,10 +567,13 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Event check.** Before the generation is built, every event pair goes to the check, which scores the full pair
   (what the label names and that it happened); a pair it rejects, or leaves unanswered after a retry, is dropped and
   counted, and an accepted pair stays. The measurement's Codex judge scores sampled event pairs in new calls.
-- **Deadline.** The deadline is saved when the pass starts and kept on resume; batch items and event-check items
-  expire at it; a batch unanswered at the deadline ends untagged with the reason `deadline`, and an event check
-  unanswered at it drops its pair; an answer stored after it is ignored; the pass then builds, and no resume sends the
-  batch or the check again.
+- **Deadlines.** Each step's deadline is saved when it starts and kept on resume, and every item it sends, retries
+  included, expires at it; a wait that returns without an answer before the deadline doesn't end the step; an answer
+  stored after the deadline is ignored, and no resume sends the item again. At the pass's deadline a batch still
+  unanswered ends untagged with the reason `deadline`, an event check still unanswered drops its pair, and the pass
+  builds; at the reference step's deadline a unit without a complete reference or its searches is a nonresponse, the
+  recall floor fails and the run stops before the pilot; at the measurement's deadline a pair a judge hasn't scored
+  counts as wrong, and the measurement reports.
 - **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
   page that is.
 - **Graph.** A pointer-only extraction yields entity and episode nodes linked to their quotes' existing passages, with
