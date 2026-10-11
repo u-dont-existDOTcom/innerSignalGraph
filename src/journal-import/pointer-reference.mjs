@@ -253,11 +253,14 @@ export function pointerReferenceSample({ units, seed, strata = POINTER_REFERENCE
 /**
  * Calibration's units as a challenge set (plan Part 3, "Calibration as a challenge set"): the sampling units the
  * import's calibration units lie on, each once, with its quotes in journal order, the hazard types of the calibration
- * units on it, and an inclusion probability of 1, since they were chosen, not drawn. A calibration unit lies on its
- * page or, in a representation without pages, on every stretch (samplingUnits) holding a quote that overlaps its bytes.
- * One with no quote there yet (a page that needs visual reading) is counted and left out, as in the random sample.
- * `calibration` gives each calibration unit's representation, page number or byte range, and hazard types; nothing of
- * its text. The result has the reference step's sample shape, so the same step writes and checks its questions.
+ * units on it, and an inclusion probability of 1, since they were chosen, not drawn. A calibration unit lies on the
+ * quotes of its own representation: on its page where they have page numbers, and where they have none (a plain-text
+ * journal, or a page's visual transcription, which has no page entry of its own whatever page it transcribes) on every
+ * stretch (samplingUnits) holding a quote that overlaps its bytes. One whose representation has no quote there yet (a
+ * page that needs visual reading) is counted and left out, as in the random sample, rather than taking another
+ * representation's quotes. `calibration` gives each calibration unit's representation, page number or byte range, and
+ * hazard types; nothing of its text. The result has the reference step's sample shape, so the same step writes and
+ * checks its questions.
  */
 export function pointerChallengeUnits({ units, calibration } = {}) {
   const isRange = (value) => Number.isSafeInteger(value.start_byte) && Number.isSafeInteger(value.end_byte)
@@ -271,11 +274,18 @@ export function pointerChallengeUnits({ units, calibration } = {}) {
     && (item.hazard_types === undefined || (Array.isArray(item.hazard_types) && item.hazard_types.every((hazard) => typeof hazard === "string")))),
   "POINTER_CHALLENGE_INPUT_INVALID");
   const sampling = samplingUnits(units);
-  const lyingOn = (item) => (Number.isSafeInteger(item.page_number)
-    ? [`page:${item.page_number}`].filter((unitId) => sampling.has(unitId))
-    : [...sampling.values()].filter((unit) => unit.quotes.some((quote) => !Number.isSafeInteger(quote.page)
-      && quote.representation_id === item.representation_id && quote.start_byte < item.end_byte && quote.end_byte > item.start_byte))
-      .map((unit) => unit.unit_id));
+  const unitOfQuote = new Map([...sampling.values()].flatMap((unit) => unit.quotes.map((quote) => [quote.unit_id, unit.unit_id])));
+  const quotesOf = new Map();
+  for (const quote of units) {
+    if (!quotesOf.has(quote.representation_id)) quotesOf.set(quote.representation_id, []);
+    quotesOf.get(quote.representation_id).push(quote);
+  }
+  const overlaps = (quote, item) => isRange(quote) && isRange(item) && quote.start_byte < item.end_byte && quote.end_byte > item.start_byte;
+  const lies = (quote, item) => (Number.isSafeInteger(quote.page)
+    ? (Number.isSafeInteger(item.page_number) ? quote.page === item.page_number : overlaps(quote, item))
+    : (isRange(item) ? overlaps(quote, item) : true));
+  const lyingOn = (item) => [...new Set((quotesOf.get(item.representation_id) ?? []).filter((quote) => lies(quote, item))
+    .map((quote) => unitOfQuote.get(quote.unit_id)))];
   const chosen = new Map();
   let withoutQuotes = 0;
   for (const item of calibration) {

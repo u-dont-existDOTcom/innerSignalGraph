@@ -278,3 +278,23 @@ test("a journal without pages is drawn in stretches of about a page, so no quest
   assert.throws(() => pointerChallengeUnits({ units: quotes, calibration: [{ unit_id: "c", representation_id: "representation:plain-text",
     page_number: null }] }), { code: "POINTER_CHALLENGE_INPUT_INVALID" });
 });
+
+test("a calibration unit read from a page's visual transcription lies on that transcription's quotes, never on the native page's", () => {
+  // Page 3's native text, and its visual transcription, which has no page entry of its own, so its quotes have no page.
+  const native = [0, 1].map((index) => ({ unit_id: `unit:n${index}`, page: 3, representation_id: "pdf:page:3", text: `Native paragraph ${index}.`,
+    start_byte: index * 30, end_byte: index * 30 + 20, source_order: index }));
+  const visual = [0, 1, 2].map((index) => ({ unit_id: `unit:v${index}`, page: null, representation_id: "visual:page:3",
+    text: `Transcribed paragraph ${index}.`, start_byte: index * 40, end_byte: index * 40 + 30, source_order: 2 + index }));
+  const challenge = pointerChallengeUnits({ units: [...native, ...visual], calibration: [
+    { unit_id: "calibration:visual", representation_id: "visual:page:3", page_number: 3, start_byte: 0, end_byte: 120,
+      hazard_types: ["visual_representation"] },
+    { unit_id: "calibration:native", representation_id: "pdf:page:3", page_number: 3, start_byte: 0, end_byte: 50, hazard_types: [] },
+    // A transcription with no quotes yet is counted, and takes no other representation's quotes.
+    { unit_id: "calibration:unread", representation_id: "visual:page:4", page_number: 3, start_byte: 0, end_byte: 50, hazard_types: ["visual_representation"] }
+  ] });
+  assert.deepEqual(challenge.units.map((unit) => [unit.unit_id.startsWith("representation:") ? "visual stretch" : unit.unit_id, unit.quote_ids, unit.hazards]), [
+    ["page:3", ["unit:n0", "unit:n1"], []],
+    ["visual stretch", ["unit:v0", "unit:v1", "unit:v2"], ["visual_representation"]]
+  ]);
+  assert.deepEqual([challenge.calibration_units, challenge.units_without_quotes, challenge.candidate_units], [3, 1, 2]);
+});
