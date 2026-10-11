@@ -53,8 +53,8 @@ the fidelity checks have nothing left to guard.
    they mention. Each tag is anchored to exact words in its quote, and a mechanical check drops any tag whose anchor
    isn't there. Tags only help find quotes: the answer still reads the quote, never the tag. A missing tag costs a
    missed quote; a wrong one can bring up an off-topic quote, which is marked as found by a tag and checked against
-   its own words before it's used. Neither changes what a quote says. The extraction the current import has already
-   done can seed these tags.
+   its own words before it's used. Neither changes what a quote says. Tags are made from the journal's text alone,
+   never seeded from the current import's extraction, which its reviews against answer keys shaped (Part 3).
 4. **Measured judges and a random sample (next, for the pointer pass).**
    - The pass is checked on retrieval recall: for sampled questions, does search find the quotes a careful reader
      would cite?
@@ -310,7 +310,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 ### What the pass does
 
 - **Input.** The quote generation's quotes in source order, cut into batches of consecutive pages of at most about
-  6 KB of quote text. A page is never split across batches unless the page alone is over the limit.
+  6 KB of quote text. A page is never split across batches unless the page alone is over the limit. The tagger sees
+  only the journal's text: no extraction, reference or review from the semantic import goes into a tag, so nothing
+  that has seen an answer key shapes what is measured.
 - **One answer per batch.** A new role, `pointer_tagger`, with the schema `schemas/journal-import/pointer-result.schema.json`.
   It lists the people, places, organizations, topics and events the quotes mention. Each tag has:
   - a kind from that fixed list;
@@ -385,8 +387,7 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   first call; the tags and reasoning perhaps as much again. On pay-per-use API keys that is a few dollars to a few tens
   of dollars for a journal this size, depending on the model. The pilot measures tokens per page, and the provider's
   price list at that time gives the cost.
-- **Measuring.** At most 96 reference answers (fewer where calibration already wrote one) and 96 search-writing
-  answers on the same Codex slots, about half an hour, which can run while the pass does. The precision check is 12
+- **Measuring.** 96 reference answers and 96 search-writing answers on the same Codex slots, about half an hour, which can run while the pass does. The precision check is 12
   calls for each judge; the Claude judge's 12, one at a time at the Claude lane's current seven minutes or so a call,
   take about an hour and a half and fit in a day's 40.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
@@ -398,11 +399,15 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   (`createDeterministicAuditSample`) is drawn from every unit that has quotes (the import's pieces of the journal, about
   a page each), with a recorded seed: the journal is cut into 12 stretches in order, and 8 units are drawn at random
   from each, 96 in all, each with its inclusion probability recorded. Units with no quotes yet (pages that need visual
-  reading) are counted and left out, and repeated units count once. Each sampled unit gets a frozen reference from the
-  reference reader: source-grounded questions with expected answers, and the items that answer them with exact
-  anchors. A unit that calibration already gave a frozen reference keeps it, and the others get one from the same
-  reader. No reader is ever shown a tag, so the references measure the pass independently. The measurement runs on the
-  import server and reports counts only.
+  reading) are counted and left out, and repeated units count once. Each sampled unit gets a new frozen reference from
+  the reference reader: source-grounded questions with expected answers, and the items that answer them with exact
+  anchors. Calibration's references aren't reused: the import's repairs were checked against them. No reader is ever
+  shown a tag, so the references measure the pass independently. The measurement runs on the import
+  server and reports counts only.
+- **No unit drops out.** A sampled unit's reference is complete when the reader doesn't list the unit as unassessed and
+  gives it at least one answerable or partly answerable question. An incomplete or failed reference gets one retry.
+  A unit still without a complete reference is a nonresponse: recall is then unknown, the recall floor fails, and the
+  report lists the unit. So a hard page can't leave the sample and lift the bound.
 - **Calibration as a challenge set.** Calibration's units were chosen by their place in the journal plus every hazard
   (dreams, wishes, plans, hypotheticals), so they aren't a random sample. Recall on them is reported on its own, with
   hazards apart, and never stands in for a floor.
@@ -412,15 +417,21 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   when one of those items is. A question the reference marks unanswerable has no quote to find, so those are left out
   of recall and reported on their own: how many there are, and how many tag-only results their searches bring back.
   - One call per sampled unit writes, once for each of its questions, up to three searches an answering model would
-    run, without seeing the expected answers. Code runs them with `find_journal_quotes` on that generation. A question
-    is found when, for each of its evidence items, a quote holding one of that item's anchors comes back in the first
-    12 results of one of its searches.
+    run. It sees only the questions, never the unit's text or the expected answers, as an answering model would.
+  - Code runs the searches with `find_journal_quotes` on that generation. A question is found when, for each of its
+    evidence items, a quote holding one of that item's anchors comes back in the first 12 results of one of its
+    searches.
   - Recall is reported with words only (the live index) and with words and tags, and critical questions on their own
     line.
   - A unit's questions move together and the sample is drawn by stretch, so each one-sided 95% lower bound follows
     the design. Recall is the weighted ratio of questions found to questions asked, with weights from the inclusion
     probabilities; its standard error comes from how the sampled units vary within each stretch (linearized); and
-    Student's t has as many degrees of freedom as there are sampled units less the number of stretches (84).
+    Student's t has as many degrees of freedom as there are sampled units less the number of stretches, counted in the
+    sample as drawn (84 for the owner's journal: 96 units in 12 stretches). A shorter journal can have stretches with
+    fewer than 8 units; a stretch with a single sampled unit is merged with its neighbor for the variance, which can
+    overstate it but never understates it, and with fewer than two sampled units in all the bound can't be computed
+    and the recall floor fails.
+  - No loss and gain use the same weights as recall.
 - **Tag precision.** It is measured on tag–quote pairs, the way search uses tags: each quote a kept tag is anchored in
   makes one pair, so a tag on a hundred quotes is a hundred pairs, and a wrong one weighs as much as the wrong hits it
   causes.
@@ -453,9 +464,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 
 1. **Build** the role, schema, batching, checks, graph adaptation, search on tags and the measurement command, with
    the tests below. Codex review; the owner merges.
-2. **Pilot** on 20 pages drawn from a recorded seed: seconds per batch, tokens, tags kept and dropped, failed batches.
-   Nothing published.
-3. **Reference sample:** draw the 96 units with a recorded seed and give each a frozen reference.
+2. **Reference sample:** draw the 96 units with a recorded seed and give each a new frozen reference.
+3. **Pilot** on 20 pages drawn from a recorded seed outside the reference sample: seconds per batch, tokens, tags kept
+   and dropped, failed batches. It never looks at a reference, and nothing is published.
 4. **Full pass** on the whole journal, timed. Built, not published.
 5. **Measure** that generation against every floor: recall on the random sample, precision on a sample of its own
    tag–quote pairs, coverage of its pages, with calibration's set reported apart. Nothing published. If a floor fails,
@@ -495,15 +506,19 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   the quotes with a tag of that kind; the quote's text, date and cues are unchanged.
 - **Supersede.** The pointer generation replaces version 2 exactly as version 2 replaced version 1.
 - **Measurement.** Recall and precision on synthetic data with known answers. The unit sample is the import's
-  probability sample (12 stretches, 8 units each) from a recorded seed, only from units with quotes, and reuses an
-  existing frozen reference only for a unit the draw picked; recall's weighted estimate and design-based bound match a
-  hand-worked example, and units whose questions all fail together widen the bound; a question is found only when each
-  of its evidence items has a quote in the first 12 results of one of its searches; unanswerable questions stay out of
-  recall and are reported. Precision samples tag–quote pairs, so a wrong tag on many quotes counts once for each; the
-  Clopper-Pearson arithmetic, with a bound of 0 for no pairs; the sample's size is fixed before scoring and its bound
-  computed once; a pair counts as correct only when both judges say so. A pass with no tags fails the precision floor,
-  and the gain floor whenever word search misses a question; the gain floor is reported as not applicable when word
-  search misses nothing; an untagged share over 2% blocks publication; publishing refuses a generation whose digest
-  isn't the measured one.
+  probability sample (12 stretches, 8 units each) from a recorded seed, only from units with quotes, and every sampled
+  unit gets a new reference; a unit listed as unassessed, or with no answerable question, gets one retry and then
+  makes recall unknown and the recall floor fail; the pilot's pages never overlap the sample; the search-writing
+  packet holds the questions and nothing of the unit's text or expected answers, and the tagger's packet holds journal
+  text and nothing from the semantic import. Recall's weighted estimate and design-based bound match a hand-worked
+  example; units whose questions all fail together widen the bound; degrees of freedom come from the sample as drawn,
+  a single-unit stretch is merged with its neighbor, and fewer than two units fail the floor. A question is found only
+  when each of its evidence items has a quote in the first 12 results of one of its searches; unanswerable questions
+  stay out of recall and are reported. Precision samples tag–quote pairs, so a wrong tag on many quotes counts once
+  for each; the Clopper-Pearson arithmetic, with a bound of 0 for no pairs; the sample's size is fixed before scoring
+  and its bound computed once; a pair counts as correct only when both judges say so. A pass with no tags fails the
+  precision floor, and the gain floor whenever word search misses a question; the gain floor is reported as not
+  applicable when word search misses nothing; an untagged share over 2% blocks publication; publishing refuses a
+  generation whose digest isn't the measured one.
 
 All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
