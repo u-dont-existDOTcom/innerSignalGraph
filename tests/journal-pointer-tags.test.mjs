@@ -730,3 +730,52 @@ test("the quote search tool offers the kinds filter and says what a tag match is
   assert.equal(Object.hasOwn(tool.inputSchema.properties, "match_tags"), false, "words-only search is the measurement's, not a tool's");
   for (const words of ["matched_by", "checked against its own words", "Never quote a tag"]) assert.ok(tool.description.includes(words), words);
 });
+
+test("the quote generation takes each page's pointer extraction, orders its episodes across the journal, and adds no passage", () => {
+  const journal = pointerJournal();
+  const { built, kept } = journal;
+  const options = { caseId: CASE, corpusId: CORPUS, generation: GENERATION, originalObjectId: "original:pointer", mediaType: "application/pdf",
+    representations: PAGES, unitOptions: UNIT_OPTIONS };
+  const calls = [];
+  const tagged = buildQuoteGeneration({ ...options, extractionFor: ({ representation, units, quoteMeta, passageIdForUnit }) => {
+    calls.push(representation.representation_id);
+    // The page's quotes have their dates by the time its extraction is asked for.
+    assert.ok(units.every((unit) => quoteMeta.has(passageIdForUnit(unit.unit_id))));
+    return pointerExtraction({ units, kept, quoteMeta, passageIdForUnit });
+  } });
+  assert.deepEqual(calls, PAGES.map((page) => page.representation_id), "once per page, in order");
+  validateJournalGraph(tagged.graph, sources());
+  // The same quotes, dates and passages as the generation without tags.
+  assert.deepEqual(tagged.quoteMeta, built.quoteMeta);
+  assert.deepEqual(tagged.quoteMonths, built.quoteMonths);
+  assert.deepEqual(tagged.stats, built.stats);
+  const passages = (graph) => graph.nodes.filter((node) => node.kind === "passage");
+  assert.deepEqual(passages(tagged.graph), passages(built.graph));
+  // The same entities and episodes as each page's extraction adapted on its own, but an episode's source order counts
+  // the quotes of the whole journal, not of its page.
+  const separate = pointerGraph(journal).graph;
+  const others = (graph) => graph.nodes.filter((node) => node.kind === "entity" || node.kind === "episode")
+    .map((node) => (node.kind === "episode" ? { ...node, data: { ...node.data, source_order: null } } : node));
+  assert.deepEqual(others(tagged.graph), others(separate));
+  const episodes = tagged.graph.nodes.filter((node) => node.kind === "episode");
+  const order = (label) => episodes.find((node) => node.data.label === label).data.source_order;
+  const unitsInOrder = PAGES.flatMap((page) => splitQuoteUnits({ representationId: page.representation_id, text: page.text, ...UNIT_OPTIONS }));
+  const indexOf = (fragment) => unitsInOrder.findIndex((unit) => unit.text.includes(fragment));
+  assert.equal(order("anniversaire de Jean"), indexOf("L'anniversaire"));
+  assert.equal(order("Jean's birthday party"), indexOf("birthday party"));
+  assert.equal(order("promenade au parc"), indexOf("Promenade"));
+  assert.ok(order("promenade au parc") > order("Jean's birthday party") && order("Jean's birthday party") > order("anniversaire de Jean"));
+  assert.equal(separate.nodes.find((node) => node.kind === "episode" && node.data.label === "promenade au parc").data.source_order, 1,
+    "adapted page by page, the third page's episode would be second in its page and out of journal order");
+  // Without a hook the generation is the same as before: no extraction, so nothing to order.
+  assert.deepEqual(buildQuoteGeneration(options).graph, built.graph);
+
+  // An extraction anchored on part of a quote would add a passage, which the quote generation refuses.
+  const { unitOf } = journal;
+  assert.throws(() => buildQuoteGeneration({ ...options, extractionFor: ({ units }) => ({ schema_version: "1.0", status: "complete", assertions: [],
+    entities: units.some((unit) => unit.unit_id === unitOf("Jean est venu"))
+      ? [{ local_id: "part", label: "Lyon", entity_kind: "place", anchors: [anchor(unitOf("Jean est venu"), "vin de Lyon")] }] : [],
+    episodes: [], coverage: units.map((unit) => ({ unit_id: unit.unit_id, disposition: "no_assertion", assertion_local_ids: [], reason: "test" })),
+    requested_context: [] }) }), { code: "QUOTE_GENERATION_EXTRACTION_ADDS_PASSAGE" });
+  assert.throws(() => buildQuoteGeneration({ ...options, extractionFor: "tags" }), { code: "QUOTE_GENERATION_EXTRACTION_INVALID" });
+});
