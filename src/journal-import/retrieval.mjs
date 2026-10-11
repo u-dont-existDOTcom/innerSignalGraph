@@ -586,10 +586,11 @@ export async function openPrivateJournalGraph({
    * without tags, and quotes found only through a tag come after all of them, so tags can't push a word
    * match down. Each quote says how it matched (`matched_by`: words, tag or both) and, when a tag
    * matched, which tags (`matched_tags`). `kinds` keeps only quotes with a tag of one of those kinds
-   * (`quote_tags`). Tags never change a quote's text, date or cues.
+   * (`quote_tags`). Tags never change a quote's text, date or cues. `matchTags: false` searches the same
+   * generation by words alone, the baseline the pass's measurement compares with; it isn't offered to tools.
    */
   const findQuotes = async ({ query, from = null, to = null, includeUndated = true, limit = QUOTE_SEARCH_LIMITS.limitDefault,
-    byteBudget = QUOTE_SEARCH_LIMITS.byteBudgetDefault, cursor = null, kinds = null } = {}) => {
+    byteBudget = QUOTE_SEARCH_LIMITS.byteBudgetDefault, cursor = null, kinds = null, matchTags = true } = {}) => {
     await assertCurrent();
     invariant(typeof query === "string" && query.length > 0 && query.length <= 4_000, "QUOTE_QUERY_INVALID");
     invariant((from === null || isJournalTimeBound(from)) && (to === null || isJournalTimeBound(to)) && typeof includeUndated === "boolean", "QUOTE_FILTERS_INVALID");
@@ -597,14 +598,17 @@ export async function openPrivateJournalGraph({
     invariant(Number.isSafeInteger(byteBudget) && byteBudget >= QUOTE_SEARCH_LIMITS.byteBudgetMin && byteBudget <= QUOTE_SEARCH_LIMITS.byteBudgetMax, "QUOTE_BUDGET_INVALID");
     invariant(kinds === null || (Array.isArray(kinds) && kinds.length > 0 && new Set(kinds).size === kinds.length
       && kinds.every((kind) => POINTER_TAG_KINDS.includes(kind))), "QUOTE_KINDS_INVALID");
-    const tagged = Array.isArray(manifest.indexes.tag_terms) && Array.isArray(manifest.indexes.quote_tags);
-    invariant(kinds === null || tagged, "QUOTE_TAGS_NOT_AVAILABLE");
+    invariant(typeof matchTags === "boolean", "QUOTE_FILTERS_INVALID");
+    const tagIndexes = Array.isArray(manifest.indexes.tag_terms) && Array.isArray(manifest.indexes.quote_tags);
+    invariant(kinds === null || tagIndexes, "QUOTE_TAGS_NOT_AVAILABLE");
+    // Whether query words also match tag labels in this search.
+    const tagged = matchTags && tagIndexes;
     const allTerms = lexicalTerms(query);
     invariant(allTerms.length > 0, "SEARCH_QUERY_HAS_NO_TERMS");
     const expected = {
       query_sha256: sha256(Buffer.from(allTerms.join("\0"), "utf8")),
-      filters_sha256: sha256(Buffer.from(JSON.stringify(kinds === null ? { from, to, includeUndated }
-        : { from, to, includeUndated, kinds: [...kinds].sort() }), "utf8")),
+      filters_sha256: sha256(Buffer.from(JSON.stringify({ from, to, includeUndated, ...(kinds === null ? {} : { kinds: [...kinds].sort() }),
+        ...(matchTags ? {} : { match_tags: false }) }), "utf8")),
       sort: "quotes"
     };
     const start = cursor ? parseCursor(cursor, expected).offset : 0;
@@ -673,7 +677,7 @@ export async function openPrivateJournalGraph({
       const date = meta?.written ?? null;
       if (windowed && !inTimeWindow(date ? [[date.from, date.to]] : [], { from, to, include_unknown: includeUndated })) continue;
       // The quote's tags, read only when a tag matched or a kind filter needs them.
-      const quoteTags = tagged && (tagScores.has(id) || kinds !== null) ? await readIndex("quote_tags", id) : [];
+      const quoteTags = tagIndexes && (tagScores.has(id) || kinds !== null) ? await readIndex("quote_tags", id) : [];
       if (kinds !== null && !quoteTags.some((tag) => kinds.includes(tag.kind))) continue;
       let text, page;
       if (meta) {
