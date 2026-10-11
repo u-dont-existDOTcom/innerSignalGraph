@@ -322,10 +322,12 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   event; the quote says what happened.
 - **An event is something the quote reports as happening.** A dream, wish, plan, hypothetical or denial isn't an event:
   the tagger tags what it is about as a topic instead. Before the generation is built, every event tag–quote pair goes
-  to an event check (the `pair_judge` role on the Codex lane, 50 pairs to a call, one retry), which asks whether that
-  quote reports it as happening; a pair it rejects or leaves unanswered is dropped and counted. So a dream reaches the
-  timeline as something that happened only if both the tagger and the check get it wrong, and the precision floor on
-  events measures what is left.
+  to an event check (the `pair_judge` role on the Codex lane, 50 pairs to a call, one retry), which scores the full
+  pair: the quote really mentions what the label names, and reports it as happening. A pair it rejects or leaves
+  unanswered is dropped and counted. Event-check items expire at the pass's saved deadline like the tagger's batches;
+  a check still unanswered then counts as unanswered, so its pair is dropped, and a resumed pass keeps the same
+  deadline. So a dream reaches the timeline as something that happened only if both the tagger and the check get it
+  wrong, and the precision floor on events measures what is left.
 - **No coreference.** A tag never claims that "he", "she", "there" or a different name means a named person, place or
   organization. A pronoun-only mention isn't tagged, and this part has no aliases: telling that two names mean the
   same person is a later part with its own measurement. So every quote a name tag points at contains that name.
@@ -388,11 +390,12 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Full width.** The Codex worker runs at its maximum of eight slots. If the semantic import is running, it is paused
   for the pass, so the two don't compete for the subscription.
 - **A deadline that holds.** The deadline is a run setting, `pointer_deadline_minutes` (default 180). When the pass
-  starts it saves the deadline as a time in its own state, so a resumed pass keeps the same one. Every batch's
-  exchange item expires at that time, so no worker starts a batch after it. At the deadline the pass stops waiting:
-  every batch still unanswered is recorded as untagged with the reason `deadline`, an answer stored after it is
-  ignored, and the pass builds from what it has. Sending those batches again is a new pass, not a resume. The pass
-  doesn't rely on the worker's `--once` mode, which waits out usage-limit backoff.
+  starts it saves the deadline as a time in its own state, so a resumed pass keeps the same one. Every batch's and
+  every event check's exchange item expires at that time, so no worker starts one after it. At the deadline the pass
+  stops waiting: every batch still unanswered is recorded as untagged with the reason `deadline`, every event check
+  still unanswered drops its pair, an answer stored after it is ignored, and the pass builds from what it has. Sending
+  those again is a new pass, not a resume. The pass doesn't rely on the worker's `--once` mode, which waits out
+  usage-limit backoff.
 - **No stops for a person.** Nothing in the pass waits for the owner. Publishing the result is still the owner's
   `deploy`.
 
@@ -474,9 +477,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - Each sampled pair is scored by two independent judges, one Codex and one Claude. Each judge is shown the exact
     quote, the tag's label and kind, and asked whether that quote really mentions or concerns what the label names,
     and whether the kind is right. Pairs go 50 to a call.
-  - Both judges score every sampled pair, and a pair counts as correct only when both say so. For events, the Codex
-    lane's event check has already accepted every pair left, so the Claude judge is the one independent of that
-    filter; since both must agree, the event bound can rest only on it, never on the filter agreeing with itself. A judge call that fails
+  - Both judges score every sampled pair, each in its own calls, and a pair counts as correct only when both say so.
+    For events too, the Codex judge scores each sampled pair again in a new call; it never reuses the event check's
+    answer. Since the check ran on the same lane, the Codex judge's verdicts on events may lean its way, but the Claude
+    judge is independent of it, and a pair counts only when both agree. A judge call that fails
     gets one retry, and a pair still unscored by either judge counts as wrong, which can only lower the bound. Their
     agreement (raw agreement and Cohen's kappa, reported as undefined when the judges give one answer throughout) and
     the number of disagreements are reported; agreement is never a gate.
@@ -541,11 +545,13 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   dropped; every drop is counted.
 - **Failures.** A malformed answer gets one retry; a second failure leaves its batch untagged and listed, and the run
   finishes.
-- **Event check.** Before the generation is built, every event pair goes to the check; a pair it rejects, or leaves
-  unanswered after a retry, is dropped and counted, and an accepted pair stays.
-- **Deadline.** The deadline is saved when the pass starts and kept on resume; batch items expire at it; a batch
-  unanswered at the deadline ends untagged with the reason `deadline`; an answer stored after it is ignored; the pass
-  then builds, and no resume sends the batch again.
+- **Event check.** Before the generation is built, every event pair goes to the check, which scores the full pair
+  (what the label names and that it happened); a pair it rejects, or leaves unanswered after a retry, is dropped and
+  counted, and an accepted pair stays. The measurement's Codex judge scores sampled event pairs in new calls.
+- **Deadline.** The deadline is saved when the pass starts and kept on resume; batch items and event-check items
+  expire at it; a batch unanswered at the deadline ends untagged with the reason `deadline`, and an event check
+  unanswered at it drops its pair; an answer stored after it is ignored; the pass then builds, and no resume sends the
+  batch or the check again.
 - **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
   page that is.
 - **Graph.** A pointer-only extraction yields entity and episode nodes linked to their quotes' existing passages, with
