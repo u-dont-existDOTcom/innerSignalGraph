@@ -1,15 +1,15 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
-import { POINTER_FLOORS, POINTER_PRECISION_SAMPLES } from "./pointer-measure.mjs";
+import { POINTER_FLOORS } from "./pointer-measure.mjs";
 import { POINTER_DROP_REASONS, POINTER_TAG_KINDS, batchPointerQuotes, checkPointerTags, pointerExtraction, pointerTagIndexes,
   untaggedPages } from "./pointer-tags.mjs";
 import { buildQuoteGeneration } from "./quote-index.mjs";
 
 // The pointer pass's steps between the tagger's answers and the generation it builds (plan
-// 2026-10-09-journal-quote-first.md, Part 3): each batch's answer checked by code, the event check, the kinds too
-// small to measure left out, a coverage pass laid over the first, and the generation built with its tag indexes and
-// its untagged pages. Everything here is mechanical; the model calls are the runtime's. Nothing returned for a log or
-// a report holds journal text: reports are counts and page numbers.
+// 2026-10-09-journal-quote-first.md, Part 3): each batch's answer checked by code, the event check, a coverage pass
+// laid over the first, and the generation built with its tag indexes and its untagged pages. Everything here is
+// mechanical; the model calls are the runtime's. Nothing returned for a log or a report holds journal text: reports
+// are counts and page numbers.
 
 /** How a batch ended: answered (its answer then checked by code), failed after its retry, or out of time. */
 export const POINTER_BATCH_OUTCOMES = Object.freeze(["answered", "failed", "deadline"]);
@@ -162,11 +162,13 @@ export function pointerEventCheckCalls(pairs, perCall = POINTER_EVENT_CHECK_PAIR
  * Applies the event check. An event tag keeps its anchors in a quote only when the check accepted that pair: the
  * quote mentions what the label names (`mentions`) and reports it as happening (`kind_right`). A pair it rejected or
  * left unanswered (no judgment in `judgments`, a map from pair ID) loses those anchors, and a tag left with none is
- * dropped. Returns the new results and the counts.
+ * dropped. Returns the new results, the counts (the event-check floor reads `pairs` and `unanswered`) and the pairs it
+ * dropped, rejected or unanswered, which event-check recall samples.
  */
 export function applyPointerEventCheck({ checked, pairs, judgments } = {}) {
   invariant(Array.isArray(checked) && Array.isArray(pairs) && judgments instanceof Map, "POINTER_EVENT_INPUT_INVALID");
   const counts = { pairs: pairs.length, accepted: 0, rejected: 0, unanswered: 0, tags_dropped: 0 };
+  const dropped = [];
   // The quotes each event tag loses, by batch and tag.
   const losing = new Map();
   for (const pair of pairs) {
@@ -174,6 +176,7 @@ export function applyPointerEventCheck({ checked, pairs, judgments } = {}) {
     if (!isObject(judgment)) counts.unanswered += 1;
     else if (judgment.mentions === true && judgment.kind_right === true) { counts.accepted += 1; continue; }
     else counts.rejected += 1;
+    dropped.push(pair);
     const key = `${pair.batch_id}\0${pair.tag_index}`;
     if (!losing.has(key)) losing.set(key, new Set());
     losing.get(key).add(pair.unit_id);
@@ -189,7 +192,7 @@ export function applyPointerEventCheck({ checked, pairs, judgments } = {}) {
     });
     return deepFreeze({ ...structuredClone(result), kept: structuredClone(kept) });
   });
-  return Object.freeze({ checked: Object.freeze(results), counts: Object.freeze(counts) });
+  return Object.freeze({ checked: Object.freeze(results), counts: Object.freeze(counts), dropped: Object.freeze(dropped) });
 }
 
 // The tag indexes of checked results.
@@ -198,23 +201,6 @@ const indexesOf = (checked, unitsById, passageIdForUnit) => pointerTagIndexes({
 });
 
 const pairsByKind = (pairs) => Object.fromEntries(POINTER_TAG_KINDS.map((kind) => [kind, pairs.filter((pair) => pair.kind === kind).length]));
-
-/**
- * Leaves out every kind with some pairs but fewer than its precision sample needs to reach the floor
- * (`POINTER_PRECISION_SAMPLES.minimum_kind_pairs`), by count alone and before anything is measured, and any kind in
- * `alsoLeaveOut` (a coverage pass keeps the kinds the first pass left out). Returns the results without those kinds'
- * tags, the kinds left out and the pairs of each kind before.
- */
-export function leaveOutSmallKinds({ checked, unitsById, passageIdForUnit, alsoLeaveOut = [] } = {}) {
-  invariant(Array.isArray(checked) && unitsById instanceof Map && typeof passageIdForUnit === "function" && Array.isArray(alsoLeaveOut)
-    && alsoLeaveOut.every((kind) => POINTER_TAG_KINDS.includes(kind)), "POINTER_KINDS_INPUT_INVALID");
-  const before = pairsByKind(indexesOf(checked, unitsById, passageIdForUnit).pairs);
-  const leftOut = POINTER_TAG_KINDS.filter((kind) => alsoLeaveOut.includes(kind)
-    || (before[kind] > 0 && before[kind] < POINTER_PRECISION_SAMPLES.minimum_kind_pairs));
-  const results = checked.map((result) => deepFreeze({ ...structuredClone(result),
-    kept: structuredClone(result.kept.filter((tag) => !leftOut.includes(tag.kind))) }));
-  return Object.freeze({ checked: Object.freeze(results), left_out: Object.freeze(leftOut), pairs_by_kind: Object.freeze(before) });
-}
 
 /**
  * The batches a coverage pass sends again: every batch with a page in `pages`, the untagged pages, whole and as they
@@ -250,8 +236,8 @@ export function keepPointerPages({ checked, unitsById, pages } = {}) {
  * everywhere else the first pass's, exactly. A batch both passes have keeps the first pass's tags anchored outside the
  * retried pages and takes the coverage pass's anchored on them; a tag with anchors on both sides keeps only its
  * anchors on its side (identity never crosses a quote, so nothing is lost). Each page ends with the outcome of the
- * pass its tags come from. Both inputs are checked results, the first as built (after its event check and kinds
- * left out), the second after its own event check.
+ * pass its tags come from. Both inputs are checked results, the first as built (after its event check), the second
+ * after its own event check.
  */
 export function overlayPointerRepass({ first, second, unitsById, pages } = {}) {
   invariant(Array.isArray(first) && Array.isArray(second) && unitsById instanceof Map && Array.isArray(pages), "POINTER_REPASS_INPUT_INVALID");
@@ -342,10 +328,10 @@ export function pointerCoverage({ input, checked, indexes } = {}) {
 
 /**
  * What a pass did, in counts and page numbers only: batches, pages by how their batch ended, tags kept and dropped by
- * reason, pairs by kind, the event check, the kinds left out and the untagged pages.
+ * reason, pairs by kind, the event check and the untagged pages.
  */
-export function pointerPassReport({ checked, eventCheck, kinds, indexes, coverage } = {}) {
-  invariant(Array.isArray(checked) && isObject(eventCheck) && isObject(kinds) && isObject(indexes) && isObject(coverage), "POINTER_REPORT_INPUT_INVALID");
+export function pointerPassReport({ checked, eventCheck, indexes, coverage } = {}) {
+  invariant(Array.isArray(checked) && isObject(eventCheck) && isObject(indexes) && isObject(coverage), "POINTER_REPORT_INPUT_INVALID");
   const pageOutcomes = Object.fromEntries(POINTER_BATCH_OUTCOMES.map((outcome) => [outcome, 0]));
   for (const result of checked) for (const status of Object.values(result.status_by_page)) pageOutcomes[status] += 1;
   const dropped = zeroDrops();
@@ -356,8 +342,7 @@ export function pointerPassReport({ checked, eventCheck, kinds, indexes, coverag
     tags_kept: checked.reduce((total, result) => total + result.kept.length, 0),
     tags_dropped: dropped,
     pairs_by_kind: pairsByKind(indexes.pairs),
-    event_check: { ...eventCheck },
-    kinds_left_out: [...kinds.left_out],
+    event_check: Object.fromEntries(["pairs", "accepted", "rejected", "unanswered", "tags_dropped"].map((key) => [key, eventCheck[key]])),
     pages_with_quotes: coverage.pages_with_quotes,
     untagged_pages: coverage.untagged.map((item) => ({ ...item })),
     untagged_share: coverage.untagged_share,

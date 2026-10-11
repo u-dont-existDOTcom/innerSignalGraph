@@ -623,10 +623,11 @@ test("every supported hardest role refuses an indivisible oversized complete pac
   }, caseId: CASE_ID, receiptKey: Buffer.alloc(32, 41), routeRef: "route:synthetic",
     allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
     model: "gpt-6-sol", effort: "medium", waitMs: 0, executionAttestation: "codex_exec" });
-  // The hardest tier runs every role but visual_reader and the pointer pass's standard-tier tagger and search writer.
+  // The hardest tier runs every role but visual_reader and the pointer pass's standard-tier tagger, search writer and
+  // question writer.
   const roles = Object.keys(JOURNAL_ROLE_DEFINITIONS).filter(role => port.capabilities().hardest_roles[role].available);
   assert.deepEqual(roles, Object.keys(JOURNAL_ROLE_DEFINITIONS)
-    .filter(role => !["visual_reader", "pointer_tagger", "search_writer"].includes(role)));
+    .filter(role => !["visual_reader", "pointer_tagger", "search_writer", "question_writer"].includes(role)));
   for (const role of roles) {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     const request = referenceCall();
