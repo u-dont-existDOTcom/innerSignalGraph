@@ -273,7 +273,7 @@ test("on a direct browser route every pointer step sends one call at a time; the
 
 test("a pointer step that reaches the Claude daily limit stops and resumes, and the import's own blocker stays as it was", async (t) => {
   const f = await runtimeEnvironment(t);
-  f.config.hardest_lane = { daily_limit: 2 };
+  f.config.hardest_lane = { enabled: true, daily_limit: 2 };
   await f.run("stage", "build-quotes");
   // The import stopped for its own reason.
   const stopped = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
@@ -289,7 +289,7 @@ test("a pointer step that reaches the Claude daily limit stops and resumes, and 
 
   // With room again, the step resumes with its saved deadline and finishes; the import's blocker is still its own.
   const deadline = state.pointer.reference.deadline;
-  f.config.hardest_lane = { daily_limit: 40 };
+  f.config.hardest_lane = { enabled: true, daily_limit: 40 };
   const resumed = await f.run("pointer-reference");
   assert.equal(resumed.pointer.reference.status, "done");
   assert.equal(resumed.pointer.reference.deadline, deadline);
@@ -297,4 +297,15 @@ test("a pointer step that reaches the Claude daily limit stops and resumes, and 
   state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
   assert.equal(state.blocker, "CALIBRATION_REFERENCE_MISSED");
   assert.ok(state.hardest_lane.sent > 2);
+});
+
+test("with the hardest lane off, the pointer steps' hardest-tier calls count against no Claude limit", async (t) => {
+  // They go to the standard route with the other tier's calls, so a limit of 1 stops nothing and nothing is counted.
+  const f = await runtimeEnvironment(t);
+  f.config.hardest_lane = { enabled: false, daily_limit: 1 };
+  const referenced = await f.run("stage", "build-quotes", "pointer-reference");
+  assert.equal(referenced.pointer.reference.status, "done");
+  assert.equal(referenced.pointer.reference.counts.complete_units, 96);
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  assert.equal(state.hardest_lane?.sent ?? 0, 0);
 });

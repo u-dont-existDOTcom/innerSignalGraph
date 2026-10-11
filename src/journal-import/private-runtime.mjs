@@ -367,13 +367,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     };
     // The pointer pass's Claude calls count against the same daily limit, but a step that reaches it stops on its own
     // (it resumes with its saved deadline): the import's blocker, which says why the import stopped, stays as it was.
-    const pointerBeforeHardestSend = async () => {
+    // With the hardest lane off, a hardest-tier pointer call goes to the standard route, which isn't Claude's, so
+    // nothing is counted.
+    const pointerBeforeHardestSend = hardestLane.enabled ? async () => {
       const importBlocker = state.blocker;
       const allowed = applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit });
       state.blocker = importBlocker;
       await save();
       if (!allowed) throw new ValidationError("HARDEST_DAILY_LIMIT", { code: "HARDEST_DAILY_LIMIT" });
-    };
+    } : null;
     // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the
     // work exchange queues any number for its workers' slots. The hardest lane, when it's on, runs on the exchange.
     const directRoute = route !== null && ![JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER].includes(route.provider);
