@@ -2939,6 +2939,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const run = state.pointer;
       invariant(run?.measure?.status === "done" && run.measure.publish === true && !run.blocker, "POINTER_NOT_READY_TO_PUBLISH");
       invariant(run.persisted?.step_id === run.measure.measured_step_id, "POINTER_MEASURED_GENERATION_MISMATCH");
+      // The measured generation reads dates as the run setting said when the run started; a setting changed since
+      // calls for a new run, as every other step does.
+      invariant(run.numeric_date_order === quoteNumericDateOrder, "POINTER_RUN_SETTING_CHANGED");
       if (run.published) return summary();
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: run.persisted.corpus_id, corpusKey: key, resumeMatchingObjects: true });
       try {
