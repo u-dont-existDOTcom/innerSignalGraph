@@ -19,6 +19,19 @@ import { buildQuoteGeneration } from "./quote-index.mjs";
 // The coverage check's two judges: the Codex one, in calls of its own, and the Claude one.
 const COVERAGE_TIERS = Object.freeze(["standard", "hardest"]);
 
+// Why a judge held a quote back, counted once a check for each reason it gave: something the quote says left out (not
+// covered), a question repeating another, a question asking about two things or more, or a question copying the quote's
+// wording. One check can give several reasons, so the reasons can add up to more than the checks. Content-free.
+const heldBackCounts = () => ({ checks: 0, left_out: 0, repeated: 0, combined: 0, copied: 0 });
+function countHeldBack(counts, result) {
+  if (result.confirmed) return;
+  counts.checks += 1;
+  if (!result.covered) counts.left_out += 1;
+  if (result.repeated > 0) counts.repeated += 1;
+  if (result.combined > 0) counts.combined += 1;
+  if (result.copied > 0) counts.copied += 1;
+}
+
 function invariant(condition, code) {
   if (!condition) throw new ValidationError(code, { code });
 }
@@ -76,8 +89,11 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   const quoteFor = (id) => ({ unit_id: id, text: quoteById.get(id).text });
   // Each quote both judges answered for, in every round: whether Codex (the standard tier) and Claude (the hardest) each
   // confirmed it. Their agreement shows whether one judge passes what the other doesn't, as the measurement reports for
-  // precision; it decides nothing.
+  // precision; it decides nothing. So do the reasons each judge gave for the quotes it held back, all of them and where
+  // only that judge held back, and the counts of each round.
   const agreement = [];
+  const heldBack = { codex: heldBackCounts(), claude: heldBackCounts(), codex_only: heldBackCounts(), claude_only: heldBackCounts() };
+  const byRound = [0, 1].map(() => ({ checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0 }));
 
   for (let round = 0; round < 2; round += 1) {
     // The question writer: each unit's first answer, and the one retry of those that fell short.
@@ -140,7 +156,17 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       });
       for (const unit of judging) for (const id of unit.quote_ids) {
         const [first, second] = judges.map((judge) => (judge.failed.has(id) ? null : judge.results.get(id) ?? null));
-        if (first && second) agreement.push({ first: first.confirmed === true, second: second.confirmed === true });
+        if (!first || !second) continue;
+        agreement.push({ first: first.confirmed === true, second: second.confirmed === true });
+        countHeldBack(heldBack.codex, first);
+        countHeldBack(heldBack.claude, second);
+        if (second.confirmed) countHeldBack(heldBack.codex_only, first);
+        if (first.confirmed) countHeldBack(heldBack.claude_only, second);
+        const counts = byRound[round];
+        counts.checks += 1;
+        if (first.confirmed) counts.codex_confirmed += 1;
+        if (second.confirmed) counts.claude_confirmed += 1;
+        if (first.confirmed && second.confirmed) counts.both_confirmed += 1;
       }
       for (const unit of judging) {
         for (const judge of judges) for (const id of unit.quote_ids) if (judge.late.has(id)) noteLate(unit, judge.late.get(id));
@@ -191,7 +217,8 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     sample: { kind: given ? "calibration" : "random", seed_sha256: sample.seed_sha256, strata: sample.strata,
       units_per_stratum: sample.units_per_stratum, candidate_units: sample.candidate_units },
     judges: { codex_confirmed: agreement.filter((item) => item.first).length,
-      claude_confirmed: agreement.filter((item) => item.second).length, agreement: cohenKappa(agreement) },
+      claude_confirmed: agreement.filter((item) => item.second).length, agreement: cohenKappa(agreement), held_back: heldBack,
+      by_round: byRound },
     units: reference
   });
 }
@@ -222,8 +249,9 @@ export function pointerReferenceCounts(reference) {
   return Object.freeze({ sampled_units: reference.units.length, complete_units: complete, nonresponse_units: reference.units.length - complete,
     nonresponse_by_reason: Object.freeze(reasons), deadline_units_with_a_call_unanswered: unanswered, units_retried: retried, questions,
     critical_questions: critical, event_questions: events,
-    // A reference stored before the judges' agreement was counted has none.
-    judges: reference.judges ? Object.freeze({ ...reference.judges }) : null });
+    // A reference stored before the judges' agreement was counted has none, and one stored before their reasons were
+    // counted (12 Oct 2026) has no `held_back` or `by_round`; `pointer-recount` counts them again from the stored answers.
+    judges: reference.judges ? deepFreeze(structuredClone(reference.judges)) : null });
 }
 
 

@@ -441,6 +441,17 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   quotes both judges answered, how many each confirmed and their agreement (raw and Cohen's kappa), as the measurement
   already reports for precision. If Claude at high effort passes what Codex flags, the report shows it, and the owner
   decides whether to go back to max effort with smaller calls.
+- **The judges' reasons (amended 12 Oct 2026, owner decision 30).** In the second run, Claude at high effort answered
+  every coverage check in 2 to 6 minutes, but the two judges agreed on 174 of the 300 checks both answered (raw 0.58,
+  kappa 0.15): Codex confirmed 153 and Claude 233, and 54 of the 96 sampled units still had a quote they didn't both
+  confirm after the one rewrite, so the run stopped before the pilot. The owner chose clearer rules with both judges
+  kept (30: A). First the reference step and the challenge set count, for the checks both judges answered, why each
+  judge held a quote back: something it says left out, a question repeating another, a question asking about two
+  things or more, or a question copying the quote's wording, once a check for each reason given, for each judge and
+  where only that judge held back, with each round's checks and confirmations. The counts decide nothing.
+  `pointer-recount` counts a finished reference step again from its stored answers once its deadline has passed, so
+  nothing can be sent; it saves nothing, and says whether the stored counts still follow. A step stored before these
+  counts gets them that way. The rule changes follow from the counts, in an amendment of their own.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 

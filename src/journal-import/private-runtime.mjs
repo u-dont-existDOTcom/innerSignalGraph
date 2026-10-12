@@ -2804,6 +2804,33 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       return summary();
     }
+    // Counts the current run's finished reference step again from its stored answers, and changes nothing: its deadline
+    // has passed, so every call is only read back from the durable port, never sent (a port that sends here refuses), no
+    // Claude slot is counted, and nothing is saved. For a step stored before a count existed (the judges' reasons, 12
+    // Oct 2026), and as a check that the stored counts still follow from the stored answers. Content-free.
+    async function pointerRecount() {
+      const run = state.pointer;
+      const step = run?.reference;
+      invariant(step?.status === "done", "POINTER_REFERENCE_NOT_DONE");
+      invariant(Date.parse(step.deadline) <= now().getTime(), "POINTER_RECOUNT_BEFORE_DEADLINE");
+      const refuse = (code) => async () => { throw new ValidationError(code, { code }); };
+      const readOnly = Object.freeze({ invoke: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
+        getCompletion: (operationKey, options) => port.getCompletion(operationKey, options),
+        wasSent: (operationKey) => port.wasSent(operationKey) });
+      const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
+      const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline,
+        port: readOnly, grant, generation: run.generation, now, beforeHardestSend: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
+        oneAtATime: pointerTurns });
+      const counts = pointerReferenceCounts(reference);
+      // The stored counts must come out the same, leaving aside what was counted only later.
+      const core = ({ judges, ...rest }) => ({ ...rest, judges: judges
+        ? { codex_confirmed: judges.codex_confirmed, claude_confirmed: judges.claude_confirmed, agreement: judges.agreement } : null });
+      const stored = core(step.counts);
+      const again = core(counts);
+      if (stored.judges === null) again.judges = null;
+      return { ...summary(), recount: { run_id: run.run_id, step: "reference",
+        matches_stored_counts: JSON.stringify(again) === JSON.stringify(stored), counts } };
+    }
     // A step's record, made and saved when it first starts: its ID, its deadline and, for a step that draws a sample,
     // its seed.
     const pointerStep = async (run, name, minutes, { seed = false } = {}) => {
@@ -3038,6 +3065,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "pointer-measure") return pointerMeasure();
         if (command === "pointer-publish") return pointerPublish();
         if (command === "pointer-new-run") return pointerNewRun();
+        if (command === "pointer-recount") return pointerRecount();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();
