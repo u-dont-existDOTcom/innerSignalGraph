@@ -62,7 +62,8 @@ const judgment = (pair) => ({ pair_id: pair.pair_id, mentions: true, kind_right:
 // "repeated:once" and the like flag its first question for that reason instead), by the search call key, and by the
 // tagger's or pair judge's call key
 // ("skip-last" leaves out a judgment, "foreign" adds one for a pair the call doesn't hold). "open" holds its call
-// until the deadline, and "invalid" answers with no valid output.
+// until the deadline, "invalid" answers with no valid output, and "closed" closes its item unanswered, a close that
+// reads back later as a record from before the store said when it was seen.
 function scriptedPort({ clock, script = {} }) {
   const sent = [];
   const answers = new Map();
@@ -108,6 +109,10 @@ function scriptedPort({ clock, script = {} }) {
         clock.now = Math.max(clock.now, Date.parse(request.expiresAt));
         throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
       }
+      if (script[request.operationKey] === "closed") {
+        answers.set(request.operationKey, { closed: true });
+        throw new JournalInferencePortError("JOURNAL_WORK_EXPIRED", { submissionStatus: "not_submitted" });
+      }
       if (!answers.has(request.operationKey)) {
         const at = new Date(clock.now).toISOString();
         let stored = { invalid: true, at };
@@ -124,6 +129,7 @@ function scriptedPort({ clock, script = {} }) {
     async getCompletion(operationKey) {
       if (!answers.has(operationKey)) return { status: sent.some((item) => item.operationKey === operationKey) ? "unknown" : "not_submitted" };
       const stored = answers.get(operationKey);
+      if (stored.closed) return { status: "not_submitted", code: "JOURNAL_WORK_EXPIRED" };
       if (stored.invalid) return { status: "invalid_output" };
       return { status: "completed", output: stored.output, receipt: receipt(stored) };
     },
@@ -226,6 +232,22 @@ test("the judges' reasons for holding a quote back are counted by kind, for each
     { checks: 6, codex_confirmed: 6, claude_confirmed: 6, both_confirmed: 6 }]);
   assert.deepEqual([judges.codex_confirmed, judges.claude_confirmed, judges.agreement.items], [49, 49, 51]);
   assert.equal(JSON.stringify(judges).includes("Synthetic"), false);
+});
+
+test("read back after the deadline, a writer item that closed in time leads to its unit's next round, as it did", async () => {
+  const clock = { now: START };
+  // Page 9's first writer item closes unanswered: the call fails, and the unit's second round writes its questions.
+  const port = scriptedPort({ clock, script: { [writerKey(9)]: "closed" } });
+  const first = await run(port, clock);
+  const ninth = first.units.find((unit) => unit.unit_id === "page:9");
+  assert.deepEqual([ninth.status, ninth.writer_attempts], ["complete", 2]);
+  // The record of that close doesn't say when it was seen, but the unit's next round was sent, so it was seen in time.
+  clock.now = Date.parse(DEADLINE) + 60_000;
+  const sent = port.sent.length;
+  const again = await run(port, clock);
+  assert.deepEqual(again, first);
+  assert.equal(port.sent.length, sent);
+  assert.equal("closes_inferred" in again, false);
 });
 
 test("a search plan short twice makes its unit a nonresponse", async () => {

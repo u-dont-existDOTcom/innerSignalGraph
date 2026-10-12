@@ -92,6 +92,9 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   // precision; it decides nothing. So do the reasons each judge gave for the quotes it held back, all of them and where
   // only that judge held back, and the counts of each round.
   const agreement = [];
+  // Read back after the deadline, calls whose close the store can't place in time or after it (a record from before it
+  // said when): each is taken as a deadline, as an expired item's is, and counted here so a recount says it guessed.
+  let inferred = 0;
   const heldBack = { codex: heldBackCounts(), claude: heldBackCounts(), codex_only: heldBackCounts(), claude_only: heldBackCounts() };
   const byRound = [0, 1].map(() => ({ checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0 }));
 
@@ -101,12 +104,15 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     if (writing.length > 0) {
       const calls = writing.map((unit) => {
         const { notes } = next(unit);
-        return call("question_writer", "standard", `${stepId}:writer:${unit.index}:${round}`, [...unit.quote_ids], {
+        return { ...call("question_writer", "standard", `${stepId}:writer:${unit.index}:${round}`, [...unit.quote_ids], {
           quote_units: unit.quote_ids.map(quoteFor),
           ...(notes.length > 0 ? { coverage_notes: notes.map(({ unit_id: unitId, missing }) => ({ unit_id: unitId, missing })) } : {})
-        });
+        }),
+        // The writer has no retry of its own: its unit's next round is it, sent only after this call ended in time.
+        ...(round === 0 ? { nextKeys: [`${stepId}:writer:${unit.index}:1`] } : {}) };
       });
       const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 0, oneAtATime });
+      inferred += outcomes.filter((outcome) => outcome.inferred).length;
       writing.forEach((unit, position) => {
         const outcome = outcomes[position];
         noteLate(unit, outcome);
@@ -134,6 +140,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
         return checked.valid ? null : `COVERAGE_ANSWER_${checked.reason.toUpperCase()}`;
       };
       const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 1, beforeHardestSend, check, oneAtATime });
+      inferred += outcomes.filter((outcome) => outcome.inferred).length;
       const judges = COVERAGE_TIERS.map((tier, tierIndex) => {
         const results = new Map();
         const notes = new Map();
@@ -187,6 +194,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     ? null : "SEARCH_PLAN_INCOMPLETE");
   const searchOutcomes = searchCalls.length > 0
     ? await runDeadlineCalls({ calls: searchCalls, port, deadline, now, retries: 1, check: searchCheck, oneAtATime }) : [];
+  inferred += searchOutcomes.filter((outcome) => outcome.inferred).length;
   const searches = new Map();
   confirmed.forEach(({ unit, step }, position) => {
     const outcome = searchOutcomes[position];
@@ -219,6 +227,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     judges: { codex_confirmed: agreement.filter((item) => item.first).length,
       claude_confirmed: agreement.filter((item) => item.second).length, agreement: cohenKappa(agreement), held_back: heldBack,
       by_round: byRound },
+    ...(inferred > 0 ? { closes_inferred: inferred } : {}),
     units: reference
   });
 }

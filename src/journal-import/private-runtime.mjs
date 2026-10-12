@@ -2831,7 +2831,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const again = core(counts);
       if (stored.judges === null) again.judges = null;
       return { ...summary(), recount: { run_id: run.run_id, step: "reference",
-        matches_stored_counts: JSON.stringify(again) === JSON.stringify(stored), counts } };
+        matches_stored_counts: JSON.stringify(again) === JSON.stringify(stored),
+        // Calls closed unanswered whose stored record can't say whether the step saw that in time: each is read as a
+        // deadline. Zero means the recount followed every call as the step did.
+        closes_inferred: reference.closes_inferred ?? 0, counts } };
     }
     // A step's record, made and saved when it first starts: its ID, its deadline and, for a step that draws a sample,
     // its seed.

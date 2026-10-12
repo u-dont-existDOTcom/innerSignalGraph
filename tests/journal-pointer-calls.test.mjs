@@ -125,10 +125,21 @@ test("after the deadline, an item closed unanswered in time is followed to its r
     deadline: DEADLINE, now: () => new Date(clock.now) });
   assert.deepEqual(outcomes.map((outcome) => [outcome.status, outcome.attempts, outcome.output?.n ?? outcome.reason]),
     [["answered", 2, 1], ["answered", 2, 2], ["deadline", 1, "deadline"], ["deadline", 1, "deadline"]]);
+  // Only the close the store can't place is a guess, and its outcome says so.
+  assert.deepEqual(outcomes.map((outcome) => outcome.inferred === true), [false, false, true, false]);
   // With no retry of its own, a call closed in time failed then, and reads as failed.
   const [single] = await runDeadlineCalls({ calls: [call("unit:1")], port: fakePort({ "unit:1": { closed: true, at: before } },
     { clock, earlier: ["unit:1"] }), deadline: DEADLINE, now: () => new Date(clock.now), retries: 0 });
   assert.deepEqual([single.status, single.attempts, single.reason], ["failed", 1, "JOURNAL_WORK_EXPIRED"]);
+  // A record that doesn't say when, on a call without a retry of its own: a key the caller sends only after the call
+  // ends in time (`nextKeys`, the question writer's next round) shows it was seen in time; with none sent, a guess.
+  const legacy = fakePort({ "unit:2": "expired", "unit:3": "expired" }, { clock, earlier: ["unit:2", "unit:2:next", "unit:3"] });
+  const [followed, guessed] = await runDeadlineCalls({ calls: [{ ...call("unit:2"), nextKeys: ["unit:2:next"] },
+    { ...call("unit:3"), nextKeys: ["unit:3:next"] }], port: legacy, deadline: DEADLINE, now: () => new Date(clock.now), retries: 0 });
+  assert.deepEqual([followed.status, followed.reason, followed.inferred ?? false], ["failed", "JOURNAL_WORK_EXPIRED", false]);
+  assert.deepEqual([guessed.status, guessed.reason, guessed.inferred], ["deadline", "deadline", true]);
+  await assert.rejects(runDeadlineCalls({ calls: [{ ...call("unit:4"), nextKeys: [""] }], port: legacy, deadline: DEADLINE }),
+    { code: "POINTER_CALLS_INVALID" });
   assert.deepEqual(port.sent, [], "nothing goes out after the deadline");
 });
 
