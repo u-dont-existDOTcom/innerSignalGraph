@@ -5,13 +5,14 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalQuoteNumericDateOrder, journalSemanticConcurrency,
-  normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalPointerDeadlines, journalQuoteNumericDateOrder,
+  journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
+import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { createJournalLookahead } from "./lookahead.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket, journalRoleInstruction } from "./provider-port.mjs";
@@ -26,7 +27,11 @@ import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibratio
   sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
 import { JOURNAL_GRAPH_CONTRACT, validateJournalGraph, resolveExactQuote } from "./contracts.mjs";
 import { createDurableJournalInferencePort } from "./durable-inference.mjs";
-import { openPrivateJournalGraph } from "./retrieval.mjs";
+import { QUOTE_SEARCH_LIMITS, openPrivateJournalGraph } from "./retrieval.mjs";
+import { buildPointerGeneration, pointerPassInput } from "./pointer-pass.mjs";
+import { POINTER_RECALL_TOP, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
+  runPointerReference } from "./pointer-steps.mjs";
+import { pointerChallengeUnits } from "./pointer-reference.mjs";
 import { lexicalTerms } from "./graph.mjs";
 import { applyReconciliationResult, validateReconciliationResult } from "./reconcile.mjs";
 import { createAuditScopeIndex, createReconciledAuditScope, summarizeFidelityCoverage } from "./audit-scope.mjs";
@@ -169,6 +174,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   const calibrationFailureLimit = journalCalibrationFailureLimit(config);
   const calibrationCriticalMissLimit = journalCalibrationCriticalMissLimit(config);
   const quoteNumericDateOrder = journalQuoteNumericDateOrder(config);
+  const pointerDeadlines = journalPointerDeadlines(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -254,14 +260,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       capabilities: () => semanticPort.capabilities(),
       // Check immediately before the send, including after the durable intent was written.
       // A denial there is recorded as not submitted so resume cannot mistake it for a sent call.
-      async invoke(input) {
+      async invoke(input, options) {
         try { await authorize(); }
         catch (error) { error.submissionStatus = "not_submitted"; throw error; }
         if (lookaheadSupported) {
           lookahead?.markUsed(input.operationKey);
           lookaheadUsed.add(input.operationKey);
         }
-        const result = await semanticPort.invoke(input);
+        const result = await semanticPort.invoke(input, options);
         // A grant may change during a long application call. Recheck before the
         // durable port admits its result or a dependent role receives it.
         await authorize();
@@ -359,6 +365,35 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       await save();
     };
+    // The pointer pass's second judge is the hardest tier, which the plan makes Claude. A step that sends hardest-tier
+    // calls (the reference step, the challenge set and the measurement) needs the route that serves them to attest a
+    // fresh context and the model it ran for each call, as the hardest lane's own check does when the lane is on, so no
+    // supposed second judge counts without that evidence. Only the work exchange's hardest tier attests both.
+    // The judge itself is the plan's: Claude Opus at max effort, the hardest lane's own default and the only model the
+    // Codex exchange accepts for that lane when it is on. The exchange sends hardest calls with the configured model even
+    // when the lane is off, and attests whichever it ran, so the setting is checked here too.
+    const pointerHardestJudge = normalizeJournalHardestLaneConfig({});
+    const pointerHardestAttested = () => {
+      const capabilities = semanticPort.capabilities();
+      invariant(capabilities.hardest_fresh_context_per_generate === true
+        && capabilities.hardest_authenticated_execution_profile_per_generate === true, "POINTER_HARDEST_ROUTE_UNATTESTED");
+      invariant(hardestLane.model === pointerHardestJudge.model && hardestLane.effort === pointerHardestJudge.effort,
+        "POINTER_HARDEST_JUDGE_UNEXPECTED");
+    };
+    // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the
+    // work exchange queues any number for its workers' slots. Hardest-tier calls always reach the exchange.
+    const directRoute = route !== null && ![JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER].includes(route.provider);
+    const pointerTurns = directRoute ? ["standard"] : [];
+    // Those hardest-tier calls, Claude's, count against the hardest lane's daily limit, the lane on or off, but a step
+    // that reaches it stops on its own (it resumes with its saved deadline): the import's blocker, which says why the
+    // import stopped, stays as it was.
+    const pointerBeforeHardestSend = async () => {
+      const importBlocker = state.blocker;
+      const allowed = applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit });
+      state.blocker = importBlocker;
+      await save();
+      if (!allowed) throw new ValidationError("HARDEST_DAILY_LIMIT", { code: "HARDEST_DAILY_LIMIT" });
+    };
     const lookaheadSummary = () => {
       const sent = new Set([...lookaheadSent, ...(lookahead?.sentOperationKeys() ?? [])]);
       let used = 0;
@@ -385,10 +420,28 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       ...(state.quote_index ? { quote_index: { ...structuredClone(state.quote_index.stats), corpus_id: state.quote_index.corpus_id,
         generation: state.quote_index.generation, built_at: state.quote_index.built_at, published_at: state.quote_index.published?.at ?? null,
         supersedes: state.quote_index.supersedes ?? null } } : {}),
+      ...(state.pointer ? { pointer: pointerSummary() } : {}),
+      ...(state.pointer_history?.length ? { pointer_runs_before: state.pointer_history.length } : {}),
       hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0,
       lookahead: semanticConcurrency === 1
         ? { concurrency: 1, sent: 0, used: 0, unused: 0 }
         : (lookaheadSupported ? lookaheadSummary() : "unsupported_port") });
+    // A pointer step as status shows it: what it did, in counts and page numbers, with its seed as a digest and
+    // without the private references its results are stored under.
+    const pointerStepSummary = (step) => {
+      if (!step) return null;
+      const { seed, result_ref: _resultRef, ...rest } = step;
+      return { ...structuredClone(rest), ...(seed ? { seed_sha256: hash(seed) } : {}) };
+    };
+    const pointerSummary = () => {
+      const { reference, challenge, pilot, pass, coverage_pass: coveragePass, measure, persisted, published, ...run } = state.pointer;
+      return { ...structuredClone(run), reference: pointerStepSummary(reference), challenge: pointerStepSummary(challenge),
+        pilot: pointerStepSummary(pilot), pass: pointerStepSummary(pass),
+        coverage_pass: pointerStepSummary(coveragePass), measure: pointerStepSummary(measure),
+        persisted: persisted ? { step_id: persisted.step_id, generation: persisted.generation, graph_sha256: persisted.graph_sha256,
+          built_at: persisted.built_at } : null,
+        published: published ? structuredClone(published) : null };
+    };
     const calibrationStopStatus = (reason) => {
       if (["CALIBRATION_REFERENCE_UNRESOLVED", "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
         "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED",
@@ -2625,10 +2678,34 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // of any other generation records that one as `supersedes`, and publishing replaces exactly that
     // one. Rebuilding the published generation itself (a setting changed and changed back) replaces
     // nothing, however many builds came in between.
+    // The pages a quote generation is built from, read once per command.
+    let quoteSourceCache = null;
+    const quoteSource = async () => {
+      const ref = JSON.stringify(state.parsed_ref);
+      if (quoteSourceCache?.ref !== ref) {
+        const plan = await readLarge(state.parsed_ref);
+        quoteSourceCache = { ref, mediaType: plan.parsed.source.mime_type, representations: plan.parsed.representations.map((representation) => {
+          const page = plan.parsed.pages.find((p) => p.representation_id === representation.representation_id);
+          return { representation_id: representation.representation_id, text: representation.text,
+            page_number: page?.page_number ?? null, parse_status: parseStatus(page, plan.parsed.source.mime_type) };
+        }) };
+      }
+      return quoteSourceCache;
+    };
+    // buildQuoteGeneration's input for a generation of the quote corpus: the quote index's own, or a pointer pass's.
+    const quoteGenerationInput = async (generation) => {
+      const { mediaType, representations } = await quoteSource();
+      return { caseId, corpusId: `${state.corpus_id}:quotes`, generation, originalObjectId: state.original.object_id, mediaType, representations,
+        dateOptions: { numericOrder: quoteNumericDateOrder } };
+    };
+
+    // The quote index's generation: its version and how it reads all-numeric dates.
+    const quoteIndexGeneration = () => `${state.generation}:quotes:${QUOTE_INDEX_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
+
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
       const corpusId = `${state.corpus_id}:quotes`;
-      const generation = `${state.generation}:quotes:${QUOTE_INDEX_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
+      const generation = quoteIndexGeneration();
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
       try {
         if (state.quote_index?.generation !== generation) {
@@ -2643,14 +2720,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           const published = state.quote_published?.generation ?? null;
           const supersedes = published === generation ? null : published;
-          const plan = await readLarge(state.parsed_ref);
-          const representations = plan.parsed.representations.map((representation) => {
-            const page = plan.parsed.pages.find((p) => p.representation_id === representation.representation_id);
-            return { representation_id: representation.representation_id, text: representation.text,
-              page_number: page?.page_number ?? null, parse_status: parseStatus(page, plan.parsed.source.mime_type) };
-          });
-          const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: state.original.object_id,
-            mediaType: plan.parsed.source.mime_type, representations, dateOptions: { numericOrder: quoteNumericDateOrder } });
+          const { representations } = await quoteSource();
+          const built = buildQuoteGeneration(await quoteGenerationInput(generation));
           // The quote corpus carries the archived original its locators name, so it is complete on its own.
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
@@ -2691,6 +2762,243 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       } finally { quoteStore.close(); }
     }
 
+
+    // The pointer pass (plan 2026-10-09-journal-quote-first.md, Part 3): a run of steps over the quote corpus's quotes,
+    // each with its deadline saved when it starts, so a resumed step keeps it and sends nothing after it. The run state
+    // holds only counts, page numbers and digests; results that hold journal text go to the private store, named in the
+    // state by reference. A run that fails a floor or has a nonresponse keeps its blocker, and no later step runs.
+    // A run's generation is a new generation of the quote corpus, and it reads dates the way the run setting said when
+    // the run started: a changed setting needs a new run (`pointer-new-run`), so no step mixes two readings.
+    const pointerRun = async () => {
+      invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
+      if (!state.pointer) {
+        const runId = randomBytes(4).toString("hex");
+        state.pointer = { run_id: runId, generation: `${quoteIndexGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
+          started_at: now().toISOString(), blocker: null };
+        await save();
+      }
+      invariant(state.pointer.numeric_date_order === quoteNumericDateOrder, "POINTER_RUN_SETTING_CHANGED");
+      if (state.pointer.blocker) throw new ValidationError(state.pointer.blocker, { code: state.pointer.blocker });
+      return state.pointer;
+    };
+    // Starts over: the current run, whatever its state, goes into the run state's history as status shows it (counts
+    // only), and the next pointer command starts a new run with new steps, seeds and deadlines. Its stored results
+    // stay in the private store.
+    async function pointerNewRun() {
+      if (state.pointer) {
+        state.pointer_history = [...(state.pointer_history ?? []), { ...pointerSummary(), ended_at: now().toISOString() }];
+        delete state.pointer;
+        await save();
+      }
+      return summary();
+    }
+    // A step's record, made and saved when it first starts: its ID, its deadline and, for a step that draws a sample,
+    // its seed.
+    const pointerStep = async (run, name, minutes, { seed = false } = {}) => {
+      if (!run[name]) {
+        const started = now();
+        run[name] = { step_id: `pointer:${run.run_id}:${name}`, status: "running", started_at: started.toISOString(),
+          deadline: new Date(started.getTime() + minutes * 60_000).toISOString(), ...(seed ? { seed: randomBytes(32).toString("hex") } : {}) };
+        await save();
+      }
+      return run[name];
+    };
+    const finishPointerStep = async (step, fields) => {
+      Object.assign(step, structuredClone(fields), { status: "done", finished_at: now().toISOString() });
+      await save();
+    };
+    // What a pass keeps in the private store: everything a coverage pass and the measurement read.
+    const storedPointerPass = (result) => ({ generation: result.generation, step_id: result.step_id, pages: result.pages, checked: result.checked,
+      event_pairs: result.event_pairs, dropped_event_pairs: result.dropped_event_pairs, event_check: result.event_check, coverage: result.coverage,
+      report: result.report, calls: result.calls, tagger_answered_at: result.tagger_answered_at });
+
+    // Step 2: the reference sample's questions, both coverage judges and the searches. A nonresponse stops the run.
+    async function pointerReference() {
+      const run = await pointerRun();
+      pointerHardestAttested();
+      const step = await pointerStep(run, "reference", pointerDeadlines.reference, { seed: true });
+      if (step.status === "done") return summary();
+      const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
+      const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant,
+        generation: run.generation, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns });
+      const nonresponse = reference.units.filter((unit) => unit.status !== "complete")
+        .map((unit) => ({ unit_id: unit.unit_id, reason: unit.reason, deadline_cause: unit.deadline_cause ?? null }));
+      await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:reference`, reference), counts: pointerReferenceCounts(reference),
+        nonresponse_units: nonresponse });
+      if (nonresponse.length > 0) {
+        run.blocker = "POINTER_REFERENCE_NONRESPONSE";
+        await save();
+      }
+      return summary();
+    }
+
+    // Calibration's units as a challenge set, for the measurement to report apart: the reference step on their pages,
+    // under the same rules and with the reference step's time limit. A nonresponse here is counted and stops nothing.
+    // The pass reads the parsed source's text, as the quote index does (quoteSource): a page's visual transcription
+    // isn't the journal's exact words and stays out of quote search until visual reading is planned (plan Part 3), so a
+    // calibration unit read from one is counted among the units without quotes.
+    async function pointerChallenge() {
+      const run = await pointerRun();
+      pointerHardestAttested();
+      invariant(run.reference?.status === "done", "POINTER_REFERENCE_NOT_DONE");
+      const step = await pointerStep(run, "challenge", pointerDeadlines.reference);
+      if (step.status === "done") return summary();
+      const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
+      const planUnits = new Map(plan.units.map((unit) => [unit.unit_id, unit]));
+      const calibration = (plan.calibration ?? []).map((item) => {
+        const unit = planUnits.get(item.unit_id);
+        invariant(unit, "POINTER_CHALLENGE_UNIT_MISSING");
+        return { unit_id: unit.unit_id, representation_id: unit.representation_id, page_number: unit.page_number ?? null,
+          start_byte: unit.start_byte, end_byte: unit.end_byte, hazard_types: [...(unit.hazard_types ?? [])] };
+      });
+      const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
+      const sample = pointerChallengeUnits({ units: input.units, calibration });
+      const reference = sample.units.length > 0
+        ? await runPointerReference({ units: input.units, sample, stepId: step.step_id, deadline: step.deadline, port, grant,
+          generation: run.generation, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns })
+        : { step_id: step.step_id, deadline: step.deadline, sample: { kind: "calibration", candidate_units: 0 }, units: [] };
+      await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:challenge`, reference),
+        counts: pointerReferenceCounts(reference), calibration_units: sample.calibration_units, units_without_quotes: sample.units_without_quotes });
+      return summary();
+    }
+
+    // Step 3: the pilot, on pages outside the reference sample. It builds nothing.
+    async function pointerPilot() {
+      const run = await pointerRun();
+      invariant(run.reference?.status === "done", "POINTER_REFERENCE_NOT_DONE");
+      const step = await pointerStep(run, "pilot", pointerDeadlines.pass, { seed: true });
+      if (step.status === "done") return summary();
+      const reference = await readLarge(run.reference.result_ref);
+      const pilot = await runPointerPilot({ quoteGeneration: await quoteGenerationInput(run.generation),
+        excludeUnitIds: reference.units.flatMap((unit) => unit.quote_ids), seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant, now,
+        oneAtATime: pointerTurns });
+      await finishPointerStep(step, { pages: pilot.pages, candidate_pages: pilot.candidate_pages, event_check: pilot.event_check, report: pilot.report,
+        calls: pilot.calls, answered_at: pilot.tagger_answered_at });
+      return summary();
+    }
+
+    // Step 4: the full pass, built and not published. When its coverage falls short, one new pass on the untagged
+    // pages follows at once, since the measurement would be run again on that pass's generation anyway.
+    async function pointerPass() {
+      const run = await pointerRun();
+      invariant(run.pilot?.status === "done", "POINTER_PILOT_NOT_DONE");
+      const quoteGeneration = await quoteGenerationInput(run.generation);
+      const first = await pointerStep(run, "pass", pointerDeadlines.pass);
+      if (first.status !== "done") {
+        const result = await runPointerPass({ quoteGeneration, stepId: first.step_id, deadline: first.deadline, port, grant, now, oneAtATime: pointerTurns });
+        await finishPointerStep(first, { result_ref: await writeLarge(`pointer:${run.run_id}:pass`, storedPointerPass(result)), report: result.report,
+          calls: result.calls, coverage_holds: result.coverage.holds, answered_at: result.tagger_answered_at });
+      }
+      if (!first.coverage_holds) {
+        const stored = await readLarge(first.result_ref);
+        const pages = stored.coverage.untagged.map((item) => item.page);
+        invariant(pages.length > 0, "POINTER_COVERAGE_PAGES_MISSING");
+        const step = await pointerStep(run, "coverage_pass", pointerDeadlines.pass);
+        if (step.status !== "done") {
+          const result = await runPointerPass({ quoteGeneration, stepId: step.step_id, deadline: step.deadline, port, grant, now, pages,
+            first: { checked: stored.checked, event_pairs: stored.event_pairs, dropped_event_pairs: stored.dropped_event_pairs }, oneAtATime: pointerTurns });
+          await finishPointerStep(step, { pages, result_ref: await writeLarge(`pointer:${run.run_id}:coverage_pass`, storedPointerPass(result)),
+            report: result.report, calls: result.calls, coverage_holds: result.coverage.holds, answered_at: result.tagger_answered_at });
+        }
+      }
+      return summary();
+    }
+
+    // Step 5: the measurement of the generation the pass built, stored as it would be published (not published), so
+    // the searches run on it. A floor that fails stops the run.
+    async function pointerMeasure() {
+      const run = await pointerRun();
+      pointerHardestAttested();
+      invariant(run.pass?.status === "done" && (run.pass.coverage_holds || run.coverage_pass?.status === "done"), "POINTER_PASS_NOT_DONE");
+      // Calibration's set is reported with every measurement, so its questions must be ready first.
+      invariant(run.challenge?.status === "done", "POINTER_CHALLENGE_NOT_DONE");
+      const measured = run.coverage_pass?.status === "done" ? run.coverage_pass : run.pass;
+      const quoteGeneration = await quoteGenerationInput(run.generation);
+      const stored = await readLarge(measured.result_ref);
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: quoteGeneration.corpusId, corpusKey: key, resumeMatchingObjects: true });
+      try {
+        if (run.persisted?.step_id !== measured.step_id) {
+          const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
+          const { built, indexes } = buildPointerGeneration({ quoteGeneration, input, checked: stored.checked });
+          const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
+            objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
+          invariant(original.byte_length === state.original.byte_length && original.sha256 === state.original.sha256, "QUOTE_ARCHIVE_COPY_MISMATCH");
+          const persisted = await persistGraphGeneration({ corpusStore: quoteStore, graph: built.graph,
+            sourceRepresentations: Object.fromEntries(quoteGeneration.representations.map((item) => [item.representation_id, item.text])),
+            permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
+            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_tags: indexes.quote_tags, tag_terms: indexes.tag_terms },
+            indexRepresentations: true });
+          run.persisted = { step_id: measured.step_id, generation: run.generation, corpus_id: quoteGeneration.corpusId,
+            manifest_object_id: persisted.manifest_object_id, manifest_reference: persisted.manifest_reference,
+            graph_sha256: persisted.manifest.graph_sha256, built_at: now().toISOString() };
+          await save();
+        }
+        const step = await pointerStep(run, "measure", pointerDeadlines.measure, { seed: true });
+        if (step.status === "done") return summary();
+        if (!step.measured_step_id) {
+          step.measured_step_id = measured.step_id;
+          await save();
+        }
+        invariant(step.measured_step_id === measured.step_id, "POINTER_MEASURED_GENERATION_CHANGED");
+        const reference = await readLarge(run.reference.result_ref);
+        const challenge = await readLarge(run.challenge.result_ref);
+        const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId: run.persisted.manifest_object_id, caseId,
+          corpusId: quoteGeneration.corpusId, generation: run.generation, visibilityEpoch: 0, cursorSecret: key });
+        try {
+          // find_journal_quotes on the measured generation: its first results, as passage IDs. A search with no
+          // word in it finds nothing.
+          const search = async ({ query, matchTags }) => {
+            try {
+              const found = await reader.findQuotes({ query, limit: POINTER_RECALL_TOP, byteBudget: QUOTE_SEARCH_LIMITS.byteBudgetMax, matchTags });
+              return found.quotes.map((quote) => quote.quote_id);
+            } catch (error) {
+              if (["SEARCH_QUERY_HAS_NO_TERMS", "QUOTE_QUERY_INVALID"].includes(error?.code)) return [];
+              throw error;
+            }
+          };
+          const result = await runPointerMeasure({ quoteGeneration, pass: stored, reference, challenge, search, seed: step.seed, stepId: step.step_id,
+            deadline: step.deadline, port, grant, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns });
+          await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:measure`, result), publish: result.publish,
+            failed_floors: Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name),
+            floors: result.floors, report: result.report });
+          if (!result.publish) {
+            run.blocker = "POINTER_FLOORS_FAILED";
+            await save();
+          }
+        } finally { reader.close(); }
+      } finally { quoteStore.close(); }
+      return summary();
+    }
+
+    // Step 6, on the owner's `deploy`: exactly the measured generation, identified by its manifest's reference and its
+    // graph's digest, and only when every floor held. It replaces the published quote generation.
+    async function pointerPublish() {
+      const run = state.pointer;
+      invariant(run?.measure?.status === "done" && run.measure.publish === true && !run.blocker, "POINTER_NOT_READY_TO_PUBLISH");
+      invariant(run.persisted?.step_id === run.measure.measured_step_id, "POINTER_MEASURED_GENERATION_MISMATCH");
+      // The measured generation reads dates as the run setting said when the run started; a setting changed since
+      // calls for a new run, as every other step does.
+      invariant(run.numeric_date_order === quoteNumericDateOrder, "POINTER_RUN_SETTING_CHANGED");
+      if (run.published) return summary();
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: run.persisted.corpus_id, corpusKey: key, resumeMatchingObjects: true });
+      try {
+        const manifest = await quoteStore.readJsonObject({ objectId: run.persisted.manifest_object_id });
+        invariant(manifest.generation === run.generation && manifest.graph_sha256 === run.persisted.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH");
+        const persisted = { manifest, manifest_reference: run.persisted.manifest_reference, manifest_object_id: run.persisted.manifest_object_id };
+        const supersedes = state.quote_published?.generation ?? null;
+        await authorize();
+        const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize, supersedes });
+        const receipt = typeof service.rootDir === "string"
+          ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
+          : await publish();
+        const at = now().toISOString();
+        run.published = { at, supersedes, legacy_state_unchanged: receipt.legacy_state_unchanged, objects_verified: receipt.transfer.objects_verified };
+        state.quote_published = { generation: run.generation, manifest_object_id: run.persisted.manifest_object_id, at };
+        await save();
+      } finally { quoteStore.close(); }
+      return summary();
+    }
+
     const executeSemantic = async (action) => {
       lookahead = createRunLookahead();
       try { await action(); }
@@ -2711,6 +3019,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "resume-calibration") return resumeCalibration();
         if (command === "build-quotes") { (await buildQuotes()).close(); return summary(); }
         if (command === "publish-quotes") return publishQuotes();
+        if (command === "pointer-reference") return pointerReference();
+        if (command === "pointer-challenge") return pointerChallenge();
+        if (command === "pointer-pilot") return pointerPilot();
+        if (command === "pointer-pass") return pointerPass();
+        if (command === "pointer-measure") return pointerMeasure();
+        if (command === "pointer-publish") return pointerPublish();
+        if (command === "pointer-new-run") return pointerNewRun();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();

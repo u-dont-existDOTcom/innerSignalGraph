@@ -6,7 +6,8 @@ import {
   JournalInferencePortError,
   assertJournalInferenceGrant,
   buildJournalRolePacket,
-  journalRoleInstruction
+  journalRoleInstruction,
+  journalRoleRunsOnTier
 } from "./provider-port.mjs";
 import { JOURNAL_WORK_TRANSPORT, journalWorkFileKey } from "./work-exchange.mjs";
 import { hardestJournalPacketFits } from "./packet-bounds.mjs";
@@ -28,7 +29,9 @@ const DEFAULT_WAIT_MS = 45 * 60_000;
 const DEFAULT_POLL_MS = 5_000;
 const DEFAULT_TTL_MS = 24 * 60 * 60_000;
 const MAX_SUCCESSORS = 8;
-// Images reach ChatGPT only as attachments, which the connector cannot deliver yet.
+// Images reach ChatGPT only as attachments, which the connector cannot deliver yet. Apart from these, a role runs
+// on the tiers its definition allows (journalRoleRunsOnTier): the pointer pass's tagger and search writer never
+// reach the hardest lane.
 const UNSUPPORTED_ROLES = new Set(["visual_reader"]);
 const CASE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const REQUEST_CONTEXT_ID_PATTERN = /^[\x21-\x7e]{1,256}$/u;
@@ -110,7 +113,8 @@ export function createExchangeJournalInferencePort({
     authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
     ...(executionAttestation === "codex_exec" ? { execution_profile_evidence: "codex_exec_request_pinned" } : {}),
     hardest_roles: Object.fromEntries(Object.entries(JOURNAL_ROLE_DEFINITIONS).map(([role, definition]) => [role, {
-      output_schema_id: definition.outputSchema, instruction_installed: true, available: !UNSUPPORTED_ROLES.has(role)
+      output_schema_id: definition.outputSchema, instruction_installed: true,
+      available: !UNSUPPORTED_ROLES.has(role) && journalRoleRunsOnTier(role, "hardest")
     }])),
     hardest_fresh_context_per_generate: executionAttestation === "codex_exec",
     hardest_authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
@@ -124,7 +128,7 @@ export function createExchangeJournalInferencePort({
     roles: Object.fromEntries(Object.entries(JOURNAL_ROLE_DEFINITIONS).map(([role, definition]) => [role, {
       output_schema_id: definition.outputSchema,
       instruction_installed: true,
-      available: !UNSUPPORTED_ROLES.has(role)
+      available: !UNSUPPORTED_ROLES.has(role) && journalRoleRunsOnTier(role, "standard")
     }]))
   });
 
@@ -279,10 +283,11 @@ export function createExchangeJournalInferencePort({
     return { status: "pending", workId };
   }
 
-  const checkedInput = ({ role, packet, outputSchema, operationKey, grant, tier = "standard" }, prefetch = false) => {
+  const checkedInput = ({ role, packet, outputSchema, operationKey, grant, tier = "standard", expiresAt = null }, prefetch = false) => {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
-    if (UNSUPPORTED_ROLES.has(role))
+    // An invalid tier is refused below, as before; a valid one must be one the role runs on.
+    if (UNSUPPORTED_ROLES.has(role) || ((tier === "standard" || tier === "hardest") && !journalRoleRunsOnTier(role, tier)))
       throw new JournalInferencePortError("JOURNAL_EXCHANGE_ROLE_UNSUPPORTED", { submissionStatus: "not_submitted" });
     if (prefetch && tier === "hardest")
       throw new JournalInferencePortError("JOURNAL_PREFETCH_TIER_UNSUPPORTED", { submissionStatus: "not_submitted" });
@@ -290,15 +295,17 @@ export function createExchangeJournalInferencePort({
     assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
     invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+    // A step with a saved deadline (the pointer pass) has its items expire then, instead of after the usual TTL.
+    invariant(expiresAt === null || (typeof expiresAt === "string" && Number.isFinite(Date.parse(expiresAt))), "JOURNAL_WORK_EXPIRY_INVALID");
     if (tier === "hardest" && !hardestJournalPacketFits(role, checkedPacket)) {
       throw new JournalInferencePortError("JOURNAL_WORK_PACKET_TOO_LARGE", { submissionStatus: "not_submitted" });
     }
-    return { role, packet: checkedPacket, outputSchema, operationKey, grant, tier,
+    return { role, packet: checkedPacket, outputSchema, operationKey, grant, tier, expiresAt,
       digest: inputDigest(role, checkedPacket, outputSchema, grant) };
   };
 
   async function publish(input, { dispatchNew = false } = {}) {
-    const { role, packet, outputSchema, operationKey, grant, tier, digest } = input;
+    const { role, packet, outputSchema, operationKey, grant, tier, expiresAt, digest } = input;
     let selected = await current(operationKey);
     // A speculative item carries no durable caller intent. Replace it on the same operation key
     // before the sequential caller creates an intent or spends a controller attempt.
@@ -341,13 +348,18 @@ export function createExchangeJournalInferencePort({
         throw new JournalInferencePortError(completion.code, { submissionStatus: "exhausted" });
       }
       const issuedAt = now();
+      const usualExpiry = issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs);
+      // Nothing is sent once a step's deadline has passed: the item could only expire unanswered.
+      if (expiresAt !== null && Date.parse(expiresAt) <= issuedAt.getTime()) {
+        throw new JournalInferencePortError("JOURNAL_STEP_DEADLINE_PASSED", { submissionStatus: "not_submitted" });
+      }
       const entry = {
         schema_version: 1, work_id: workId, case_id: caseId, role, tier,
         instruction: journalRoleInstruction(role), packet,
         output_schema_name: outputSchema, output_schema: journalSchema(outputSchema),
         expected_generation: packet.expected_generation ?? null,
         issued_at: issuedAt.toISOString(),
-        expires_at: new Date(issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs)).toISOString(),
+        expires_at: new Date(expiresAt === null ? usualExpiry : Math.min(usualExpiry, Date.parse(expiresAt))).toISOString(),
         input_sha256: digest, grant_id: grant.grant_id, grant_purpose: grant.purpose, route_ref: routeRef,
         ...(dispatchNew ? { origin: "lookahead" } : {})
       };
@@ -419,11 +431,15 @@ export function createExchangeJournalInferencePort({
     return { status: entry ? "pending" : "not_submitted" };
   }
 
-  const invoke = async (request) => {
+  // `options.waitMs` overrides the port's wait for this call: 0 sends the item without waiting, and a step with a
+  // deadline waits until then. The item stays open after the wait either way.
+  const invoke = async (request, options = {}) => {
     const { operationKey, tier = "standard" } = request;
+    const callWaitMs = options.waitMs ?? waitMs;
+    invariant(Number.isSafeInteger(callWaitMs) && callWaitMs >= 0, "JOURNAL_EXCHANGE_TIMING_INVALID");
     await publish(checkedInput(request));
 
-    const deadline = Date.now() + waitMs;
+    const deadline = Date.now() + callWaitMs;
     for (;;) {
       const observed = await observe(operationKey, { tier });
       if (observed.status === "completed") return { output: observed.output, receipt: observed.receipt };

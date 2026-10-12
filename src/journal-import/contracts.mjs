@@ -8,13 +8,18 @@ export const JOURNAL_PROTOCOL_VERSION = "1.0";
 export const JOURNAL_SCHEMA_NAMES = Object.freeze([
   "answer-result",
   "checkpoint",
+  "coverage-judgment-result",
   "extraction-result",
   "graph",
+  "pair-judgment-result",
   "pattern-result",
+  "pointer-result",
+  "question-set-result",
   "reconciliation-result",
   "reference-result",
   "restricted-anchor",
   "review-result",
+  "search-plan-result",
   "visual-result"
 ]);
 

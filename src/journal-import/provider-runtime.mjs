@@ -191,23 +191,26 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
         const hardest = exchangePort.capabilities();
         return Object.freeze({
           ...providerPort.capabilities(),
-          hardest_roles: hardest.roles,
+          // The exchange's hardest-tier map: a role that runs only on the standard tier is unavailable there.
+          hardest_roles: hardest.hardest_roles,
           hardest_fresh_context_per_generate: hardest.fresh_context_per_generate,
           hardest_authenticated_execution_profile_per_generate: hardest.authenticated_execution_profile_per_generate
         });
       },
       async prepare() { await exchangePort.prepare?.(); },
-      async invoke(input) {
+      // A call's options (a step's wait until its deadline) and a completion's tier reach the port that serves it.
+      async invoke(input, options) {
         const selected = portFor(input);
         operations.set(input.operationKey, selected);
-        return selected.invoke(input);
+        return selected.invoke(input, options);
       },
-      async getCompletion(operationKey, { authoritativeCompletion } = {}) {
+      async getCompletion(operationKey, options = {}) {
+        const { authoritativeCompletion } = options;
         const selected = operations.get(operationKey)
           ?? (typeof authoritativeCompletion === "boolean" ? (authoritativeCompletion ? exchangePort : providerPort) : null);
-        if (selected) return selected.getCompletion(operationKey);
+        if (selected) return selected.getCompletion(operationKey, options);
         const [exchange, browser] = await Promise.all([
-          exchangePort.getCompletion(operationKey), providerPort.getCompletion(operationKey)
+          exchangePort.getCompletion(operationKey, options), providerPort.getCompletion(operationKey, options)
         ]);
         return exchange.status !== "not_submitted" ? exchange : browser;
       },

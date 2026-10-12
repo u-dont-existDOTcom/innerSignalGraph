@@ -50,3 +50,7 @@
 - `2026-10-09-teaching-points-for-map-changes.md`: ADOPTED in a separate proposal, pending verified merge and deployment. Reader-relevant changes include canonical AI-guide text and queue teaching points with cause, reader need, prior coverage, and placement; approved T1–T9 points from the October 4 map changes are backfilled without re-humanizing the article.
 - The unsent-owner-revision rule is **app-only**: preserving a draft while its editor changes a passage is assistant execution, not a reader exercise. The PR documents that distinction separately from reader-facing changes.
 - CI guard and synthetic regression tests are in this change; the public humanized guide is a downstream derivative and is not silently published.
+
+## 2026-10-11: journal pointer pass
+
+- Live lane read on 2026-10-11 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `ba6d902e`): `suggested-fixes/innerSignalGraph/` holds `2026-09-30-claim-integrity-checks.md`, deferred above until the polish and ship phase, and `2026-10-09-teaching-points-for-map-changes.md`, adopted above in its own change. This branch changes the journal importer only and adds no new disposition.
