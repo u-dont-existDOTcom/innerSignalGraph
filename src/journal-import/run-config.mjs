@@ -61,6 +61,10 @@ export function journalPointerDeadlines(config) {
   });
 }
 
+// The efforts the hardest lane may set for Claude Opus. Max is the default. The pointer pass's judge runs at high, since at
+// max its coverage checks took more than the 30 minutes a Claude call had (owner decision 28, 12 Oct 2026).
+export const JOURNAL_HARDEST_EFFORTS = Object.freeze(["high", "max"]);
+
 export function normalizeJournalHardestLaneConfig(config) {
   return Object.freeze({
     enabled: config?.hardest_lane?.enabled === true,

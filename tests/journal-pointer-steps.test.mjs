@@ -158,8 +158,13 @@ test("every sampled unit gets its questions, both judges' confirmation and its s
   assert.deepEqual(Object.keys(searcher.packet.questions[0]), ["question_id", "question"]);
   assert.deepEqual(pointerReferenceCounts(reference), { sampled_units: 30, complete_units: 30, nonresponse_units: 0,
     nonresponse_by_reason: { questions_incomplete: 0, coverage_unconfirmed: 0, coverage_check_failed: 0, searches_incomplete: 0, deadline: 0 },
-    deadline_units_with_a_call_unanswered: 0, units_retried: 0, questions: 45, critical_questions: 30, event_questions: 45 });
+    deadline_units_with_a_call_unanswered: 0, units_retried: 0, questions: 45, critical_questions: 30, event_questions: 45,
+    judges: { codex_confirmed: 45, claude_confirmed: 45,
+      agreement: { items: 45, agreements: 45, disagreements: 0, raw_agreement: 1, kappa: null } } });
   assert.equal(JSON.stringify(pointerReferenceCounts(reference)).includes("Synthetic"), false);
+  // A reference stored before the judges' agreement was counted reports none.
+  const { judges, ...older } = reference;
+  assert.equal(pointerReferenceCounts(older).judges, null);
 });
 
 test("a unit either judge leaves unconfirmed gets its one retry with that judge's notes, and is a nonresponse if it falls short again", async () => {
@@ -180,6 +185,12 @@ test("a unit either judge leaves unconfirmed gets its one retry with that judge'
   assert.deepEqual([seventh.status, seventh.writer_attempts], ["complete", 2]);
   assert.equal(port.sent.filter((item) => item.operationKey === writerKey(7, 1) && !item.packet.coverage_notes).length, 1);
   assert.equal(pointerReferenceCounts(reference).units_retried, 3);
+  // The judges disagree on unit:p3q0 in the first round (Codex leaves it unconfirmed once) and on unit:p5q1 in both
+  // rounds (Claude never confirms it); every other quote both judged, they both confirmed.
+  const { judges } = pointerReferenceCounts(reference);
+  assert.equal(judges.agreement.disagreements, 3);
+  assert.deepEqual([judges.agreement.items - judges.codex_confirmed, judges.agreement.items - judges.claude_confirmed], [1, 2]);
+  assert.equal(judges.agreement.agreements, judges.agreement.items - 3);
 });
 
 test("a search plan short twice makes its unit a nonresponse", async () => {

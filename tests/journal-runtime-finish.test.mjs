@@ -482,6 +482,35 @@ test("real lookahead prepare checks access and writes no corpus objects", async 
   assert.equal([...h.work.values()].filter(item => item.origin === "lookahead").length, 1);
 });
 
+test("a refused access check gets one fresh token, and access that is withdrawn is still refused", async (t) => {
+  const f = await environment(t);
+  // A provider whose token in hand ran out, as on a host short of memory: the case check refuses it, and the one fresh
+  // token it is asked for passes.
+  const asked = [];
+  let fresh = false;
+  const runningOut = async ({ renew = false } = {}) => {
+    asked.push(renew);
+    if (renew) fresh = true;
+    return { bearerToken: fresh ? WRITER : "expired-synthetic" };
+  };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: createMockJournalInferencePort({ handlers: handlers() }),
+    environment: f.environment, authContextProvider: runningOut });
+  try { assert.equal((await runtime.execute("status")).blocker, null); } finally { await runtime.close(); }
+  assert.deepEqual(asked, [false, true]);
+  // Withdrawn access is refused with the fresh token too, and the check stops after that one try.
+  const askedRevoked = [];
+  const revoked = async ({ renew = false } = {}) => { askedRevoked.push(renew); return { bearerToken: "revoked-synthetic" }; };
+  await assert.rejects(openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: createMockJournalInferencePort({ handlers: handlers() }),
+    environment: f.environment, authContextProvider: revoked }), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+  assert.deepEqual(askedRevoked, [false, true]);
+  // Without a renewing provider there is no fresh token to try: the refusal stands at once.
+  await assert.rejects(openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: createMockJournalInferencePort({ handlers: handlers() }),
+    environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: "expired-synthetic" } }), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+});
+
 test("hardest lane run never prefetches a hardest work item", async (t) => {
   const entries = Array.from({ length: 16 }, (_, index) => `Synthetic hardest entry ${index}: a blue cup.`);
   const f = await environment(t, entries);

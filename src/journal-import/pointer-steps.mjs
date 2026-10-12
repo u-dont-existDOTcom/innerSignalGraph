@@ -74,6 +74,10 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     packet: rolePacket(role, { generation, grantPurpose: grant.purpose, assigned, tag: `pointer:${role}:${stepId}`, fields }) });
   const next = (unit) => referenceUnitStep({ quoteIds: unit.quote_ids, attempts: unit.attempts });
   const quoteFor = (id) => ({ unit_id: id, text: quoteById.get(id).text });
+  // Each quote both judges answered for, in every round: whether Codex (the standard tier) and Claude (the hardest) each
+  // confirmed it. Their agreement shows whether one judge passes what the other doesn't, as the measurement reports for
+  // precision; it decides nothing.
+  const agreement = [];
 
   for (let round = 0; round < 2; round += 1) {
     // The question writer: each unit's first answer, and the one retry of those that fell short.
@@ -134,6 +138,10 @@ export async function runPointerReference({ units, seed = null, sample: given = 
         });
         return { results, notes, failed, late };
       });
+      for (const unit of judging) for (const id of unit.quote_ids) {
+        const [first, second] = judges.map((judge) => (judge.failed.has(id) ? null : judge.results.get(id) ?? null));
+        if (first && second) agreement.push({ first: first.confirmed === true, second: second.confirmed === true });
+      }
       for (const unit of judging) {
         for (const judge of judges) for (const id of unit.quote_ids) if (judge.late.has(id)) noteLate(unit, judge.late.get(id));
         unit.attempts[round].coverage = judges.map((judge) => (unit.quote_ids.some((id) => judge.failed.has(id))
@@ -182,6 +190,8 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     deadline,
     sample: { kind: given ? "calibration" : "random", seed_sha256: sample.seed_sha256, strata: sample.strata,
       units_per_stratum: sample.units_per_stratum, candidate_units: sample.candidate_units },
+    judges: { codex_confirmed: agreement.filter((item) => item.first).length,
+      claude_confirmed: agreement.filter((item) => item.second).length, agreement: cohenKappa(agreement) },
     units: reference
   });
 }
@@ -211,7 +221,9 @@ export function pointerReferenceCounts(reference) {
   }
   return Object.freeze({ sampled_units: reference.units.length, complete_units: complete, nonresponse_units: reference.units.length - complete,
     nonresponse_by_reason: Object.freeze(reasons), deadline_units_with_a_call_unanswered: unanswered, units_retried: retried, questions,
-    critical_questions: critical, event_questions: events });
+    critical_questions: critical, event_questions: events,
+    // A reference stored before the judges' agreement was counted has none.
+    judges: reference.judges ? Object.freeze({ ...reference.judges }) : null });
 }
 
 

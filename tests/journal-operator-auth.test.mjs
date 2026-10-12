@@ -239,6 +239,57 @@ test("concurrent callers share one token request", async () => {
   assert.equal(server.calls.length, 1);
 });
 
+test("a token's life counts from when it was asked for, so a slow answer can't stretch it", async () => {
+  let clock = 0;
+  let served = 0;
+  // Each answer takes 15 s to arrive.
+  const fetchImpl = async () => {
+    clock += 15_000;
+    served += 1;
+    return { ok: true, json: async () => ({ access_token: `token-${served}`, token_type: "Bearer", expires_in: 300 }) };
+  };
+  const provider = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET, fetchImpl, now: () => clock });
+  assert.deepEqual(await provider(), { bearerToken: "token-1" });
+  clock = 239_000;
+  assert.deepEqual(await provider(), { bearerToken: "token-1" });
+  // 60 s before the end of its 300 s, counted from the request at 0 rather than from the answer at 15 s.
+  clock = 240_000;
+  assert.deepEqual(await provider(), { bearerToken: "token-2" });
+  // When renewals fail, the token in hand is kept only until its 300 s are up, counted the same way: a token asked for
+  // at 0 and received at 15 s is no longer handed out at 300 s.
+  let down = false;
+  const failing = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET, now: () => clock,
+    fetchImpl: async (...args) => { if (down) throw new Error(SECRET); return fetchImpl(...args); } });
+  clock = 0;
+  assert.deepEqual(await failing(), { bearerToken: "token-3" });
+  down = true;
+  clock = 299_999;
+  assert.deepEqual(await failing(), { bearerToken: "token-3" });
+  clock = 300_000;
+  await assert.rejects(failing, { code: "OPERATOR_TOKEN_UNAVAILABLE" });
+});
+
+test("a forced renewal fetches a new token at once, and its failure is thrown", async () => {
+  let clock = 0;
+  let fail = false;
+  const server = tokenServer({ lifetimes: [300, 300, 300] });
+  const fetchImpl = async (url, init) => { if (fail) throw new Error(SECRET); return server.fetchImpl(url, init); };
+  const provider = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET, fetchImpl, now: () => clock });
+  assert.deepEqual(await provider(), { bearerToken: "token-1" });
+  clock = 10_000;
+  assert.deepEqual(await provider({ renew: true }), { bearerToken: "token-2" });
+  assert.deepEqual(await provider(), { bearerToken: "token-2" });
+  const both = await Promise.all([provider({ renew: true }), provider({ renew: true })]);
+  assert.deepEqual(both.map((item) => item.bearerToken), ["token-3", "token-3"]);
+  assert.equal(server.calls.length, 3);
+  // The token in hand is the one that was refused, so a failed forced renewal never hands it back.
+  fail = true;
+  await assert.rejects(provider({ renew: true }),
+    (error) => error.code === "OPERATOR_TOKEN_UNAVAILABLE" && !error.message.includes(SECRET));
+  // An ordinary check still gets the token in hand while it lasts.
+  assert.deepEqual(await provider(), { bearerToken: "token-3" });
+});
+
 test("token failures carry codes only, never the secret or the response", async () => {
   const denied = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET,
     fetchImpl: tokenServer({ failWith: 401 }).fetchImpl });

@@ -8,6 +8,7 @@ import { createChatGptSubscriptionCdpTransport } from "./chatgpt-subscription-cd
 import { createChatGptSubscriptionDesktopCdpTransport } from "./chatgpt-subscription-desktop-cdp.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, createDisabledJournalInferencePort, createProviderJournalInferencePort } from "./provider-port.mjs";
 import { JOURNAL_EXCHANGE_PROVIDER, JOURNAL_CODEX_EXCHANGE_PROVIDER, createExchangeJournalInferencePort } from "./exchange-port.mjs";
+import { JOURNAL_HARDEST_EFFORTS } from "./run-config.mjs";
 import {
   assertJournalWorkExchangeRoot,
   createJournalWorkExchange,
@@ -127,7 +128,7 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   invariant(!hardestLane.enabled || ["chatgpt_subscription_browser", JOURNAL_EXCHANGE_PROVIDER, JOURNAL_CODEX_EXCHANGE_PROVIDER].includes(config.provider),
     "HARDEST_LANE_ROUTE_UNAVAILABLE");
   if (hardestLane.enabled && config.provider === JOURNAL_CODEX_EXCHANGE_PROVIDER) {
-    invariant((hardestLane.model ?? "claude-opus-5-5") === "claude-opus-5-5" && (hardestLane.effort ?? "max") === "max",
+    invariant((hardestLane.model ?? "claude-opus-5-5") === "claude-opus-5-5" && JOURNAL_HARDEST_EFFORTS.includes(hardestLane.effort ?? "max"),
       "HARDEST_LANE_CONFIG_INVALID");
   }
   // A browser route remains necessary for ordinary image-bearing visual_reader work. The local
