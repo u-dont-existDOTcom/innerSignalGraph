@@ -7,7 +7,7 @@ import { applyPointerEventCheck, checkPointerBatches, pointerEventCheckCalls, po
   pointerTaggerPacket } from "../src/journal-import/pointer-pass.mjs";
 import { pointerChallengeUnits, pointerReferenceSample } from "../src/journal-import/pointer-reference.mjs";
 import { POINTER_MEASURE_SAMPLE_NAMES, POINTER_PILOT_PAGES, POINTER_RECALL_TOP, measurePointerChallenge, measurePointerRecall, pointerBrokenAnchors,
-  pointerMeasureSamples, pointerPilotPages, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
+  pointerMeasureSamples, pointerMisses, pointerPilotPages, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
   runPointerReference } from "../src/journal-import/pointer-steps.mjs";
 import { buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
 
@@ -471,6 +471,14 @@ test("the measurement scores the generation against every floor: recall by its s
   const result = await measure(port, clock, second, { beforeHardestSend: async ({ operationKey }) => { slots.push(operationKey); } });
   assert.equal(result.publish, true);
   assert.ok(Object.values(result.floors).every((floor) => floor.holds));
+  assert.deepEqual([result.checks_failed, result.targets_missed], [[], []]);
+  assert.deepEqual(result.report.sample, { units: REFERENCE.units.length, measured: REFERENCE.units.length });
+  // Nothing missed: the misses log is empty.
+  assert.deepEqual(result.report.misses, { questions_not_found: 0, critical_questions_not_found: 0, event_questions_not_found: 0,
+    questions_lost_to_tags: 0, units_not_measured: 0, event_quotes_untagged: 0, pages_untagged: 0, event_pairs_dropped: 0,
+    event_checks_unanswered: 0, dropped_events_judged_real: 0 });
+  assert.deepEqual(result.misses, { questions_not_found: [], units_not_measured: [], event_quotes_untagged: [], pages_untagged: [],
+    dropped_events_judged_real: [] });
   // Every question is found with tags; the rain questions only through their tags, so words alone miss them.
   const rain = REFERENCE.units.flatMap((unit) => unit.questions).filter((question) => question.queries[0] === "pluie").length;
   assert.ok(rain > 0);
@@ -502,7 +510,7 @@ test("the measurement scores the generation against every floor: recall by its s
   assert.equal(POINTER_RECALL_TOP, 12);
 });
 
-test("the first pass's measurement judges the event pairs its check dropped, and its untagged page fails coverage", async () => {
+test("the first pass's measurement judges the event pairs its check dropped, and its untagged page misses the coverage target", async () => {
   const clock = { now: START };
   const port = scriptedPort({ clock });
   const first = await pass(port, clock);
@@ -511,8 +519,15 @@ test("the first pass's measurement judges the event pairs its check dropped, and
   assert.deepEqual([dropped.pairs, dropped.sampled, dropped.real], [1, 1, 0], "both judges reject the dream as an event");
   assert.deepEqual([result.floors.event_check_recall.applicable, result.floors.event_check_recall.estimate], [true, 1]);
   assert.equal(result.floors.coverage.holds, false);
-  assert.equal(result.publish, false);
+  // Coverage is a target (question 22: B): missing it is reported and logged, and stops nothing.
+  assert.equal(result.publish, true);
+  assert.deepEqual([result.checks_failed, result.targets_missed], [[], ["coverage"]]);
   assert.deepEqual(Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name), ["coverage"]);
+  assert.deepEqual(result.misses.pages_untagged, first.coverage.untagged.map(({ page, reason }) => ({ page, reason })));
+  assert.deepEqual(result.misses.pages_untagged.map((item) => item.page), [5]);
+  // The dream the check dropped is logged as dropped, and not as a real event: both judges reject it.
+  assert.deepEqual([result.report.misses.pages_untagged, result.report.misses.event_pairs_dropped, result.report.misses.dropped_events_judged_real],
+    [1, 1, 0]);
   assert.ok(port.sent.some((item) => item.operationKey === "measure:synthetic:judge:hardest:dropped_events:0"));
 });
 
@@ -529,6 +544,7 @@ test("a pair a judge leaves unscored at the deadline counts as wrong, and as rea
   assert.deepEqual([event.correct, event.unscored_claude], [4, 0], "the other calls went out at once and were answered");
   assert.equal(result.floors.precision.holds, false);
   assert.equal(result.publish, false);
+  assert.deepEqual(result.checks_failed, ["precision"]);
   assert.deepEqual([result.report.calls.deadline, result.report.calls.answered], [1, 5]);
   // Among the dropped, a pair one judge leaves unscored counts as real.
   const lateClock = { now: START };
@@ -537,6 +553,9 @@ test("a pair a judge leaves unscored at the deadline counts as wrong, and as rea
   const dropped = lateResult.report.samples.find((sample) => sample.name === "dropped_events");
   assert.deepEqual([dropped.real, dropped.unscored_claude], [1, 1]);
   assert.equal(lateResult.floors.event_check_recall.estimate, 0.8);
+  // That pair goes into the misses log as a real event the check dropped.
+  assert.equal(lateResult.report.misses.dropped_events_judged_real, 1);
+  assert.deepEqual(lateResult.misses.dropped_events_judged_real.map((item) => Object.keys(item)), [["pair_id", "unit_id"]]);
 });
 
 test("run again with the stored answers, the measurement gives the same result and sends nothing new", async () => {
@@ -550,7 +569,7 @@ test("run again with the stored answers, the measurement gives the same result a
   assert.equal(port.sent.length, sent);
 });
 
-test("recall is measured over every sampled unit, and a floor with nothing to measure says so", () => {
+test("recall is measured over the sampled units, and a floor with nothing to measure says so", () => {
   const all = new Set(REFERENCE.units.flatMap((unit) => unit.questions.map((question) => question.question_id)));
   const none = new Set();
   const events = new Set(PASS_INPUT.units.map((unit) => unit.unit_id));
@@ -562,10 +581,74 @@ test("recall is measured over every sampled unit, and a floor with nothing to me
   const flat = measurePointerRecall({ reference: plain, foundWithTags: all, foundWordsOnly: none, eventTaggedUnitIds: events });
   assert.deepEqual([flat.critical_recall, flat.critical_recall_estimate, flat.critical_recall_words_only_estimate, flat.event_coverage], [null, null, null, null]);
   assert.equal(full.units.length, REFERENCE.units.length);
+  assert.deepEqual(full.sample, { units: REFERENCE.units.length, measured: REFERENCE.units.length });
   assert.deepEqual(Object.keys(full.units[0]), ["unit_id", "questions", "found_with_tags", "found_words_only", "critical_questions", "event_quotes"]);
-  const incomplete = { units: [{ ...REFERENCE.units[0], status: "nonresponse", questions: [] }, ...REFERENCE.units.slice(1)] };
-  assert.throws(() => measurePointerRecall({ reference: incomplete, foundWithTags: all, foundWordsOnly: all, eventTaggedUnitIds: events }),
-    { code: "POINTER_REFERENCE_INCOMPLETE" });
+  // A unit is complete, with questions, or a nonresponse.
+  for (const changed of [{ questions: [] }, { status: "pending" }]) {
+    const reference = { units: [{ ...REFERENCE.units[0], ...changed }, ...REFERENCE.units.slice(1)] };
+    assert.throws(() => measurePointerRecall({ reference, foundWithTags: all, foundWordsOnly: all, eventTaggedUnitIds: events }),
+      { code: "POINTER_REFERENCE_INVALID" });
+  }
+});
+
+test("a nonresponse is left out of recall, and its stretch's measured units stand for it", () => {
+  // Two stretches of two units, each drawn with probability 1/2, with two questions a unit. The first stretch loses a
+  // unit; the one left finds both its questions, and each unit of the second stretch finds one of its two.
+  const question = (unitId, index) => ({ question_id: `${unitId}:q${index}`, unit_id: `${unitId}:quote`, critical: false, event: false,
+    queries: ["x"] });
+  const unit = (unitId, stratum, status, inclusionProbability = 0.5) => ({ unit_id: unitId, stratum, inclusion_probability: inclusionProbability,
+    status, reason: status === "complete" ? null : "deadline", questions: status === "complete" ? [question(unitId, 0), question(unitId, 1)] : [] });
+  const reference = { units: [unit("a", 0, "complete"), unit("b", 0, "nonresponse"), unit("c", 1, "complete"), unit("d", 1, "complete")] };
+  const found = new Set(["a:q0", "a:q1", "c:q0", "d:q0"]);
+  const measured = (units) => measurePointerRecall({ reference: { units }, foundWithTags: found, foundWordsOnly: found, eventTaggedUnitIds: new Set() });
+  const result = measured(reference.units);
+  // Unit a now stands for its stretch alone, with weight 4 where c and d keep 2: recall is (4·2 + 2·1 + 2·1) /
+  // (4·2 + 2·2 + 2·2) = 3/4. Leaving b out without the adjustment would give 8/12.
+  assert.equal(result.recall.estimate, 0.75);
+  assert.deepEqual(result.sample, { units: 4, measured: 3 });
+  assert.deepEqual(result.units.map((item) => item.unit_id), ["a", "c", "d"]);
+  // Unit a, alone in its stretch and drawn with probability below 1, is merged with the next stretch for the variance.
+  assert.deepEqual(result.recall.collapsed_strata, [[0, 1]]);
+  assert.equal(result.recall.degrees_of_freedom, 2);
+  // A stretch taken whole that loses a unit is a sample of its units from then on; one that keeps them all stays whole.
+  const whole = measured(reference.units.map((item) => ({ ...item, inclusion_probability: 1 })));
+  assert.deepEqual([whole.recall.estimate, whole.recall.census_strata, whole.recall.reason], [0.75, [1], "no degrees of freedom"]);
+  // With no unit measured, recall and everything measured with it is unknown.
+  const none = measured(reference.units.map((item) => ({ ...item, status: "nonresponse", reason: "deadline", questions: [] })));
+  assert.deepEqual([none.recall.estimate, none.recall_estimate, none.recall_words_only_estimate, none.critical_recall, none.gain,
+    none.event_coverage, none.units, none.sample], [null, null, null, null, null, null, [], { units: 4, measured: 0 }]);
+});
+
+test("the misses log names what the generation leaves out by ID and page, and counts it", () => {
+  const question = (id, unitId, flags = {}) => ({ question_id: id, unit_id: unitId, critical: false, event: false, queries: ["x"], ...flags });
+  const reference = { units: [
+    { unit_id: "page:1", stratum: 0, inclusion_probability: 0.5, status: "complete", reason: null, questions: [
+      question("q1", "quote:1a"), question("q2", "quote:1a", { critical: true }), question("q3", "quote:1b", { event: true })] },
+    { unit_id: "page:2", stratum: 0, inclusion_probability: 0.5, status: "nonresponse", reason: "coverage_unconfirmed", questions: [] },
+    { unit_id: "page:3", stratum: 1, inclusion_probability: 0.5, status: "complete", reason: null, questions: [
+      question("q4", "quote:3a", { event: true }), question("q5", "quote:3a")] }] };
+  // Words and tags find q1 and q4; words alone find q2, which the tags lost, and q4.
+  const misses = pointerMisses({ reference, foundWithTags: new Set(["q1", "q4"]), foundWordsOnly: new Set(["q2", "q4"]),
+    eventTaggedUnitIds: new Set(["quote:3a"]), untagged: [{ page: 7, reason: "deadline" }],
+    eventCheck: { pairs: 20, accepted: 15, rejected: 3, unanswered: 2, tags_dropped: 4 },
+    droppedReal: [{ pair_id: "measure-pair:1", unit_id: "quote:9a", kind: "event", label: "a wedding", quote: "Invented quote." }] });
+  assert.deepEqual(misses.log, {
+    questions_not_found: [
+      { question_id: "q2", unit_id: "quote:1a", sampled_unit_id: "page:1", critical: true, event: false, found_words_only: true },
+      { question_id: "q3", unit_id: "quote:1b", sampled_unit_id: "page:1", critical: false, event: true, found_words_only: false },
+      { question_id: "q5", unit_id: "quote:3a", sampled_unit_id: "page:3", critical: false, event: false, found_words_only: false }],
+    units_not_measured: [{ unit_id: "page:2", reason: "coverage_unconfirmed" }],
+    event_quotes_untagged: ["quote:1b"],
+    pages_untagged: [{ page: 7, reason: "deadline" }],
+    dropped_events_judged_real: [{ pair_id: "measure-pair:1", unit_id: "quote:9a" }] });
+  assert.deepEqual(misses.counts, { questions_not_found: 3, critical_questions_not_found: 1, event_questions_not_found: 1,
+    questions_lost_to_tags: 1, units_not_measured: 1, event_quotes_untagged: 1, pages_untagged: 1, event_pairs_dropped: 5,
+    event_checks_unanswered: 2, dropped_events_judged_real: 1 });
+  // IDs and pages only: no label or quote.
+  for (const word of ["wedding", "Invented"]) assert.equal(JSON.stringify(misses).includes(word), false, word);
+  assert.ok(Object.isFrozen(misses.log.questions_not_found[0]) && Object.isFrozen(misses.counts));
+  assert.throws(() => pointerMisses({ reference, foundWithTags: new Set(), foundWordsOnly: new Set(), eventTaggedUnitIds: new Set(),
+    untagged: [], eventCheck: {}, droppedReal: [] }), { code: "POINTER_MISSES_INPUT_INVALID" });
 });
 
 test("each sample is fixed by its seed, 150 pairs at most, and its items are what a judge sees", () => {

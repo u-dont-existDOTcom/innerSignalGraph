@@ -172,7 +172,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       return { ...base, status: "complete", reason: null, deadline_cause: null, questions: step.questions.map((question) => ({ ...question,
         queries: [...queries.get(question.question_id)] })) };
     }
-    // Out of time, or short in a way the rounds can't mend: a nonresponse, which fails the recall floor.
+    // Out of time, or short in a way the rounds can't mend: a nonresponse, which the measurement leaves out and logs.
     const reason = unit.late ? "deadline" : (step.step === "nonresponse" ? step.reason
       : (step.step === "complete" ? "searches_incomplete" : "deadline"));
     return { ...base, status: "nonresponse", reason, deadline_cause: reason === "deadline" ? unit.late ?? "unsent" : null, questions: [] };
@@ -412,26 +412,38 @@ const JUDGE_TIERS = Object.freeze(["standard", "hardest"]);
 const digest = (parts) => sha256(JSON.stringify(parts)).slice(0, 32);
 const byRank = (left, right) => (left.rank < right.rank ? -1 : (left.rank > right.rank ? 1 : 0));
 
+// Sampled units by stretch.
+const perStratum = (units) => units.reduce((counts, unit) => counts.set(unit.stratum, (counts.get(unit.stratum) ?? 0) + 1), new Map());
+
 /**
  * Recall, critical recall, no loss, gain and event coverage on the reference sample (plan Part 3, "Retrieval recall"
  * and the floors), from which questions the searches found with tags (`foundWithTags`) and with words only
  * (`foundWordsOnly`), and which quotes have a kept event tag (`eventTaggedUnitIds`). Each is the design-based ratio
- * over every sampled unit, weighted by its inclusion probability: a unit with no critical question, or no question
- * word search misses, or no quote that reports an event, adds nothing to that ratio but stays in the design. A sample
- * with a nonresponse can't be measured: the run stopped before the pilot. Returns pointerFloors' recall inputs and
- * each unit's counts, content-free.
+ * over the sampled units the reference step measured, weighted by inclusion probability: a unit with no critical
+ * question, or no question word search misses, or no quote that reports an event, adds nothing to that ratio but stays
+ * in the design. A nonresponse is left out (owner, 11 Oct 2026, question 22: B), and its stretch's measured units stand
+ * for it: each one's inclusion probability is multiplied by the share of its stretch's sampled units that were measured,
+ * the usual weighting-class adjustment, so the measured units count as the stretch's sample. That assumes a unit left
+ * out would have done as its stretch's others did, so `sample` counts the units measured for the sample target. A
+ * stretch with no unit measured drops out. Returns pointerFloors' recall inputs and each measured unit's counts,
+ * content-free.
  */
 export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds } = {}) {
   invariant(reference && Array.isArray(reference.units) && reference.units.length > 0 && foundWithTags instanceof Set
     && foundWordsOnly instanceof Set && eventTaggedUnitIds instanceof Set, "POINTER_RECALL_INPUT_INVALID");
-  invariant(reference.units.every((unit) => unit.status === "complete" && Array.isArray(unit.questions) && unit.questions.length > 0),
-    "POINTER_REFERENCE_INCOMPLETE");
+  invariant(reference.units.every((unit) => unit.status === "nonresponse"
+    || (unit.status === "complete" && Array.isArray(unit.questions) && unit.questions.length > 0)), "POINTER_REFERENCE_INVALID");
+  const measured = reference.units.filter((unit) => unit.status === "complete");
+  const drawn = perStratum(reference.units);
+  const answered = perStratum(measured);
+  const inclusion = (unit) => (answered.get(unit.stratum) === drawn.get(unit.stratum) ? unit.inclusion_probability
+    : unit.inclusion_probability * answered.get(unit.stratum) / drawn.get(unit.stratum));
   const count = (questions, found) => questions.filter((question) => found.has(question.question_id)).length;
   const critical = (unit) => unit.questions.filter((question) => question.critical);
   const missed = (unit) => unit.questions.filter((question) => !foundWordsOnly.has(question.question_id));
   const eventQuotes = (unit) => [...new Set(unit.questions.filter((question) => question.event).map((question) => question.unit_id))];
-  const rows = (pick) => reference.units.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
-    inclusion_probability: unit.inclusion_probability, ...pick(unit) }));
+  const rows = (pick) => measured.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
+    inclusion_probability: inclusion(unit), ...pick(unit) }));
   const bound = (pick) => designRatioBound({ units: rows(pick), confidence: POINTER_FLOORS.confidence });
   const recall = bound((unit) => ({ asked: unit.questions.length, found: count(unit.questions, foundWithTags) }));
   const wordsOnly = bound((unit) => ({ asked: unit.questions.length, found: count(unit.questions, foundWordsOnly) }));
@@ -450,9 +462,53 @@ export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly,
     gain: gain.estimate === null ? null : gain,
     event_coverage: eventCoverage.estimate === null ? null : eventCoverage,
     words_only: wordsOnly,
-    units: reference.units.map((unit) => ({ unit_id: unit.unit_id, questions: unit.questions.length,
+    sample: { units: reference.units.length, measured: measured.length },
+    units: measured.map((unit) => ({ unit_id: unit.unit_id, questions: unit.questions.length,
       found_with_tags: count(unit.questions, foundWithTags), found_words_only: count(unit.questions, foundWordsOnly),
       critical_questions: critical(unit).length, event_quotes: eventQuotes(unit).length }))
+  });
+}
+
+/**
+ * The misses log (owner, 11 Oct 2026, question 22: B, "keep a log of the misses and then work on those later"): what
+ * the measured generation leaves out, so later rounds can close it. `log` is for the private store alone and names
+ * things only by ID and page: the sampled questions words and tags didn't find (with the quote each asks about, whether
+ * it is critical or about an event, and whether word search alone found it, which the no-loss check counts against the
+ * tags), the sampled units the reference step couldn't measure (with why), the sampled quotes that report an event and
+ * carry no kept event tag, the pages left untagged (with why), and the sampled event pairs the event check dropped that
+ * count as real (`droppedReal`, as the measurement judged them). `counts` gives the same in numbers, with the event
+ * pairs the check dropped and left unanswered (`eventCheck`), for the report and the owner page. The questions and
+ * quotes themselves stay in the reference and the pass.
+ */
+export function pointerMisses({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds, untagged, eventCheck, droppedReal } = {}) {
+  invariant(reference && Array.isArray(reference.units) && foundWithTags instanceof Set && foundWordsOnly instanceof Set
+    && eventTaggedUnitIds instanceof Set && Array.isArray(untagged) && eventCheck && Number.isSafeInteger(eventCheck.rejected)
+    && Number.isSafeInteger(eventCheck.unanswered) && Array.isArray(droppedReal), "POINTER_MISSES_INPUT_INVALID");
+  const measured = reference.units.filter((unit) => unit.status === "complete");
+  const questions = measured.flatMap((unit) => unit.questions.filter((question) => !foundWithTags.has(question.question_id))
+    .map((question) => ({ question_id: question.question_id, unit_id: question.unit_id, sampled_unit_id: unit.unit_id,
+      critical: question.critical === true, event: question.event === true, found_words_only: foundWordsOnly.has(question.question_id) })));
+  const notMeasured = reference.units.filter((unit) => unit.status !== "complete")
+    .map((unit) => ({ unit_id: unit.unit_id, reason: unit.reason ?? null }));
+  const eventQuotes = [...new Set(measured.flatMap((unit) => unit.questions.filter((question) => question.event).map((question) => question.unit_id)))]
+    .filter((unitId) => !eventTaggedUnitIds.has(unitId));
+  const pages = untagged.map(({ page, reason }) => ({ page, reason }));
+  const dropped = droppedReal.map(({ pair_id: pairId, unit_id: unitId }) => ({ pair_id: pairId, unit_id: unitId }));
+  return deepFreeze({
+    log: { questions_not_found: questions, units_not_measured: notMeasured, event_quotes_untagged: eventQuotes, pages_untagged: pages,
+      dropped_events_judged_real: dropped },
+    counts: {
+      questions_not_found: questions.length,
+      critical_questions_not_found: questions.filter((question) => question.critical).length,
+      event_questions_not_found: questions.filter((question) => question.event).length,
+      questions_lost_to_tags: questions.filter((question) => question.found_words_only).length,
+      units_not_measured: notMeasured.length,
+      event_quotes_untagged: eventQuotes.length,
+      pages_untagged: pages.length,
+      event_pairs_dropped: eventCheck.rejected + eventCheck.unanswered,
+      event_checks_unanswered: eventCheck.unanswered,
+      dropped_events_judged_real: dropped.length
+    }
   });
 }
 
@@ -559,13 +615,15 @@ async function foundQuestions({ units, passageIdForUnit, search, matchTags }) {
  * and its relatives on the reference sample, through `search({ query, matchTags })` (the first results of
  * find_journal_quotes on that generation, as passage IDs in rank order); both judges on every fixed sample, the Codex
  * one (standard tier) and the Claude one (hardest tier) each in calls of their own, 50 pairs to a call, with one retry,
- * all sent at once and expiring at `deadline`; and then every floor. A pair counts as correct only when both judges
- * accept it, and one either leaves unscored counts as wrong; a dropped event pair counts as real when either accepts it
- * or leaves it unscored. `pass` is the measured pass's result (its checked results, event-check ledger counts, dropped
- * event pairs and coverage), and `quoteGeneration` its generation's input, which gives each quote's passage and text.
+ * all sent at once and expiring at `deadline`; then every floor, and the misses log. A pair counts as correct only
+ * when both judges accept it, and one either leaves unscored counts as wrong; a dropped event pair counts as real when
+ * either accepts it or leaves it unscored. `pass` is the measured pass's result (its checked results, event-check
+ * ledger counts, dropped event pairs and coverage), and `quoteGeneration` its generation's input, which gives each
+ * quote's passage and text.
  * `challenge`, the reference step's result on calibration's units, is searched the same way and reported apart
- * (`report.challenge`); it never decides. Returns the floors, a content-free report, and each sample's items with both
- * verdicts for the private store.
+ * (`report.challenge`); it never decides. Returns `publish` (every one of POINTER_CHECKS holds), the checks failed and
+ * the targets missed, the floors, a content-free report with the misses counted, and for the private store the misses
+ * log and each sample's items with both verdicts.
  */
 export async function runPointerMeasure({ quoteGeneration, pass, reference, challenge = null, search, seed, stepId, deadline, port, grant,
   now = () => new Date(), beforeHardestSend = null, oneAtATime = [] } = {}) {
@@ -579,12 +637,11 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
   const indexes = pointerTagIndexes({ batches: pass.checked.map((result) => ({ units: result.unit_ids.map((unitId) => input.unitsById.get(unitId)),
     kept: result.kept, passageIdForUnit: input.passageIdForUnit })) });
 
-  // Recall, words with tags and words only, on the generation itself.
+  // Recall, words with tags and words only, on the generation itself. A nonresponse has no question to search.
   const eventTagged = new Set(indexes.pairs.filter((pair) => pair.kind === "event").map((pair) => pair.unit_id));
-  const recall = measurePointerRecall({ reference,
-    foundWithTags: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
-    foundWordsOnly: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }),
-    eventTaggedUnitIds: eventTagged });
+  const foundWithTags = await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: true });
+  const foundWordsOnly = await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: false });
+  const recall = measurePointerRecall({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds: eventTagged });
   // Calibration's units, reported apart.
   const challengeUnits = challenge ? challenge.units.filter((unit) => unit.status === "complete") : [];
   const challengeReport = challenge ? measurePointerChallenge({ reference: challenge,
@@ -612,12 +669,15 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
     if (outcome.status === "answered") for (const judgment of outcome.output.judgments) verdicts[calls[index].tier].set(judgment.pair_id, judgment);
   });
   const accepts = (judgment) => judgment.mentions === true && judgment.kind_right === true;
+  // Correct: both judges accept it. Real, among the dropped events: either accepts it, or one leaves it unscored.
+  const correct = (item) => item.codex && item.claude && accepts(item.codex) && accepts(item.claude);
+  const real = (item) => !item.codex || !item.claude || accepts(item.codex) || accepts(item.claude);
   const scored = samples.map((sample) => {
     const items = sample.items.map((item) => ({ ...item, codex: verdicts.standard.get(item.pair_id) ?? null, claude: verdicts.hardest.get(item.pair_id) ?? null }));
     const both = items.filter((item) => item.codex && item.claude);
     const counts = { name: sample.name, pairs: sample.pairs, sampled: items.length,
-      correct: items.filter((item) => item.codex && item.claude && accepts(item.codex) && accepts(item.claude)).length,
-      real: items.filter((item) => !item.codex || !item.claude || accepts(item.codex) || accepts(item.claude)).length,
+      correct: items.filter(correct).length,
+      real: items.filter(real).length,
       unscored_codex: items.filter((item) => !item.codex).length, unscored_claude: items.filter((item) => !item.claude).length,
       agreement: cohenKappa(both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) }))) };
     return { items, counts, both };
@@ -642,22 +702,30 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
       dropped: { pairs: dropped.pairs, sampled: dropped.sampled, real: dropped.real } },
     event_coverage: recall.event_coverage,
     coverage: { untagged_pages: pass.coverage.untagged.length, pages_with_quotes: pass.coverage.pages_with_quotes },
-    anchors: { broken: pointerBrokenAnchors({ checked: pass.checked, unitsById: input.unitsById }) }
+    anchors: { broken: pointerBrokenAnchors({ checked: pass.checked, unitsById: input.unitsById }) },
+    sample: recall.sample
   });
+  const misses = pointerMisses({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds: eventTagged, untagged: pass.coverage.untagged,
+    eventCheck: pass.event_check, droppedReal: scored.find((sample) => sample.counts.name === "dropped_events").items.filter(real) });
   return deepFreeze({
     generation: input.generation,
     step_id: stepId,
     seed_sha256: seedSha256,
     publish: floors.publish,
+    checks_failed: floors.checks_failed,
+    targets_missed: floors.targets_missed,
     floors: floors.floors,
     report: {
       recall_units: recall.units,
+      sample: recall.sample,
       words_only: { estimate: recall.words_only.estimate, lower_bound: recall.words_only.lower_bound },
       samples: scored.map((sample) => sample.counts),
       agreement: cohenKappa(scored.flatMap((sample) => sample.both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) })))),
       calls: pointerCallCounts(outcomes),
+      misses: misses.counts,
       challenge: challengeReport
     },
+    misses: misses.log,
     samples: scored.map((sample) => ({ name: sample.counts.name, items: sample.items }))
   });
 }

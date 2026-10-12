@@ -153,7 +153,9 @@ test("the pointer run goes from the reference sample to publication, each step w
     [1, 0.5, {}]);
   assert.equal(measure.report.challenge.units, challenged.counts.sampled_units);
   assert.equal(measure.publish, true);
-  assert.deepEqual(measure.failed_floors, []);
+  assert.deepEqual([measure.checks_failed, measure.targets_missed], [[], []]);
+  assert.deepEqual(measure.report.sample, { units: 96, measured: 96 });
+  assert.equal(measure.report.misses.questions_not_found, 0);
   assert.equal(measure.floors.recall.estimate, 1);
   assert.equal(measure.floors.no_loss.recall_words_only_estimate, 0.5, "words alone miss every rain question");
   assert.equal(measure.floors.gain.estimate, 1);
@@ -184,13 +186,13 @@ test("the pointer run goes from the reference sample to publication, each step w
   assert.equal((await f.run("pointer-publish")).pointer.published.at, deployed.pointer.published.at);
 });
 
-test("reference units the coverage judges never confirm stop the run before the pilot, each listed by its page", async (t) => {
+test("reference units the coverage judges never confirm are listed by their page and logged, and the run goes on", async (t) => {
   // The judges never confirm a page's first quote on the even pages.
   const f = await runtimeEnvironment(t, { refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0 });
   await f.run("stage", "build-quotes");
-  const stopped = await f.run("pointer-reference");
-  assert.equal(stopped.pointer.blocker, "POINTER_REFERENCE_NONRESPONSE");
-  const { reference } = stopped.pointer;
+  const referenced = await f.run("pointer-reference");
+  assert.equal(referenced.pointer.blocker, null);
+  const { reference } = referenced.pointer;
   assert.ok(reference.nonresponse_units.length > 0);
   for (const unit of reference.nonresponse_units) {
     assert.match(unit.unit_id, /^page:\d+$/u);
@@ -199,9 +201,26 @@ test("reference units the coverage judges never confirm stop the run before the 
   }
   assert.equal(reference.counts.nonresponse_units, reference.nonresponse_units.length);
   assert.equal(reference.counts.complete_units + reference.counts.nonresponse_units, 96);
-  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_REFERENCE_NONRESPONSE" });
+  // The pass and the measurement go on (owner, 11 Oct 2026, question 22: B): recall is measured on the units measured,
+  // and the sample target, which stops nothing, reports the rest.
+  const { measure } = (await f.run("pointer-challenge", "pointer-pilot", "pointer-pass", "pointer-measure")).pointer;
+  assert.equal(measure.publish, true);
+  assert.deepEqual([measure.checks_failed, measure.targets_missed], [[], ["sample"]]);
+  assert.deepEqual(measure.report.sample, { units: 96, measured: reference.counts.complete_units });
+  assert.deepEqual(measure.floors.sample.not_measured, reference.counts.nonresponse_units);
+  assert.equal(measure.report.misses.units_not_measured, reference.counts.nonresponse_units);
+  assert.equal(measure.floors.recall.estimate, 1, "every measured unit's questions are found");
+});
+
+test("a reference step that measures no sampled unit stops the run before the pilot", async (t) => {
+  const f = await runtimeEnvironment(t, { refuse: () => true });
+  await f.run("stage", "build-quotes");
+  const stopped = await f.run("pointer-reference");
+  assert.equal(stopped.pointer.blocker, "POINTER_REFERENCE_EMPTY");
+  assert.deepEqual([stopped.pointer.reference.counts.complete_units, stopped.pointer.reference.nonresponse_units.length], [0, 96]);
+  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_REFERENCE_EMPTY" });
   // Status still answers.
-  assert.equal((await f.run("status")).pointer.blocker, "POINTER_REFERENCE_NONRESPONSE");
+  assert.equal((await f.run("status")).pointer.blocker, "POINTER_REFERENCE_EMPTY");
 });
 
 test("the step deadlines are run settings, checked before anything runs", async (t) => {

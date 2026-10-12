@@ -10,7 +10,8 @@ import { POINTER_PAGELESS_STRETCH, pointerPagelessStretches } from "./pointer-ta
 // coverage call; two coverage judges, one Codex and one Claude, each see the quotes with their questions, at most 25
 // quotes to a call (fewer when the questions are long), and list questions that repeat, combine or copy; and code, not
 // either judge alone, confirms a quote only when both do. A unit gets one writer retry in all, with both judges' notes
-// when a quote was left unconfirmed; a unit still incomplete after it is a nonresponse, which fails the recall floor.
+// when a quote was left unconfirmed; a unit still incomplete after it is a nonresponse, left out of the measurement and
+// logged as a miss.
 // The model calls and the deadline are the runtime's. Nothing returned for a log or a report holds journal text: notes
 // go only into the writer's retry packet.
 

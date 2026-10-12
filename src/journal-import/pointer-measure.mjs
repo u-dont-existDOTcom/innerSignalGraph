@@ -1,10 +1,10 @@
 import { ValidationError } from "../core/errors.mjs";
 
-// The statistics that decide whether a pointer pass is published (plan 2026-10-09-journal-quote-first.md, Part 3,
-// "Measuring it, with the floors fixed in advance"): recall's design-based lower bound on the random unit sample,
-// the Clopper-Pearson bound on tag precision, the two judges' agreement, and the floors. Everything here is
-// arithmetic on counts, so no journal text comes in. The special functions are written out here, so nothing beyond
-// Node is needed.
+// The statistics that measure a pointer pass and decide whether it may be published (plan
+// 2026-10-09-journal-quote-first.md, Part 3, "Measuring it, with the floors fixed in advance"): recall's design-based
+// lower bound on the random unit sample, the Clopper-Pearson bound on tag precision, the two judges' agreement, and
+// the floors. Everything here is arithmetic on counts, so no journal text comes in. The special functions are written
+// out here, so nothing beyond Node is needed.
 
 // The floors, stated in the plan before anything is measured. Only the owner can change them.
 export const POINTER_FLOORS = Object.freeze({
@@ -18,6 +18,15 @@ export const POINTER_FLOORS = Object.freeze({
   event_coverage_point_estimate: 0.75,
   confidence: 0.95
 });
+
+// The floors that block publication (owner, 11 Oct 2026, question 22: B, "keep a log of the misses and then work on
+// those later since as you said it doesn't cause harm, just lack of info, so the main pass can be fast"). These checks
+// stop a map that would mislead: a wrong tag (precision, events included, so a dream isn't listed as something that
+// happened), tags that make search find less than word search alone (no loss), and a tag pointing at words its quote
+// doesn't have (anchors); and a pass that kept no tag has nothing to publish. Every other floor is a completeness
+// target: falling short means information is missing, not wrong, so it is reported, its misses are logged for a later
+// round, and it doesn't stop publication.
+export const POINTER_CHECKS = Object.freeze(["no_loss", "precision", "anchors", "tags"]);
 
 // Precision is gated for every tag kind, each on its own fixed sample, so pairs of one kind can't carry another. A
 // kind with no more pairs than a sample holds is judged in full: that census gives its exact precision, so it needs no
@@ -339,18 +348,20 @@ export function eventCheckRecall({ kept, dropped, confidence = 0.95 } = {}) {
 const isEstimate = (value) => value === null || isProbability(value);
 const isRatioResult = (value) => isObject(value) && isEstimate(value.estimate) && isEstimate(value.lower_bound);
 
-// The publication floors. `recall`, `critical_recall` and `gain` are designRatioBound results at
-// POINTER_FLOORS.confidence (`recall` is null when a sampled unit is a nonresponse; `critical_recall`, recall with words
-// and tags on the critical questions, is null when the sample has none; `gain` is null when word search misses no
-// sampled question). The four recall estimates use the same weights; the critical pair is null when the sample has no
-// critical question, and its first is `critical_recall`'s estimate. `event_coverage`, also a designRatioBound result,
-// is the share of the sampled quotes that report an event with a kept event tag, null when no sampled quote reports one.
-// `precision` holds each kind's sample (`pairs`, `sampled`, `correct`); `event_check` the event pairs checked and how
-// many went unanswered; `event_recall` the samples eventCheckRecall takes, the kept one being the event kind's
-// precision sample. The pass is published only when every floor holds.
+// The floors. `recall`, `critical_recall` and `gain` are designRatioBound results at POINTER_FLOORS.confidence, over
+// the sampled units the reference step measured (measurePointerRecall); `recall` may be null when it is unknown;
+// `critical_recall`, recall with words and tags on the critical questions, is null when the sample has none; `gain` is
+// null when word search misses no sampled question. The four recall estimates use the same weights; the critical pair
+// is null when the sample has no critical question, and its first is `critical_recall`'s estimate. `event_coverage`,
+// also a designRatioBound result, is the share of the sampled quotes that report an event with a kept event tag, null
+// when no sampled quote reports one. `sample` counts the sampled units and the ones measured. `precision` holds each
+// kind's sample (`pairs`, `sampled`, `correct`); `event_check` the event pairs checked and how many went unanswered;
+// `event_recall` the samples eventCheckRecall takes, the kept one being the event kind's precision sample. Each floor
+// says whether it `blocks`: the pass may be published when every one of POINTER_CHECKS holds (`checks_failed` is
+// empty), and `targets_missed` lists the completeness targets it fell short of.
 export function pointerFloors(input) {
   invariant(isObject(input), "POINTER_FLOORS_INPUT_INVALID");
-  const { recall, gain, precision, coverage, anchors, event_check: eventCheck, event_recall: eventRecall } = input;
+  const { recall, gain, precision, coverage, anchors, sample, event_check: eventCheck, event_recall: eventRecall } = input;
   invariant(recall === null || isRatioResult(recall), "POINTER_FLOORS_RECALL_INVALID");
   invariant(isEstimate(input.recall_estimate) && isEstimate(input.recall_words_only_estimate),
     "POINTER_FLOORS_NO_LOSS_INVALID");
@@ -374,15 +385,17 @@ export function pointerFloors(input) {
   invariant(isObject(coverage) && isCount(coverage.untagged_pages) && isCount(coverage.pages_with_quotes)
     && coverage.untagged_pages <= coverage.pages_with_quotes, "POINTER_FLOORS_COVERAGE_INVALID");
   invariant(isObject(anchors) && isCount(anchors.broken), "POINTER_FLOORS_ANCHORS_INVALID");
+  invariant(isObject(sample) && isCount(sample.units) && sample.units > 0 && isCount(sample.measured) && sample.measured <= sample.units,
+    "POINTER_FLOORS_SAMPLE_INVALID");
 
-  // Recall unknown, or a bound that can't be computed, fails.
+  // Recall unknown, or a bound that can't be computed, falls short.
   const recallBound = recall === null ? null : recall.lower_bound;
   const recallFloor = Object.freeze({
     holds: recallBound !== null && recallBound >= POINTER_FLOORS.recall_lower_bound,
     estimate: recall === null ? null : recall.estimate,
     lower_bound: recallBound,
     minimum: POINTER_FLOORS.recall_lower_bound,
-    reason: recall === null ? "recall unknown: a sampled unit is a nonresponse"
+    reason: recall === null ? "recall unknown"
       : recallBound === null ? recall.reason ?? "no lower bound" : null
   });
 
@@ -401,7 +414,7 @@ export function pointerFloors(input) {
   });
 
   // Recall on the critical questions, on the point estimate with the lower bound reported, so the other questions can't
-  // carry a pass that misses them, even when word search misses the same ones.
+  // hide a pass that misses them, even when word search misses the same ones.
   const criticalFloor = Object.freeze(criticalRecall === null
     ? { holds: true, applicable: false, estimate: null, lower_bound: null, minimum: POINTER_FLOORS.critical_recall_point_estimate,
       reason: "no critical question in the sample" }
@@ -466,8 +479,8 @@ export function pointerFloors(input) {
   });
 
   // Event tags on the sampled quotes that report an event, measured against the reference, so a pass that tags no event
-  // fails even though the event floors above, which see only the tagger's pairs, have nothing to gate. On the point
-  // estimate, with the lower bound reported.
+  // falls short here even though the event floors above, which see only the tagger's pairs, have nothing to measure. On
+  // the point estimate, with the lower bound reported.
   const eventCoverage = input.event_coverage;
   const eventCoverageFloor = Object.freeze(eventCoverage === null
     ? { holds: true, applicable: false, estimate: null, lower_bound: null, minimum: POINTER_FLOORS.event_coverage_point_estimate,
@@ -476,7 +489,23 @@ export function pointerFloors(input) {
       applicable: true, estimate: eventCoverage.estimate, lower_bound: eventCoverage.lower_bound,
       minimum: POINTER_FLOORS.event_coverage_point_estimate, reason: eventCoverage.estimate === null ? "no estimate" : null });
 
-  const floors = Object.freeze({
+  // Every sampled unit measured. A unit the reference step left without its questions or its searches (a nonresponse)
+  // is left out of recall and the floors measured with it, and its stretch's measured units stand for it
+  // (measurePointerRecall); that assumes it would have done as they did, which a hard page may not. So this target
+  // reports it, and the misses log lists the unit for a later round.
+  const sampleFloor = Object.freeze({
+    holds: sample.measured === sample.units,
+    units: sample.units,
+    measured: sample.measured,
+    not_measured: sample.units - sample.measured,
+    reason: sample.measured === sample.units ? null : "sampled units not measured"
+  });
+
+  // Something to publish: a pass that kept no tag would publish nothing new.
+  const keptPairs = sum(POINTER_PRECISION_SAMPLES.kinds.map((kind) => precision[kind].pairs));
+  const tagsFloor = Object.freeze({ holds: keptPairs > 0, pairs: keptPairs, reason: keptPairs > 0 ? null : "no tag kept: nothing to publish" });
+
+  const named = {
     recall: recallFloor,
     no_loss: noLossFloor,
     critical_recall: criticalFloor,
@@ -486,7 +515,17 @@ export function pointerFloors(input) {
     event_check_recall: eventRecallFloor,
     event_coverage: eventCoverageFloor,
     coverage: coverageFloor,
-    anchors: anchorsFloor
+    anchors: anchorsFloor,
+    sample: sampleFloor,
+    tags: tagsFloor
+  };
+  const floors = Object.freeze(Object.fromEntries(Object.entries(named)
+    .map(([name, floor]) => [name, Object.freeze({ holds: floor.holds, blocks: POINTER_CHECKS.includes(name), ...floor })])));
+  const checksFailed = POINTER_CHECKS.filter((name) => !floors[name].holds);
+  return Object.freeze({
+    publish: checksFailed.length === 0,
+    checks_failed: Object.freeze(checksFailed),
+    targets_missed: Object.freeze(Object.keys(floors).filter((name) => !floors[name].blocks && !floors[name].holds)),
+    floors
   });
-  return Object.freeze({ publish: Object.values(floors).every((floor) => floor.holds), floors });
 }

@@ -2766,7 +2766,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // The pointer pass (plan 2026-10-09-journal-quote-first.md, Part 3): a run of steps over the quote corpus's quotes,
     // each with its deadline saved when it starts, so a resumed step keeps it and sends nothing after it. The run state
     // holds only counts, page numbers and digests; results that hold journal text go to the private store, named in the
-    // state by reference. A run that fails a floor or has a nonresponse keeps its blocker, and no later step runs.
+    // state by reference. A run whose measurement fails a check, or whose reference step measured no unit, keeps its
+    // blocker, and no later step runs; a completeness target missed is logged and stops nothing (owner, 11 Oct 2026,
+    // question 22: B).
     // A run's generation is a new generation of the quote corpus, and it reads dates the way the run setting said when
     // the run started: a changed setting needs a new run (`pointer-new-run`), so no step mixes two readings.
     const pointerRun = async () => {
@@ -2812,7 +2814,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       event_pairs: result.event_pairs, dropped_event_pairs: result.dropped_event_pairs, event_check: result.event_check, coverage: result.coverage,
       report: result.report, calls: result.calls, tagger_answered_at: result.tagger_answered_at });
 
-    // Step 2: the reference sample's questions, both coverage judges and the searches. A nonresponse stops the run.
+    // Step 2: the reference sample's questions, both coverage judges and the searches. A nonresponse is listed, left out
+    // of the measurement and logged as a miss; the run stops here only when no sampled unit was measured, since then
+    // the no-loss check, which the measurement runs on these units, couldn't run.
     async function pointerReference() {
       const run = await pointerRun();
       pointerHardestAttested();
@@ -2825,8 +2829,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         .map((unit) => ({ unit_id: unit.unit_id, reason: unit.reason, deadline_cause: unit.deadline_cause ?? null }));
       await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:reference`, reference), counts: pointerReferenceCounts(reference),
         nonresponse_units: nonresponse });
-      if (nonresponse.length > 0) {
-        run.blocker = "POINTER_REFERENCE_NONRESPONSE";
+      if (nonresponse.length === reference.units.length) {
+        run.blocker = "POINTER_REFERENCE_EMPTY";
         await save();
       }
       return summary();
@@ -2905,7 +2909,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     // Step 5: the measurement of the generation the pass built, stored as it would be published (not published), so
-    // the searches run on it. A floor that fails stops the run.
+    // the searches run on it. A check that fails stops the run; the targets missed and the misses log are reported.
     async function pointerMeasure() {
       const run = await pointerRun();
       pointerHardestAttested();
@@ -2959,10 +2963,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const result = await runPointerMeasure({ quoteGeneration, pass: stored, reference, challenge, search, seed: step.seed, stepId: step.step_id,
             deadline: step.deadline, port, grant, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns });
           await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:measure`, result), publish: result.publish,
-            failed_floors: Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name),
-            floors: result.floors, report: result.report });
+            checks_failed: result.checks_failed, targets_missed: result.targets_missed, floors: result.floors, report: result.report });
           if (!result.publish) {
-            run.blocker = "POINTER_FLOORS_FAILED";
+            run.blocker = "POINTER_CHECKS_FAILED";
             await save();
           }
         } finally { reader.close(); }
@@ -2971,7 +2974,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     // Step 6, on the owner's `deploy`: exactly the measured generation, identified by its manifest's reference and its
-    // graph's digest, and only when every floor held. It replaces the published quote generation.
+    // graph's digest, and only when every check held. It replaces the published quote generation.
     async function pointerPublish() {
       const run = state.pointer;
       invariant(run?.measure?.status === "done" && run.measure.publish === true && !run.blocker, "POINTER_NOT_READY_TO_PUBLISH");

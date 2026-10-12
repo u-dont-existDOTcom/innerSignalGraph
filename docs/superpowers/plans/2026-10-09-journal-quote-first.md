@@ -287,10 +287,20 @@ Each new test fails without the source change.
 Owner request, 11 Oct 2026, 01:03 UTC: "i do want to make this journal import just happen in a few hours for the
 public, not weeks. but i also don't want so many gaps and errors and failures..."
 
+Owner direction on the floors, 11 Oct 2026 (question 22). At 22:14 UTC: "i think we can just keep a log of the misses
+and then work on those later since as you said it doesn't cause harm, just lack of info, so the main pass can be
+fast, then the rest can be built slowly to completion, learning lessons along the way so each time it is faster". At
+23:49 UTC, on the floors as first written here: "you're saying the map never goes live until every miss is cleared?
+isn't that the opposite of what i was saying? how is that in alignment with the quick first pass idea to get
+something useful?" His words choose option B of the three then set out to him: only the checks against harm block
+publication, and the completeness targets are reported, with their misses logged for later rounds ("Floors" and "The
+misses log and later rounds" below). Option A (every floor blocks, as first written) and option C (nothing blocks)
+stay his to choose instead.
+
 Outcome: a journal the size of the owner's is searchable by its words and by the people, places, topics and events
 it mentions within a few hours of upload. Its errors are measured, and none of them can change what the journal says.
 
-This part builds steps 3 and 4 of the design above. Nothing in it is built yet.
+This part builds steps 3 and 4 of the design above.
 
 ### Why the semantic import can't get there
 
@@ -324,13 +334,14 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   event: the tagger tags what it is about as a topic instead. Before the generation is built, every event tag–quote
   pair goes to an event check (the `pair_judge` role on the Codex lane, 50 pairs to a call, one retry), which scores
   the full pair: the quote really mentions what the label names, and reports it as happening. A pair it rejects or
-  leaves unanswered is dropped and counted, and neither can lose events silently: the event-check floor below fails
-  the pass when more than 2% are left unanswered, and the event-check recall floor has both judges score a sample of
+  leaves unanswered is dropped and counted, and neither can lose events silently: the event-check target below is
+  missed when more than 2% are left unanswered, and the event-check recall target has both judges score a sample of
   the dropped pairs, rejected or unanswered, as well as the kept ones, so a check that throws out real events, or
-  leaves them unanswered, fails the pass. Event-check items expire at the pass's saved deadline like the tagger's
-  batches; a check still unanswered then counts as unanswered, so its pair is dropped, and a resumed pass keeps the
-  same deadline. So a dream reaches the timeline as something that happened only if both the tagger and the check get
-  it wrong, and the precision floor on events measures what is left.
+  leaves them unanswered, misses it, and the misses log counts them. Event-check items expire at the pass's saved
+  deadline like the tagger's batches; a check still unanswered then counts as unanswered, so its pair is dropped, and
+  a resumed pass keeps the same deadline. So a dream reaches the timeline as something that happened only if both the
+  tagger and the check get it wrong, and the precision check on events, which blocks publication, measures what is
+  left.
 - **No coreference.** A tag never claims that "he", "she", "there" or a different name means a named person, place or
   organization. A pronoun-only mention isn't tagged, and this part has no aliases: telling that two names mean the
   same person is a later part with its own measurement. So every quote a name tag points at contains that name.
@@ -408,12 +419,12 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   - a batch still unanswered is untagged with the reason `deadline`, an event check still unanswered drops its pair
     and counts against the event-check floor, and the pass builds;
   - a sampled unit whose questions or searches aren't complete, or that has a quote the coverage check hasn't
-    confirmed, is a nonresponse (see the measurement below), so the recall floor fails, and the run stops before the
-    pilot;
+    confirmed, is a nonresponse (see the measurement below): it is left out of the measurement and logged, and the
+    run goes on unless no sampled unit was measured;
   - a sampled pair a judge hasn't scored counts against the floor it was sampled for (as wrong for precision, as a
     real event in the sample of dropped events), which can only lower its bound, and the measurement reports.
 - **Never resumed past it.** Sending any of those again is a new step, never a resume, and a generation that fails a
-  floor this way is discarded like any other. No step relies on the worker's `--once` mode, which waits out
+  check this way is discarded like any other. No step relies on the worker's `--once` mode, which waits out
   usage-limit backoff.
 - **No stops for a person.** Nothing in the pass waits for the owner. Publishing the result is still the owner's
   `deploy`.
@@ -471,18 +482,22 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   is left out and list no question, so one judge's miss can't let a biased or self-answering question set through;
   otherwise each judge says in a few words what is missing, repeated, combined or copied. The question writer then
   gets one retry for that unit, with both judges' notes, and both judges check the new questions. A quote still not
-  confirmed, after that retry or at the reference step's deadline, makes its unit a nonresponse (below), so the recall
-  floor fails and the run stops before the pilot: a question set that leaves the hard part of a quote unasked can't be
-  measured around. Each judge also checks each question's critical and event marks against the definitions above, and
-  a question is critical, or about an event, when the writer or either judge marks it so.
-- **No unit drops out.** A unit's questions are complete when every one of its quotes has at least one question naming
-  it, every question names one of its quotes, and both coverage judges confirmed every one of its quotes. An
-  incomplete or failed answer gets one retry, and so does a search-writing answer that fails or leaves a question
-  without a search. A unit still without its questions or its searches, after its retry or at the reference step's
-  deadline, is a nonresponse: recall is then unknown, the recall floor fails, and the report lists the unit. So a hard
-  page can't leave the sample and lift the bound. Since the questions and searches are all done before the pilot, a
-  nonresponse stops the run there, with the units listed on the owner page, and no journal is tagged for a generation
-  that couldn't be published.
+  confirmed, after that retry or at the reference step's deadline, makes its unit a nonresponse (below): a question
+  set that leaves the hard part of a quote unasked is never measured, and the unit is counted and logged instead.
+  Each judge also checks each question's critical and event marks against the definitions above, and a question is
+  critical, or about an event, when the writer or either judge marks it so.
+- **A unit that drops out is counted.** A unit's questions are complete when every one of its quotes has at least one
+  question naming it, every question names one of its quotes, and both coverage judges confirmed every one of its
+  quotes. An incomplete or failed answer gets one retry, and so does a search-writing answer that fails or leaves a
+  question without a search. A unit still without its questions or its searches, after its retry or at the reference
+  step's deadline, is a nonresponse (question 22). It is left out of recall and the floors measured with it, and the
+  measured units of its stretch stand for it: each one's inclusion probability is multiplied by the share of its
+  stretch's sampled units that were measured (the usual weighting-class adjustment), and a stretch taken whole that
+  loses a unit is a sample from then on. That assumes the unit would have done as the rest of its stretch did, which a
+  hard page may not, so the sample target below reports every unit not measured, the report and the owner page list
+  them, and the misses log keeps them for a later round. Since the questions and searches are all done before the
+  pilot, a reference step that measures no unit at all stops the run there: the no-loss check, which blocks
+  publication, couldn't run, so no journal is tagged for a generation that couldn't be published.
 - **Calibration as a challenge set.** Calibration's units were chosen by their place in the journal plus every hazard
   (dreams, wishes, plans, hypotheticals), so they aren't a random sample. Recall on them is reported on its own, with
   hazards apart, and never stands in for a floor.
@@ -509,7 +524,7 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     stretch, would be merged with its nearest such neighbor (the standard collapsed-strata estimator, conservative in
     expectation). When every sampled unit was taken with certainty (in a journal this short, possibly a single
     unit), recall is exact and its bound is the estimate. Otherwise, when the units drawn with probability below 1
-    leave no degree of freedom, the bound can't be computed and the recall floor fails.
+    leave no degree of freedom, the bound can't be computed and the recall target is missed.
   - No loss, critical recall and gain use the same weights as recall.
 - **Tag precision.** It is measured on tag–quote pairs, the way search uses tags: each quote a kept tag is anchored in
   makes one pair, so a tag on a hundred quotes is a hundred pairs, and a wrong one weighs as much as the wrong hits it
@@ -534,74 +549,103 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     never a gate.
   - Each sample's size is fixed before scoring and each is scored once, so its one-sided 95% Clopper-Pearson bound is
     computed once, with no stopping early; a census needs no bound.
-- **Floors** (stated now; the owner approves them by merging this plan, and only the owner can change them). The pass
-  is published only when every one holds. A pass with no tags fails, and so does one that leaves more than 2% of the
-  pages without a kept tag:
-  - **recall:** the one-sided 95% lower bound of recall with words and tags, on the random sample, is at least 85%;
-  - **no loss:** recall with words and tags is at least recall with words only, on the same sampled questions, all of
-    them and the critical ones (point estimates). If the sample has no critical question, the report says so and this
-    floor is judged on all questions alone;
-  - **critical recall:** recall with words and tags on the sample's critical questions is at least 85%, the recall
-    floor's level, so a pass can't miss what the critical questions ask while the other questions carry the recall
-    floor, even when word search misses the same ones. This floor is on the point estimate, with its lower bound
-    reported: the critical questions are a fraction of the sample, so their bound is wide, and a floor on it would
-    fail good passes by chance. If the sample has no critical question, the report says so in place of this floor;
-  - **gain:** of the sampled questions word search alone misses, words and tags find at least a quarter. This floor
-    is on the point estimate, with its lower bound reported: it is there to stop a pass that adds nothing, and a pass
+- **Floors** (stated now; the owner approves them by merging this plan, and only the owner can change them). They are
+  of two kinds (question 22). The **checks** stop a map that would mislead: no loss, precision and anchors, and a
+  pass that kept no tag has nothing to publish. The pass may be published only when every check holds. The others are
+  **completeness targets**: falling short of one means information is missing, not wrong, so it is reported, what it
+  missed goes in the misses log (below), and it stops nothing. So a pass that leaves more than 2% of the pages without
+  a kept tag misses the coverage target, and one with no tags can't be published:
+  - **recall** (target): the one-sided 95% lower bound of recall with words and tags, on the random sample, is at
+    least 85%;
+  - **no loss** (check): recall with words and tags is at least recall with words only, on the same sampled
+    questions, all of them and the critical ones (point estimates). If the sample has no critical question, the
+    report says so and this check is judged on all questions alone. With no sampled unit measured it can't be
+    shown, so it fails;
+  - **critical recall** (target): recall with words and tags on the sample's critical questions is at least 85%, the
+    recall target's level, so the other questions can't hide a pass that misses what the critical questions ask,
+    even when word search misses the same ones. This target is on the point estimate, with its lower bound reported:
+    the critical questions are a fraction of the sample, so their bound is wide, and a target on it would be missed
+    by good passes by chance. If the sample has no critical question, the report says so in place of this target;
+  - **gain** (target): of the sampled questions word search alone misses, words and tags find at least a quarter.
+    This target is on the point estimate, with its lower bound reported: it shows a pass that adds little, and a pass
     with no tags finds none of them. If word search misses no sampled question, there is nothing to gain, and the
-    report says so in place of this floor;
-  - **precision:** for each kind, the one-sided 95% lower bound of pair precision on its own sample of 150 pairs is at
-    least 90%; a kind with 150 pairs or fewer is judged in full, and its exact precision must be at least 90%. A kind
-    the generation has no pairs of has nothing to gate, and the report says so;
-  - **event check:** at most 2% of the event pairs the tagger kept are left unanswered by the event check, after its
-    retry or at the pass's deadline, so a pass that runs out of time checking events fails instead of losing them. A
-    pass whose tagger kept no event pair has nothing to check, and the report says so;
-  - **event-check recall:** of the event pairs the tagger kept that are real events, the share the event check kept,
-    with its one-sided 95% lower bound at least 90%. It combines two samples. The event kind's precision sample covers
-    the pairs the check kept, and there a pair is real only when both judges say so. Its own fixed sample of 150 of
-    the pairs the check dropped, the ones it rejected or left unanswered (all of them, if fewer), drawn with a
-    recorded seed and scored by both judges as the precision samples are, covers the rest, and there a pair counts as
-    real when either judge accepts it or one leaves it unscored. With A pairs kept, R dropped, and shares p real among
-    the kept and q among the dropped, recall is A·p / (A·p + R·q); its lower bound puts the 97.5% lower bound of p and
-    the 97.5% upper bound of q (Clopper-Pearson) into that formula, so the two hold together at 95%, and a sample that
-    is a census uses its exact share. An unanswered pair is in the dropped sample like a rejected one, so real events
-    the check leaves unanswered count as lost here even when they are under the event-check floor's 2%. So a check
-    that throws out real events, or leaves them unanswered, fails, however many false ones it rightly removes. A pass
-    with no event pair has nothing to gate, and neither has one whose two samples are both censuses with no pair
-    judged real, since it then has no real event to keep; the report says so. Otherwise the bound applies, and it is
-    zero when no kept pair is judged real;
-  - **event coverage:** of the sampled quotes that report an event, the ones with a question the writer or a coverage
-    judge marks as about an event, the share with at least one kept event tag, weighted as recall is, is at least 75%.
-    So a pass whose tagger tags no event, or tags events only as topics, fails, and the timeline can't come out empty
-    while the journal reports events: the event floors above see only the pairs the tagger made, so they can't catch
-    it. This floor is on the point estimate, with its lower bound reported, as critical recall is. If no sampled quote
-    reports an event, the report says so in place of this floor;
-  - **coverage:** at most 2% of the pages with quotes are untagged, each one listed with its reason. A page is
-    untagged when it ends with no kept tag, whatever the reason: its batch failed twice or ran out of time, the answer
-    gave it no tag, or every tag on it was dropped. So a pass whose answers are valid but nearly empty fails here.
-    Above 2%, the untagged pages' batches go into one new pass. Its generation keeps every tag the first one kept on
-    the other pages, exactly, and replaces only the retried pages' tags; the whole measurement then runs again on it
-    before anything is published, with the reference sample, its questions and its searches as they are. If
-    coverage still fails after that pass, the generation is discarded like any other that fails a floor;
-  - **anchors:** no kept tag whose anchor doesn't resolve or breaks a name rule above, which holds by construction
-    and is checked anyway.
+    report says so in place of this target;
+  - **precision** (check): for each kind, the one-sided 95% lower bound of pair precision on its own sample of 150
+    pairs is at least 90%; a kind with 150 pairs or fewer is judged in full, and its exact precision must be at least
+    90%. A kind the generation has no pairs of has nothing to gate, and the report says so;
+  - **event check** (target): at most 2% of the event pairs the tagger kept are left unanswered by the event check,
+    after its retry or at the pass's deadline, so a pass that runs out of time checking events misses it, and the
+    lost checks are counted. A pass whose tagger kept no event pair has nothing to check, and the report says so;
+  - **event-check recall** (target): of the event pairs the tagger kept that are real events, the share the event
+    check kept, with its one-sided 95% lower bound at least 90%. It combines two samples. The event kind's precision
+    sample covers the pairs the check kept, and there a pair is real only when both judges say so. Its own fixed
+    sample of 150 of the pairs the check dropped, the ones it rejected or left unanswered (all of them, if fewer),
+    drawn with a recorded seed and scored by both judges as the precision samples are, covers the rest, and there a
+    pair counts as real when either judge accepts it or one leaves it unscored. With A pairs kept, R dropped, and
+    shares p real among the kept and q among the dropped, recall is A·p / (A·p + R·q); its lower bound puts the 97.5%
+    lower bound of p and the 97.5% upper bound of q (Clopper-Pearson) into that formula, so the two hold together at
+    95%, and a sample that is a census uses its exact share. An unanswered pair is in the dropped sample like a
+    rejected one, so real events the check leaves unanswered count as lost here even when they are under the
+    event-check target's 2%. So a check that throws out real events, or leaves them unanswered, misses it, however
+    many false ones it rightly removes. A pass with no event pair has nothing to measure, and neither has one whose
+    two samples are both censuses with no pair judged real, since it then has no real event to keep; the report says
+    so. Otherwise the bound applies, and it is zero when no kept pair is judged real;
+  - **event coverage** (target): of the sampled quotes that report an event, the ones with a question the writer or a
+    coverage judge marks as about an event, the share with at least one kept event tag, weighted as recall is, is at
+    least 75%. So a pass whose tagger tags no event, or tags events only as topics, misses it, and the report shows a
+    timeline that would come out empty while the journal reports events: the event floors above see only the pairs
+    the tagger made, so they can't catch it. This target is on the point estimate, with its lower bound reported, as
+    critical recall is. If no sampled quote reports an event, the report says so in place of this target;
+  - **coverage** (target): at most 2% of the pages with quotes are untagged, each one listed with its reason. A page
+    is untagged when it ends with no kept tag, whatever the reason: its batch failed twice or ran out of time, the
+    answer gave it no tag, or every tag on it was dropped. So a pass whose answers are valid but nearly empty misses
+    it. Above 2%, the untagged pages' batches go into one new pass before the measurement. Its generation keeps every
+    tag the first one kept on the other pages, exactly, and replaces only the retried pages' tags; the measurement
+    then runs on it, with the reference sample, its questions and its searches as they are. Pages still untagged
+    after that pass go in the misses log;
+  - **anchors** (check): no kept tag whose anchor doesn't resolve or breaks a name rule above, which holds by
+    construction and is checked anyway;
+  - **sample** (target): every sampled unit was measured. Each unit not measured is listed with its reason, and the
+    report gives the floors above over the units measured ("A unit that drops out is counted");
+  - **something to publish** (check): the pass kept at least one tag.
+
+### The misses log and later rounds
+
+The first pass goes out as soon as its checks hold, and what it misses is logged and closed later, each round faster
+than the one before (question 22, quoted at the top of this part).
+
+- **The log.** Each measurement keeps, in the private store with its result, what the generation leaves out, by ID
+  and page only: the sampled questions words and tags didn't find (with the quote each asks about, whether it is
+  critical or about an event, and whether word search alone found it), the sampled units not measured (with why),
+  the sampled quotes that report an event and carry no kept event tag, the pages left untagged (with why), and the
+  sampled event pairs the check dropped that count as real. Its counts, with the event pairs the check dropped or
+  left unanswered, go in the measurement's report, its status and the owner page, so the owner sees how complete
+  each round leaves the map.
+- **Later rounds.** Each starts from the last round's log, and builds and measures a new generation under the same
+  checks, published on the owner's `deploy` in place of the one before. What a round does depends on what the log
+  shows: tagging the untagged pages again, as the coverage pass does; writing questions again for the units not
+  measured, so the next measurement covers them; and, from the questions missed, changing what the tagger is asked
+  to do on the pages where it fell short. What each round learns goes into the next one's plan. This part builds the
+  log; each later round is planned and built from it.
 
 ### Steps
 
 1. **Build** the role, schema, batching, checks, graph adaptation, search on tags and the measurement command, with
    the tests below. Codex review; the owner merges.
 2. **Reference sample:** draw the 96 units with a recorded seed and write the questions for their quotes and the
-   searches, by the reference step's deadline. A nonresponse stops the run here.
+   searches, by the reference step's deadline. A nonresponse is logged; the run stops here only when no sampled unit
+   was measured.
 3. **Pilot** on 20 pages drawn from a recorded seed outside the reference sample: seconds per batch, tokens, tags kept
    and dropped, failed batches. It never looks at a reference, and nothing is published.
 4. **Full pass** on the whole journal, timed. Built, not published.
 5. **Measure** that generation against every floor: recall on the random sample, precision on a sample of its own
    pairs of each kind, a sample of the event pairs its check dropped, its event checks left unanswered, the sampled
    quotes that report an event and have an event tag, and the coverage of its pages, with calibration's set reported
-   apart. Nothing published. If coverage fails, one new pass tags the untagged pages and this step runs again on its
-   generation. If any floor fails after that, the generation is discarded and the counts go on the owner page.
+   apart. Nothing published. If coverage misses its target, one new pass first tags the untagged pages, and this step
+   runs on its generation. If a check fails, the generation is discarded. Either way the counts, the targets missed
+   and the misses log's counts go on the owner page.
 6. **Publish** on the owner's `deploy` exactly the measured generation, identified by its digest, and only when every
-   floor holds, with the connector rebuild that ships the tool descriptions.
+   check holds, with the connector rebuild that ships the tool descriptions.
 
 ### Out of this part
 
@@ -610,8 +654,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Pictures and handwriting.** Pages that need visual reading have no quotes until their transcription is verified.
   Their reading pass uses the same design: one call per page, all at once, checked by code.
 - **The semantic import.** It stopped on 11 Oct at 01:41 UTC, when calibration round 5 went past its limit of
-  critical misses (5 confirmed, 3 allowed). Whether it starts again is an owner decision (question 21). This pass
-  doesn't depend on it.
+  critical misses (5 confirmed, 3 allowed). It stays stopped, and this pass builds the result (owner, 11 Oct 2026,
+  question 21: A, "i already told you that before, i said swtich to the new quick method"). This pass doesn't depend
+  on it.
 
 ### Tests
 
@@ -626,23 +671,23 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   finishes.
 - **Event check.** Before the generation is built, every event pair goes to the check, which scores the full pair
   (what the label names and that it happened); a pair it rejects, or leaves unanswered after a retry, is dropped and
-  counted, and an accepted pair stays; more than 2% of the pairs unanswered fails the event-check floor, and a pass
-  with no event pair passes it with nothing to check. A fixed sample of the dropped pairs, rejected or unanswered, is
+  counted, and an accepted pair stays; more than 2% of the pairs unanswered misses the event-check target, and a pass
+  with no event pair meets it with nothing to check. A fixed sample of the dropped pairs, rejected or unanswered, is
   scored by both judges, and a dropped pair counts as a real event when either judge accepts it or one leaves it
   unscored, while a kept pair is real only when both accept it; event-check recall, A·p / (A·p + R·q), matches a
   hand-worked example, its lower bound uses the 97.5% lower bound of p and the 97.5% upper bound of q (a census uses
-  its exact share), a check that rejects every real event fails however many false ones it rejects, real events left
-  unanswered count as lost (8 real events kept, 2 left unanswered and 90 false ones rejected give 80%, which fails,
-  though only 2% went unanswered), and a pass with no event pair, or with two census samples and no pair judged real,
-  has nothing to gate. The measurement's Codex judge scores sampled event pairs in new calls.
+  its exact share), a check that rejects every real event misses it however many false ones it rejects, real events
+  left unanswered count as lost (8 real events kept, 2 left unanswered and 90 false ones rejected give 80%, which
+  misses it, though only 2% went unanswered), and a pass with no event pair, or with two census samples and no pair
+  judged real, has nothing to measure. The measurement's Codex judge scores sampled event pairs in new calls.
 - **Deadlines.** Each step's deadline is saved when it starts and kept on resume, and every item it sends, retries
   included, expires at it; a wait that returns without an answer before the deadline doesn't end the step; an answer
   stored after the deadline is ignored, and no resume sends the item again. At the pass's deadline a batch still
   unanswered ends untagged with the reason `deadline`, an event check still unanswered drops its pair, and the pass
   builds; at the reference step's deadline a unit without its questions or its searches, or with a quote the coverage
-  check hasn't confirmed, is a nonresponse, the recall floor fails and the run stops before the pilot; at the
-  measurement's deadline a pair a judge hasn't scored counts against its floor (as wrong for precision, as a real
-  event in the sample of dropped events), and the measurement reports.
+  check hasn't confirmed, is a nonresponse, left out of recall and logged, and the run goes on; at the measurement's
+  deadline a pair a judge hasn't scored counts against its floor (as wrong for precision, as a real event in the
+  sample of dropped events), and the measurement reports.
 - **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
   page that is.
 - **Graph.** A pointer-only extraction yields entity and episode nodes linked to their quotes' existing passages, with
@@ -655,35 +700,42 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 - **Measurement.** Recall and precision on synthetic data with known answers. The unit sample is the import's
   probability sample (12 stretches, 8 units each) from a recorded seed, only from units with quotes, and every quote
   of a sampled unit gets at least one question. An answer that leaves a quote without a question or names a quote
-  outside its unit gets one retry and then makes recall unknown and the recall floor fail; so does a search-writing
-  answer that leaves a question without a search. The pilot's pages never overlap the sample; the question writer's
-  packet holds the unit's quotes and no tag, each coverage judge's packet holds the quotes, their questions and their
-  critical and event marks and no tag, the search-writing packet holds the questions and nothing of the unit's text,
-  and the tagger's packet holds journal text and nothing from the semantic import. Recall's weighted estimate and
-  design-based bound match a hand-worked example; units whose questions all fail together widen the bound; degrees of
-  freedom come from the sample as drawn; a stretch taken whole adds no variance or degree of freedom and stays
-  separate; a single-unit stretch drawn with probability below 1 is merged with its nearest such neighbor; a sample
-  taken entirely with certainty, even a single unit, gives an exact recall whose bound is the estimate; and units
-  drawn with probability below 1 that leave no degree of freedom fail the floor. A question is found only when its
-  quote is in the first 12 results of one of its searches; a quote either coverage judge doesn't confirm, because its
-  questions leave something out or the judge lists one as repeating another, asking about two things or copying the
-  quote's wording, sends its unit back to the question writer once with both judges' notes, and one still not
-  confirmed makes the unit a nonresponse; a question is critical, or about an event, when the writer or either judge
-  marks it so; a sample with no critical question is reported and judged for no loss on all questions alone; critical
-  recall under 85% fails the pass even when overall recall holds and word search misses the same critical questions,
-  and a sample with no critical question reports it in place of that floor; a pass that tags no event, or tags events
-  only as topics, fails event coverage when a sampled quote reports an event, and a sample with no such quote reports
-  it in place of that floor. Precision samples tag–quote pairs, so a wrong tag on many quotes counts once for each;
-  each kind is gated on its own sample of 150, so pairs of one kind can't carry another, and a name of the wrong kind
-  fails its kind; a kind with 150 pairs or fewer is judged in full and gated on its exact share, so a small kind is
-  kept when its pairs are right; a kind with no pairs has nothing to gate; the Clopper-Pearson arithmetic; each
-  sample's size is fixed before scoring and its bound computed once; a pair counts as correct only when both judges
-  say so, and a pair left unscored after a retry counts as wrong; kappa is reported as undefined when the judges give
-  one answer throughout. A pass with no tags fails the coverage floor, and the gain floor whenever word search misses
-  a question; the gain floor is reported as not applicable when word search misses nothing; a page whose valid answer
-  gave it no tag, or whose tags were all dropped, counts as untagged; an untagged share over 2% blocks publication,
-  and the generation a new pass builds keeps the first generation's tags on the pages it didn't retry, exactly,
-  replaces only the retried pages' tags, and is measured again from the start; the words-only baseline is the same
-  generation with tag matching off; publishing refuses a generation whose digest isn't the measured one.
+  outside its unit gets one retry and then makes its unit a nonresponse; so does a search-writing answer that leaves a
+  question without a search. A nonresponse is left out of recall, and each measured unit of its stretch has its
+  inclusion probability multiplied by the share of the stretch measured (a hand-worked example); a stretch taken whole
+  that loses a unit is a sample from then on; the sample target lists every unit not measured and stops nothing; with
+  no unit measured, no loss can't be shown and nothing is published, and a reference step that measures no unit stops
+  the run before the pilot. The pilot's pages never overlap the sample; the question writer's packet holds the unit's
+  quotes and no tag, each coverage judge's packet holds the quotes, their questions and their critical and event marks
+  and no tag, the search-writing packet holds the questions and nothing of the unit's text, and the tagger's packet
+  holds journal text and nothing from the semantic import. Recall's weighted estimate and design-based bound match a
+  hand-worked example; units whose questions all fail together widen the bound; degrees of freedom come from the
+  sample as drawn; a stretch taken whole adds no variance or degree of freedom and stays separate; a single-unit
+  stretch drawn with probability below 1 is merged with its nearest such neighbor; a sample taken entirely with
+  certainty, even a single unit, gives an exact recall whose bound is the estimate; and units drawn with probability
+  below 1 that leave no degree of freedom miss the target. A question is found only when its quote is in the first 12
+  results of one of its searches; a quote either coverage judge doesn't confirm, because its questions leave something
+  out or the judge lists one as repeating another, asking about two things or copying the quote's wording, sends its
+  unit back to the question writer once with both judges' notes, and one still not confirmed makes the unit a
+  nonresponse; a question is critical, or about an event, when the writer or either judge marks it so; a sample with
+  no critical question is reported and judged for no loss on all questions alone; critical recall under 85% misses its
+  target even when overall recall holds and word search misses the same critical questions, and a sample with no
+  critical question reports it in place of that target; a pass that tags no event, or tags events only as topics,
+  misses event coverage when a sampled quote reports an event, and a sample with no such quote reports it in place of
+  that target. Precision samples tag–quote pairs, so a wrong tag on many quotes counts once for each; each kind is
+  gated on its own sample of 150, so pairs of one kind can't carry another, and a name of the wrong kind fails its
+  kind; a kind with 150 pairs or fewer is judged in full and gated on its exact share, so a small kind is kept when
+  its pairs are right; a kind with no pairs has nothing to gate; the Clopper-Pearson arithmetic; each sample's size is
+  fixed before scoring and its bound computed once; a pair counts as correct only when both judges say so, and a pair
+  left unscored after a retry counts as wrong; kappa is reported as undefined when the judges give one answer
+  throughout. Every floor says whether it blocks: a failed check stops publication, and a missed target is only
+  reported. A pass with no tags has nothing to publish, and misses the coverage target, and the gain target whenever
+  word search misses a question; the gain target is reported as not applicable when word search misses nothing; a page
+  whose valid answer gave it no tag, or whose tags were all dropped, counts as untagged; an untagged share over 2%
+  sends the untagged pages to one new pass, and the generation it builds keeps the first generation's tags on the
+  pages it didn't retry, exactly, replaces only the retried pages' tags, and is the one measured; the words-only
+  baseline is the same generation with tag matching off; publishing refuses a generation whose digest isn't the
+  measured one. The misses log names the questions, units, quotes, pages and dropped event pairs missed by ID and page
+  only, never their text, and counts them.
 
 All test data is synthetic. Journal text, packets and answers never enter Git, logs or pull request text.
