@@ -6,7 +6,7 @@ import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalPointerDeadlines, journalQuoteNumericDateOrder,
-  journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
+  journalSemanticConcurrency, JOURNAL_HARDEST_EFFORTS, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -380,15 +380,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // calls (the reference step, the challenge set and the measurement) needs the route that serves them to attest a
     // fresh context and the model it ran for each call, as the hardest lane's own check does when the lane is on, so no
     // supposed second judge counts without that evidence. Only the work exchange's hardest tier attests both.
-    // The judge itself is the plan's: Claude Opus at max effort, the hardest lane's own default and the only model the
-    // Codex exchange accepts for that lane when it is on. The exchange sends hardest calls with the configured model even
-    // when the lane is off, and attests whichever it ran, so the setting is checked here too.
+    // The judge itself is the plan's: Claude Opus, the hardest lane's own default and the only model the Codex exchange
+    // accepts for that lane when it is on, at one of the lane's efforts (high, which the plan's judge uses since its
+    // coverage checks took more than 30 minutes at max, or max). The exchange sends hardest calls with the configured
+    // model and effort even when the lane is off, and attests whichever it ran, so the setting is checked here too.
     const pointerHardestJudge = normalizeJournalHardestLaneConfig({});
     const pointerHardestAttested = () => {
       const capabilities = semanticPort.capabilities();
       invariant(capabilities.hardest_fresh_context_per_generate === true
         && capabilities.hardest_authenticated_execution_profile_per_generate === true, "POINTER_HARDEST_ROUTE_UNATTESTED");
-      invariant(hardestLane.model === pointerHardestJudge.model && hardestLane.effort === pointerHardestJudge.effort,
+      invariant(hardestLane.model === pointerHardestJudge.model && JOURNAL_HARDEST_EFFORTS.includes(hardestLane.effort),
         "POINTER_HARDEST_JUDGE_UNEXPECTED");
     };
     // Which tiers' pointer calls take turns: a direct browser route has one page and takes one call at a time, while the

@@ -30,7 +30,7 @@ function call(operationKey) {
       adjacent_context: { by_unit: [] }, visual_context: [], neutral_reading_instructions: [] } };
 }
 
-async function fixture(t, scenario = "ok", { workName = "work" } = {}) {
+async function fixture(t, scenario = "ok", { workName = "work", effort = "max" } = {}) {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-claude-test-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const host = path.join(base, "host"), laptop = path.join(base, "laptop");
@@ -296,7 +296,7 @@ else {
   const port = createExchangeJournalInferencePort({ exchange, caseId: "synthetic-case", receiptKey: randomBytes(32),
     routeRef: "route:synthetic", allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
     model: "gpt-6-sol", effort: "medium", executionAttestation: "codex_exec", waitMs: 0,
-    hardestLane: { model: "claude-opus-5-5", effort: "max" } });
+    hardestLane: { model: "claude-opus-5-5", effort } });
   const environment = { PATH: `${path.dirname(process.execPath)}:${process.env.PATH}`,
     HOME: laptop, LANG: "C" };
   const args = ["--agent", "claude", "--remote", "synthetic-host", "--remote-checkout", checkout,
@@ -350,6 +350,13 @@ test("Claude arguments map only the pinned hardest profile and remote MCP holds 
   assert.deepEqual(args.slice(args.indexOf("--tools"), args.indexOf("--tools") + 2), ["--tools", ""]);
   assert.throws(() => claudePrintArgs({ record: { ...record, model: "claude-unmapped" }, mcpConfig: "/tmp/mcp.json", sessionId }),
     { code: "JOURNAL_CLAUDE_PROFILE_INVALID" });
+  // The lane's two efforts are passed as they are; any other is refused.
+  const high = claudePrintArgs({ record: { ...record, effort: "high" }, mcpConfig: "/tmp/mcp.json", sessionId });
+  assert.deepEqual(high.slice(high.indexOf("--model"), high.indexOf("--model") + 4), ["--model", "opus", "--effort", "high"]);
+  for (const effort of ["medium", "xhigh", undefined]) {
+    assert.throws(() => claudePrintArgs({ record: { ...record, effort }, mcpConfig: "/tmp/mcp.json", sessionId }),
+      { code: "JOURNAL_CLAUDE_PROFILE_INVALID" });
+  }
   const remoteArgs = ["--agent", "claude", "--remote", "host",
     "--remote-checkout", "/host/repo", "--remote-config", "/host/config", "--work-dir", "/tmp/work"];
   for (const extra of [[], ["--remote-node", "node"], ["--remote-node", "/host/node bin"]]) {
@@ -469,6 +476,20 @@ for (const scenario of ["ssh_prestart_retry", "init_exit_release_failure"]) {
       init_exit_release_failure: ["attempt_release_failed", "rejected:EXIT_NONZERO", "answered"] }[scenario]);
   });
 }
+
+test("a hardest item at high effort is answered at high effort, and its answer is promoted", async (t) => {
+  const f = await fixture(t, "ok", { effort: "high" });
+  const operationKey = "job:synthetic-claude-high";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  assert.equal((await f.exchange.listDispatch())[0].effort, "high");
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment, stderr: { write() {} } }), 0);
+  const trace = JSON.parse(await fs.readFile(f.trace, "utf8"));
+  assert.equal(trace.args[trace.args.indexOf("--effort") + 1], "high");
+  const completed = await f.port.getCompletion(operationKey);
+  assert.equal(completed.status, "completed");
+  assert.deepEqual(completed.output, ANSWER);
+  assert.equal(completed.receipt.effective_effort, "high");
+});
 
 test("packet-free and failed Claude admissions never promote staged answers", async (t) => {
   const outcomes = { packet_free: "rejected:PACKET_NOT_FETCHED", submit_before_fetch: "rejected:PACKET_NOT_FETCHED",

@@ -312,18 +312,19 @@ test("the steps that use Claude's judge need an attested hardest route, and its 
   await assert.rejects(unattested.run("pointer-challenge"), { code: "POINTER_HARDEST_ROUTE_UNATTESTED" });
   await assert.rejects(unattested.run("pointer-measure"), { code: "POINTER_HARDEST_ROUTE_UNATTESTED" });
 
-  // The second judge must be Claude Opus at max effort, the lane on or off: the exchange would send hardest calls with
-  // another configured model and attest it.
+  // The second judge must be Claude Opus at high or max effort, the lane on or off: the exchange would send hardest calls
+  // with another configured model or effort and attest it.
   const other = await runtimeEnvironment(t, { environment: route("codex_exec_exchange") });
   await other.run("stage", "build-quotes");
-  for (const setting of [{ model: "claude-sonnet-5-5" }, { effort: "high" }]) {
+  for (const setting of [{ model: "claude-sonnet-5-5" }, { effort: "medium" }, { effort: "xhigh" }]) {
     other.config.hardest_lane = { enabled: false, ...setting };
     await assert.rejects(other.run("pointer-reference"), { code: "POINTER_HARDEST_JUDGE_UNEXPECTED" });
   }
 
-  // The Codex exchange with the lane off still sends hardest calls to its hardest model, Claude, so the limit holds.
+  // The Codex exchange with the lane off still sends hardest calls to its hardest model, Claude, so the limit holds. Its
+  // judge here runs at high effort, which passes the check above.
   const exchange = await runtimeEnvironment(t, { environment: route("codex_exec_exchange") });
-  exchange.config.hardest_lane = { enabled: false, daily_limit: 1 };
+  exchange.config.hardest_lane = { enabled: false, effort: "high", daily_limit: 1 };
   await exchange.run("stage", "build-quotes");
   await assert.rejects(exchange.run("pointer-reference"), { code: "HARDEST_DAILY_LIMIT" });
   assert.equal(JSON.parse(await fs.readFile(exchange.stateFile, "utf8")).hardest_lane.sent, 1);

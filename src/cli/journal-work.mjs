@@ -7,6 +7,7 @@ import {
   createJournalWorkExchange, journalWorkExchangeSecret, journalWorkFileKey, resolveJournalWorkExchangeRoot
 } from "../journal-import/work-exchange.mjs";
 import { journalWorkPacketValue, MAX_HARDEST_PACKET_CHARS } from "../journal-import/packet-bounds.mjs";
+import { JOURNAL_HARDEST_EFFORTS } from "../journal-import/run-config.mjs";
 
 import { attemptDirectory, journalAttemptIdentity, readJournalAttemptMarker,
   releaseAttemptMarker, writeAttemptMarker, withJournalAttemptLock } from "../journal-import/attempt-markers.mjs";
@@ -263,7 +264,7 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     let execution;
     try { execution = JSON.parse(parsed["--execution-json"]); } catch { fail("JOURNAL_WORK_EXECUTION_INVALID"); }
     const dispatch = (await createJournalWorkDispatchReader({ root }).listDispatch()).find((item) => item.work_id === workId);
-    if (dispatch?.tier !== "hardest" || dispatch.model !== "claude-opus-5-5" || dispatch.effort !== "max"
+    if (dispatch?.tier !== "hardest" || dispatch.model !== "claude-opus-5-5" || !JOURNAL_HARDEST_EFFORTS.includes(dispatch.effort)
       || Date.parse(dispatch.expires_at) <= Date.now()
       || parsed["--subject"] !== "local:claude-hardest"
       || execution?.profile_evidence !== "claude_code_model_usage_reported"

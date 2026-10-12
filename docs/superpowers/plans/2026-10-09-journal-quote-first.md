@@ -433,6 +433,14 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   pairs, 15 calls for each judge, and the sample of dropped events at most 150 pairs, 3 calls for each. The Claude
   lane's 24 calls or so, one at a time at its current seven minutes or so a call, take under three hours and fit in a
   day's 40. The event check is one call per 50 event pairs on the Codex slots, minutes for a journal this size.
+- **The Claude judge's effort (amended 12 Oct 2026, owner decision 28).** In the first run, Claude Opus at max effort
+  took more than 30 minutes on each coverage check of 25 quotes, the time the Claude worker gave a call, so its first two
+  calls ran out and the owner stopped the run (decision 27). The Claude judge now runs at high effort, the hardest
+  lane's other setting, and the worker gives a call up to 60 minutes. The owner's words: "you could try claude opus at
+  high effort but make note if it's not working as well". So the reference step and the challenge set report, for the
+  quotes both judges answered, how many each confirmed and their agreement (raw and Cohen's kappa), as the measurement
+  already reports for precision. If Claude at high effort passes what Codex flags, the report shows it, and the owner
+  decides whether to go back to max effort with smaller calls.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 

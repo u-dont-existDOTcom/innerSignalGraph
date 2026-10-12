@@ -8,6 +8,7 @@ import { MAX_HARDEST_PACKET_CHARS } from "./packet-bounds.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { writeAttemptMarker } from "./attempt-markers.mjs";
 import { assertJournalWorkId } from "./work-exchange.mjs";
+import { JOURNAL_HARDEST_EFFORTS } from "./run-config.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const MODEL = "claude-opus-5-5";
@@ -102,10 +103,10 @@ export function claudeMcpConfiguration(options, stageDir, environment, workId) {
 }
 
 export function claudePrintArgs({ record, mcpConfig, sessionId }) {
-  if (record.tier !== "hardest" || record.model !== MODEL || record.effort !== "max") fail("JOURNAL_CLAUDE_PROFILE_INVALID");
+  if (record.tier !== "hardest" || record.model !== MODEL || !JOURNAL_HARDEST_EFFORTS.includes(record.effort)) fail("JOURNAL_CLAUDE_PROFILE_INVALID");
   if (!UUID.test(sessionId ?? "")) fail("JOURNAL_CLAUDE_SESSION_INVALID");
   const instruction = `Private InnerSignal journal work item ${record.work_id}. Call get_journal_work_packet with this work_id, follow its instruction using only its packet, then submit your JSON answer with submit_journal_work_result. If it lists schema problems, fix them and submit again. Reply only: done.`;
-  return ["-p", instruction, "--model", "opus", "--effort", "max", "--output-format", "stream-json", "--verbose",
+  return ["-p", instruction, "--model", "opus", "--effort", record.effort, "--output-format", "stream-json", "--verbose",
     "--setting-sources", "", "--settings", '{"disableAllHooks":true}', "--disable-slash-commands", "--include-hook-events",
     "--mcp-config", mcpConfig, "--strict-mcp-config", "--tools", "", "--session-id", sessionId,
     "--allowedTools", "mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result",
@@ -980,7 +981,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         if (!records.some((item) => item.work_id === workId && !item.answered)) closeRetries.delete(workId);
       }
       let record = records.find((item) => (!initial || initial.has(item.work_id)) && !item.answered
-        && item.tier === "hardest" && item.model === MODEL && item.effort === "max"
+        && item.tier === "hardest" && item.model === MODEL && JOURNAL_HARDEST_EFFORTS.includes(item.effort)
         && /^[0-9a-f]{48}$/u.test(item.attempt_identity ?? "")
         && Date.parse(item.expires_at) > Date.now()
         && !pendingReleases.has(item.work_id) && !skipped.has(item.work_id)

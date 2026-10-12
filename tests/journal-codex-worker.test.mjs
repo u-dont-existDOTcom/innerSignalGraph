@@ -203,6 +203,11 @@ test("Codex route validates model and role effort, while ChatGPT connector admis
   assert.equal(hardest.capabilities().hardest_execution_profile_evidence, "claude_code_model_usage_reported");
   assert.throws(() => loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case",
     hardestLane: { enabled: true, model: "claude-other", effort: "max" } }), { code: "HARDEST_LANE_CONFIG_INVALID" });
+  // Claude Opus at high effort, the pointer pass's judge, is the lane's other effort; any other is refused.
+  assert.equal(loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case",
+    hardestLane: { enabled: true, effort: "high" } }).capabilities().hardest_fresh_context_per_generate, true);
+  assert.throws(() => loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case",
+    hardestLane: { enabled: true, effort: "medium" } }), { code: "HARDEST_LANE_CONFIG_INVALID" });
   const chat = loadJournalInferencePortFromEnvironment(env({ ...route, provider: "chatgpt_connector_exchange", model: "GPT-5.6 Sol", effort: "Pro" }), { caseId: "synthetic-case" });
   assert.equal(chat.capabilities().fresh_context_per_generate, false);
   assert.equal(chat.capabilities().authenticated_execution_profile_per_generate, false);
