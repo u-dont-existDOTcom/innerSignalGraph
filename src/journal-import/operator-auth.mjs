@@ -107,6 +107,9 @@ export function createOperatorTokenProvider({
   let pending = null;
 
   async function fetchToken() {
+    // The token's life counts from when it was asked for, since it can't have been issued before that. Counted from
+    // its arrival, a slow answer would make it seem to last longer than it does.
+    const requestedAt = now();
     const form = new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret });
     if (scope) form.set("scope", scope);
     // A stalled endpoint must not hold up the run: the request and its body read share one deadline,
@@ -143,18 +146,20 @@ export function createOperatorTokenProvider({
     const lifetimeMs = lifetime * 1000;
     // Renew a margin before expiry, but never sooner than halfway through the token's life, so a
     // short-lived token is still reused for a while instead of being requested on every check.
-    const fetchedAt = now();
-    current = { token, expiresAt: fetchedAt + lifetimeMs, renewAt: fetchedAt + Math.max(lifetimeMs - refreshMarginMs, lifetimeMs / 2) };
+    current = { token, expiresAt: requestedAt + lifetimeMs,
+      renewAt: requestedAt + Math.max(lifetimeMs - refreshMarginMs, lifetimeMs / 2) };
     return current;
   }
 
-  return async function operatorAuthContext() {
-    if (!current || now() >= current.renewAt) {
+  // `renew: true` asks for a new token now, whatever the one in hand says: the caller saw that one refused. So when
+  // the request fails, the failure is thrown rather than the refused token handed back.
+  return async function operatorAuthContext({ renew = false } = {}) {
+    if (renew || !current || now() >= current.renewAt) {
       pending ??= fetchToken().finally(() => { pending = null; });
       try { await pending; }
       catch (error) {
         // A failed early renewal keeps a token that is still valid; a later check tries again.
-        if (!current || now() >= current.expiresAt) throw error;
+        if (renew || !current || now() >= current.expiresAt) throw error;
       }
     }
     return { bearerToken: current.token };

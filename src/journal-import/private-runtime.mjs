@@ -198,9 +198,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const service = suppliedService ?? createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider });
     const caseId = config.target_profile.case_id;
     const auth = { bearerToken: environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN };
+    const verifyAccess = async () => {
+      for (const purpose of ["archive", "organize_search", "session_use"]) await service.verifyCaseAccess(caseId, { requiredScope: "case:write", requiredPurpose: purpose }, auth);
+    };
+    // A renewing token can still be refused: on a host short of memory it can run out between the provider's look at
+    // it and the case check (12 Oct 2026). One fresh token and one more check tell that apart from access that was
+    // withdrawn, which is refused again and stops the command as before.
     const authorize = async () => {
       if (authContextProvider) Object.assign(auth, await authContextProvider());
-      for (const purpose of ["archive", "organize_search", "session_use"]) await service.verifyCaseAccess(caseId, { requiredScope: "case:write", requiredPurpose: purpose }, auth);
+      try { await verifyAccess(); }
+      catch (error) {
+        if (!authContextProvider || error?.code !== "PRIVATE_CASE_ACCESS_DENIED") throw error;
+        Object.assign(auth, await authContextProvider({ renew: true }));
+        await verifyAccess();
+      }
     };
     await authorize();
     const route = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON ? JSON.parse(environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON) : null;
