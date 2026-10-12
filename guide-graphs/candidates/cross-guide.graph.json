@@ -570,7 +570,8 @@
         "AMEND.IC.COMMUNITY_REPARENTING",
         "AMEND.CROSS.BLOCKED_ACTION_WAIT",
         "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
-        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
+        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -584,7 +585,8 @@
         "For deliberate social or relationship practice, name the life-serving purpose first—connection, curiosity, communication, skill, play or another chosen value. If the action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation.",
         "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
         "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language.",
-        "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure."
+        "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure.",
+        "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -595,7 +597,8 @@
         "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate.",
         "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
         "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step.",
-        "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied."
+        "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
+        "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care."
       ],
       "successSignals": [
         "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -1619,18 +1622,23 @@
       },
       "sourceRefs": [
         "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
-        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
+        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Give direct, proportionate guidance for urgent medical assessment or emergency help before continuing therapeutic interpretation.",
         "Do not delay an urgent red flag with baseline-history questions. Once immediate safety is handled, return to the person's therapeutic focus when appropriate.",
-        "For severe recurrent pain after prior unrevealing assessments, preserve that history. During an unbearable attack, an appropriate local medical emergency/urgent-care triage service can assess the live episode and consider pain relief despite diagnostic uncertainty; do not promise an ambulance, admission, a particular medicine, or zero cost."
+        "For severe recurrent pain after prior unrevealing assessments, preserve that history. During an unbearable attack, an appropriate local medical emergency/urgent-care triage service can assess the live episode and consider pain relief despite diagnostic uncertainty; do not promise an ambulance, admission, a particular medicine, or zero cost.",
+        "Near-daily familiar severe pain calls for a sustainable specialist pain-care pathway and written flare plan in addition to proportionate urgent care for dangerous or truly unmanageable episodes.",
+        "A known chronic-pain condition does not excuse overlooking new, changed or atypical urgent features; red flags take priority regardless of previous symptom frequency."
       ],
       "avoid": [
         "Do not park a clearly urgent medical or neurological red flag because the person mentioned it as an aside.",
         "Do not diagnose the cause from chat, and do not turn an urgent medical turn into inner-child continuity messaging.",
-        "Do not substitute a generic suicide-hotline script or repeat 'see a doctor' as new advice when thoughts of death are reported as pain-triggered and the actionable problem is unbearable bodily pain. Do not weaken immediate protective action if current self-harm intent or inability to remain safe is supported."
+        "Do not substitute a generic suicide-hotline script or repeat 'see a doctor' as new advice when thoughts of death are reported as pain-triggered and the actionable problem is unbearable bodily pain. Do not weaken immediate protective action if current self-harm intent or inability to remain safe is supported.",
+        "Do not recommend daily ambulance calls simply to force recognition of an inadequately treated chronic condition, and never promise that repeat emergency visits cause specialist referral.",
+        "Do not call a flare nonurgent solely because similar crises have occurred before; reassess new pattern, severity and other red flags on current evidence."
       ],
       "successSignals": [
         "The response prioritizes immediate medical safety without unnecessary diagnostic speculation and leaves therapy work for after the urgent issue is addressed."
@@ -1659,6 +1667,128 @@
         ]
       },
       "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.REFRACTORY_PAIN_NAVIGATION",
+      "title": "Coordinate a specialist chronic-pain pathway and flare plan",
+      "kind": "route-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "refractory_pain_care",
+            "op": "eq",
+            "value": "indicated"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "medical_urgency",
+            "op": "eq",
+            "value": "urgent"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "intent",
+              "imminent"
+            ]
+          },
+          {
+            "field": "suicidal_ideation_context",
+            "op": "eq",
+            "value": "other_or_unclear"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          }
+        ],
+        "any": [
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "absent",
+              "unknown"
+            ]
+          },
+          {
+            "field": "suicidal_ideation_context",
+            "op": "eq",
+            "value": "pain_episode"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
+        "AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST",
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Recognize recurrent severe refractory bodily pain as a treatment access and longitudinal care problem without assuming the person is psychologically imagining it or that a specific mechanism has been proven.",
+        "Select one feasible access step: a referral to a locally verified type of chronic-pain specialist service, without inventing a clinic or contact details. In France a physician can send the HAS adult SDC referral form and justify a sollicitation urgente for priority assessment if warranted. Do not promise acceptance, expedited scheduling, cure or a particular intervention.",
+        "Seek an individualized written plan for predictable pain flares: whom to contact, agreed treatments and which features require urgent medical triage. SAMU or emergency care is a backup for new red flags, changed or atypical symptoms, unusually severe or unmanageable attacks, not the only near-daily strategy.",
+        "Preserve previous investigations and distinguish offered/prescribed from actually tried medicines and experienced effects. A specialist may evaluate structural, visceral, neuropathic and nociplastic possibilities without claiming a diagnosis from a response.",
+        "Respect prior coercive or harmful care, patient agency and an appropriately chosen trusted friend/advocate without assuming family or medical institutions are automatically safe or automatically malicious.",
+        "Consider tDCS/rTMS only if a qualified pain specialist finds an appropriate condition and indication, without promising symptom relief or recommending home stimulation."
+      ],
+      "avoid": [
+        "Do not advise routinely calling an ambulance every day just to be taken seriously or imply many visits guarantee a referral.",
+        "Do not recommend volunteering transient pain-triggered suicidal thoughts as leverage for physical-pain treatment; prior harmful psychiatric care must inform referral feasibility.",
+        "Do not coach a false denial of current suicidal intent, a suicide plan, inability to remain safe, or imminent danger, inability to stay safe or another actual urgent danger; immediate protection still matters in that situation.",
+        "Do not overdiagnose central sensitization or claim a PPI, antidepressant or neuromodulation response proves the pain mechanism or repairs drug-related injury.",
+        "Do not confuse treatments offered, declined, actually taken and ineffective, or invent access guarantees."
+      ],
+      "successSignals": [
+        "A specific specialist referral or justified priority request is submitted, or its exact current blocker and next step are identified.",
+        "A written flare response plan is made or a practical request for one is documented."
+      ],
+      "tags": [
+        "medical",
+        "chronic-pain",
+        "specialist-referral",
+        "trust",
+        "care-navigation"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim repeated emergency contact guarantees a particular medicine or specialist care.",
+          "Do not infer suicidal intent or a confirmed pain diagnosis from brief distress or treatment response.",
+          "Do not treat any psychiatric or clinical institution as universally harmless or harmful."
+        ],
+        "requiredNuance": [
+          "The immediate safety route remains available if intent or inability to stay safe emerges, even if the person has been harmed by coercive treatment.",
+          "The primary solution to predictable recurring pain is continuity of specialist care and flare planning, not repeated emergency contact alone.",
+          "Trusted voluntary advocacy is valuable when prior coercive encounters limit trust; an unsafe family member is not an automatic support.",
+          "Referral urgency and access remain clinically and locally determined.",
+          "Unknown stopping/return capacity or present safety is not, by itself, evidence of impairment; the referral action is reversible, and concern about danger must be based on concrete evidence. For reported pain-triggered suicidal ideation, keep the observing/adult safety-support node selected alongside chronic-pain coordination, and never overrule actual present_safety unsafe, demonstrated lost capacity, suicidal intent or new medical red flags."
+        ]
+      },
+      "defaultQuestion": "",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
     }
   ],
   "edges": [

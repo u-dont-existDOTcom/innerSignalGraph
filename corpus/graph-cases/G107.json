@@ -1,0 +1,28 @@
+{
+  "id": "G107",
+  "title": "Unknown stopping or returning ability is not by itself proof of current incapacity, and pain-linked ideation retains support",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "unknown",
+    "ability_to_return": "unknown",
+    "suicidal_state": "ideation",
+    "medical_urgency": "nonurgent",
+    "refractory_pain_care": "indicated",
+    "actionable_problem": "present",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "current_intent": "conversation",
+    "inner_adult_access": "low",
+    "witness_capacity": "unknown",
+    "suicidal_ideation_context": "pain_episode"
+  },
+  "expected": {
+    "primary": "ROUTE.REFRACTORY_PAIN_NAVIGATION",
+    "selectedIncludes": [
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION",
+      "IC.SUICIDAL_ADULT_SEAT"
+    ]
+  }
+}

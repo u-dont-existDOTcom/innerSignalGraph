@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.LITERATURE_TASK_PROGRESS
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 91a059f8886ca98983ee97b8ea7f24876ba53caedcf02adbc68ca5dedd504f54
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: f74f620d80e77acc00f37ff811ad3ebe3fc6416283976726a219676a1a90e2b4
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # AMEND.CROSS.LITERATURE_TASK_PROGRESS
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Apply the approved literature reconciliation to the current task without duplicating existing modalities. Completed relational assessment is not reopened by repeated reassurance alone; new relevant evidence or a changed decision does reopen it. A distinct repetitive checking process may be left unanswered while background grief remains meaningful. A present protective response that permits a bounded step need not disappear; unknown or refused permission never licenses deeper work. Unknown capacities are not deficits. Keep one chosen current task and only necessary supporting interventions, while all applicable safety and evidence constraints remain in force. Record the user’s reported response and advance, adapt or close rather than replay completed steps. Authored questions must still matter now, and intentional absence of a question is authoritative."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```

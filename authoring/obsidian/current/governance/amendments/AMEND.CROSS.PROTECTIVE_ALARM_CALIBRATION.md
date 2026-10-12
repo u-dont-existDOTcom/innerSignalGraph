@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION
 status: owner-approved
 domain: cross-guide
-base_record_sha256: a2ff202896a9b1868fbb61555f5315ce5691f75a0f67acef32691898cfcd1c51
-source_file_sha256: 593ddf714cbae3fba3666be35563cbddad6d3db75207f1c0d06fa5a31ee14af2
-projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b53acfd44f
+base_record_sha256: ccfbad0fea7b10a1225a3946cfbf9a480396e6545b37f8878f1244597f277c91
+source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
 ---
 
 # AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION
@@ -24,6 +24,6 @@ projection_input_sha256: 354f6bae4ead288dbc25d78ee4550d529bfe6f19adf4b9ae8ff180b
     "status": "owner-approved",
     "text": "Anxiety or another protective alarm is information about expected danger, overload, humiliation, uncertainty or boundary threat, not an oracle or command. In ordinary-life decisions, hear what it is trying to protect and test the prediction against evidence, present capacity and later outcomes. This does not authorize pushing past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex. Consent, immediate safety and possible medical red flags take precedence; use a cheap reversible precaution first. Protective intent, predictive accuracy and actual effectiveness are separate."
   },
-  "version": "2026-10-09-pain-romance-revision-r1"
+  "version": "owner-amendments-2026-10-11-r6"
 }
 ```
