@@ -444,6 +444,9 @@ test("an item that expires unanswered is closed, refused to late answers and sen
 
   clock += 2 * 60 * 60 * 1000;
   assert.deepEqual(await durable.getCompletion(KEY), { status: "not_submitted" });
+  // The store keeps the close with its code and when it was seen, and a read-only lookup returns that record.
+  const record = await durable.storedCompletion(KEY);
+  assert.deepEqual([record.status, typeof record.code, Number.isFinite(Date.parse(record.observed_at))], ["not_submitted", "string", true]);
   const closed = await environment.connector.readResult(firstId);
   assert.equal(closed.retired, true);
   assert.equal(closed.unanswered, true);

@@ -131,8 +131,8 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
       grant: call.grant, tier: call.tier, expiresAt: deadline };
     const done = (outcome) => ({ outcome: { key: call.key, attempts: attempt + 1, ...outcome } });
     if (remaining() <= 0) {
-      // Nothing is sent after the deadline. An answer that came in time is still read, and an invalid one still
-      // lets its retry's answer count.
+      // Nothing is sent after the deadline. An answer that came in time is still read, and an invalid one, or an item
+      // closed unanswered in time, still lets its retry's answer count.
       const completion = await port.getCompletion(operationKey, { tier: call.tier });
       if (completion.status === "completed" && inTime(completion.receipt)) {
         const failure = failedCheck(call, completion.output);
@@ -142,6 +142,16 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
       }
       if (completion.status === "invalid_output" && attempt < retries) return { next: "INVALID_STRUCTURED_OUTPUT" };
       if (completion.status === "exhausted") return done({ status: "failed", reason: completion.code ?? "EXHAUSTED" });
+      // An item closed unanswered that the step could send again: if the step saw it close before the deadline, it moved
+      // on as a closed item does, to the call's next key (whose answer is read here as it was then) or, on the last
+      // attempt, to a failed call; seen at or after the deadline, the call ended as a deadline. The store says when the
+      // close was seen; a record from before it did is taken as seen in time when the next key was sent.
+      if (completion.status === "not_submitted" && RESENDABLE.has(completion.code)) {
+        const seen = Date.parse(typeof completion.observed_at === "string" ? completion.observed_at : "");
+        const inTimeClose = Number.isFinite(seen) ? seen < end
+          : attempt < retries && typeof port.wasSent === "function" && await port.wasSent(pointerCallKey(call.key, attempt + 1));
+        if (inTimeClose) return { next: completion.code };
+      }
       // Sent and left unanswered, or never sent at all because an earlier wait used up the step's time. A port that
       // can't tell (no wasSent) reports the first.
       const unsent = completion.status === "not_submitted" && typeof port.wasSent === "function" && !(await port.wasSent(operationKey));

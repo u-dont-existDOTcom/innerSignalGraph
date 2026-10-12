@@ -49,7 +49,8 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
     } catch (e) {
       if (["not_submitted", "completed_invalid", "exhausted"].includes(e.submissionStatus)) {
         await writeResult(key, attempt, {
-          status: e.submissionStatus === "completed_invalid" ? "invalid_output" : e.submissionStatus, code: e.code
+          status: e.submissionStatus === "completed_invalid" ? "invalid_output" : e.submissionStatus, code: e.code,
+          ...(e.submissionStatus === "not_submitted" ? { observed_at: new Date().toISOString() } : {})
         });
         if (e.submissionStatus === "completed_invalid") await release(key);
       }
@@ -112,7 +113,8 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
         return completion;
       }
       if (completionIsAuthoritative && completion.status === "not_submitted") {
-        await writeResult(key, attempt, { status: "not_submitted", code: completion.code ?? "INFERENCE_NOT_SUBMITTED" });
+        await writeResult(key, attempt, { status: "not_submitted", code: completion.code ?? "INFERENCE_NOT_SUBMITTED",
+          observed_at: new Date().toISOString() });
         return { status: "not_submitted" };
       }
       if (completionIsAuthoritative && completion.status === "invalid_output") {
@@ -130,9 +132,17 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
     // an answer the port received late stays with the port. A key sent but not answered here reads as unknown, and a
     // stored invalid answer as invalid. For a recount of a finished step, which must change nothing.
     async storedCompletion(key) {
-      const { intent, result } = await latest(key);
-      if (result) return result.status === "invalid_output" ? { status: "invalid_output" } : result;
-      return { status: intent ? "unknown" : "not_submitted" };
+      // The last attempt recorded for the key: a closed one (not submitted) keeps its record, with its code and when the
+      // close was seen, unless the key was sent again here.
+      let found = { status: "not_submitted" };
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        if (!(await read(id(key, attempt, "intent")))) break;
+        const result = await read(id(key, attempt, "result"));
+        if (!result) return { status: "unknown" };
+        found = result.status === "invalid_output" ? { status: "invalid_output" } : result;
+        if (result.status !== "not_submitted") break;
+      }
+      return found;
     },
     isAuthoritativeCompletion: authoritative,
     // Whether this key's call was ever sent: its first intent is recorded before any send. Content-free.
