@@ -412,6 +412,25 @@ test("a controller's completion check reads an answer that arrived after the run
   assert.deepEqual(await environment.connector.listDispatch(), [], "released once stored");
 });
 
+test("a read-only lookup sees only what the store holds: an answer that came late stays with the exchange, unwritten", async (t) => {
+  const environment = await setup(t);
+  const store = memoryStore();
+  const durable = createDurableJournalInferencePort({ port: environment.makePort({ waitMs: 0 }), corpusStore: store });
+  assert.deepEqual(await durable.storedCompletion(KEY), { status: "not_submitted" });
+  await assert.rejects(durable.invoke(referenceCall()), { code: "COMPLETION_UNKNOWN" });
+  assert.equal(await environment.answerOpenItems(), 1);
+  const records = [...store.data.keys()];
+  assert.deepEqual(await durable.storedCompletion(KEY), { status: "unknown" }, "sent, and not answered in the store");
+  assert.deepEqual([...store.data.keys()], records, "nothing written");
+  assert.equal((await environment.connector.listDispatch()).length, 1, "the answered item stays with the exchange");
+  // Once a completion check has stored the answer, the read-only lookup returns it as stored.
+  const completed = await durable.getCompletion(KEY);
+  assert.equal(completed.status, "completed");
+  const stored = await durable.storedCompletion(KEY);
+  assert.deepEqual([stored.status, stored.output], ["completed", referenceAnswer]);
+  assert.deepEqual(stored.receipt, completed.receipt);
+});
+
 test("an item that expires unanswered is closed, refused to late answers and sent again as a successor", async (t) => {
   const environment = await setup(t);
   // The runtime and the connector share a host clock; this one only runs ahead of it.

@@ -2805,17 +2805,19 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return summary();
     }
     // Counts the current run's finished reference step again from its stored answers, and changes nothing: its deadline
-    // has passed, so every call is only read back from the durable port, never sent (a port that sends here refuses), no
-    // Claude slot is counted, and nothing is saved. For a step stored before a count existed (the judges' reasons, 12
-    // Oct 2026), and as a check that the stored counts still follow from the stored answers. Content-free.
+    // has passed, so every call is only read back from what the durable store already holds (never from the port, which
+    // would store and release an answer it received late), never sent (a send here refuses), no Claude slot is counted,
+    // and nothing is saved. For a step stored before a count existed (the judges' reasons, 12 Oct 2026), and as a check
+    // that the stored counts still follow from the stored answers. Content-free.
     async function pointerRecount() {
       const run = state.pointer;
       const step = run?.reference;
       invariant(step?.status === "done", "POINTER_REFERENCE_NOT_DONE");
       invariant(Date.parse(step.deadline) <= now().getTime(), "POINTER_RECOUNT_BEFORE_DEADLINE");
+      await authorize();
       const refuse = (code) => async () => { throw new ValidationError(code, { code }); };
       const readOnly = Object.freeze({ invoke: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
-        getCompletion: (operationKey, options) => port.getCompletion(operationKey, options),
+        getCompletion: (operationKey) => port.storedCompletion(operationKey),
         wasSent: (operationKey) => port.wasSent(operationKey) });
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
       const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline,

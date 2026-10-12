@@ -208,6 +208,7 @@ test("reference units the coverage judges never confirm stop the run before the 
 test("a finished reference step is counted again from its stored answers after its deadline, sending nothing and saving nothing", async (t) => {
   const later = { ms: 0 };
   let sends = 0;
+  let lookups = 0;
   // Both judges hold back a page's first quote on the even pages, as something left out.
   const f = await runtimeEnvironment(t, { refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
     now: () => new Date(Date.now() + later.ms),
@@ -216,16 +217,17 @@ test("a finished reference step is counted again from its stored answers after i
       sends += 1;
       const result = await port.invoke(...args);
       return { ...result, receipt: { ...result.receipt, provider_route_receipt: { received_at: new Date(Date.now() + later.ms).toISOString() } } };
-    } }) });
+    }, getCompletion: (...args) => { lookups += 1; return port.getCompletion(...args); } }) });
   await assert.rejects(f.run("stage", "pointer-recount"), { code: "POINTER_REFERENCE_NOT_DONE" });
   const { reference } = (await f.run("build-quotes", "pointer-reference")).pointer;
   // Before the deadline a call could still be sent, so nothing is counted again.
   await assert.rejects(f.run("pointer-recount"), { code: "POINTER_RECOUNT_BEFORE_DEADLINE" });
   later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;
-  const sent = sends;
+  const [sent, looked] = [sends, lookups];
   const before = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
   const { recount, pointer } = await f.run("pointer-recount");
   assert.equal(sends, sent, "nothing is sent");
+  assert.equal(lookups, looked, "only the store is read: the port isn't asked, so it can't hand over a late answer");
   assert.deepEqual(JSON.parse(await fs.readFile(f.stateFile, "utf8")).pointer, before.pointer, "nothing is saved");
   assert.deepEqual([recount.run_id, recount.step, recount.matches_stored_counts], [pointer.run_id, "reference", true]);
   assert.deepEqual(recount.counts, reference.counts);

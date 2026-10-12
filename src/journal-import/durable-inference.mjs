@@ -126,6 +126,14 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       }
       return { status: "unknown" };
     },
+    // What this store already holds for a key, read only: the port isn't asked, and nothing is written or released, so
+    // an answer the port received late stays with the port. A key sent but not answered here reads as unknown, and a
+    // stored invalid answer as invalid. For a recount of a finished step, which must change nothing.
+    async storedCompletion(key) {
+      const { intent, result } = await latest(key);
+      if (result) return result.status === "invalid_output" ? { status: "invalid_output" } : result;
+      return { status: intent ? "unknown" : "not_submitted" };
+    },
     isAuthoritativeCompletion: authoritative,
     // Whether this key's call was ever sent: its first intent is recorded before any send. Content-free.
     async wasSent(key) { return Boolean(await read(id(key, 1, "intent"))); },
