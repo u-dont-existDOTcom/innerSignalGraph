@@ -158,6 +158,19 @@ test("code confirms a quote only when the judge says it is covered and lists no 
     judgment("unit:two")] } });
   assert.deepEqual(copied.quotes.map((quote) => [quote.confirmed, quote.copied]), [[true, 1], [true, 0]]);
   assert.deepEqual(copied.notes, []);
+  assert.equal(checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
+    judgment("unit:one", { copied_question_ids: ["question:7:0:0"] }), judgment("unit:two")] } }).valid, true, "a confirmed quote needs no note");
+  // In a run from before that decision (no copy-run setting), a copied question holds its quote back as it did then, so
+  // a recount of such a run follows it: the note goes to the writer, and an answer without one is invalid.
+  const before = checkCoverageJudgments({ quotes: callQuotes(), copyRunWords: null, answer: { judgments: [
+    judgment("unit:one", { copied_question_ids: ["question:7:0:0"], missing: "one question copies the quote's turn of phrase" }),
+    judgment("unit:two")] } });
+  assert.deepEqual(before.quotes.map((quote) => [quote.confirmed, quote.copied]), [[false, 1], [true, 0]]);
+  assert.deepEqual(before.notes, [{ unit_id: "unit:one", missing: "one question copies the quote's turn of phrase" }]);
+  assert.equal(checkCoverageJudgments({ quotes: callQuotes(), copyRunWords: null, answer: { judgments: [
+    judgment("unit:one", { copied_question_ids: ["question:7:0:0"] }), judgment("unit:two")] } }).reason, "unconfirmed_without_note");
+  assert.throws(() => checkCoverageJudgments({ quotes: callQuotes(), copyRunWords: 2, answer: { judgments: [] } }),
+    { code: "POINTER_COVERAGE_CHECK_INPUT_INVALID" });
   const uncovered = checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
     judgment("unit:one", { covered: false, missing: "the call from the workshop" }), judgment("unit:two")] } });
   assert.deepEqual(uncovered.quotes.map((quote) => quote.confirmed), [false, true]);
@@ -232,6 +245,10 @@ test("a unit gets one writer retry in all; still unconfirmed after it, its quest
   assert.deepEqual([unconfirmed.step, unconfirmed.attempt], ["unconfirmed", 1]);
   assert.deepEqual(unconfirmed.questions.map((item) => [item.question_id, item.unit_id, item.critical, item.event]), [
     ["question:7:1:0", "unit:one", false, true], ["question:7:1:1", "unit:one", false, false], ["question:7:1:2", "unit:two", true, false]]);
+  // In a run from before that decision (no copy-run setting), the same unit is a nonresponse, as it was then.
+  assert.deepEqual(referenceUnitStep({ quoteIds: QUOTES, copyRunWords: null, attempts: [{ set: set(0), coverage: coverage([true, false], notes) },
+    { set: set(1), coverage: coverage([true, false], notes) }] }), { step: "nonresponse", reason: "coverage_unconfirmed" });
+  assert.throws(() => referenceUnitStep({ quoteIds: QUOTES, attempts: [], copyRunWords: 21 }), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
   assert.deepEqual(step([{ set: incomplete, coverage: null }, { set: set(1), coverage: null }]), { step: "judge", attempt: 1 });
   assert.equal(step([{ set: set(0), coverage: coverage([false, true], notes) }, { set: set(1), coverage: coverage([true, true]) }]).step,
     "complete");
@@ -266,6 +283,23 @@ test("code checks copying: the longest run of its quote's words a question holds
   for (const copyRunWords of [2, 21, 7.5, "8"]) {
     assert.throws(() => check(copyRunWords), { code: "POINTER_QUESTION_SET_INPUT_INVALID" });
   }
+});
+
+test("in a script written without spaces between words, each letter counts as a word, so copying shows there too", () => {
+  // Chinese: a question that repeats its quote shares all eleven characters; one in other words shares four.
+  const quote = "我昨天去医院看我妈妈了。";
+  assert.deepEqual(longestSharedRun(quote, "我昨天去医院看我妈妈了吗？"), { words: 11, run: "我 昨 天 去 医 院 看 我 妈 妈 了" });
+  assert.equal(longestSharedRun(quote, "我去医院看过妈妈吗？").words, 4);
+  // Japanese and Thai, their marks (kana's voicing marks, Thai's vowel and tone marks) aside like accents.
+  assert.equal(longestSharedRun("昨日、駅前のカフェでコーヒーを飲んだ。", "昨日、駅前のカフェでコーヒーを飲んだか？").words, 17);
+  assert.equal(longestSharedRun("เมื่อวานฉันไปโรงพยาบาลกับแม่", "เมื่อวานฉันไปโรงพยาบาลกับแม่ใช่ไหม").words, 23);
+  // A word of another script beside them stays one word, and a script written with spaces is read in words.
+  assert.deepEqual(longestSharedRun("I bought an iPhone手机 yesterday.", "Did I buy an iphone手机?"), { words: 4, run: "an iphone 手 机" });
+  assert.equal(longestSharedRun("어제 엄마와 병원에 갔어요.", "어제 엄마와 병원에 갔어요?").words, 4);
+  // So a question that copies a Chinese quote is held back, as one copying a French quote is.
+  const set = checkQuestionSet({ sampleIndex: 1, attempt: 0, quoteIds: ["unit:zh"], texts: new Map([["unit:zh", quote]]), answer: {
+    schema_version: "1.0", questions: [{ unit_id: "unit:zh", question: "我昨天去医院看我妈妈了吗？", critical: false, event: true }] } });
+  assert.deepEqual([set.longest_runs, set.copied.length], [[11], 1]);
 });
 
 test("a quote the copy check holds back gets the writer's retry with a note naming the run, though both judges confirm it", () => {

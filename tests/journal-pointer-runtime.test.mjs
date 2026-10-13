@@ -27,8 +27,9 @@ const distinct = (text) => text.match(/(?:quolp|vemmet)\d+/u)[0];
 
 // Answers by rule: each quote's question asks about its own word, or for the rain, about "pluie" and its page, and
 // the search writer searches the question's last word; the tagger tags Jean, each quote's word, and the rain; the
-// judges confirm and accept everything except the quotes whose word `refuse` picks.
-function handlers({ refuse = () => false } = {}) {
+// judges confirm and accept everything except the quotes whose word `refuse` picks, and list as copied the first
+// question of each quote whose word `copied` picks.
+function handlers({ refuse = () => false, copied = () => false } = {}) {
   const rainTerm = (text) => `pluie${text.match(/vemmet(\d+)/u)[1]}`;
   return {
     question_writer: (packet) => ({ schema_version: "1.0", questions: packet.quote_units.flatMap((quote) => [
@@ -36,8 +37,11 @@ function handlers({ refuse = () => false } = {}) {
       { unit_id: quote.unit_id, question: `What was the weather, ask about ${rainTerm(quote.text)}`, critical: false, event: false }]) }),
     coverage_judge: (packet) => ({ schema_version: "1.0", judgments: packet.quotes.map((quote) => {
       const refused = refuse(distinct(quote.text));
-      return { unit_id: quote.unit_id, covered: !refused, missing: refused ? "something is left out" : "", critical_question_ids: [],
-        event_question_ids: [], repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [] };
+      const copying = copied(distinct(quote.text));
+      return { unit_id: quote.unit_id, covered: !refused,
+        missing: refused ? "something is left out" : (copying ? "a question copies the quote's words" : ""), critical_question_ids: [],
+        event_question_ids: [], repeated_question_ids: [], combined_question_ids: [],
+        copied_question_ids: copying ? [quote.questions[0].question_id] : [] };
     }) }),
     search_writer: (packet) => ({ schema_version: "1.0", searches: packet.questions.map((question) => ({ question_id: question.question_id,
       queries: [question.question.split(" ").at(-1)] })) }),
@@ -263,14 +267,46 @@ test("a finished reference step is counted again from its stored answers after i
   const older = (await f.run("pointer-recount")).recount;
   assert.equal(older.matches_stored_counts, true);
   assert.deepEqual(older.counts.judges.held_back, heldBack);
-  // So does one stored before the copy check and the unconfirmed units' counts (owner decision 30): only the counts it
-  // holds are compared.
+  // Stored counts without the copy check's and the unconfirmed units' counts still match: only the counts held are
+  // compared.
   for (const name of ["copy_check", "unconfirmed_units", "unconfirmed_questions", "unconfirmed_critical_questions"]) delete state.pointer.reference.counts[name];
   await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
   const oldest = (await f.run("pointer-recount")).recount;
   assert.equal(oldest.matches_stored_counts, true);
   assert.deepEqual(oldest.counts.copy_check, reference.counts.copy_check);
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(JSON.stringify(older).includes(word), false, word);
+});
+
+test("a run from before owner decision 30 keeps its rules, so its recount follows it: a copying flag holds a quote back, and an unconfirmed unit is a nonresponse", async (t) => {
+  const later = { ms: 0 };
+  // Both judges list the question of every even page's quote that asks about its word as copying it, in both rounds.
+  const f = await runtimeEnvironment(t, { copied: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
+    now: () => new Date(Date.now() + later.ms),
+    wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => {
+      const result = await port.invoke(...args);
+      return { ...result, receipt: { ...result.receipt, provider_route_receipt: { received_at: new Date(Date.now() + later.ms).toISOString() } } };
+    } }) });
+  // The run opens (its pilot can't start before the reference step) and, as code from before the decision wrote it, has
+  // no copy-run setting.
+  await assert.rejects(f.run("stage", "build-quotes", "pointer-pilot"), { code: "POINTER_REFERENCE_NOT_DONE" });
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  delete state.pointer.copy_run_words;
+  await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
+  const stopped = (await f.run("pointer-reference")).pointer;
+  assert.equal(stopped.blocker, "POINTER_REFERENCE_NONRESPONSE");
+  const { reference } = stopped;
+  assert.deepEqual(reference.unconfirmed_units, []);
+  assert.ok(reference.nonresponse_units.length > 0);
+  assert.ok(reference.nonresponse_units.every((unit) => unit.reason === "coverage_unconfirmed"));
+  const { held_back: heldBack } = reference.counts.judges;
+  assert.ok(heldBack.codex.checks > 0);
+  assert.deepEqual(heldBack.codex, { checks: heldBack.codex.checks, left_out: 0, repeated: 0, combined: 0, copied: heldBack.codex.checks });
+  assert.deepEqual([reference.counts.copy_check.run_words, reference.counts.copy_check.copying], [null, 0]);
+  // After its deadline, the recount follows it exactly.
+  later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;
+  const { recount } = await f.run("pointer-recount");
+  assert.equal(recount.matches_stored_counts, true);
+  assert.deepEqual(recount.counts, reference.counts);
 });
 
 test("the step deadlines are run settings, checked before anything runs", async (t) => {

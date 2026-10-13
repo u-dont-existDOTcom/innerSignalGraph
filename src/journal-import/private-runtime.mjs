@@ -2783,8 +2783,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // state by reference. A run that fails a floor or has a nonresponse keeps its blocker, and no later step runs.
     // A run's generation is a new generation of the quote corpus, and it reads dates the way the run setting said when
     // the run started: a changed setting needs a new run (`pointer-new-run`), so no step mixes two readings. The copy
-    // check's run length is kept the same way; a run from before the copy check (owner decision 30) has none and flags
-    // no question.
+    // check's run length is kept the same way; a run from before owner decision 30 has none, and its steps keep the rules
+    // it started with (pointer-reference.mjs).
     const pointerRun = async () => {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
       if (!state.pointer) {
@@ -2799,7 +2799,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (state.pointer.blocker) throw new ValidationError(state.pointer.blocker, { code: state.pointer.blocker });
       return state.pointer;
     };
-    // The copy check's run length a run's steps use: what it started with, or none for a run from before the check.
+    // The copy check's run length a run's steps use: what it started with, or null for a run from before owner decision
+    // 30, whose steps then keep that run's rules.
     const runCopyRunWords = (run) => run.copy_run_words ?? null;
     // Starts over: the current run, whatever its state, goes into the run state's history as status shows it (counts
     // only), and the next pointer command starts a new run with new steps, seeds and deadlines. Its stored results
@@ -2817,9 +2818,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // would store and release an answer it received late), never sent (a send here refuses), no Claude slot is counted,
     // and nothing is saved. For a step stored before a count existed (the judges' reasons, 12 Oct 2026; the copy check's
     // run lengths, owner decision 30), and as a check that the stored counts still follow from the stored answers. The
-    // recount follows the code's current rules: for a step stored before owner decision 30, a unit still unconfirmed after
-    // its retry now counts as unconfirmed rather than as a nonresponse, so its counts can differ from those stored for
-    // that reason alone. Only the counts the stored ones hold are compared. Content-free.
+    // recount follows the rules the run ran under: in a run from before owner decision 30, a judge's copying flag still
+    // holds a quote back and a unit still unconfirmed after its retry is still a nonresponse. Only the counts the stored
+    // ones hold are compared. Content-free.
     async function pointerRecount() {
       const run = state.pointer;
       const step = run?.reference;

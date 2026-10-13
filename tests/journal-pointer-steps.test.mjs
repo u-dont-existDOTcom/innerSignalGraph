@@ -278,6 +278,27 @@ test("code holds back a quote whose question copies a run of its words, and a un
   assert.deepEqual(pointerReferenceCounts(before).copy_check, { run_words: null, questions: 45, copying: 0, longest_run: { 2: 43, 6: 2 } });
 });
 
+test("a run from before owner decision 30 keeps its rules: a judge's copying flag holds a quote back, and a unit unconfirmed after its retry is a nonresponse", async () => {
+  // Codex flags a copied question on page 3's first quote in the first round only; Claude on page 5's second quote in
+  // both rounds.
+  const script = { "standard:unit:p3q0": "copied:once", "hardest:unit:p5q1": "copied:always" };
+  const clock = { now: START };
+  const reference = await run(scriptedPort({ clock, script }), clock, { copyRunWords: null });
+  const byPage = new Map(reference.units.map((unit) => [unit.unit_id, unit]));
+  assert.deepEqual([byPage.get("page:3").status, byPage.get("page:3").writer_attempts], ["complete", 2]);
+  const fifth = byPage.get("page:5");
+  assert.deepEqual([fifth.status, fifth.reason, fifth.writer_attempts, fifth.questions], ["nonresponse", "coverage_unconfirmed", 2, []]);
+  const counts = pointerReferenceCounts(reference);
+  assert.deepEqual([counts.complete_units, counts.unconfirmed_units, counts.nonresponse_by_reason.coverage_unconfirmed], [29, 0, 1]);
+  const copied = (checks) => ({ ...NONE_HELD_BACK, checks, copied: checks });
+  assert.deepEqual(counts.judges.held_back, { codex: copied(1), claude: copied(2), codex_only: copied(1), claude_only: copied(2) });
+  assert.deepEqual([counts.copy_check.run_words, counts.copy_check.copying], [null, 0]);
+  // Under the rules since then, the same flags hold nothing back.
+  const later = { now: START };
+  const since = await run(scriptedPort({ clock: later, script }), later);
+  assert.ok(since.units.every((unit) => unit.status === "complete" && unit.writer_attempts === 1));
+});
+
 test("read back after the deadline, a writer item that closed in time leads to its unit's next round, as it did", async () => {
   const clock = { now: START };
   // Page 9's first writer item closes unanswered: the call fails, and the unit's second round writes its questions.

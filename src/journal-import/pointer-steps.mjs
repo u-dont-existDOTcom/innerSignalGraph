@@ -21,7 +21,9 @@ const COVERAGE_TIERS = Object.freeze(["standard", "hardest"]);
 
 // Why a judge held a quote back, counted once a check for each reason it gave: something the quote says left out (not
 // covered), a question repeating another, a question asking about two things or more, or a question copying the quote's
-// wording. One check can give several reasons, so the reasons can add up to more than the checks. Content-free.
+// wording. One check can give several reasons, so the reasons can add up to more than the checks. A copying flag alone
+// holds a quote back only in a run from before owner decision 30; since then it is counted only beside another reason.
+// Content-free.
 const heldBackCounts = () => ({ checks: 0, left_out: 0, repeated: 0, combined: 0, copied: 0 });
 function countHeldBack(counts, result) {
   if (result.confirmed) return;
@@ -59,9 +61,11 @@ function rolePacket(role, { generation, grantPurpose, assigned, tag, fields }) {
  * unit whose questions are complete; the writer's one retry, with both judges' notes, for every unit that fell short,
  * and both judges again; and the search writer, with one retry, for every unit whose quotes are all confirmed. Every
  * call is keyed under `stepId` and expires at `deadline`. Code checks every complete question set for questions that
- * copy a run of `copyRunWords` of their quote's words (checkQuestionSet; null for a run from before that check flags
- * none). A unit whose retry's questions are complete and judged but still not all confirmed is `unconfirmed`: it keeps
- * its questions, gets no searches, and counts in recall with every question missed (owner decision 30). Any other unit
+ * copy a run of `copyRunWords` of their quote's words (checkQuestionSet). A unit whose retry's questions are complete
+ * and judged but still not all confirmed is `unconfirmed`: it keeps its questions, gets no searches, and counts in
+ * recall with every question missed (owner decision 30). A run from before that decision (`copyRunWords` null) keeps the
+ * rules it ran under, so a recount follows it: code flags no question, a judge's copying flag holds its quote back, and
+ * a unit still unconfirmed after its retry is a nonresponse (pointer-reference.mjs). Any other unit
  * without confirmed questions or complete searches is a nonresponse, with its reason; one that ran out of time is a
  * nonresponse for the deadline. Returns the frozen reference: the sample's record, the judges' counts, the copy check's
  * counts, and for each sampled unit its stretch, inclusion probability, quotes and, when complete or unconfirmed, its
@@ -89,7 +93,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   };
   const call = (role, tier, key, assigned, fields) => ({ key, role, tier, grant, outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
     packet: rolePacket(role, { generation, grantPurpose: grant.purpose, assigned, tag: `pointer:${role}:${stepId}`, fields }) });
-  const next = (unit) => referenceUnitStep({ quoteIds: unit.quote_ids, attempts: unit.attempts });
+  const next = (unit) => referenceUnitStep({ quoteIds: unit.quote_ids, attempts: unit.attempts, copyRunWords });
   const quoteFor = (id) => ({ unit_id: id, text: quoteById.get(id).text });
   // Each quote both judges answered for, in every round: whether Codex (the standard tier) and Claude (the hardest) each
   // confirmed it. Their agreement shows whether one judge passes what the other doesn't, as the measurement reports for
@@ -149,7 +153,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       // An answer that fails the code's check (a quote missed or judged twice, another quote's question listed, an
       // unconfirmed quote without a note) uses its call's retry, like an answer that fails the schema.
       const check = (spec, output) => {
-        const checked = checkCoverageJudgments({ quotes: spec.packet.quotes, answer: output });
+        const checked = checkCoverageJudgments({ quotes: spec.packet.quotes, answer: output, copyRunWords });
         return checked.valid ? null : `COVERAGE_ANSWER_${checked.reason.toUpperCase()}`;
       };
       const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 1, beforeHardestSend, check, oneAtATime });
@@ -168,7 +172,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
             }
             return;
           }
-          const checked = checkCoverageJudgments({ quotes: group.quotes, answer: outcome.output });
+          const checked = checkCoverageJudgments({ quotes: group.quotes, answer: outcome.output, copyRunWords });
           for (const result of checked.quotes) results.set(result.unit_id, result);
           for (const note of checked.notes) notes.set(note.unit_id, note);
         });

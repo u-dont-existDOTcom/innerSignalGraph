@@ -505,7 +505,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     names the run. The judges no longer judge copying: a copied question a judge still lists is counted and decides
     nothing. The reference step reports, for every question, how many of its quote's words in a row it holds, so the
     setting can be checked against what the writer actually writes. A run keeps the setting it started with, as it
-    keeps its date setting.
+    keeps its date setting. In a script written without spaces between words (Chinese, Japanese, Thai, Lao, Khmer,
+    Burmese), each letter counts as a word, so copying shows there too; the setting then counts letters, and is set
+    from that report.
 - **No unit drops out.** A unit's questions are complete when every one of its quotes has at least one question naming
   it, every question names one of its quotes, and both coverage judges confirmed every one of its quotes. An
   incomplete or failed answer gets one retry, and so does a search-writing answer that fails or leaves a question
@@ -522,7 +524,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     the run before the pilot only when the unconfirmed units alone already put the recall floor out of reach: with
     every complete unit's questions taken as found and every unconfirmed unit's as missed, the best any generation
     could do, the one-sided 95% lower bound is under 85% (`POINTER_RECALL_OUT_OF_REACH`). A unit whose coverage check
-    failed after its retry, or that ran out of time, is still a nonresponse.
+    failed after its retry, or that ran out of time, is still a nonresponse. A run from before this amendment keeps the
+    rules it started with, so its recount (`pointer-recount`) follows it: there a judge's copying flag holds a quote
+    back, and an unconfirmed unit is a nonresponse.
 - **Calibration as a challenge set.** Calibration's units were chosen by their place in the journal plus every hazard
   (dreams, wishes, plans, hypotheticals), so they aren't a random sample. Recall on them is reported on its own, with
   hazards apart, and never stands in for a floor.
