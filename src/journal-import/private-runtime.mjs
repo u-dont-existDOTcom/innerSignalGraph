@@ -2785,6 +2785,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // the run started: a changed setting needs a new run (`pointer-new-run`), so no step mixes two readings. The copy
     // check's run length is kept the same way; a run from before owner decision 30 has none, and its steps keep the rules
     // it started with (pointer-reference.mjs).
+    // Whether a run's settings still are the run config's: its date setting, and the copy check's run length for a run
+    // that has one. A changed setting calls for a new run, at every step and at publication.
+    const pointerSettingsHold = (run) => run.numeric_date_order === quoteNumericDateOrder
+      && (!Object.hasOwn(run, "copy_run_words") || run.copy_run_words === pointerCopyRunWords);
     const pointerRun = async () => {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
       if (!state.pointer) {
@@ -2793,9 +2797,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           copy_run_words: pointerCopyRunWords, started_at: now().toISOString(), blocker: null };
         await save();
       }
-      invariant(state.pointer.numeric_date_order === quoteNumericDateOrder, "POINTER_RUN_SETTING_CHANGED");
-      invariant(!Object.hasOwn(state.pointer, "copy_run_words") || state.pointer.copy_run_words === pointerCopyRunWords,
-        "POINTER_RUN_SETTING_CHANGED");
+      invariant(pointerSettingsHold(state.pointer), "POINTER_RUN_SETTING_CHANGED");
       if (state.pointer.blocker) throw new ValidationError(state.pointer.blocker, { code: state.pointer.blocker });
       return state.pointer;
     };
@@ -3046,9 +3048,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const run = state.pointer;
       invariant(run?.measure?.status === "done" && run.measure.publish === true && !run.blocker, "POINTER_NOT_READY_TO_PUBLISH");
       invariant(run.persisted?.step_id === run.measure.measured_step_id, "POINTER_MEASURED_GENERATION_MISMATCH");
-      // The measured generation reads dates as the run setting said when the run started; a setting changed since
-      // calls for a new run, as every other step does.
-      invariant(run.numeric_date_order === quoteNumericDateOrder, "POINTER_RUN_SETTING_CHANGED");
+      // The measured generation reads dates as the run setting said when the run started, and was measured under the copy
+      // check's run length the run started with; a setting changed since calls for a new run, as every other step does.
+      invariant(pointerSettingsHold(run), "POINTER_RUN_SETTING_CHANGED");
       if (run.published) return summary();
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: run.persisted.corpus_id, corpusKey: key, resumeMatchingObjects: true });
       try {

@@ -173,10 +173,14 @@ test("the pointer run goes from the reference sample to publication, each step w
   const state = await fs.readFile(f.stateFile, "utf8");
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(state.includes(word), false, word);
 
-  // A date setting changed after the measurement holds publication back, as it does every step.
+  // A date setting changed after the measurement holds publication back, as it does every step, and so does a changed
+  // copy-run setting.
   f.config.quote_numeric_date_order = "day_first";
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
   delete f.config.quote_numeric_date_order;
+  f.config.pointer_copy_run_words = 7;
+  await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
+  delete f.config.pointer_copy_run_words;
   const deployed = await f.run("pointer-publish");
   assert.equal(deployed.pointer.published.supersedes, published.active_generation);
   const after = (await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora.find((item) => item.corpus_id === published.corpus_id);
