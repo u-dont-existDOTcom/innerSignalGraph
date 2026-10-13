@@ -104,6 +104,9 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   // said when): each is taken as a deadline, as an expired item's is, and counted here so a recount says it guessed.
   let inferred = 0;
   const heldBack = { codex: heldBackCounts(), claude: heldBackCounts(), codex_only: heldBackCounts(), claude_only: heldBackCounts() };
+  // The checks where each judge listed a question as copying its quote, whatever it decided: since owner decision 30 such
+  // a flag holds nothing back, so it shows here, not among the reasons. Content-free.
+  const copyingFlagged = { codex: 0, claude: 0 };
   const byRound = [0, 1].map(() => ({ checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0, copied_by_code: 0 }));
   // The copy check over every complete question set, both rounds: how long a run of its quote's words each question
   // holds (questions by run length), and how many reach the setting. Content-free.
@@ -189,6 +192,8 @@ export async function runPointerReference({ units, seed = null, sample: given = 
           countHeldBack(heldBack.claude, second);
           if (second.confirmed) countHeldBack(heldBack.codex_only, first);
           if (first.confirmed) countHeldBack(heldBack.claude_only, second);
+          if (first.copied > 0) copyingFlagged.codex += 1;
+          if (second.copied > 0) copyingFlagged.claude += 1;
           const counts = byRound[round];
           counts.checks += 1;
           if (first.confirmed) counts.codex_confirmed += 1;
@@ -252,7 +257,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       units_per_stratum: sample.units_per_stratum, candidate_units: sample.candidate_units },
     judges: { codex_confirmed: agreement.filter((item) => item.first).length,
       claude_confirmed: agreement.filter((item) => item.second).length, agreement: cohenKappa(agreement), held_back: heldBack,
-      by_round: byRound },
+      by_round: byRound, copying_flagged: copyingFlagged },
     copy_check: copyCheck,
     ...(inferred > 0 ? { closes_inferred: inferred } : {}),
     units: reference
@@ -300,7 +305,8 @@ export function pointerReferenceCounts(reference) {
     units_retried: retried, questions, critical_questions: critical, event_questions: events,
     unconfirmed_questions: unconfirmedQuestions, unconfirmed_critical_questions: unconfirmedCritical,
     // A reference stored before the judges' agreement was counted has none, and one stored before their reasons were
-    // counted (12 Oct 2026) has no `held_back` or `by_round`; `pointer-recount` counts them again from the stored answers.
+    // counted (12 Oct 2026) has no `held_back` or `by_round`, and one stored before owner decision 30 no
+    // `copying_flagged`; `pointer-recount` counts them again from the stored answers.
     judges: reference.judges ? deepFreeze(structuredClone(reference.judges)) : null,
     // A reference stored before the copy check (owner decision 30) has none.
     copy_check: reference.copy_check ? deepFreeze(structuredClone(reference.copy_check)) : null });

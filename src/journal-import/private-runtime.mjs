@@ -2836,13 +2836,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         port: readOnly, grant, generation: run.generation, now, beforeHardestSend: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
         oneAtATime: pointerTurns, copyRunWords: runCopyRunWords(run) });
       const counts = pointerReferenceCounts(reference);
-      // The stored counts must come out the same, leaving aside what was counted only later: the judges' reasons and
-      // rounds, the copy check, and any count the stored ones don't hold.
-      const core = ({ judges, copy_check: copyCheck, ...rest }) => ({ ...rest, judges: judges
-        ? { codex_confirmed: judges.codex_confirmed, claude_confirmed: judges.claude_confirmed, agreement: judges.agreement } : null });
-      const stored = core(step.counts);
-      const again = Object.fromEntries(Object.entries(core(counts)).filter(([name]) => Object.hasOwn(stored, name)));
-      if (stored.judges === null) again.judges = null;
+      // The stored counts must come out the same, leaving aside what was counted only later. So what they hold is compared,
+      // at every level, and nothing else: the judges' reasons and rounds came on 12 Oct 2026, and the copy check, the
+      // unconfirmed units and the judges' copying flags with owner decision 30. A count stored as null wasn't counted then.
+      const plain = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+      const held = (fresh, kept) => {
+        if (Array.isArray(kept) && Array.isArray(fresh) && fresh.length === kept.length) return fresh.map((item, index) => held(item, kept[index]));
+        if (!plain(kept) || !plain(fresh)) return fresh;
+        return Object.fromEntries(Object.keys(kept).filter((name) => Object.hasOwn(fresh, name)).map((name) => [name, held(fresh[name], kept[name])]));
+      };
+      const stored = step.counts;
+      const again = held(counts, stored);
+      for (const name of ["judges", "copy_check"]) if (stored[name] === null) again[name] = null;
       return { ...summary(), recount: { run_id: run.run_id, step: "reference",
         matches_stored_counts: JSON.stringify(again) === JSON.stringify(stored),
         // Calls closed unanswered whose stored record can't say whether the step saw that in time: each is read as a
@@ -2885,11 +2890,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         .map((unit) => ({ unit_id: unit.unit_id, reason: unit.reason, deadline_cause: unit.deadline_cause ?? null }));
       const unconfirmed = reference.units.filter((unit) => unit.status === "unconfirmed").map((unit) => unit.unit_id);
       const reach = pointerRecallReach(reference);
-      await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:reference`, reference), counts: pointerReferenceCounts(reference),
-        nonresponse_units: nonresponse, unconfirmed_units: unconfirmed, recall_reach: reach });
+      const counts = pointerReferenceCounts(reference);
+      const resultRef = await writeLarge(`pointer:${run.run_id}:reference`, reference);
+      // The blocker is saved with the finished step, in the same write, so a stop between two writes can't leave a run
+      // that can't pass free to go on to the pilot.
       if (nonresponse.length > 0) run.blocker = "POINTER_REFERENCE_NONRESPONSE";
       else if (!reach.reachable) run.blocker = "POINTER_RECALL_OUT_OF_REACH";
-      if (run.blocker) await save();
+      await finishPointerStep(step, { result_ref: resultRef, counts, nonresponse_units: nonresponse, unconfirmed_units: unconfirmed,
+        recall_reach: reach });
       return summary();
     }
 

@@ -259,10 +259,21 @@ test("a finished reference step is counted again from its stored answers after i
   assert.deepEqual(heldBack.claude, heldBack.codex);
   assert.deepEqual([heldBack.codex_only.checks, heldBack.claude_only.checks], [0, 0], "the judges here always agree");
   assert.equal(byRound[0].checks + byRound[1].checks, recount.counts.judges.agreement.items);
+  // Every count the stored step holds is compared, the copy check's and the judges' reasons and flags included: one that
+  // no longer follows from the stored answers shows.
+  for (const tamper of [(counts) => { counts.copy_check.copying += 1; }, (counts) => { counts.judges.held_back.codex.left_out += 1; },
+    (counts) => { counts.judges.copying_flagged.claude += 1; }, (counts) => { counts.unconfirmed_questions += 1; }]) {
+    const changed = structuredClone(before);
+    tamper(changed.pointer.reference.counts);
+    await fs.writeFile(f.stateFile, JSON.stringify(changed), { mode: 0o600 });
+    assert.equal((await f.run("pointer-recount")).recount.matches_stored_counts, false);
+  }
+  await fs.writeFile(f.stateFile, JSON.stringify(before), { mode: 0o600 });
   // A reference stored before the reasons were counted gets them from the recount, and its other counts still match.
   const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
   delete state.pointer.reference.counts.judges.held_back;
   delete state.pointer.reference.counts.judges.by_round;
+  delete state.pointer.reference.counts.judges.copying_flagged;
   await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
   const older = (await f.run("pointer-recount")).recount;
   assert.equal(older.matches_stored_counts, true);
@@ -301,6 +312,7 @@ test("a run from before owner decision 30 keeps its rules, so its recount follow
   const { held_back: heldBack } = reference.counts.judges;
   assert.ok(heldBack.codex.checks > 0);
   assert.deepEqual(heldBack.codex, { checks: heldBack.codex.checks, left_out: 0, repeated: 0, combined: 0, copied: heldBack.codex.checks });
+  assert.deepEqual(reference.counts.judges.copying_flagged, { codex: heldBack.codex.checks, claude: heldBack.claude.checks });
   assert.deepEqual([reference.counts.copy_check.run_words, reference.counts.copy_check.copying], [null, 0]);
   // After its deadline, the recount follows it exactly.
   later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;

@@ -502,7 +502,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     `pointer_copy_run_words` of its quote's words in a row (a run setting, 8 by default, from 3 to 20), in the quote's
     order, with accents, case and punctuation aside. A shorter shared run is the plain words anyone would use for what
     happened. A copying question leaves its quote unconfirmed whatever the judges say, and the writer's retry note
-    names the run. The judges no longer judge copying: a copied question a judge still lists is counted and decides
+    names the run. The judges no longer judge copying: a copied question a judge still lists is counted (each judge's
+    checks with such a flag, whatever it decided) and decides
     nothing. The reference step reports, for every question, how many of its quote's words in a row it holds, so the
     setting can be checked against what the writer actually writes. A run keeps the setting it started with, as it
     keeps its date setting. In a script written without spaces between words (Chinese, Japanese, Thai, Lao, Khmer,

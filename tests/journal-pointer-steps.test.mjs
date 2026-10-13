@@ -180,7 +180,8 @@ test("every sampled unit gets its questions, both judges' confirmation and its s
     judges: { codex_confirmed: 45, claude_confirmed: 45,
       agreement: { items: 45, agreements: 45, disagreements: 0, raw_agreement: 1, kappa: null },
       held_back: { codex: NONE_HELD_BACK, claude: NONE_HELD_BACK, codex_only: NONE_HELD_BACK, claude_only: NONE_HELD_BACK },
-      by_round: [{ ...NO_COPYING, checks: 45, codex_confirmed: 45, claude_confirmed: 45, both_confirmed: 45 }, NO_COPYING] },
+      by_round: [{ ...NO_COPYING, checks: 45, codex_confirmed: 45, claude_confirmed: 45, both_confirmed: 45 }, NO_COPYING],
+      copying_flagged: { codex: 0, claude: 0 } },
     // Each question shares two words in a row with its quote ("synthetic paragraph"), far below the run that copies.
     copy_check: { run_words: 8, questions: 45, copying: 0, longest_run: { 2: 45 } } });
   assert.equal(JSON.stringify(pointerReferenceCounts(reference)).includes("Synthetic"), false);
@@ -247,6 +248,8 @@ test("the judges' reasons for holding a quote back are counted by kind, for each
   assert.deepEqual(judges.by_round, [{ ...NO_COPYING, checks: 45, codex_confirmed: 44, claude_confirmed: 43, both_confirmed: 43 },
     { ...NO_COPYING, checks: 4, codex_confirmed: 4, claude_confirmed: 4, both_confirmed: 4 }]);
   assert.deepEqual([judges.codex_confirmed, judges.claude_confirmed, judges.agreement.items], [48, 47, 49]);
+  // Codex's copying flag, which held nothing back, is still counted.
+  assert.deepEqual(judges.copying_flagged, { codex: 1, claude: 0 });
   assert.equal(JSON.stringify(judges).includes("Synthetic"), false);
 });
 
@@ -292,6 +295,7 @@ test("a run from before owner decision 30 keeps its rules: a judge's copying fla
   assert.deepEqual([counts.complete_units, counts.unconfirmed_units, counts.nonresponse_by_reason.coverage_unconfirmed], [29, 0, 1]);
   const copied = (checks) => ({ ...NONE_HELD_BACK, checks, copied: checks });
   assert.deepEqual(counts.judges.held_back, { codex: copied(1), claude: copied(2), codex_only: copied(1), claude_only: copied(2) });
+  assert.deepEqual(counts.judges.copying_flagged, { codex: 1, claude: 2 });
   assert.deepEqual([counts.copy_check.run_words, counts.copy_check.copying], [null, 0]);
   // Under the rules since then, the same flags hold nothing back.
   const later = { now: START };
