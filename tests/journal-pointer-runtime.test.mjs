@@ -7,7 +7,7 @@ import path from "node:path";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
-import { POINTER_DEADLINE_DEFAULTS, journalPointerDeadlines } from "../src/journal-import/run-config.mjs";
+import { POINTER_DEADLINE_DEFAULTS, journalPointerCopyRunWords, journalPointerDeadlines } from "../src/journal-import/run-config.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 
 // The pointer pass's commands in the private runtime (plan 2026-10-09-journal-quote-first.md, Part 3): the reference
@@ -185,24 +185,42 @@ test("the pointer run goes from the reference sample to publication, each step w
   assert.equal((await f.run("pointer-publish")).pointer.published.at, deployed.pointer.published.at);
 });
 
-test("reference units the coverage judges never confirm stop the run before the pilot, each listed by its page", async (t) => {
-  // The judges never confirm a page's first quote on the even pages.
+test("reference units the coverage judges never confirm count as missed, and stop the run before the pilot when that puts recall out of reach", async (t) => {
+  // The judges never confirm a page's first quote on the even pages: about half the sample.
   const f = await runtimeEnvironment(t, { refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0 });
   await f.run("stage", "build-quotes");
   const stopped = await f.run("pointer-reference");
-  assert.equal(stopped.pointer.blocker, "POINTER_REFERENCE_NONRESPONSE");
+  assert.equal(stopped.pointer.blocker, "POINTER_RECALL_OUT_OF_REACH");
   const { reference } = stopped.pointer;
-  assert.ok(reference.nonresponse_units.length > 0);
-  for (const unit of reference.nonresponse_units) {
-    assert.match(unit.unit_id, /^page:\d+$/u);
-    assert.equal(Number(unit.unit_id.slice("page:".length)) % 2, 0);
-    assert.equal(unit.reason, "coverage_unconfirmed");
+  assert.deepEqual(reference.nonresponse_units, []);
+  assert.ok(reference.unconfirmed_units.length > 0);
+  for (const unitId of reference.unconfirmed_units) {
+    assert.match(unitId, /^page:\d+$/u);
+    assert.equal(Number(unitId.slice("page:".length)) % 2, 0);
   }
-  assert.equal(reference.counts.nonresponse_units, reference.nonresponse_units.length);
-  assert.equal(reference.counts.complete_units + reference.counts.nonresponse_units, 96);
-  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_REFERENCE_NONRESPONSE" });
+  assert.deepEqual([reference.counts.unconfirmed_units, reference.counts.nonresponse_units], [reference.unconfirmed_units.length, 0]);
+  assert.equal(reference.counts.complete_units + reference.counts.unconfirmed_units, 96);
+  assert.equal(reference.recall_reach.unconfirmed_units, reference.unconfirmed_units.length);
+  assert.ok(reference.recall_reach.best_lower_bound < reference.recall_reach.floor);
+  assert.equal(reference.recall_reach.reachable, false);
+  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_RECALL_OUT_OF_REACH" });
   // Status still answers.
-  assert.equal((await f.run("status")).pointer.blocker, "POINTER_REFERENCE_NONRESPONSE");
+  assert.equal((await f.run("status")).pointer.blocker, "POINTER_RECALL_OUT_OF_REACH");
+});
+
+test("a few units still unconfirmed after their retry count as missed and the run goes on, the floor still within reach", async (t) => {
+  // The judges never confirm the first quote of page 50 or page 100: at most two sampled units.
+  const f = await runtimeEnvironment(t, { refuse: (word) => ["quolp50", "quolp100"].includes(word) });
+  await f.run("stage", "build-quotes");
+  const referenced = await f.run("pointer-reference");
+  const { reference } = referenced.pointer;
+  assert.equal(referenced.pointer.blocker, null);
+  assert.ok(reference.unconfirmed_units.length <= 2);
+  assert.deepEqual([reference.counts.complete_units + reference.counts.unconfirmed_units, reference.counts.nonresponse_units], [96, 0]);
+  assert.equal(reference.recall_reach.reachable, true);
+  assert.equal(reference.counts.copy_check.run_words, journalPointerCopyRunWords({}));
+  // The pilot runs.
+  assert.equal((await f.run("pointer-pilot")).pointer.pilot.status, "done");
 });
 
 test("a finished reference step is counted again from its stored answers after its deadline, sending nothing and saving nothing", async (t) => {
@@ -245,6 +263,13 @@ test("a finished reference step is counted again from its stored answers after i
   const older = (await f.run("pointer-recount")).recount;
   assert.equal(older.matches_stored_counts, true);
   assert.deepEqual(older.counts.judges.held_back, heldBack);
+  // So does one stored before the copy check and the unconfirmed units' counts (owner decision 30): only the counts it
+  // holds are compared.
+  for (const name of ["copy_check", "unconfirmed_units", "unconfirmed_questions", "unconfirmed_critical_questions"]) delete state.pointer.reference.counts[name];
+  await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
+  const oldest = (await f.run("pointer-recount")).recount;
+  assert.equal(oldest.matches_stored_counts, true);
+  assert.deepEqual(oldest.counts.copy_check, reference.counts.copy_check);
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(JSON.stringify(older).includes(word), false, word);
 });
 
@@ -278,6 +303,29 @@ test("a run reads dates as the setting said when it started: a changed setting n
   assert.match(second.generation, /:quotes:quote-index-v2-day-first:pointer-[0-9a-f]{8}$/u);
   assert.notEqual(second.reference.seed_sha256, first.reference.seed_sha256);
   assert.equal(second.reference.status, "done");
+});
+
+test("the copy check's run length is a run setting, checked before anything runs and kept by a run", async (t) => {
+  assert.equal(journalPointerCopyRunWords({}), 8);
+  assert.equal(journalPointerCopyRunWords({ pointer_copy_run_words: 5 }), 5);
+  for (const value of [2, 21, 7.5, "8"]) {
+    assert.throws(() => journalPointerCopyRunWords({ pointer_copy_run_words: value }), { code: "JOURNAL_POINTER_COPY_RUN_INVALID" });
+  }
+  const f = await runtimeEnvironment(t);
+  f.config.pointer_copy_run_words = 2;
+  await assert.rejects(f.open(), { code: "JOURNAL_POINTER_COPY_RUN_INVALID" });
+  f.config.pointer_copy_run_words = 6;
+  const first = (await f.run("stage", "pointer-reference")).pointer;
+  assert.equal(first.copy_run_words, 6);
+  assert.equal(first.reference.counts.copy_check.run_words, 6);
+  // A changed setting needs a new run, as the date setting does.
+  f.config.pointer_copy_run_words = 7;
+  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_RUN_SETTING_CHANGED" });
+  // A run from before the copy check has no setting of its own, and goes on under any.
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  delete state.pointer.copy_run_words;
+  await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
+  assert.equal((await f.run("pointer-pilot")).pointer.pilot.status, "done");
 });
 
 // The mock port, counting the calls it holds at once, by tier and in all.

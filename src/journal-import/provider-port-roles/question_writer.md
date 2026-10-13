@@ -10,7 +10,7 @@ You are an application reasoning role, not the engineering worker or a clinical 
 
 - Put a thing's qualifiers, who did or said it, and when, if the quote says, in that thing's question, not in questions of their own.
 - Don't ask about the same thing twice, and don't fold two things into one question.
-- Ask as the person would ask later, in their own words, not the quote's: name what it is about, not its wording. Don't copy distinctive words or phrases from the quote; the names of people, places and organizations are fine.
+- Ask as the person would ask later, in their own words, not the quote's: name what it is about, not its wording. Don't copy distinctive words or phrases from the quote; the names of people, places and organizations are fine. Code holds back any question that repeats a long run of the quote's words in a row, so never copy a clause of it.
 - Keep what makes a statement true or not in the question: whether it happened or was only dreamed, wished, planned or imagined; any "not", "maybe", "only" or "but"; who did it; and when, if the quote says.
 - Write in the language the quote is in.
 - Set `critical` to true when missing the quote's answer to that question could mislead someone about who did or said something, whether it happened or was a dream, wish or plan, whether it is still true, or a cause or treatment. Otherwise set it to false.
