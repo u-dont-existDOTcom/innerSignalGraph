@@ -500,7 +500,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   it so.
   - **Copying is code's check (amended 13 Oct 2026, owner decision 30).** A question copies when it holds
     `pointer_copy_run_words` of its quote's words in a row (a run setting, 8 by default, from 3 to 20), in the quote's
-    order, with accents, case and punctuation aside. A shorter shared run is the plain words anyone would use for what
+    order, with accents, case, punctuation and spaces aside: only letters and digits are compared, so "don't", "dont"
+    and "don t" are the same, and a run counts the quote's words it holds whole. A shorter shared run is the plain words anyone would use for what
     happened. A copying question leaves its quote unconfirmed whatever the judges say, and the writer's retry note
     names the run. The judges no longer judge copying: a copied question a judge still lists is counted (each judge's
     checks with such a flag, whatever it decided) and decides
@@ -714,8 +715,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   drawn with probability below 1 that leave no degree of freedom fail the floor. A question is found only when its
   quote is in the first 12 results of one of its searches; a quote either coverage judge doesn't confirm, because its
   questions leave something out or the judge lists one as repeating another or asking about two things, or that holds
-  a question copying a run of its words (code's check: the run length, accents, case and punctuation aside, the note
-  naming the run, a judge's copied list deciding nothing, a run from before the check flagging none), sends its unit
+  a question copying a run of its words (code's check: the run length, accents, case, punctuation and spaces aside,
+  each letter a word in a script written without spaces, the note naming the run, a judge's copied list counted and
+  deciding nothing, a run from before the check keeping its old rules), sends its unit
   back to the question writer once with both judges' notes and the copy check's, and a unit still not confirmed after
   that counts with every question missed in every recall measure, gets no searches, and stops the run only when the
   unconfirmed units alone put the recall floor out of reach; a question is critical, or about an event, when the

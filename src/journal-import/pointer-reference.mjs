@@ -36,8 +36,8 @@ export const POINTER_REFERENCE_NONRESPONSE_REASONS = Object.freeze(["questions_i
 export const POINTER_REFERENCE_SAMPLE = Object.freeze({ strata: 12, units_per_stratum: 8 });
 /**
  * The copy check (owner decision 30, 12 Oct 2026): a question copies its quote when it holds this many of the quote's
- * words or more in a row, in the quote's order, so word search could find the quote by its own phrasing and recall
- * would answer itself. A shorter shared run is the plain words anyone would use for what happened ("did I want to move
+ * words or more in a row, in the quote's order (spaces, punctuation, accents and case aside: longestSharedRun), so word
+ * search could find the quote by its own phrasing and recall would answer itself. A shorter shared run is the plain words anyone would use for what happened ("did I want to move
  * back to the village"), not copying. The run setting `pointer_copy_run_words` can change it, within the limits; the
  * reference step reports how long a run each question shares with its quote, so the setting can be checked against what
  * the question writer actually writes. In a script written without spaces between words (Chinese, Japanese, Thai, Lao,
@@ -69,34 +69,62 @@ function deepFreeze(value) {
 // counts as a word, so a question that copies a clause still shares a long run with its quote.
 const UNSPACED = String.raw`\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}\p{scx=Thai}\p{scx=Lao}\p{scx=Khmer}\p{scx=Myanmar}`;
 const COPY_WORD = new RegExp(String.raw`(?=[\p{L}\p{N}])[${UNSPACED}]|(?:(?![${UNSPACED}])[\p{L}\p{N}])+`, "gu");
-// The words the copy check compares: runs of letters and digits (single letters, in a script written without spaces),
-// lowercased and without accents, so case, accents and punctuation (an apostrophe included) never make or break a run.
+// A text's words as the copy check counts them: runs of letters and digits (single letters, in a script written without
+// spaces), lowercased and without accents.
 const copyWords = (text) => text.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().match(COPY_WORD) ?? [];
 
 /**
  * The longest run of a quote's words, in the quote's order, that a question holds: its length in words, and the run
- * itself as the copy check compares it (the quote's own words, for the writer's retry note only).
+ * itself as the copy check compares it (the quote's own words, for the writer's retry note only). Only letters and
+ * digits are compared, lowercased and without accents: spaces and punctuation are skipped on both sides, so "don't",
+ * "dont" and "don t" are the same, and a run counts the quote's words it holds whole.
  */
 export function longestSharedRun(quoteText, questionText) {
   invariant(typeof quoteText === "string" && typeof questionText === "string", "POINTER_COPY_CHECK_INPUT_INVALID");
-  const quote = copyWords(quoteText);
-  const question = copyWords(questionText);
+  const words = copyWords(quoteText);
+  // The quote's letters in order, each with the word it belongs to, and each word's first and last letter.
+  const wordOf = [];
+  const first = [];
+  const last = [];
+  // Where each letter occurs in the quote.
+  const places = new Map();
+  for (const [word, text] of words.entries()) {
+    for (const letter of text) {
+      const at = wordOf.length;
+      if (first[word] === undefined) first[word] = at;
+      last[word] = at;
+      wordOf.push(word);
+      if (!places.has(letter)) places.set(letter, []);
+      places.get(letter).push(at);
+    }
+  }
   let best = 0;
-  let end = 0;
-  let previous = new Array(question.length + 1).fill(0);
-  for (let i = 1; i <= quote.length; i += 1) {
-    const current = new Array(question.length + 1).fill(0);
-    for (let j = 1; j <= question.length; j += 1) {
-      if (quote[i - 1] !== question[j - 1]) continue;
-      current[j] = previous[j - 1] + 1;
-      if (current[j] > best) {
-        best = current[j];
-        end = i;
+  let from = 0;
+  // For each place in the quote, the length of the shared stretch of letters ending there and at the question's
+  // previous letter (`previous`, whose set places are `set`) or at its current one (`current`).
+  let previous = new Int32Array(wordOf.length);
+  let current = new Int32Array(wordOf.length);
+  let set = [];
+  for (const letter of copyWords(questionText).join("")) {
+    const now = [];
+    for (const end of places.get(letter) ?? []) {
+      const length = (end > 0 ? previous[end - 1] : 0) + 1;
+      current[end] = length;
+      now.push(end);
+      // The quote's words this stretch holds whole.
+      const start = end - length + 1;
+      const opening = first[wordOf[start]] === start ? wordOf[start] : wordOf[start] + 1;
+      const closing = last[wordOf[end]] === end ? wordOf[end] : wordOf[end] - 1;
+      if (closing - opening + 1 > best) {
+        best = closing - opening + 1;
+        from = opening;
       }
     }
-    previous = current;
+    for (const place of set) previous[place] = 0;
+    [previous, current] = [current, previous];
+    set = now;
   }
-  return { words: best, run: quote.slice(end - best, end).join(" ") };
+  return { words: best, run: words.slice(from, from + best).join(" ") };
 }
 
 // The copy-run setting a step runs under: a length within the limits, or null for a run from before owner decision 30,

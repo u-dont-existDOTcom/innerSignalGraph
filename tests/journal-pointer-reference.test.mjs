@@ -261,7 +261,7 @@ test("a unit gets one writer retry in all; still unconfirmed after it, its quest
   assert.throws(() => step([{}, {}, {}]), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
 });
 
-test("code checks copying: the longest run of its quote's words a question holds, accents, case and punctuation aside", () => {
+test("code checks copying: the longest run of its quote's words a question holds, accents, case, punctuation and spaces aside", () => {
   assert.equal(POINTER_COPY_RUN_WORDS, 8);
   assert.deepEqual(POINTER_COPY_RUN_LIMITS, { min: 3, max: 20 });
   const quote = "Hier, je suis allé voir ma mère à l'hôpital de Thiès avec Awa.";
@@ -269,7 +269,15 @@ test("code checks copying: the longest run of its quote's words a question holds
   assert.equal(longestSharedRun(quote, "Qui ai-je vu à Thiès ?").words, 1);
   assert.deepEqual(longestSharedRun("I want to move back to the village.", "Did I WANT to move—back to the village?"),
     { words: 8, run: "i want to move back to the village" });
-  assert.deepEqual(longestSharedRun("Nothing alike.", "Something else?"), { words: 0, run: "" });
+  assert.deepEqual(longestSharedRun("Nothing alike.", "Something else?"), { words: 0, run: "" }, "only whole words count");
+  // Spaces and punctuation are skipped on both sides, so an apostrophe or a hyphen dropped, or turned into a space,
+  // changes nothing.
+  for (const question of ["Did I really dont want to leave right now?", "Did I really don t want to leave right now?"]) {
+    assert.deepEqual(longestSharedRun("I really don't want to leave right now", question), { words: 9, run: "i really don t want to leave right now" });
+  }
+  assert.deepEqual(longestSharedRun("My mother-in-law came for the whole weekend", "Did my mother in law come for the whole weekend?"),
+    { words: 4, run: "my mother in law" });
+  assert.deepEqual([longestSharedRun("", "Anything?").words, longestSharedRun("Something.", "").words], [0, 0]);
   assert.throws(() => longestSharedRun(null, "q"), { code: "POINTER_COPY_CHECK_INPUT_INVALID" });
 
   // A complete set reports each question's longest run, and flags those that reach the run length.
