@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-09-r3`
+Queue version: `2026-10-14-r4`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -207,10 +207,10 @@ Where: Also Look Outward, following the paragraph on safe graded disclosure and 
 
 ### PGQ-031 — Gratitude opens a possible door; the child is not required to enter
 Caused by: owner-authored October 14 revision of “Ask God for a Loan,” `AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014`, `IC.LOVE_HORIZON_EXPLORATION`, `IC.DEEP_LOVE_TO_CHILD`, and the updated extraction distinction.
-Teaching point: If someone chooses gratitude for a concrete good that remains true even amid pain, they may notice a growing softness or spiritual love. Neither immediate softening nor eventual divine love is guaranteed; this is not a duty to be grateful for mistreatment or a replacement for ordinary action. Once any deep love is genuinely available, ask whether the younger self can share it. Numbness, rejection, skepticism, or fear deserves humble patience and protection, not more spiritual intensity or a demand for thanks. Do not claim the child is knowingly testing the adult. A feast felt by the adult alone is not evidence of inner-child integration.
+Teaching point: Preserve the FULL progression in the already owner-edited prose: (1) recognize ordinary good and relief, even something as small as painless urination; (2) when genuine, become grateful even for suffering itself, insofar as it reveals the value of not suffering and can foster compassion, wisdom and further gratitude; (3) directly notice whether such thankfulness opens the heart into softness, stillness, freedom or divine love—do not reduce it to intellectual positive reframing; (4) invite the younger self into what is actually accessible, while listening to any BS, numbness or refusal. Gratitude for suffering is voluntary, not a demand to excuse harm or decline care, and neither felt love nor child inclusion is guaranteed. Do not claim the child is knowingly testing the adult, and do not demand gratitude from the child.
 Reader need: Without this sequence, gratitude may become toxic positivity, or a beautiful spiritual opening may be mistaken for achieved reparenting.
 Already covered: The owner has already rewritten this public section directly. Preserve their wording/voice and **do not duplicate the section**. The humanizer should compare the new public passage with the operational nuance and disposition this entry as already incorporated when verified, not overwrite it with generic AI prose.
-Evidence boundary: The owner's roselle/bilharzia experience is a personal, suspected-diagnosis anecdote, not demonstration that roselle treats or cures schistosomiasis; do not turn it into therapy or medical protocol. Any public factual-health framing requires separate editorial and clinical-source review.
+Evidence boundary: Preserve the owner's account that severe painful bloody urination resolved after drinking roselle and that he experienced recovery; absence of a laboratory parasite test does not negate his reported clinical resolution. The specific infection was unconfirmed. This first-person experience does not itself assert general roselle efficacy, so do not insert a cure-denying disclaimer into the memoir. Review evidence separately only if a general treatment recommendation is added.
 Where: “Ask God for a Loan” (the existing owner-edited passage).
 
 ## EMPTY sentinel

@@ -10,7 +10,10 @@ test("gratitude remains a voluntary doorway, not an assumed spiritual outcome", 
   const horizon = byId.get("IC.LOVE_HORIZON_EXPLORATION");
   assert.ok(horizon.sourceRefs.includes("AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014"));
   assert.ok(horizon.recommendations.some(s => /gratitude for one concretely true present good/i.test(s)));
+  assert.ok(horizon.recommendations.some(s => /gratitude even for suffering itself/i.test(s) && /compassion, wisdom/i.test(s)));
+  assert.ok(horizon.recommendations.some(s => /actually opens in the heart/i.test(s)));
   assert.ok(horizon.avoid.some(s => /gratitude as obligatory/i.test(s)));
+  assert.ok(horizon.avoid.some(s => /Voluntary gratitude even for suffering itself must remain available/i.test(s)));
   assert.ok(horizon.effects.requiredNuance.some(s => /distinct observations/i.test(s)));
   const values = { present_safety:"safe", orientation:"oriented", ability_to_stop:"yes", ability_to_return:"yes", altered_state:"sober", suicidal_state:"absent", spiritual_curiosity:"present", deep_love_access:"none_known", activation:"moderate", dissociation:"none" };
   const curious = planFromGraphs({ graphs: bundle.graphs, variables: values });
@@ -37,4 +40,6 @@ test("extraction instructions do not conflate saying thanks with felt deep love"
   const prompt = await fs.readFile(new URL("../src/prompts/case-extract.mjs", import.meta.url), "utf8");
   assert.match(prompt, /Saying thanks, naming one good thing amid suffering/);
   assert.match(prompt, /does not by itself establish deep_love_access/);
+  assert.match(prompt, /clinical recovery as an observation/);
+  assert.match(prompt, /Gratitude even for suffering itself/);
 });

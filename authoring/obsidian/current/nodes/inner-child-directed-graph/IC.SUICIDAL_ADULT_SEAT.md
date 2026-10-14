@@ -33,8 +33,8 @@ regression_refs:
   - G107
   - G108
 base_record_sha256: 1437969437237264d7d066dccaf82c45b19c266b42589372f3c0c2f4ae04d9f1
-base_graph_sha256: 667e64676613d0362e95abfbb14fa0b10289b75fd49b03770309caf680b86840
-projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
+base_graph_sha256: 3b294038b2cb13818489ef5fd3a9e350c3f1778dd0fa95d1443c810d791f1ba8
+projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698f47ae2ed3
 ---
 
 # Bring a second adult or witness seat into the room

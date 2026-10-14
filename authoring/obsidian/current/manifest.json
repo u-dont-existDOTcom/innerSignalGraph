@@ -330,7 +330,7 @@
     },
     {
       "path": "guide-graphs/candidates/inner-child.graph.json",
-      "sha256": "667e64676613d0362e95abfbb14fa0b10289b75fd49b03770309caf680b86840"
+      "sha256": "3b294038b2cb13818489ef5fd3a9e350c3f1778dd0fa95d1443c810d791f1ba8"
     },
     {
       "path": "guide-graphs/candidates/somatic.graph.json",
@@ -338,11 +338,11 @@
     },
     {
       "path": "guide-graphs/compiled/bundle.json",
-      "sha256": "9d81949591f724f57ec0bf0bf4b54d78eaa2907a4e0e30d9ac1785e37207b379"
+      "sha256": "d613ceeb53a0846d47433db5202e73adf19ceeeed95e135b9508dfa035b1c216"
     },
     {
       "path": "guide-graphs/compiled/inner-child-directed-graph.json",
-      "sha256": "31cafa9b0756d831a984571eea5b8b1d2d4595c50f6923d6e408a94f21213ec0"
+      "sha256": "8f8335f57fba4d0bac196ebd8608ff70588f3e606e8d11f26709fa0381519029"
     },
     {
       "path": "guide-graphs/compiled/inner-child-somatic-cross-guide.json",
@@ -362,11 +362,11 @@
     },
     {
       "path": "guides/manifest.json",
-      "sha256": "85a520657d929b908bee84264bedf46e5b63c47b4e73d70c7651206f56641b03"
+      "sha256": "fde8632a366863b25ce7613fa0b2180e66594692a902e5fb89db40add0c6b3d6"
     },
     {
       "path": "guides/owner-amendments.json",
-      "sha256": "643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69"
+      "sha256": "9a0bae8a6a6e95d24c392d7451cb58c31a56ae4ab8ae22617f4e3aad57355cd2"
     },
     {
       "path": "guides/semantic-assets.json",
@@ -427,7 +427,7 @@
   ],
   "compiledBundle": {
     "path": "guide-graphs/compiled/bundle.json",
-    "sha256": "9d81949591f724f57ec0bf0bf4b54d78eaa2907a4e0e30d9ac1785e37207b379",
+    "sha256": "d613ceeb53a0846d47433db5202e73adf19ceeeed95e135b9508dfa035b1c216",
     "version": "inner-child-somatic-pilot-2026-08-09-r5"
   },
   "contractVersion": "inner-signal-authoring-projection-v1",
@@ -436,1249 +436,1249 @@
       "entityId": "edge-00f0d2f3ba62df96",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-00f0d2f3ba62df96.md",
-      "sha256": "7e2abcaffbf60a2fe7d0349b409d6c25c9154c2d25a88a4fa6d4a6ec14ca7933"
+      "sha256": "4639bf4a9a7c1f21dddb618caba8fab6f16138b1f3f49a7297a47bb2fc2d1010"
     },
     {
       "entityId": "edge-09358c495d7e7c09",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-09358c495d7e7c09.md",
-      "sha256": "d40c0933d51363d1631a9cc218aa6475ffa228b2755b597c2b7a8df9e07872df"
+      "sha256": "7f79f5cb18faa9b1adf14b446335e0a2663427a758186ad48074228c4f7eace0"
     },
     {
       "entityId": "edge-09c3325863d15d4f",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-09c3325863d15d4f.md",
-      "sha256": "ddfaf9d364392fbfd395338d29ae13109625c2c569c172331bffa31eaee60627"
+      "sha256": "c4298e047515ca4bd887aeab09842d595913b62e1a44936beaea1897c8e4c171"
     },
     {
       "entityId": "edge-10e04a5bcdcaba2b",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-10e04a5bcdcaba2b.md",
-      "sha256": "a6139c71e57691f0446c5b2334d566d15b2716f24a6bbf04833186c15999cf03"
+      "sha256": "33040d2ddf460a6d3dad34026eb4a28be8190a2c47d4f3093f067d58f45f41fc"
     },
     {
       "entityId": "edge-150cfa2806398797",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-150cfa2806398797.md",
-      "sha256": "37510634346d5884a90485cd9afdabba539c32041abef0c45589b50b94e36c24"
+      "sha256": "50f6bce8e36d8b3c19d77ed28955672388fefd28478f19eff2f72dc10221283f"
     },
     {
       "entityId": "edge-15879508315cf094",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-15879508315cf094.md",
-      "sha256": "0934dac0d51b734b7ccf9ca0d061877b18fd1b35ac915f0ef883b693ef02d789"
+      "sha256": "12baf651474bfdc6d77c0043a883bbe48a6575c6442d40bca7ab3539e2ef3ba3"
     },
     {
       "entityId": "edge-1908fe10a903af07",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-1908fe10a903af07.md",
-      "sha256": "b36ed86d575123b9c14dc72b4e6d42a4a70c4290bbf7ca8264644d4d5b6125db"
+      "sha256": "f65c16b1e9357ba4e5ac8424d7d48a3455cb944430a9502898dcc6f739d57912"
     },
     {
       "entityId": "edge-1a73d4263c0cbb8a",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-1a73d4263c0cbb8a.md",
-      "sha256": "db5f111825f403ff760c22cd3ad57314d098cb637fa8dfbae974241d094407cc"
+      "sha256": "60b616f259f3ca184405e0b2c1ba061140dc419f5afd423af2152f3e07452fe8"
     },
     {
       "entityId": "edge-1a7c15c34ca3eb6e",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-1a7c15c34ca3eb6e.md",
-      "sha256": "022cfd8b3845dbd9e70f88ff6b81011a4d9c7a50ab8249135d400a30b65bdb2a"
+      "sha256": "118f2720a870ff6e420dfc00338714fcc6063d9fb9e2b4342fd281d1d31f1f6d"
     },
     {
       "entityId": "edge-1d3f1e7b5698541b",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-1d3f1e7b5698541b.md",
-      "sha256": "a8d46dd9156b1abd62c958bd01adc44163aec95dbb177ec23d5d0aad02cca6dc"
+      "sha256": "ffb1a629422628ea239a1767f52a559a4487d4339c02742b48870749b6b98a6a"
     },
     {
       "entityId": "edge-25072aa143df4b40",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-25072aa143df4b40.md",
-      "sha256": "cc186736e775af54f2b65349ad8c6b7edef0806d258e7a348cf088a7d1712b3b"
+      "sha256": "6bce213f52e878167a3b8da8613128408b209da5ae45c03e9231c30243a57263"
     },
     {
       "entityId": "edge-260939bab061a1d8",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-260939bab061a1d8.md",
-      "sha256": "5953df6484969c29451def1ab979f4756ec96d49492696809a3b29341afe3edd"
+      "sha256": "a49ade86660be85fb8ebf4cdd50f830622611de264baa4394aacff2fdbde8903"
     },
     {
       "entityId": "edge-2917aa30ed169eca",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-2917aa30ed169eca.md",
-      "sha256": "f29e0cd93efafb67100f0677ec96db89f63c8e142641a35c193c0341898cadb3"
+      "sha256": "32b2eeb32933d066af18a3ba4b17cdbd9524545af99dc06af6b08656d9dfcccd"
     },
     {
       "entityId": "edge-2995b8a0204e4f16",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-2995b8a0204e4f16.md",
-      "sha256": "e9ea3ff98fc2be092af6869c1393a5ecfc6e9b26a7104d6a03cd3eb30c162f04"
+      "sha256": "ecca50c1e31eebb962e6c8e7c8b5a159c429c9e1cc48782eb6cdc2111756b40c"
     },
     {
       "entityId": "edge-2bc484edafcd5fac",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-2bc484edafcd5fac.md",
-      "sha256": "a176a2d604698712dcc0c0060ee927c114704d0b8eef2ee5ba997d4efae08d5c"
+      "sha256": "6bbeed78c4f987f589507196fc4ee1747785440c6c119860c8f8e9903716e228"
     },
     {
       "entityId": "edge-31137bf17186f8b7",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-31137bf17186f8b7.md",
-      "sha256": "8448b5b5fbafffad79d87abf935d68808db416f2c01421b114dd1970703b73be"
+      "sha256": "fc41ad013b3e1fd1b5466dd64747137dae2a4a077a6c7e6fc82e72a4caef6852"
     },
     {
       "entityId": "edge-356ce96f4d37fde3",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-356ce96f4d37fde3.md",
-      "sha256": "4835bf993f9fb75696d3ac662296d19b6184b7566c6f7d3c6484e6e0e241ea8f"
+      "sha256": "c6ebecd926b2d57db285b41d3ec4977119d0e04c0ba60b764527c3dcda3d8bcd"
     },
     {
       "entityId": "edge-3b41fb02f23d6e08",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-3b41fb02f23d6e08.md",
-      "sha256": "940f05c6077d7fcc7a0f9b5e1ca5da2d10ecf2e3996f84998915eacffed6d7b6"
+      "sha256": "ca3c8088d2a2c37c1483dcf02da72bdff0e60975670b11deed6535f369419ff7"
     },
     {
       "entityId": "edge-3ca16b953ccf5107",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-3ca16b953ccf5107.md",
-      "sha256": "a5426d8e6608147ad03db18beaa2118d739049e3a8f76357cbddeb73049c71d2"
+      "sha256": "01c53bb5e01d967c24fab28dc33fc5128d0d1898e85bcc601224cced427ee385"
     },
     {
       "entityId": "edge-3d216f309b888978",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-3d216f309b888978.md",
-      "sha256": "968a2a0b4992ae0846d6c1de49d683944a2d189645b559a73b4586b747044674"
+      "sha256": "9833841ffe00b82e3cc33f284d233ec93755e64887aeb4bf2add08459a5153df"
     },
     {
       "entityId": "edge-407425a28f148560",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-407425a28f148560.md",
-      "sha256": "d052539da2553f1365c653627eb9419ca8c26ea8ea413b48148a05b81614dec0"
+      "sha256": "84bbb1d9cb615a70a248a75e25c8ff86130ed08fe100378b6c767ea30f37a486"
     },
     {
       "entityId": "edge-4199a55d0566afa3",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-4199a55d0566afa3.md",
-      "sha256": "a03d5128203a93bf598e0c93926625868c5186d101afdd00b1bb8e6a334e2da6"
+      "sha256": "0bdce3688bc7a87869a615062b9ab9288ece2b5a7ed83729c9941bd0af99fcc8"
     },
     {
       "entityId": "edge-4fe520f4a31c2182",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-4fe520f4a31c2182.md",
-      "sha256": "5b7ac12a3aaffccd8b47e949f587c6d1a3521f4d537980c03afc6cd1b0c32be9"
+      "sha256": "8861a962fe56f2c77e7ae975cfa9d7c516aa02cf8c15ae744a1ec8e22640ad26"
     },
     {
       "entityId": "edge-500078a2c25f7bb6",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-500078a2c25f7bb6.md",
-      "sha256": "a949d968d1573c9b4efe806293ee2976f65ebb47b91c97a6f459e77982b48f54"
+      "sha256": "0dda8e848f39da8df7550b1f102a5f8c5962d61d27d8b9fc6196939d2f97555b"
     },
     {
       "entityId": "edge-5fb44b551210e940",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-5fb44b551210e940.md",
-      "sha256": "d9b19d9ff2da12eff557c5f1f9831f3f9d273f9b72f7012e842d34bfeaa5e75f"
+      "sha256": "3932559d1e568323b2703b63ce36983458083f80f150003325793e5ef1d8db55"
     },
     {
       "entityId": "edge-6a0fc52a6f4c16dc",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-6a0fc52a6f4c16dc.md",
-      "sha256": "ba20647a13f516df0081fcc9b0775be554bddf299d106d1f7aa55164e44c58c4"
+      "sha256": "10526598dc8c19da183a2ae1cb0664c312739a46f65e9d100be39b83a06c2a76"
     },
     {
       "entityId": "edge-6c02b2ad03ea59d1",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-6c02b2ad03ea59d1.md",
-      "sha256": "b13fc2d53a73ed96c60b37e562b9f524e46337329ef1514f403a09733f6cc0d5"
+      "sha256": "d749db3cd1f4d1ec82d21642c778e5cc1fc995e32fa9c9ac48fed6834549387a"
     },
     {
       "entityId": "edge-6cc02fe08378d0fd",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-6cc02fe08378d0fd.md",
-      "sha256": "211794ec0b141684c704cc2fc6dc87995f0b79edce2c1f3e02cd7f4f0f8ae78e"
+      "sha256": "1332779c92ddf4f2dbe1356a02756db66653e12865d5b4611e79f98cccc0e714"
     },
     {
       "entityId": "edge-70a28d7f2ad3f92c",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-70a28d7f2ad3f92c.md",
-      "sha256": "203c69e0369ef9f15d854f54590a7b5e9fef81259e3faa33f84f72587bb49301"
+      "sha256": "7cd8170c2aec800c0ecab90cd50cd4665fd3d9681b46b7f8495377333801183d"
     },
     {
       "entityId": "edge-74cbae803f02649a",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-74cbae803f02649a.md",
-      "sha256": "7bacefb1bc9b52fd2779ff3e5a25a512672b67fb7a2a8397069eb3fa80d0a102"
+      "sha256": "b0a29d2e04f90216914514179ad8b0edaa7c5b63ead36670bc72d74ccb6d92c8"
     },
     {
       "entityId": "edge-80a67ed9a89e011b",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-80a67ed9a89e011b.md",
-      "sha256": "7519fc8dbae7fcd9af75e493d414716fd887e0810cd633f57debad48c48dadcc"
+      "sha256": "0f35ff0db67c9d42e06dfaab0681c5275d74e7d9584eaf56741d6e33c7ec76f0"
     },
     {
       "entityId": "edge-818ced9e73c5558b",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-818ced9e73c5558b.md",
-      "sha256": "00abd996c3ec9e222fbf17a38fc1cbdeee129119c0115b098838c82565fc526e"
+      "sha256": "97683a81fbf6ce607d850ed979f83735278ae32fe784ba393c381b500b28aa16"
     },
     {
       "entityId": "edge-8dbe97cba7ccfbd5",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-8dbe97cba7ccfbd5.md",
-      "sha256": "a5bdf89daf83a3e1d9a831ea1ee21b93b162397cf150a63c6743df2b1c4e62b2"
+      "sha256": "c6e3563279707e7bcaa1cf1851215cfeb86e351949a37912ffabb32887ee07ee"
     },
     {
       "entityId": "edge-90e8bf697a5cc2bb",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-90e8bf697a5cc2bb.md",
-      "sha256": "c7b3482cee26c7a6467b7648de1c3bf7fe3defdeb6eaf156c280a3331f2b56e5"
+      "sha256": "9ec8e455a34bf5b2cedcb0670cc2227de2dc1d5839c23d51ecffbc342e9538aa"
     },
     {
       "entityId": "edge-90fd208b35fd9fd0",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-90fd208b35fd9fd0.md",
-      "sha256": "f91702a4e06e4cf8a0d2687f2e3637543abdd9edaac5d443ef69d87df68ea92a"
+      "sha256": "062d7f830e0aef11dad7198d3d8f2da52b3c0b7038b9f95711064bdffcaa55df"
     },
     {
       "entityId": "edge-921743cb0634a783",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-921743cb0634a783.md",
-      "sha256": "ac81a47d57b0801fbb8fe93654760a7db8bffab0b31fbc2bb3354120a91e1da6"
+      "sha256": "906217ae2f7aaf20972206b9d577869016ee922a74a4493974182d2fdd9409c5"
     },
     {
       "entityId": "edge-925905a3b57a86e5",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-925905a3b57a86e5.md",
-      "sha256": "81a687c60404519ebad73e6a4a437529fa4a69b591da8df9e9909c69f51f9688"
+      "sha256": "9c2400c90cb492b930932f30431c4f39f09ff8ba4f335a70399848077a648f9a"
     },
     {
       "entityId": "edge-99d56077b4e97a9f",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-99d56077b4e97a9f.md",
-      "sha256": "68cff339b958d10569d7a3043b8b7beb2d62a2d090ad13f141d3e24604e9a323"
+      "sha256": "ddde668779022b5c2c64ad97b7154a92545c394ea977c770b2a4314972e4b65d"
     },
     {
       "entityId": "edge-9d1f6834fd64c41c",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-9d1f6834fd64c41c.md",
-      "sha256": "5bfba0dfe82a3488af1ee5e8e1a75703a3332b83c0a9b37f9a8ca49524043e85"
+      "sha256": "f571684fe49bea1cf9abd791ce43a232f58e0ba56cbb01f6c70272564ca64ca5"
     },
     {
       "entityId": "edge-9e7a5f52bc0bcaf0",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-9e7a5f52bc0bcaf0.md",
-      "sha256": "b7ac917618d2316ae301924d24d9d515cc3e694d6eb656f67bf858f2428703ce"
+      "sha256": "d9fea6b94e2e01bac5a936218793dfb2296e58ac224f4e8da17fdd9711d184b5"
     },
     {
       "entityId": "edge-b631a1d25ec33e2c",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-b631a1d25ec33e2c.md",
-      "sha256": "b2f95ed98adf0b3d535e26bfc5280431f4a4044851f2c0fdfbca2b8d3842678b"
+      "sha256": "70c8dae7af39b426e29a161306138df9eee12419236600e24a852c07b797cb17"
     },
     {
       "entityId": "edge-b7f839687cc2737d",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-b7f839687cc2737d.md",
-      "sha256": "5b5eab9a21e269bd7903ee29a34dcaa0647c9bfcd1eb7e71cdab39a2e06ecd4b"
+      "sha256": "2c18d74bf6efe5c93cacacbc6554e12830bf88ffe10c6b677ed0823b0ecdd1e6"
     },
     {
       "entityId": "edge-b87b024a8f311a6b",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-b87b024a8f311a6b.md",
-      "sha256": "3ff665ef027e2604ab848d7b92d98c023737be275a8821685be9d5dcae9156cb"
+      "sha256": "a1d5d57ca9a57bb3175b2b84dc274bb26cb36677e7861b9536aa6b13f39416d7"
     },
     {
       "entityId": "edge-c9321b0ae44d2b42",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-c9321b0ae44d2b42.md",
-      "sha256": "34108ee63a8734f9466947b10280d07a2dddbf0e22793afb1eeec781ca478d90"
+      "sha256": "15d285e39e8a9bb40e26178f710924e8fbbc6555d10b885326f635e2cc55b7c8"
     },
     {
       "entityId": "edge-ccb40506ccca7c38",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-ccb40506ccca7c38.md",
-      "sha256": "e2d66b8268eb547d10ac19c52acdb4d72889de4d50ba996fd535919cb4ebe94e"
+      "sha256": "7fd42b7aad6410586b6bc68e7ded17709c353b37eb644434a309854597c21e30"
     },
     {
       "entityId": "edge-d6f3913d7d34fece",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-d6f3913d7d34fece.md",
-      "sha256": "fe3a62329a7078dd52a70f861cfbd93e7f922cf40ba1bfa0e82a246516b4a687"
+      "sha256": "8bdf759234cecbc984ed06a42a1f39d49f2c88baf5b66e1658c3f3c31a07a5ce"
     },
     {
       "entityId": "edge-e30e4a7df657c186",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-e30e4a7df657c186.md",
-      "sha256": "98a99632bd330450170f9e817d607a17da81eaad9c134b636f661a3522ca6b67"
+      "sha256": "bcf718603e91a42ac9280ea8af0890800b05f95bc87cde880a3efcf00daac565"
     },
     {
       "entityId": "edge-ebd0ae015462b4ea",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-ebd0ae015462b4ea.md",
-      "sha256": "ef198c16d8d06f2cd157fa40761c11b1383b53cbf937099c71fb68575210a800"
+      "sha256": "5103b2b85dcff4ec7ccb85f347ad81bd20988e56f9233d82ba0c45d30b72d16f"
     },
     {
       "entityId": "edge-f444fb0c1458244b",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-f444fb0c1458244b.md",
-      "sha256": "e86b9b3573d147e2bc61ad36b2177e9f091a7246357a41b9cd5729b4f3c8b2a8"
+      "sha256": "462d0c8189005ca9c287c8ead7a1d5a4ef67595ac3a19337351db8bec0847bc0"
     },
     {
       "entityId": "edge-f815620d3ea663ac",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-f815620d3ea663ac.md",
-      "sha256": "11bd0d5e4167067ebb2906dfbcba422be7f15f405dad1de2bffa08215ade8e29"
+      "sha256": "1be7d6fcd9da01042ef85b8a88d52e24891749fe6e801645a56cd16205b38c99"
     },
     {
       "entityId": "edge-fdd143415bf7c1c0",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-directed-graph/edge-fdd143415bf7c1c0.md",
-      "sha256": "521c3987cd3492e84144c18622230460c16d2565a22d0b191b6f2e9c1b6c392d"
+      "sha256": "67a5a99df89515fb77d783da531ee716073e8d06cd46d8a12471528d34226e60"
     },
     {
       "entityId": "edge-06a8c74337e69895",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-06a8c74337e69895.md",
-      "sha256": "2b3c283519e107b24e715185ab36669273758b5a31fad0c5845f7af4261a667d"
+      "sha256": "4af509ed48b5ec557f1e1d61d9d471ec12ae6723342c6ac5322827cf4373aa20"
     },
     {
       "entityId": "edge-0724cc98ceb9bdc4",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-0724cc98ceb9bdc4.md",
-      "sha256": "31da49e454b6152adcc737a8cfc2b4176502e96bc0258ce6b4657a1b1a289d87"
+      "sha256": "d17dd59cfcdc6736ff6d8fe05f2facba9f565249f5092d441864c16bba553fd3"
     },
     {
       "entityId": "edge-098185b2cbf2b449",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-098185b2cbf2b449.md",
-      "sha256": "d3b695a5cb19f9a689613082947c8f68a138b4a793ef962fd2160087cb6d3e2c"
+      "sha256": "251b1e7c125e45a7b5ce2a1578778b0096f1f2d4cf37994b3144f69bda5e5d7f"
     },
     {
       "entityId": "edge-0fd4fe1ae59d9df0",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-0fd4fe1ae59d9df0.md",
-      "sha256": "a7dc2ac8b3065aca483a98b71d3b2751c159146d72721612a943d6c889cd98f3"
+      "sha256": "1b8973324a0cbbea47d4f78535cd495d194e0c8c2f67c848c6fba7dd2724b936"
     },
     {
       "entityId": "edge-139f0d7d0cce5f34",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-139f0d7d0cce5f34.md",
-      "sha256": "a5329d1d4ded4b776ece3203b9310b0122764e17c02b08ed86b3f113e1693478"
+      "sha256": "70da2af15993075d2585e454df05b49e31d92baaf768c1ec0bf5ff4968e881c2"
     },
     {
       "entityId": "edge-14587a2cab2f9bb0",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-14587a2cab2f9bb0.md",
-      "sha256": "e76f8f65601c07855a8bf08a88017d82d5bb8793ee6ad6cef3278e9457a054e2"
+      "sha256": "4e5f0285d720fc65f8443a3d6a1fb48c7cec59a736e2f09c57574912d359bb3b"
     },
     {
       "entityId": "edge-1881a7806d6da2ad",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-1881a7806d6da2ad.md",
-      "sha256": "61ac817560e5d0ad942e88368a943b30117769db72d46c4a2cf23a19966ce3f5"
+      "sha256": "dfd00381f59ef03dfe9889436e1bab22c4046625ae64bd24cd8747e742bdb92d"
     },
     {
       "entityId": "edge-19c7e4f510c1bed6",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-19c7e4f510c1bed6.md",
-      "sha256": "f2206b333bf3fe7bd4f47a832cc6138637842d74236517a8ac25ab831d577f9d"
+      "sha256": "2155c961a2e019af0ff707af8abfbc46cef0503108e1c046fbd1a0503c67e6d9"
     },
     {
       "entityId": "edge-1b8003dd65b0e475",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-1b8003dd65b0e475.md",
-      "sha256": "45010c208e6e3598f018a2f2dd91698823cec11ebaf2d41db5eee6cb19ae5376"
+      "sha256": "d4923bedb947daf680ddbdf7ea22423adb99a3dc5dd9378acbed38a8d7ec1435"
     },
     {
       "entityId": "edge-1d31be36b310d9bd",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-1d31be36b310d9bd.md",
-      "sha256": "e1dbfaeb7935e8b5dbcc4d4c4a59bcf74a23383b765921d19161dfd60c86e3ca"
+      "sha256": "647762dd383fd186434d069828b3d993a2bf510aba50d572dfd29f17142b4ce9"
     },
     {
       "entityId": "edge-202fb9356923a08c",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-202fb9356923a08c.md",
-      "sha256": "18e3089fba07dc51a1630fc0c22d91b9ec67754be934a5693f9926fcd9176cfe"
+      "sha256": "fa9415f227c1fd227255810d2bbe8fcb667a2f666eb3809b4c63dae6c704466f"
     },
     {
       "entityId": "edge-20fbb69347ec6514",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-20fbb69347ec6514.md",
-      "sha256": "734b331081e2fe23d414c3930a964cbcc35a9998aa951693de62261241f87bbb"
+      "sha256": "6a74fdc4890f431f6b01aefb52263fbf74ee732dffab8988cb3783775ec5fdcb"
     },
     {
       "entityId": "edge-26f67844ac7cfc9d",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-26f67844ac7cfc9d.md",
-      "sha256": "8643691dfd7dfe002e218642dd759e0517c91686837627731e73d22a40ec87e2"
+      "sha256": "4708e1679dad19b604934188d496c40b229b43b4367920f386c3e415e232588e"
     },
     {
       "entityId": "edge-27d2bfc0d80f2304",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-27d2bfc0d80f2304.md",
-      "sha256": "e9076fbefe1ac27b2ae611d9ed8a94db3c1048aecba82b8a6043bdc71b5488de"
+      "sha256": "bf851af9473112ebf76c66f2042c7f46cbb889115e90884f657b01e8e003f52a"
     },
     {
       "entityId": "edge-290b4c73ef6f649a",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-290b4c73ef6f649a.md",
-      "sha256": "f37bc5f17761c732f421727cad5fcb6739dee62f63b27c31029cc46b3411cbbc"
+      "sha256": "6618bf1d6da20788129a378d289ab1ea9d79eb717905e541066f7acb7f0b1a71"
     },
     {
       "entityId": "edge-2c306b88920d5bb9",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-2c306b88920d5bb9.md",
-      "sha256": "a17413e1f5ece53721bfaa8aae1c5ad759094ad0d806bc5e3870b1c0857a404e"
+      "sha256": "be2eab97e1017b569f390e46d1afb7a312c1812d3ab06e43a9636ea670d5779b"
     },
     {
       "entityId": "edge-320e01b40631a99d",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-320e01b40631a99d.md",
-      "sha256": "8b805c155a41605b0429822abc491383caf290312b79ee89e08cbd526ce95e1a"
+      "sha256": "7a87f4db0c7aa476ded85e95081e037f60ca8dbdcae6de26004fb902877f8718"
     },
     {
       "entityId": "edge-40f5e4dcc7df701e",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-40f5e4dcc7df701e.md",
-      "sha256": "2eb11609beeea598eed208f26d0f462b1e029a764b9da3b70f2318004218540e"
+      "sha256": "2f36dd38184b313938e9ba673ad2d33e6327e121b51d95c006e797b456c9e5fe"
     },
     {
       "entityId": "edge-4ceb810e4d6e85b3",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-4ceb810e4d6e85b3.md",
-      "sha256": "39768e6a7b5c431ea2cff04cf06fca7a2dbe7ff89fa9851d34eb44289e872084"
+      "sha256": "ad85da22fe62e8ca0b40699c4d6079c40f101298b60cd7b2c7fa014a8392d1f1"
     },
     {
       "entityId": "edge-4d0886366d54fb51",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-4d0886366d54fb51.md",
-      "sha256": "143068db4d41fb5e41aa0678d40656a3995e038de5e241b9c5ef2fe6dee4cadf"
+      "sha256": "43cfa6613db99af0f5f6ae60564a040be8b71c45e2ff9dda730d6158d87185bf"
     },
     {
       "entityId": "edge-4d41a1935ebeaacc",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-4d41a1935ebeaacc.md",
-      "sha256": "f658a0c184e99bbb42971fda5fdc187c8355cfcf260f2f2d3fce49ec29b94682"
+      "sha256": "911c3760945595b43b8073b1baeabc97201b366198756908f6ba232efb67002c"
     },
     {
       "entityId": "edge-52b3fd3e8405c4f6",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-52b3fd3e8405c4f6.md",
-      "sha256": "6e6b8f9a02a5eb4fb50b3e8a8c5bc9a27b8e052baea8c0622ef8dab45a37af91"
+      "sha256": "6aee7f042b699ad6c68f8d859ff790ce00cc718dd82da991f865c76e028bf15d"
     },
     {
       "entityId": "edge-53d9b9a50ad926f2",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-53d9b9a50ad926f2.md",
-      "sha256": "6523150306785891fb4e2b4ddbb20016be985805754e6c3c6fc337d899169785"
+      "sha256": "a4296360e7b444fef824112964d1073c0c414acec9ee16339512a0028ecc34a6"
     },
     {
       "entityId": "edge-5560cac1685543c3",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-5560cac1685543c3.md",
-      "sha256": "c50f00428cb0f197caff26108a6fdf6e0bec0066a803ae448a8a864fabe47772"
+      "sha256": "d73230ea3edb0680e41bb13ca5eab0be47f1e76c18676e05be769c11deaa696c"
     },
     {
       "entityId": "edge-64ed5766f37e762e",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-64ed5766f37e762e.md",
-      "sha256": "b6f0e999341165c8fbc8cb69eec0d8d96ca929453eb23acd8ef0bfec3f51467d"
+      "sha256": "ea53964a09dd123dd9bf4ec508ab58f3339166de66f973410a6c0555199ddddc"
     },
     {
       "entityId": "edge-658ef849326bde99",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-658ef849326bde99.md",
-      "sha256": "826d394b5fb2e93e698167dc3dfa432c489660436d514ef1136f792ac2f08db3"
+      "sha256": "299b1b261df1983089d15a1dd75d8beca831e3ffebde973b483ef241369aa1c5"
     },
     {
       "entityId": "edge-69996deb74624c46",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-69996deb74624c46.md",
-      "sha256": "68c8e04a1776dbaa482208cd86803e745e08910d43bffc01218825b8fb20b86c"
+      "sha256": "965c433e2817f71ee9b8a04010a26f006aac198b459ecc143476dd1b3307f5e9"
     },
     {
       "entityId": "edge-6fb9a21aa26c1dd6",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-6fb9a21aa26c1dd6.md",
-      "sha256": "cd12fadbf8d5c8ec84ad3882532dc4e09e8fef4d3124d0ea17e00a5580cb2680"
+      "sha256": "8f29372823ad0b3ea066d7022207379fd4a25dd2711c092fd5e198d592dfdd43"
     },
     {
       "entityId": "edge-709e70af3fe22ed8",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-709e70af3fe22ed8.md",
-      "sha256": "075a40abf0f7b99c6b8c161517986d5714418ea214c7989dda708be1f8b9ea67"
+      "sha256": "edb0b62ed289c8d1a73418ec4907e58b535a72d85022b2cfd4590009ac96a91b"
     },
     {
       "entityId": "edge-7146ef1e2d1e596c",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-7146ef1e2d1e596c.md",
-      "sha256": "40863190d678a335149e713fda8678417bd3a13c6a010b2b18755b7355f78c32"
+      "sha256": "c05c9930d99ae2f4913f9ca4ac4620ca382a984c87009e472f0aac4c288cdae9"
     },
     {
       "entityId": "edge-738b80c1e51f97cf",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-738b80c1e51f97cf.md",
-      "sha256": "e6fd52fb52f3f016fde458f6387025a4c6ac1524a50b4974c8f8ba38b8b806e1"
+      "sha256": "85213fa1e614581fb5d3346e87f1998baf243a6effdaa9b1239c8fdfb3194314"
     },
     {
       "entityId": "edge-84d33992287c9421",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-84d33992287c9421.md",
-      "sha256": "f873048b78fef9684d4c29c2da81c0b91ad5a23568343f628bc03ae928046ad1"
+      "sha256": "e9ff3da1b9c91b5426958af4bffb1ba0fa391cd7cd2216bbd24d421dde0509f7"
     },
     {
       "entityId": "edge-85047a8f79e43b9a",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-85047a8f79e43b9a.md",
-      "sha256": "05cdb2dfe48a442c1393ed163db795841a4180fd852db2a343ee16ee13403504"
+      "sha256": "7f994d017d293c45a81d6eb04477b3fa1c8b5b4744efb8001d39ec9b92d8e528"
     },
     {
       "entityId": "edge-853dc6b33275bc1c",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-853dc6b33275bc1c.md",
-      "sha256": "1aeb8771b9d68a5ce065a77a09bf6d504b87b6de4eab33dd1a11402929841180"
+      "sha256": "7183ac290bbccc626b30bc88947caf4c9eb7ea30d4e23b6675c00edc3f7328ce"
     },
     {
       "entityId": "edge-8bda1ced7a10909f",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-8bda1ced7a10909f.md",
-      "sha256": "2a652fb84b4afe15ea17633d90bd8f13ef397b7bf5905de68f1cf089e2db38e0"
+      "sha256": "1d0741a0f78264004c537796a12d4e1fc0f9dacfabe2626dbc291359adefd697"
     },
     {
       "entityId": "edge-8d441a3769c88058",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-8d441a3769c88058.md",
-      "sha256": "0f40482e03aa2abeb6bb36639231ea1b7bd76a60a50743e9d7480233dcc1f7da"
+      "sha256": "5cfe683a1ad544d8a80e72ae2fd18022369d5845b5295b4c1aab115b123693f0"
     },
     {
       "entityId": "edge-96b24ad5feb07a46",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-96b24ad5feb07a46.md",
-      "sha256": "8bb1a418a7cc468ecf603d2aefcecbc587b185068e5be99bdc1e5212b284244d"
+      "sha256": "9ef547a62446e6c3164cc5699880c990b8cf023602c660c81d42125249e681f8"
     },
     {
       "entityId": "edge-a299f8873d2221b2",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-a299f8873d2221b2.md",
-      "sha256": "3b6e43d390789ff54781e100e7d6faa96b4aac4cac3b666c2ce74207aba2d921"
+      "sha256": "9486eb786566136bd60250a0f21e04bfa84f16a6c50e709606382d9bd82ae8d3"
     },
     {
       "entityId": "edge-a967dfb563310f10",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-a967dfb563310f10.md",
-      "sha256": "43e38ff9fa948ff0f9f69811c7c4f516338bddbdcfe611189edeafe7614ad97b"
+      "sha256": "2fab947dbba949dcbfd4de52a542aedce5ac5a30b40e97f4a628d1aa478745d4"
     },
     {
       "entityId": "edge-acd46ba5498e9169",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-acd46ba5498e9169.md",
-      "sha256": "df3b964792a10ee1f48919527bcab12f9a26743d77795d5bf0cd278a5e4d6545"
+      "sha256": "79d897737452a3a817a63324466d8dde97a82146a356f1ac5966e870004edfb2"
     },
     {
       "entityId": "edge-ae78549bf2cabb38",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-ae78549bf2cabb38.md",
-      "sha256": "fc16beedc987edb94fb599aa45e607dc1ba7a595ce851898a30b55e69e8a43f0"
+      "sha256": "59191fa0c575ded462527ca288000f26c9f2d040b16618abcbd4d4626adaa509"
     },
     {
       "entityId": "edge-af571f49143202a9",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-af571f49143202a9.md",
-      "sha256": "460d8f2d71f30dd22a50c99de8bbbe04c5fbf79ff1f6848c00abcbaaddf506df"
+      "sha256": "58ac5410ea17427e54501447056715a2c820beaa1abf2ff38e84b5b5e60ef120"
     },
     {
       "entityId": "edge-c48e57ac0afba6d0",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-c48e57ac0afba6d0.md",
-      "sha256": "dbf2f1e306c772fcd87a4fc2ae08b68e33dfb13216a9c8599067f3ba374db5a4"
+      "sha256": "05001fd29427a797c5e5a08b32517e0df0122efb3b5e43f3083981f0c22e1346"
     },
     {
       "entityId": "edge-cbbd40873c591035",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-cbbd40873c591035.md",
-      "sha256": "fa09381f04c9053917e89abf4b170da291957122d1e03be7e3d057dacf878695"
+      "sha256": "87ea63cfcd82fde8aeb0ae75447907cb320e4e55aec6ec3aa5648d6b7c321dbb"
     },
     {
       "entityId": "edge-d09133224c15d81a",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-d09133224c15d81a.md",
-      "sha256": "6beff0fc2de8aa5fee9fbec6d47135ba87afd199441512b38155909f3a2a990d"
+      "sha256": "fef0dcd1e5922302bd981823813d290dfa34d36a214cf342c354eb5d9027a6b3"
     },
     {
       "entityId": "edge-d7e61f40566949db",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-d7e61f40566949db.md",
-      "sha256": "b60f0d714682cfbd662f9d38b0f64a27cc245ea31da9ce1ea2a11fccae1575fb"
+      "sha256": "841b1c220e200a76916441bd34df10e01ffc186c32bbe0ab824005590983e84b"
     },
     {
       "entityId": "edge-e7b07e2487cbd669",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-e7b07e2487cbd669.md",
-      "sha256": "74ee0fc8f655537bbfde7450b64bdd1576bbd4377bf4321e5d0688610e422283"
+      "sha256": "0f75126b45363eb5a3030d50a264a6d7621cedda9f7972a5c298f3edb55aaea9"
     },
     {
       "entityId": "edge-e82744b5edb10b35",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-e82744b5edb10b35.md",
-      "sha256": "856d36fe161816179d16a39babb743f1870863a0748cbed49b17799006f7ebca"
+      "sha256": "37fbfd65c2904fa89621594cb3d51b0700bac5500b59ce7a35da1a485cb10589"
     },
     {
       "entityId": "edge-f00c27e8e9f9b9cc",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-f00c27e8e9f9b9cc.md",
-      "sha256": "ebb746e48d0087289e8be04fba24048fd5f7fc50cb2663b462b258a4d6853bad"
+      "sha256": "bc88a19fc3b482ea4f34e939448d5bc0158f3ccdefd15d57e66548edf0aa4001"
     },
     {
       "entityId": "edge-f23e440e31c029ab",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-f23e440e31c029ab.md",
-      "sha256": "8c66ed2bd5400dd612c30b42e1f822c9f17a29bc42c39d4dd8255f910078c1c6"
+      "sha256": "243e3572efdf97bd6853b662897e158bebd2a11288ca43297cd1b314bea4d013"
     },
     {
       "entityId": "edge-f56d7a53949d198a",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-f56d7a53949d198a.md",
-      "sha256": "1879ac4f6e4b24c6fc6eb7d1765293a05b604b19c19620aab587809d5b0d7413"
+      "sha256": "2f26059dc4b661b9c1164bad36015d929a2718a41fedbe212196c64d6f8e4605"
     },
     {
       "entityId": "edge-f7a057f2e4ceca14",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-f7a057f2e4ceca14.md",
-      "sha256": "1f04de2789815ad489073a8abe72484c9cfad44abf2ae835591874c168a9a5e2"
+      "sha256": "3c6218d2a85244a614b5e465978668357fbd79a1dff37f0510deec5c7cf68400"
     },
     {
       "entityId": "edge-fe2c314c211219a7",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/inner-child-somatic-cross-guide/edge-fe2c314c211219a7.md",
-      "sha256": "fdc5d86caa5c88c225a688be4e8223acbf98ebb559c3ce898067610eb4ba6c62"
+      "sha256": "7dcb07b9f5557cf14a538ec6af0aa04a9fbdc3be36f888bd5a81065571dab749"
     },
     {
       "entityId": "edge-12fae8be1798fa5d",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-12fae8be1798fa5d.md",
-      "sha256": "a19525e0d8e33e743bc9e06a78814881e8cfa91c28fb929d29a3d65826c3817a"
+      "sha256": "795796b6d25b881956239025f4e80813883caa18788b486a35ff5c53c0f00bf6"
     },
     {
       "entityId": "edge-22b61e7855f64765",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-22b61e7855f64765.md",
-      "sha256": "dbbcd9e6c230359dd84b6bbfd3738cb1207ceb11d974cb523b5734e7d46ea032"
+      "sha256": "4a0e94f193e7d160d337846aa197f90a6bd8fa0bb2c9a1dc32b0e45e0bee8c55"
     },
     {
       "entityId": "edge-2533d0ac1c60ebd1",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-2533d0ac1c60ebd1.md",
-      "sha256": "1cc293094130615e3f3fa08d10def0046e1f62447ef0bf4d16007898df20b343"
+      "sha256": "f4a45b311fd5c5b89545e4111a40423e9c476a2f41af9845b120a1ddf2441854"
     },
     {
       "entityId": "edge-379a3403a875b6e5",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-379a3403a875b6e5.md",
-      "sha256": "521b1c1cb8f55ad8ceeb8591bf58ced01925d506efe87b1daa953cd1dad431e7"
+      "sha256": "9ca67be7eca8e47495c55ba78d50fac2c6d16e583d630c1b6801d114632b2c58"
     },
     {
       "entityId": "edge-3b4784649beec5d3",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-3b4784649beec5d3.md",
-      "sha256": "4e7b45baff2cb86e1fc923d18f0f7192c20dc109d529573ec55f8ce0fda87dff"
+      "sha256": "c67864663ee2fefa6700001d583542ca0192a16a38ca1c64d49cc6ef659eb2f3"
     },
     {
       "entityId": "edge-6e83229592d968aa",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-6e83229592d968aa.md",
-      "sha256": "47f59a2dcce7a7b483d29d2aa259b7e111fbe4c0a21c51dba4f078b7fa2f30f6"
+      "sha256": "a7108f4fc84895dece0d731596a550c6d89894a3d3ccb31379f71cd48b458d89"
     },
     {
       "entityId": "edge-74c88e1dc7f74f3e",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-74c88e1dc7f74f3e.md",
-      "sha256": "8b11f582ba8835949cc76794dbf340c878c4b263f012f589188047c8de290a73"
+      "sha256": "992cf4d376d61fe46858ea50662e1578d05627f679709cdaca39759424bb062c"
     },
     {
       "entityId": "edge-83e29e5e7e4e1685",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-83e29e5e7e4e1685.md",
-      "sha256": "3e648b0b77cac7bb80b3631e1d021cada91d0266be9d7cf6af42e8ab5eb5232a"
+      "sha256": "d69585aa48eeff51bfd7d5880ee8d6dd217674cd4c8e7a836a0d4d19275b3e2a"
     },
     {
       "entityId": "edge-8a46740ce71a75e0",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-8a46740ce71a75e0.md",
-      "sha256": "c8f21185ff2eaf71c4fe9599f5d6ef3ae720c710e1e492cf00f286fa7ab4c0c5"
+      "sha256": "54884b27f69aec86627dfb122bf6ec9189b56a29a931459e43b39618f8ac661a"
     },
     {
       "entityId": "edge-aa6f11fe4acf3528",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-aa6f11fe4acf3528.md",
-      "sha256": "9090a554af8486c1e1c842f7100a44190a4625b92570637e9e99a0ae2a15bb84"
+      "sha256": "65669de4f7ff45eaab686da09f9f2664ed6343812b3c37816064e193895aa439"
     },
     {
       "entityId": "edge-d463cef57d1f27f2",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-d463cef57d1f27f2.md",
-      "sha256": "20fdcb7a01eb06123ef0ff67acc44313ab329f4c5cd1b3514f9e318b610495e5"
+      "sha256": "6ae72582b733a5ee6beea9f06500d3fdaa1e2c37748f189221c6d062199756cb"
     },
     {
       "entityId": "edge-e5e41b401fe787fa",
       "entityType": "graph-edge",
       "path": "authoring/obsidian/current/edges/somatic-directed-graph/edge-e5e41b401fe787fa.md",
-      "sha256": "c2f12101cafaf9c1de494b00d58706531c6d0a43c4a7a45fc6a6c9a63e2f96f3"
+      "sha256": "80e85940a0c436194219e57de1e55fc1c5f1779ba47e241d45e359db72e5f47e"
     },
     {
       "entityId": "AMEND.CROSS.BLOCKED_ACTION_WAIT",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.BLOCKED_ACTION_WAIT.md",
-      "sha256": "92be8473fe7696f0a4ce2037cb5052771cfc1aadff346f3b74dc16a05c1ef8cc"
+      "sha256": "2a093924747179f7ff605aa3846442d72e03b724f28639b5d128874af64621a2"
     },
     {
       "entityId": "AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST.md",
-      "sha256": "0390d9cb2dab4eb6426a93d1b465200f7cadadbba54252cba77f7661d5697a17"
+      "sha256": "a2653b53d33eae8b53d506dcedd411fb95f051277961b4c0726f3bef60b4c78e"
     },
     {
       "entityId": "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE.md",
-      "sha256": "e639b4cf76371335b0d6639930bf2b7288740155d89a51f8be7fe4ca2690ceaa"
+      "sha256": "d2d84b333f003bc82d7c24974ffa6c6ff0809f66e0113c1db7af02b912397e30"
     },
     {
       "entityId": "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.FOCUS_PRIORITY_BASELINE.md",
-      "sha256": "f4e43d0bd7f2737ed1c7fdc91edd19daad07d89c5482036ee0a5886a77bc9282"
+      "sha256": "d7020a79dafa806151bebb1ca77e972c2620b344446523846993ebef25620aa0"
     },
     {
       "entityId": "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS.md",
-      "sha256": "ea3cdb876c5bee58d1afb6c0f5b15168ce688c04d85756e1d15483f0b95ea862"
+      "sha256": "46e73a112db66b35fcef5ebb7e3660f9cbc93b60526c8d0d7f939b9233f1a1fc"
     },
     {
       "entityId": "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.INFLUENCE_PROTECTION_LOVE.md",
-      "sha256": "a912c2be68aca4474330ed11d6db499cbd9e65225f133412b23b36a34cefde9f"
+      "sha256": "db7e76952ae533a4d081640e5e83f42bdd9885058a13150969ba40479be16fa4"
     },
     {
       "entityId": "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW.md",
-      "sha256": "a4223368c55191ee6c3836bd29fb6e94565c90fd24918e59f5257e57f5625614"
+      "sha256": "fd10beb1bcda1c02dc2e56a446e9cc95dd5d0ced311f73c44e407899acfbc15b"
     },
     {
       "entityId": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS.md",
-      "sha256": "d49f32a893b4a2fc2f87c7fef84c3e116d3aef7bde079e6f7f8209ab5fba796f"
+      "sha256": "31c6969dc0da469f3032256a2c348db799017cfb642d986c0cfafadbdbd36c7c"
     },
     {
       "entityId": "AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING.md",
-      "sha256": "ed913adf1045e71af6dd64be29684ce2e475eb3faa3a42cd40c52e8513aab960"
+      "sha256": "4c06c9f89f24be285f7a5e16dabb456cbbcdb381a9076fe0034ae59397c1f974"
     },
     {
       "entityId": "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION.md",
-      "sha256": "c5dc36386dc15a38fd5ebe0ea6f10827030020ec111cfdb3340796ef3a475889"
+      "sha256": "1a64b6c6928ae7e7662826f0fc1859d29e6749d1478f89332067afadb91ee452"
     },
     {
       "entityId": "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM.md",
-      "sha256": "bb37d3124237766e616d92405d1f9eeb0f579583fbe5561fe2e58cda11e9db39"
+      "sha256": "8c3e197048b86284ea5c3fc68b1442bda6d031690e70a9ccfb4feb584a328489"
     },
     {
       "entityId": "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING.md",
-      "sha256": "f8dec755675f88705bde63362fc0b0c763c8a79921aa049b32596fc058d5365f"
+      "sha256": "16239598635f68cc98902fc6bcfed4d4d4db36b33b9888e9df7b42aae2ddd10c"
     },
     {
       "entityId": "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION.md",
-      "sha256": "6358c272a3d6cb7a124803deefabff32f3735a60b88823ccf0b9dca6afafbfbd"
+      "sha256": "f2f774ba305103fd13cc9b86beb1a68f0073c05e034ec7c91a91548870783161"
     },
     {
       "entityId": "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD.md",
-      "sha256": "858a9fae7bb56fd3a194bd47e9d7159cf69ae19ac3bd5059938cbb7ba589c072"
+      "sha256": "51343c01ee6f70f49cd0fcce81b10db761db4c8e7441ec2e17f1af89f552d7e1"
     },
     {
       "entityId": "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY.md",
-      "sha256": "e51eb2401fdd2481cf92eac71202606bf2a0a809ce402021f04893a137abfaca"
+      "sha256": "3706b718c1832a7dfed6d428352392c1f4e9a6c3293def200930cee8cc720783"
     },
     {
       "entityId": "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY.md",
-      "sha256": "7bcca9b5e192ab56fec1f335c3bcca36514f914ed7be7f153b72236247b9b432"
+      "sha256": "7168e824307b3de5e39a795aa8cb87f1f8a1320f5f17ce7ba5570c34d798716d"
     },
     {
       "entityId": "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.RELATIONAL_REALITY_CHECK.md",
-      "sha256": "9e20b21330a23bfde86e8fcffb2000892f4bb60abf0c0186b1437c8539dc31c5"
+      "sha256": "1728688a1768612cb911d9aae330e737282a81a1a090f185a29f098c60d1457a"
     },
     {
       "entityId": "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER.md",
-      "sha256": "47d8e481d0b66038fa325a16bb62f8da08f4d23025d3e5350b653044d96b36fb"
+      "sha256": "056294938549b692361f28653caf79df6e5a3faa3a107f3f13e357c0839ca857"
     },
     {
       "entityId": "AMEND.CROSS.SUPPORT_MODE_CONTINUITY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.SUPPORT_MODE_CONTINUITY.md",
-      "sha256": "151722c06b46189e37d9e02ff0d30abbe044cd4847c77a4ae3c5baaf0dd8aa36"
+      "sha256": "b3e4da07a50f88cd41e7c006c47a97690d62b8032b8218244820d900ab88a62c"
     },
     {
       "entityId": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING.md",
-      "sha256": "5330df6fd779ec6fee1b1521523382f89c6bda813ad6995b7bf974708e999042"
+      "sha256": "d2e246c1165d8651ad22f3b0f0c46524df907ba9546b9344d288603e179c3023"
     },
     {
       "entityId": "AMEND.EVIDENCE.PROVENANCE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.EVIDENCE.PROVENANCE.md",
-      "sha256": "38c4e55460602a443c333d4310558f945159eac19d0c0bbc19a84dfe222b45f1"
+      "sha256": "ce686639600912f517268f9934464acd92a532b526d4de12ca3f041a1650e298"
     },
     {
       "entityId": "AMEND.IC.BEST_FRIEND_PROMPT",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.BEST_FRIEND_PROMPT.md",
-      "sha256": "380b037dc2a0e189c724128772b1d942ccbd3dec6bde2340cb04dd365da80aea"
+      "sha256": "c79375f3370cc6f42d452721083818d4c7468350f19a24871075713bebb10722"
     },
     {
       "entityId": "AMEND.IC.BORROW_LOVE_EXTERNAL",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.BORROW_LOVE_EXTERNAL.md",
-      "sha256": "7d1c496985d9e6866157fb4098c513e5b02ccbb916bf02e686401bf216259c3a"
+      "sha256": "7d13218fe12289d229751619397168666e51d93d48cbb91b81b9f7ec9f0e0cbc"
     },
     {
       "entityId": "AMEND.IC.COMMUNITY_REPARENTING",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.COMMUNITY_REPARENTING.md",
-      "sha256": "105e04f3dad469c7b1a9c296c9b217c3a27390dc91024cc6625e704dc4120278"
+      "sha256": "7b8303685414999b52e7266f46d1669957cef95230f80506556bfc3593bbcc1e"
     },
     {
       "entityId": "AMEND.IC.CONTINUITY_TITRATION",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.CONTINUITY_TITRATION.md",
-      "sha256": "eaf96d69b339a6ee38e2162fd822426b45aaa5355b5a1d63c848ca27abfa2ab2"
+      "sha256": "408dc65be47020a8eff96ada8a14015301a5d23b51cb60a5507bbd07e07ab395"
     },
     {
       "entityId": "AMEND.IC.DEEP_LOVE_TO_CHILD",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.DEEP_LOVE_TO_CHILD.md",
-      "sha256": "9c8941078fd8455dd23b255c8a2566740740af0d144d63faa291cb36998f7f2a"
+      "sha256": "2400db83acb7a0337d5ee9962cfc74a6f10caa1e373753c96f6f4da8048c9f1c"
     },
     {
       "entityId": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.EARLY_GENTLE_HYPNOSIS.md",
-      "sha256": "19a51cdfed6f08252a0e0821234f6b92bdda58a4221b92036cc093d6f94d01ec"
+      "sha256": "602db2e8c13711ff3eb7ea4785603ba6e525023bea42438b84a42331f4c186e0"
     },
     {
       "entityId": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE.md",
-      "sha256": "ac26a9047abf9d646bf16bf8dda2b3b6cbcdd182ed0561c0af7b8c3198294fcb"
+      "sha256": "a21a8e8b118c9a8318365b8a82545ba40da27864b8227ef70e22c37cd91c2d34"
     },
     {
       "entityId": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.EXISTENTIAL_LOVE_ROUTING.md",
-      "sha256": "5e68d4ebdc8f4ca27d579454b7eed40acdc1aee745f7788fc8c8a62c813879ec"
+      "sha256": "457df2db0f0ecf9764758040d31082b9798101f8b2c755c03ac1f383d58b2bbc"
     },
     {
       "entityId": "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION.md",
-      "sha256": "c772863382af2bfb7e43abbb6df8a92728fdee11f744f4ebb7df4dd77aabe547"
+      "sha256": "5f358a4d1d1cbd81cc471ff2326deefc7ac2cd43659446ee624eb7d488200b9f"
     },
     {
       "entityId": "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014.md",
-      "sha256": "3eef4474bd093f48a3cab5c750d5e1fe37a3308079e473e6baae1b34edd97a48"
+      "sha256": "04c251294d300f69b6038bd72e1886ead57d27f1e8281468fd9e866e71587b5e"
     },
     {
       "entityId": "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.INTUITION_ANALYTIC_INTEGRATION.md",
-      "sha256": "87d1c5a1de3e3aa237eec424f777ed8aaa77db1ef75ac166c84b990a4e16f308"
+      "sha256": "76b0c76bb790c7cf64fe1c71f341ce416adae12b415498d199342367be3ccce4"
     },
     {
       "entityId": "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.MUSIC_EMOTIONAL_ACCESS.md",
-      "sha256": "34023a19b8e27790629925aad21a0d1d9a8ec4ff3b926b8696c540be06c15b96"
+      "sha256": "3f1c4c6782da7b959ef84722a445d3a32d0a687ae99051b5cd2abf8bf1bb8405"
     },
     {
       "entityId": "AMEND.IC.NONPUNITIVE_REVIEW",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW.md",
-      "sha256": "089bf7d9add9a1296e10ec9fb0911f4799774cda7a4e25984c4dd044755134a5"
+      "sha256": "376dcb825e4aa37497c456030fc519823369ac7df1b63957e6396f4e6bc4fbfd"
     },
     {
       "entityId": "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.PRACTICE_TO_LIFE_TRANSFER.md",
-      "sha256": "3d7fb60dafb2368e19465b41f3e986d4b17b0d20c952c2eb433a0c0513307cb1"
+      "sha256": "38ac58b154840f4f6d8b920fcd718a4f3a805f6b082eaffff74677290a010932"
     },
     {
       "entityId": "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.REALIZATION_LOVE_INTEGRATION.md",
-      "sha256": "5fe9ea3a59c37fef608e91b402e54816ed11bf151f09aa731a11c54f011e17bc"
+      "sha256": "1cfcaac07f90dd15e7e981310cbdd623a53a327fb144c47c644bd4f87474d232"
     },
     {
       "entityId": "AMEND.IC.SCAFFOLDED_CHALLENGE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.SCAFFOLDED_CHALLENGE.md",
-      "sha256": "3a6275e2be7ca92d43cddb08d9abfd2db8501f41824372940ae3af0b9ff98bb4"
+      "sha256": "fc48873e21fa83882b674e87a8f5776f70394dc42fbb53325f3d65f76db41882"
     },
     {
       "entityId": "AMEND.IC.SEMANTIC_ASSET_NOTES",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.SEMANTIC_ASSET_NOTES.md",
-      "sha256": "4e83b6a929ca6abf9c21c6994ea614d1a24d2e3e1aff3d59445e6a6a7a5264d1"
+      "sha256": "fe9a81e8b6ba637beef78df549717fc60a58acff0aec7d0bf409e8c4ced009e0"
     },
     {
       "entityId": "AMEND.IC.SPIRITUAL_STRUGGLE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.SPIRITUAL_STRUGGLE.md",
-      "sha256": "8e5bae89ea3b46e8f3eba088b8b58631ec21072dd3934a8f88fe5f3b84774e3d"
+      "sha256": "54c818e192f8faebc1e8c5e08af0b31fb10b320dd98eb7b8877fd3420f06ebc4"
     },
     {
       "entityId": "AMEND.IC.SUICIDAL_ADULT_SEAT",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.SUICIDAL_ADULT_SEAT.md",
-      "sha256": "53140bc0eb07c7eb27fffd3b18e6a01042947d6e62149ea1411fcba8551cc6f2"
+      "sha256": "0ceb544e48b7afdbddfbd0862f2056ffdb8ad5464d4488d8d937637746270f5d"
     },
     {
       "entityId": "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY.md",
-      "sha256": "a78ebda1d19e9553f505ba52c13e7247cb2466b44a90e66578c37844f75ef31b"
+      "sha256": "a3b5bf0d5b9d3b1b4c90734182092b4d93c55e9403748ec69501cf189cbc6244"
     },
     {
       "entityId": "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY.md",
-      "sha256": "ff29ecedf670ae8cc6a33f3da4e357acc59d1c145c3f0e136635ab8a8ef6871d"
+      "sha256": "14ad0a331578c6ac96e08af5d53fa8ae2775565f3d310e007b6875333c60e5b9"
     },
     {
       "entityId": "AMEND.IC.WELLBEING_HORIZON",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WELLBEING_HORIZON.md",
-      "sha256": "3380f3f39736d4911c70c2bba96f57c7d53a7e8030aadf41ad4781661f1ad277"
+      "sha256": "8415e770489838c3b2d070426b605c7b6c9f01c9a3ca229c729c389cef45c2a5"
     },
     {
       "entityId": "AMEND.IC.WISDOM_CARING_COMPANY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_CARING_COMPANY.md",
-      "sha256": "22b04617796e80664b2cf8500e01bffa25068fa6619d0353e1ff0b34767f9443"
+      "sha256": "483185ff14b6093f3b584b5e93094c6450f9d1f07340df41b411d6986b12427f"
     },
     {
       "entityId": "AMEND.IC.WISDOM_COMMON_HUMANITY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_COMMON_HUMANITY.md",
-      "sha256": "4d46de3d843980b4da465d81ee71dee489457551dbea00844faa1b4fd849fc6c"
+      "sha256": "a453bbdf10189ca905939289a03793e66068ac5d9095546c74d1c80ea46517c8"
     },
     {
       "entityId": "AMEND.IC.WISDOM_CORE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_CORE.md",
-      "sha256": "f30ae6def4e7a200a7220e8b66f2013c4cb97bc029344b663eb7922dd32388c3"
+      "sha256": "c2c036f4f6d972be233741831b82d414061063e0fb97e83d7edb917f381a0d18"
     },
     {
       "entityId": "AMEND.IC.WISDOM_CRITICISM_KERNEL",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_CRITICISM_KERNEL.md",
-      "sha256": "a5a04bbe179ade5c4c14fa2126027d85ccbf63280d179dbc6f85b70fa0a34932"
+      "sha256": "a70b326297ac91481b2dc36c097006aa3897592ebee3404a3d26f55eb3cc0bf8"
     },
     {
       "entityId": "AMEND.IC.WISDOM_DRAFT_EDITOR",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_DRAFT_EDITOR.md",
-      "sha256": "54414f59ebc63238dfa70753173fa4b1feb39c23362da40db150cf6e7df5ca3e"
+      "sha256": "99df262919bc554d36f35c9948a1d5a328268921d8e94a443ba689f0b63b6f1d"
     },
     {
       "entityId": "AMEND.IC.WISDOM_DRAFT_RETURN",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_DRAFT_RETURN.md",
-      "sha256": "5a94f343b33e674f3e17baf0e4e1127acfa4592fe96bc822bab0f8047bdaec33"
+      "sha256": "da517ef5ad5d2ea2300344863a45486b608cc83f2a6c5022d6cc6ea942c7eb93"
     },
     {
       "entityId": "AMEND.IC.WISDOM_GOODWILL_BRIDGE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_GOODWILL_BRIDGE.md",
-      "sha256": "c96fbdcf8a02b90ff984bb7f945fdf23f2b31100431ccc1770730bd5dcecdf06"
+      "sha256": "8811e67210d1538433e77d70f7f29b5737f9deb2e6b7d53227dbcc3b7fe9cb11"
     },
     {
       "entityId": "AMEND.IC.WISDOM_PAST_COMPETENCE",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_PAST_COMPETENCE.md",
-      "sha256": "eb9f3bae25cce8e59a6b0866cd8ccf85126e31935308d809cb20772a53414404"
+      "sha256": "5683394f35ae9fc3e0fcbd2175bf3da5b56ae55c5f802b4c77b13ec7ab5a052f"
     },
     {
       "entityId": "AMEND.IC.WISDOM_SOURCES",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_SOURCES.md",
-      "sha256": "3af25feb8e62c38aad8b364c52f683adcd384758ccfa61d5ee8f71c7bb7d9d31"
+      "sha256": "e68806530328797bd2630afa6012908ebc8ee85c760e6c25bbe53e78178f12fe"
     },
     {
       "entityId": "AMEND.IC.WISDOM_STORY",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_STORY.md",
-      "sha256": "b402a2b1ab7268112297d7963028cdd4d67049fb7e8faa0bbb6406df2973c79a"
+      "sha256": "2cfdf9211edc0de93578deb8318611dd9422b1b27c39bf25411f511db6a7f74b"
     },
     {
       "entityId": "AMEND.IC.WISDOM_WISER_SELF",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.IC.WISDOM_WISER_SELF.md",
-      "sha256": "bdd30d91d50fca8c0ade105b19b067f67488a078ac244f42dec770640768a13b"
+      "sha256": "f12768acf236f92a0db1fc8eb00b1ff35a91d8d7e92c621738929b43f6ae86f7"
     },
     {
       "entityId": "AMEND.SOM.ADVANCED_RELEASE_BYPASS",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.SOM.ADVANCED_RELEASE_BYPASS.md",
-      "sha256": "ba6754ac5e27503e1207f2051d02d471f0cbd20f7366cfca0da6a0ec42c1aa13"
+      "sha256": "c193af5b7d542741b9d7dc31aef7748e46b876e7d1cff97f786a923cf967adbc"
     },
     {
       "entityId": "AMEND.SOM.ADVANCED_RELEASE_PARALLEL",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.SOM.ADVANCED_RELEASE_PARALLEL.md",
-      "sha256": "b4da7f0c0c3193fc7be9cc9023699cff110567b9ca0e7f531376d72149d9098c"
+      "sha256": "e1133731d8f7dceb50e93e4c893135d8575160959c0ced97b8e21cdcb72ed896"
     },
     {
       "entityId": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.SOM.EARLY_INNER_CHILD_PARALLEL.md",
-      "sha256": "7dbedc2957bc2b72dd25391f06c3c56a3a10f6c7048b95a82473f96ac85959bd"
+      "sha256": "bdd7b5cb6552824f8589cb7d32e83f11b7bb43cf1fa13947fbc97818852fed40"
     },
     {
       "entityId": "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL.md",
-      "sha256": "76d3ee9db6d583e63864321fc7ddd63b257d32424d190e560089c03e4127008d"
+      "sha256": "c4c1110030b87c83dab16663ef13abeff053704de5bcfc1586f2c954105bcada"
     },
     {
       "entityId": "AMEND.SOM.PREP_MODALITIES",
       "entityType": "owner-amendment",
       "path": "authoring/obsidian/current/governance/amendments/AMEND.SOM.PREP_MODALITIES.md",
-      "sha256": "c6e3ead0528a287e5ee4963639b022182998822d440c73c4a3f3c382be20fe45"
+      "sha256": "1660c7db3a37b4d90ba3f58e82a9e89c3f2c9773a2f70a26c6ad38aa8714908a"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D01",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D01.md",
-      "sha256": "99a48610e97912e88a08fb8921ffe9300f9caa15f07b81d7e10d81e1303569d8"
+      "sha256": "be298f487d923520043e6b09dbea3442e778fae3e62c663f35f5ff4746bfa196"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D02",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D02.md",
-      "sha256": "64d37898930ae30ef9a0f250968b970666c0ec9ea2669e46cb6a3aad29019332"
+      "sha256": "8a660631a4cdbd2b681448947dcafae1dd2655b2c7ee179367b7b03c97709fab"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D03",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D03.md",
-      "sha256": "c9cc63a489d39f4eb410093cbdb567c02371fa9cab1a2d09feb524470d10691e"
+      "sha256": "24b364cdfdf11213743da204d387ba418db390786234bc4b18281a6fdaafb1b9"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D04",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D04.md",
-      "sha256": "2986193ab0bb146b922c40e03d1c5b6348447d204bdf6044a2b73111396b9096"
+      "sha256": "96f65e161006d379839b4891731348d681e312a7395cbe0720d55a980e3bd11f"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D05",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D05.md",
-      "sha256": "5bdf905f63c713f489b280cecf2cdd777cab92c6fe332e5a38ee4becb525719d"
+      "sha256": "e0db4c307d8e339c9c0b01e5ded44aa295f23096fb0890fe04c88a9ff4077245"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D06",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D06.md",
-      "sha256": "6cbe8cadf88b13cc16ec42781eb3939f811ef28c2ebceddced2f09ffd64b3938"
+      "sha256": "dce149896ed3e85045e0087313cd34f26431c49d69685e785d7376938db6dba0"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D07",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D07.md",
-      "sha256": "b6cb88536334dfbb784dd8dec30707c8c39752f44bbeba8b3103a44e3e5a6ea1"
+      "sha256": "7d3d98f0e79adb0131c2866513c8eaf777988f694c25e3ef6b62c1b51311b47e"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D08",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D08.md",
-      "sha256": "3f66a559ed8f912cea22f5ee08675eb11d12035f0a1d101fbc6faa60ff775ef5"
+      "sha256": "77e416969003b77dd9c96c80fc664e7317efa34b8dbac230a1ff6aff54f324ab"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D09",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D09.md",
-      "sha256": "256700f468b919ffe71f178f002b10490b9a8ce2adf2d5df0faea35e729ea8cb"
+      "sha256": "99b71196cea9865bdd5f1e0b6c6560ee3a7bde71228796453d843f47a5e5fc35"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D10",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D10.md",
-      "sha256": "b9a1575da4bfad633236183f067173ce561ca4f68b79dcdbda4669a4be5a27a9"
+      "sha256": "27387c5a868a8090630edd6e3060ea0028f17e0059031a6c7d3c90dc7eab2453"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D11",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D11.md",
-      "sha256": "aaed24e46da406758345d26ba03c2b63ef9ac1fa4522d85aebf9923ae5a6ae85"
+      "sha256": "e1b2834a7f44364795adc6a0b84969575053d1ff5c30adc7f7a5b8b9fda7adcb"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D12",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D12.md",
-      "sha256": "ed9ab9106d90e6a7f90b67b2973dcab73d6746a79ac1914282542af73b650af9"
+      "sha256": "50d5453f09baca4c4d279699366455fab506da1c2be6d47bb73212371a3a835f"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D13",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D13.md",
-      "sha256": "70f2c56db3fdf6253dc35b8c014faa69d5d3fd68616434ce2f2a72f4c763afe0"
+      "sha256": "db0a4fa37fdad54def7fc9d48b43f0e507ba6af050cc68295743334450b37725"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D14",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D14.md",
-      "sha256": "2b7bd26be9cc9bb6d44bb78f581c2e53bd97ebe002355285d171b0c576207148"
+      "sha256": "f805659fb9cdcfb80eca15e302bcc83a685621d55b2bba5ff09c0d094b0a17b1"
     },
     {
       "entityId": "OWNER.MAP.RESOLUTION.2026-08-29.D15",
       "entityType": "map-owner-decision",
       "path": "authoring/obsidian/current/governance/decisions/OWNER.MAP.RESOLUTION.2026-08-29.D15.md",
-      "sha256": "1ae1b5aec99bf71bf5edb55a248f7b17f776ac897c7988701018b9af3abcb417"
+      "sha256": "7a73518e4a6fc9cb93f61f2694fd47163399838a57ee1aca711996a4b9fc31e2"
     },
     {
       "entityId": "OVERLAY.IC.AUTHORITY_RETURN_BOUNDARY",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.AUTHORITY_RETURN_BOUNDARY.md",
-      "sha256": "45d8a94a655849d18afeea26110e8e97e6a8a36acbde6a3c82701dfbb2a7f765"
+      "sha256": "d31173deea661e637d567102313e70f2dd08c2c0777a73150a8500e7736b2b7a"
     },
     {
       "entityId": "OVERLAY.IC.BEST_FRIEND_REALITY_CHECK",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.BEST_FRIEND_REALITY_CHECK.md",
-      "sha256": "1ea2bb5af5eac1885cf3029a8e84da7fbb309ab45500ddc557474a11611562a1"
+      "sha256": "ef531db3f11dd32c1ed0b09445d35305a46b0f1360ca73b646cbc76ccacfff4c"
     },
     {
       "entityId": "OVERLAY.IC.BOUNDED_TRUTHFUL_VOW",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.BOUNDED_TRUTHFUL_VOW.md",
-      "sha256": "dd3ff138caa1265b8a346d7c8aa95459a446e7e329dbd832dc8db5c71b9e9862"
+      "sha256": "234334657f498dee42ffe2a34d7af3216e829ab7598271afe189d0c07a191765"
     },
     {
       "entityId": "OVERLAY.IC.COMMON_HUMANITY_MUTUAL_HEALING",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.COMMON_HUMANITY_MUTUAL_HEALING.md",
-      "sha256": "db14871b4bbe30d2d1ec3bc05b6f966f0f764a443c1cda8e873616f3c5667bf9"
+      "sha256": "85f3b75b05c1344c53f1ea2c5494ffd37b54071b9892e15b069c521ad8bddc04"
     },
     {
       "entityId": "OVERLAY.IC.DYNAMIC_PARTS_MODEL",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.DYNAMIC_PARTS_MODEL.md",
-      "sha256": "a20177264a1054c7986d78ddeaba97cfe26b7149d03cf29c007f1cbfe9aa4321"
+      "sha256": "51b6eda27038420c2158e47d2f4e2ae852ffc5188b4bdbf6b89dc8c435ba79cd"
     },
     {
       "entityId": "OVERLAY.IC.FLEXIBLE_DELIBERATE_CLOSURE",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.FLEXIBLE_DELIBERATE_CLOSURE.md",
-      "sha256": "85a62b42fb06ba0cf0647d528bd231d8ef61c7d1fab34ecd7c1e2a4fdad431d4"
+      "sha256": "168768f3f8d99d15dfa829d49973f7cc80198d00491dd6902cb1b192602f71b3"
     },
     {
       "entityId": "OVERLAY.IC.FORGIVENESS_PRESERVES_BOUNDARIES",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.FORGIVENESS_PRESERVES_BOUNDARIES.md",
-      "sha256": "dda8bbcdb137081f37914e56a7f0f0792d8765f91571e308b9242abd85d561a4"
+      "sha256": "afb618a247cee0dba767c03ba4523ea1fbe725e6e21d7ffe0c34beceb44c396a"
     },
     {
       "entityId": "OVERLAY.IC.IDENTITY_BEFORE_DECONSTRUCTION",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.IDENTITY_BEFORE_DECONSTRUCTION.md",
-      "sha256": "be02a89dd3f94fbe56b16f29af588a7af6df14bb36594c62f5e2101fae11ce72"
+      "sha256": "ccd09d7ece9a9c71deb1cf6f0b2454ebbf1fbc2402fca4b87986a4fc09fbfd7f"
     },
     {
       "entityId": "OVERLAY.IC.KERNEL_OF_TRUTH_RESPONSE",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.KERNEL_OF_TRUTH_RESPONSE.md",
-      "sha256": "1ff4853cd70d04736dca350cbc3b58a0ae3b7c6f7a03fc78139942b4bdade613"
+      "sha256": "e03e0ab0a8092e33a29713141a38bd8ebd849d99bd0e70c1ee94f470177d5a2c"
     },
     {
       "entityId": "OVERLAY.IC.LOVE_SURVIVES_REJECTION",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.LOVE_SURVIVES_REJECTION.md",
-      "sha256": "a88a33ada3ba6f0359d36b1d4e85abdc069edd73e423b90b8078b2295e71ed79"
+      "sha256": "ef179263ce8ebcc7eb37f9d305222eaeb043f16faebd1eb3da39b5c20613966a"
     },
     {
       "entityId": "OVERLAY.IC.NONPUNITIVE_REVIEW",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.NONPUNITIVE_REVIEW.md",
-      "sha256": "8a6e19fb39e48a2321c01b79f1e8ea58f937fcab0c9c2bdc8dd44457f83a94ec"
+      "sha256": "0b63450d8654f9bf0d35aa767ca0baabaf7cbd40ce3f52194ff705d4859b4d2d"
     },
     {
       "entityId": "OVERLAY.IC.PAUSE_ORIENT_BEFORE_INTERPRETATION",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.PAUSE_ORIENT_BEFORE_INTERPRETATION.md",
-      "sha256": "8e23b677c2490d799d06593f9194db9647b926f6bd92f501f303d2f4fa743222"
+      "sha256": "539cabc5fd039fa5eb8697a3b0f7fdf5b0175c41ae223eb4ab71e663b9c0b087"
     },
     {
       "entityId": "OVERLAY.IC.POSITIVE_HOOK_AUDIT",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.POSITIVE_HOOK_AUDIT.md",
-      "sha256": "cd38b76a7996b5f66172b0f9b0b60011fdc24c6068e3871104367b4789b50aff"
+      "sha256": "28b4f471f204240ca278a5a1373c4da87cd639578b5aba6a8aac6d3de73c33f6"
     },
     {
       "entityId": "OVERLAY.IC.PROTOCOL_STATE_PROVENANCE",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.PROTOCOL_STATE_PROVENANCE.md",
-      "sha256": "6c421e7ea92f401088bde02528900c7150404485761e1725e4f5dd0def0817c5"
+      "sha256": "d157ef9ba4fc9cb37f591a460d8eb3c92d5bac830a18a67115b816a68ec746ec"
     },
     {
       "entityId": "OVERLAY.IC.TENTATIVE_CONCLUSIONS_REEVALUATE",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.TENTATIVE_CONCLUSIONS_REEVALUATE.md",
-      "sha256": "4dea5f0c741733f22da7f53f8e787a9fa9c1054011ffea45dda1975f44760871"
+      "sha256": "20bd4a2bc09a457318a2f63a8e94a7b1c8c127fa4328dcb18899289ea4f347a1"
     },
     {
       "entityId": "OVERLAY.IC.TRANSITIONS_AND_ENDINGS",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.TRANSITIONS_AND_ENDINGS.md",
-      "sha256": "2b933e5bb1efa2de971119f5bfcc64d640c59bf603001f521b87be6ec5aa4410"
+      "sha256": "512cb9edfb5adf9cc9983b7277bfc14cd1c4a9def6d0d7d1a41930637737ec13"
     },
     {
       "entityId": "OVERLAY.IC.UNSAFE_IMPULSE_PAUSE",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.UNSAFE_IMPULSE_PAUSE.md",
-      "sha256": "b8ada80170f94f28fa0bd4b99033eb50264df392f46e71b69767aa1c268f7e02"
+      "sha256": "eb76677ff7001d84010c2a9e099309fe6fdfb7a3c107eb42db0661bdf0e1d964"
     },
     {
       "entityId": "OVERLAY.IC.WORTH_CAPACITY_DISTINCTION",
       "entityType": "documentation-overlay",
       "path": "authoring/obsidian/current/governance/overlays/OVERLAY.IC.WORTH_CAPACITY_DISTINCTION.md",
-      "sha256": "bc336cf48e27f00981bee28296de606b40e7e79e4263eed6a862559d71838511"
+      "sha256": "f2b564cdf1df41b7f76678c9c0bfdf01af2a5769e1562000457587a4ceedd5ef"
     },
     {
       "entityId": "development-graph",
@@ -1690,1789 +1690,1789 @@
       "entityId": "IC.ADULT_APPRENTICE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.ADULT_APPRENTICE.md",
-      "sha256": "b1bacce4291d0277091cf405a6763d3ee551195e280e8a09f7fc6b70fc957eeb"
+      "sha256": "bfee5cdc548a2116a54d80a77348270b6544f2551ae096af6aee657a12d6fc49"
     },
     {
       "entityId": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.AGE_RESPONSIBILITY_CLARIFICATION.md",
-      "sha256": "bac5a8a3607db26c98fe3b47484f81329f13f4b7ee9aede814beb7b777bb6369"
+      "sha256": "752263c48f8dbb020d218b447280dcefad459655967c7c25d552476e0dd4dd56"
     },
     {
       "entityId": "IC.ALTERED_STATE_GATE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.ALTERED_STATE_GATE.md",
-      "sha256": "3eed9332ea60f9b73bf7b1c7bd5b9de85d6c1d13efa0b5144bd1009e97658995"
+      "sha256": "db3f58d122a6faae00e3b6be5d586a98859bde8dbb1723b36891b77b0bcc4e35"
     },
     {
       "entityId": "IC.BEST_FRIEND_PERSPECTIVE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.BEST_FRIEND_PERSPECTIVE.md",
-      "sha256": "879fef9b48f7d477a88d4808c3abe399f9db78613749d35c989eacc9f26c7d3e"
+      "sha256": "a0123a67d19e23a906ffc4e56d3e96cc3c64aeb58ee1387ec57442ce5308170b"
     },
     {
       "entityId": "IC.BORROW_LOVE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.BORROW_LOVE.md",
-      "sha256": "8b0a5b3d392b2d29d49c705d7014298aa0a72a87b837de387f2ce1c89e57f08c"
+      "sha256": "c68ff981cfc03ac87c9e8639fd07eebcb04ce61193a64c5e887ca3d46ff92eb9"
     },
     {
       "entityId": "IC.BORROW_ONE_FUNCTION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.BORROW_ONE_FUNCTION.md",
-      "sha256": "7e843ff53d6cf02d61bd447b4e784a960f397b697d25995e5e182e94e8dcae8f"
+      "sha256": "1a053d0459ff8c2b83e4a64af738a70deb5c4b300ede1133b32cde69f114a871"
     },
     {
       "entityId": "IC.CARING_COMPANY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.CARING_COMPANY.md",
-      "sha256": "dae6cde64256c4ab23baa8cf792da275a989c183dbdebb77a67b7942c184784c"
+      "sha256": "35e4aca1e1672fa4dc6ac6fcd33917149200ba929bd0d00f9fb8952dfb87b883"
     },
     {
       "entityId": "IC.CHALLENGE_CHECK_IN",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.CHALLENGE_CHECK_IN.md",
-      "sha256": "26575d138ad480ec84f874f3d6c605caa0536d6b5c21314c53113774891b926a"
+      "sha256": "5bb7acb3aed3e6ebe494b14e2f42bed9980ccbf599ad5064727d3ea2a7a23ea7"
     },
     {
       "entityId": "IC.COMMON_HUMANITY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.COMMON_HUMANITY.md",
-      "sha256": "770c96232592563ab2e02e8e02e9fa2396ef26a145221a981c3ba254f88b0fed"
+      "sha256": "68678cdd14758948052a9ea4c4fb812bda909528302e24b8dc4a4ea7d856a47e"
     },
     {
       "entityId": "IC.COMPASSIONATE_STORY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.COMPASSIONATE_STORY.md",
-      "sha256": "82e60142d666cfebf00e48e6b54a73a50e8a264aa198eab8820671eaf25cacfb"
+      "sha256": "b8e141bc98ee2c40e906e0cac5a75a134248125f5c2daf6309b240fb5d2fde44"
     },
     {
       "entityId": "IC.CONTINUITY_TITRATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.CONTINUITY_TITRATION.md",
-      "sha256": "0fbe6188d2f99c2bd64bb70dba1b781d40ebda774ea056087d772bd42d2e2743"
+      "sha256": "1e31a935189455ec3337c8222fdc82d8f1f4323178908b2423d99d17889771ff"
     },
     {
       "entityId": "IC.CREDIBILITY_REPAIR",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.CREDIBILITY_REPAIR.md",
-      "sha256": "9734daa847f8fc97c1b2c7e130a601a5c1c0ae250d26fc28f018c61ac6f7b0b1"
+      "sha256": "28b34fc8fa5378c63586483a03e1fd67bbdce3135d208c43a790a883d7f6480d"
     },
     {
       "entityId": "IC.CRITICISM_KERNEL",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
-      "sha256": "e8dcd479f8c509a67645c02270757350668c96b7de3001ca4b7951be22bb5b2a"
+      "sha256": "17b65690c068f87939c82027a9d72361ac2104852299d3a68e6ea4c68f7e4a89"
     },
     {
       "entityId": "IC.DEEP_CHILD_DIALOGUE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",
-      "sha256": "9335c74aa692ce5fc1c2d440ba0119b42cb6fabff9e51fa83c5efe74e4331206"
+      "sha256": "a1ef26be771506179928a6f15b3b6d3bd0c2e748f6a560dac859b20cef80fe13"
     },
     {
       "entityId": "IC.DEEP_LOVE_TO_CHILD",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.DEEP_LOVE_TO_CHILD.md",
-      "sha256": "470defe6df978c8df9bbb57424c15ef75d2acf679acb1880942c746490791b90"
+      "sha256": "80b238998450502c8f71865ed41ff2d70878095a8ca76170105c233b241b381f"
     },
     {
       "entityId": "IC.DIFFERENTIATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.DIFFERENTIATION.md",
-      "sha256": "bd773829bd4859bfb4994925215037db684bb0974009a937a3dede740bc2daa1"
+      "sha256": "d3d32d12824075a564fdc9c45d560822576bbaf56eb02a35cbc4472710d005f6"
     },
     {
       "entityId": "IC.DRAFT_EDITOR",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.DRAFT_EDITOR.md",
-      "sha256": "e15453e8b0ee83317f993fdde33f9f3375d56f3086d59d247d75d849b0e9f6be"
+      "sha256": "3cc8fbe9bcce093fdabd744b593ff99f6c954afbcaccf150e5b4931aada16982"
     },
     {
       "entityId": "IC.DRAFT_RETURN_TO_CARE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.DRAFT_RETURN_TO_CARE.md",
-      "sha256": "4c1db50e5dafff8ef7205b80ecd0b64e9dc7a5edcd97c32b637679c3f3b6c3ac"
+      "sha256": "2fc31ed7d85154b2702f96817bd175788bbdd127b403b0fe3d22bc3a3d399619"
     },
     {
       "entityId": "IC.EXISTENTIAL_NOURISHMENT",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.EXISTENTIAL_NOURISHMENT.md",
-      "sha256": "7542d5080d5cc6d6ba3a15af3b94b1f2c5e649cb54f61a746599a922817a21b7"
+      "sha256": "0251a9e89932f8ccc861e91864eee8c243ebe17372b05776cfdd33b5b3e16e5e"
     },
     {
       "entityId": "IC.FORGIVENESS_LATER",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.FORGIVENESS_LATER.md",
-      "sha256": "89b6fa33a26512d5e6043fe13b2516c0e34a2dce45e9748fd5f633cfb24ea4ad"
+      "sha256": "638e15100ffeb4b22bf071e57726cba8fe57fd08747648e01a62fd6b90d8a278"
     },
     {
       "entityId": "IC.GENTLE_SELF_HYPNOSIS",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.GENTLE_SELF_HYPNOSIS.md",
-      "sha256": "7772d200a50de5d583e5d09a9c5b5045a8d0f186fdf64e2d6f907b58740b71d3"
+      "sha256": "beb7bd14e7148cbce0ed7f3221118df69ab1f85088ec30d800e02d523f6ecb48"
     },
     {
       "entityId": "IC.GOODWILL_BRIDGE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.GOODWILL_BRIDGE.md",
-      "sha256": "585800433d7c7d7a111132cd049c9f71306d215fb439cb69070c5e4fa591d12b"
+      "sha256": "94cc8ec134c00804e6fc2abe5d1192d395df059cda9d74544a43bbe486003674"
     },
     {
       "entityId": "IC.GUIDE_LATER",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.GUIDE_LATER.md",
-      "sha256": "4d1f03534a7c655235468ae92730d4d8cd67a3ac2c4c57764481abb44d9706b1"
+      "sha256": "4b6a72b05b959f941ad68ad726542331f55c2b1262527bbd88ecab4c40665cb4"
     },
     {
       "entityId": "IC.IDENTITY_FORMATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.IDENTITY_FORMATION.md",
-      "sha256": "3e6eba9af1015778f2bab3cd299fac0d18a47caea69e037a3a834a464d8a6402"
+      "sha256": "ef4395dfcbaa4fe307d3b336de41e7c3a46b65ce0491552c8a057f3a6d6f9618"
     },
     {
       "entityId": "IC.INTUITION_TRUST_CALIBRATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.INTUITION_TRUST_CALIBRATION.md",
-      "sha256": "3bcdbd666f673527d9878bc052da77f1fb43dad583a6eba26f842130edf87c62"
+      "sha256": "adf6f1b497d176992a2d8f66ae8c10d939b7ff7f1dc931de4604f81ff2d0d7e7"
     },
     {
       "entityId": "IC.LOVE_HORIZON_EXPLORATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.LOVE_HORIZON_EXPLORATION.md",
-      "sha256": "96456b2e9941de7da952acdc50db0eef953a8583abd0ecd3add4216f81a44049"
+      "sha256": "81c63de3ba0a2ffbe9a22d703ae6e74d7cbbab45732370a8431435d7a100518d"
     },
     {
       "entityId": "IC.MEET_GUARD",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.MEET_GUARD.md",
-      "sha256": "0c2d5bf74ddaa431d2847c3ff0d1ebccdecf62b8d964b7adf8634721090c908e"
+      "sha256": "11782b7d264d7aee09ed093162f284140f7dec20fff0153358e0db2fe1d438a2"
     },
     {
       "entityId": "IC.MUSIC_EMOTIONAL_ACCESS",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.MUSIC_EMOTIONAL_ACCESS.md",
-      "sha256": "d10fc6664dc9418ecc72b3a85c4f65ec4f66ae80667789b95e9e5119d3b4f6ef"
+      "sha256": "199f593ec79b3108207bd516ec8bf3aadcecf689a6f2ffb40dced0615719c8d0"
     },
     {
       "entityId": "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.MUSIC_EMOTIONAL_ACCESS_STOP.md",
-      "sha256": "7351ebd0afd5c45975c43d5d0853d35b563cae23c444635cfa052705bcaa6bd5"
+      "sha256": "6fa6246591f99089e86f70438a04c7953684ba611a7d7e70c9aee9212da4ca29"
     },
     {
       "entityId": "IC.NEUTRAL_WITNESS",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.NEUTRAL_WITNESS.md",
-      "sha256": "cb7ca70af3fbcf5aa6bf5a7aac6cab85a032fb04c2b29a72d1d38d5ff7bdfe09"
+      "sha256": "4474639dcd94365e711ae9b2fadec751f50a7d0fe428b3290c67fe192a389f27"
     },
     {
       "entityId": "IC.PAST_COMPETENCE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.PAST_COMPETENCE.md",
-      "sha256": "0d05bd9249cd2626e3f87ecd2889636bf4e4d30ff8f7a469007935d8c249f239"
+      "sha256": "773b8b2f4be8d25c342b5d591e767051ecca9a4ea779386432bc90cc355bde9f"
     },
     {
       "entityId": "IC.PHOTO_EPISTEMIC_CAUTION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
-      "sha256": "6a81478af7e251b038d2f5bafdd46890da8fa848b3ddc37ea74eaa0ca65227eb"
+      "sha256": "ab280f1d340d9c0c8d4d87951263294e27586d0cbc540f0f650c863925dd5718"
     },
     {
       "entityId": "IC.PRACTICE_TO_LIFE_TRANSFER",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.PRACTICE_TO_LIFE_TRANSFER.md",
-      "sha256": "44263d582dfc36ee1798d091d7c3e818b10486c613d9dce164d9d5f1c74e496a"
+      "sha256": "edece753afe311cc852b7787160767f2a198a88481d7038effbcb1e94e063e51"
     },
     {
       "entityId": "IC.PRECIOUS_HUMAN_OPPORTUNITY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.PRECIOUS_HUMAN_OPPORTUNITY.md",
-      "sha256": "b385dbb39a0c7d8bc8e781e8a433984ea9d67d1e0fb4a480334c170b04df4955"
+      "sha256": "6e2f97f531e3e551d22f1abf0d482f45bcefb78857c37c87dddacd38f42b12b5"
     },
     {
       "entityId": "IC.PROTECTOR_ACTION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.PROTECTOR_ACTION.md",
-      "sha256": "7928d8c17d2f7e38f239705782e42b0d839b8da23b1d6e404254cbde4561e348"
+      "sha256": "1b297b690b9116d0baa029fd61e9be6f2358a4010d5a810ea44960f9d6fa4140"
     },
     {
       "entityId": "IC.REACTIVATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.REACTIVATION.md",
-      "sha256": "7b1ff9c667622f5e4fc76e88ef1122724f092f0d28ad007c05baa689f6b2b77a"
+      "sha256": "fbcbd1d25aca5310756aa7ca71540ea5b0322e417d614c43c3abb9fc54c9e456"
     },
     {
       "entityId": "IC.REALIZATION_LOVE_INTEGRATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
-      "sha256": "643b9bad3035fd74be5818b21072e8dd10ca64e502c4f39e96a1600cc953baaf"
+      "sha256": "f573f2a4fa0bad918ac3a53a684555bf985b1fc04272bc72661f03eec9ea31bc"
     },
     {
       "entityId": "IC.SAFETY_ORIENTATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.SAFETY_ORIENTATION.md",
-      "sha256": "b04caade1a0d007f26d9fe8af809067462cd9050b6ca702a0b849a542d876704"
+      "sha256": "4a0295de0bfb86f3aa37961171806181453731ed83e6ef3db1e80f8b0de3f70d"
     },
     {
       "entityId": "IC.SCAFFOLDED_CHALLENGE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.SCAFFOLDED_CHALLENGE.md",
-      "sha256": "857363293744c361eba3b4fe02bc326204827832b433688adb7f1cda92f3d299"
+      "sha256": "7fb677b34eba7f109349fb4270fd0652f344efbc329f3e137b89fb96b195a904"
     },
     {
       "entityId": "IC.SOLAR_PLEXUS_RELAXATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.SOLAR_PLEXUS_RELAXATION.md",
-      "sha256": "8c66201af8648892f8392c251700a577d509456865a01ed049883c1b998fb57a"
+      "sha256": "990c9901d93df9a4aaf4754e028fd1b664e217cce0eec298fa8c0a880b07476c"
     },
     {
       "entityId": "IC.SPIRITUAL_STRUGGLE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.SPIRITUAL_STRUGGLE.md",
-      "sha256": "44370ee8378cc5068343ca3dd37bed938005dee8464e6a0470d0c36be4d1dd89"
+      "sha256": "099d40929113d1846a2d9f4a4ac37c2ce8a28ddfc2619896b26801203a6caa49"
     },
     {
       "entityId": "IC.SUICIDAL_ADULT_SEAT",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.SUICIDAL_ADULT_SEAT.md",
-      "sha256": "4bac6956a0505dcd84dc2dd6f291211bac75027bb93a4d41d51cea27c6048848"
+      "sha256": "195810c81dca4a6456a238ee213349f20e7c8a17cfdf4dd4caf8c66ac956f5e2"
     },
     {
       "entityId": "IC.SUICIDAL_SELF_DEATH_INQUIRY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.SUICIDAL_SELF_DEATH_INQUIRY.md",
-      "sha256": "a68636697459d1a1f66152e006d656eed62294f604c3450fe986e5063c64897a"
+      "sha256": "9f9023bcfc9f7dec47be076eabbef8a9fa111d2872dbf18c2b68f34d2f6f540f"
     },
     {
       "entityId": "IC.WISER_SELF_PERSPECTIVE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-directed-graph/IC.WISER_SELF_PERSPECTIVE.md",
-      "sha256": "f1c1a126c22c43113ea775c0cef6884095f47facdc5f0591126cd25d6ce63f84"
+      "sha256": "734684e55364cb5b067c5bf78fd0450fc68517756ab469bd4a90f065c51e56ef"
     },
     {
       "entityId": "ROUTE.ACT_OUTWARD",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ACT_OUTWARD.md",
-      "sha256": "f078c965890629a2b2742661802ad408e29ec4cd6e67eaa8d03190e3bb493332"
+      "sha256": "7442cec633c258cfdab848accdf8b8e0031c111d64f7707d25c41ebcb9ab7df2"
     },
     {
       "entityId": "ROUTE.ALTERED_ACTION_LOCK",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_ACTION_LOCK.md",
-      "sha256": "bf6dcbac9e6ef29cd2a5c4029828b2a99384b88bbbcad00fdcc26e65b13df004"
+      "sha256": "b5b6e57b5ae8afa11a228e5fa2960d92d341901ee0392ca861507c4e86248e93"
     },
     {
       "entityId": "ROUTE.ALTERED_ACUTE_STABILIZATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_ACUTE_STABILIZATION.md",
-      "sha256": "299c9bc1907a37201891afe10b4819bd29ec30d2aff4c763695186df565aa07c"
+      "sha256": "646533d18918a9776fed7ec12189836419925e61b4009d6dc5e29a1d8b9bab99"
     },
     {
       "entityId": "ROUTE.ALTERED_AFTERMATH",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_AFTERMATH.md",
-      "sha256": "2fe8e0bc79165e78b9b1f450e26e664732a7992042d0dcac901f9a7f66f4b4ff"
+      "sha256": "0c8e03ee8f65744f14494a1169c59cc070827f9d129ded4bcb7ff9a0881874c4"
     },
     {
       "entityId": "ROUTE.ALTERED_MEDICAL_SAFETY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_MEDICAL_SAFETY.md",
-      "sha256": "a42e117de79b4d838192947ec4e6bec76a9a447d477a1c16fa4d64ebe2573bdd"
+      "sha256": "15b4ca4530c0757faa2cc5668013a3695836e0c8da3b35abe85d08521b8af5b4"
     },
     {
       "entityId": "ROUTE.ALTERED_PREPARATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_PREPARATION.md",
-      "sha256": "cc3bbc6b53df2a5f661891b793536351314b840a8d8397bef0aebdf9d63adf9e"
+      "sha256": "449532da454fcc37ccd79a3b9b84a889a1fb9f8a5117a380147529c0cec77caf"
     },
     {
       "entityId": "ROUTE.ALTERED_STABLE_THERAPY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STABLE_THERAPY.md",
-      "sha256": "dbd8f6a58edab1043b60802f551e0ff045317251c755acc90061ea2f6ba0142d"
+      "sha256": "ec9b28917f0c5b3eb81fe74ef29e6ec1d8e0378b0ec21c3190b72228a58f92b2"
     },
     {
       "entityId": "ROUTE.ALTERED_STATE_TRANSFER",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
-      "sha256": "a7d5a9d16f689262a241735397a99cd78031fb2962704d36ccf3e2b96157d5ae"
+      "sha256": "142e1e3151f03b445639026d5d301146860f24be20cb2cc5a9ef15bf6d1a7eca"
     },
     {
       "entityId": "ROUTE.COMMUNITY_SUPPORT",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.COMMUNITY_SUPPORT.md",
-      "sha256": "0d5b9206f4b1fc228020f612f09e31b12010756e155a478b6f8d6b76c9c00f0e"
+      "sha256": "7b1bc73ac272cb12b12068a2fe74d19687d1e4a6a76cf15e2b9b12a427231156"
     },
     {
       "entityId": "ROUTE.DEFINED_WAIT",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.DEFINED_WAIT.md",
-      "sha256": "6a83f3941a1528316a335da0aa387fe4dcfc784ffc90629a847856315363e8c1"
+      "sha256": "7ae59741ca455134219df0bc90844282aa5715bcd88e33db8b1718571e345335"
     },
     {
       "entityId": "ROUTE.EXTERNAL_EMBODIMENT",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.EXTERNAL_EMBODIMENT.md",
-      "sha256": "d61f95c2ded6e10b18446d55674faac0453e94683371db5c3d7c7b855217bf5f"
+      "sha256": "da74e551be0864f53f32be8df245426400e6bf32914e404bbc31eac4d628a13a"
     },
     {
       "entityId": "ROUTE.GO_INWARD",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.GO_INWARD.md",
-      "sha256": "cde9e9ce45b746ef1563c5ec0f1477b935251473935dfdf70845daab9a73487f"
+      "sha256": "41a7fcb419ff05e64c78b30a532bff2f7048306f6e8076d8732b1fd3f766d022"
     },
     {
       "entityId": "ROUTE.INFLUENCE_INTERNAL",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_INTERNAL.md",
-      "sha256": "9d1b663f60ad05a0f275d52b0a8701f25767d0e14381000859b1594b06d21c22"
+      "sha256": "4a78821d5b8a25fca017d7e677c16a14c1bafe0a7fe1c917fa42e675b4ea8275"
     },
     {
       "entityId": "ROUTE.INFLUENCE_LOVE_CAPACITY",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_LOVE_CAPACITY.md",
-      "sha256": "3eb02a1e7cd0f245414246f8e5dd569f1e40122701d9d908e37585b7f5c3fa3e"
+      "sha256": "0409fc3baa0cc337750c8950cbc817bd886373fc984611ec9ff37296fb22b389"
     },
     {
       "entityId": "ROUTE.INFLUENCE_NONORDINARY_METTA",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_NONORDINARY_METTA.md",
-      "sha256": "dfce8ff0675d3b3585410f0a9508974a19e7a95a4749513dc290f83d7d336762"
+      "sha256": "c0c54666d4d5473ced10c3103d9d0143e47e1d4a23f37666d42a15b9909cfa8d"
     },
     {
       "entityId": "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN.md",
-      "sha256": "5c39a296d534090bc7251c29cdb633581061e672064c489193b5613b2f090e16"
+      "sha256": "47066565718340dabd0cd0f0d3da89c6a1b71bd462ccf352c7015436401bad56"
     },
     {
       "entityId": "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_SOCIAL_PROTECTION.md",
-      "sha256": "96c44ef46dd11942cf8e6f720a379287c4543ede7fc3772f2a771210389412d8"
+      "sha256": "9ba6c99cf70c2fdacb08240492c89494724de90e9c5763b7fd3fd0356f0832ab"
     },
     {
       "entityId": "ROUTE.LEAVE_ALONE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.LEAVE_ALONE.md",
-      "sha256": "f3f4064a906374f8a820f478b942139edfc3f4dd989e49fed40562562ccbd5e1"
+      "sha256": "c00e2eb58ed46258ec838256bcf0d26ce7ae5ffa1c29cbfca20ae50a4f1ebdb5"
     },
     {
       "entityId": "ROUTE.MEDICAL_RED_FLAG",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.MEDICAL_RED_FLAG.md",
-      "sha256": "1683044f7b1002ac1672e53b5a6c971bf570d74d9264e6a5178f30aecdf5916b"
+      "sha256": "a32f563e0d2a19b541c443e8f10602548b1c2a4b0772d23d4b14bdad0a739a25"
     },
     {
       "entityId": "ROUTE.REFRACTORY_PAIN_NAVIGATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.REFRACTORY_PAIN_NAVIGATION.md",
-      "sha256": "e338ace5289abde3889557300b768df6a213616e344562eee9b603740439210c"
+      "sha256": "e53190fe4c0571ed8dccba4fcbc48f702ed3bb887bdf346994ab3cc7c82d0c3e"
     },
     {
       "entityId": "ROUTE.RELATIONAL_REALITY_CHECK",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.RELATIONAL_REALITY_CHECK.md",
-      "sha256": "70569249bfd4ca5baab23515200245ecca8534a1a70cab93a955cbba846fcb34"
+      "sha256": "d611d4e046e698221ac36f76838e85fb0906a5192345760dd71cb56edfcc4da5"
     },
     {
       "entityId": "ROUTE.THREE_WAY_GATE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/inner-child-somatic-cross-guide/ROUTE.THREE_WAY_GATE.md",
-      "sha256": "bed72f82f680454048c3628253ec6d4a39f83b62e4b03cf3595d9df33f45a73b"
+      "sha256": "b6cd2787c803ddabd633ec5ee047832312807ede09e1d54d0813f08dfa839607"
     },
     {
       "entityId": "SOM.ADVANCED_RELEASE_BLOCK",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.ADVANCED_RELEASE_BLOCK.md",
-      "sha256": "f968429a196102d0f4f9ed4a9781d8061c2d7e065fbb87f2ad25cee19f64a476"
+      "sha256": "8003e06746516503a58f6dbdbf0e5a0b757a0012b3167984321f07b47efc944f"
     },
     {
       "entityId": "SOM.ADVANCED_RELEASE_OPTIONAL",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.ADVANCED_RELEASE_OPTIONAL.md",
-      "sha256": "3900d220cd8c5ea0b8500596c1563ad0e50e0f90b86d3d2ff0b30850c2190856"
+      "sha256": "1799f0faf9d4c9d93c2cfc31990cb422e6442d0241e4dccb1e977f89c8b8eed0"
     },
     {
       "entityId": "SOM.AQUATIC_BODYWORK",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.AQUATIC_BODYWORK.md",
-      "sha256": "666dc8e20a6229e1f0ae45cd11b4da389c6d1783480a7d18459ae3e127eb4858"
+      "sha256": "bc8f382c88eee8db8339d25a9c21459b0fd9673b4510d16355aea75f6ec8f1a3"
     },
     {
       "entityId": "SOM.BYPASS_AUDIT",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.BYPASS_AUDIT.md",
-      "sha256": "3500b0cd9b272ccb92db6028df703da9efb01a416737f0a65f1b646a91b1275e"
+      "sha256": "ba3b98804a45f71682c53881281741fdef5a59465134947e9455c3e47427705c"
     },
     {
       "entityId": "SOM.CONSENSUAL_TOUCH",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.CONSENSUAL_TOUCH.md",
-      "sha256": "7e61e006d106e2f8f7450a63a9ca0de45229f48e9441160d2157d14bb7783944"
+      "sha256": "c00461d294d6e9f6334686ab766152092dec89cd73be315da0f98d7f53e16cfe"
     },
     {
       "entityId": "SOM.DEEP_BRAINSPOTTING",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.DEEP_BRAINSPOTTING.md",
-      "sha256": "8a227483f3a0b4cae57b1b3e13af70590c1a205093dbd34d6986b96008e38f1b"
+      "sha256": "028dd0e70a800fd29aacde9d5259533e5bb16292a7b296db3ca9774b420de22d"
     },
     {
       "entityId": "SOM.DISCHARGE_SETTLE_STACK",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.DISCHARGE_SETTLE_STACK.md",
-      "sha256": "691fe7f7feba4c9c192cf79d8e90e9e4d854ca3b181378503ba103191d7f8cbc"
+      "sha256": "3810e657133195c1c724babd90369de32cca28f9391902d47e049aea6d69c12c"
     },
     {
       "entityId": "SOM.EFT_PORTABLE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.EFT_PORTABLE.md",
-      "sha256": "563782b69c5e3b9a96880a850d72e98ce43355093cf52c8048c4401fb5b4bc9d"
+      "sha256": "ab9700702f269731c482cdb2f6793d3f3c5b2a2f85bc01d48547eb4a28874b5b"
     },
     {
       "entityId": "SOM.EMDR_DEVELOPMENTAL",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.EMDR_DEVELOPMENTAL.md",
-      "sha256": "c1a60942e46a2b4c7f3c9c79eb324627052fb07ccf35509905a2f85c751c01cb"
+      "sha256": "960c5e87393fe50bbb6382ec54c1f8cd684f26080838da061cdf66f637f16bc4"
     },
     {
       "entityId": "SOM.EMDR_DEVELOPMENTAL_DEFER",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.EMDR_DEVELOPMENTAL_DEFER.md",
-      "sha256": "c50cc48f95f77ab726182b58a4c824214c7bb9934780bc72f66b4c558401b692"
+      "sha256": "6542d4fdf521a4b5805b1d31d571055e00634198dc9772ce983ffa15dfadb53e"
     },
     {
       "entityId": "SOM.EMDR_DISCRETE",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.EMDR_DISCRETE.md",
-      "sha256": "18fc14e227e1b295bc3d6cac09214c6b4fa26beda7f3e8a2e62650ccefcbd29a"
+      "sha256": "0cb1dd2258edb170f560da5329f59075489ba4bb50d230a905582c6c14194432"
     },
     {
       "entityId": "SOM.GENTLE_REGULATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.GENTLE_REGULATION.md",
-      "sha256": "3785d0f7105c1b9bbc362c3109dd8dfb06e61bbcb33f9f021f83136adc8fbb8e"
+      "sha256": "481241e3a98d682917dd83248c43b5d65d30e94967a73110d4789e8fa9fc19d0"
     },
     {
       "entityId": "SOM.GENTLE_SHAKING",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.GENTLE_SHAKING.md",
-      "sha256": "9ac21332b08b68969641a06cd9c27289c26724ce846fb887c476587d57130a2f"
+      "sha256": "3105ea9cb1ee252299340d35d15f22fa27e462861f3cfb6bb2a027538cfee7c4"
     },
     {
       "entityId": "SOM.MEANING_INTEGRATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.MEANING_INTEGRATION.md",
-      "sha256": "3dd8fa11e3d4b50e973a4b04c77b2505466fcf762774f9fdbe3789dbb147418e"
+      "sha256": "2bd6b28c11a01bfcc5c00a87f11e986f7465891a82238f3fe7640e240b380b2d"
     },
     {
       "entityId": "SOM.RESOURCE_BRAINSPOTTING",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.RESOURCE_BRAINSPOTTING.md",
-      "sha256": "5a7b83e827f1edec2ea8d5d7a266f1c32e8fdfef6454f44ab5bb05b985cc7be5"
+      "sha256": "d8dd37a7b5fcb6fe12c8020252d53125d0e4d215fbb3917b7835c4538345e7de"
     },
     {
       "entityId": "SOM.SAFETY_STABILIZATION",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.SAFETY_STABILIZATION.md",
-      "sha256": "05ff584020bc4e5db71942cce3a114d7868812173a72883cd273a5295aa00bb7"
+      "sha256": "cbbb6146f64bccaae07ca065ce5866ae53e1619f79e69bad5462cdb1698cd058"
     },
     {
       "entityId": "SOM.SIBAM_TRACKING",
       "entityType": "graph-node",
       "path": "authoring/obsidian/current/nodes/somatic-directed-graph/SOM.SIBAM_TRACKING.md",
-      "sha256": "3a8162e76d4c67548196a648556fba1e5d33782fd273c3e1c174e3bcedfffee9"
+      "sha256": "06178389c24234220276d5b90335893aafcce70d1500f69ee72efe90619aed3e"
     },
     {
       "entityId": "G001",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G001.md",
-      "sha256": "70825d18c308af7983882f40a38b5feb8aa1ab5576f432e68d07d3714979832d"
+      "sha256": "0cfd3a65ed579a8f57536dc8d2a5775bf14cd107dd0f72725bf417d90f5b492d"
     },
     {
       "entityId": "G002",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G002.md",
-      "sha256": "16c9d5ca48baf9151806167735bbc03fd47305f293cfc59d943a599c346c6ee4"
+      "sha256": "9ba3c448db599c51d1b5d8636d67f6fa4e29498beb532983c1eba330b67517d6"
     },
     {
       "entityId": "G003",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G003.md",
-      "sha256": "f3c172d90da46cb9dd83fdf8b5470e23a2526d6e18d08015a73f5835a6b578f8"
+      "sha256": "c769ce94674b788b5f11f051e059de4f59a35f9791ce3d34158a40fcd67abe36"
     },
     {
       "entityId": "G004",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G004.md",
-      "sha256": "e2de3606ad86cc95a8a5b5b0794abae6eb43a2fbc2b66bf274f2ab526d6f25f8"
+      "sha256": "f33963c9e8f74ac0a42c3391a9e0badcc020a1281f48e4f395b6b1bec22b9675"
     },
     {
       "entityId": "G005",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G005.md",
-      "sha256": "4bf752a636090f55c2f6f0fb17559e6371c542e303715a99149b95c8a8ddf7fa"
+      "sha256": "cc775ad6c0c15b082e27a9e43f7f94dc4df398c25fdb4c51dbb282f1e094eb14"
     },
     {
       "entityId": "G006",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G006.md",
-      "sha256": "4af31c4f1526f821a8ffaed60575267829c942797de58ef7060e626a6a7080db"
+      "sha256": "9085130c589eb8dd01fc60d16555e69e17bcd709c2e95926981dc278ee30351a"
     },
     {
       "entityId": "G007",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G007.md",
-      "sha256": "080ca5e2d53ccf69304bb514192db588509ac47e7183e4f87229533e433008da"
+      "sha256": "4251f4fd010586e583cca459c78b0fc5efdb2f4b8ac06aa9708e534b8d887fd0"
     },
     {
       "entityId": "G008",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G008.md",
-      "sha256": "8e0a5c3d34e1965b8f72ed6eafa23aa93afdbb0569acf2bd2205d3ffb8d0480d"
+      "sha256": "8b1a8ec8f352cc05214317cb5c22526db7f8d961238612ab492818e9e3e4fb2f"
     },
     {
       "entityId": "G009",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G009.md",
-      "sha256": "96c5ba7f0ca0648a74950dbbe7bd5f9f4eee4c80de54386081640e1255500b87"
+      "sha256": "d050fcbfa158cf207ee3795008e81a1b31c2242c5f333e0a79baf6333e05dd02"
     },
     {
       "entityId": "G010",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G010.md",
-      "sha256": "85d9bee64b3bf7f61eec6aeea17b5964acd29c3e461f7aa0c73236103a58f629"
+      "sha256": "63b5248664ed88f0b60fd2ce0308f1bff1d37db63380ff1f8ee7275787f635ba"
     },
     {
       "entityId": "G011",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G011.md",
-      "sha256": "6e6fce0bb9fd59ed0a0ed8f1f4a0ced26db29e550c22dd45f8ba8e14719125d4"
+      "sha256": "f596aae41e8d9a2b4fb98636ca4dc66c87f47e5a9e4045922eb66f2882c7ebc2"
     },
     {
       "entityId": "G012",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G012.md",
-      "sha256": "27b507f0a51c9d0f7a2b81fb13ed99610ade48e7e20c3e7fa97a9db538eacf30"
+      "sha256": "702da6ef87fcccaebaaef8363c152ed6c56d8effb570d59c9c167286fe5b1cc3"
     },
     {
       "entityId": "G013",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G013.md",
-      "sha256": "3415258c5a217749e6f92182760a5722e5fd3502a041e4205e64fca903645a36"
+      "sha256": "607e829a8a206e9ae25db6dfa745ecbd64fe7fe9003b244a1db03c394219b62c"
     },
     {
       "entityId": "G014",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G014.md",
-      "sha256": "44cea2dc741e5432fda0732bc72b91a5a019ae2486db8996779fb86d5dc5a7e0"
+      "sha256": "27a75728d321b197cb50c9c2feb3661538d833f4ac0293b99256c4a66f138179"
     },
     {
       "entityId": "G015",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G015.md",
-      "sha256": "448b13f6f2d4b9f6d853e2b801c579d9b28712849a5cf47ed9028d2c99f18d19"
+      "sha256": "221129d8205149e37846da451d706bfe2cb6af9ec345773387f4d7b431389191"
     },
     {
       "entityId": "G016",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G016.md",
-      "sha256": "e6ee70f79a09adf703767e17c7ac210a49d3c0de0aafffe379f60b00930ef26f"
+      "sha256": "442195b68999ace3110cdbca83fdb43a6e3202f916d83408dc148714c4009e98"
     },
     {
       "entityId": "G017",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G017.md",
-      "sha256": "305f48f9d67c807b76b6c3ca92c61cb69c3d366897a65ec91b851ecb6e5bd894"
+      "sha256": "a2696a218450cb1c5c84d074514d8d6353530169bb61fe04b5efe4ba84715fbc"
     },
     {
       "entityId": "G018",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G018.md",
-      "sha256": "bbc2be07439e996e313e39a355fa46ef45b04cbd14ab4f0666848e2a55baddc2"
+      "sha256": "8b7b16a7350b3bc55b49edebb7f52fb6427b53d766f174c2868e8cd7fbc3f761"
     },
     {
       "entityId": "G025",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G025.md",
-      "sha256": "cb79b5bb6117224bf8f3e3ab69bf2aa2b99d569cf8179436c1c8959d8558e4b7"
+      "sha256": "779943805eeb0dd31c082b758ca2309c4dcc349e489a347faac31823ce2a3977"
     },
     {
       "entityId": "G026",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G026.md",
-      "sha256": "1982f76b021516c4d83df416df471a7c19c1f749f9d71f387521f71c16365a92"
+      "sha256": "a3c2394a36ee44ae9680c722964005e142fa7553648694747877f6a7a6616e2c"
     },
     {
       "entityId": "G027",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G027.md",
-      "sha256": "ba0d3943c683b1b65166728396b4132c965ff520a0cb2d651b8648306e693474"
+      "sha256": "bb4c01f25c5fb7235e80e90079d7a36abb6295b77c0f44994acc8b3919992070"
     },
     {
       "entityId": "G028",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G028.md",
-      "sha256": "cd1193f63b28cf82f42191be1039645eca965607e48fd2428f80e012f104ce21"
+      "sha256": "2a136239b115b23235f3820253d74302b9bf363a7a9c17790e921002ad3801ba"
     },
     {
       "entityId": "G029",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G029.md",
-      "sha256": "4a97d7f1690e4847082d972e1698d18cee73734f63b2c9d5439066c9db029817"
+      "sha256": "77cf16cbd63ab0baad049e9593a50128eda66a5180edc6bc8af2ed517e34da95"
     },
     {
       "entityId": "G030",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G030.md",
-      "sha256": "44bdd7d211b9d4c867777f170c205b59ab21a53392c0f3ae79a0afa0e98508f7"
+      "sha256": "42060400e1bfabced147debad1e40b3cf574987cf8d5948b14ba38532c64b300"
     },
     {
       "entityId": "G031",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G031.md",
-      "sha256": "15d2862ecfc0d5a183f742b0b500fd8157ee1640e0721fba68069767b9657ddb"
+      "sha256": "6f0d43f577ffd2f266aea147208bc7e0dfc94c70720fa09555d03423c162c852"
     },
     {
       "entityId": "G032",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G032.md",
-      "sha256": "5dc6868c804c020eac0cce620ed823a4becdb86141c2d6ef09644d31584adf49"
+      "sha256": "1063d2306987fbae0afb0a65a5c1357e1276379d995eae6448ecf68855aa076b"
     },
     {
       "entityId": "G033",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G033.md",
-      "sha256": "2ad258cce1f2f7367aec20b0bef0a4b40099db4999278e886fcb0be159ba7052"
+      "sha256": "e4675ce1cdc318d608e6ac5ee58dfad3d56a124134fdd5ede85bf8768b6bdb5b"
     },
     {
       "entityId": "G034",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G034.md",
-      "sha256": "2fbfbe9a1e8e01b2f2f5fe8a5c4953eaf771d6d41e99b0714ffb89327d1b01df"
+      "sha256": "ff825d3200cdc597455ac454c3879c1bceb812fc0d4c6e997469f102865a1593"
     },
     {
       "entityId": "G035",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G035.md",
-      "sha256": "575c365f264821f5d071a1bce8e41e2131cb3dd5f273d379c34afb676b3744ab"
+      "sha256": "bc40e3ca57a5ae2617c59adca4148bcba2c4d16d3251345b996b7cd544030402"
     },
     {
       "entityId": "G036",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G036.md",
-      "sha256": "7f663b6662dd9131e5d7e0f0da56079ac289d8ecc63f300fbc993b9650a373e9"
+      "sha256": "5219836a768c26c0244fa75b18abc2be3920d3fccfb38f44025a05eedfa475c3"
     },
     {
       "entityId": "G047",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G047.md",
-      "sha256": "3686cae4f980cab778c621e58e3a8d2d91448290fdc1113dc4ce17e1357dca97"
+      "sha256": "32df951aa390ca4d3cec23c36666a618fd0e9367d44d253a829fca8e81417c1d"
     },
     {
       "entityId": "G048",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G048.md",
-      "sha256": "d9e482eeaa0eaa1e23dce3d0e6353924b1ed97a0b30f59985c14a390aef9203e"
+      "sha256": "479c16aa83b391025af3627acadbc34b9777fbd57697fbf0658f7638f27f9601"
     },
     {
       "entityId": "G049",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G049.md",
-      "sha256": "c3e7eff5156028e1a8e8bc54ced1a805c04fd1c62adecec5746b2ba84d3c46e3"
+      "sha256": "600ab699fc0527fe23585fcb4185f361317b27e5abd99ea7797bbc7621cc68b5"
     },
     {
       "entityId": "G050",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G050.md",
-      "sha256": "f8634cf40479d3a0207d617712e0afaa0a3c20bade4c9323a861ee8948df7317"
+      "sha256": "1c80cb7c01ccc7376b79bac174ac43b2cc7bdf5a09d876c4a33682559e7b2f61"
     },
     {
       "entityId": "G051",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G051.md",
-      "sha256": "6ce244ff1bea8be92014ab200a4c9a9efb1c6455e0e6a65a5e8bd105da1c735c"
+      "sha256": "580464b1ea1bc0bd17799dacd87cdc361cce3ceba36caf46e91ece3133b7c7e7"
     },
     {
       "entityId": "G052",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G052.md",
-      "sha256": "5a3fcb2382b9ded16eef3c089eb204ec205cc23d49a95f4d6f2459afff726cc3"
+      "sha256": "0176c5fde12f5c01d6bea860d2b44c39758dec92ec877a35d99350f50c18b792"
     },
     {
       "entityId": "G053",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G053.md",
-      "sha256": "4b138f88837ffa770c091c1e5c2848d6116d3b88699af30287982fc067dffac1"
+      "sha256": "34ff1dc6cbd5cedaa2e9a7b28e06069a9f18f71b2df6ca94896b87a25166465b"
     },
     {
       "entityId": "G054",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G054.md",
-      "sha256": "2c639ade68c272a0d3985b84380eab48a6fc89d78a65cfe5826db2b8e6ef1544"
+      "sha256": "7e9eb6b799b09b70345466a1b53b4d7e059649700030ba8ffefbac7078bad631"
     },
     {
       "entityId": "G055",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G055.md",
-      "sha256": "a83c84849755f66ff7878dcd2b4f2b7142d99bdb3e5aec8cad05796d25a641cb"
+      "sha256": "a9ebea05493902fc1ea9c681388b017bc884f205980509a645b5b75eb6b93661"
     },
     {
       "entityId": "G056",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G056.md",
-      "sha256": "28cd76bc4df61228a2b0f46632c0a61c0c420bd7d1becd8574e876eb8b51ba95"
+      "sha256": "bfe078ac3cbef1a3d214fe49f4503d9c02352a9ea4d9a0e8f07aa876df9985f0"
     },
     {
       "entityId": "G057",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G057.md",
-      "sha256": "34063f402f6267ba7116a4b1b4002b1fc80ea7c1240919cba754f4d4a8c2a1b0"
+      "sha256": "1d6179c850c9cdfe350b620e6b5409294d7775074467af59d3b74575aea3bc2a"
     },
     {
       "entityId": "G058",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G058.md",
-      "sha256": "c208154a2f01e87160be58da919668948f2c78447d0b48247f6c5700f6be55f3"
+      "sha256": "e3229b0419f4c681b0f4f060cf49a942e49da66cd37b8d9477439ffb6f1c50d5"
     },
     {
       "entityId": "G059",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G059.md",
-      "sha256": "33727e37f6dd09ee1fe8575dabae718fd48ae0b100e8fc26c701848dc1e8352c"
+      "sha256": "6461bf3f9ab1f07fac0a4f3bbc0f901837f7cfc0805bb2f4dd011d8241791306"
     },
     {
       "entityId": "G060",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G060.md",
-      "sha256": "70c13e647a57cc0f9fc06900bdda80745ed5eda7b31bdb9cc80406c2f88fe97a"
+      "sha256": "6f4fedd07e0ba07b9868b64b07de21f58cbfb3dd1f4b97fee533d50c3c580515"
     },
     {
       "entityId": "G061",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G061.md",
-      "sha256": "b65097a14aabc3966d95af5b4c299fd2a346200a97f4c34836b6e16ca35f6637"
+      "sha256": "06d7b0774b2379393c22962e3180f939f3ca199587393466fcd901e0996284f3"
     },
     {
       "entityId": "G062",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G062.md",
-      "sha256": "0db6a438bdc16f9fc59b67549ac207e2a4cfeaa1768bf00cc7f7c00dfb6b67c5"
+      "sha256": "ab59cc6501e6f17bd48be993233872fcd64e77d2ca62d42150b2ca51936961e2"
     },
     {
       "entityId": "G063",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G063.md",
-      "sha256": "4c172185ee388a52798d21e2dccf59c6851746a78da8f67cca19524aac1d94a6"
+      "sha256": "b2e2cf1b77ec083be380be3a4e9c38d1c701d6490d9ccefcc67e819b49e3f9b7"
     },
     {
       "entityId": "G064",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G064.md",
-      "sha256": "69cad33a4e8aac65c23184350be0913169c71660c16a59d3869b7752cfea8d7f"
+      "sha256": "d85632ed6787a966cb24599f19969095f0db8972e2761d9dea96f01af31d655a"
     },
     {
       "entityId": "G065",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G065.md",
-      "sha256": "62fe5205a28ac3db581aa23c303418f5ebac805adf27be4b9d21c3081f0a759a"
+      "sha256": "b4477ae55868061ebfde8bb26f67ec96d884a991de8ac2246a7076b3ed4e9cc0"
     },
     {
       "entityId": "G066",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G066.md",
-      "sha256": "c0170170dc920601cc2b4b9ff59108c22d07e88a182c9133d53f06ca5c0e4255"
+      "sha256": "36c2f22983e4f3830ef8de99aebc9a03cc5cf66b2cbb96ddb10cf50eadc3ef4c"
     },
     {
       "entityId": "G068",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G068.md",
-      "sha256": "2a406a93fce1d74030cbe0b74ecc142cb05bd47ffddf64a6924671003498f490"
+      "sha256": "8aa3eecf043e71a24ac1d79c3ce53473738b85f740f4ae0a86e1f6eb631e4f70"
     },
     {
       "entityId": "G069",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G069.md",
-      "sha256": "2813aaef3c3213c29d6a0b317a614237d36ce920151ce512514473aab685f76b"
+      "sha256": "0075657c475ca3fb15622eb42d8260d7e703f3bad8bdf5082b017ca8fb798960"
     },
     {
       "entityId": "G070",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G070.md",
-      "sha256": "07c35a1ed6d2f615ba877ee001850847e57502366823aab542a374af76b48b84"
+      "sha256": "1bdc0aa7b9969559d49935cdc1119de2510ea2ea647ea918853c7eed6361d43c"
     },
     {
       "entityId": "G074",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G074.md",
-      "sha256": "b58dc75e161d872115816453d8e3e642b5c8d585750df52e42dcbeeff9f74ba3"
+      "sha256": "c1f9bce291fe1960bf6442cb63bffa4fdc4cae282a7f07e9e45848615e607e08"
     },
     {
       "entityId": "G079",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G079.md",
-      "sha256": "75b87c2033b0714f0417aaab8033f770728d37b8a1d58e36ca9c13d07d7efe74"
+      "sha256": "460d44715993efa1f18ebb017d7add6806e50a182320df5e33c0fff22fdb0bdd"
     },
     {
       "entityId": "G085",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G085.md",
-      "sha256": "4a1cc230fbc51b2a23de2c70189e715ff87fbf2b62f5f6c2255bc4ac387f0af3"
+      "sha256": "cdd47d73fae5b8201db6ae5b9c57892adfd17651383023000877e19a026c2d01"
     },
     {
       "entityId": "G087",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G087.md",
-      "sha256": "caac98ed61c77f27072abe63ce9f370cebafde5ec2c84b1c50910159fa604179"
+      "sha256": "c586912098f4fa91596b0ea5874a77790798713bd351066ad14f97db3bcfed48"
     },
     {
       "entityId": "G088",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G088.md",
-      "sha256": "d94977d8a67170bedffb3a784ab3d3a5f6d67297711e4e88143126e795c530b6"
+      "sha256": "3afd8c9396626ebee54441caafb46d8776d0ca55a1e1b597dc2bbae89091824a"
     },
     {
       "entityId": "G089",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G089.md",
-      "sha256": "7b52a325c326e7562aaf08a3e5fadd9d282fb52e790276f310becb1e22928624"
+      "sha256": "f3b625457fb30926d1d4a257de48ba0232b927b3ef65ee8c6d3f63bfbbab0dca"
     },
     {
       "entityId": "G090",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G090.md",
-      "sha256": "4cf6b438d1a28bcab22320ccd85ac1640a4e6c4930f858510c30354cdcda469c"
+      "sha256": "8d8d38ceddb2413058aa0c80a27ea2711156bee50858c3c6173cd961a31602a2"
     },
     {
       "entityId": "G091",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G091.md",
-      "sha256": "28ab416454a5efc12b0768b24cd13c89fc819c397edf8cd7413247bbf5b7bf7d"
+      "sha256": "a3efb257fe8d8ba23b5dc573f4c55db6b66fd66dd0bd985b4784769cb205c702"
     },
     {
       "entityId": "G092",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G092.md",
-      "sha256": "63d2742d56ac861d59edcdd3618fa807f8ee883f327265dd150a50d706ae0e45"
+      "sha256": "99cf3187ae4b523a118946ad0bd6100f230c222ac50a6a51fd9275a349375876"
     },
     {
       "entityId": "G093",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G093.md",
-      "sha256": "8f31c838fd7c3b9c5a34857db3d745a22675f7843f57275485e0227af4ee6076"
+      "sha256": "6aab5fd3147f1ee838f93a24fe957a0338fefb0ad3b8e60bce0416c16ee9ce1b"
     },
     {
       "entityId": "G094",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G094.md",
-      "sha256": "914076981160e6b9af087c1f649761168453750ca1d98c8332cc0bdadee78d1f"
+      "sha256": "e8b84c5bd305c3bda8014dc09599b089c678be46937e9c6f85d73ddd43bb556d"
     },
     {
       "entityId": "G095",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G095.md",
-      "sha256": "702aa1fcdd537d6324f278ecad1cc8b83240f3f6ef674bc0996fdbd57f14b530"
+      "sha256": "f81a13ed2e8947c7edccd521bceaa5c5b0c630d7e395e9e086810e54ae372770"
     },
     {
       "entityId": "G096",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G096.md",
-      "sha256": "a26a1cc270dc1a1b7df48b5ef849266ac63e0f40bd345b7bee531b0c0bd0cdd6"
+      "sha256": "7b1a72d8f191838cc3aa74f13991f1e94507ebdf76f5cca4273ef246f75156b0"
     },
     {
       "entityId": "G097",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G097.md",
-      "sha256": "72190a6fc8bc8c33ba886baeae22342e0eb2a95b818e18fddb65928554181f43"
+      "sha256": "f43b86c43449365cec7ded746413dd02f08bd540c74597913498e40874e5f03d"
     },
     {
       "entityId": "G098",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G098.md",
-      "sha256": "b8a7e82e45b779524fa5b8521d1132d77c9cfa90a53743b547daa9b7052d1528"
+      "sha256": "741249eb93912302b324cc38ce5d9073de42334f203a02d183f1b80e4e882496"
     },
     {
       "entityId": "G099",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G099.md",
-      "sha256": "682038699e3b8620aaf39b7b369dbd720bb7b094963cae7f403b86b1d5a08922"
+      "sha256": "4bc7224c472581afe0e02501a5ce75403d6e90f6d987f29174b69f418505a684"
     },
     {
       "entityId": "G100",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G100.md",
-      "sha256": "6b092da931fc8674e86486182c608b00a47b600f15b63b1c78d54fd744411dc8"
+      "sha256": "2d52c53c653465b70a35489de8cd027b28408efc23f35246e09afb8a7288b15d"
     },
     {
       "entityId": "G101",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G101.md",
-      "sha256": "a0daad22b22be3e18ed347cde250f75d03baeb051be6effc3acad9d00963ad75"
+      "sha256": "a3fe7d2742e817416136f40962754a3aa467f81aa61402ae7fa2119d07169840"
     },
     {
       "entityId": "G102",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G102.md",
-      "sha256": "eff9e13d5128591d550e181f45ded068cad833c11c0e4329da70a0a39b372941"
+      "sha256": "cd38c32cd0e3718943fda5934e726d0192383d834adc5b9dc4d2719dc758fcdd"
     },
     {
       "entityId": "G103",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G103.md",
-      "sha256": "6bc860944b35c09d4ecf71445c3aa2334585f2226088b6b244c5ae37aee95974"
+      "sha256": "4db32b7a62aab56f8a7c9cbbe7f41e5f66ce1f2505c85678390c51b4f760face"
     },
     {
       "entityId": "G104",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G104.md",
-      "sha256": "783f48d0314746bb9209e1342d169a17fe15b41bfc68966b2955c67fd9ccbfd8"
+      "sha256": "6740099252b61c9d4f5051a98e4763d38ba3636786679df266bca27371095c71"
     },
     {
       "entityId": "G105",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G105.md",
-      "sha256": "d7b3f4a91142ad7b22a3846a8dad09f6773d0bd5687facbb04204121461f66a6"
+      "sha256": "9fc89c31c6e3716eeb8479f8594215ecb0095181bcd8e991fed01e3be9e0363d"
     },
     {
       "entityId": "G106",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G106.md",
-      "sha256": "3f9fb351a36d3078523a96496373248c4442df36932da6df7f7d09c34f3fb76e"
+      "sha256": "d4d05d199e5a1ef3f7f3509c152ba12bbe786a9cf5590be7fec392342d53b19e"
     },
     {
       "entityId": "G107",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G107.md",
-      "sha256": "572a914aae636572ae7582d4d4bc2724d11d2387e5030dd17df73ce04568e14e"
+      "sha256": "42a54f54c30d6cba9f87385e12786e33be6e8a8083b72b8ef8ba3315a3df5900"
     },
     {
       "entityId": "G108",
       "entityType": "graph-regression",
       "path": "authoring/obsidian/current/regressions/G108.md",
-      "sha256": "f612ecc8208ba3aa36a0a3efe796deec76960e412c7f0b0e26a308592d497077"
+      "sha256": "1a71e3caaa78ec8f3a996fbc39fc47707d2d153c37f04d6b83958827b058a6aa"
     },
     {
       "entityId": "ALT.ACTION_LOCK",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.ACTION_LOCK.md",
-      "sha256": "d7375b72ac6b511d66f0a08a328201e4a9d7af36883ab0fe54d40f0461bb7af5"
+      "sha256": "c3566fc2ea5b055dd486e1e0380cd48820934dd5748f011702f05b0f32c6aef4"
     },
     {
       "entityId": "ALT.AFTERMATH",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.AFTERMATH.md",
-      "sha256": "3936a4543de275a209509165fde3b7bcf517375e8a9cf5e3417061dbebf6487c"
+      "sha256": "2ea352567e1847fbcc57e8d679482e320d37f02e10ee1914562ec56f240b87d6"
     },
     {
       "entityId": "ALT.CAPACITY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.CAPACITY.md",
-      "sha256": "e99d29af8765b82c3760b73490e3c23b1aab3e232e933aa709b939289c5ca65c"
+      "sha256": "e6e4a3cd9137f9102b8b7fa62bc3a56acfdd7a80907b23cd8ed8e320546aa2b4"
     },
     {
       "entityId": "ALT.EPISTEMICS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.EPISTEMICS.md",
-      "sha256": "885032e9e6ec92a2014fc1af291589dcaf0ac010b9919003f48db46e68b04ecc"
+      "sha256": "0d18657d03d16ab09b0ad578cbd0fc531484fd91423efb81ad6a274508972729"
     },
     {
       "entityId": "ALT.GROUNDING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.GROUNDING.md",
-      "sha256": "ba21947b1ac5ba2b60bdff742496b12304671164a8ea310e3814a9cc441a75f2"
+      "sha256": "57602737ec31936488b11f88057db7affec65f51018a6237e97ddf3c644500d8"
     },
     {
       "entityId": "ALT.INTRO",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.INTRO.md",
-      "sha256": "b7f1625a37ad114633b2856bfc8add6302e310370badd9c8d55cc34fe9dd5361"
+      "sha256": "acbae11286ab840845c6f3add3f0a87c271dc1632ad4cc0c517e6b7c825e9ef4"
     },
     {
       "entityId": "ALT.NO_RESCUE_IMPORT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.NO_RESCUE_IMPORT.md",
-      "sha256": "814c7d3ba2904e6bfdd53968ed3fba4a1be304bdaa9dcc6f23045d59f12841ba"
+      "sha256": "a0b0266aafc145cbd3c1cc17bb4d39d00e6ddca2f9250f9000a0daf072fe12e3"
     },
     {
       "entityId": "ALT.PANIC_LOOP",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.PANIC_LOOP.md",
-      "sha256": "708a18b11ec0a9f7689a01fc11879038c743c25e0eee98f405efbb4ad773e27c"
+      "sha256": "a8b4ad6fc83d62db381d6fb432f4b720adee7a5e3ae248ce4c2009a7f3dfd50d"
     },
     {
       "entityId": "ALT.PREPARATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.PREPARATION.md",
-      "sha256": "cca4280a8a458183851788e076c2e0e611ea2ae06e8d9ee969a58c2e0c736bea"
+      "sha256": "fa0598b4ddcfb4de23dfa66eb994f6e84acde29a31bdd47b56de19889c5958e1"
     },
     {
       "entityId": "ALT.TOUCH",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.TOUCH.md",
-      "sha256": "2c890a571eae07dfc9e94062a8d2d4d550bb56de692ea605c7cffb4ccd5bbce7"
+      "sha256": "dfdad6d6a4a3cdb168ca2d5b83fc111b95956a2ea423da0136b8e45eba23a1df"
     },
     {
       "entityId": "ALT.TRIAGE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/altered-states-map-source/ALT.TRIAGE.md",
-      "sha256": "352cc8fe065a5a573aaf74274356b6295a53e4d44ba761f4eb2346368395b89c"
+      "sha256": "cccc8f0c25a66b1dc2d60926032776860fafd79b3262ae8b96744c496eb0cebd"
     },
     {
       "entityId": "IC.ADULT_APPRENTICE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.ADULT_APPRENTICE.md",
-      "sha256": "16c43f3d305efc9aff8c3cd0acea4248a4355f0ef330d235ad90bb6c30bd90da"
+      "sha256": "35396edaed4eee0f2a5d886a1f4737319eba7d01cd4e409a5c20bb6c0efeb1f9"
     },
     {
       "entityId": "IC.ADULT_VOICE_FAKE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.ADULT_VOICE_FAKE.md",
-      "sha256": "fcc03bf4c9a0af02627635e1061045ff4338da0e4b745b8215d3c1700b848eca"
+      "sha256": "1d1bc4b2be27019b9da172a43b0fcf375beaa892847c6849b4444857ffff5326"
     },
     {
       "entityId": "IC.ALTERED_STATES",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.ALTERED_STATES.md",
-      "sha256": "6c5d00fc611006590001ffbc4420b6c786dbccc3707c1a9196f4e7fd3cf8d946"
+      "sha256": "c2231935cc19d88ee22eecd8b7cd1548d48f2871eb7693b28fa147a17ac6a1d2"
     },
     {
       "entityId": "IC.BEFORE_DEEP",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.BEFORE_DEEP.md",
-      "sha256": "63a156356547928f370f2490f7680b1d578e72487567bc132f35344511d3274e"
+      "sha256": "3d690d01ed46c16be915e299d7399c3290ec4d919ce5a33d0cf16e204a6efef5"
     },
     {
       "entityId": "IC.BORROW_ADULT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.BORROW_ADULT.md",
-      "sha256": "ecb419f646a6cf42c2f8fabe98ee459f2b63c8af749342814d6b32c2bc887ec0"
+      "sha256": "e3cd27f3541cc86f9ddf65d0593bc933c8a5d5d7cd4bc0e191faafd977ea7f14"
     },
     {
       "entityId": "IC.BORROW_LOVE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.BORROW_LOVE.md",
-      "sha256": "427480c2e0fed458416eaec29b0f8800a2ed1d724d64ab0801a12918cc096822"
+      "sha256": "e4dd13c2d321ca474a06e72fda9f23840bd6ca1eaf40098d10cd41527754750d"
     },
     {
       "entityId": "IC.BORROW_ONE_FUNCTION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION.md",
-      "sha256": "bc322e25f20e6dcabfda529f149a1064f102f810b2c3b5228b9180bb6f108c45"
+      "sha256": "9677e5387b5e555323ab41f7aa69e99df0c7516b0afecda3d64b8e9bbcbe4db7"
     },
     {
       "entityId": "IC.BOTTOM_UP_SEQUENCE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.BOTTOM_UP_SEQUENCE.md",
-      "sha256": "786d5cdf06e2f2550097ba2bd46bb7af1b5d5cab72f54fe4260b4f58aadcc74a"
+      "sha256": "a239e0b7a88d354324a3fc96fa38623422c900cf08b6edfa68eb028899c65414"
     },
     {
       "entityId": "IC.CHECKING_LOOP",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.CHECKING_LOOP.md",
-      "sha256": "7ce9d89d7114a9b94f10ee4895aea992eaae082d5d8522d44222e7c9c2192032"
+      "sha256": "822fd4582675adc3bfa05300dac61cdbc2aab803427cf5a39cf8513e42c2ab5e"
     },
     {
       "entityId": "IC.CHICKEN_EGG",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.CHICKEN_EGG.md",
-      "sha256": "bdc4ce0748e3f4d3a9ce9431d752b7648a1fe9f2d43273690c2bc316211c3cb0"
+      "sha256": "c237a1e04b70b7957dc68e934eaa61e0e12bdf38085985e09b1d4cfc8c17a325"
     },
     {
       "entityId": "IC.CHILD_BAD_THINGS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.CHILD_BAD_THINGS.md",
-      "sha256": "e562289adca677a49c032ca0327c7c420646a6d35ae03f8822e81934546fb1d1"
+      "sha256": "1842c58d24f32640c1609faee862dd4d145612c988a14b803fcff47d53669248"
     },
     {
       "entityId": "IC.DIFFERENTIATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.DIFFERENTIATION.md",
-      "sha256": "a5518912d8a884d634a4df54cf2cb434d88df6259b86be932b6d97764fa3af20"
+      "sha256": "c85892f565a707e67f835237f38feffa0cad44b2e4219d7efd2a3be5c24e39ea"
     },
     {
       "entityId": "IC.ESCAPE_URGE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.ESCAPE_URGE.md",
-      "sha256": "247eb1b15ebcd82264eddf6f921dbaff21ef2eec58ee1d6afab0d9c0d58d881f"
+      "sha256": "5031f5fdc6bdd47331534ff203f6ddc0855b264b60b1b48588da1b6f3e24e28b"
     },
     {
       "entityId": "IC.FORGIVENESS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.FORGIVENESS.md",
-      "sha256": "17c44b4059d6bb7e44ad574372f5ce9d9f6e0a9f3e9cf2568e855acd6e5e1419"
+      "sha256": "bd205fb4ccf078bc4254b9fd9f7171a1e25cd2a5c68d0824f4d358b99d8701b1"
     },
     {
       "entityId": "IC.GUARDS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.GUARDS.md",
-      "sha256": "267afc39d73e65d166d60bbcf24c4895f4452ffac3e60fe8e9be267a44954859"
+      "sha256": "21bec849d9b9fb25905e407ca7b69f5662001b22db79a83ca83fc6d7b59cc83e"
     },
     {
       "entityId": "IC.GUIDE_LATER",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.GUIDE_LATER.md",
-      "sha256": "90b4b34e8aa31acc8ae17d3ca08f7b9172b799ecd000e3172c9ca3fec3dbda24"
+      "sha256": "4a0c8f8a8460c1adfb5f24e78d15283c078c3a812bc4e3a6842a710469035c56"
     },
     {
       "entityId": "IC.HEART_SOLAR_LOOP",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.HEART_SOLAR_LOOP.md",
-      "sha256": "c8a4008ed99766815147ad32805d679fc3768b4f611c99c54591035a5dde8950"
+      "sha256": "06033e283e15655186d364914d5f63a3cbf6a89063b7ceec66f4c39720b2c6bb"
     },
     {
       "entityId": "IC.HELPER_AUTHORITY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.HELPER_AUTHORITY.md",
-      "sha256": "63194a2459379dcf3d867dce30ab5cc128156c89eda95d167d8d12c5803191e1"
+      "sha256": "05170563cf3443d5f457af6f80330188b3b3990a91009766f781de49f78e0ba8"
     },
     {
       "entityId": "IC.IDENTITY_PLAY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.IDENTITY_PLAY.md",
-      "sha256": "587cbd9f489ee9cb318abc3679727661f7b92d08634ddf1999b2cbfc24e63f4a"
+      "sha256": "42589e38cdf40988672bc10e478ee3f385a41e8582f34f7e199fccbf115e2cf2"
     },
     {
       "entityId": "IC.IFS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.IFS.md",
-      "sha256": "6f3b01572f1a2343c580688d9448d23590225f9eda9c1f23c4c46786339a863b"
+      "sha256": "b57a5e68c670eb2c665dcb03294ef614355f1f5aeafd69687119043013a4bd63"
     },
     {
       "entityId": "IC.INHERITED_PARENT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.INHERITED_PARENT.md",
-      "sha256": "291954134ea3fe84c78b6235e70fda628f5b0b58e0f84d04d277c523aed70858"
+      "sha256": "2bf4ecd91bbb106291b9c725e361ecb4a6c3b8a014527204cce22c5809f1032a"
     },
     {
       "entityId": "IC.LOVE_MISSING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.LOVE_MISSING.md",
-      "sha256": "3308934ede1b8aed99d26aad600c91ddc9afa295e246a2f9d2635ccfdd601a08"
+      "sha256": "0aa0a195b4c1bb6c2afe845937f6bbfa43f49bc8cbd3ec5ce260a89890a99bff"
     },
     {
       "entityId": "IC.NEUTRAL_WITNESS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.NEUTRAL_WITNESS.md",
-      "sha256": "46607776a16d94ed4b4bb9b0b88a6bb4b37e7f0b90342128bf8f2b7f13ff36dd"
+      "sha256": "5c2f0a1df4525e01e3829944fc456b839ad9cdd719a3c017d2e95fdc402c5d2b"
     },
     {
       "entityId": "IC.NO_CLEAR_CHILD",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.NO_CLEAR_CHILD.md",
-      "sha256": "737980b6b816888f7c06a7316cf7492d51d7dad9647d2a5b7bdb40d653508e1f"
+      "sha256": "40bb625d0e28f8ea81043c31e528a07ee9c6572b2f8369f5f16f12d810e751ef"
     },
     {
       "entityId": "IC.PHOTOS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.PHOTOS.md",
-      "sha256": "f42a2391b88f2e9e9967b36dfd187529a422de3002d4ec5f1778cfefd7cedb8d"
+      "sha256": "b3dae364873523787d51c4a0f2418954207f4029d5de981690798d2e83bae385"
     },
     {
       "entityId": "IC.PROTECTOR_VISIBLE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.PROTECTOR_VISIBLE.md",
-      "sha256": "bbb922cb7bb40e9f83c9c331f3c369b3f9a49f7d90badd7f187a2eb93e7acf9b"
+      "sha256": "d6594bc1a58a09b79492ccd17de28ecb65b8e260714d2b54da245ed91e12ff33"
     },
     {
       "entityId": "IC.REGULATION_BEFORE_DIALOGUE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.REGULATION_BEFORE_DIALOGUE.md",
-      "sha256": "99f4edf040230e2b7ed0bdd9eaba8bd4a98807d056f24aa07950f47d3573593d"
+      "sha256": "7a2a77a4a0603877a6e4e257aeecdbd3db3ae375a58b95758193770bd79dc63d"
     },
     {
       "entityId": "IC.RELATED_CLINICAL_WORK",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.RELATED_CLINICAL_WORK.md",
-      "sha256": "f79afa0dbb3a7d5bc4c6b50b6a6beabe20b9ab1f75ebb586024ee08889f8509d"
+      "sha256": "ef0d68b7526ae26fb7504da675bb5d18af8085f353789017f185068f4f9e23c1"
     },
     {
       "entityId": "IC.RELATIONAL_REALITY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.RELATIONAL_REALITY.md",
-      "sha256": "f2ef76e11521de5bb79e15d4c83ca1855278cde8b79bdd10b891fc3e870d9ff5"
+      "sha256": "2c82588a7cfb5358605df4fe8c958dccc0841f6441224b5a2fe7016fe52a46e5"
     },
     {
       "entityId": "IC.RELATIONSHIP",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.RELATIONSHIP.md",
-      "sha256": "b50ff079b2a584f63e63ac64d8a2d03be20cdfe07c3ec688034b459fe32b30b2"
+      "sha256": "dc77697318e4f21805ed87b45aa01732e1d453bdca330f0546d4352d5cfc209d"
     },
     {
       "entityId": "IC.SESSION_CLOSURE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.SESSION_CLOSURE.md",
-      "sha256": "221bc6d36a5b16be1442c20e6276d319c1fd04fbda73be37750f4e1a558590aa"
+      "sha256": "f0de0704f10f192cf41271dadb48853c960415880e71aa9c8664a5f3c1cb24d5"
     },
     {
       "entityId": "IC.SOMATIC_HEART_OPENING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.SOMATIC_HEART_OPENING.md",
-      "sha256": "902511f666b22d84f633115fe8026b419dbd7704f6f93656c9a888c36bf2b3f6"
+      "sha256": "03f9075d436f20d34e27af48b1c605f4c0c0328680fc509db272d058da84a1e3"
     },
     {
       "entityId": "IC.SPIRITUAL_LOAN",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.SPIRITUAL_LOAN.md",
-      "sha256": "b042069f715c99dd67255f97f2c5e024eb5e3b7b95ad2392f0bb5588726b9daa"
+      "sha256": "f7b82910ce143f26d64ae999889c42f8fea5a5d78e162f491ae1c6d850841f4c"
     },
     {
       "entityId": "IC.SPIRITUAL_STRUGGLE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.SPIRITUAL_STRUGGLE.md",
-      "sha256": "ecae42ac8559c4feb9754a46966f08c4adfb2194c069c0c8bcb3bca79942ec54"
+      "sha256": "44f65c9cf3290f2e85f400dc3f39790697bf4dfa2c0134b198d2590e98a44355"
     },
     {
       "entityId": "IC.START_WHATEVER",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.START_WHATEVER.md",
-      "sha256": "cc05502ced5820e1ea790adf7020dc84ba1ff1abc368f1fbb6ceaa3aa2bc80e1"
+      "sha256": "d3b92b2874266a55bfa673222d0e2740856fc73973c985870cb9be8efb2b369a"
     },
     {
       "entityId": "IC.THREE_FUNCTIONS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.THREE_FUNCTIONS.md",
-      "sha256": "d92cac77fb094d822560322ac0e829ef7c093a2cf9e0f95d929740f6e4fef54a"
+      "sha256": "9210d589791aedc5d9a322cc7933203cc0f010874b5c50f66864988fe510d246"
     },
     {
       "entityId": "IC.VOW",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/inner-child-guide/IC.VOW.md",
-      "sha256": "ff34569335b11f453cfd47a7423e4516929c5941eb2d7c72a886a4af7c284aad"
+      "sha256": "d4877f6710312b3463b18f6af67297cb3ce4c31820b9fa48d787844ec546c791"
     },
     {
       "entityId": "AMEND.CROSS.BLOCKED_ACTION_WAIT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.BLOCKED_ACTION_WAIT.md",
-      "sha256": "6fc61cfcf341821d05e83d4ca9f904260368b399295dfab1ed9175df88e74191"
+      "sha256": "112e909cf9a86c020b5354a6bbb76f69b6ef44f9e2783084585048135024345a"
     },
     {
       "entityId": "AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST.md",
-      "sha256": "2c81f7316be7bad632055dda5940b13b191f1a290a2084daccb03f13fa40af7a"
+      "sha256": "83a64c42d6eeacbbbeaee248f2bf713152015f473623a0a14d32052afb562c1a"
     },
     {
       "entityId": "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE.md",
-      "sha256": "16f8ff392c14980a2aaef07a0767854d9794dfda789dd6426123f8b0ed713007"
+      "sha256": "5d1e42694e6b4e59c408aa5fe6ccbca79df83e2cb55fa7e8bcbb0ffd98b4ad4e"
     },
     {
       "entityId": "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.FOCUS_PRIORITY_BASELINE.md",
-      "sha256": "49b1c090dbfb613768acbd6e63283fefff041ac3daeb5e2be6990c46ab72b24f"
+      "sha256": "4370f1e2e292c39d7f9b990ec05b3a1541f4d6bcaad61bafe94783c49d7a319d"
     },
     {
       "entityId": "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS.md",
-      "sha256": "faac9a2f7c37cafac1cde5c10b5f23971a66c73b0ba672242aa794d0f014ff8e"
+      "sha256": "5ceed7e1ee9495a73512a7d5b1479544fb513764fddcc999cd8c3f92ca85a34d"
     },
     {
       "entityId": "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.INFLUENCE_PROTECTION_LOVE.md",
-      "sha256": "065fe6c0da7cc12bd2f1252a4834c0456ad51bde0223dfe87c09dbcdce3db45c"
+      "sha256": "1b9ece961e3c03af417984d50eb3815d04766287a05a0a2036503526d0b38453"
     },
     {
       "entityId": "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW.md",
-      "sha256": "8e1de3c4462f956282325238df65bc79b101b3f3244fb9849fb22248597f2b17"
+      "sha256": "f7f9d78df4952a40c820fb4e5974b8f45d2069e2d178f36b4c0a47058d51b5ab"
     },
     {
       "entityId": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS.md",
-      "sha256": "5329f23e6522f4d74877cff959cc754907ed6f43bc71725589caab2e023137eb"
+      "sha256": "eef4d2168728451298c83f5512ff9777610826b875138098f49bea3bd9a4ad2e"
     },
     {
       "entityId": "AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING.md",
-      "sha256": "afc2029ffd849069df6e758b80efaafdd74fef1178f4bcb1f94e3b4e474a0dee"
+      "sha256": "31d613349d87d92e08589dfbc77190483f3c7e9a10aaadfb94836c821dd3c1c4"
     },
     {
       "entityId": "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION.md",
-      "sha256": "a7973730ebea990ad41cd77d1b76d83a097744931407dfebe357006e3de4192c"
+      "sha256": "2c4c04444d2b6a4c111353dd01ed65476e92e9f8b7573a2af83df0c4f64504af"
     },
     {
       "entityId": "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM.md",
-      "sha256": "1c2d98d737bfe071d7e4c98028f4e93109e195f943ec60dbf20d3a96e51d381c"
+      "sha256": "27b6507a825a3c15a9e77afd0fdbd9a9086dafe0233aae70e2d620fc02bada07"
     },
     {
       "entityId": "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING.md",
-      "sha256": "0ef6d4b69f6930722df905bf01fabd509e709a72afe75c923f8f178254ed1602"
+      "sha256": "fbe1a274a8a0f68d40c01651a3fdafd5878e5dd02e484d064400e6b47857a617"
     },
     {
       "entityId": "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION.md",
-      "sha256": "7076a10685f4b85664a29759bbfcc36b57519caaae6f8fa816975fb61599bc04"
+      "sha256": "571cc9c5c96b11419c60d7358bda1853e0c2c37abf31b657ded122580f0cec59"
     },
     {
       "entityId": "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD.md",
-      "sha256": "0a37fecc3668d9ce4ad1c721be35e256167db2aef70655afdc4c56f8b93b2a71"
+      "sha256": "c388fa32d64e425d5c13d287df1e2e60510efc8842a9b0b601779c5b59e7e637"
     },
     {
       "entityId": "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY.md",
-      "sha256": "ef8e6414b9b78c8bf6d3548a61f47cb3f87c3cd99fdab7a839a9a8409c6e2db3"
+      "sha256": "405af280b3415d731a4bc48a0cef238f46594c0948d869c0e4ba44da85025910"
     },
     {
       "entityId": "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY.md",
-      "sha256": "624590f2d41dcdb109b8bac56066fa05feb3fc78862bbf968c93f80e22fd470e"
+      "sha256": "723f47ed5bb1bfcb3676c077b984cc0012449589634fb569a97f522fe7798d16"
     },
     {
       "entityId": "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.RELATIONAL_REALITY_CHECK.md",
-      "sha256": "f19982103f001bf92965ceca4f159825b74e78e76cac7e7ddb6872634478dc86"
+      "sha256": "76dd124f6472d7b4e4c8967f33774f619bed2db8a1bbd5081de511df7eb22c56"
     },
     {
       "entityId": "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER.md",
-      "sha256": "a94e2589e7027bcf11fd3b857bd5adb3e727ea5cf29027f0900ddd5d88143f2c"
+      "sha256": "9926e962de0a3a8b599fe1a060fa83c56b9ebe408c52b60b412b5e6333eb6ca5"
     },
     {
       "entityId": "AMEND.CROSS.SUPPORT_MODE_CONTINUITY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.SUPPORT_MODE_CONTINUITY.md",
-      "sha256": "6b0e87d2faca4577d1a249ef7f790c0452a694e4bf031c45f1eff92a937472d4"
+      "sha256": "91d6d84295991ac9b3dccfd86206f173031b1437fb87a9ef329be012eec5f114"
     },
     {
       "entityId": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING.md",
-      "sha256": "e903ec12994ec689af6183fe411af0f85be1dfd6f996808b148735e8016ce26f"
+      "sha256": "e795ae624f987d836f9e9b60309eca7a4911dfdb6866821017b888616176ed93"
     },
     {
       "entityId": "AMEND.EVIDENCE.PROVENANCE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.EVIDENCE.PROVENANCE.md",
-      "sha256": "5e1a8224a5fed3dd8820519835961b6df2afe92e8fd3f2cda29ecaaab89239d1"
+      "sha256": "44b38d86e580209f4be75d4671384637050f0ebb11aaed92873cdf25da0439c9"
     },
     {
       "entityId": "AMEND.IC.BEST_FRIEND_PROMPT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.BEST_FRIEND_PROMPT.md",
-      "sha256": "f50cef8d537741886a399eec835ad122560073b2b90894b7a32c2062d0122f2a"
+      "sha256": "2db5e99185d319f14a5e0d1d253ca503c9d1d4d205c641e33921f5f7a2b95af3"
     },
     {
       "entityId": "AMEND.IC.BORROW_LOVE_EXTERNAL",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.BORROW_LOVE_EXTERNAL.md",
-      "sha256": "60d536f5f31e3b9172548efa860a3357c8efbb2cd43da50c6b8d05336015a76e"
+      "sha256": "452d90a147f35a7a1590ab73c4d7e023300565fef5db1a55f4af79cad7102d73"
     },
     {
       "entityId": "AMEND.IC.COMMUNITY_REPARENTING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.COMMUNITY_REPARENTING.md",
-      "sha256": "bea1a2face0b831534717cf8297ca7ef7aa3d0c37e58cecf1f386e05a1f9e560"
+      "sha256": "63550039b6984ac540a6cccef3f26f171b7dc42a4f9d4035dcf012ccc7b4985b"
     },
     {
       "entityId": "AMEND.IC.CONTINUITY_TITRATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.CONTINUITY_TITRATION.md",
-      "sha256": "e6193e691b9b3f91f8c3b128d483df6371c8d8fb1d173e027404dfbdfd6edbe3"
+      "sha256": "cd21264d0b1ed6a6333fc6f5bb0249a36621176829e98d35e8e3fc3277bbe577"
     },
     {
       "entityId": "AMEND.IC.DEEP_LOVE_TO_CHILD",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.DEEP_LOVE_TO_CHILD.md",
-      "sha256": "4f5d8f2776a189d74ac6d698279f9e02d95826019f0704e3c986bea3c0c01439"
+      "sha256": "a5213443fdd7e90269e1fad2637db26204fddba77605145b87cc3bbe0a21272d"
     },
     {
       "entityId": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.EARLY_GENTLE_HYPNOSIS.md",
-      "sha256": "69f391d1d7e6f059732025471cac956afe1ca60ef907ad93a6def274f4d65145"
+      "sha256": "38223e49a9b3e3b11c1f8132a1396e8cd37bb4352bc4be222549c2c96c5e7496"
     },
     {
       "entityId": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE.md",
-      "sha256": "4e09a3ce44e08ab2af4e9e46d9c002cf760d6f77a25ed34ddc0c20f369b329d4"
+      "sha256": "2d4aefe8c78a69939f41a96dea1f27608f373f57ca88443f6057be6735374a83"
     },
     {
       "entityId": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.EXISTENTIAL_LOVE_ROUTING.md",
-      "sha256": "d46af0d731ffb62ae55d44e3d8ba5baac81baeba65f8a203bcdbefac23d00731"
+      "sha256": "5cf7633f48f1cd40e1d8ac40bbb4082b4bb354469c6cfc21eae87cd2cd335d15"
     },
     {
       "entityId": "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION.md",
-      "sha256": "387624e3abb45d8e55d8162ad7fca9127d3cd4b18db98e2edaec83b0453e651a"
+      "sha256": "f62f303df0595ce8a5f4cbbd6fb97bb4ed0a6a1b8124a52ece1aa1ac5d5621f8"
     },
     {
       "entityId": "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014.md",
-      "sha256": "30348ce5a14213e37c26aa4459c35ebc7b2c8cc35269ba4f0d08d402c3153c4a"
+      "sha256": "c884f76ae435c9beff3ec68bd697d7f4655f944b49e240cc96d5bf8dfcd8481b"
     },
     {
       "entityId": "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.INTUITION_ANALYTIC_INTEGRATION.md",
-      "sha256": "47b8c502d83ef30702662622f927007e5e8a300ca25daf05e24cc3a32547656f"
+      "sha256": "e63dea96bdd002c2b3185c641bf4cd61710836f98633b47c37f23ae16e72d4ed"
     },
     {
       "entityId": "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.MUSIC_EMOTIONAL_ACCESS.md",
-      "sha256": "ca8f77f8f8db9719bb6fe3dbf70a204f398d20099ebf0fb9a6d99ed912a83053"
+      "sha256": "9f98bbefe810b61e2f9623d423ebedf933926f0e33cc50322ab9b7fa538919b5"
     },
     {
       "entityId": "AMEND.IC.NONPUNITIVE_REVIEW",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.NONPUNITIVE_REVIEW.md",
-      "sha256": "20f1208081747c256a19a88df0678ab0ba6c66ec8f2185ac7ccd2dd90d2bbd1d"
+      "sha256": "8d6a5c838ccd6ee1ad3ad437cc28936e9a2b558603bcc3f7abaabc88d08e6b06"
     },
     {
       "entityId": "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.PRACTICE_TO_LIFE_TRANSFER.md",
-      "sha256": "5ce060a488da0ea9d3321a85da09a22938f2333fd75b37a568b8bf411c111129"
+      "sha256": "67bd39b18560e0b1cb55c3e7ed91db3a139065d24037c1b4fb2d6821a2f54321"
     },
     {
       "entityId": "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.REALIZATION_LOVE_INTEGRATION.md",
-      "sha256": "785f9acd1c265732f332751c609e5c996bae1026474ddeb54aa1b82b5c50eade"
+      "sha256": "3954e6d43ae2e4cf12ba537b03d54ce42cd0fe6fd6aea145b675aaeaeab8081a"
     },
     {
       "entityId": "AMEND.IC.SCAFFOLDED_CHALLENGE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.SCAFFOLDED_CHALLENGE.md",
-      "sha256": "fc6163397c797b183cc7eb37888ee62758e7aed3b099d9fdd934460a5aaa764c"
+      "sha256": "97402f7a45dd54b85447e7405a805b48814f825de0c40238ec960bec9c4f1893"
     },
     {
       "entityId": "AMEND.IC.SEMANTIC_ASSET_NOTES",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.SEMANTIC_ASSET_NOTES.md",
-      "sha256": "f4d6a6bc4066c6d266b1a6e7c97bf2cf3d7283ed4c705a97a2fa212176c25429"
+      "sha256": "c5a67619d9045ddaaddb3b3c8144259caa7b692e93ce2948f80ca11987af5c17"
     },
     {
       "entityId": "AMEND.IC.SPIRITUAL_STRUGGLE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.SPIRITUAL_STRUGGLE.md",
-      "sha256": "efd8380bed3fa0cf51ecf163f65b86ff74fd75418a120583866e766c7569e47f"
+      "sha256": "26f040528899596ba4dd956a29900ee76b43a3c105bf4d4cfea2a42224859f0c"
     },
     {
       "entityId": "AMEND.IC.SUICIDAL_ADULT_SEAT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.SUICIDAL_ADULT_SEAT.md",
-      "sha256": "2d9985798e108d4df7a5075039ca1e34ad7a061cee7b84750f6ca76058e4203e"
+      "sha256": "41d3fba092f89412b79d385d28c21392b0451cff387f6c489055fa912afcf0ed"
     },
     {
       "entityId": "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY.md",
-      "sha256": "58c51fb04b5effbae3166d41e0da4043939482f3660025fdc486381337a4b7e4"
+      "sha256": "7616f519fb41afd479e07c980366255a9cc84b062bff0a450ce91eaa11b056af"
     },
     {
       "entityId": "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY.md",
-      "sha256": "89212acdd9fd0bd6852d86aff4bb1fba9c9bcc94003f757407075d5e6c54e866"
+      "sha256": "a829697d674972d8b75e26e956d85c5f4ba65cc12fcd1bcfbed0084e30d49925"
     },
     {
       "entityId": "AMEND.IC.WELLBEING_HORIZON",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WELLBEING_HORIZON.md",
-      "sha256": "3102780a37364780c867974eb59f05915274acb40e6ae360952f0e078a7493bd"
+      "sha256": "7d427ffe7dd6af372c5d22701251558082bf12b134cbe3531e39307fbdfb6234"
     },
     {
       "entityId": "AMEND.IC.WISDOM_CARING_COMPANY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_CARING_COMPANY.md",
-      "sha256": "cba9b188775c2d3c04056643f30e4f6e9561ce3239c306c124565fe90dabe5a8"
+      "sha256": "2b2de43f7deb0dc85b3954354cf0f5a17b6634394a4ff2c7e9dd9d0ffd4ee884"
     },
     {
       "entityId": "AMEND.IC.WISDOM_COMMON_HUMANITY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_COMMON_HUMANITY.md",
-      "sha256": "fb84161cecb19de0ef94629bdfce5d2e479a4c46ff023e5550909372f42d94cf"
+      "sha256": "8e0ba09034e54466a444f8c0f3dd1f60780ad342739d2b372d5a92002a87aae7"
     },
     {
       "entityId": "AMEND.IC.WISDOM_CORE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_CORE.md",
-      "sha256": "a5ec8543de0ce6ceb689901c2d0639e8b9b7d7d23cbed3e9879e9e6c12943c3c"
+      "sha256": "db3ae881775954ae6906bdaeb0f91d4e6a374beb2c9f5c2329a0dcdbe0a096af"
     },
     {
       "entityId": "AMEND.IC.WISDOM_CRITICISM_KERNEL",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_CRITICISM_KERNEL.md",
-      "sha256": "9a77f1f3eb8b130743850052877a547da92f82c5c079194f6b333b61d6648dbe"
+      "sha256": "c8031c30d2669de0a7ccd25cd8f87605c8b33425157041c8db0ae9a5793b0aa2"
     },
     {
       "entityId": "AMEND.IC.WISDOM_DRAFT_EDITOR",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_DRAFT_EDITOR.md",
-      "sha256": "990bbd18170bf64fd92e7b1fc62deecaee307bc02e801d06497cc21888d44c70"
+      "sha256": "79aca0193a97e13132670a4bfcd0c26662f61b77c3acb438bb187ca1638ee048"
     },
     {
       "entityId": "AMEND.IC.WISDOM_DRAFT_RETURN",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_DRAFT_RETURN.md",
-      "sha256": "b4b00957732a72a85410bd75e1d0cdd3bab0a70d5fc7e1c64b7df343f6458b0f"
+      "sha256": "313afb29424ee0e5f8b6430b4582166ce47427f6a11b4948795895fb2b715f6d"
     },
     {
       "entityId": "AMEND.IC.WISDOM_GOODWILL_BRIDGE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_GOODWILL_BRIDGE.md",
-      "sha256": "3fc5e01cc53b2c6cabc8f425346b9711649e5558e4b159415e86c1645cc10b6b"
+      "sha256": "bf25e6eadc67d975fc89cf75db64c7ef62cfb9e1ee3eb5404b5ee397728d5b04"
     },
     {
       "entityId": "AMEND.IC.WISDOM_PAST_COMPETENCE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_PAST_COMPETENCE.md",
-      "sha256": "dacc4dabe6f7621d4664be69d124b280209c710cc93c1e5d380ccf33b48392d4"
+      "sha256": "359931f1d630a340db527ee2678bbe1d2ddfc8e4e0d412edafb3327c0b53cfe9"
     },
     {
       "entityId": "AMEND.IC.WISDOM_SOURCES",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_SOURCES.md",
-      "sha256": "6f2ea75902a1a49442e2a92fcfdda05187507d3c144b07fc8b1b28e8818863ec"
+      "sha256": "32f14b5f538aad3091ccbfd21a8c346213460d872db8de9f4ae0aadc69f43c55"
     },
     {
       "entityId": "AMEND.IC.WISDOM_STORY",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_STORY.md",
-      "sha256": "fc3ddbb26654e2dc8812421fe7af7371ef4de6ba6322909dc0796dcfbb42c2a4"
+      "sha256": "1bc4317a6fcb9cfceb3e3b674e5419c3ee9453d4d556be30e20be20071b766a7"
     },
     {
       "entityId": "AMEND.IC.WISDOM_WISER_SELF",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.IC.WISDOM_WISER_SELF.md",
-      "sha256": "0997ad60afa54fb46fdfb7a3271cfa06b2e21f3752d3904d9ee995e79951f82c"
+      "sha256": "de9c09b37572fbceab63ae40ea3b6f1d3e11c16bc1bf4047ea0288307363231c"
     },
     {
       "entityId": "AMEND.SOM.ADVANCED_RELEASE_BYPASS",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.SOM.ADVANCED_RELEASE_BYPASS.md",
-      "sha256": "418f3b9d89f612e4434d13186d9df88154db23ea905329815cb6b2d877737c43"
+      "sha256": "fe1c1d1b655dbebcb9c0fb258ad10941ceef8cccf7cf52a50b411b68ebf1c0c1"
     },
     {
       "entityId": "AMEND.SOM.ADVANCED_RELEASE_PARALLEL",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.SOM.ADVANCED_RELEASE_PARALLEL.md",
-      "sha256": "d4795c654be95574e0d40fba89b3431ca23d3539b62233c9922f982d872f9be5"
+      "sha256": "ef0266a17ae5fa44cb5062f38489174c55afba4fc09a591dcbd32cb4b7948def"
     },
     {
       "entityId": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.SOM.EARLY_INNER_CHILD_PARALLEL.md",
-      "sha256": "a93232583a3450e225ca7ba70ff672ea8f4685e0bf68d8555c419669badddb0c"
+      "sha256": "169d898323d9e62720a44ee9df76112e7eda23711bf33e04917adb17e6fb5dcb"
     },
     {
       "entityId": "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL.md",
-      "sha256": "5ac203beef430bfa7b0ec8f6b836c105eb78cd14d3162766ea226e17a0e1a262"
+      "sha256": "a070c84bdd526482bb7a5c15e156dd1311aff475f6725866862c7d7d706eb565"
     },
     {
       "entityId": "AMEND.SOM.PREP_MODALITIES",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/owner-amendments/AMEND.SOM.PREP_MODALITIES.md",
-      "sha256": "81ba81074ba68a4ad023b3ba843d0cf9cc1c89ced7ce1de3c39296f8b2818d1a"
+      "sha256": "1c92831b5972d764975da573bbd43ceea57ea6ab0a618ab23b2c6495e0d38871"
     },
     {
       "entityId": "ASSET.IC.SUICIDE.COSMIC_JACKPOT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/semantic-assets/ASSET.IC.SUICIDE.COSMIC_JACKPOT.md",
-      "sha256": "287286408b3920bddbf1af2b9109b8694ce5817c18fa5d1a48ba299d4f494b8c"
+      "sha256": "9e3e7bb931953051f87505908d355da50918a753840cbec93df609f1a353ab80"
     },
     {
       "entityId": "SOM.ADVANCED_RELEASE_SOURCE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.ADVANCED_RELEASE_SOURCE.md",
-      "sha256": "9f71f2d98e7c25baed674aac026f69c7357f8841c345cadb1d7a4fa22db8fa1a"
+      "sha256": "e51fdb3c57524d3a16a847c74f0f736e6715bfe08029ebf80cc81939cd115092"
     },
     {
       "entityId": "SOM.AQUATIC",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.AQUATIC.md",
-      "sha256": "ccb8bec46c35c73af80436127f41f88bad5ebcfd0bb25a627cb949b1f70715b0"
+      "sha256": "c4c1c203fed545f6cdf63e8f339a354fd6fb400a0ee425d8bd38bd0116c9656e"
     },
     {
       "entityId": "SOM.BRAINSPOTTING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.BRAINSPOTTING.md",
-      "sha256": "8c6ea398666219621e6859256c70c434dff487847b0c5908e9f91f097e8425d0"
+      "sha256": "54bf23c241bc05fc9baa434c7e5baf183d80b67c4e5d2c983ed565367d78ff7b"
     },
     {
       "entityId": "SOM.BUTOH_EXTERNAL",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.BUTOH_EXTERNAL.md",
-      "sha256": "0a8a4a55611b056aec72def4ccfd6b410123d10343f9590646e1420c8f12edb6"
+      "sha256": "d8ada69ab78dd4f22a3515ff697e56555e6ebc059b44c3eee8bcff5e72d739c7"
     },
     {
       "entityId": "SOM.EFT",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.EFT.md",
-      "sha256": "5061c3c0479e2c1ac46a479adf3647a1e24aaa92c52cc0c1bad47b289454f71e"
+      "sha256": "8ab3f73a93ef220fe9f9988bd23ae0a9821afcbd557ffdec594e1a8acf6ae7cd"
     },
     {
       "entityId": "SOM.EMDR",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.EMDR.md",
-      "sha256": "6523c4b18f3c02c64148ad8eac7d32a399cb3c8a552b5103d4678109d5ee7fe4"
+      "sha256": "520f31601da967c89538e6b7d05c7e91f8d88e71b49672003b589f316ec1f196"
     },
     {
       "entityId": "SOM.GENTLE_SHAKING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.GENTLE_SHAKING.md",
-      "sha256": "fac1e9cba1bd587e735188d236231ea2ae2a1d5aee32f030876dfd0439ea5c71"
+      "sha256": "821e887b7c933d1e7660a1f3d17434519b0992a891d56f55a523bc8ebf351c54"
     },
     {
       "entityId": "SOM.INTEGRATION",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.INTEGRATION.md",
-      "sha256": "86ac3e1f2c372430a64f05260b5b63d211b4dafc295e681876387c3ab6e3f2ea"
+      "sha256": "0070a958c1e52172ba059bcdfe919d8ffbeb5192bee15d043653f87f8c4764bd"
     },
     {
       "entityId": "SOM.INTRO",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.INTRO.md",
-      "sha256": "50b36e620878dd6a8cca5ea70e3fc1f0e4221475fc9a58c28e6e14211b2fd33d"
+      "sha256": "b3a20db8852b3a610f983bce7b75a56f0ff94eb1ef49c9020852696e1b9847e2"
     },
     {
       "entityId": "SOM.JUDGE_HELP",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.JUDGE_HELP.md",
-      "sha256": "0b8f8a59b99f89f339f03bc3302aa2664fb462ae5fd9c4d052407074aa92e7ad"
+      "sha256": "e03adeeb819cb83719f7d638beec7913010dece72c9ce2d2d8cac21fe2169682"
     },
     {
       "entityId": "SOM.MAP_GLANCE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.MAP_GLANCE.md",
-      "sha256": "5bfc8e0171488c15c73b4b3bd9811acc97f462e72770d4dabcc6a3b2a1313ee4"
+      "sha256": "9f746115806059ce2cc205736fde97d7139b04e9a2a7c15c7f7ef0ecef3361e0"
     },
     {
       "entityId": "SOM.MAP_NOT_LADDER",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.MAP_NOT_LADDER.md",
-      "sha256": "8b350557fe7ddf885935a1554b27a8cab4ca62b730bd68e30faa5b5c2a609960"
+      "sha256": "03911161fa98a013079fe47816338bb72511fd89000d77d42cad5401f5fae5be"
     },
     {
       "entityId": "SOM.PHASE1",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.PHASE1.md",
-      "sha256": "5a51cf7f3c0c508ef5317c7d492a0478df4ef93dc829e082e424951eec49b128"
+      "sha256": "0d2ba4eb886d2ae45165d6b0ad24f30c6834e246cfc899ce1290e01d58993dee"
     },
     {
       "entityId": "SOM.PHASE2",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.PHASE2.md",
-      "sha256": "d219d70124931bee8280053f9c0f16a6fd6b04e2a65032fa1d096421b1da353f"
+      "sha256": "ab550cfaa48bfe8f968f41cd492f9bb6c951550327ebb3e897708b653c612c72"
     },
     {
       "entityId": "SOM.PHASE3",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.PHASE3.md",
-      "sha256": "da0c8537d017ad314be7cc52d6ad8b6d14ccddcdd9af5d6f5feb1ffcb2395dca"
+      "sha256": "bb8131c5fe52499a8e7e8b21cac73bcd6b25da3d350791aa97ed28677c6b5f87"
     },
     {
       "entityId": "SOM.PHASE4",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.PHASE4.md",
-      "sha256": "cebf8e518869a3d7819b9efeccf51e9c5b8eb14a3ff5d0fe5d536582ba95efa8"
+      "sha256": "30b9a67fee988d4e64a67bc750f0a36ed3a3d1fbd81770aec714118e506da15f"
     },
     {
       "entityId": "SOM.PHASE5",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.PHASE5.md",
-      "sha256": "48295ff19b9165cd786eaf38fcaff0f932b83121cd509c41a696084a0bd53201"
+      "sha256": "978f309c58409ff0f7ec85f30bc36d9075701730543a9bf18e4efd7cd7e8bc1e"
     },
     {
       "entityId": "SOM.POST_BRAINSPOTTING",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.POST_BRAINSPOTTING.md",
-      "sha256": "aea1638b7c75b81fc0c9a9b88caba138a79f58e4d86337b71c775655d211d863"
+      "sha256": "c85ae0f2f9fc6659598577cecf289283dec7b7783eea405b2b5767b1af48646f"
     },
     {
       "entityId": "SOM.POST_EMDR",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.POST_EMDR.md",
-      "sha256": "ef4c56665954cf876b5a62f6ef1561817384c9b3b20295627d6a55cb028bb7e1"
+      "sha256": "7a8fc4764df04c9a9844f7a263369105023a28c58f1919f0799b9a2409875a09"
     },
     {
       "entityId": "SOM.SE",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.SE.md",
-      "sha256": "fc2d86f0b62110849d0487b102fb4bcaffe758a89bdab2e5fa56131b77b1ddb5"
+      "sha256": "1e45ea368b9d5ea30cb91c290763a7929e5f2d536cb02a3f84826d9f5616eb6e"
     },
     {
       "entityId": "SOM.SHAKING_QIGONG",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.SHAKING_QIGONG.md",
-      "sha256": "7bf3345150bf7e91e3088215a8c182b7eb59dd3ca3f67c36dffb6d7ea0a7323f"
+      "sha256": "c2bcaf225b3986f8612112d5a26075f30098fbda140ed2cb95dee8516bcb7731"
     },
     {
       "entityId": "SOM.SIBAM",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.SIBAM.md",
-      "sha256": "45c36be59d8317f19114d1c3d932e7a26eaeb60e3ed6b57430e1e3a7f113df4f"
+      "sha256": "bfa408b939d534c54dd93a128e4c19c4dcf325213c9cf6dcdf05ba5c311933bf"
     },
     {
       "entityId": "SOM.STACK",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.STACK.md",
-      "sha256": "46f248161e82e515c320675b773073808d5c266aebefc2545430c9105440535b"
+      "sha256": "8fba2d2a261416110d71101bd24dd2b27f2db7c11a891b0183528208088955cf"
     },
     {
       "entityId": "SOM.TOUCH",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.TOUCH.md",
-      "sha256": "31054b5a753106d5761b9c0443d7b7590a8203cfe5b94d5e56511985b97dc435"
+      "sha256": "ec974e6d8ea393f9bc7df571b8891d69ecfbe011bc7c81745b6d771f49ca9ed8"
     },
     {
       "entityId": "SOM.YOGA",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/somatic-sequencing-guide/SOM.YOGA.md",
-      "sha256": "c2414f2281cce80d093f74c330d3e306899384649a960179ac88c92388631253"
+      "sha256": "ef907010d23d0c0c53ae6b7e5d02318749a4238e8d6c1297c4422c33fac3fd0b"
     },
     {
       "entityId": "VAGAL.CLAIMS.P1_4",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/vagal-blitz-source/VAGAL.CLAIMS.P1_4.md",
-      "sha256": "a1c2ab184e8b7e2d058a082d3140a852df317e6ce10f4c44ba43a1063a003264"
+      "sha256": "bd4a36bb636492f05007350b4869edc99ae140deb5b5ae6114210b97fa67a7f3"
     },
     {
       "entityId": "VAGAL.MAINTENANCE.P6_7",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/vagal-blitz-source/VAGAL.MAINTENANCE.P6_7.md",
-      "sha256": "c29a3b0881dc4385112c9c12fc5b98907648a46a267c1269a832e5d2a613df54"
+      "sha256": "2b7277d9df443139b0139ec078b61cdce9cb6633773f3d3e27b0cb3d7f741bda"
     },
     {
       "entityId": "VAGAL.PROTOCOL.P7_8",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/vagal-blitz-source/VAGAL.PROTOCOL.P7_8.md",
-      "sha256": "0ffedee0c827253e9174178ea662365e67779981ada481c81ba7a5a0fe5cc173"
+      "sha256": "bfce3b22170c97a927fef36e1a5a4f0912e56cf92589ec40bd8147f3efe003e9"
     },
     {
       "entityId": "VAGAL.SAFETY.P5",
       "entityType": "source-section",
       "path": "authoring/obsidian/current/sources/vagal-blitz-source/VAGAL.SAFETY.P5.md",
-      "sha256": "b4f55773570ee6ed00f7b57c3b93832617a58ee05ada5acae6598b6d8ddf9ecb"
+      "sha256": "214c4e7cc6fb04d684af31ba0f5e701e86c7daf6cd64b61dadae2727e1510ac0"
     }
   ],
   "graphContractVersion": "guide-graph-v1",
@@ -3488,9 +3488,9 @@
   ],
   "ownerAmendments": {
     "path": "guides/owner-amendments.json",
-    "sha256": "643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69"
+    "sha256": "9a0bae8a6a6e95d24c392d7451cb58c31a56ae4ab8ae22617f4e3aad57355cd2"
   },
-  "projectionInputSha256": "4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0",
+  "projectionInputSha256": "d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698f47ae2ed3",
   "regressionInputs": [
     {
       "path": "corpus/graph-cases/G001.json",
@@ -3812,7 +3812,7 @@
     },
     {
       "path": "guide-graphs/candidates/inner-child.graph.json",
-      "sha256": "667e64676613d0362e95abfbb14fa0b10289b75fd49b03770309caf680b86840"
+      "sha256": "3b294038b2cb13818489ef5fd3a9e350c3f1778dd0fa95d1443c810d791f1ba8"
     },
     {
       "path": "guide-graphs/candidates/somatic.graph.json",

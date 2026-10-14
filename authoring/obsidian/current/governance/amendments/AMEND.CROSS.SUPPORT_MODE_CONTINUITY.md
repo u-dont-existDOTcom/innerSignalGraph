@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.SUPPORT_MODE_CONTINUITY
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 77fd89d49cb7319f188e7dd9a969807382c4382e2c09e9297c5ec0817b3d1603
-source_file_sha256: 643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69
-projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
+base_record_sha256: 65b330b26fac90d0bff574c558cbc32daf9ac2ebf9da713f0652c071475cc363
+source_file_sha256: 9a0bae8a6a6e95d24c392d7451cb58c31a56ae4ab8ae22617f4e3aad57355cd2
+projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698f47ae2ed3
 ---
 
 # AMEND.CROSS.SUPPORT_MODE_CONTINUITY
@@ -24,6 +24,6 @@ projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a23
     "status": "owner-approved",
     "text": "When a person explicitly states how conversational support helps them most—primarily being heard, collaborative untangling, ideas/advice, or a mix—treat that as a durable preference until they change it. Do not ask the same support-mode question again merely because the topic changes, and do not infer the preference from gender, age, diagnosis, culture, or another stereotype. A current explicit request can override the default for that turn. Before repeating advice or a therapeutic framing, check recent conversation and task history; if substantially the same guidance was already delivered and the new turn does not change its rationale, feasibility, or application, reference it minimally and advance from the new information rather than presenting the old advice as new."
   },
-  "version": "owner-amendments-2026-10-14-r7"
+  "version": "owner-amendments-2026-10-14-r8"
 }
 ```

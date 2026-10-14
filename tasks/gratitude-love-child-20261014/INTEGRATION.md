@@ -6,7 +6,7 @@ Owner supplied a new public-section revision headed **“Ask God for a Loan”**
 
 ## What changes
 
-1. `IC.LOVE_HORIZON_EXPLORATION`: optional gratitude for a concrete genuine good can open softness, warmth, stillness, or sacred love; no promised result, toxic positivity, compelled thanks for harm, or substitution for practical action. Remains gated by actual spiritual curiosity and ordinary readiness. Graph node title makes the option visible in the generated map without adding a compulsory stage.
+1. `IC.LOVE_HORIZON_EXPLORATION`: begin with real gratitude for a modest good, then voluntarily extend gratitude even to suffering as it reveals the value of relief and may deepen compassion, wisdom and gratitude. Notice actual softening or sacred love, followed by the separate invitation to include the child; no compulsory practice, promise of success, forced thanks for harm, or substitution for ordinary action. Remains gated by actual spiritual curiosity and ordinary readiness. Graph node title makes the option visible in the generated map without adding a compulsory stage.
 2. `IC.DEEP_LOVE_TO_CHILD`: the adult's felt love and the child's reception remain separate observations. Refusal, numbness, or cynicism can be respected, with patient non-contingent care; no assumed motive of deliberately testing humility, no requirement that the child be grateful, and no spirituality escalation.
 3. Case extraction explicitly distinguishes verbal gratitude, direct affect, interpretation, child inclusion, and medical evidence.
 4. `PGQ-031` preserves reader-facing meaning in the same queue as earlier pending entries. The owner reports the public section has already been edited; the future humanizer should compare and mark incorporated, **not duplicate or rewrite it gratuitously**.
@@ -14,7 +14,7 @@ Owner supplied a new public-section revision headed **“Ask God for a Loan”**
 
 ## Non-goals / evidence boundaries
 
-No new therapeutic department, spirituality mandate, clinical efficacy claim, medication protocol, live case recommendation, consent change, or hosted rollout. The public anecdote concerning suspected bilharzia and symptom resolution after roselle tea remains an anecdote, not evidence of schistosomiasis cure; CDC clinical guidance identifies parasite testing and praziquantel rather than roselle as diagnostic/treatment standards. Personal spiritual interpretations are not asserted as shared metaphysical facts.
+No new therapeutic department, spirituality mandate, clinical efficacy claim, medication protocol, live case recommendation, consent change, or hosted rollout. Preserve the author’s account of severe urinary symptoms followed by full relief and self-reported clinical recovery after roselle tea. The specific infectious organism was unconfirmed, but that is not evidence against recovery, nor a reason to insert an unsolicited cure-denying disclaimer in his memoir. A personal report does not automatically substantiate a general recommendation that roselle cures schistosomiasis. The earlier overbroad editorial caveat was an assistant extrapolation, not a UDA requirement: UDA’s whole-argument and provenance rules caution against broadening a memoir into a general medical trial claim. Personal spiritual interpretations are not asserted as shared metaphysical facts.
 
 ## Verification / continuation
 

@@ -7,13 +7,13 @@ source_id: AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
 guide_id: owner-amendments
 heading: AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
 source_role: owner-approved-extension
-source_hash: 643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69
+source_hash: 9a0bae8a6a6e95d24c392d7451cb58c31a56ae4ab8ae22617f4e3aad57355cd2
 section_hash: 37fc128e6951158f7c7d2fcca259e3d161851bb3a2d58a23f336e07f8b0a17e9
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.ACT_OUTWARD
   - ROUTE.DEFINED_WAIT
-projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
+projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698f47ae2ed3
 ---
 
 # AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING

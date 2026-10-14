@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "owner-amendments-2026-10-14-r7",
+      "version": "owner-amendments-2026-10-14-r8",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "October 11 r6 preserves immutable October 10 r5, adds chronic pain specialist-navigation and clinician-trust distinctions, and retains immediate safety when it is truly needed. Humanized changes remain queued and not automatically published; deployment remains separately gated. October 14 owner-supplied gratitude-as-access clarification is captured as a separate approved amendment; the owner-authored public passage is not treated as automatic runtime input.",
+  "notes": "October 11 r6 preserves immutable October 10 r5, adds chronic pain specialist-navigation and clinician-trust distinctions, and retains immediate safety when it is truly needed. Humanized changes remain queued and not automatically published; deployment remains separately gated. October 14 owner-supplied gratitude-as-access clarification, including gratitude even for suffering, is recorded as a separate approved amendment; the owner-authored public passage remains protected memoir, not automatic runtime input.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",

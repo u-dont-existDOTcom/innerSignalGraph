@@ -28,7 +28,7 @@ regression_refs:
   - G061
 base_record_sha256: b7eb28446e5f846502da7446f6626afdca72c7092e674bb4af8c9db272dabfe6
 base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
-projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
+projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698f47ae2ed3
 ---
 
 # Keep ordinary social influence answerable to practical protection
