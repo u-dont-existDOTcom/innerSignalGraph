@@ -92,7 +92,8 @@ async function runtimeEnvironment(t, options = {}) {
   const exchangeLike = options.attested === false ? mock : attestedPort(mock);
   const port = options.wrapPort ? options.wrapPort(exchangeLike) : exchangeLike;
   const open = () => openJournalExecutionRuntime({ config, configPath, service, inferencePort: port, sourceParser,
-    environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER, ...(options.environment ?? {}) } });
+    environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER, ...(options.environment ?? {}) },
+    ...(options.now ? { now: options.now } : {}) });
   // Runs commands in one runtime and closes it.
   const run = async (...commands) => {
     const runtime = await open();
@@ -202,6 +203,49 @@ test("reference units the coverage judges never confirm stop the run before the 
   await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_REFERENCE_NONRESPONSE" });
   // Status still answers.
   assert.equal((await f.run("status")).pointer.blocker, "POINTER_REFERENCE_NONRESPONSE");
+});
+
+test("a finished reference step is counted again from its stored answers after its deadline, sending nothing and saving nothing", async (t) => {
+  const later = { ms: 0 };
+  let sends = 0;
+  let lookups = 0;
+  // Both judges hold back a page's first quote on the even pages, as something left out.
+  const f = await runtimeEnvironment(t, { refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
+    now: () => new Date(Date.now() + later.ms),
+    // As the work exchange's receipts do, each says when its answer came, so it can be read back after the deadline.
+    wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => {
+      sends += 1;
+      const result = await port.invoke(...args);
+      return { ...result, receipt: { ...result.receipt, provider_route_receipt: { received_at: new Date(Date.now() + later.ms).toISOString() } } };
+    }, getCompletion: (...args) => { lookups += 1; return port.getCompletion(...args); } }) });
+  await assert.rejects(f.run("stage", "pointer-recount"), { code: "POINTER_REFERENCE_NOT_DONE" });
+  const { reference } = (await f.run("build-quotes", "pointer-reference")).pointer;
+  // Before the deadline a call could still be sent, so nothing is counted again.
+  await assert.rejects(f.run("pointer-recount"), { code: "POINTER_RECOUNT_BEFORE_DEADLINE" });
+  later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;
+  const [sent, looked] = [sends, lookups];
+  const before = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  const { recount, pointer } = await f.run("pointer-recount");
+  assert.equal(sends, sent, "nothing is sent");
+  assert.equal(lookups, looked, "only the store is read: the port isn't asked, so it can't hand over a late answer");
+  assert.deepEqual(JSON.parse(await fs.readFile(f.stateFile, "utf8")).pointer, before.pointer, "nothing is saved");
+  assert.deepEqual([recount.run_id, recount.step, recount.matches_stored_counts], [pointer.run_id, "reference", true]);
+  assert.deepEqual(recount.counts, reference.counts);
+  const { held_back: heldBack, by_round: byRound } = recount.counts.judges;
+  assert.ok(heldBack.codex.checks > 0);
+  assert.deepEqual(heldBack.codex, { checks: heldBack.codex.checks, left_out: heldBack.codex.checks, repeated: 0, combined: 0, copied: 0 });
+  assert.deepEqual(heldBack.claude, heldBack.codex);
+  assert.deepEqual([heldBack.codex_only.checks, heldBack.claude_only.checks], [0, 0], "the judges here always agree");
+  assert.equal(byRound[0].checks + byRound[1].checks, recount.counts.judges.agreement.items);
+  // A reference stored before the reasons were counted gets them from the recount, and its other counts still match.
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  delete state.pointer.reference.counts.judges.held_back;
+  delete state.pointer.reference.counts.judges.by_round;
+  await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
+  const older = (await f.run("pointer-recount")).recount;
+  assert.equal(older.matches_stored_counts, true);
+  assert.deepEqual(older.counts.judges.held_back, heldBack);
+  for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(JSON.stringify(older).includes(word), false, word);
 });
 
 test("the step deadlines are run settings, checked before anything runs", async (t) => {

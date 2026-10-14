@@ -57,10 +57,13 @@ function taggerAnswer(packet, operationKey) {
 const judgment = (pair) => ({ pair_id: pair.pair_id, mentions: true, kind_right: !(pair.kind === "event" && pair.quote.includes("rêvais")) });
 
 // Answers each role from its packet, as the exchange would after its schema check, and keeps an invalid answer as
-// invalid. `script` changes single answers: by the writer's call key, by "tier:quote" for a coverage judge (round 0
-// only, unless the entry says "always"), by the search call key, and by the tagger's or pair judge's call key
+// invalid. `script` changes single answers: by the writer's call key, by "tier:quote" for a coverage judge ("once" for
+// round 0 only, "always" for both, each holding the quote back as left out; "copied:once", "combined:always",
+// "repeated:once" and the like flag its first question for that reason instead), by the search call key, and by the
+// tagger's or pair judge's call key
 // ("skip-last" leaves out a judgment, "foreign" adds one for a pair the call doesn't hold). "open" holds its call
-// until the deadline, and "invalid" answers with no valid output.
+// until the deadline, "invalid" answers with no valid output, and "closed" closes its item unanswered, a close that
+// reads back later as a record from before the store said when it was seen.
 function scriptedPort({ clock, script = {} }) {
   const sent = [];
   const answers = new Map();
@@ -82,11 +85,14 @@ function scriptedPort({ clock, script = {} }) {
     if (request.role === "coverage_judge") {
       const round = Number(request.operationKey.split(":coverage:")[1].split(":")[0]);
       return { schema_version: "1.0", judgments: packet.quotes.map((quote) => {
-        const rule = script[`${request.tier}:${quote.unit_id}`];
-        const unconfirmed = rule === "always" || (rule === "once" && round === 0);
-        return { unit_id: quote.unit_id, covered: !unconfirmed, missing: unconfirmed ? `${request.tier} judge: something is missing` : "",
+        const rule = script[`${request.tier}:${quote.unit_id}`] ?? "";
+        const [reason, when] = rule.includes(":") ? rule.split(":") : ["left_out", rule];
+        const unconfirmed = when === "always" || (when === "once" && round === 0);
+        const flagged = (kind) => (unconfirmed && reason === kind ? [quote.questions[0].question_id] : []);
+        return { unit_id: quote.unit_id, covered: !(unconfirmed && reason === "left_out"),
+          missing: unconfirmed ? `${request.tier} judge: ${reason === "left_out" ? "something is missing" : `a question is ${reason}`}` : "",
           critical_question_ids: [], event_question_ids: request.tier === "hardest" ? quote.questions.map((question) => question.question_id) : [],
-          repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [] };
+          repeated_question_ids: flagged("repeated"), combined_question_ids: flagged("combined"), copied_question_ids: flagged("copied") };
       }) };
     }
     const questions = custom === "skip-first" ? packet.questions.slice(1) : packet.questions;
@@ -102,6 +108,10 @@ function scriptedPort({ clock, script = {} }) {
         await new Promise((resolve) => { setImmediate(resolve); });
         clock.now = Math.max(clock.now, Date.parse(request.expiresAt));
         throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
+      }
+      if (script[request.operationKey] === "closed") {
+        answers.set(request.operationKey, { closed: true });
+        throw new JournalInferencePortError("JOURNAL_WORK_EXPIRED", { submissionStatus: "not_submitted" });
       }
       if (!answers.has(request.operationKey)) {
         const at = new Date(clock.now).toISOString();
@@ -119,12 +129,15 @@ function scriptedPort({ clock, script = {} }) {
     async getCompletion(operationKey) {
       if (!answers.has(operationKey)) return { status: sent.some((item) => item.operationKey === operationKey) ? "unknown" : "not_submitted" };
       const stored = answers.get(operationKey);
+      if (stored.closed) return { status: "not_submitted", code: "JOURNAL_WORK_EXPIRED" };
       if (stored.invalid) return { status: "invalid_output" };
       return { status: "completed", output: stored.output, receipt: receipt(stored) };
     },
     async wasSent(operationKey) { return sent.some((item) => item.operationKey === operationKey); }
   };
 }
+
+const NONE_HELD_BACK = Object.freeze({ checks: 0, left_out: 0, repeated: 0, combined: 0, copied: 0 });
 
 const run = (port, clock, extra = {}) => runPointerReference({ units: quoteUnits(), seed: "synthetic-seed", stepId: "reference:synthetic",
   deadline: DEADLINE, port, grant, generation: "generation:synthetic:quotes", now: () => new Date(clock.now), ...extra });
@@ -160,7 +173,10 @@ test("every sampled unit gets its questions, both judges' confirmation and its s
     nonresponse_by_reason: { questions_incomplete: 0, coverage_unconfirmed: 0, coverage_check_failed: 0, searches_incomplete: 0, deadline: 0 },
     deadline_units_with_a_call_unanswered: 0, units_retried: 0, questions: 45, critical_questions: 30, event_questions: 45,
     judges: { codex_confirmed: 45, claude_confirmed: 45,
-      agreement: { items: 45, agreements: 45, disagreements: 0, raw_agreement: 1, kappa: null } } });
+      agreement: { items: 45, agreements: 45, disagreements: 0, raw_agreement: 1, kappa: null },
+      held_back: { codex: NONE_HELD_BACK, claude: NONE_HELD_BACK, codex_only: NONE_HELD_BACK, claude_only: NONE_HELD_BACK },
+      by_round: [{ checks: 45, codex_confirmed: 45, claude_confirmed: 45, both_confirmed: 45 },
+        { checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0 }] } });
   assert.equal(JSON.stringify(pointerReferenceCounts(reference)).includes("Synthetic"), false);
   // A reference stored before the judges' agreement was counted reports none.
   const { judges, ...older } = reference;
@@ -191,6 +207,47 @@ test("a unit either judge leaves unconfirmed gets its one retry with that judge'
   assert.equal(judges.agreement.disagreements, 3);
   assert.deepEqual([judges.agreement.items - judges.codex_confirmed, judges.agreement.items - judges.claude_confirmed], [1, 2]);
   assert.equal(judges.agreement.agreements, judges.agreement.items - 3);
+  const leftOut = (checks) => ({ ...NONE_HELD_BACK, checks, left_out: checks });
+  assert.deepEqual(judges.held_back, { codex: leftOut(1), claude: leftOut(2), codex_only: leftOut(1), claude_only: leftOut(2) });
+  assert.deepEqual(judges.by_round.map((round) => round.checks).reduce((sum, checks) => sum + checks), judges.agreement.items);
+  assert.deepEqual(judges.by_round.map((round) => round.checks - round.both_confirmed), [2, 1]);
+});
+
+test("the judges' reasons for holding a quote back are counted by kind, for each judge and where only one held back", async () => {
+  const clock = { now: START };
+  // In the first round Codex flags a copied question on page 3's first quote and a combined one on page 9's, while Claude
+  // finds something left out on page 9's and a repeated question on page 11's second quote. The rewrites pass both.
+  const port = scriptedPort({ clock, script: { "standard:unit:p3q0": "copied:once", "standard:unit:p9q0": "combined:once",
+    "hardest:unit:p9q0": "once", "hardest:unit:p11q1": "repeated:once" } });
+  const reference = await run(port, clock);
+  assert.ok(reference.units.every((unit) => unit.status === "complete"));
+  const { judges } = pointerReferenceCounts(reference);
+  assert.deepEqual(judges.held_back, {
+    codex: { checks: 2, left_out: 0, repeated: 0, combined: 1, copied: 1 },
+    claude: { checks: 2, left_out: 1, repeated: 1, combined: 0, copied: 0 },
+    codex_only: { checks: 1, left_out: 0, repeated: 0, combined: 0, copied: 1 },
+    claude_only: { checks: 1, left_out: 0, repeated: 1, combined: 0, copied: 0 } });
+  // 45 quotes in the first round; pages 3, 9 and 11, two quotes each, again in the second.
+  assert.deepEqual(judges.by_round, [{ checks: 45, codex_confirmed: 43, claude_confirmed: 43, both_confirmed: 42 },
+    { checks: 6, codex_confirmed: 6, claude_confirmed: 6, both_confirmed: 6 }]);
+  assert.deepEqual([judges.codex_confirmed, judges.claude_confirmed, judges.agreement.items], [49, 49, 51]);
+  assert.equal(JSON.stringify(judges).includes("Synthetic"), false);
+});
+
+test("read back after the deadline, a writer item that closed in time leads to its unit's next round, as it did", async () => {
+  const clock = { now: START };
+  // Page 9's first writer item closes unanswered: the call fails, and the unit's second round writes its questions.
+  const port = scriptedPort({ clock, script: { [writerKey(9)]: "closed" } });
+  const first = await run(port, clock);
+  const ninth = first.units.find((unit) => unit.unit_id === "page:9");
+  assert.deepEqual([ninth.status, ninth.writer_attempts], ["complete", 2]);
+  // The record of that close doesn't say when it was seen, but the unit's next round was sent, so it was seen in time.
+  clock.now = Date.parse(DEADLINE) + 60_000;
+  const sent = port.sent.length;
+  const again = await run(port, clock);
+  assert.deepEqual(again, first);
+  assert.equal(port.sent.length, sent);
+  assert.equal("closes_inferred" in again, false);
 });
 
 test("a search plan short twice makes its unit a nonresponse", async () => {

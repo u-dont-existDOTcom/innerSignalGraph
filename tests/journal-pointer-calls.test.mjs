@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { JournalInferencePortError } from "../src/journal-import/provider-port.mjs";
 import { POINTER_CALL_OUTCOMES, pointerCallCounts, pointerCallKey, runDeadlineCalls } from "../src/journal-import/pointer-calls.mjs";
+import { createDurableJournalInferencePort } from "../src/journal-import/durable-inference.mjs";
 
 // The pointer pass's calls against a saved deadline (plan 2026-10-09-journal-quote-first.md, Part 3, "Deadlines").
 // A fake port stands in for the durable exchange port; all content is invented.
@@ -10,15 +11,16 @@ const START = Date.parse("2026-10-11T06:00:00Z");
 const DEADLINE = "2026-10-11T09:00:00.000Z";
 
 // Each operation key answers as scripted: an output (received at a given time), "invalid", "expired" (closed
-// unanswered), "open" (no answer before the wait ends, which lasts as long as it was asked to), "exhausted" or
-// "revoked". A key reports its answer only once it was sent, in this run or, for the keys in `earlier`, before it.
+// unanswered; read back later, a record that doesn't say when the close was seen) or { closed: true, at } (closed
+// unanswered, the close seen at `at`), "open" (no answer before the wait ends, which lasts as long as it was asked to),
+// "exhausted" or "revoked". A key reports its answer only once it was sent, in this run or, for the keys in `earlier`, before it.
 function fakePort(script, { clock, earlier = [] }) {
   const sent = [];
   const wasSent = (operationKey) => earlier.includes(operationKey) || sent.some((item) => item.operationKey === operationKey);
   const reply = (operationKey) => {
     const answer = script[operationKey] ?? "open";
     if (answer === "invalid") throw new JournalInferencePortError("INVALID_STRUCTURED_OUTPUT", { submissionStatus: "completed_invalid" });
-    if (answer === "expired") throw new JournalInferencePortError("JOURNAL_WORK_EXPIRED", { submissionStatus: "not_submitted" });
+    if (answer === "expired" || answer?.closed) throw new JournalInferencePortError("JOURNAL_WORK_EXPIRED", { submissionStatus: "not_submitted" });
     if (answer === "open") throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
     if (answer === "exhausted") throw new JournalInferencePortError("JOURNAL_HARDEST_ATTEMPT_EXHAUSTED", { submissionStatus: "exhausted" });
     if (answer === "revoked") throw new JournalInferencePortError("GRANT_REVOKED");
@@ -26,6 +28,7 @@ function fakePort(script, { clock, earlier = [] }) {
   };
   return {
     sent,
+    wasSent: async (operationKey) => wasSent(operationKey),
     async invoke(request, options) {
       sent.push({ operationKey: request.operationKey, expiresAt: request.expiresAt, waitMs: options.waitMs, tier: request.tier });
       // An open item's wait runs alongside the other calls' and lasts as long as it was asked to.
@@ -40,7 +43,8 @@ function fakePort(script, { clock, earlier = [] }) {
       if (!wasSent(operationKey)) return { status: "not_submitted" };
       if (answer === undefined || answer === "open") return { status: "unknown" };
       if (answer === "invalid") return { status: "invalid_output" };
-      if (answer === "expired") return { status: "not_submitted" };
+      if (answer === "expired") return { status: "not_submitted", code: "JOURNAL_WORK_EXPIRED" };
+      if (answer.closed) return { status: "not_submitted", code: "JOURNAL_WORK_EXPIRED", observed_at: answer.at };
       if (answer === "exhausted") return { status: "exhausted", code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED" };
       return { status: "completed", output: answer.output, receipt: { provider_route_receipt: { received_at: answer.at } } };
     }
@@ -103,6 +107,67 @@ test("after the deadline nothing is sent, but an answer that came in time still 
     deadline: DEADLINE, now: () => new Date(clock.now) });
   assert.deepEqual(outcomes.map((outcome) => [outcome.status, outcome.attempts]), [["answered", 1], ["answered", 2], ["deadline", 1], ["failed", 1]]);
   assert.deepEqual(port.sent, [], "nothing goes out after the deadline");
+});
+
+test("after the deadline, an item closed unanswered in time is followed to its retry, as the step followed it", async () => {
+  const clock = { now: Date.parse(DEADLINE) + 60_000 };
+  const before = "2026-10-11T07:00:00.000Z";
+  const port = fakePort({
+    // Closed at 07:00, and its retry answered at 07:30: the step read that answer, and so does a read after the deadline.
+    "batch:1": { closed: true, at: before }, [pointerCallKey("batch:1", 1)]: { output: { n: 1 }, at: "2026-10-11T07:30:00.000Z" },
+    // A record that doesn't say when the close was seen: its retry was sent, so the step saw it in time.
+    "batch:2": "expired", [pointerCallKey("batch:2", 1)]: { output: { n: 2 }, at: "2026-10-11T08:00:00.000Z" },
+    // Never sent again: the close came at or after the deadline, and the call ended there.
+    "batch:3": "expired",
+    "batch:4": { closed: true, at: DEADLINE }
+  }, { clock, earlier: ["batch:1", pointerCallKey("batch:1", 1), "batch:2", pointerCallKey("batch:2", 1), "batch:3", "batch:4"] });
+  const outcomes = await runDeadlineCalls({ calls: ["batch:1", "batch:2", "batch:3", "batch:4"].map((key) => call(key)), port,
+    deadline: DEADLINE, now: () => new Date(clock.now) });
+  assert.deepEqual(outcomes.map((outcome) => [outcome.status, outcome.attempts, outcome.output?.n ?? outcome.reason]),
+    [["answered", 2, 1], ["answered", 2, 2], ["deadline", 1, "deadline"], ["deadline", 1, "deadline"]]);
+  // Only the close the store can't place is a guess, and its outcome says so.
+  assert.deepEqual(outcomes.map((outcome) => outcome.inferred === true), [false, false, true, false]);
+  // With no retry of its own, a call closed in time failed then, and reads as failed.
+  const [single] = await runDeadlineCalls({ calls: [call("unit:1")], port: fakePort({ "unit:1": { closed: true, at: before } },
+    { clock, earlier: ["unit:1"] }), deadline: DEADLINE, now: () => new Date(clock.now), retries: 0 });
+  assert.deepEqual([single.status, single.attempts, single.reason], ["failed", 1, "JOURNAL_WORK_EXPIRED"]);
+  // A record that doesn't say when, on a call without a retry of its own: a key the caller sends only after the call
+  // ends in time (`nextKeys`, the question writer's next round) shows it was seen in time; with none sent, a guess.
+  const legacy = fakePort({ "unit:2": "expired", "unit:3": "expired" }, { clock, earlier: ["unit:2", "unit:2:next", "unit:3"] });
+  const [followed, guessed] = await runDeadlineCalls({ calls: [{ ...call("unit:2"), nextKeys: ["unit:2:next"] },
+    { ...call("unit:3"), nextKeys: ["unit:3:next"] }], port: legacy, deadline: DEADLINE, now: () => new Date(clock.now), retries: 0 });
+  assert.deepEqual([followed.status, followed.reason, followed.inferred ?? false], ["failed", "JOURNAL_WORK_EXPIRED", false]);
+  assert.deepEqual([guessed.status, guessed.reason, guessed.inferred], ["deadline", "deadline", true]);
+  await assert.rejects(runDeadlineCalls({ calls: [{ ...call("unit:4"), nextKeys: [""] }], port: legacy, deadline: DEADLINE }),
+    { code: "POINTER_CALLS_INVALID" });
+  assert.deepEqual(port.sent, [], "nothing goes out after the deadline");
+});
+
+test("a read-only recount through the durable store follows an item closed in time to its retry's answer, as the step did", async () => {
+  // Real time here, since the durable store records when it saw a close by the host's clock.
+  const deadline = new Date(Date.now() + 3 * 60 * 60_000).toISOString();
+  const clock = { now: Date.now() };
+  const data = new Map();
+  const corpusStore = {
+    async readJsonObject({ objectId }) {
+      if (!data.has(objectId)) throw Object.assign(new Error("missing"), { code: "ENOENT" });
+      return structuredClone(data.get(objectId));
+    },
+    async writeJsonObject({ objectId, value }) { data.set(objectId, structuredClone(value)); }
+  };
+  const durable = createDurableJournalInferencePort({ corpusStore,
+    port: fakePort({ "batch:1": { closed: true }, [pointerCallKey("batch:1", 1)]: { output: { n: 1 } } }, { clock }) });
+  const granted = { ...call("batch:1"), packet: { grant_purpose: "organize_search" },
+    grant: { grant_id: "grant:synthetic", purpose: "organize_search", allowed_roles: ["pointer_tagger"] } };
+  const [live] = await runDeadlineCalls({ calls: [granted], port: durable, deadline, now: () => new Date() });
+  assert.deepEqual([live.status, live.attempts, live.output], ["answered", 2, { n: 1 }]);
+  const records = data.size;
+  const readOnly = { invoke: async () => { throw new Error("a recount sends nothing"); },
+    getCompletion: (key) => durable.storedCompletion(key), wasSent: (key) => durable.wasSent(key) };
+  const [recounted] = await runDeadlineCalls({ calls: [granted], port: readOnly, deadline,
+    now: () => new Date(Date.parse(deadline) + 60_000) });
+  assert.deepEqual([recounted.status, recounted.attempts, recounted.output], [live.status, live.attempts, live.output]);
+  assert.equal(data.size, records, "nothing written");
 });
 
 test("a revoked grant or an unexpected error stops the step instead of failing its calls", async () => {

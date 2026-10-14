@@ -70,7 +70,9 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
   check = null, pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }), deadlineGraceMs = DEADLINE_GRACE_MS,
   oneAtATime = [] } = {}) {
   invariant(Array.isArray(calls) && calls.every((call) => call && typeof call.key === "string" && call.key.length > 0
-    && typeof call.role === "string" && (call.tier === "standard" || call.tier === "hardest")), "POINTER_CALLS_INVALID");
+    && typeof call.role === "string" && (call.tier === "standard" || call.tier === "hardest")
+    && (call.nextKeys === undefined || (Array.isArray(call.nextKeys) && call.nextKeys.every((key) => typeof key === "string" && key.length > 0)))),
+  "POINTER_CALLS_INVALID");
   invariant(new Set(calls.map((call) => call.key)).size === calls.length, "POINTER_CALL_KEY_DUPLICATE");
   invariant(port && typeof port.invoke === "function" && typeof port.getCompletion === "function", "POINTER_CALL_PORT_INVALID");
   const end = Date.parse(deadline);
@@ -131,8 +133,8 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
       grant: call.grant, tier: call.tier, expiresAt: deadline };
     const done = (outcome) => ({ outcome: { key: call.key, attempts: attempt + 1, ...outcome } });
     if (remaining() <= 0) {
-      // Nothing is sent after the deadline. An answer that came in time is still read, and an invalid one still
-      // lets its retry's answer count.
+      // Nothing is sent after the deadline. An answer that came in time is still read, and an invalid one, or an item
+      // closed unanswered in time, still lets its retry's answer count.
       const completion = await port.getCompletion(operationKey, { tier: call.tier });
       if (completion.status === "completed" && inTime(completion.receipt)) {
         const failure = failedCheck(call, completion.output);
@@ -142,6 +144,22 @@ export async function runDeadlineCalls({ calls, port, deadline, now = () => new 
       }
       if (completion.status === "invalid_output" && attempt < retries) return { next: "INVALID_STRUCTURED_OUTPUT" };
       if (completion.status === "exhausted") return done({ status: "failed", reason: completion.code ?? "EXHAUSTED" });
+      // An item closed unanswered that the step could send again: if the step saw it close before the deadline, it moved
+      // on as a closed item does, to the call's next key (whose answer is read here as it was then) or, on the last
+      // attempt, to a failed call; seen at or after the deadline, the call ended as a deadline. The store says when the
+      // close was seen. A record from before it did is taken as seen in time when the step sent anything only a close
+      // seen in time leads to: the call's own retry, or one of the caller's `nextKeys` (the question writer's next round);
+      // with neither, as seen at the deadline, when an item expires, and its outcome says it was `inferred`.
+      if (completion.status === "not_submitted" && RESENDABLE.has(completion.code)) {
+        const seen = Date.parse(typeof completion.observed_at === "string" ? completion.observed_at : "");
+        if (Number.isFinite(seen)) {
+          if (seen < end) return { next: completion.code };
+        } else {
+          const later = [...(attempt < retries ? [pointerCallKey(call.key, attempt + 1)] : []), ...(call.nextKeys ?? [])];
+          if (typeof port.wasSent === "function") for (const key of later) if (await port.wasSent(key)) return { next: completion.code };
+          return done({ status: "deadline", reason: "deadline", inferred: true });
+        }
+      }
       // Sent and left unanswered, or never sent at all because an earlier wait used up the step's time. A port that
       // can't tell (no wasSent) reports the first.
       const unsent = completion.status === "not_submitted" && typeof port.wasSent === "function" && !(await port.wasSent(operationKey));
