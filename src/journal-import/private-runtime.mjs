@@ -6,7 +6,7 @@ import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalPointerCopyRunWords, journalPointerDeadlines,
-  journalQuoteNumericDateOrder, journalSemanticConcurrency, JOURNAL_HARDEST_EFFORTS, normalizeJournalHardestLaneConfig,
+  journalPointerRules, journalQuoteNumericDateOrder, journalSemanticConcurrency, JOURNAL_HARDEST_EFFORTS, normalizeJournalHardestLaneConfig,
   vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
@@ -177,6 +177,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   const quoteNumericDateOrder = journalQuoteNumericDateOrder(config);
   const pointerDeadlines = journalPointerDeadlines(config);
   const pointerCopyRunWords = journalPointerCopyRunWords(config);
+  const pointerRules = journalPointerRules(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -2788,13 +2789,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Whether a run's settings still are the run config's: its date setting, and the copy check's run length for a run
     // that has one. A changed setting calls for a new run, at every step and at publication.
     const pointerSettingsHold = (run) => run.numeric_date_order === quoteNumericDateOrder
-      && (!Object.hasOwn(run, "copy_run_words") || run.copy_run_words === pointerCopyRunWords);
+      && (!Object.hasOwn(run, "copy_run_words") || run.copy_run_words === pointerCopyRunWords)
+      && (!Object.hasOwn(run, "pointer_rules") || run.pointer_rules === pointerRules);
     const pointerRun = async () => {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
       if (!state.pointer) {
         const runId = randomBytes(4).toString("hex");
         state.pointer = { run_id: runId, generation: `${quoteIndexGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
-          copy_run_words: pointerCopyRunWords, started_at: now().toISOString(), blocker: null };
+          copy_run_words: pointerCopyRunWords, pointer_rules: pointerRules, started_at: now().toISOString(), blocker: null };
         await save();
       }
       invariant(pointerSettingsHold(state.pointer), "POINTER_RUN_SETTING_CHANGED");
@@ -2804,6 +2806,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // The copy check's run length a run's steps use: what it started with, or null for a run from before owner decision
     // 30, whose steps then keep that run's rules.
     const runCopyRunWords = (run) => run.copy_run_words ?? null;
+    // The rules a run's steps use (pointer-reference.mjs, POINTER_RULES): what it started with, or owner decision 30's for a
+    // run from before owner decision 32. Under 3 Codex is the only judge, so no step of such a run needs Claude's route.
+    const runRules = (run) => run.pointer_rules ?? 2;
+    const pointerJudgeRoute = (run) => { if (runRules(run) !== 3) pointerHardestAttested(); };
     // Starts over: the current run, whatever its state, goes into the run state's history as status shows it (counts
     // only), and the next pointer command starts a new run with new steps, seeds and deadlines. Its stored results
     // stay in the private store.
@@ -2836,7 +2842,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
       const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline,
         port: readOnly, grant, generation: run.generation, now, beforeHardestSend: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
-        oneAtATime: pointerTurns, copyRunWords: runCopyRunWords(run) });
+        oneAtATime: pointerTurns, copyRunWords: runCopyRunWords(run), rules: runRules(run) });
       const counts = pointerReferenceCounts(reference);
       // The stored counts must come out the same, leaving aside what was counted only later. So what they hold is compared,
       // at every level, and nothing else: the judges' reasons and rounds came on 12 Oct 2026, and the copy check, the
@@ -2876,28 +2882,32 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       event_pairs: result.event_pairs, dropped_event_pairs: result.dropped_event_pairs, event_check: result.event_check, coverage: result.coverage,
       report: result.report, calls: result.calls, tagger_answered_at: result.tagger_answered_at });
 
-    // Step 2: the reference sample's questions, both coverage judges and the searches. A nonresponse stops the run. A
-    // unit still unconfirmed after its retry counts in recall with every question missed (owner decision 30), and stops
-    // the run only when the unconfirmed units alone already put the recall floor out of reach (pointerRecallReach).
+    // Step 2: the reference sample's questions, the coverage judges and the searches. Under owner decision 30's rules a
+    // nonresponse stops the run, and a unit still unconfirmed after its retry counts in recall with every question missed
+    // and stops the run only when the unconfirmed units alone already put the recall floor out of reach
+    // (pointerRecallReach). Under owner decision 32's, Codex judges alone and nothing here stops the run: a unit still not
+    // covered after its retry is marked and measured, and a nonresponse is listed and left out of the measurement.
     async function pointerReference() {
       const run = await pointerRun();
-      pointerHardestAttested();
+      pointerJudgeRoute(run);
       const step = await pointerStep(run, "reference", pointerDeadlines.reference, { seed: true });
       if (step.status === "done") return summary();
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
       const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant,
         generation: run.generation, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns,
-        copyRunWords: runCopyRunWords(run) });
+        copyRunWords: runCopyRunWords(run), rules: runRules(run) });
       const nonresponse = reference.units.filter((unit) => unit.status === "nonresponse")
         .map((unit) => ({ unit_id: unit.unit_id, reason: unit.reason, deadline_cause: unit.deadline_cause ?? null }));
       const unconfirmed = reference.units.filter((unit) => unit.status === "unconfirmed").map((unit) => unit.unit_id);
-      const reach = pointerRecallReach(reference);
+      // Under owner decision 32's rules nothing here stops the run: a marked unit is measured, and a nonresponse is listed.
+      const marksOnly = runRules(run) === 3;
+      const reach = marksOnly ? null : pointerRecallReach(reference);
       const counts = pointerReferenceCounts(reference);
       const resultRef = await writeLarge(`pointer:${run.run_id}:reference`, reference);
       // The blocker is saved with the finished step, in the same write, so a stop between two writes can't leave a run
       // that can't pass free to go on to the pilot.
-      if (nonresponse.length > 0) run.blocker = "POINTER_REFERENCE_NONRESPONSE";
-      else if (!reach.reachable) run.blocker = "POINTER_RECALL_OUT_OF_REACH";
+      if (!marksOnly && nonresponse.length > 0) run.blocker = "POINTER_REFERENCE_NONRESPONSE";
+      else if (!marksOnly && !reach.reachable) run.blocker = "POINTER_RECALL_OUT_OF_REACH";
       await finishPointerStep(step, { result_ref: resultRef, counts, nonresponse_units: nonresponse, unconfirmed_units: unconfirmed,
         recall_reach: reach });
       return summary();
@@ -2910,7 +2920,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // calibration unit read from one is counted among the units without quotes.
     async function pointerChallenge() {
       const run = await pointerRun();
-      pointerHardestAttested();
+      pointerJudgeRoute(run);
       invariant(run.reference?.status === "done", "POINTER_REFERENCE_NOT_DONE");
       const step = await pointerStep(run, "challenge", pointerDeadlines.reference);
       if (step.status === "done") return summary();
@@ -2927,7 +2937,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const reference = sample.units.length > 0
         ? await runPointerReference({ units: input.units, sample, stepId: step.step_id, deadline: step.deadline, port, grant,
           generation: run.generation, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns,
-          copyRunWords: runCopyRunWords(run) })
+          copyRunWords: runCopyRunWords(run), rules: runRules(run) })
         : { step_id: step.step_id, deadline: step.deadline, sample: { kind: "calibration", candidate_units: 0 }, units: [] };
       await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:challenge`, reference),
         counts: pointerReferenceCounts(reference), calibration_units: sample.calibration_units, units_without_quotes: sample.units_without_quotes });
@@ -2977,10 +2987,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     // Step 5: the measurement of the generation the pass built, stored as it would be published (not published), so
-    // the searches run on it. A floor that fails stops the run.
+    // the searches run on it. Under owner decision 30's rules a floor that fails stops the run; under owner decision
+    // 32's the floors are reported and don't block publication (`floors_block` false).
     async function pointerMeasure() {
       const run = await pointerRun();
-      pointerHardestAttested();
+      pointerJudgeRoute(run);
       invariant(run.pass?.status === "done" && (run.pass.coverage_holds || run.coverage_pass?.status === "done"), "POINTER_PASS_NOT_DONE");
       // Calibration's set is reported with every measurement, so its questions must be ready first.
       invariant(run.challenge?.status === "done", "POINTER_CHALLENGE_NOT_DONE");
@@ -3029,8 +3040,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
           };
           const result = await runPointerMeasure({ quoteGeneration, pass: stored, reference, challenge, search, seed: step.seed, stepId: step.step_id,
-            deadline: step.deadline, port, grant, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns });
+            deadline: step.deadline, port, grant, now, beforeHardestSend: pointerBeforeHardestSend, oneAtATime: pointerTurns, rules: runRules(run) });
           await finishPointerStep(step, { result_ref: await writeLarge(`pointer:${run.run_id}:measure`, result), publish: result.publish,
+            floors_block: result.floors_block,
             failed_floors: Object.entries(result.floors).filter(([, floor]) => !floor.holds).map(([name]) => name),
             floors: result.floors, report: result.report });
           if (!result.publish) {
@@ -3043,7 +3055,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     // Step 6, on the owner's `deploy`: exactly the measured generation, identified by its manifest's reference and its
-    // graph's digest, and only when every floor held. It replaces the published quote generation.
+    // graph's digest, and, under owner decision 30's rules, only when every floor held. It replaces the published quote
+    // generation.
     async function pointerPublish() {
       const run = state.pointer;
       invariant(run?.measure?.status === "done" && run.measure.publish === true && !run.blocker, "POINTER_NOT_READY_TO_PUBLISH");

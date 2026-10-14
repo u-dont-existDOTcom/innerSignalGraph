@@ -303,6 +303,74 @@ test("a run from before owner decision 30 keeps its rules: a judge's copying fla
   assert.ok(since.units.every((unit) => unit.status === "complete" && unit.writer_attempts === 1));
 });
 
+test("under owner decision 32's rules Codex judges alone: a piece still not covered after its retry is marked and searched, any split is fine, and a copying question is flagged", async () => {
+  const clock = { now: START };
+  // Codex finds something left out of page 3's first quote in the first round only, and of page 5's second quote in both;
+  // it lists a repeated question on page 9's first quote both times, which any way of splitting allows. Page 7's writer
+  // asks each quote in the quote's own words.
+  const port = scriptedPort({ clock, script: { "standard:unit:p3q0": "once", "standard:unit:p5q1": "always",
+    "standard:unit:p9q0": "repeated:always", [writerKey(7)]: "copy" } });
+  const slots = [];
+  const reference = await run(port, clock, { rules: 3, copyRunWords: 5, beforeHardestSend: async ({ operationKey }) => { slots.push(operationKey); } });
+  assert.deepEqual([...new Set(port.sent.filter((item) => item.role === "coverage_judge").map((item) => item.tier))], ["standard"]);
+  assert.equal(slots.length, 0, "no Claude call");
+  const byPage = new Map(reference.units.map((unit) => [unit.unit_id, unit]));
+  assert.deepEqual([byPage.get("page:3").status, byPage.get("page:3").writer_attempts], ["complete", 2]);
+  // Still not covered after the retry: marked, with the retry's questions, and searched like a complete unit.
+  const fifth = byPage.get("page:5");
+  assert.deepEqual([fifth.status, fifth.reason, fifth.writer_attempts], ["marked", "coverage_unconfirmed", 2]);
+  assert.match(fifth.questions[0].question_id, /^question:\d+:1:0$/u);
+  assert.ok(fifth.questions.every((question) => question.queries.length > 0));
+  assert.equal(port.sent.filter((item) => item.operationKey === searchKey(5)).length, 1);
+  assert.deepEqual([byPage.get("page:9").status, byPage.get("page:9").writer_attempts], ["complete", 1]);
+  // The copying questions are kept, flagged, and send nothing back to the writer.
+  const seventh = byPage.get("page:7");
+  assert.deepEqual([seventh.status, seventh.writer_attempts, seventh.questions.map((question) => question.copied)], ["complete", 1, [true, true]]);
+  assert.ok(reference.units.filter((unit) => unit.unit_id !== "page:7").every((unit) => unit.questions.every((question) => !("copied" in question))));
+  const counts = pointerReferenceCounts(reference);
+  assert.deepEqual([counts.complete_units, counts.marked_units, counts.unconfirmed_units, counts.nonresponse_units], [29, 1, 0, 0]);
+  assert.deepEqual([counts.marked_questions, counts.copying_questions_flagged, counts.marked_by_reason], [2, 2, { coverage_unconfirmed: 1 }]);
+  // One judge: Claude's counts are null; 45 quotes in the first round, pages 3 and 5 (two quotes each) in the second.
+  assert.deepEqual(counts.judges, { codex_confirmed: 46, claude_confirmed: null, agreement: null,
+    held_back: { codex: { checks: 3, left_out: 3, repeated: 0, combined: 0, copied: 0 }, claude: null, codex_only: null, claude_only: null },
+    by_round: [{ checks: 45, codex_confirmed: 43, claude_confirmed: null, both_confirmed: null, copied_by_code: 2 },
+      { checks: 4, codex_confirmed: 3, claude_confirmed: null, both_confirmed: null, copied_by_code: 0 }],
+    copying_flagged: { codex: 0, claude: null } });
+  assert.equal(JSON.stringify(counts).includes("ynthetic"), false);
+  // Run again with the stored answers: the same reference, and nothing new sent.
+  const sent = port.sent.length;
+  clock.now = Date.parse(DEADLINE) + 60_000;
+  assert.deepEqual(await run(port, clock, { rules: 3, copyRunWords: 5 }), reference);
+  assert.equal(port.sent.length, sent);
+  // Rules a run can't have, or owner decision 32's without the copy check, are refused before anything is sent.
+  await assert.rejects(run(port, clock, { rules: 4 }), { code: "POINTER_STEP_INPUT_INVALID" });
+  await assert.rejects(run(port, clock, { rules: 3, copyRunWords: null }), { code: "POINTER_STEP_INPUT_INVALID" });
+});
+
+test("under owner decision 32's rules a judge's call with no usable answer marks its pieces, which are still searched", async () => {
+  const clock = { now: START };
+  const key = "reference:synthetic:coverage:0:standard:0";
+  const port = scriptedPort({ clock, script: { [key]: "invalid", [pointerCallKey(key, 1)]: "invalid" } });
+  const reference = await run(port, clock, { rules: 3 });
+  const failedQuotes = new Set(port.sent.find((item) => item.operationKey === key).packet.quotes.map((quote) => quote.unit_id));
+  const failedUnits = reference.units.filter((unit) => unit.quote_ids.some((id) => failedQuotes.has(id)));
+  assert.ok(failedUnits.length > 0 && failedUnits.length < reference.units.length);
+  for (const unit of failedUnits) {
+    assert.deepEqual([unit.status, unit.reason, unit.writer_attempts], ["marked", "coverage_check_failed", 1]);
+    // Its questions as the writer marked them, each with its searches.
+    assert.ok(unit.questions.every((question) => question.queries.length > 0 && question.event === (Number(question.question_id.split(":").at(-1)) % 2 === 0)));
+  }
+  assert.ok(reference.units.filter((unit) => !failedUnits.includes(unit)).every((unit) => unit.status === "complete"));
+  const counts = pointerReferenceCounts(reference);
+  assert.deepEqual([counts.marked_units, counts.nonresponse_units, counts.marked_by_reason], [failedUnits.length, 0,
+    { coverage_check_failed: failedUnits.length }]);
+  // Under owner decision 30's rules the same failure is a nonresponse.
+  const before = { now: START };
+  const older = await run(scriptedPort({ clock: before, script: { [key]: "invalid", [pointerCallKey(key, 1)]: "invalid" } }), before);
+  assert.ok(older.units.filter((unit) => unit.quote_ids.some((id) => failedQuotes.has(id)))
+    .every((unit) => unit.status === "nonresponse" && unit.reason === "coverage_check_failed"));
+});
+
 test("read back after the deadline, a writer item that closed in time leads to its unit's next round, as it did", async () => {
   const clock = { now: START };
   // Page 9's first writer item closes unanswered: the call fails, and the unit's second round writes its questions.
@@ -717,6 +785,42 @@ test("recall is measured over every sampled unit, and a floor with nothing to me
     { code: "POINTER_REFERENCE_INCOMPLETE" });
 });
 
+test("under owner decision 32's rules the measurement takes Codex's verdict alone, searches the marked units, leaves a unit without questions out, and reports the floors without blocking publication", async () => {
+  const clock = { now: START };
+  const port = scriptedPort({ clock });
+  const first = await pass(port, clock);
+  // The first unit is marked, the second got no questions, and the third's first question copies its quote.
+  const [one, two, three, ...rest] = REFERENCE.units;
+  const reference = { units: [{ ...one, status: "marked", reason: "coverage_unconfirmed" },
+    { ...two, status: "nonresponse", reason: "questions_incomplete", questions: [] },
+    { ...three, questions: three.questions.map((question, index) => (index === 0 ? { ...question, copied: true } : question)) }, ...rest] };
+  const sentBefore = port.sent.length;
+  const result = await measure(port, clock, first, { rules: 3, reference });
+  const judged = port.sent.slice(sentBefore);
+  assert.ok(judged.length > 0 && judged.every((item) => item.role === "pair_judge" && item.tier === "standard"));
+  // The first pass leaves page 5 untagged, so its coverage floor fails, and still nothing blocks publication.
+  assert.equal(result.floors.coverage.holds, false);
+  assert.deepEqual([result.publish, result.floors_block], [true, false]);
+  assert.equal(result.report.agreement, null);
+  assert.ok(result.report.samples.every((sample) => sample.unscored_claude === null && sample.agreement === null));
+  const dropped = result.report.samples.find((sample) => sample.name === "dropped_events");
+  assert.deepEqual([dropped.pairs, dropped.real], [1, 0], "Codex rejects the dream as an event");
+  assert.equal(result.report.unmeasured_units, 1);
+  assert.deepEqual(result.report.recall_units.map((unit) => unit.unit_id), [one, three, ...rest].map((unit) => unit.unit_id));
+  assert.equal(result.report.recall_units[0].status, "marked");
+  assert.ok(result.report.recall_units[0].found_with_tags > 0, "the marked unit was searched");
+  assert.equal(result.report.recall_units[1].questions, three.questions.length - 1, "the flagged copying question is left out");
+  // Under owner decision 30's rules the same reference can't be measured, and the same failed floor blocks publication.
+  const older = { now: START };
+  await assert.rejects(measure(scriptedPort({ clock: older }), older, first, { reference }), { code: "POINTER_REFERENCE_INCOMPLETE" });
+  const blocked = await measure(scriptedPort({ clock: older }), older, first);
+  assert.deepEqual([blocked.publish, blocked.floors_block, "unmeasured_units" in blocked.report], [false, true, false]);
+  // A sample with no unit to measure can't be measured under either rules.
+  const empty = { units: REFERENCE.units.map((unit) => ({ ...unit, status: "nonresponse", reason: "deadline", questions: [] })) };
+  assert.throws(() => measurePointerRecall({ reference: empty, foundWithTags: new Set(), foundWordsOnly: new Set(), eventTaggedUnitIds: new Set(),
+    excludeUnmeasured: true }), { code: "POINTER_REFERENCE_INCOMPLETE" });
+});
+
 test("the recall floor's reach takes complete units as found and unconfirmed ones as missed, the best any generation could do", () => {
   assert.deepEqual(pointerRecallReach(REFERENCE), { unconfirmed_units: 0, best_estimate: 1, best_lower_bound: 1, floor: 0.85, reachable: true });
   const unconfirmed = (count) => ({ units: REFERENCE.units.map((unit, index) => (index < count ? { ...unit, status: "unconfirmed" } : unit)) });
@@ -802,4 +906,11 @@ test("calibration's units are a challenge set: the reference step runs on their 
   const report = measurePointerChallenge({ reference: { units: [...challenge.units, { unit_id: "page:9", status: "nonresponse", questions: [], hazards: [] }] },
     foundWithTags: found, foundWordsOnly: new Set() });
   assert.deepEqual([report.units, report.nonresponse_units, report.all.found_with_tags, report.all.recall_with_tags], [3, 1, 1, 1 / 3]);
+  // A marked unit (owner decision 32) was searched and counts like a complete one; its flagged copying question is left out.
+  const [page2] = challenge.units;
+  const markedReport = measurePointerChallenge({ reference: { units: [{ ...page2, status: "marked", reason: "coverage_unconfirmed",
+    questions: page2.questions.map((question, index) => (index === 0 ? { ...question, copied: true } : question)) }] },
+  foundWithTags: new Set(page2.questions.map((question) => question.question_id)), foundWordsOnly: new Set() });
+  assert.deepEqual([markedReport.marked_units, markedReport.nonresponse_units, markedReport.all.questions, markedReport.all.found_with_tags], [1, 0, 1, 1]);
+  assert.equal("marked_units" in report, false);
 });

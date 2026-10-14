@@ -3,7 +3,7 @@ import { realLocation } from "../core/private-path.mjs";
 
 import { ValidationError } from "../core/errors.mjs";
 import { QUOTE_DATE_DEFAULTS, QUOTE_NUMERIC_DATE_ORDERS } from "./quote-index.mjs";
-import { POINTER_COPY_RUN_LIMITS, POINTER_COPY_RUN_WORDS } from "./pointer-reference.mjs";
+import { POINTER_COPY_RUN_LIMITS, POINTER_COPY_RUN_WORDS, POINTER_RULES, POINTER_RULES_DEFAULT } from "./pointer-reference.mjs";
 
 export function journalSemanticConcurrency(config) {
   const value = config.semantic_concurrency === undefined ? 1 : config.semantic_concurrency;
@@ -60,6 +60,14 @@ export function journalPointerDeadlines(config) {
     pass: minutes("pointer_deadline_minutes", POINTER_DEADLINE_DEFAULTS.pass),
     measure: minutes("pointer_measure_deadline_minutes", POINTER_DEADLINE_DEFAULTS.measure)
   });
+}
+
+// The pointer pass's rules for a new run (pointer-reference.mjs, POINTER_RULES): 3 by default, owner decision 32's; 2
+// keeps owner decision 30's. A run keeps the rules it started with, like its other settings.
+export function journalPointerRules(config) {
+  const value = config.pointer_rules ?? POINTER_RULES_DEFAULT;
+  if (!POINTER_RULES.includes(value)) throw new ValidationError("JOURNAL_POINTER_RULES_INVALID", { code: "JOURNAL_POINTER_RULES_INVALID" });
+  return value;
 }
 
 // The pointer pass's copy check (owner decision 30, 12 Oct 2026): a question copies its quote when it holds this many

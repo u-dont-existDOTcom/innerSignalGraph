@@ -6,8 +6,8 @@ import { applyPointerEventCheck, buildPointerGeneration, checkPointerBatches, ke
   pointerEventCheckCalls, pointerEventPairs, pointerPassInput, pointerPassReport, pointerRepassBatches, pointerTaggerPacket } from "./pointer-pass.mjs";
 import { POINTER_FLOORS, POINTER_PRECISION_SAMPLES, cohenKappa, designRatioBound, pointerFloors } from "./pointer-measure.mjs";
 import { batchPointerQuotes, checkPointerTags, pointerPageOf, pointerTagIndexes } from "./pointer-tags.mjs";
-import { POINTER_COPY_RUN_WORDS, POINTER_REFERENCE_NONRESPONSE_REASONS, checkCoverageJudgments, checkQuestionSet, checkSearchPlan,
-  coverageJudgeCalls, pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
+import { POINTER_COPY_RUN_WORDS, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_RULES, checkCoverageJudgments, checkQuestionSet, checkSearchPlan,
+  coverageJudgeCalls, pointerJudgeTiers, pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
 import { buildQuoteGeneration } from "./quote-index.mjs";
 
 // The pointer pass's steps as sequences of deadline-bound call rounds (plan 2026-10-09-journal-quote-first.md, Part
@@ -16,8 +16,8 @@ import { buildQuoteGeneration } from "./quote-index.mjs";
 // go through the port; checking, sampling and bookkeeping are the pure functions of pointer-reference.mjs. What a step
 // returns holds journal-derived text (questions and searches) for the private store alone; its counts are content-free.
 
-// The coverage check's two judges: the Codex one, in calls of its own, and the Claude one.
-const COVERAGE_TIERS = Object.freeze(["standard", "hardest"]);
+// The coverage check's judges are pointerJudgeTiers(rules): the Codex one (standard tier), in calls of its own, and the
+// Claude one (hardest), or under owner decision 32's rules the Codex one alone.
 
 // Why a judge held a quote back, counted once a check for each reason it gave: something the quote says left out (not
 // covered), a question repeating another, a question asking about two things or more, or a question copying the quote's
@@ -65,17 +65,25 @@ function rolePacket(role, { generation, grantPurpose, assigned, tag, fields }) {
  * and judged but still not all confirmed is `unconfirmed`: it keeps its questions, gets no searches, and counts in
  * recall with every question missed (owner decision 30). A run from before that decision (`copyRunWords` null) keeps the
  * rules it ran under, so a recount follows it: code flags no question, a judge's copying flag holds its quote back, and
- * a unit still unconfirmed after its retry is a nonresponse (pointer-reference.mjs). Any other unit
- * without confirmed questions or complete searches is a nonresponse, with its reason; one that ran out of time is a
- * nonresponse for the deadline. Returns the frozen reference: the sample's record, the judges' counts, the copy check's
- * counts, and for each sampled unit its stretch, inclusion probability, quotes and, when complete or unconfirmed, its
- * questions with their critical and event marks (and, when complete, their searches). With `sample` (calibration's
+ * a unit still unconfirmed after its retry is a nonresponse (pointer-reference.mjs). Under owner decision 32's rules
+ * (`rules` 3) Codex is the only judge and any way of splitting a quote into questions is fine: a quote is confirmed
+ * when the judge finds it covered; a copying question is flagged `copied` and kept; a unit still not covered after its
+ * retry, or one its judge gave no usable answer for, is `marked` with its reason, keeps its questions, and is searched
+ * and measured like a complete one. A run keeps the rules it started with (`rules` 2 for owner decision 30's). Any
+ * other unit without confirmed or marked questions and complete searches is a nonresponse, with its reason; one that
+ * ran out of time is a nonresponse for the deadline. Returns the frozen reference: the sample's record, the judges'
+ * counts (Claude's null when Codex judges alone), the copy check's counts, and for each sampled unit its stretch,
+ * inclusion probability, quotes and, when complete, marked or unconfirmed, its questions with their critical and event
+ * marks (and, when complete or marked, their searches). With `sample` (calibration's
  * units, from pointerChallengeUnits) in place of a seed, the same step runs on those units, and each keeps its hazards.
  * Every step here passes `oneAtATime` (the tiers whose route takes one call at a time) to runDeadlineCalls, so those
  * tiers' calls take turns.
  */
 export async function runPointerReference({ units, seed = null, sample: given = null, stepId, deadline, port, grant, generation,
-  now = () => new Date(), beforeHardestSend = null, oneAtATime = [], copyRunWords = POINTER_COPY_RUN_WORDS } = {}) {
+  now = () => new Date(), beforeHardestSend = null, oneAtATime = [], copyRunWords = POINTER_COPY_RUN_WORDS, rules = 2 } = {}) {
+  invariant(POINTER_RULES.includes(rules) && (rules === 2 || copyRunWords !== null), "POINTER_STEP_INPUT_INVALID");
+  // The coverage judges this run's rules use: Codex and Claude, or under owner decision 32's, Codex alone.
+  const tiers = pointerJudgeTiers(rules);
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && typeof generation === "string" && generation.length > 0, "POINTER_STEP_INPUT_INVALID");
   invariant((seed === null) !== (given === null) && (given === null || (Array.isArray(given.units) && given.units.every((unit) => unit
@@ -93,7 +101,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   };
   const call = (role, tier, key, assigned, fields) => ({ key, role, tier, grant, outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
     packet: rolePacket(role, { generation, grantPurpose: grant.purpose, assigned, tag: `pointer:${role}:${stepId}`, fields }) });
-  const next = (unit) => referenceUnitStep({ quoteIds: unit.quote_ids, attempts: unit.attempts, copyRunWords });
+  const next = (unit) => referenceUnitStep({ quoteIds: unit.quote_ids, attempts: unit.attempts, copyRunWords, rules });
   const quoteFor = (id) => ({ unit_id: id, text: quoteById.get(id).text });
   // Each quote both judges answered for, in every round: whether Codex (the standard tier) and Claude (the hardest) each
   // confirmed it. Their agreement shows whether one judge passes what the other doesn't, as the measurement reports for
@@ -151,17 +159,17 @@ export async function runPointerReference({ units, seed = null, sample: given = 
           .map(({ question_id: questionId, question, critical, event }) => ({ question_id: questionId, question, critical, event })) }));
       });
       const groups = coverageJudgeCalls({ quotes });
-      const calls = COVERAGE_TIERS.flatMap((tier) => groups.map((group) => call("coverage_judge", tier,
+      const calls = tiers.flatMap((tier) => groups.map((group) => call("coverage_judge", tier,
         `${stepId}:coverage:${round}:${tier}:${group.call_index}`, group.quotes.map((quote) => quote.unit_id), { quotes: group.quotes })));
       // An answer that fails the code's check (a quote missed or judged twice, another quote's question listed, an
       // unconfirmed quote without a note) uses its call's retry, like an answer that fails the schema.
       const check = (spec, output) => {
-        const checked = checkCoverageJudgments({ quotes: spec.packet.quotes, answer: output, copyRunWords });
+        const checked = checkCoverageJudgments({ quotes: spec.packet.quotes, answer: output, copyRunWords, rules });
         return checked.valid ? null : `COVERAGE_ANSWER_${checked.reason.toUpperCase()}`;
       };
       const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 1, beforeHardestSend, check, oneAtATime });
       inferred += outcomes.filter((outcome) => outcome.inferred).length;
-      const judges = COVERAGE_TIERS.map((tier, tierIndex) => {
+      const judges = tiers.map((tier, tierIndex) => {
         const results = new Map();
         const notes = new Map();
         const failed = new Set();
@@ -175,7 +183,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
             }
             return;
           }
-          const checked = checkCoverageJudgments({ quotes: group.quotes, answer: outcome.output, copyRunWords });
+          const checked = checkCoverageJudgments({ quotes: group.quotes, answer: outcome.output, copyRunWords, rules });
           for (const result of checked.quotes) results.set(result.unit_id, result);
           for (const note of checked.notes) notes.set(note.unit_id, note);
         });
@@ -185,20 +193,29 @@ export async function runPointerReference({ units, seed = null, sample: given = 
         // The quotes the copy check holds back, which no judge's confirmation lets through.
         const copying = new Set(unit.attempts[round].set.copied.map((item) => item.unit_id));
         for (const id of unit.quote_ids) {
-          const [first, second] = judges.map((judge) => (judge.failed.has(id) ? null : judge.results.get(id) ?? null));
-          if (!first || !second) continue;
-          agreement.push({ first: first.confirmed === true, second: second.confirmed === true });
-          countHeldBack(heldBack.codex, first);
-          countHeldBack(heldBack.claude, second);
-          if (second.confirmed) countHeldBack(heldBack.codex_only, first);
-          if (first.confirmed) countHeldBack(heldBack.claude_only, second);
-          if (first.copied > 0) copyingFlagged.codex += 1;
-          if (second.copied > 0) copyingFlagged.claude += 1;
+          const verdicts = judges.map((judge) => (judge.failed.has(id) ? null : judge.results.get(id) ?? null));
+          if (verdicts.some((verdict) => !verdict)) continue;
+          const [first, second = null] = verdicts;
           const counts = byRound[round];
-          counts.checks += 1;
-          if (first.confirmed) counts.codex_confirmed += 1;
-          if (second.confirmed) counts.claude_confirmed += 1;
-          if (first.confirmed && second.confirmed) counts.both_confirmed += 1;
+          if (second) {
+            agreement.push({ first: first.confirmed === true, second: second.confirmed === true });
+            countHeldBack(heldBack.codex, first);
+            countHeldBack(heldBack.claude, second);
+            if (second.confirmed) countHeldBack(heldBack.codex_only, first);
+            if (first.confirmed) countHeldBack(heldBack.claude_only, second);
+            if (first.copied > 0) copyingFlagged.codex += 1;
+            if (second.copied > 0) copyingFlagged.claude += 1;
+            counts.checks += 1;
+            if (first.confirmed) counts.codex_confirmed += 1;
+            if (second.confirmed) counts.claude_confirmed += 1;
+            if (first.confirmed && second.confirmed) counts.both_confirmed += 1;
+          } else {
+            // Codex alone (owner decision 32).
+            countHeldBack(heldBack.codex, first);
+            if (first.copied > 0) copyingFlagged.codex += 1;
+            counts.checks += 1;
+            if (first.confirmed) counts.codex_confirmed += 1;
+          }
           if (copying.has(id)) counts.copied_by_code += 1;
         }
       }
@@ -212,9 +229,9 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     }
   }
 
-  // The searches, for the units whose questions are confirmed; one retry for an answer that leaves a question without
-  // a search or names another.
-  const confirmed = sampled.map((unit) => ({ unit, step: next(unit) })).filter(({ step }) => step.step === "complete");
+  // The searches, for the units whose questions are confirmed, and under owner decision 32's rules for the marked ones
+  // too, which are measured like them; one retry for an answer that leaves a question without a search or names another.
+  const confirmed = sampled.map((unit) => ({ unit, step: next(unit) })).filter(({ step }) => step.step === "complete" || step.step === "marked");
   const searchCalls = confirmed.map(({ unit, step }) => call("search_writer", "standard", `${stepId}:search:${unit.index}`,
     [...unit.quote_ids], { questions: step.questions.map(({ question_id: questionId, question }) => ({ question_id: questionId, question })) }));
   const searchCheck = (spec, output) => (checkSearchPlan({ questionIds: spec.packet.questions.map((item) => item.question_id), answer: output }).complete
@@ -241,13 +258,20 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       return { ...base, status: "complete", reason: null, deadline_cause: null, questions: step.questions.map((question) => ({ ...question,
         queries: [...queries.get(question.question_id)] })) };
     }
+    // Marked under owner decision 32's rules: something still uncovered after the retry, or a judge with no usable answer.
+    // Its questions are searched and measured like a complete unit's, and its reason says why it is marked.
+    if (step.step === "marked" && plan) {
+      const queries = new Map(plan.map((item) => [item.question_id, item.queries]));
+      return { ...base, status: "marked", reason: step.reason, deadline_cause: null, questions: step.questions.map((question) => ({ ...question,
+        queries: [...queries.get(question.question_id)] })) };
+    }
     // Still unconfirmed after the retry, in time: its questions count in recall, every one missed (owner decision 30).
     if (step.step === "unconfirmed" && !unit.late) {
       return { ...base, status: "unconfirmed", reason: null, deadline_cause: null, questions: step.questions.map((question) => ({ ...question })) };
     }
     // Out of time, or short in a way the rounds can't mend: a nonresponse, which fails the recall floor.
     const reason = unit.late ? "deadline" : (step.step === "nonresponse" ? step.reason
-      : (step.step === "complete" ? "searches_incomplete" : "deadline"));
+      : (step.step === "complete" || step.step === "marked" ? "searches_incomplete" : "deadline"));
     return { ...base, status: "nonresponse", reason, deadline_cause: reason === "deadline" ? unit.late ?? "unsent" : null, questions: [] };
   });
   return deepFreeze({
@@ -255,9 +279,14 @@ export async function runPointerReference({ units, seed = null, sample: given = 
     deadline,
     sample: { kind: given ? "calibration" : "random", seed_sha256: sample.seed_sha256, strata: sample.strata,
       units_per_stratum: sample.units_per_stratum, candidate_units: sample.candidate_units },
-    judges: { codex_confirmed: agreement.filter((item) => item.first).length,
+    // With Codex alone (owner decision 32) there is no second judge to agree with: Claude's counts are null.
+    judges: tiers.length === 2 ? { codex_confirmed: agreement.filter((item) => item.first).length,
       claude_confirmed: agreement.filter((item) => item.second).length, agreement: cohenKappa(agreement), held_back: heldBack,
-      by_round: byRound, copying_flagged: copyingFlagged },
+      by_round: byRound, copying_flagged: copyingFlagged }
+      : { codex_confirmed: byRound.reduce((sum, round) => sum + round.codex_confirmed, 0), claude_confirmed: null, agreement: null,
+        held_back: { codex: heldBack.codex, claude: null, codex_only: null, claude_only: null },
+        by_round: byRound.map((round) => ({ ...round, claude_confirmed: null, both_confirmed: null })),
+        copying_flagged: { codex: copyingFlagged.codex, claude: null } },
     copy_check: copyCheck,
     ...(inferred > 0 ? { closes_inferred: inferred } : {}),
     units: reference
@@ -267,7 +296,8 @@ export async function runPointerReference({ units, seed = null, sample: given = 
 /**
  * Content-free counts of a reference, for reports and the owner page. `questions`, `critical_questions` and
  * `event_questions` are the complete units'; the unconfirmed units' questions, which count in recall as missed, are
- * counted apart.
+ * counted apart, and so are the marked units' under owner decision 32's rules (`marked_units`, `marked_questions`, the
+ * flagged copying questions among them, and `marked_by_reason`), present only when a unit is marked.
  */
 export function pointerReferenceCounts(reference) {
   invariant(reference && Array.isArray(reference.units), "POINTER_REFERENCE_INVALID");
@@ -282,7 +312,12 @@ export function pointerReferenceCounts(reference) {
   let unconfirmedCritical = 0;
   let retried = 0;
   let unanswered = 0;
+  let marked = 0;
+  let markedQuestions = 0;
+  let flaggedQuestions = 0;
+  const markedReasons = {};
   for (const unit of reference.units) {
+    flaggedQuestions += (unit.questions ?? []).filter((question) => question.copied === true).length;
     if (unit.deadline_cause === "unanswered") unanswered += 1;
     if (unit.writer_attempts > 1) retried += 1;
     if (unit.status === "complete") {
@@ -294,6 +329,10 @@ export function pointerReferenceCounts(reference) {
       unconfirmed += 1;
       unconfirmedQuestions += unit.questions.length;
       unconfirmedCritical += unit.questions.filter((question) => question.critical).length;
+    } else if (unit.status === "marked") {
+      marked += 1;
+      markedQuestions += unit.questions.length;
+      markedReasons[unit.reason] = (markedReasons[unit.reason] ?? 0) + 1;
     } else {
       invariant(Object.hasOwn(reasons, unit.reason), "POINTER_REFERENCE_INVALID");
       nonresponse += 1;
@@ -309,7 +348,9 @@ export function pointerReferenceCounts(reference) {
     // `copying_flagged`; `pointer-recount` counts them again from the stored answers.
     judges: reference.judges ? deepFreeze(structuredClone(reference.judges)) : null,
     // A reference stored before the copy check (owner decision 30) has none.
-    copy_check: reference.copy_check ? deepFreeze(structuredClone(reference.copy_check)) : null });
+    copy_check: reference.copy_check ? deepFreeze(structuredClone(reference.copy_check)) : null,
+    ...(marked > 0 || flaggedQuestions > 0 ? { marked_units: marked, marked_questions: markedQuestions,
+      copying_questions_flagged: flaggedQuestions, marked_by_reason: Object.freeze(markedReasons) } : {}) });
 }
 
 /**
@@ -525,8 +566,6 @@ export const POINTER_RECALL_TOP = 12;
 export const POINTER_MEASURE_SAMPLE_NAMES = Object.freeze([...POINTER_PRECISION_SAMPLES.kinds, "dropped_events"]);
 // Pairs to a judge's call, as for the event check.
 const MEASURE_PAIRS_PER_CALL = 50;
-// The judges: the Codex one on the standard tier and the Claude one on the hardest.
-const JUDGE_TIERS = Object.freeze(["standard", "hardest"]);
 
 const digest = (parts) => sha256(JSON.stringify(parts)).slice(0, 32);
 const byRank = (left, right) => (left.rank < right.rank ? -1 : (left.rank > right.rank ? 1 : 0));
@@ -539,25 +578,34 @@ const byRank = (left, right) => (left.rank < right.rank ? -1 : (left.rank > righ
  * word search misses, or no quote that reports an event, adds nothing to that ratio but stays in the design. An
  * unconfirmed unit (owner decision 30) counts with every question missed, in recall with tags and with words only, in
  * critical recall and in gain, and with none of its event quotes covered: nothing of it is searched or counted found.
- * A sample with a nonresponse can't be measured: the run stopped before the pilot. Returns pointerFloors' recall
- * inputs and each unit's counts, content-free.
+ * A marked unit (owner decision 32) was searched and counts like a complete one. A question the copy check flagged
+ * (`copied`) is left out of every count, since its search would find its quote by the quote's own words. Under owner
+ * decision 30's rules a sample with a nonresponse can't be measured: the run stopped before the pilot. With
+ * `excludeUnmeasured` (owner decision 32's rules), a unit without questions is left out of the design and counted in
+ * `unmeasured_units`. Returns pointerFloors' recall inputs and each unit's counts, content-free.
  */
-export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds } = {}) {
+export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds, excludeUnmeasured = false } = {}) {
   invariant(reference && Array.isArray(reference.units) && reference.units.length > 0 && foundWithTags instanceof Set
-    && foundWordsOnly instanceof Set && eventTaggedUnitIds instanceof Set, "POINTER_RECALL_INPUT_INVALID");
-  invariant(reference.units.every((unit) => (unit.status === "complete" || unit.status === "unconfirmed") && Array.isArray(unit.questions)
-    && unit.questions.length > 0), "POINTER_REFERENCE_INCOMPLETE");
-  // An unconfirmed unit finds nothing, whatever a search would have returned.
-  const searched = (unit) => unit.status === "complete";
+    && foundWordsOnly instanceof Set && eventTaggedUnitIds instanceof Set && typeof excludeUnmeasured === "boolean", "POINTER_RECALL_INPUT_INVALID");
+  // Under owner decision 32's rules a unit left without questions or searches (a nonresponse) is listed, not measured:
+  // the design runs over the units that have them. Before, such a sample can't be measured at all.
+  const measurable = (unit) => ["complete", "unconfirmed", "marked"].includes(unit.status) && Array.isArray(unit.questions) && unit.questions.length > 0;
+  const units = excludeUnmeasured ? reference.units.filter(measurable) : reference.units;
+  invariant(units.length > 0 && units.every(measurable), "POINTER_REFERENCE_INCOMPLETE");
+  // An unconfirmed unit finds nothing, whatever a search would have returned; a marked one was searched like a complete one.
+  const searched = (unit) => unit.status === "complete" || unit.status === "marked";
+  // A question the copy check flagged (owner decision 32) is left out of every count: its search would find its quote by
+  // the quote's own words.
+  const asked = (unit) => unit.questions.filter((question) => question.copied !== true);
   const count = (unit, questions, found) => (searched(unit) ? questions.filter((question) => found.has(question.question_id)).length : 0);
-  const critical = (unit) => unit.questions.filter((question) => question.critical);
-  const missed = (unit) => unit.questions.filter((question) => !searched(unit) || !foundWordsOnly.has(question.question_id));
-  const eventQuotes = (unit) => [...new Set(unit.questions.filter((question) => question.event).map((question) => question.unit_id))];
-  const rows = (pick) => reference.units.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
+  const critical = (unit) => asked(unit).filter((question) => question.critical);
+  const missed = (unit) => asked(unit).filter((question) => !searched(unit) || !foundWordsOnly.has(question.question_id));
+  const eventQuotes = (unit) => [...new Set(asked(unit).filter((question) => question.event).map((question) => question.unit_id))];
+  const rows = (pick) => units.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
     inclusion_probability: unit.inclusion_probability, ...pick(unit) }));
   const bound = (pick) => designRatioBound({ units: rows(pick), confidence: POINTER_FLOORS.confidence });
-  const recall = bound((unit) => ({ asked: unit.questions.length, found: count(unit, unit.questions, foundWithTags) }));
-  const wordsOnly = bound((unit) => ({ asked: unit.questions.length, found: count(unit, unit.questions, foundWordsOnly) }));
+  const recall = bound((unit) => ({ asked: asked(unit).length, found: count(unit, asked(unit), foundWithTags) }));
+  const wordsOnly = bound((unit) => ({ asked: asked(unit).length, found: count(unit, asked(unit), foundWordsOnly) }));
   const criticalRecall = bound((unit) => ({ asked: critical(unit).length, found: count(unit, critical(unit), foundWithTags) }));
   const criticalWordsOnly = bound((unit) => ({ asked: critical(unit).length, found: count(unit, critical(unit), foundWordsOnly) }));
   const gain = bound((unit) => ({ asked: missed(unit).length, found: count(unit, missed(unit), foundWithTags) }));
@@ -573,8 +621,9 @@ export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly,
     gain: gain.estimate === null ? null : gain,
     event_coverage: eventCoverage.estimate === null ? null : eventCoverage,
     words_only: wordsOnly,
-    units: reference.units.map((unit) => ({ unit_id: unit.unit_id, status: unit.status, questions: unit.questions.length,
-      found_with_tags: count(unit, unit.questions, foundWithTags), found_words_only: count(unit, unit.questions, foundWordsOnly),
+    ...(excludeUnmeasured ? { unmeasured_units: reference.units.length - units.length } : {}),
+    units: units.map((unit) => ({ unit_id: unit.unit_id, status: unit.status, questions: asked(unit).length,
+      found_with_tags: count(unit, asked(unit), foundWithTags), found_words_only: count(unit, asked(unit), foundWordsOnly),
       critical_questions: critical(unit).length, event_quotes: eventQuotes(unit).length }))
   });
 }
@@ -589,11 +638,12 @@ export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly,
 export function measurePointerChallenge({ reference, foundWithTags, foundWordsOnly } = {}) {
   invariant(reference && Array.isArray(reference.units) && foundWithTags instanceof Set && foundWordsOnly instanceof Set,
     "POINTER_CHALLENGE_INPUT_INVALID");
-  // An unconfirmed unit's questions were never searched, so none is in the found sets: they count as missed.
-  const counted = reference.units.filter((unit) => unit.status === "complete" || unit.status === "unconfirmed");
+  // An unconfirmed unit's questions were never searched, so none is in the found sets: they count as missed. A marked
+  // one's were (owner decision 32), and its flagged copying questions are left out.
+  const counted = reference.units.filter((unit) => ["complete", "unconfirmed", "marked"].includes(unit.status));
   const share = (found, asked) => (asked === 0 ? null : found / asked);
   const tally = (units) => {
-    const questions = units.flatMap((unit) => unit.questions);
+    const questions = units.flatMap((unit) => unit.questions.filter((question) => question.copied !== true));
     const critical = questions.filter((question) => question.critical);
     const found = (list, set) => list.filter((question) => set.has(question.question_id)).length;
     return { units: units.length, questions: questions.length, found_with_tags: found(questions, foundWithTags),
@@ -605,6 +655,7 @@ export function measurePointerChallenge({ reference, foundWithTags, foundWordsOn
   return deepFreeze({
     units: reference.units.length,
     unconfirmed_units: counted.filter((unit) => unit.status === "unconfirmed").length,
+    ...(counted.some((unit) => unit.status === "marked") ? { marked_units: counted.filter((unit) => unit.status === "marked").length } : {}),
     nonresponse_units: reference.units.length - counted.length,
     all: tally(counted),
     by_place_only: tally(counted.filter((unit) => (unit.hazards ?? []).length === 0)),
@@ -683,18 +734,26 @@ async function foundQuestions({ units, passageIdForUnit, search, matchTags }) {
 /**
  * The measurement (plan Part 3, "Measuring it" and step 5) of a pass's generation, as it would be published: recall
  * and its relatives on the reference sample, through `search({ query, matchTags })` (the first results of
- * find_journal_quotes on that generation, as passage IDs in rank order); both judges on every fixed sample, the Codex
+ * find_journal_quotes on that generation, as passage IDs in rank order); the judges on every fixed sample, the Codex
  * one (standard tier) and the Claude one (hardest tier) each in calls of their own, 50 pairs to a call, with one retry,
  * all sent at once and expiring at `deadline`; and then every floor. A pair counts as correct only when both judges
  * accept it, and one either leaves unscored counts as wrong; a dropped event pair counts as real when either accepts it
- * or leaves it unscored. `pass` is the measured pass's result (its checked results, event-check ledger counts, dropped
+ * or leaves it unscored. Under owner decision 32's rules (`rules` 3) the Codex judge alone scores each pair, the marked
+ * units are searched with the complete ones, a unit without questions is left out of recall and counted
+ * (`report.unmeasured_units`), and the floors are reported without blocking publication (`publish` true,
+ * `floors_block` false). `pass` is the measured pass's result (its checked results, event-check ledger counts, dropped
  * event pairs and coverage), and `quoteGeneration` its generation's input, which gives each quote's passage and text.
  * `challenge`, the reference step's result on calibration's units, is searched the same way and reported apart
  * (`report.challenge`); it never decides. Returns the floors, a content-free report, and each sample's items with both
  * verdicts for the private store.
  */
 export async function runPointerMeasure({ quoteGeneration, pass, reference, challenge = null, search, seed, stepId, deadline, port, grant,
-  now = () => new Date(), beforeHardestSend = null, oneAtATime = [] } = {}) {
+  now = () => new Date(), beforeHardestSend = null, oneAtATime = [], rules = 2 } = {}) {
+  invariant(POINTER_RULES.includes(rules), "POINTER_STEP_INPUT_INVALID");
+  // The pair judges this run's rules use: the Codex one (standard tier) and the Claude one (hardest), or under owner
+  // decision 32's, Codex alone, whose verdict alone then decides each pair.
+  const tiers = pointerJudgeTiers(rules);
+  const alone = tiers.length === 1;
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string"
     && typeof search === "function", "POINTER_STEP_INPUT_INVALID");
@@ -708,13 +767,13 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
   // Recall, words with tags and words only, on the generation itself. An unconfirmed unit has no searches: it counts
   // with every question missed.
   const eventTagged = new Set(indexes.pairs.filter((pair) => pair.kind === "event").map((pair) => pair.unit_id));
-  const searchedUnits = reference.units.filter((unit) => unit.status === "complete");
-  const recall = measurePointerRecall({ reference,
+  const searchedUnits = reference.units.filter((unit) => unit.status === "complete" || unit.status === "marked");
+  const recall = measurePointerRecall({ reference, excludeUnmeasured: rules === 3,
     foundWithTags: await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
     foundWordsOnly: await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }),
     eventTaggedUnitIds: eventTagged });
   // Calibration's units, reported apart.
-  const challengeUnits = challenge ? challenge.units.filter((unit) => unit.status === "complete") : [];
+  const challengeUnits = challenge ? challenge.units.filter((unit) => unit.status === "complete" || unit.status === "marked") : [];
   const challengeReport = challenge ? measurePointerChallenge({ reference: challenge,
     foundWithTags: await foundQuestions({ units: challengeUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
     foundWordsOnly: await foundQuestions({ units: challengeUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }) }) : null;
@@ -723,7 +782,7 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
   const { seed_sha256: seedSha256, samples } = pointerMeasureSamples({ pairs: indexes.pairs, dropped: pass.dropped_event_pairs,
     unitsById: input.unitsById, seed });
   const calls = [];
-  for (const tier of JUDGE_TIERS) {
+  for (const tier of tiers) {
     for (const sample of samples) {
       for (let start = 0; start < sample.items.length; start += MEASURE_PAIRS_PER_CALL) {
         const items = sample.items.slice(start, start + MEASURE_PAIRS_PER_CALL);
@@ -735,19 +794,25 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
     }
   }
   const outcomes = calls.length > 0 ? await runDeadlineCalls({ calls, port, deadline, now, retries: 1, check: pairAnswerCheck, beforeHardestSend, oneAtATime }) : [];
-  const verdicts = Object.fromEntries(JUDGE_TIERS.map((tier) => [tier, new Map()]));
+  const verdicts = Object.fromEntries(tiers.map((tier) => [tier, new Map()]));
   outcomes.forEach((outcome, index) => {
     if (outcome.status === "answered") for (const judgment of outcome.output.judgments) verdicts[calls[index].tier].set(judgment.pair_id, judgment);
   });
   const accepts = (judgment) => judgment.mentions === true && judgment.kind_right === true;
   const scored = samples.map((sample) => {
-    const items = sample.items.map((item) => ({ ...item, codex: verdicts.standard.get(item.pair_id) ?? null, claude: verdicts.hardest.get(item.pair_id) ?? null }));
-    const both = items.filter((item) => item.codex && item.claude);
-    const counts = { name: sample.name, pairs: sample.pairs, sampled: items.length,
-      correct: items.filter((item) => item.codex && item.claude && accepts(item.codex) && accepts(item.claude)).length,
-      real: items.filter((item) => !item.codex || !item.claude || accepts(item.codex) || accepts(item.claude)).length,
-      unscored_codex: items.filter((item) => !item.codex).length, unscored_claude: items.filter((item) => !item.claude).length,
-      agreement: cohenKappa(both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) }))) };
+    const items = sample.items.map((item) => ({ ...item, codex: verdicts.standard.get(item.pair_id) ?? null,
+      claude: alone ? null : verdicts.hardest.get(item.pair_id) ?? null }));
+    const both = alone ? [] : items.filter((item) => item.codex && item.claude);
+    const counts = alone
+      ? { name: sample.name, pairs: sample.pairs, sampled: items.length,
+        correct: items.filter((item) => item.codex && accepts(item.codex)).length,
+        real: items.filter((item) => !item.codex || accepts(item.codex)).length,
+        unscored_codex: items.filter((item) => !item.codex).length, unscored_claude: null, agreement: null }
+      : { name: sample.name, pairs: sample.pairs, sampled: items.length,
+        correct: items.filter((item) => item.codex && item.claude && accepts(item.codex) && accepts(item.claude)).length,
+        real: items.filter((item) => !item.codex || !item.claude || accepts(item.codex) || accepts(item.claude)).length,
+        unscored_codex: items.filter((item) => !item.codex).length, unscored_claude: items.filter((item) => !item.claude).length,
+        agreement: cohenKappa(both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) }))) };
     return { items, counts, both };
   });
   const byName = new Map(scored.map((sample) => [sample.counts.name, sample.counts]));
@@ -776,15 +841,19 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
     generation: input.generation,
     step_id: stepId,
     seed_sha256: seedSha256,
-    publish: floors.publish,
+    // Under owner decision 32's rules the floors are reported and don't block publication, which still waits for the
+    // owner's `deploy`.
+    publish: rules === 3 ? true : floors.publish,
+    floors_block: rules !== 3,
     floors: floors.floors,
     report: {
       recall_units: recall.units,
       words_only: { estimate: recall.words_only.estimate, lower_bound: recall.words_only.lower_bound },
       samples: scored.map((sample) => sample.counts),
-      agreement: cohenKappa(scored.flatMap((sample) => sample.both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) })))),
+      agreement: alone ? null : cohenKappa(scored.flatMap((sample) => sample.both.map((item) => ({ first: accepts(item.codex), second: accepts(item.claude) })))),
       calls: pointerCallCounts(outcomes),
-      challenge: challengeReport
+      challenge: challengeReport,
+      ...(rules === 3 ? { unmeasured_units: recall.unmeasured_units } : {})
     },
     samples: scored.map((sample) => ({ name: sample.counts.name, items: sample.items }))
   });
