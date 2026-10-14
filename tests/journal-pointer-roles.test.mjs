@@ -480,6 +480,20 @@ test("the reference roles' instructions are installed, and each call goes only t
   assert.match(journalRoleInstruction("question_writer"), /Don't ask about the same thing twice, and don't fold two things into one question/);
   assert.match(journalRoleInstruction("coverage_judge"), /`repeated_question_ids` lists each question that asks about the same thing as an earlier question/);
   assert.match(journalRoleInstruction("coverage_judge"), /`combined_question_ids` each question that asks about two things or more/);
+  // The writer and both judges read one definition of a thing, word for word (owner decision 30, 14 Oct 2026): the
+  // judges split most on repeated questions, on two things in one question and on what was left out.
+  const rules = (role) => journalRoleInstruction(role).split("What counts as one thing")[1]?.split("\n\nWriting the questions:")[0]
+    .split("\n\nJudging each quote:")[0];
+  assert.match(rules("question_writer") ?? "", /A thing is one statement the quote makes that could be true or false on its own/);
+  assert.match(rules("question_writer") ?? "", /a question about a detail alone asks about the same thing as that thing's question/);
+  assert.equal(rules("coverage_judge"), rules("question_writer"));
+  // A quote that is only a date line, a heading, a greeting, a sign-off or filler (the quote index keeps short date lines
+  // and a short last paragraph as quotes of their own) still gets its one question, which the judges accept.
+  assert.match(rules("question_writer") ?? "", /A quote with nothing else, such as a date line, a heading, a greeting, a sign-off or filler on its own, says one thing, what it is, and gets one question about it/);
+  assert.match(journalRoleInstruction("coverage_judge"), /a question about a detail alone included/);
+  assert.match(journalRoleInstruction("coverage_judge"), /Hold a quote back only for a thing left out, a repeated question or a combined one/);
+  assert.match(journalRoleInstruction("coverage_judge"), /still covers its thing, as long as it keeps every detail the quote gives that thing/);
+  assert.match(rules("question_writer") ?? "", /a question that leaves out a detail the quote gives leaves that detail uncovered/);
   // No question may copy its quote's wording, or word search would find the quote by its own phrasing. Code checks a run
   // of the quote's words (owner decision 30), so the judge doesn't judge copying.
   assert.match(journalRoleInstruction("coverage_judge"), /`copied_question_ids` stays empty: code checks whether a question copies a run/);

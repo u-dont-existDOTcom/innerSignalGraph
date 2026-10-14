@@ -456,6 +456,15 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   the counts: code, not the judges, checks copying, and a unit still unconfirmed after its rewrite counts in recall
   with every question missed instead of stopping the run (both under "Measuring it" below). The sharper writer and judge
   instructions, where the judges split, follow the counts.
+- **The rules, second part (amended 14 Oct 2026, owner decision 30).** The count went live on 14 Oct and read the
+  stopped run again (its stored counts still followed, call for call). Over the 300 checks both judges answered, Codex
+  held a quote back in 147 and Claude in 67. Codex's reasons: a question repeating another 65 times, something left out
+  61, two things in one question 55, copying 5. Claude's: 30, 18, 14 and 12. Where only Codex held back (103 checks):
+  44, 42, 39 and 3; where only Claude did (23): 12, 5, 4 and 4. So the judges split on repeats, on two things in one
+  question and on what is left out, about evenly, and hardly on copying. The question writer and both judges now get the
+  same written rules for what one thing is ("What counts as one thing", under "Measuring it" below), and a judge holds a
+  quote back only for one of those three reasons, judged by those rules: never for style, word choice, the questions'
+  order or how it would have asked.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
@@ -483,6 +492,19 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   reports as happening or having happened, the tagger's sense of an event: a dream, wish, plan, hypothetical or denial
   isn't one. These questions are the sample's frozen reference. Calibration's references aren't reused: the import's
   repairs were checked against them. No writer is ever shown a tag, so the questions measure the pass independently.
+  - **What counts as one thing (amended 14 Oct 2026, owner decision 30).** A thing is one statement a quote makes that
+    could be true or false on its own: something that happened, a feeling, a thought, a fact, a plan, a wish, a dream or
+    a denial. It includes its details: who did or said it, with or to whom, when, where, how and why (a reason or a
+    cause included), what it concerned (a list included) and its qualifiers. The details go in that thing's question,
+    and a question that leaves out a detail the quote gives leaves that detail uncovered; a question with a thing's
+    details asks about one thing, and a question about a detail alone repeats that thing's question. A question in
+    other words than a judge would use still covers its thing, as long as it keeps every detail the quote gives it. A verb that only frames a statement ("I think", "I remember", "I dreamed that", "I wish") makes one thing
+    with it. A thing said twice is one thing. Inside a longer quote, a date line or a heading gives the when or the
+    subject of what follows, and a greeting, a sign-off, filler and the quote's tone or wording are not things; a quote
+    with nothing else, such as a date line, a heading, a greeting, a sign-off or filler on its own (the quote index keeps
+    short date lines and a short last paragraph as quotes of their own), says one thing, what it is, and gets one
+    question about it. The writer and both judges get these rules
+    word for word.
 - **Two independent checks that the questions cover each quote.** Two judges that write no questions
   (`coverage_judge`), one on the Codex lane in calls of its own, never the writer's, and one on the Claude lane, each
   see each sampled quote with its questions, 25 quotes to a call, and each says whether together they ask about
