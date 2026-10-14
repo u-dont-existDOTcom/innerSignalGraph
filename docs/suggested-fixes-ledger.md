@@ -54,3 +54,8 @@
 ## 2026-10-11: journal pointer pass
 
 - Live lane read on 2026-10-11 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `ba6d902e`): `suggested-fixes/innerSignalGraph/` holds `2026-09-30-claim-integrity-checks.md`, deferred above until the polish and ship phase, and `2026-10-09-teaching-points-for-map-changes.md`, adopted above in its own change. This branch changes the journal importer only and adds no new disposition.
+
+## 2026-10-14: gratitude map change (PR #159) and the r6 release item
+
+- Live lane read on 2026-10-14 (default branch of `u-dont-existDOTcom/universal-dev-architecture`): `suggested-fixes/innerSignalGraph/` holds `2026-09-30-claim-integrity-checks.md`, deferred above until the polish and ship phase; `2026-10-09-teaching-points-for-map-changes.md`, adopted above; and a new item, `2026-10-11-therapy-r6-coordinated-journal-release.md` (owner request; issue #154).
+- `2026-10-11-therapy-r6-coordinated-journal-release.md`: ADOPTED, and already live. The journal lane's coordinated deploy on the owner's question 24 answer A (12 Oct, 01:03 to 01:11 UTC) rebuilt the hosted connector from `main` `f5fccf3f`, which contains PR #152 (`d0fb8c72`) in full. Read on 14 Oct: the connector's source checkout is at `f5fccf3f` with no local changes, its container started 12 Oct at 01:07:31 UTC, and `/health` serves therapy protocol 0.2.1 with `protocolSha256` `14c77194…`, no longer the `d10e6338…` recorded when the item was filed. The owner's instruction (release it with the journal worker's release, without disturbing the import) is met. Not done: the `stable` promotion and the `docs/RELEASE-EVIDENCE.md` record the item asked for; whether to backfill them is the owner's call. Evidence: issue #154, comment of 14 Oct.
