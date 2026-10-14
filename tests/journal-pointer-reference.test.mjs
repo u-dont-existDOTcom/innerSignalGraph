@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { POINTER_COVERAGE_CALL_CHARS, POINTER_COVERAGE_QUOTES_PER_CALL, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE,
-  checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls, pointerChallengeUnits, pointerReferenceSample,
-  referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
+import { POINTER_COPY_RUN_LIMITS, POINTER_COPY_RUN_WORDS, POINTER_COVERAGE_CALL_CHARS, POINTER_COVERAGE_QUOTES_PER_CALL,
+  POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE, checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls,
+  longestSharedRun, pointerChallengeUnits, pointerReferenceSample, referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
 import { POINTER_PAGELESS_STRETCH } from "../src/journal-import/pointer-tags.mjs";
 import { MAX_HARDEST_PACKET_CHARS, hardestJournalPacketFits } from "../src/journal-import/packet-bounds.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket } from "../src/journal-import/provider-port.mjs";
@@ -35,7 +35,8 @@ test("a question set is complete when every quote has a question and every quest
 
   const withoutTwo = { ...writerAnswer(), questions: writerAnswer().questions.slice(0, 2) };
   assert.deepEqual(checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: withoutTwo }),
-    { complete: false, answer_valid: true, questions: [], foreign_questions: 0, quotes_without_question: 1, quotes_too_long: 0 });
+    { complete: false, answer_valid: true, questions: [], foreign_questions: 0, quotes_without_question: 1, quotes_too_long: 0,
+      longest_runs: [], copied: [] });
   const foreign = { ...writerAnswer(), questions: [...writerAnswer().questions,
     { unit_id: "unit:three", question: "Where?", critical: false, event: false }] };
   const foreignSet = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: foreign });
@@ -133,7 +134,7 @@ const callQuotes = () => [
   { unit_id: "unit:two", questions: [{ question_id: "question:7:0:2", critical: true, event: false }] }
 ];
 
-test("code confirms a quote only when the judge says it is covered and lists no repeated, combined or copied question", () => {
+test("code confirms a quote only when the judge says it is covered and lists no repeated or combined question", () => {
   const checked = checkCoverageJudgments({ quotes: callQuotes(), answer: { schema_version: "1.0", judgments: [
     judgment("unit:one", { critical_question_ids: ["question:7:0:1"] }), judgment("unit:two", { event_question_ids: ["question:7:0:2"] })] } });
   assert.equal(checked.valid, true);
@@ -150,12 +151,26 @@ test("code confirms a quote only when the judge says it is covered and lists no 
   const combined = checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
     judgment("unit:one"), judgment("unit:two", { combined_question_ids: ["question:7:0:2"], missing: "one question asks two things" })] } });
   assert.deepEqual(combined.quotes.map((quote) => quote.confirmed), [true, false]);
-  // A question that copies its quote's wording would let word search find the quote by its own phrasing.
+  // Copying is the code's check now (owner decision 30): a question the judge lists as copied is counted and holds
+  // nothing back, so the quote is confirmed and no note goes to the writer.
   const copied = checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
     judgment("unit:one", { copied_question_ids: ["question:7:0:0"], missing: "one question copies the quote's turn of phrase" }),
     judgment("unit:two")] } });
-  assert.deepEqual(copied.quotes.map((quote) => [quote.confirmed, quote.copied]), [[false, 1], [true, 0]]);
-  assert.deepEqual(copied.notes, [{ unit_id: "unit:one", missing: "one question copies the quote's turn of phrase" }]);
+  assert.deepEqual(copied.quotes.map((quote) => [quote.confirmed, quote.copied]), [[true, 1], [true, 0]]);
+  assert.deepEqual(copied.notes, []);
+  assert.equal(checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
+    judgment("unit:one", { copied_question_ids: ["question:7:0:0"] }), judgment("unit:two")] } }).valid, true, "a confirmed quote needs no note");
+  // In a run from before that decision (no copy-run setting), a copied question holds its quote back as it did then, so
+  // a recount of such a run follows it: the note goes to the writer, and an answer without one is invalid.
+  const before = checkCoverageJudgments({ quotes: callQuotes(), copyRunWords: null, answer: { judgments: [
+    judgment("unit:one", { copied_question_ids: ["question:7:0:0"], missing: "one question copies the quote's turn of phrase" }),
+    judgment("unit:two")] } });
+  assert.deepEqual(before.quotes.map((quote) => [quote.confirmed, quote.copied]), [[false, 1], [true, 0]]);
+  assert.deepEqual(before.notes, [{ unit_id: "unit:one", missing: "one question copies the quote's turn of phrase" }]);
+  assert.equal(checkCoverageJudgments({ quotes: callQuotes(), copyRunWords: null, answer: { judgments: [
+    judgment("unit:one", { copied_question_ids: ["question:7:0:0"] }), judgment("unit:two")] } }).reason, "unconfirmed_without_note");
+  assert.throws(() => checkCoverageJudgments({ quotes: callQuotes(), copyRunWords: 2, answer: { judgments: [] } }),
+    { code: "POINTER_COVERAGE_CHECK_INPUT_INVALID" });
   const uncovered = checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [
     judgment("unit:one", { covered: false, missing: "the call from the workshop" }), judgment("unit:two")] } });
   assert.deepEqual(uncovered.quotes.map((quote) => quote.confirmed), [false, true]);
@@ -187,7 +202,7 @@ test("a coverage answer that misses a quote, judges one twice or lists another q
   assert.throws(() => checkCoverageJudgments({ quotes: [], answer: { judgments: [] } }), { code: "POINTER_COVERAGE_CHECK_INPUT_INVALID" });
 });
 
-test("a unit gets one writer retry in all, and a unit still incomplete after it is a nonresponse", () => {
+test("a unit gets one writer retry in all; still unconfirmed after it, its questions count as missed, and still incomplete, it is a nonresponse", () => {
   assert.deepEqual(POINTER_REFERENCE_NONRESPONSE_REASONS, ["questions_incomplete", "coverage_unconfirmed", "coverage_check_failed",
     "searches_incomplete", "deadline"]);
   const set = (attempt) => checkQuestionSet({ sampleIndex: 7, attempt, quoteIds: QUOTES, texts: TEXTS, answer: writerAnswer() });
@@ -222,10 +237,18 @@ test("a unit gets one writer retry in all, and a unit still incomplete after it 
   // An unconfirmed quote uses it with the judge's notes.
   const notes = [{ unit_id: "unit:two", missing: "the call from the workshop" }];
   assert.deepEqual(step([{ set: set(0), coverage: coverage([true, false], notes) }]), { step: "write", attempt: 1, notes });
-  // After the retry there is no other: incomplete again, or unconfirmed again, is a nonresponse.
+  // After the retry there is no other: incomplete again is a nonresponse; complete and judged but unconfirmed again, the
+  // retry's questions count in recall with every one missed (owner decision 30), marked as a complete unit's would be.
   assert.deepEqual(step([{ set: incomplete, coverage: null }, { set: null, coverage: null }]), { step: "nonresponse", reason: "questions_incomplete" });
-  assert.deepEqual(step([{ set: set(0), coverage: coverage([true, false], notes) }, { set: set(1), coverage: coverage([true, false], notes) }]),
-    { step: "nonresponse", reason: "coverage_unconfirmed" });
+  const unconfirmed = step([{ set: set(0), coverage: coverage([true, false], notes) },
+    { set: set(1), coverage: [judge([true, false], notes, { critical: ["question:7:1:2"], event: ["question:7:1:0"] }), judge([true, false])] }]);
+  assert.deepEqual([unconfirmed.step, unconfirmed.attempt], ["unconfirmed", 1]);
+  assert.deepEqual(unconfirmed.questions.map((item) => [item.question_id, item.unit_id, item.critical, item.event]), [
+    ["question:7:1:0", "unit:one", false, true], ["question:7:1:1", "unit:one", false, false], ["question:7:1:2", "unit:two", true, false]]);
+  // In a run from before that decision (no copy-run setting), the same unit is a nonresponse, as it was then.
+  assert.deepEqual(referenceUnitStep({ quoteIds: QUOTES, copyRunWords: null, attempts: [{ set: set(0), coverage: coverage([true, false], notes) },
+    { set: set(1), coverage: coverage([true, false], notes) }] }), { step: "nonresponse", reason: "coverage_unconfirmed" });
+  assert.throws(() => referenceUnitStep({ quoteIds: QUOTES, attempts: [], copyRunWords: 21 }), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
   assert.deepEqual(step([{ set: incomplete, coverage: null }, { set: set(1), coverage: null }]), { step: "judge", attempt: 1 });
   assert.equal(step([{ set: set(0), coverage: coverage([false, true], notes) }, { set: set(1), coverage: coverage([true, true]) }]).step,
     "complete");
@@ -236,6 +259,87 @@ test("a unit gets one writer retry in all, and a unit still incomplete after it 
   assert.throws(() => step([{ set: set(0), coverage: [judge([true, true]), { quotes: judge([true, true]).quotes.slice(0, 1), notes: [] }] }]),
     { code: "POINTER_REFERENCE_STEP_COVERAGE_MISMATCH" });
   assert.throws(() => step([{}, {}, {}]), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
+});
+
+test("code checks copying: the longest run of its quote's words a question holds, accents, case, punctuation and spaces aside", () => {
+  assert.equal(POINTER_COPY_RUN_WORDS, 8);
+  assert.deepEqual(POINTER_COPY_RUN_LIMITS, { min: 3, max: 20 });
+  const quote = "Hier, je suis allé voir ma mère à l'hôpital de Thiès avec Awa.";
+  assert.deepEqual(longestSharedRun(quote, "Avec qui suis-je allé voir ma mère à l'hôpital ?"), { words: 7, run: "alle voir ma mere a l hopital" });
+  assert.equal(longestSharedRun(quote, "Qui ai-je vu à Thiès ?").words, 1);
+  assert.deepEqual(longestSharedRun("I want to move back to the village.", "Did I WANT to move—back to the village?"),
+    { words: 8, run: "i want to move back to the village" });
+  assert.deepEqual(longestSharedRun("Nothing alike.", "Something else?"), { words: 0, run: "" }, "only whole words count");
+  // Spaces and punctuation are skipped on both sides, so an apostrophe or a hyphen dropped, or turned into a space,
+  // changes nothing.
+  for (const question of ["Did I really dont want to leave right now?", "Did I really don t want to leave right now?"]) {
+    assert.deepEqual(longestSharedRun("I really don't want to leave right now", question), { words: 9, run: "i really don t want to leave right now" });
+  }
+  assert.deepEqual(longestSharedRun("My mother-in-law came for the whole weekend", "Did my mother in law come for the whole weekend?"),
+    { words: 4, run: "my mother in law" });
+  assert.deepEqual([longestSharedRun("", "Anything?").words, longestSharedRun("Something.", "").words], [0, 0]);
+  assert.throws(() => longestSharedRun(null, "q"), { code: "POINTER_COPY_CHECK_INPUT_INVALID" });
+
+  // A complete set reports each question's longest run, and flags those that reach the run length.
+  const check = (copyRunWords) => checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: writerAnswer(),
+    ...(copyRunWords === undefined ? {} : { copyRunWords }) });
+  assert.deepEqual([check().longest_runs, check().copied], [[3, 3, 7], []]);
+  assert.deepEqual(check(7).copied, [{ question_id: "question:7:0:2", unit_id: "unit:two", words: 7, run: "i want to move back to the" }]);
+  assert.equal(check(7).complete, true, "copying leaves the set complete: it holds its quote back from confirmation");
+  // A run from before the check flags none, and still reports the runs.
+  assert.deepEqual([check(null).longest_runs, check(null).copied], [[3, 3, 7], []]);
+  for (const copyRunWords of [2, 21, 7.5, "8"]) {
+    assert.throws(() => check(copyRunWords), { code: "POINTER_QUESTION_SET_INPUT_INVALID" });
+  }
+});
+
+test("the copy check's work grows with the two texts' lengths added, however repetitive they are", () => {
+  // 4,000 one-letter words against 800 questions of 400: matched place by place, that is over a billion steps; read once
+  // against each question it takes a fraction of a second. The bound is generous, so a slow machine doesn't fail it.
+  const quote = Array.from({ length: 4000 }, () => "a").join(" ");
+  const question = Array.from({ length: 400 }, () => "a").join(" ");
+  const started = performance.now();
+  for (let index = 0; index < 800; index += 1) assert.equal(longestSharedRun(quote, question).words, 400);
+  assert.ok(performance.now() - started < 10_000);
+  assert.equal(longestSharedRun("a".repeat(50_000), "a".repeat(400)).words, 0, "a word longer than the question is never held whole");
+});
+
+test("in a script written without spaces between words, each letter counts as a word, so copying shows there too", () => {
+  // Chinese: a question that repeats its quote shares all eleven characters; one in other words shares four.
+  const quote = "我昨天去医院看我妈妈了。";
+  assert.deepEqual(longestSharedRun(quote, "我昨天去医院看我妈妈了吗？"), { words: 11, run: "我 昨 天 去 医 院 看 我 妈 妈 了" });
+  assert.equal(longestSharedRun(quote, "我去医院看过妈妈吗？").words, 4);
+  // Japanese and Thai, their marks (kana's voicing marks, Thai's vowel and tone marks) aside like accents.
+  assert.equal(longestSharedRun("昨日、駅前のカフェでコーヒーを飲んだ。", "昨日、駅前のカフェでコーヒーを飲んだか？").words, 17);
+  assert.equal(longestSharedRun("เมื่อวานฉันไปโรงพยาบาลกับแม่", "เมื่อวานฉันไปโรงพยาบาลกับแม่ใช่ไหม").words, 23);
+  // A word of another script beside them stays one word, and a script written with spaces is read in words.
+  assert.deepEqual(longestSharedRun("I bought an iPhone手机 yesterday.", "Did I buy an iphone手机?"), { words: 4, run: "an iphone 手 机" });
+  assert.equal(longestSharedRun("어제 엄마와 병원에 갔어요.", "어제 엄마와 병원에 갔어요?").words, 4);
+  // So a question that copies a Chinese quote is held back, as one copying a French quote is.
+  const set = checkQuestionSet({ sampleIndex: 1, attempt: 0, quoteIds: ["unit:zh"], texts: new Map([["unit:zh", quote]]), answer: {
+    schema_version: "1.0", questions: [{ unit_id: "unit:zh", question: "我昨天去医院看我妈妈了吗？", critical: false, event: true }] } });
+  assert.deepEqual([set.longest_runs, set.copied.length], [[11], 1]);
+});
+
+test("a quote the copy check holds back gets the writer's retry with a note naming the run, though both judges confirm it", () => {
+  const confirmAll = () => ({ quotes: QUOTES.map((id) => ({ unit_id: id, confirmed: true, critical_question_ids: [], event_question_ids: [] })), notes: [] });
+  const both = () => [confirmAll(), confirmAll()];
+  const set = (attempt, answer = writerAnswer()) => checkQuestionSet({ sampleIndex: 7, attempt, quoteIds: QUOTES, texts: TEXTS, answer, copyRunWords: 7 });
+  const step = (attempts) => referenceUnitStep({ quoteIds: QUOTES, attempts });
+  assert.deepEqual(step([{ set: set(0), coverage: both() }]), { step: "write", attempt: 1, notes: [{ unit_id: "unit:two",
+    missing: "Code check: a question repeats 7 of this quote's words in a row (\"i want to move back to the\"). Ask about the same thing in other "
+      + "words, the way a person might later ask." }] });
+  // The judges' notes come first, then the copy check's.
+  const judgeNote = { unit_id: "unit:one", missing: "the rain is left out" };
+  const holding = { ...confirmAll(), quotes: confirmAll().quotes.map((quote) => (quote.unit_id === "unit:one" ? { ...quote, confirmed: false } : quote)),
+    notes: [judgeNote] };
+  assert.deepEqual(step([{ set: set(0), coverage: [holding, confirmAll()] }]).notes.map((note) => note.unit_id), ["unit:one", "unit:two"]);
+  // Copying again after the retry: the unit's questions count as missed. Asked in other words, the unit is complete.
+  assert.equal(step([{ set: set(0), coverage: both() }, { set: set(1), coverage: both() }]).step, "unconfirmed");
+  const reworded = { ...writerAnswer(), questions: writerAnswer().questions.map((item, index) => (index === 2
+    ? { ...item, question: "Do I hope to return to live in the village where I grew up?" } : item)) };
+  assert.deepEqual(set(1, reworded).copied, []);
+  assert.equal(step([{ set: set(0), coverage: both() }, { set: set(1, reworded), coverage: both() }]).step, "complete");
 });
 
 // Synthetic quote units: `pages` pages, page n holding (n % 3) + 1 quotes, in journal order.

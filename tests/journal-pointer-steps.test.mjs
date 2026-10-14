@@ -7,7 +7,7 @@ import { applyPointerEventCheck, checkPointerBatches, pointerEventCheckCalls, po
   pointerTaggerPacket } from "../src/journal-import/pointer-pass.mjs";
 import { pointerChallengeUnits, pointerReferenceSample } from "../src/journal-import/pointer-reference.mjs";
 import { POINTER_MEASURE_SAMPLE_NAMES, POINTER_PILOT_PAGES, POINTER_RECALL_TOP, measurePointerChallenge, measurePointerRecall, pointerBrokenAnchors,
-  pointerMeasureSamples, pointerPilotPages, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
+  pointerMeasureSamples, pointerPilotPages, pointerRecallReach, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
   runPointerReference } from "../src/journal-import/pointer-steps.mjs";
 import { buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
 
@@ -59,7 +59,8 @@ const judgment = (pair) => ({ pair_id: pair.pair_id, mentions: true, kind_right:
 // Answers each role from its packet, as the exchange would after its schema check, and keeps an invalid answer as
 // invalid. `script` changes single answers: by the writer's call key, by "tier:quote" for a coverage judge ("once" for
 // round 0 only, "always" for both, each holding the quote back as left out; "copied:once", "combined:always",
-// "repeated:once" and the like flag its first question for that reason instead), by the search call key, and by the
+// "repeated:once" and the like flag its first question for that reason instead; a writer's "copy" asks each quote in its
+// own words), by the search call key, and by the
 // tagger's or pair judge's call key
 // ("skip-last" leaves out a judgment, "foreign" adds one for a pair the call doesn't hold). "open" holds its call
 // until the deadline, "invalid" answers with no valid output, and "closed" closes its item unanswered, a close that
@@ -79,8 +80,10 @@ function scriptedPort({ clock, script = {} }) {
     }
     if (request.role === "question_writer") {
       const quotes = custom === "skip-last" ? packet.quote_units.slice(0, -1) : packet.quote_units;
+      // "copy" asks each quote in its own words.
       return { schema_version: "1.0", questions: quotes.map((quote, index) => ({ unit_id: quote.unit_id,
-        question: `What happened in the synthetic paragraph ${quote.unit_id}?`, critical: index === 0, event: index % 2 === 0 })) };
+        question: custom === "copy" ? quote.text : `What happened in the synthetic paragraph ${quote.unit_id}?`, critical: index === 0,
+        event: index % 2 === 0 })) };
     }
     if (request.role === "coverage_judge") {
       const round = Number(request.operationKey.split(":coverage:")[1].split(":")[0]);
@@ -138,6 +141,7 @@ function scriptedPort({ clock, script = {} }) {
 }
 
 const NONE_HELD_BACK = Object.freeze({ checks: 0, left_out: 0, repeated: 0, combined: 0, copied: 0 });
+const NO_COPYING = Object.freeze({ checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0, copied_by_code: 0 });
 
 const run = (port, clock, extra = {}) => runPointerReference({ units: quoteUnits(), seed: "synthetic-seed", stepId: "reference:synthetic",
   deadline: DEADLINE, port, grant, generation: "generation:synthetic:quotes", now: () => new Date(clock.now), ...extra });
@@ -169,21 +173,25 @@ test("every sampled unit gets its questions, both judges' confirmation and its s
   assert.deepEqual(Object.keys(judge.packet.quotes[0].questions[0]), ["question_id", "question", "critical", "event"]);
   const searcher = port.sent.find((item) => item.role === "search_writer");
   assert.deepEqual(Object.keys(searcher.packet.questions[0]), ["question_id", "question"]);
-  assert.deepEqual(pointerReferenceCounts(reference), { sampled_units: 30, complete_units: 30, nonresponse_units: 0,
+  assert.deepEqual(pointerReferenceCounts(reference), { sampled_units: 30, complete_units: 30, unconfirmed_units: 0, nonresponse_units: 0,
     nonresponse_by_reason: { questions_incomplete: 0, coverage_unconfirmed: 0, coverage_check_failed: 0, searches_incomplete: 0, deadline: 0 },
     deadline_units_with_a_call_unanswered: 0, units_retried: 0, questions: 45, critical_questions: 30, event_questions: 45,
+    unconfirmed_questions: 0, unconfirmed_critical_questions: 0,
     judges: { codex_confirmed: 45, claude_confirmed: 45,
       agreement: { items: 45, agreements: 45, disagreements: 0, raw_agreement: 1, kappa: null },
       held_back: { codex: NONE_HELD_BACK, claude: NONE_HELD_BACK, codex_only: NONE_HELD_BACK, claude_only: NONE_HELD_BACK },
-      by_round: [{ checks: 45, codex_confirmed: 45, claude_confirmed: 45, both_confirmed: 45 },
-        { checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0 }] } });
+      by_round: [{ ...NO_COPYING, checks: 45, codex_confirmed: 45, claude_confirmed: 45, both_confirmed: 45 }, NO_COPYING],
+      copying_flagged: { codex: 0, claude: 0 } },
+    // Each question shares two words in a row with its quote ("synthetic paragraph"), far below the run that copies.
+    copy_check: { run_words: 8, questions: 45, copying: 0, longest_run: { 2: 45 } } });
   assert.equal(JSON.stringify(pointerReferenceCounts(reference)).includes("Synthetic"), false);
-  // A reference stored before the judges' agreement was counted reports none.
-  const { judges, ...older } = reference;
-  assert.equal(pointerReferenceCounts(older).judges, null);
+  // A reference stored before the judges' agreement was counted reports none, and one stored before the copy check none
+  // of its counts.
+  const { judges, copy_check: copyCheck, ...older } = reference;
+  assert.deepEqual([pointerReferenceCounts(older).judges, pointerReferenceCounts(older).copy_check], [null, null]);
 });
 
-test("a unit either judge leaves unconfirmed gets its one retry with that judge's notes, and is a nonresponse if it falls short again", async () => {
+test("a unit either judge leaves unconfirmed gets its one retry with that judge's notes, and if it falls short again counts as missed", async () => {
   const clock = { now: START };
   const port = scriptedPort({ clock, script: { "standard:unit:p3q0": "once", "hardest:unit:p5q1": "always",
     [writerKey(7)]: "skip-last" } });
@@ -194,13 +202,20 @@ test("a unit either judge leaves unconfirmed gets its one retry with that judge'
   assert.match(third.questions[0].question_id, /^question:\d+:1:0$/, "the retry's questions");
   const retry = port.sent.find((item) => item.role === "question_writer" && item.packet.coverage_notes);
   assert.deepEqual(retry.packet.coverage_notes, [{ unit_id: "unit:p3q0", missing: "standard judge: something is missing" }]);
+  // Still unconfirmed after the retry (owner decision 30): the retry's questions are kept, with no searches, and count
+  // in recall with every one missed.
   const fifth = byPage.get("page:5");
-  assert.deepEqual([fifth.status, fifth.reason, fifth.questions], ["nonresponse", "coverage_unconfirmed", []]);
+  assert.deepEqual([fifth.status, fifth.reason, fifth.writer_attempts], ["unconfirmed", null, 2]);
+  assert.deepEqual(fifth.questions.map((question) => [question.unit_id, "queries" in question]), [["unit:p5q0", false], ["unit:p5q1", false]]);
+  assert.match(fifth.questions[0].question_id, /^question:\d+:1:0$/u);
+  assert.equal(port.sent.filter((item) => item.role === "search_writer" && item.operationKey === searchKey(5)).length, 0, "no searches for it");
   // An incomplete first answer (a quote without a question) uses the same one retry, without notes.
   const seventh = byPage.get("page:7");
   assert.deepEqual([seventh.status, seventh.writer_attempts], ["complete", 2]);
   assert.equal(port.sent.filter((item) => item.operationKey === writerKey(7, 1) && !item.packet.coverage_notes).length, 1);
-  assert.equal(pointerReferenceCounts(reference).units_retried, 3);
+  assert.deepEqual(Object.fromEntries(Object.entries(pointerReferenceCounts(reference)).filter(([name]) => ["complete_units", "unconfirmed_units",
+    "nonresponse_units", "units_retried", "unconfirmed_questions", "unconfirmed_critical_questions"].includes(name))),
+  { complete_units: 29, unconfirmed_units: 1, nonresponse_units: 0, units_retried: 3, unconfirmed_questions: 2, unconfirmed_critical_questions: 1 });
   // The judges disagree on unit:p3q0 in the first round (Codex leaves it unconfirmed once) and on unit:p5q1 in both
   // rounds (Claude never confirms it); every other quote both judged, they both confirmed.
   const { judges } = pointerReferenceCounts(reference);
@@ -215,23 +230,77 @@ test("a unit either judge leaves unconfirmed gets its one retry with that judge'
 
 test("the judges' reasons for holding a quote back are counted by kind, for each judge and where only one held back", async () => {
   const clock = { now: START };
-  // In the first round Codex flags a copied question on page 3's first quote and a combined one on page 9's, while Claude
-  // finds something left out on page 9's and a repeated question on page 11's second quote. The rewrites pass both.
+  // In the first round Codex flags a combined question on page 9's first quote and a copied one on page 3's, while Claude
+  // finds something left out on page 9's and a repeated question on page 11's second quote. A copied flag holds nothing
+  // back now (owner decision 30: code checks copying), so page 3 is confirmed at once. The rewrites pass both judges.
   const port = scriptedPort({ clock, script: { "standard:unit:p3q0": "copied:once", "standard:unit:p9q0": "combined:once",
     "hardest:unit:p9q0": "once", "hardest:unit:p11q1": "repeated:once" } });
   const reference = await run(port, clock);
   assert.ok(reference.units.every((unit) => unit.status === "complete"));
+  assert.equal(reference.units.find((unit) => unit.unit_id === "page:3").writer_attempts, 1);
   const { judges } = pointerReferenceCounts(reference);
   assert.deepEqual(judges.held_back, {
-    codex: { checks: 2, left_out: 0, repeated: 0, combined: 1, copied: 1 },
+    codex: { checks: 1, left_out: 0, repeated: 0, combined: 1, copied: 0 },
     claude: { checks: 2, left_out: 1, repeated: 1, combined: 0, copied: 0 },
-    codex_only: { checks: 1, left_out: 0, repeated: 0, combined: 0, copied: 1 },
+    codex_only: NONE_HELD_BACK,
     claude_only: { checks: 1, left_out: 0, repeated: 1, combined: 0, copied: 0 } });
-  // 45 quotes in the first round; pages 3, 9 and 11, two quotes each, again in the second.
-  assert.deepEqual(judges.by_round, [{ checks: 45, codex_confirmed: 43, claude_confirmed: 43, both_confirmed: 42 },
-    { checks: 6, codex_confirmed: 6, claude_confirmed: 6, both_confirmed: 6 }]);
-  assert.deepEqual([judges.codex_confirmed, judges.claude_confirmed, judges.agreement.items], [49, 49, 51]);
+  // 45 quotes in the first round; pages 9 and 11, two quotes each, again in the second.
+  assert.deepEqual(judges.by_round, [{ ...NO_COPYING, checks: 45, codex_confirmed: 44, claude_confirmed: 43, both_confirmed: 43 },
+    { ...NO_COPYING, checks: 4, codex_confirmed: 4, claude_confirmed: 4, both_confirmed: 4 }]);
+  assert.deepEqual([judges.codex_confirmed, judges.claude_confirmed, judges.agreement.items], [48, 47, 49]);
+  // Codex's copying flag, which held nothing back, is still counted.
+  assert.deepEqual(judges.copying_flagged, { codex: 1, claude: 0 });
   assert.equal(JSON.stringify(judges).includes("Synthetic"), false);
+});
+
+test("code holds back a quote whose question copies a run of its words, and a unit copying again after its retry counts as missed", async () => {
+  const clock = { now: START };
+  // Page 5's writer asks each quote in the quote's own words, both times; page 7's only the first time. A quote here is
+  // six words, so this run copies at five.
+  const port = scriptedPort({ clock, script: { [writerKey(5)]: "copy", [writerKey(5, 1)]: "copy", [writerKey(7)]: "copy" } });
+  const reference = await run(port, clock, { copyRunWords: 5 });
+  const byPage = new Map(reference.units.map((unit) => [unit.unit_id, unit]));
+  assert.deepEqual([byPage.get("page:5").status, byPage.get("page:5").writer_attempts], ["unconfirmed", 2]);
+  assert.deepEqual([byPage.get("page:7").status, byPage.get("page:7").writer_attempts], ["complete", 2]);
+  // The retry's note names the run, and goes only into the writer's packet.
+  const retry = port.sent.find((item) => item.operationKey === writerKey(7, 1));
+  assert.deepEqual(retry.packet.coverage_notes, [{ unit_id: "unit:p7q0", missing: "Code check: a question repeats 6 of this quote's words in a row "
+    + "(\"synthetic paragraph 0 of page 7\"). Ask about the same thing in other words, the way a person might later ask." },
+  { unit_id: "unit:p7q1", missing: "Code check: a question repeats 6 of this quote's words in a row (\"synthetic paragraph 1 of page 7\"). Ask "
+    + "about the same thing in other words, the way a person might later ask." }]);
+  const counts = pointerReferenceCounts(reference);
+  // Pages 5 and 7 copy in the first round (two quotes each), page 5 again in the second; the judges confirmed them all.
+  assert.deepEqual(counts.judges.by_round.map((round) => round.copied_by_code), [4, 2]);
+  assert.deepEqual(counts.copy_check, { run_words: 5, questions: 49, copying: 6, longest_run: { 2: 43, 6: 6 } });
+  assert.deepEqual(counts.judges.held_back.codex, NONE_HELD_BACK, "the judges held nothing back: the code did");
+  assert.equal(JSON.stringify(counts).includes("ynthetic"), false);
+  // Without the check (a run from before it), nothing copies.
+  const earlier = { now: START };
+  const before = await run(scriptedPort({ clock: earlier, script: { [writerKey(5)]: "copy" } }), earlier, { copyRunWords: null });
+  assert.equal(before.units.find((unit) => unit.unit_id === "page:5").status, "complete");
+  assert.deepEqual(pointerReferenceCounts(before).copy_check, { run_words: null, questions: 45, copying: 0, longest_run: { 2: 43, 6: 2 } });
+});
+
+test("a run from before owner decision 30 keeps its rules: a judge's copying flag holds a quote back, and a unit unconfirmed after its retry is a nonresponse", async () => {
+  // Codex flags a copied question on page 3's first quote in the first round only; Claude on page 5's second quote in
+  // both rounds.
+  const script = { "standard:unit:p3q0": "copied:once", "hardest:unit:p5q1": "copied:always" };
+  const clock = { now: START };
+  const reference = await run(scriptedPort({ clock, script }), clock, { copyRunWords: null });
+  const byPage = new Map(reference.units.map((unit) => [unit.unit_id, unit]));
+  assert.deepEqual([byPage.get("page:3").status, byPage.get("page:3").writer_attempts], ["complete", 2]);
+  const fifth = byPage.get("page:5");
+  assert.deepEqual([fifth.status, fifth.reason, fifth.writer_attempts, fifth.questions], ["nonresponse", "coverage_unconfirmed", 2, []]);
+  const counts = pointerReferenceCounts(reference);
+  assert.deepEqual([counts.complete_units, counts.unconfirmed_units, counts.nonresponse_by_reason.coverage_unconfirmed], [29, 0, 1]);
+  const copied = (checks) => ({ ...NONE_HELD_BACK, checks, copied: checks });
+  assert.deepEqual(counts.judges.held_back, { codex: copied(1), claude: copied(2), codex_only: copied(1), claude_only: copied(2) });
+  assert.deepEqual(counts.judges.copying_flagged, { codex: 1, claude: 2 });
+  assert.deepEqual([counts.copy_check.run_words, counts.copy_check.copying], [null, 0]);
+  // Under the rules since then, the same flags hold nothing back.
+  const later = { now: START };
+  const since = await run(scriptedPort({ clock: later, script }), later);
+  assert.ok(since.units.every((unit) => unit.status === "complete" && unit.writer_attempts === 1));
 });
 
 test("read back after the deadline, a writer item that closed in time leads to its unit's next round, as it did", async () => {
@@ -630,10 +699,38 @@ test("recall is measured over every sampled unit, and a floor with nothing to me
   const flat = measurePointerRecall({ reference: plain, foundWithTags: all, foundWordsOnly: none, eventTaggedUnitIds: events });
   assert.deepEqual([flat.critical_recall, flat.critical_recall_estimate, flat.critical_recall_words_only_estimate, flat.event_coverage], [null, null, null, null]);
   assert.equal(full.units.length, REFERENCE.units.length);
-  assert.deepEqual(Object.keys(full.units[0]), ["unit_id", "questions", "found_with_tags", "found_words_only", "critical_questions", "event_quotes"]);
+  assert.deepEqual(Object.keys(full.units[0]), ["unit_id", "status", "questions", "found_with_tags", "found_words_only", "critical_questions",
+    "event_quotes"]);
+  // An unconfirmed unit (owner decision 30) counts with every question missed, and none of its event quotes covered,
+  // whatever the found sets say; it is never searched.
+  const [first, ...rest] = REFERENCE.units;
+  const withUnconfirmed = { units: [{ ...first, status: "unconfirmed", questions: first.questions.map(({ queries, ...question }) => question) }, ...rest] };
+  const counted = measurePointerRecall({ reference: withUnconfirmed, foundWithTags: all, foundWordsOnly: none, eventTaggedUnitIds: events });
+  assert.deepEqual(counted.units[0], { unit_id: first.unit_id, status: "unconfirmed", questions: first.questions.length, found_with_tags: 0,
+    found_words_only: 0, critical_questions: first.questions.filter((question) => question.critical).length,
+    event_quotes: new Set(first.questions.filter((question) => question.event).map((question) => question.unit_id)).size });
+  assert.ok(counted.recall_estimate < 1 && counted.gain.estimate === counted.recall_estimate);
+  const asked = REFERENCE.units.reduce((sum, unit) => sum + unit.questions.length / unit.inclusion_probability, 0);
+  assert.ok(Math.abs(counted.recall_estimate - (1 - first.questions.length / first.inclusion_probability / asked)) < 1e-12);
   const incomplete = { units: [{ ...REFERENCE.units[0], status: "nonresponse", questions: [] }, ...REFERENCE.units.slice(1)] };
   assert.throws(() => measurePointerRecall({ reference: incomplete, foundWithTags: all, foundWordsOnly: all, eventTaggedUnitIds: events }),
     { code: "POINTER_REFERENCE_INCOMPLETE" });
+});
+
+test("the recall floor's reach takes complete units as found and unconfirmed ones as missed, the best any generation could do", () => {
+  assert.deepEqual(pointerRecallReach(REFERENCE), { unconfirmed_units: 0, best_estimate: 1, best_lower_bound: 1, floor: 0.85, reachable: true });
+  const unconfirmed = (count) => ({ units: REFERENCE.units.map((unit, index) => (index < count ? { ...unit, status: "unconfirmed" } : unit)) });
+  const one = pointerRecallReach(unconfirmed(1));
+  assert.equal(one.unconfirmed_units, 1);
+  assert.ok(one.best_estimate < 1 && one.best_lower_bound <= one.best_estimate);
+  // Half the sample unconfirmed: no generation could reach the floor, so the run stops before the pilot.
+  const half = pointerRecallReach(unconfirmed(Math.ceil(REFERENCE.units.length / 2)));
+  assert.ok(half.best_lower_bound < 0.85);
+  assert.equal(half.reachable, false);
+  // A nonresponse is left out here: it stops the run anyway.
+  const nonresponse = { units: [{ ...REFERENCE.units[0], status: "nonresponse", questions: [] }, ...REFERENCE.units.slice(1)] };
+  assert.equal(pointerRecallReach(nonresponse).unconfirmed_units, 0);
+  assert.throws(() => pointerRecallReach(null), { code: "POINTER_REFERENCE_INVALID" });
 });
 
 test("each sample is fixed by its seed, 150 pairs at most, and its items are what a judge sees", () => {

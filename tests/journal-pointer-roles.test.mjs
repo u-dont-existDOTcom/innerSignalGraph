@@ -480,9 +480,11 @@ test("the reference roles' instructions are installed, and each call goes only t
   assert.match(journalRoleInstruction("question_writer"), /Don't ask about the same thing twice, and don't fold two things into one question/);
   assert.match(journalRoleInstruction("coverage_judge"), /`repeated_question_ids` lists each question that asks about the same thing as an earlier question/);
   assert.match(journalRoleInstruction("coverage_judge"), /`combined_question_ids` each question that asks about two things or more/);
-  // No question may copy its quote's wording, or word search would find the quote by its own phrasing.
-  assert.match(journalRoleInstruction("coverage_judge"), /`copied_question_ids` lists each question that copies the quote's wording/);
+  // No question may copy its quote's wording, or word search would find the quote by its own phrasing. Code checks a run
+  // of the quote's words (owner decision 30), so the judge doesn't judge copying.
+  assert.match(journalRoleInstruction("coverage_judge"), /`copied_question_ids` stays empty: code checks whether a question copies a run/);
   assert.match(journalRoleInstruction("question_writer"), /Don't copy distinctive words or phrases from the quote; the names of people/);
+  assert.match(journalRoleInstruction("question_writer"), /Code holds back any question that repeats a long run of the quote's words in a row/);
   // Event marks, which event coverage is measured against.
   assert.match(journalRoleInstruction("question_writer"), /Set `event` to true when the question asks about something the quote reports as happening/);
   assert.match(journalRoleInstruction("coverage_judge"), /`event_question_ids` lists every question of that quote that asks about something the quote reports as happening/);

@@ -7,7 +7,7 @@ import path from "node:path";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
-import { POINTER_DEADLINE_DEFAULTS, journalPointerDeadlines } from "../src/journal-import/run-config.mjs";
+import { POINTER_DEADLINE_DEFAULTS, journalPointerCopyRunWords, journalPointerDeadlines } from "../src/journal-import/run-config.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 
 // The pointer pass's commands in the private runtime (plan 2026-10-09-journal-quote-first.md, Part 3): the reference
@@ -27,8 +27,9 @@ const distinct = (text) => text.match(/(?:quolp|vemmet)\d+/u)[0];
 
 // Answers by rule: each quote's question asks about its own word, or for the rain, about "pluie" and its page, and
 // the search writer searches the question's last word; the tagger tags Jean, each quote's word, and the rain; the
-// judges confirm and accept everything except the quotes whose word `refuse` picks.
-function handlers({ refuse = () => false } = {}) {
+// judges confirm and accept everything except the quotes whose word `refuse` picks, and list as copied the first
+// question of each quote whose word `copied` picks.
+function handlers({ refuse = () => false, copied = () => false } = {}) {
   const rainTerm = (text) => `pluie${text.match(/vemmet(\d+)/u)[1]}`;
   return {
     question_writer: (packet) => ({ schema_version: "1.0", questions: packet.quote_units.flatMap((quote) => [
@@ -36,8 +37,11 @@ function handlers({ refuse = () => false } = {}) {
       { unit_id: quote.unit_id, question: `What was the weather, ask about ${rainTerm(quote.text)}`, critical: false, event: false }]) }),
     coverage_judge: (packet) => ({ schema_version: "1.0", judgments: packet.quotes.map((quote) => {
       const refused = refuse(distinct(quote.text));
-      return { unit_id: quote.unit_id, covered: !refused, missing: refused ? "something is left out" : "", critical_question_ids: [],
-        event_question_ids: [], repeated_question_ids: [], combined_question_ids: [], copied_question_ids: [] };
+      const copying = copied(distinct(quote.text));
+      return { unit_id: quote.unit_id, covered: !refused,
+        missing: refused ? "something is left out" : (copying ? "a question copies the quote's words" : ""), critical_question_ids: [],
+        event_question_ids: [], repeated_question_ids: [], combined_question_ids: [],
+        copied_question_ids: copying ? [quote.questions[0].question_id] : [] };
     }) }),
     search_writer: (packet) => ({ schema_version: "1.0", searches: packet.questions.map((question) => ({ question_id: question.question_id,
       queries: [question.question.split(" ").at(-1)] })) }),
@@ -169,10 +173,14 @@ test("the pointer run goes from the reference sample to publication, each step w
   const state = await fs.readFile(f.stateFile, "utf8");
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(state.includes(word), false, word);
 
-  // A date setting changed after the measurement holds publication back, as it does every step.
+  // A date setting changed after the measurement holds publication back, as it does every step, and so does a changed
+  // copy-run setting.
   f.config.quote_numeric_date_order = "day_first";
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
   delete f.config.quote_numeric_date_order;
+  f.config.pointer_copy_run_words = 7;
+  await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
+  delete f.config.pointer_copy_run_words;
   const deployed = await f.run("pointer-publish");
   assert.equal(deployed.pointer.published.supersedes, published.active_generation);
   const after = (await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora.find((item) => item.corpus_id === published.corpus_id);
@@ -185,24 +193,42 @@ test("the pointer run goes from the reference sample to publication, each step w
   assert.equal((await f.run("pointer-publish")).pointer.published.at, deployed.pointer.published.at);
 });
 
-test("reference units the coverage judges never confirm stop the run before the pilot, each listed by its page", async (t) => {
-  // The judges never confirm a page's first quote on the even pages.
+test("reference units the coverage judges never confirm count as missed, and stop the run before the pilot when that puts recall out of reach", async (t) => {
+  // The judges never confirm a page's first quote on the even pages: about half the sample.
   const f = await runtimeEnvironment(t, { refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0 });
   await f.run("stage", "build-quotes");
   const stopped = await f.run("pointer-reference");
-  assert.equal(stopped.pointer.blocker, "POINTER_REFERENCE_NONRESPONSE");
+  assert.equal(stopped.pointer.blocker, "POINTER_RECALL_OUT_OF_REACH");
   const { reference } = stopped.pointer;
-  assert.ok(reference.nonresponse_units.length > 0);
-  for (const unit of reference.nonresponse_units) {
-    assert.match(unit.unit_id, /^page:\d+$/u);
-    assert.equal(Number(unit.unit_id.slice("page:".length)) % 2, 0);
-    assert.equal(unit.reason, "coverage_unconfirmed");
+  assert.deepEqual(reference.nonresponse_units, []);
+  assert.ok(reference.unconfirmed_units.length > 0);
+  for (const unitId of reference.unconfirmed_units) {
+    assert.match(unitId, /^page:\d+$/u);
+    assert.equal(Number(unitId.slice("page:".length)) % 2, 0);
   }
-  assert.equal(reference.counts.nonresponse_units, reference.nonresponse_units.length);
-  assert.equal(reference.counts.complete_units + reference.counts.nonresponse_units, 96);
-  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_REFERENCE_NONRESPONSE" });
+  assert.deepEqual([reference.counts.unconfirmed_units, reference.counts.nonresponse_units], [reference.unconfirmed_units.length, 0]);
+  assert.equal(reference.counts.complete_units + reference.counts.unconfirmed_units, 96);
+  assert.equal(reference.recall_reach.unconfirmed_units, reference.unconfirmed_units.length);
+  assert.ok(reference.recall_reach.best_lower_bound < reference.recall_reach.floor);
+  assert.equal(reference.recall_reach.reachable, false);
+  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_RECALL_OUT_OF_REACH" });
   // Status still answers.
-  assert.equal((await f.run("status")).pointer.blocker, "POINTER_REFERENCE_NONRESPONSE");
+  assert.equal((await f.run("status")).pointer.blocker, "POINTER_RECALL_OUT_OF_REACH");
+});
+
+test("a few units still unconfirmed after their retry count as missed and the run goes on, the floor still within reach", async (t) => {
+  // The judges never confirm the first quote of page 50 or page 100: at most two sampled units.
+  const f = await runtimeEnvironment(t, { refuse: (word) => ["quolp50", "quolp100"].includes(word) });
+  await f.run("stage", "build-quotes");
+  const referenced = await f.run("pointer-reference");
+  const { reference } = referenced.pointer;
+  assert.equal(referenced.pointer.blocker, null);
+  assert.ok(reference.unconfirmed_units.length <= 2);
+  assert.deepEqual([reference.counts.complete_units + reference.counts.unconfirmed_units, reference.counts.nonresponse_units], [96, 0]);
+  assert.equal(reference.recall_reach.reachable, true);
+  assert.equal(reference.counts.copy_check.run_words, journalPointerCopyRunWords({}));
+  // The pilot runs.
+  assert.equal((await f.run("pointer-pilot")).pointer.pilot.status, "done");
 });
 
 test("a finished reference step is counted again from its stored answers after its deadline, sending nothing and saving nothing", async (t) => {
@@ -237,15 +263,66 @@ test("a finished reference step is counted again from its stored answers after i
   assert.deepEqual(heldBack.claude, heldBack.codex);
   assert.deepEqual([heldBack.codex_only.checks, heldBack.claude_only.checks], [0, 0], "the judges here always agree");
   assert.equal(byRound[0].checks + byRound[1].checks, recount.counts.judges.agreement.items);
+  // Every count the stored step holds is compared, the copy check's and the judges' reasons and flags included: one that
+  // no longer follows from the stored answers shows.
+  for (const tamper of [(counts) => { counts.copy_check.copying += 1; }, (counts) => { counts.judges.held_back.codex.left_out += 1; },
+    (counts) => { counts.judges.copying_flagged.claude += 1; }, (counts) => { counts.unconfirmed_questions += 1; }]) {
+    const changed = structuredClone(before);
+    tamper(changed.pointer.reference.counts);
+    await fs.writeFile(f.stateFile, JSON.stringify(changed), { mode: 0o600 });
+    assert.equal((await f.run("pointer-recount")).recount.matches_stored_counts, false);
+  }
+  await fs.writeFile(f.stateFile, JSON.stringify(before), { mode: 0o600 });
   // A reference stored before the reasons were counted gets them from the recount, and its other counts still match.
   const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
   delete state.pointer.reference.counts.judges.held_back;
   delete state.pointer.reference.counts.judges.by_round;
+  delete state.pointer.reference.counts.judges.copying_flagged;
   await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
   const older = (await f.run("pointer-recount")).recount;
   assert.equal(older.matches_stored_counts, true);
   assert.deepEqual(older.counts.judges.held_back, heldBack);
+  // Stored counts without the copy check's and the unconfirmed units' counts still match: only the counts held are
+  // compared.
+  for (const name of ["copy_check", "unconfirmed_units", "unconfirmed_questions", "unconfirmed_critical_questions"]) delete state.pointer.reference.counts[name];
+  await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
+  const oldest = (await f.run("pointer-recount")).recount;
+  assert.equal(oldest.matches_stored_counts, true);
+  assert.deepEqual(oldest.counts.copy_check, reference.counts.copy_check);
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(JSON.stringify(older).includes(word), false, word);
+});
+
+test("a run from before owner decision 30 keeps its rules, so its recount follows it: a copying flag holds a quote back, and an unconfirmed unit is a nonresponse", async (t) => {
+  const later = { ms: 0 };
+  // Both judges list the question of every even page's quote that asks about its word as copying it, in both rounds.
+  const f = await runtimeEnvironment(t, { copied: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
+    now: () => new Date(Date.now() + later.ms),
+    wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => {
+      const result = await port.invoke(...args);
+      return { ...result, receipt: { ...result.receipt, provider_route_receipt: { received_at: new Date(Date.now() + later.ms).toISOString() } } };
+    } }) });
+  // The run opens (its pilot can't start before the reference step) and, as code from before the decision wrote it, has
+  // no copy-run setting.
+  await assert.rejects(f.run("stage", "build-quotes", "pointer-pilot"), { code: "POINTER_REFERENCE_NOT_DONE" });
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  delete state.pointer.copy_run_words;
+  await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
+  const stopped = (await f.run("pointer-reference")).pointer;
+  assert.equal(stopped.blocker, "POINTER_REFERENCE_NONRESPONSE");
+  const { reference } = stopped;
+  assert.deepEqual(reference.unconfirmed_units, []);
+  assert.ok(reference.nonresponse_units.length > 0);
+  assert.ok(reference.nonresponse_units.every((unit) => unit.reason === "coverage_unconfirmed"));
+  const { held_back: heldBack } = reference.counts.judges;
+  assert.ok(heldBack.codex.checks > 0);
+  assert.deepEqual(heldBack.codex, { checks: heldBack.codex.checks, left_out: 0, repeated: 0, combined: 0, copied: heldBack.codex.checks });
+  assert.deepEqual(reference.counts.judges.copying_flagged, { codex: heldBack.codex.checks, claude: heldBack.claude.checks });
+  assert.deepEqual([reference.counts.copy_check.run_words, reference.counts.copy_check.copying], [null, 0]);
+  // After its deadline, the recount follows it exactly.
+  later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;
+  const { recount } = await f.run("pointer-recount");
+  assert.equal(recount.matches_stored_counts, true);
+  assert.deepEqual(recount.counts, reference.counts);
 });
 
 test("the step deadlines are run settings, checked before anything runs", async (t) => {
@@ -278,6 +355,29 @@ test("a run reads dates as the setting said when it started: a changed setting n
   assert.match(second.generation, /:quotes:quote-index-v2-day-first:pointer-[0-9a-f]{8}$/u);
   assert.notEqual(second.reference.seed_sha256, first.reference.seed_sha256);
   assert.equal(second.reference.status, "done");
+});
+
+test("the copy check's run length is a run setting, checked before anything runs and kept by a run", async (t) => {
+  assert.equal(journalPointerCopyRunWords({}), 8);
+  assert.equal(journalPointerCopyRunWords({ pointer_copy_run_words: 5 }), 5);
+  for (const value of [2, 21, 7.5, "8"]) {
+    assert.throws(() => journalPointerCopyRunWords({ pointer_copy_run_words: value }), { code: "JOURNAL_POINTER_COPY_RUN_INVALID" });
+  }
+  const f = await runtimeEnvironment(t);
+  f.config.pointer_copy_run_words = 2;
+  await assert.rejects(f.open(), { code: "JOURNAL_POINTER_COPY_RUN_INVALID" });
+  f.config.pointer_copy_run_words = 6;
+  const first = (await f.run("stage", "pointer-reference")).pointer;
+  assert.equal(first.copy_run_words, 6);
+  assert.equal(first.reference.counts.copy_check.run_words, 6);
+  // A changed setting needs a new run, as the date setting does.
+  f.config.pointer_copy_run_words = 7;
+  await assert.rejects(f.run("pointer-pilot"), { code: "POINTER_RUN_SETTING_CHANGED" });
+  // A run from before the copy check has no setting of its own, and goes on under any.
+  const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  delete state.pointer.copy_run_words;
+  await fs.writeFile(f.stateFile, JSON.stringify(state), { mode: 0o600 });
+  assert.equal((await f.run("pointer-pilot")).pointer.pilot.status, "done");
 });
 
 // The mock port, counting the calls it holds at once, by tier and in all.

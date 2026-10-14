@@ -452,6 +452,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   `pointer-recount` counts a finished reference step again from its stored answers once its deadline has passed, so
   nothing can be sent; it saves nothing, and says whether the stored counts still follow. A step stored before these
   counts gets them that way. The rule changes follow from the counts, in an amendment of their own.
+- **The rules, first part (amended 13 Oct 2026, owner decision 30).** Two of the changes the owner chose don't wait for
+  the counts: code, not the judges, checks copying, and a unit still unconfirmed after its rewrite counts in recall
+  with every question missed instead of stopping the run (both under "Measuring it" below). The sharper writer and judge
+  instructions, where the judges split, follow the counts.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
@@ -490,10 +494,22 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   is left out and list no question, so one judge's miss can't let a biased or self-answering question set through;
   otherwise each judge says in a few words what is missing, repeated, combined or copied. The question writer then
   gets one retry for that unit, with both judges' notes, and both judges check the new questions. A quote still not
-  confirmed, after that retry or at the reference step's deadline, makes its unit a nonresponse (below), so the recall
-  floor fails and the run stops before the pilot: a question set that leaves the hard part of a quote unasked can't be
-  measured around. Each judge also checks each question's critical and event marks against the definitions above, and
-  a question is critical, or about an event, when the writer or either judge marks it so.
+  confirmed after that retry leaves its unit unconfirmed (below), and one not confirmed by the reference step's
+  deadline makes its unit a nonresponse (below). Each judge also checks each question's critical and event marks
+  against the definitions above, and a question is critical, or about an event, when the writer or either judge marks
+  it so.
+  - **Copying is code's check (amended 13 Oct 2026, owner decision 30).** A question copies when it holds
+    `pointer_copy_run_words` of its quote's words in a row (a run setting, 8 by default, from 3 to 20), in the quote's
+    order, with accents, case, punctuation and spaces aside: only letters and digits are compared, so "don't", "dont"
+    and "don t" are the same, and a run counts the quote's words it holds whole. A shorter shared run is the plain words anyone would use for what
+    happened. A copying question leaves its quote unconfirmed whatever the judges say, and the writer's retry note
+    names the run. The judges no longer judge copying: a copied question a judge still lists is counted (each judge's
+    checks with such a flag, whatever it decided) and decides
+    nothing. The reference step reports, for every question, how many of its quote's words in a row it holds, so the
+    setting can be checked against what the writer actually writes. A run keeps the setting it started with, as it
+    keeps its date setting. In a script written without spaces between words (Chinese, Japanese, Thai, Lao, Khmer,
+    Burmese), each letter counts as a word, so copying shows there too; the setting then counts letters, and is set
+    from that report.
 - **No unit drops out.** A unit's questions are complete when every one of its quotes has at least one question naming
   it, every question names one of its quotes, and both coverage judges confirmed every one of its quotes. An
   incomplete or failed answer gets one retry, and so does a search-writing answer that fails or leaves a question
@@ -502,6 +518,17 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   page can't leave the sample and lift the bound. Since the questions and searches are all done before the pilot, a
   nonresponse stops the run there, with the units listed on the owner page, and no journal is tagged for a generation
   that couldn't be published.
+  - **An unconfirmed unit counts as missed (amended 13 Oct 2026, owner decision 30).** A unit whose rewritten
+    questions are complete and judged by both judges, but still not all confirmed, keeps those questions and is
+    `unconfirmed`, not a nonresponse. It gets no searches, and counts in every recall measure with each of its
+    questions missed: recall with tags and with words only, critical recall and gain, and event coverage with none of
+    its event quotes covered. So a unit the judges can't agree on lowers recall instead of stopping the run. It stops
+    the run before the pilot only when the unconfirmed units alone already put the recall floor out of reach: with
+    every complete unit's questions taken as found and every unconfirmed unit's as missed, the best any generation
+    could do, the one-sided 95% lower bound is under 85% (`POINTER_RECALL_OUT_OF_REACH`). A unit whose coverage check
+    failed after its retry, or that ran out of time, is still a nonresponse. A run from before this amendment keeps the
+    rules it started with, so its recount (`pointer-recount`) follows it: there a judge's copying flag holds a quote
+    back, and an unconfirmed unit is a nonresponse.
 - **Calibration as a challenge set.** Calibration's units were chosen by their place in the journal plus every hazard
   (dreams, wishes, plans, hypotheticals), so they aren't a random sample. Recall on them is reported on its own, with
   hazards apart, and never stands in for a floor.
@@ -610,7 +637,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
 1. **Build** the role, schema, batching, checks, graph adaptation, search on tags and the measurement command, with
    the tests below. Codex review; the owner merges.
 2. **Reference sample:** draw the 96 units with a recorded seed and write the questions for their quotes and the
-   searches, by the reference step's deadline. A nonresponse stops the run here.
+   searches, by the reference step's deadline. A nonresponse stops the run here, and so do unconfirmed units that
+   already put the recall floor out of reach.
 3. **Pilot** on 20 pages drawn from a recorded seed outside the reference sample: seconds per batch, tokens, tags kept
    and dropped, failed batches. It never looks at a reference, and nothing is published.
 4. **Full pass** on the whole journal, timed. Built, not published.
@@ -659,7 +687,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   stored after the deadline is ignored, and no resume sends the item again. At the pass's deadline a batch still
   unanswered ends untagged with the reason `deadline`, an event check still unanswered drops its pair, and the pass
   builds; at the reference step's deadline a unit without its questions or its searches, or with a quote the coverage
-  check hasn't confirmed, is a nonresponse, the recall floor fails and the run stops before the pilot; at the
+  check hasn't confirmed, is a nonresponse, the recall floor fails and the run stops before the pilot (a unit judged
+  in time but still unconfirmed after its retry counts as missed instead); at the
   measurement's deadline a pair a judge hasn't scored counts against its floor (as wrong for precision, as a real
   event in the sample of dropped events), and the measurement reports.
 - **Batches.** Every quote is in exactly one batch, pages stay whole, and no batch is over the limit except a single
@@ -685,10 +714,15 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   taken entirely with certainty, even a single unit, gives an exact recall whose bound is the estimate; and units
   drawn with probability below 1 that leave no degree of freedom fail the floor. A question is found only when its
   quote is in the first 12 results of one of its searches; a quote either coverage judge doesn't confirm, because its
-  questions leave something out or the judge lists one as repeating another, asking about two things or copying the
-  quote's wording, sends its unit back to the question writer once with both judges' notes, and one still not
-  confirmed makes the unit a nonresponse; a question is critical, or about an event, when the writer or either judge
-  marks it so; a sample with no critical question is reported and judged for no loss on all questions alone; critical
+  questions leave something out or the judge lists one as repeating another or asking about two things, or that holds
+  a question copying a run of its words (code's check: the run length, accents, case, punctuation and spaces aside,
+  each letter a word in a script written without spaces, the note naming the run, a judge's copied list counted and
+  deciding nothing, a run from before the check keeping its old rules), sends its unit
+  back to the question writer once with both judges' notes and the copy check's, and a unit still not confirmed after
+  that counts with every question missed in every recall measure, gets no searches, and stops the run only when the
+  unconfirmed units alone put the recall floor out of reach; a question is critical, or about an event, when the
+  writer or either judge marks it so; a sample with no critical question is reported and judged for no loss on all
+  questions alone; critical
   recall under 85% fails the pass even when overall recall holds and word search misses the same critical questions,
   and a sample with no critical question reports it in place of that floor; a pass that tags no event, or tags events
   only as topics, fails event coverage when a sampled quote reports an event, and a sample with no such quote reports

@@ -3,6 +3,7 @@ import { realLocation } from "../core/private-path.mjs";
 
 import { ValidationError } from "../core/errors.mjs";
 import { QUOTE_DATE_DEFAULTS, QUOTE_NUMERIC_DATE_ORDERS } from "./quote-index.mjs";
+import { POINTER_COPY_RUN_LIMITS, POINTER_COPY_RUN_WORDS } from "./pointer-reference.mjs";
 
 export function journalSemanticConcurrency(config) {
   const value = config.semantic_concurrency === undefined ? 1 : config.semantic_concurrency;
@@ -59,6 +60,15 @@ export function journalPointerDeadlines(config) {
     pass: minutes("pointer_deadline_minutes", POINTER_DEADLINE_DEFAULTS.pass),
     measure: minutes("pointer_measure_deadline_minutes", POINTER_DEADLINE_DEFAULTS.measure)
   });
+}
+
+// The pointer pass's copy check (owner decision 30, 12 Oct 2026): a question copies its quote when it holds this many
+// of the quote's words in a row. A run keeps the value it started with.
+export function journalPointerCopyRunWords(config) {
+  const value = config.pointer_copy_run_words ?? POINTER_COPY_RUN_WORDS;
+  if (!Number.isSafeInteger(value) || value < POINTER_COPY_RUN_LIMITS.min || value > POINTER_COPY_RUN_LIMITS.max)
+    throw new ValidationError("JOURNAL_POINTER_COPY_RUN_INVALID", { code: "JOURNAL_POINTER_COPY_RUN_INVALID" });
+  return value;
 }
 
 // The efforts the hardest lane may set for Claude Opus. Max is the default. The pointer pass's judge runs at high, since at
