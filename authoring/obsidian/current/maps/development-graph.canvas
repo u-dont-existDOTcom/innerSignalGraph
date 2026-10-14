@@ -876,7 +876,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 1100
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.MEET_GUARD.md",
@@ -885,7 +885,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1760
+      "y": 1980
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
@@ -920,8 +920,8 @@
       "id": "3be9ef03cd8e21c387677f3c6476444199ba8823aabc856d8b0079aea25b4238",
       "type": "file",
       "width": 300,
-      "x": 440,
-      "y": 880
+      "x": 880,
+      "y": 1760
     },
     {
       "color": "3",
@@ -1279,7 +1279,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1980
+      "y": 2200
     },
     {
       "color": "3",
@@ -1435,7 +1435,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2200
+      "y": 2420
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",

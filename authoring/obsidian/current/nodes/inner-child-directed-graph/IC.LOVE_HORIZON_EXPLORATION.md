@@ -5,9 +5,9 @@ projection_mode: current
 generated: true
 graph_id: inner-child-directed-graph
 node_id: IC.LOVE_HORIZON_EXPLORATION
-title: Explore a deeper horizon of wellbeing; gratitude is one optional door
+title: Cultivate gratitude while exploring and sustaining deeper love
 kind: decision-node
-tier: 2
+tier: 3
 priority: 94
 authority: author-framework
 graph_tags:
@@ -21,12 +21,12 @@ source_refs:
   - IC.GUIDE_LATER
   - AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
 regression_refs: []
-base_record_sha256: 7eafc6137d06064c4fe527ea7da659b67c624af0ff3d9c0e8b16f9a6e4a13adc
-base_graph_sha256: 3b294038b2cb13818489ef5fd3a9e350c3f1778dd0fa95d1443c810d791f1ba8
-projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698f47ae2ed3
+base_record_sha256: ce8167356fc6b3a58417b8bccb470f5b33b96fc7675af5317dd01e71b27fd2d0
+base_graph_sha256: 234d8448a4f48ee321d728a2176518fccb2f7400ed7f86b6a5ed66ac05b9f958
+projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a278b2a5a5
 ---
 
-# Explore a deeper horizon of wellbeing; gratitude is one optional door
+# Cultivate gratitude while exploring and sustaining deeper love
 
 > [!warning] Generated current-state projection — do not edit. Create a proposal from this node.
 
@@ -41,16 +41,6 @@ projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698
         "field": "spiritual_curiosity",
         "op": "eq",
         "value": "present"
-      },
-      {
-        "field": "deep_love_access",
-        "op": "in",
-        "value": [
-          "none_known",
-          "past_glimpse",
-          "state_dependent",
-          "unknown"
-        ]
       }
     ],
     "none": [
@@ -93,7 +83,7 @@ projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698
   "avoid": [
     "Do not prescribe a religion, theism, awakening, nonduality, conversion, psychedelics, NDEs, or a metaphysical conclusion.",
     "Do not imply that everyone needs profound spiritual love when the person says their present horizon is sufficient.",
-    "Do not prescribe gratitude as obligatory, pressure someone to thank an abuser or approve of harm, replace treatment or protection with thankfulness, or conclude that merely saying thanks proves profound love is felt. Voluntary gratitude even for suffering itself must remain available as a genuine option."
+    "Do not demand gratitude as an emotion or make refusal evidence of spiritual failure, pressure someone to thank an abuser or endorse harm, replace treatment or protection with thankfulness, or conclude that saying thanks proves divine love is felt. The spiritual practice may be essential in this path without the person being compelled to perform an experience or denied help."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -105,11 +95,12 @@ projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698
     "requiredNuance": [
       "The relevant distinction is experiential access to deeper wellbeing and love, not believer versus atheist or one religion versus another.",
       "A conceptual horizon and a directly experienced horizon are different; do not pretend reading about profound love is the same as having touched it.",
-      "The gratitude doorway is a voluntary exploratory option; noticed softness, claimed gratitude, profound felt love, and spiritual interpretation remain distinct observations.",
+      "In the author’s divine-love cultivation path, gratitude is an ongoing essential practice even when deep love is currently present; expressed thanks, felt softness, profound love, and spiritual interpretation remain distinct observations. This does not impose the path on nonparticipants or make emotional compliance a condition of care.",
       "The second step is gratitude even for suffering itself—suffering highlights the value of not suffering and can cultivate compassion, wisdom and deeper gratitude—followed by noticing any real heart softening and, only when love is accessible, a separate child-inclusion invitation. Do not silently flatten this into gratitude only for pleasant things."
     ]
   },
   "recommendations": [
+    "Within the chosen divine-love path, gratitude is essential ongoing cultivation, not just an introductory option or a tool used only when love fades. It can deepen love already felt as well as help renew access when love is absent; keep it as a practice without demanding a particular emotion, performance, or constant spiritual high.",
     "Invite investigation rather than belief: notice people, practices, traditions, experiences, nature, art, service, prayer, meditation, or other sources whose lived fruits make a deeper kind of love or wellbeing seem worth exploring.",
     "Use metta or loving-kindness as one possible cultivation practice, especially when it feels meaningful, without presenting it as the definition or guaranteed depth of love.",
     "When the person wants to try it, begin with gratitude for one concretely true present good, possibly as small as ordinary bodily comfort, a breath, or relief while suffering remains real. Then, if it arises sincerely, explore gratitude even for suffering itself: contrast makes the absence of suffering precious, and difficulties may teach compassion, wisdom, and further gratitude. Neither stage requires pretending pain is good or giving up relief.",

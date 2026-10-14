@@ -1464,6 +1464,7 @@
       "authority": "author-framework",
       "recommendations": [
         "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
+        "Continue gratitude even when profound love is currently accessible. Recognizing the suffering of other beings and feeling grateful for the chance to care for the hurting child turn a spiritual opening into continuing relationship rather than a special episode.",
         "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
         "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.",
         "If the younger state rejects or cannot receive the love, regard that as a potentially important honest response. Listen humbly and patiently, be thankful for that honesty only when genuine, and demonstrate non-contingent care without interpreting refusal as a deliberate test or asking the child to be grateful.",
@@ -1496,7 +1497,8 @@
           "Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away.",
           "This node is for present intermittent or reliable access, not merely a remembered or substance-associated glimpse.",
           "Present deep-love access, usable adult caring/protective function, and the child’s reception are distinct evidence states.",
-          "Adult spiritual gratitude and the younger self’s actual reception are separate; a child who cannot join the feast does not owe thanks or proof of readiness."
+          "Adult spiritual gratitude and the younger self’s actual reception are separate; a child who cannot join the feast does not owe thanks or proof of readiness.",
+          "Gratitude cultivation continues before, during, and after felt divine love; it is not a one-time prerequisite that must be completed before the child can receive care."
         ]
       },
       "defaultQuestion": ""
@@ -1595,9 +1597,9 @@
     },
     {
       "id": "IC.LOVE_HORIZON_EXPLORATION",
-      "title": "Explore a deeper horizon of wellbeing; gratitude is one optional door",
+      "title": "Cultivate gratitude while exploring and sustaining deeper love",
       "kind": "decision-node",
-      "tier": 2,
+      "tier": 3,
       "priority": 94,
       "activation": {
         "all": [
@@ -1605,16 +1607,6 @@
             "field": "spiritual_curiosity",
             "op": "eq",
             "value": "present"
-          },
-          {
-            "field": "deep_love_access",
-            "op": "in",
-            "value": [
-              "none_known",
-              "past_glimpse",
-              "state_dependent",
-              "unknown"
-            ]
           }
         ],
         "none": [
@@ -1662,6 +1654,7 @@
       ],
       "authority": "author-framework",
       "recommendations": [
+        "Within the chosen divine-love path, gratitude is essential ongoing cultivation, not just an introductory option or a tool used only when love fades. It can deepen love already felt as well as help renew access when love is absent; keep it as a practice without demanding a particular emotion, performance, or constant spiritual high.",
         "Invite investigation rather than belief: notice people, practices, traditions, experiences, nature, art, service, prayer, meditation, or other sources whose lived fruits make a deeper kind of love or wellbeing seem worth exploring.",
         "Use metta or loving-kindness as one possible cultivation practice, especially when it feels meaningful, without presenting it as the definition or guaranteed depth of love.",
         "When the person wants to try it, begin with gratitude for one concretely true present good, possibly as small as ordinary bodily comfort, a breath, or relief while suffering remains real. Then, if it arises sincerely, explore gratitude even for suffering itself: contrast makes the absence of suffering precious, and difficulties may teach compassion, wisdom, and further gratitude. Neither stage requires pretending pain is good or giving up relief.",
@@ -1671,7 +1664,7 @@
       "avoid": [
         "Do not prescribe a religion, theism, awakening, nonduality, conversion, psychedelics, NDEs, or a metaphysical conclusion.",
         "Do not imply that everyone needs profound spiritual love when the person says their present horizon is sufficient.",
-        "Do not prescribe gratitude as obligatory, pressure someone to thank an abuser or approve of harm, replace treatment or protection with thankfulness, or conclude that merely saying thanks proves profound love is felt. Voluntary gratitude even for suffering itself must remain available as a genuine option."
+        "Do not demand gratitude as an emotion or make refusal evidence of spiritual failure, pressure someone to thank an abuser or endorse harm, replace treatment or protection with thankfulness, or conclude that saying thanks proves divine love is felt. The spiritual practice may be essential in this path without the person being compelled to perform an experience or denied help."
       ],
       "successSignals": [
         "Curiosity becomes a voluntary experiment with no forced doctrine, attainment target, or promise of extraordinary experience."
@@ -1691,7 +1684,7 @@
         "requiredNuance": [
           "The relevant distinction is experiential access to deeper wellbeing and love, not believer versus atheist or one religion versus another.",
           "A conceptual horizon and a directly experienced horizon are different; do not pretend reading about profound love is the same as having touched it.",
-          "The gratitude doorway is a voluntary exploratory option; noticed softness, claimed gratitude, profound felt love, and spiritual interpretation remain distinct observations.",
+          "In the author’s divine-love cultivation path, gratitude is an ongoing essential practice even when deep love is currently present; expressed thanks, felt softness, profound love, and spiritual interpretation remain distinct observations. This does not impose the path on nonparticipants or make emotional compliance a condition of care.",
           "The second step is gratitude even for suffering itself—suffering highlights the value of not suffering and can cultivate compassion, wisdom and deeper gratitude—followed by noticing any real heart softening and, only when love is accessible, a separate child-inclusion invitation. Do not silently flatten this into gratitude only for pleasant things."
         ]
       },

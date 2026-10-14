@@ -7,12 +7,12 @@ source_id: AMEND.IC.SUICIDAL_ADULT_SEAT
 guide_id: owner-amendments
 heading: AMEND.IC.SUICIDAL_ADULT_SEAT
 source_role: owner-approved-extension
-source_hash: 9a0bae8a6a6e95d24c392d7451cb58c31a56ae4ab8ae22617f4e3aad57355cd2
+source_hash: b807626c278bb06b715e45f0fbb06b7904fc8078bc336fa43eba86f90bed8578
 section_hash: 46630cb3c1f337fd199384a9abf203c622f0bff4e63d68fa281bb916cc676ad4
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.SUICIDAL_ADULT_SEAT
-projection_input_sha256: d1b29964a064664d20ef683f1507064fe461e9e8f8c37d082a75698f47ae2ed3
+projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a278b2a5a5
 ---
 
 # AMEND.IC.SUICIDAL_ADULT_SEAT
