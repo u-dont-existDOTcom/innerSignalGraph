@@ -501,8 +501,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     other words than a judge would use still covers its thing, as long as it keeps every detail the quote gives it. A verb that only frames a statement ("I think", "I remember", "I dreamed that", "I wish") makes one thing
     with it. A thing said twice is one thing. Inside a longer quote, a date line or a heading gives the when or the
     subject of what follows, and a greeting, a sign-off, filler and the quote's tone or wording are not things; a quote
-    with nothing else, such as a date line or a heading on its own (the quote index keeps short date lines as quotes of
-    their own), says one thing, what it is, and gets one question about it. The writer and both judges get these rules
+    with nothing else, such as a date line, a heading, a greeting, a sign-off or filler on its own (the quote index keeps
+    short date lines and a short last paragraph as quotes of their own), says one thing, what it is, and gets one
+    question about it. The writer and both judges get these rules
     word for word.
 - **Two independent checks that the questions cover each quote.** Two judges that write no questions
   (`coverage_judge`), one on the Codex lane in calls of its own, never the writer's, and one on the Claude lane, each
