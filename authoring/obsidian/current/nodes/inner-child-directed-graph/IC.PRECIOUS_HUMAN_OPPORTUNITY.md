@@ -23,8 +23,8 @@ source_refs:
 regression_refs:
   - G097
 base_record_sha256: 71691ff9bb1f8c2c0b35f1cc4a17f42fc03a1dcaa146debbb0590dbebe3e8ad2
-base_graph_sha256: 234d8448a4f48ee321d728a2176518fccb2f7400ed7f86b6a5ed66ac05b9f958
-projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a278b2a5a5
+base_graph_sha256: 75b1dc74386153edfa674a1b5ec6d47c3b7cc67ea4ca1202217aee8704c31e48
+projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
 ---
 
 # Treat human birth as a precious opportunity before discarding it

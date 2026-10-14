@@ -48,6 +48,26 @@ test("even a spiritual opening does not certify inner-child reception or authori
   assert.ok(plan.forbiddenOverclaims.some(s => /testing whether the adult/i.test(s)));
 });
 
+test("the child route asks gratitude only of people on the gratitude path", async () => {
+  const bundle = await compileGuideGraphs({ write: false });
+  const node = bundle.graphs.flatMap(graph => graph.nodes).find(n => n.id === "IC.DEEP_LOVE_TO_CHILD");
+  const practiceLines = [
+    ...node.recommendations.filter(s => /continue gratitude/i.test(s)),
+    ...node.effects.requiredNuance.filter(s => /gratitude cultivation continues/i.test(s))
+  ];
+  assert.equal(practiceLines.length, 2);
+  for (const line of practiceLines) {
+    assert.match(line, /gratitude path/i, "the practice is scoped to the path");
+    assert.match(line, /different or secular practice/i, "others are named and not bound by it");
+  }
+  assert.ok(node.recommendations.some(s => /never a step to require/i.test(s)));
+  const values = { present_safety:"safe", orientation:"oriented", ability_to_stop:"yes", ability_to_return:"yes", activation:"moderate", dissociation:"none", altered_state:"sober", suicidal_state:"absent", spiritual_curiosity:"absent", deep_love_access:"reliable", child_love_inclusion:"untested" };
+  const plan = planFromGraphs({ graphs: bundle.graphs, variables: values });
+  assert.equal(plan.primaryJob.id, "IC.DEEP_LOVE_TO_CHILD");
+  assert.ok(!plan.selectedNodes.some(n => n.id === "IC.LOVE_HORIZON_EXPLORATION"), "no cultivation route without curiosity");
+  assert.ok(plan.requiredNuance.filter(s => /gratitude cultivation continues/i.test(s)).every(s => /gratitude path/i.test(s)));
+});
+
 test("extraction instructions do not conflate saying thanks with felt deep love", async () => {
   const prompt = await fs.readFile(new URL("../src/prompts/case-extract.mjs", import.meta.url), "utf8");
   assert.match(prompt, /Saying thanks, naming one good thing amid suffering/);

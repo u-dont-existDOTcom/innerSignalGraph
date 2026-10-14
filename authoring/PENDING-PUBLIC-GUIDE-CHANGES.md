@@ -203,7 +203,7 @@ Reader need: People with prior involuntary or traumatic care may be harmed by un
 Already covered: Also Look Outward already distinguishes privacy from dishonesty in unsafe relationships; r6 extends that principle to medical settings while retaining the existing concrete-safety floor.
 Where: Also Look Outward, following the paragraph on safe graded disclosure and before general relationship/community support.
 
-## Pending bundle H — gratitude as an optional opening into sacred love
+## Pending bundle H — gratitude as ongoing cultivation that can open into sacred love
 
 ### PGQ-031 — Gratitude is essential ongoing cultivation; the child is not required to perform it
 Caused by: owner-authored October 14 revision of “Ask God for a Loan,” `AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014`, `IC.LOVE_HORIZON_EXPLORATION`, `IC.DEEP_LOVE_TO_CHILD`, and the updated extraction distinction.

@@ -1,6 +1,16 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-13
+Updated: 2026-10-14
+
+
+## Gratitude as ongoing cultivation in the inner-child map (2026-10-14, development PR in review; one owner decision open)
+
+- **Owner outcome:** map the owner's revised "Ask God for a Loan" passage into InnerSignal without rewriting the public article or making gratitude or spirituality a prerequisite for inner-child work. Owner correction (14 Oct): within the author's spiritual path, gratitude is essential ongoing cultivation, including when divine love is already accessible; it is not a one-time access trick, a demand to feel grateful on command, or a requirement for people on a different or secular path.
+- **Change (branch `task/gratitude-love-child-bridge-20261014`, `tasks/gratitude-love-child-20261014/INTEGRATION.md`):** amendment `AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014` (owner amendments r9). `IC.LOVE_HORIZON_EXPLORATION` now applies whatever the present love access (only `spiritual_curiosity: present` gates it) and moved from tier 2 to tier 3, so `IC.DEEP_LOVE_TO_CHILD` (tier 3, priority 95) leads when love is present and has not reached the child. `IC.DEEP_LOVE_TO_CHILD` keeps the adult's love and the child's reception separate and asks gratitude only of people on the gratitude path. Case extraction separates thanks said, felt change, interpretation, child reception and reported recovery. Public-guide queue `PGQ-031`. Bundle, projection, audit map and served map regenerated together.
+- **Review (14 Oct):** Codex's first review found two problems: the child route told every client to continue gratitude (now scoped to the path, with a test), and this file had no entry (this entry). The InnerSignal worker's own review found the open decision below and fixed two wordings left from the superseded "optional door" reading (the extraction prompt and the queue heading).
+- **Open owner decision (owner page, question 31):** with love present and the child's reception unknown or already settled, gratitude cultivation now leads ahead of hearing a guard, the bliss check for spiritual bypass, portable tapping, meaning-making and gentle body regulation; before the change it wasn't eligible there. Across the 78 authored graph cases with curiosity present, gratitude leads in 5, whatever the love access (51 before the change, all with love unavailable). Whether gratitude leads that work or goes alongside it is product policy, so it waits for the owner.
+- **Validation:** Node 24.18.0: authoring check, validate and maps-check; graph regressions 78/78; therapy-lesson verifier; repository audit (one existing hosted-permissions warning); focused tests 133/133. Full suite: exact-head CI.
+- **Release boundary:** a development merge doesn't deploy. The therapy map reaches users only through `stable` promotion with the complete package gate and retained rollback (`docs/RELEASE-EVIDENCE.md`), on the owner's explicit `deploy`. The public article is owner-authored and isn't rewritten; `PGQ-031` waits for the humanizer.
 
 
 ## Refractory chronic pain pathway and clinical trust (2026-10-11, development candidate)

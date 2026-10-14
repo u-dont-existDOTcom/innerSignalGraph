@@ -24,9 +24,9 @@ source_refs:
   - IC.SPIRITUAL_LOAN
   - AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
 regression_refs: []
-base_record_sha256: 6f0bd4bff082579ddae098ec40c45e95c3d3680ef96cb869707dcda03bc54bab
-base_graph_sha256: 234d8448a4f48ee321d728a2176518fccb2f7400ed7f86b6a5ed66ac05b9f958
-projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a278b2a5a5
+base_record_sha256: 18a8a5a586916d5714740d208d3618e86864c5d95ad90bcd01acc05c16ffed8f
+base_graph_sha256: 75b1dc74386153edfa674a1b5ec6d47c3b7cc67ea4ca1202217aee8704c31e48
+projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
 ---
 
 # Bring already-accessible deep love to the younger self without force
@@ -90,12 +90,12 @@ projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a
       "This node is for present intermittent or reliable access, not merely a remembered or substance-associated glimpse.",
       "Present deep-love access, usable adult caring/protective function, and the child’s reception are distinct evidence states.",
       "Adult spiritual gratitude and the younger self’s actual reception are separate; a child who cannot join the feast does not owe thanks or proof of readiness.",
-      "Gratitude cultivation continues before, during, and after felt divine love; it is not a one-time prerequisite that must be completed before the child can receive care."
+      "On the author’s gratitude path, gratitude cultivation continues before, during, and after felt divine love; it is never a prerequisite that must be completed before the child can receive care, and it is not imposed on someone using a different or secular practice."
     ]
   },
   "recommendations": [
     "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
-    "Continue gratitude even when profound love is currently accessible. Recognizing the suffering of other beings and feeling grateful for the chance to care for the hurting child turn a spiritual opening into continuing relationship rather than a special episode.",
+    "For a person who practices the author’s gratitude path, continue gratitude even when profound love is currently accessible: recognizing the suffering of other beings and feeling grateful for the chance to care for the hurting child turn a spiritual opening into continuing relationship rather than a special episode. For someone using a different or secular practice, gratitude stays an option to offer, never a step to require.",
     "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
     "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.",
     "If the younger state rejects or cannot receive the love, regard that as a potentially important honest response. Listen humbly and patiently, be thankful for that honesty only when genuine, and demonstrate non-contingent care without interpreting refusal as a deliberate test or asking the child to be grateful.",

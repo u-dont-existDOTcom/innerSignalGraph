@@ -12,7 +12,7 @@ anchors:
   - IC.ADULT_APPRENTICE
 reconciled_nodes: []
 base_record_sha256: 35e31216d4c9a7c5e6b7bce17c862a4ac084b9e16f948f3f615a58015ba6cd11
-projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a278b2a5a5
+projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
 ---
 
 # Connect common humanity with mutual peer healing

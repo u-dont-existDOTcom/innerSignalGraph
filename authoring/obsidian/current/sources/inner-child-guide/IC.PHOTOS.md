@@ -12,7 +12,7 @@ section_hash: 0defff175f1394ced6c9ed6d5f77b158f2cbda1af1ed9a45f7044fef5e382db1
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.PHOTO_EPISTEMIC_CAUTION
-projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a278b2a5a5
+projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
 ---
 
 # Use Childhood Photographs Without Interrogating Them

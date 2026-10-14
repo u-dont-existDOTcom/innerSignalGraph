@@ -11,7 +11,7 @@ source_hash: b807626c278bb06b715e45f0fbb06b7904fc8078bc336fa43eba86f90bed8578
 section_hash: e6d6053db8950b2642932654133bab0d17826e25c80a119002466998f73bdf15
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: 4fee5291575f7064c0405c9d705dd7a1164f0b4ee473da252f0ca6a278b2a5a5
+projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
 ---
 
 # AMEND.CROSS.SUPPORT_MODE_CONTINUITY
