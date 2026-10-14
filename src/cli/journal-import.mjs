@@ -8,7 +8,7 @@ import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
 import { prepareJournalOperatorEnvironment } from "../journal-import/operator-auth.mjs";
-import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalPointerCopyRunWords, journalPointerDeadlines,
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalOperatorReviewDir, journalPointerCopyRunWords, journalPointerDeadlines,
   journalQuoteNumericDateOrder, journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -213,6 +213,10 @@ function runConfigBlockers(config) {
   catch (error) { blockers.push(error.code ?? "JOURNAL_POINTER_DEADLINE_INVALID"); }
   try { journalPointerCopyRunWords(config); }
   catch (error) { blockers.push(error.code ?? "JOURNAL_POINTER_COPY_RUN_INVALID"); }
+  try {
+    const reviewDir = journalOperatorReviewDir(config);
+    if (reviewDir && !outsideRepository(reviewDir)) blockers.push("JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED");
+  } catch (error) { blockers.push(error.code ?? "JOURNAL_OPERATOR_REVIEW_DIR_INVALID"); }
   if (config.max_external_spend_usd !== 0) blockers.push("JOURNAL_ZERO_SPEND_REQUIRED");
   if (typeof config.execution_root !== "string" || !path.isAbsolute(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_REQUIRED");
   else if (!outsideRepository(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_PRIVATE_REQUIRED");

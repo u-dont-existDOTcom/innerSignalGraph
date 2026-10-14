@@ -457,8 +457,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   and saving nothing, and writes each sampled piece that wasn't confirmed to a new HTML file: its quotes, the questions
   of each try, the judges' notes the rewrite got, and each judge's verdict with its reasons and note. It is the one
   command that writes journal text, and only into the directory the private run config names as `operator_review_dir`,
-  which must be the operator's own and closed to everyone else; the file is created owner-only and never written over,
-  and the command's output gives only the file's name and counts. Unset, the command refuses. From there the operator's
+  which must be outside the repository, a real directory, the operator's own and closed to everyone else; the file is
+  created owner-only, never over one that exists, and written through its own handle only once the directory is still
+  the one checked, so a path swapped in the meantime can't redirect it; the command's output gives only the file's name
+  and counts. Unset, the command refuses. From there the operator's
   copy goes to the owner's computer and the server's copy is removed.
 - **The rules, first part (amended 13 Oct 2026, owner decision 30).** Two of the changes the owner chose don't wait for
   the counts: code, not the judges, checks copying, and a unit still unconfirmed after its rewrite counts in recall

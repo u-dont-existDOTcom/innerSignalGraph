@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 
 // The operator's view of why the reference step didn't confirm pieces of the journal (owner, 14 Oct 2026: "i'd like to
@@ -75,6 +77,44 @@ export function collectPointerExamples({ reference, units, events, copyRunWords 
   const ordered = pieces.map((piece, index) => ({ piece, index })).sort((a, b) => page(a.piece) - page(b.piece) || a.index - b.index)
     .map(({ piece }) => piece);
   return { sampled: reference.units.length, confirmed: reference.units.length - pieces.length, pieces: ordered, copy_run_words: copyRunWords };
+}
+
+// The operator's review directory as checked before the work: a real directory (not a link), the process's own, closed to
+// everyone else. Returns its identity for writeReviewFile.
+export async function checkReviewDirectory(dir) {
+  const where = await fs.lstat(dir).catch((error) => { if (error.code === "ENOENT") return null; throw error; });
+  invariant(where && where.isDirectory() && !where.isSymbolicLink() && (where.mode & 0o077) === 0
+    && (typeof process.getuid !== "function" || where.uid === process.getuid()), "POINTER_EXAMPLES_DIR_UNSAFE");
+  return { dev: where.dev, ino: where.ino };
+}
+
+/**
+ * Creates `name` in the review directory checked earlier (`verified`, from checkReviewDirectory) and writes `content`
+ * through the new file's own handle, so a path swapped in the meantime can't redirect the text. The file is created
+ * owner-only, never over one that exists or through a link; before anything is written, the directory must still be
+ * the one checked and the name in it must be the file just created. If not, the empty file is removed when it can be
+ * found there, and nothing is written.
+ */
+export async function writeReviewFile({ dir, name, verified, content } = {}) {
+  invariant(typeof name === "string" && /^[A-Za-z0-9._-]{1,200}$/u.test(name) && verified && typeof content === "string", "POINTER_EXAMPLES_INPUT_INVALID");
+  const target = path.join(dir, name);
+  const { O_CREAT, O_EXCL, O_WRONLY, O_NOFOLLOW } = fs.constants;
+  const handle = await fs.open(target, O_CREAT | O_EXCL | O_WRONLY | (O_NOFOLLOW ?? 0), 0o600);
+  let opened = null;
+  let bound = false;
+  try {
+    opened = await handle.stat();
+    const again = await fs.lstat(dir).catch(() => null);
+    const named = await fs.lstat(target).catch(() => null);
+    bound = Boolean(again && again.isDirectory() && !again.isSymbolicLink() && again.dev === verified.dev && again.ino === verified.ino
+      && named && named.isFile() && named.dev === opened.dev && named.ino === opened.ino && (opened.mode & 0o077) === 0);
+    if (bound) await handle.writeFile(content);
+  } finally { await handle.close(); }
+  if (!bound) {
+    const named = await fs.lstat(target).catch(() => null);
+    if (named && opened && named.dev === opened.dev && named.ino === opened.ino) await fs.unlink(target).catch(() => {});
+    invariant(false, "POINTER_EXAMPLES_DIR_UNSAFE");
+  }
 }
 
 const escapeHtml = (value) => String(value).replace(/[&<>"']/gu, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[char]);

@@ -318,7 +318,9 @@ test("pointer-examples writes the pieces the judges didn't confirm to a new owne
   await fs.mkdir(open);
   await fs.chmod(open, 0o755);
   for (const [dir, code] of [[open, "POINTER_EXAMPLES_DIR_UNSAFE"], [path.join(parent, "missing"), "POINTER_EXAMPLES_DIR_UNSAFE"],
-    ["relative/review", "JOURNAL_OPERATOR_REVIEW_DIR_INVALID"]]) {
+    ["relative/review", "JOURNAL_OPERATOR_REVIEW_DIR_INVALID"],
+    // Never inside the public repository, where a routine commit could publish the file.
+    [path.resolve(new URL("../", import.meta.url).pathname, "review"), "JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED"]]) {
     f.config.operator_review_dir = dir;
     await assert.rejects(f.run("pointer-examples"), { code }, dir);
   }

@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { collectPointerExamples, renderPointerExamples } from "../src/journal-import/pointer-examples.mjs";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { checkReviewDirectory, collectPointerExamples, renderPointerExamples, writeReviewFile } from "../src/journal-import/pointer-examples.mjs";
 
 // The operator's view of the reference step's pieces that weren't confirmed (pointer-examples). All text here is invented.
 
@@ -77,4 +80,38 @@ test("the page escapes everything it shows, loads nothing from elsewhere, and sa
   assert.match(html, /The question writer gave no answer before the time ran out\./u);
   assert.match(html, /Of the 3 pieces in the sample, 2 weren't confirmed by both judges, and all of them are below\./u);
   assert.doesNotMatch(html, /Confirmed passage/u, "a confirmed piece isn't shown");
+});
+
+test("the review file is written only through its own handle, into the directory checked before the work", async (t) => {
+  const parent = await fs.mkdtemp(path.join(os.tmpdir(), "pointer-review-bind-"));
+  t.after(() => fs.rm(parent, { recursive: true, force: true }));
+  const make = async (name) => { const dir = path.join(parent, name); await fs.mkdir(dir); await fs.chmod(dir, 0o700); return dir; };
+  const dir = await make("review");
+  const other = await make("other");
+  const verified = await checkReviewDirectory(dir);
+  await writeReviewFile({ dir, name: "first.html", verified, content: "invented journal text" });
+  const handle = await fs.open(path.join(dir, "first.html"), "r");
+  try {
+    assert.equal((await handle.stat()).mode & 0o777, 0o600);
+    assert.equal(await handle.readFile("utf8"), "invented journal text");
+  } finally { await handle.close(); }
+  // A name that exists is never written over.
+  await assert.rejects(writeReviewFile({ dir, name: "first.html", verified, content: "other text" }), { code: "EEXIST" });
+  // The checked directory swapped for another before the write: nothing is written, and the empty file goes.
+  const moved = path.join(parent, "moved");
+  await fs.rename(dir, moved);
+  await fs.rename(other, dir);
+  await assert.rejects(writeReviewFile({ dir, name: "second.html", verified, content: "invented journal text" }), { code: "POINTER_EXAMPLES_DIR_UNSAFE" });
+  assert.deepEqual(await fs.readdir(dir), []);
+  // A link to the checked directory in its place: the same.
+  await fs.rm(dir, { recursive: true });
+  await fs.symlink(moved, dir);
+  await assert.rejects(writeReviewFile({ dir, name: "third.html", verified, content: "invented journal text" }), { code: "POINTER_EXAMPLES_DIR_UNSAFE" });
+  assert.deepEqual(await fs.readdir(moved), ["first.html"]);
+  // The check itself refuses a link, a directory others can open, and one that isn't there.
+  await assert.rejects(checkReviewDirectory(dir), { code: "POINTER_EXAMPLES_DIR_UNSAFE" });
+  const open = await make("open");
+  await fs.chmod(open, 0o750);
+  await assert.rejects(checkReviewDirectory(open), { code: "POINTER_EXAMPLES_DIR_UNSAFE" });
+  await assert.rejects(checkReviewDirectory(path.join(parent, "missing")), { code: "POINTER_EXAMPLES_DIR_UNSAFE" });
 });

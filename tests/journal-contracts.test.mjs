@@ -189,6 +189,17 @@ test("configured doctor verifies the private source while reporting missing oper
   invalid.quote_numeric_date_order = "day_first";
   await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
   assert.equal((await configuredJournalDoctorReport(configPath, {})).blockers.includes("JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID"), false);
+  // The operator's review directory (pointer-examples): absolute, and never inside the public repository.
+  for (const [dir, blocker] of [["relative/review", "JOURNAL_OPERATOR_REVIEW_DIR_INVALID"],
+    [path.resolve(new URL("../", import.meta.url).pathname, "review"), "JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED"]]) {
+    invalid.operator_review_dir = dir;
+    await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
+    assert.ok((await configuredJournalDoctorReport(configPath, {})).blockers.includes(blocker), dir);
+  }
+  invalid.operator_review_dir = path.join(directory, "review");
+  await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
+  const reviewed = (await configuredJournalDoctorReport(configPath, {})).blockers;
+  assert.equal(reviewed.some((blocker) => blocker.startsWith("JOURNAL_OPERATOR_REVIEW_DIR")), false);
 });
 
 test("configured doctor prepares the exchange before authorizing its inference route", async (t) => {

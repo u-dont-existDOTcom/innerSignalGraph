@@ -33,7 +33,7 @@ import { buildPointerGeneration, pointerPassInput } from "./pointer-pass.mjs";
 import { POINTER_RECALL_TOP, pointerRecallReach, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
   runPointerReference } from "./pointer-steps.mjs";
 import { pointerChallengeUnits } from "./pointer-reference.mjs";
-import { collectPointerExamples, renderPointerExamples } from "./pointer-examples.mjs";
+import { checkReviewDirectory, collectPointerExamples, renderPointerExamples, writeReviewFile } from "./pointer-examples.mjs";
 import { lexicalTerms } from "./graph.mjs";
 import { applyReconciliationResult, validateReconciliationResult } from "./reconcile.mjs";
 import { createAuditScopeIndex, createReconciledAuditScope, summarizeFidelityCoverage } from "./audit-scope.mjs";
@@ -2870,9 +2870,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const step = run?.reference;
       invariant(step?.status === "done", "POINTER_REFERENCE_NOT_DONE");
       invariant(Date.parse(step.deadline) <= now().getTime(), "POINTER_RECOUNT_BEFORE_DEADLINE");
-      const where = await fs.lstat(dir).catch((error) => { if (error.code === "ENOENT") return null; throw error; });
-      invariant(where && where.isDirectory() && !where.isSymbolicLink() && (where.mode & 0o077) === 0
-        && (typeof process.getuid !== "function" || where.uid === process.getuid()), "POINTER_EXAMPLES_DIR_UNSAFE");
+      // Never inside the public repository, where a routine commit could publish it (as execution_root).
+      invariant(isOutside(repositoryRoot, dir), "JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED");
+      const verified = await checkReviewDirectory(dir);
       await authorize();
       const refuse = (code) => async () => { throw new ValidationError(code, { code }); };
       const readOnly = Object.freeze({ invoke: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
@@ -2888,7 +2888,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const written = now();
       const html = renderPointerExamples(examples, { runId: run.run_id, generatedAt: written.toISOString() });
       const name = `pointer-examples-${run.run_id}-${written.toISOString().replace(/[^0-9TZ]/gu, "")}-${randomBytes(3).toString("hex")}.html`;
-      await fs.writeFile(path.join(dir, name), html, { flag: "wx", mode: 0o600 });
+      await writeReviewFile({ dir, name, verified, content: html });
       return { ...summary(), examples: { run_id: run.run_id, step: "reference", file: name, pieces: examples.pieces.length,
         sampled: examples.sampled, quotes: examples.pieces.reduce((sum, piece) => sum + piece.quotes.length, 0),
         bytes: Buffer.byteLength(html) } };
