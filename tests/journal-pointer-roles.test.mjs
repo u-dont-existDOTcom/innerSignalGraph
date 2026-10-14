@@ -487,6 +487,9 @@ test("the reference roles' instructions are installed, and each call goes only t
   assert.match(rules("question_writer") ?? "", /A thing is one statement the quote makes that could be true or false on its own/);
   assert.match(rules("question_writer") ?? "", /a question about a detail alone asks about the same thing as that thing's question/);
   assert.equal(rules("coverage_judge"), rules("question_writer"));
+  // A quote that is only a date line or a heading (the quote index keeps short date lines as quotes of their own) still
+  // gets its one question, which the judges accept.
+  assert.match(rules("question_writer") ?? "", /A quote with nothing else, such as a date line or a heading on its own, says one thing, what it is, and gets one question about it/);
   assert.match(journalRoleInstruction("coverage_judge"), /a question about a detail alone included/);
   assert.match(journalRoleInstruction("coverage_judge"), /Hold a quote back only for a thing left out, a repeated question or a combined one/);
   assert.match(journalRoleInstruction("coverage_judge"), /broader or narrower words than you would use still covers it/);

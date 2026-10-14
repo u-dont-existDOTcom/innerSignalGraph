@@ -498,8 +498,11 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     cause included), what it concerned (a list included) and its qualifiers. The details go in that thing's question,
     so a question with a thing's details asks about one thing, and a question about a detail alone repeats that thing's
     question. A verb that only frames a statement ("I think", "I remember", "I dreamed that", "I wish") makes one thing
-    with it. A thing said twice is one thing; a date line or a heading on its own, a greeting or a sign-off, filler and
-    the quote's tone or wording are not things. The writer and both judges get these rules word for word.
+    with it. A thing said twice is one thing. Inside a longer quote, a date line or a heading gives the when or the
+    subject of what follows, and a greeting, a sign-off, filler and the quote's tone or wording are not things; a quote
+    with nothing else, such as a date line or a heading on its own (the quote index keeps short date lines as quotes of
+    their own), says one thing, what it is, and gets one question about it. The writer and both judges get these rules
+    word for word.
 - **Two independent checks that the questions cover each quote.** Two judges that write no questions
   (`coverage_judge`), one on the Codex lane in calls of its own, never the writer's, and one on the Claude lane, each
   see each sampled quote with its questions, 25 quotes to a call, and each says whether together they ask about

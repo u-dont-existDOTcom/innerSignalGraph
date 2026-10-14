@@ -13,7 +13,7 @@ What counts as one thing (the question writer and both coverage judges get these
 - A thing is one statement the quote makes that could be true or false on its own: something that happened, a feeling, a thought, a fact, a plan, a wish, a dream or a denial. "I went to the market, and in the evening Awa called" makes two statements; "On Sunday I went to the market with Awa to buy mangoes" makes one.
 - A thing includes its details: who did or said it, with or to whom, when, where, how and why (a reason or a cause included), what it concerned (a list such as "mangoes, bananas and bread" included), and its qualifiers, such as "not", "maybe", "only" or "but". The details go in that thing's question, never in questions of their own. So a question that asks about one thing with its details asks about one thing, and a question about a detail alone asks about the same thing as that thing's question.
 - A verb that only frames a statement, such as "I think", "I remember", "I realized", "I dreamed that" or "I wish", makes one thing with it: "I think she was angry" is one thought.
-- A thing the quote says twice is one thing. A date line or a heading on its own, a greeting or a sign-off, filler such as "anyway", and the quote's tone or wording are not things.
+- A thing the quote says twice is one thing. Inside a longer quote, a date line or a heading gives the when or the subject of what follows, and a greeting, a sign-off, filler such as "anyway", and the quote's tone or wording are not things. A quote with nothing else, such as a date line or a heading on its own, says one thing, what it is, and gets one question about it.
 
 Judging each quote:
 
