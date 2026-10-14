@@ -142,7 +142,9 @@ export async function runPointerReference({ units, seed = null, sample: given = 
           for (const words of set.longest_runs) copyCheck.longest_run[words] = (copyCheck.longest_run[words] ?? 0) + 1;
         }
         unit.attempts.push({ set, coverage: null });
+        // The writer's own questions too: an incomplete set keeps none (checkQuestionSet), and the examples show them.
         observe?.({ kind: "writer", unit_id: unit.unit_id, round, status: outcome.status, set,
+          raw_questions: outcome.status === "answered" && Array.isArray(outcome.output?.questions) ? outcome.output.questions : null,
           coverage_notes: calls[position].packet.coverage_notes ?? [] });
       });
     }

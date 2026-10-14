@@ -30,8 +30,15 @@ function verdict(entry, judge, copyRunWords) {
     missing: typeof judgment.missing === "string" ? judgment.missing : "", repeated, combined, copied };
 }
 
+// Whether a try's questions were confirmed: complete, both judges confirmed every quote, and the code's copy check held
+// none back. Such a piece fell short only after its questions (its searches), so it isn't an example of what fails here.
+const triedAndConfirmed = (attempt) => Boolean(attempt && attempt.writer.status === "complete" && attempt.verdicts.length > 0
+  && attempt.verdicts.every((entry) => entry.judges.every((judge) => judge.status === "confirmed"))
+  && attempt.questions.every((item) => item.copied_words === null));
+
 /**
- * Each sampled piece that the reference step didn't confirm (status `unconfirmed` or `nonresponse`), oldest try first:
+ * Each sampled piece whose questions the reference step didn't confirm, oldest try first: not complete, and its last
+ * try's questions not confirmed (a piece stopped only at its searches is left out).
  * `reference` is runPointerReference's result, `units` the quote units it ran on (unit_id, page, text), `events` what
  * its `observe` was told, and `copyRunWords` the run's copy setting (null for a run from before owner decision 30).
  */
@@ -56,9 +63,14 @@ export function collectPointerExamples({ reference, units, events, copyRunWords 
       const writer = writers.get(`${unit.unit_id}\u0000${round}`);
       const set = writer.set;
       const copied = new Map((set?.copied ?? []).map((item) => [item.question_id, item]));
-      const questions = (set?.questions ?? []).map((item) => ({ question_id: item.question_id, quote_id: item.unit_id,
-        question: item.question, critical: item.critical === true, event: item.event === true,
-        copied_words: copied.get(item.question_id)?.words ?? null }));
+      // A complete set's questions, with their IDs and the copy check; an incomplete one keeps none, so the writer's own.
+      const questions = set?.complete
+        ? set.questions.map((item) => ({ question_id: item.question_id, quote_id: item.unit_id, question: item.question,
+          critical: item.critical === true, event: item.event === true, copied_words: copied.get(item.question_id)?.words ?? null }))
+        : (Array.isArray(writer.raw_questions) ? writer.raw_questions : []).filter(isObject).map((item, position) => ({
+          question_id: `written:${round}:${position}`, quote_id: typeof item.unit_id === "string" ? item.unit_id : "",
+          question: typeof item.question === "string" ? item.question : "", critical: item.critical === true,
+          event: item.event === true, copied_words: null }));
       const shortfall = writer.status !== "answered" ? { status: writer.status }
         : !set ? { status: "invalid" }
           : set.complete ? { status: "complete" }
@@ -71,12 +83,12 @@ export function collectPointerExamples({ reference, units, events, copyRunWords 
     return { unit_id: unit.unit_id, status: unit.status, reason: unit.reason ?? null, deadline_cause: unit.deadline_cause ?? null,
       quotes: unit.quote_ids.map((id) => ({ quote_id: id, page: quotes.get(id)?.page ?? null, text: quotes.get(id)?.text ?? "" })),
       attempts };
-  });
+  }).filter((piece) => piece.reason !== "searches_incomplete" && !triedAndConfirmed(piece.attempts.at(-1)));
   // In journal order: by the first quote's page, then the step's order.
   const page = (piece) => piece.quotes.find((quote) => Number.isSafeInteger(quote.page))?.page ?? Number.MAX_SAFE_INTEGER;
   const ordered = pieces.map((piece, index) => ({ piece, index })).sort((a, b) => page(a.piece) - page(b.piece) || a.index - b.index)
     .map(({ piece }) => piece);
-  return { sampled: reference.units.length, confirmed: reference.units.length - pieces.length, pieces: ordered, copy_run_words: copyRunWords };
+  return { sampled: reference.units.length, pieces: ordered, copy_run_words: copyRunWords };
 }
 
 // The operator's review directory as checked before the work: a real directory (not a link), the process's own, closed to
@@ -120,12 +132,11 @@ export async function writeReviewFile({ dir, name, verified, content } = {}) {
 const escapeHtml = (value) => String(value).replace(/[&<>"']/gu, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[char]);
 
 const STATUS_WORDS = Object.freeze({
-  unconfirmed: "not confirmed by both judges, even after the rewrite",
-  coverage_unconfirmed: "not confirmed by both judges, even after the rewrite",
+  unconfirmed: "not confirmed, even after the rewrite",
+  coverage_unconfirmed: "not confirmed, even after the rewrite",
   questions_incomplete: "the question writer's questions fell short twice",
   coverage_check_failed: "a judge gave no usable answer",
-  deadline: "no answer before the step's time ran out",
-  searches_incomplete: "confirmed, but its searches weren't written"
+  deadline: "the step's time ran out before its questions were confirmed"
 });
 const pieceStatus = (piece) => STATUS_WORDS[piece.status === "unconfirmed" ? "unconfirmed" : piece.reason]
   ?? `stopped short (${piece.reason ?? piece.status})`;
@@ -208,7 +219,7 @@ export function renderPointerExamples(collected, { runId, generatedAt } = {}) {
 <main>
 <div class="intro">
 <h1>Journal pieces the reference step didn't confirm</h1>
-<p>Run ${escapeHtml(runId ?? "")}, written ${escapeHtml(generatedAt ?? "")}. Of the ${escapeHtml(collected.sampled)} pieces in the sample, ${escapeHtml(collected.pieces.length)} weren't confirmed by both judges, and all of them are below. For each one: the passage, the questions the writer asked, and what each judge decided. A piece is confirmed only when both judges confirm every one of its quotes.</p>
+<p>Run ${escapeHtml(runId ?? "")}, written ${escapeHtml(generatedAt ?? "")}. Of the ${escapeHtml(collected.sampled)} pieces in the sample, ${escapeHtml(collected.pieces.length)} didn't get their questions confirmed, and all of them are below. For each one: the passage, the questions the writer asked, and what each judge decided. A piece's questions are confirmed only when both judges confirm every one of its quotes and no question copies its passage's words.</p>
 <dl>
 <dt>Something left out</dt><dd>The judge says the questions miss something the passage says; its note says what.</dd>
 <dt>Repeated</dt><dd>A question asks again about something another question already covers, often a detail asked on its own.</dd>

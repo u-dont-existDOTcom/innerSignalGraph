@@ -41,7 +41,7 @@ const events = [
 
 test("the examples hold each piece that wasn't confirmed, with its quotes, questions and both judges' verdicts", () => {
   const collected = collectPointerExamples({ reference, units, events, copyRunWords: 8 });
-  assert.deepEqual([collected.sampled, collected.confirmed, collected.pieces.map((piece) => piece.unit_id)], [3, 1, ["page:2", "page:3"]]);
+  assert.deepEqual([collected.sampled, collected.pieces.map((piece) => piece.unit_id)], [3, ["page:2", "page:3"]]);
   const [piece, late] = collected.pieces;
   assert.deepEqual(piece.quotes.map((quote) => quote.text), [units[1].text, units[2].text]);
   assert.equal(piece.attempts.length, 2);
@@ -76,9 +76,9 @@ test("the page escapes everything it shows, loads nothing from elsewhere, and sa
   assert.match(html, /<strong>Codex<\/strong>: held back \(something left out; two things in one: Q1\)\./u);
   assert.match(html, /<strong>Claude<\/strong>: no usable answer \(deadline\)\./u);
   assert.match(html, /<span class="tag warn">code: copies 9 words in a row<\/span>/u);
-  assert.match(html, /Piece 2: no answer before the step&#39;s time ran out/u);
+  assert.match(html, /Piece 2: the step&#39;s time ran out before its questions were confirmed/u);
   assert.match(html, /The question writer gave no answer before the time ran out\./u);
-  assert.match(html, /Of the 3 pieces in the sample, 2 weren't confirmed by both judges, and all of them are below\./u);
+  assert.match(html, /Of the 3 pieces in the sample, 2 didn't get their questions confirmed, and all of them are below\./u);
   assert.doesNotMatch(html, /Confirmed passage/u, "a confirmed piece isn't shown");
 });
 
@@ -114,4 +114,38 @@ test("the review file is written only through its own handle, into the directory
   await fs.chmod(open, 0o750);
   await assert.rejects(checkReviewDirectory(open), { code: "POINTER_EXAMPLES_DIR_UNSAFE" });
   await assert.rejects(checkReviewDirectory(path.join(parent, "missing")), { code: "POINTER_EXAMPLES_DIR_UNSAFE" });
+});
+
+test("a piece whose questions were confirmed but whose searches fell short isn't an example; one the copy check held back is", () => {
+  const units2 = [...units, { unit_id: "q:5", page: 5, text: "Searches ran out." }, { unit_id: "q:6", page: 6, text: "Copied passage." }];
+  const reference2 = { units: [
+    { unit_id: "page:4", quote_ids: ["q:5"], status: "nonresponse", reason: "searches_incomplete", deadline_cause: null },
+    { unit_id: "page:5", quote_ids: ["q:5"], status: "nonresponse", reason: "deadline", deadline_cause: "unanswered" },
+    { unit_id: "page:6", quote_ids: ["q:6"], status: "unconfirmed", reason: null, deadline_cause: null }
+  ] };
+  const one = (unitId, quoteId, copied) => ({ complete: true, answer_valid: true,
+    copied: copied ? [{ question_id: `question:${unitId}:0:0`, unit_id: quoteId, words: 10 }] : [],
+    questions: [{ question_id: `question:${unitId}:0:0`, unit_id: quoteId, question: "What happened?", critical: false, event: false }] });
+  const confirmedBy = (unitId, quoteId, copied) => [
+    { kind: "writer", unit_id: unitId, round: 0, status: "answered", set: one(unitId, quoteId, copied), coverage_notes: [] },
+    ...["standard", "hardest"].map((tier) => ({ kind: "judge", round: 0, tier, quote_ids: [quoteId], status: "answered", judgments: [judgment(quoteId)] }))];
+  const collected = collectPointerExamples({ reference: reference2, units: units2, copyRunWords: 8,
+    events: [...confirmedBy("page:4", "q:5", false), ...confirmedBy("page:5", "q:5", false), ...confirmedBy("page:6", "q:6", true)] });
+  assert.deepEqual(collected.pieces.map((piece) => piece.unit_id), ["page:6"]);
+  assert.equal(collected.pieces[0].attempts[0].questions[0].copied_words, 10);
+});
+
+test("a writer's incomplete answer still shows the questions it wrote", () => {
+  const reference3 = { units: [{ unit_id: "page:2", quote_ids: ["q:2", "q:3"], status: "nonresponse", reason: "questions_incomplete", deadline_cause: null }] };
+  const incomplete = { complete: false, answer_valid: true, questions: [], foreign_questions: 0, quotes_without_question: 1, quotes_too_long: 0, longest_runs: [], copied: [] };
+  const written = [{ unit_id: "q:2", question: "Where did I go on Sunday?", critical: false, event: true }];
+  const collected = collectPointerExamples({ reference: reference3, units, copyRunWords: 8, events: [
+    { kind: "writer", unit_id: "page:2", round: 0, status: "answered", set: incomplete, raw_questions: written, coverage_notes: [] },
+    { kind: "writer", unit_id: "page:2", round: 1, status: "answered", set: incomplete, raw_questions: written, coverage_notes: [] }] });
+  const [first] = collected.pieces[0].attempts;
+  assert.deepEqual(first.questions.map((item) => [item.quote_id, item.question]), [["q:2", "Where did I go on Sunday?"]]);
+  const html = renderPointerExamples(collected, { runId: "run-1", generatedAt: "2026-10-14T22:50:00.000Z" });
+  assert.match(html, /The question writer&#39;s questions fell short: 1 quote\(s\) got no question\./u);
+  assert.match(html, /<span class="q">Q1<\/span> Where did I go on Sunday\?/u);
+  assert.match(html, /Piece 1: the question writer&#39;s questions fell short twice/u);
 });
