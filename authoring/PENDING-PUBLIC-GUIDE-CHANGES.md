@@ -203,6 +203,16 @@ Reader need: People with prior involuntary or traumatic care may be harmed by un
 Already covered: Also Look Outward already distinguishes privacy from dishonesty in unsafe relationships; r6 extends that principle to medical settings while retaining the existing concrete-safety floor.
 Where: Also Look Outward, following the paragraph on safe graded disclosure and before general relationship/community support.
 
+## Pending bundle H — gratitude as an optional opening into sacred love
+
+### PGQ-031 — Gratitude opens a possible door; the child is not required to enter
+Caused by: owner-authored October 14 revision of “Ask God for a Loan,” `AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014`, `IC.LOVE_HORIZON_EXPLORATION`, `IC.DEEP_LOVE_TO_CHILD`, and the updated extraction distinction.
+Teaching point: If someone chooses gratitude for a concrete good that remains true even amid pain, they may notice a growing softness or spiritual love. Neither immediate softening nor eventual divine love is guaranteed; this is not a duty to be grateful for mistreatment or a replacement for ordinary action. Once any deep love is genuinely available, ask whether the younger self can share it. Numbness, rejection, skepticism, or fear deserves humble patience and protection, not more spiritual intensity or a demand for thanks. Do not claim the child is knowingly testing the adult. A feast felt by the adult alone is not evidence of inner-child integration.
+Reader need: Without this sequence, gratitude may become toxic positivity, or a beautiful spiritual opening may be mistaken for achieved reparenting.
+Already covered: The owner has already rewritten this public section directly. Preserve their wording/voice and **do not duplicate the section**. The humanizer should compare the new public passage with the operational nuance and disposition this entry as already incorporated when verified, not overwrite it with generic AI prose.
+Evidence boundary: The owner's roselle/bilharzia experience is a personal, suspected-diagnosis anecdote, not demonstration that roselle treats or cures schistosomiasis; do not turn it into therapy or medical protocol. Any public factual-health framing requires separate editorial and clinical-source review.
+Where: “Ask God for a Loan” (the existing owner-edited passage).
+
 ## EMPTY sentinel
 
 When every pending entry above has been consumed and the public-guide sync bookkeeping is updated, replace all pending bundles with exactly:

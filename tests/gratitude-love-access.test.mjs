@@ -1,0 +1,40 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import { compileGuideGraphs } from "../src/guide-graph/compiler.mjs";
+import { planFromGraphs } from "../src/guide-graph/planner.mjs";
+
+test("gratitude remains a voluntary doorway, not an assumed spiritual outcome", async () => {
+  const bundle = await compileGuideGraphs({ write: false });
+  const byId = new Map(bundle.graphs.flatMap(graph => graph.nodes).map(node => [node.id, node]));
+  const horizon = byId.get("IC.LOVE_HORIZON_EXPLORATION");
+  assert.ok(horizon.sourceRefs.includes("AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014"));
+  assert.ok(horizon.recommendations.some(s => /gratitude for one concretely true present good/i.test(s)));
+  assert.ok(horizon.avoid.some(s => /gratitude as obligatory/i.test(s)));
+  assert.ok(horizon.effects.requiredNuance.some(s => /distinct observations/i.test(s)));
+  const values = { present_safety:"safe", orientation:"oriented", ability_to_stop:"yes", ability_to_return:"yes", altered_state:"sober", suicidal_state:"absent", spiritual_curiosity:"present", deep_love_access:"none_known", activation:"moderate", dissociation:"none" };
+  const curious = planFromGraphs({ graphs: bundle.graphs, variables: values });
+  assert.ok(curious.selectedNodes.some(n => n.id === "IC.LOVE_HORIZON_EXPLORATION"));
+  const uninterested = planFromGraphs({ graphs: bundle.graphs, variables: { ...values, spiritual_curiosity:"absent" } });
+  assert.ok(!uninterested.selectedNodes.some(n => n.id === "IC.LOVE_HORIZON_EXPLORATION"));
+});
+
+test("even a spiritual opening does not certify inner-child reception or authorize coercion", async () => {
+  const bundle = await compileGuideGraphs({ write: false });
+  const node = bundle.graphs.flatMap(graph => graph.nodes).find(n => n.id === "IC.DEEP_LOVE_TO_CHILD");
+  assert.ok(node.sourceRefs.includes("AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014"));
+  assert.ok(node.recommendations.some(s => /without interpreting refusal as a deliberate test/i.test(s)));
+  assert.ok(node.effects.requiredNuance.some(s => /separate/i.test(s) && /reception/i.test(s)));
+  assert.ok(node.effects.forbiddenOverclaims.some(s => /testing whether the adult/i.test(s)));
+  const values = { present_safety:"safe", orientation:"oriented", ability_to_stop:"yes", ability_to_return:"yes", activation:"moderate", dissociation:"none", altered_state:"sober", deep_love_access:"intermittent", child_love_inclusion:"blocked", suicidal_state:"absent" };
+  const plan = planFromGraphs({ graphs: bundle.graphs, variables: values });
+  assert.ok(plan.selectedNodes.some(n => n.id === "IC.DEEP_LOVE_TO_CHILD"));
+  assert.ok(plan.requiredNuance.some(s => /younger self’s actual reception are separate/i.test(s)));
+  assert.ok(plan.forbiddenOverclaims.some(s => /testing whether the adult/i.test(s)));
+});
+
+test("extraction instructions do not conflate saying thanks with felt deep love", async () => {
+  const prompt = await fs.readFile(new URL("../src/prompts/case-extract.mjs", import.meta.url), "utf8");
+  assert.match(prompt, /Saying thanks, naming one good thing amid suffering/);
+  assert.match(prompt, /does not by itself establish deep_love_access/);
+});

@@ -7,11 +7,11 @@ source_id: AMEND.CROSS.SUPPORT_MODE_CONTINUITY
 guide_id: owner-amendments
 heading: AMEND.CROSS.SUPPORT_MODE_CONTINUITY
 source_role: owner-approved-extension
-source_hash: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+source_hash: 643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69
 section_hash: e6d6053db8950b2642932654133bab0d17826e25c80a119002466998f73bdf15
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # AMEND.CROSS.SUPPORT_MODE_CONTINUITY

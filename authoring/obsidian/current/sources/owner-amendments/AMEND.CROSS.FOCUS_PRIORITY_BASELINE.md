@@ -7,12 +7,12 @@ source_id: AMEND.CROSS.FOCUS_PRIORITY_BASELINE
 guide_id: owner-amendments
 heading: AMEND.CROSS.FOCUS_PRIORITY_BASELINE
 source_role: owner-approved-extension
-source_hash: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+source_hash: 643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69
 section_hash: f71ae1c65d66a286b395ee808bbb894e6d80d06adf87e3281e78c4c6d6a295fa
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.MEDICAL_RED_FLAG
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # AMEND.CROSS.FOCUS_PRIORITY_BASELINE

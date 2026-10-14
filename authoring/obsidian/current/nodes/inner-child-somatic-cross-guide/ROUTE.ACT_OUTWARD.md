@@ -44,7 +44,7 @@ regression_refs:
   - G105
 base_record_sha256: 2688eac08be228b1e51c1d3604890a60f1134c29f72cf48bef67a5799ab5c34b
 base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # Act on the concrete problem

@@ -9,8 +9,8 @@ graph_id: inner-child-directed-graph
 from_node_id: IC.DRAFT_EDITOR
 to_node_id: IC.DRAFT_RETURN_TO_CARE
 relation: returns-for-care
-base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+base_graph_sha256: 667e64676613d0362e95abfbb14fa0b10289b75fd49b03770309caf680b86840
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # IC.DRAFT_EDITOR returns-for-care IC.DRAFT_RETURN_TO_CARE

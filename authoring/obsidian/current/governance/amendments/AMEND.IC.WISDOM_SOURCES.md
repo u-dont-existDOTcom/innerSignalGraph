@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_SOURCES
 status: owner-approved
 domain: inner-child
-base_record_sha256: 30ec581356482a7525e1aed12b3398ec932777e9e430051813fea7f412049677
-source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+base_record_sha256: 7952fd8819465742466b8dcec43ba56f4d7c7b46aeaa00eb1ee466d26792a31f
+source_file_sha256: 643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # AMEND.IC.WISDOM_SOURCES
@@ -24,6 +24,6 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
     "status": "owner-approved",
     "text": "Religious and philosophical variants are optional references attached to a practice function, not extra required graph stages or additions to the always-loaded constitution. Preserve textual provenance and distinguish original teaching from modern adaptation. The mustard-seed account is a commentarial story; ocean-of-tears and former-mother reflections retain their rebirth context. Bible, Quran, Buddhist and Stoic language depends on individual preference, not a presumed hierarchy of acceptability. Do not force forgiveness, minimize grief, make postmortem claims as fact, promise that kindness reforms an aggressor, or misattribute an unverified maxim. Keep full reference detail in the attached research source and reference cards, not every response."
   },
-  "version": "owner-amendments-2026-10-11-r6"
+  "version": "owner-amendments-2026-10-14-r7"
 }
 ```

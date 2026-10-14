@@ -20,8 +20,8 @@ source_refs:
 regression_refs:
   - G011
 base_record_sha256: c3ff9bb3dc6faa4b3f0b673403aa4d16ea3ccb6256fd9e54ccf2cc79d362aa8b
-base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+base_graph_sha256: 667e64676613d0362e95abfbb14fa0b10289b75fd49b03770309caf680b86840
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # Use gentle present-focused self-hypnosis only as preparation

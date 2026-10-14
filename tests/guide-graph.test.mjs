@@ -13,7 +13,7 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.stats.graphCount, 3);
   assert.equal(bundle.stats.nodeCount, 83);
   assert.equal(bundle.stats.edgeCount, 116);
-  assert.equal(bundle.stats.ownerAmendmentCount, 58);
+  assert.equal(bundle.stats.ownerAmendmentCount, 59);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "altered-states-map-source"));

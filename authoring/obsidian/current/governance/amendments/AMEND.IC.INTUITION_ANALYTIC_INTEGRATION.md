@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: 68a10b0ac89636c276b2bc06aa7fa1dce6127b87659ff9acfff6fc392ab5c6fe
-source_file_sha256: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+base_record_sha256: 79d9b76ce74f234941a9ca478b779e20f90b2c64288dad150f57e97abf241de5
+source_file_sha256: 643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
@@ -24,6 +24,6 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
     "status": "owner-approved",
     "text": "Intuitive, mystical, gestalt, affective, and subconscious cognition are required resources, but they must work together with analytical, propositional, contradiction-sensitive cognition. Do not literalize this as a simplistic left-brain/right-brain anatomy claim. Intuitive cognition can surface patterns, resonance, meaning, and information that analysis has not consciously assembled, but a felt gestalt is not by itself a true/false adjudicator. Analytical cognition checks contradiction, track record, scope, falsifiability, and whether a compelling experience is being generalized beyond its evidence; it can also become overburdened, rigid, or eager to hand off the pressure of checking. In high-stakes trust and spiritual-authority decisions, neither mode gets unilateral control: separate the felt signal from the proposition inferred from it, let both modes contribute, and require the conclusion to remain corrigible by contrary evidence."
   },
-  "version": "owner-amendments-2026-10-11-r6"
+  "version": "owner-amendments-2026-10-14-r7"
 }
 ```

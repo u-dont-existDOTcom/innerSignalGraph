@@ -7,7 +7,7 @@ source_id: AMEND.IC.EXISTENTIAL_LOVE_ROUTING
 guide_id: owner-amendments
 heading: AMEND.IC.EXISTENTIAL_LOVE_ROUTING
 source_role: owner-approved-extension
-source_hash: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+source_hash: 643f88e62767653b9573d9608285390731c8a104997bb88e7fe0d001078eaa69
 section_hash: 3c9294cb4c616b0a37144a889acbd3ad724ccaf3839c8b69a1e63b87ece40e4e
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - IC.GUIDE_LATER
   - IC.LOVE_HORIZON_EXPLORATION
   - IC.SUICIDAL_SELF_DEATH_INQUIRY
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 4edcaa1465c9d8811996062dda0804cc0a6af295e9a02b8979b8a2317013c5d0
 ---
 
 # AMEND.IC.EXISTENTIAL_LOVE_ROUTING
