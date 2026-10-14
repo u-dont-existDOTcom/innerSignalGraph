@@ -338,9 +338,13 @@ test("pointer-examples writes the pieces the judges didn't confirm to a new owne
   assert.ok(examples.pieces > 0);
   assert.equal(examples.sampled, 96);
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained", "left out"]) assert.equal(JSON.stringify(result).includes(word), false, word);
-  const file = path.join(reviewDir, examples.file);
-  assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
-  const html = await fs.readFile(file, "utf8");
+  // One handle for the mode and the text, so both are the same file's.
+  const handle = await fs.open(path.join(reviewDir, examples.file), "r");
+  let html;
+  try {
+    assert.equal((await handle.stat()).mode & 0o777, 0o600);
+    html = await handle.readFile("utf8");
+  } finally { await handle.close(); }
   for (const unitId of reference.unconfirmed_units) assert.ok(html.includes(`saw a quolp${unitId.slice("page:".length)}.`), unitId);
   assert.equal((html.match(/<section>/gu) ?? []).length, examples.pieces, "only the pieces not confirmed");
   assert.match(html, /<strong>Codex<\/strong>: held back \(something left out\)\.<div class="note">Its note: “something is left out”<\/div>/u);
