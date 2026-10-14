@@ -6,8 +6,8 @@ import { applyPointerEventCheck, buildPointerGeneration, checkPointerBatches, ke
   pointerEventCheckCalls, pointerEventPairs, pointerPassInput, pointerPassReport, pointerRepassBatches, pointerTaggerPacket } from "./pointer-pass.mjs";
 import { POINTER_FLOORS, POINTER_PRECISION_SAMPLES, cohenKappa, designRatioBound, pointerFloors } from "./pointer-measure.mjs";
 import { batchPointerQuotes, checkPointerTags, pointerPageOf, pointerTagIndexes } from "./pointer-tags.mjs";
-import { POINTER_REFERENCE_NONRESPONSE_REASONS, checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls,
-  pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
+import { POINTER_COPY_RUN_WORDS, POINTER_REFERENCE_NONRESPONSE_REASONS, checkCoverageJudgments, checkQuestionSet, checkSearchPlan,
+  coverageJudgeCalls, pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
 import { buildQuoteGeneration } from "./quote-index.mjs";
 
 // The pointer pass's steps as sequences of deadline-bound call rounds (plan 2026-10-09-journal-quote-first.md, Part
@@ -21,7 +21,9 @@ const COVERAGE_TIERS = Object.freeze(["standard", "hardest"]);
 
 // Why a judge held a quote back, counted once a check for each reason it gave: something the quote says left out (not
 // covered), a question repeating another, a question asking about two things or more, or a question copying the quote's
-// wording. One check can give several reasons, so the reasons can add up to more than the checks. Content-free.
+// wording. One check can give several reasons, so the reasons can add up to more than the checks. A copying flag alone
+// holds a quote back only in a run from before owner decision 30; since then it is counted only beside another reason.
+// Content-free.
 const heldBackCounts = () => ({ checks: 0, left_out: 0, repeated: 0, combined: 0, copied: 0 });
 function countHeldBack(counts, result) {
   if (result.confirmed) return;
@@ -58,16 +60,22 @@ function rolePacket(role, { generation, grantPurpose, assigned, tag, fields }) {
  * rounds of calls that each go out at once: the question writer for every sampled unit; both coverage judges for every
  * unit whose questions are complete; the writer's one retry, with both judges' notes, for every unit that fell short,
  * and both judges again; and the search writer, with one retry, for every unit whose quotes are all confirmed. Every
- * call is keyed under `stepId` and expires at `deadline`. A unit without confirmed questions or complete searches is a
- * nonresponse, with its reason; one that ran out of time is a nonresponse for the deadline. Returns the frozen
- * reference: the sample's record, and for each sampled unit its stretch, inclusion probability, quotes and, when
- * complete, its questions with their critical and event marks and their searches. With `sample` (calibration's units,
- * from pointerChallengeUnits) in place of a seed, the same step runs on those units, and each keeps its hazards.
+ * call is keyed under `stepId` and expires at `deadline`. Code checks every complete question set for questions that
+ * copy a run of `copyRunWords` of their quote's words (checkQuestionSet). A unit whose retry's questions are complete
+ * and judged but still not all confirmed is `unconfirmed`: it keeps its questions, gets no searches, and counts in
+ * recall with every question missed (owner decision 30). A run from before that decision (`copyRunWords` null) keeps the
+ * rules it ran under, so a recount follows it: code flags no question, a judge's copying flag holds its quote back, and
+ * a unit still unconfirmed after its retry is a nonresponse (pointer-reference.mjs). Any other unit
+ * without confirmed questions or complete searches is a nonresponse, with its reason; one that ran out of time is a
+ * nonresponse for the deadline. Returns the frozen reference: the sample's record, the judges' counts, the copy check's
+ * counts, and for each sampled unit its stretch, inclusion probability, quotes and, when complete or unconfirmed, its
+ * questions with their critical and event marks (and, when complete, their searches). With `sample` (calibration's
+ * units, from pointerChallengeUnits) in place of a seed, the same step runs on those units, and each keeps its hazards.
  * Every step here passes `oneAtATime` (the tiers whose route takes one call at a time) to runDeadlineCalls, so those
  * tiers' calls take turns.
  */
 export async function runPointerReference({ units, seed = null, sample: given = null, stepId, deadline, port, grant, generation,
-  now = () => new Date(), beforeHardestSend = null, oneAtATime = [] } = {}) {
+  now = () => new Date(), beforeHardestSend = null, oneAtATime = [], copyRunWords = POINTER_COPY_RUN_WORDS } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && typeof generation === "string" && generation.length > 0, "POINTER_STEP_INPUT_INVALID");
   invariant((seed === null) !== (given === null) && (given === null || (Array.isArray(given.units) && given.units.every((unit) => unit
@@ -85,7 +93,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   };
   const call = (role, tier, key, assigned, fields) => ({ key, role, tier, grant, outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
     packet: rolePacket(role, { generation, grantPurpose: grant.purpose, assigned, tag: `pointer:${role}:${stepId}`, fields }) });
-  const next = (unit) => referenceUnitStep({ quoteIds: unit.quote_ids, attempts: unit.attempts });
+  const next = (unit) => referenceUnitStep({ quoteIds: unit.quote_ids, attempts: unit.attempts, copyRunWords });
   const quoteFor = (id) => ({ unit_id: id, text: quoteById.get(id).text });
   // Each quote both judges answered for, in every round: whether Codex (the standard tier) and Claude (the hardest) each
   // confirmed it. Their agreement shows whether one judge passes what the other doesn't, as the measurement reports for
@@ -96,7 +104,13 @@ export async function runPointerReference({ units, seed = null, sample: given = 
   // said when): each is taken as a deadline, as an expired item's is, and counted here so a recount says it guessed.
   let inferred = 0;
   const heldBack = { codex: heldBackCounts(), claude: heldBackCounts(), codex_only: heldBackCounts(), claude_only: heldBackCounts() };
-  const byRound = [0, 1].map(() => ({ checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0 }));
+  // The checks where each judge listed a question as copying its quote, whatever it decided: since owner decision 30 such
+  // a flag holds nothing back, so it shows here, not among the reasons. Content-free.
+  const copyingFlagged = { codex: 0, claude: 0 };
+  const byRound = [0, 1].map(() => ({ checks: 0, codex_confirmed: 0, claude_confirmed: 0, both_confirmed: 0, copied_by_code: 0 }));
+  // The copy check over every complete question set, both rounds: how long a run of its quote's words each question
+  // holds (questions by run length), and how many reach the setting. Content-free.
+  const copyCheck = { run_words: copyRunWords, questions: 0, copying: 0, longest_run: {} };
 
   for (let round = 0; round < 2; round += 1) {
     // The question writer: each unit's first answer, and the one retry of those that fell short.
@@ -116,9 +130,15 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       writing.forEach((unit, position) => {
         const outcome = outcomes[position];
         noteLate(unit, outcome);
-        unit.attempts.push({ set: outcome.status === "answered"
+        const set = outcome.status === "answered"
           ? checkQuestionSet({ sampleIndex: unit.index, attempt: round, quoteIds: unit.quote_ids,
-            texts: new Map(unit.quote_ids.map((id) => [id, quoteById.get(id).text])), answer: outcome.output }) : null, coverage: null });
+            texts: new Map(unit.quote_ids.map((id) => [id, quoteById.get(id).text])), answer: outcome.output, copyRunWords }) : null;
+        if (set?.complete) {
+          copyCheck.questions += set.longest_runs.length;
+          copyCheck.copying += set.copied.length;
+          for (const words of set.longest_runs) copyCheck.longest_run[words] = (copyCheck.longest_run[words] ?? 0) + 1;
+        }
+        unit.attempts.push({ set, coverage: null });
       });
     }
     // Both coverage judges, on every quote whose unit's questions are complete, at most 25 quotes to a call (fewer when
@@ -136,7 +156,7 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       // An answer that fails the code's check (a quote missed or judged twice, another quote's question listed, an
       // unconfirmed quote without a note) uses its call's retry, like an answer that fails the schema.
       const check = (spec, output) => {
-        const checked = checkCoverageJudgments({ quotes: spec.packet.quotes, answer: output });
+        const checked = checkCoverageJudgments({ quotes: spec.packet.quotes, answer: output, copyRunWords });
         return checked.valid ? null : `COVERAGE_ANSWER_${checked.reason.toUpperCase()}`;
       };
       const outcomes = await runDeadlineCalls({ calls, port, deadline, now, retries: 1, beforeHardestSend, check, oneAtATime });
@@ -155,25 +175,32 @@ export async function runPointerReference({ units, seed = null, sample: given = 
             }
             return;
           }
-          const checked = checkCoverageJudgments({ quotes: group.quotes, answer: outcome.output });
+          const checked = checkCoverageJudgments({ quotes: group.quotes, answer: outcome.output, copyRunWords });
           for (const result of checked.quotes) results.set(result.unit_id, result);
           for (const note of checked.notes) notes.set(note.unit_id, note);
         });
         return { results, notes, failed, late };
       });
-      for (const unit of judging) for (const id of unit.quote_ids) {
-        const [first, second] = judges.map((judge) => (judge.failed.has(id) ? null : judge.results.get(id) ?? null));
-        if (!first || !second) continue;
-        agreement.push({ first: first.confirmed === true, second: second.confirmed === true });
-        countHeldBack(heldBack.codex, first);
-        countHeldBack(heldBack.claude, second);
-        if (second.confirmed) countHeldBack(heldBack.codex_only, first);
-        if (first.confirmed) countHeldBack(heldBack.claude_only, second);
-        const counts = byRound[round];
-        counts.checks += 1;
-        if (first.confirmed) counts.codex_confirmed += 1;
-        if (second.confirmed) counts.claude_confirmed += 1;
-        if (first.confirmed && second.confirmed) counts.both_confirmed += 1;
+      for (const unit of judging) {
+        // The quotes the copy check holds back, which no judge's confirmation lets through.
+        const copying = new Set(unit.attempts[round].set.copied.map((item) => item.unit_id));
+        for (const id of unit.quote_ids) {
+          const [first, second] = judges.map((judge) => (judge.failed.has(id) ? null : judge.results.get(id) ?? null));
+          if (!first || !second) continue;
+          agreement.push({ first: first.confirmed === true, second: second.confirmed === true });
+          countHeldBack(heldBack.codex, first);
+          countHeldBack(heldBack.claude, second);
+          if (second.confirmed) countHeldBack(heldBack.codex_only, first);
+          if (first.confirmed) countHeldBack(heldBack.claude_only, second);
+          if (first.copied > 0) copyingFlagged.codex += 1;
+          if (second.copied > 0) copyingFlagged.claude += 1;
+          const counts = byRound[round];
+          counts.checks += 1;
+          if (first.confirmed) counts.codex_confirmed += 1;
+          if (second.confirmed) counts.claude_confirmed += 1;
+          if (first.confirmed && second.confirmed) counts.both_confirmed += 1;
+          if (copying.has(id)) counts.copied_by_code += 1;
+        }
       }
       for (const unit of judging) {
         for (const judge of judges) for (const id of unit.quote_ids) if (judge.late.has(id)) noteLate(unit, judge.late.get(id));
@@ -214,6 +241,10 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       return { ...base, status: "complete", reason: null, deadline_cause: null, questions: step.questions.map((question) => ({ ...question,
         queries: [...queries.get(question.question_id)] })) };
     }
+    // Still unconfirmed after the retry, in time: its questions count in recall, every one missed (owner decision 30).
+    if (step.step === "unconfirmed" && !unit.late) {
+      return { ...base, status: "unconfirmed", reason: null, deadline_cause: null, questions: step.questions.map((question) => ({ ...question })) };
+    }
     // Out of time, or short in a way the rounds can't mend: a nonresponse, which fails the recall floor.
     const reason = unit.late ? "deadline" : (step.step === "nonresponse" ? step.reason
       : (step.step === "complete" ? "searches_incomplete" : "deadline"));
@@ -226,20 +257,29 @@ export async function runPointerReference({ units, seed = null, sample: given = 
       units_per_stratum: sample.units_per_stratum, candidate_units: sample.candidate_units },
     judges: { codex_confirmed: agreement.filter((item) => item.first).length,
       claude_confirmed: agreement.filter((item) => item.second).length, agreement: cohenKappa(agreement), held_back: heldBack,
-      by_round: byRound },
+      by_round: byRound, copying_flagged: copyingFlagged },
+    copy_check: copyCheck,
     ...(inferred > 0 ? { closes_inferred: inferred } : {}),
     units: reference
   });
 }
 
-/** Content-free counts of a reference, for reports and the owner page. */
+/**
+ * Content-free counts of a reference, for reports and the owner page. `questions`, `critical_questions` and
+ * `event_questions` are the complete units'; the unconfirmed units' questions, which count in recall as missed, are
+ * counted apart.
+ */
 export function pointerReferenceCounts(reference) {
   invariant(reference && Array.isArray(reference.units), "POINTER_REFERENCE_INVALID");
   const reasons = Object.fromEntries(POINTER_REFERENCE_NONRESPONSE_REASONS.map((reason) => [reason, 0]));
   let complete = 0;
+  let unconfirmed = 0;
+  let nonresponse = 0;
   let questions = 0;
   let critical = 0;
   let events = 0;
+  let unconfirmedQuestions = 0;
+  let unconfirmedCritical = 0;
   let retried = 0;
   let unanswered = 0;
   for (const unit of reference.units) {
@@ -250,17 +290,47 @@ export function pointerReferenceCounts(reference) {
       questions += unit.questions.length;
       critical += unit.questions.filter((question) => question.critical).length;
       events += unit.questions.filter((question) => question.event).length;
+    } else if (unit.status === "unconfirmed") {
+      unconfirmed += 1;
+      unconfirmedQuestions += unit.questions.length;
+      unconfirmedCritical += unit.questions.filter((question) => question.critical).length;
     } else {
       invariant(Object.hasOwn(reasons, unit.reason), "POINTER_REFERENCE_INVALID");
+      nonresponse += 1;
       reasons[unit.reason] += 1;
     }
   }
-  return Object.freeze({ sampled_units: reference.units.length, complete_units: complete, nonresponse_units: reference.units.length - complete,
-    nonresponse_by_reason: Object.freeze(reasons), deadline_units_with_a_call_unanswered: unanswered, units_retried: retried, questions,
-    critical_questions: critical, event_questions: events,
+  return Object.freeze({ sampled_units: reference.units.length, complete_units: complete, unconfirmed_units: unconfirmed,
+    nonresponse_units: nonresponse, nonresponse_by_reason: Object.freeze(reasons), deadline_units_with_a_call_unanswered: unanswered,
+    units_retried: retried, questions, critical_questions: critical, event_questions: events,
+    unconfirmed_questions: unconfirmedQuestions, unconfirmed_critical_questions: unconfirmedCritical,
     // A reference stored before the judges' agreement was counted has none, and one stored before their reasons were
-    // counted (12 Oct 2026) has no `held_back` or `by_round`; `pointer-recount` counts them again from the stored answers.
-    judges: reference.judges ? deepFreeze(structuredClone(reference.judges)) : null });
+    // counted (12 Oct 2026) has no `held_back` or `by_round`, and one stored before owner decision 30 no
+    // `copying_flagged`; `pointer-recount` counts them again from the stored answers.
+    judges: reference.judges ? deepFreeze(structuredClone(reference.judges)) : null,
+    // A reference stored before the copy check (owner decision 30) has none.
+    copy_check: reference.copy_check ? deepFreeze(structuredClone(reference.copy_check)) : null });
+}
+
+/**
+ * Whether the recall floor can still be met, from the reference alone (owner decision 30): every complete unit's
+ * questions taken as found and every unconfirmed unit's as missed, the best any generation could do. When even that
+ * best case's one-sided lower bound falls short of the floor, the unconfirmed units alone have put it out of reach, and
+ * the run stops before the pilot, as for a nonresponse. Content-free.
+ */
+export function pointerRecallReach(reference) {
+  invariant(reference && Array.isArray(reference.units), "POINTER_REFERENCE_INVALID");
+  const counted = reference.units.filter((unit) => unit.status === "complete" || unit.status === "unconfirmed");
+  const best = designRatioBound({ units: counted.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
+    inclusion_probability: unit.inclusion_probability, asked: unit.questions.length,
+    found: unit.status === "complete" ? unit.questions.length : 0 })), confidence: POINTER_FLOORS.confidence });
+  return Object.freeze({
+    unconfirmed_units: counted.filter((unit) => unit.status === "unconfirmed").length,
+    best_estimate: best.estimate,
+    best_lower_bound: best.lower_bound,
+    floor: POINTER_FLOORS.recall_lower_bound,
+    reachable: best.lower_bound !== null && best.lower_bound >= POINTER_FLOORS.recall_lower_bound
+  });
 }
 
 
@@ -466,29 +536,33 @@ const byRank = (left, right) => (left.rank < right.rank ? -1 : (left.rank > righ
  * and the floors), from which questions the searches found with tags (`foundWithTags`) and with words only
  * (`foundWordsOnly`), and which quotes have a kept event tag (`eventTaggedUnitIds`). Each is the design-based ratio
  * over every sampled unit, weighted by its inclusion probability: a unit with no critical question, or no question
- * word search misses, or no quote that reports an event, adds nothing to that ratio but stays in the design. A sample
- * with a nonresponse can't be measured: the run stopped before the pilot. Returns pointerFloors' recall inputs and
- * each unit's counts, content-free.
+ * word search misses, or no quote that reports an event, adds nothing to that ratio but stays in the design. An
+ * unconfirmed unit (owner decision 30) counts with every question missed, in recall with tags and with words only, in
+ * critical recall and in gain, and with none of its event quotes covered: nothing of it is searched or counted found.
+ * A sample with a nonresponse can't be measured: the run stopped before the pilot. Returns pointerFloors' recall
+ * inputs and each unit's counts, content-free.
  */
 export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly, eventTaggedUnitIds } = {}) {
   invariant(reference && Array.isArray(reference.units) && reference.units.length > 0 && foundWithTags instanceof Set
     && foundWordsOnly instanceof Set && eventTaggedUnitIds instanceof Set, "POINTER_RECALL_INPUT_INVALID");
-  invariant(reference.units.every((unit) => unit.status === "complete" && Array.isArray(unit.questions) && unit.questions.length > 0),
-    "POINTER_REFERENCE_INCOMPLETE");
-  const count = (questions, found) => questions.filter((question) => found.has(question.question_id)).length;
+  invariant(reference.units.every((unit) => (unit.status === "complete" || unit.status === "unconfirmed") && Array.isArray(unit.questions)
+    && unit.questions.length > 0), "POINTER_REFERENCE_INCOMPLETE");
+  // An unconfirmed unit finds nothing, whatever a search would have returned.
+  const searched = (unit) => unit.status === "complete";
+  const count = (unit, questions, found) => (searched(unit) ? questions.filter((question) => found.has(question.question_id)).length : 0);
   const critical = (unit) => unit.questions.filter((question) => question.critical);
-  const missed = (unit) => unit.questions.filter((question) => !foundWordsOnly.has(question.question_id));
+  const missed = (unit) => unit.questions.filter((question) => !searched(unit) || !foundWordsOnly.has(question.question_id));
   const eventQuotes = (unit) => [...new Set(unit.questions.filter((question) => question.event).map((question) => question.unit_id))];
   const rows = (pick) => reference.units.map((unit) => ({ unit_id: unit.unit_id, stratum: unit.stratum,
     inclusion_probability: unit.inclusion_probability, ...pick(unit) }));
   const bound = (pick) => designRatioBound({ units: rows(pick), confidence: POINTER_FLOORS.confidence });
-  const recall = bound((unit) => ({ asked: unit.questions.length, found: count(unit.questions, foundWithTags) }));
-  const wordsOnly = bound((unit) => ({ asked: unit.questions.length, found: count(unit.questions, foundWordsOnly) }));
-  const criticalRecall = bound((unit) => ({ asked: critical(unit).length, found: count(critical(unit), foundWithTags) }));
-  const criticalWordsOnly = bound((unit) => ({ asked: critical(unit).length, found: count(critical(unit), foundWordsOnly) }));
-  const gain = bound((unit) => ({ asked: missed(unit).length, found: count(missed(unit), foundWithTags) }));
+  const recall = bound((unit) => ({ asked: unit.questions.length, found: count(unit, unit.questions, foundWithTags) }));
+  const wordsOnly = bound((unit) => ({ asked: unit.questions.length, found: count(unit, unit.questions, foundWordsOnly) }));
+  const criticalRecall = bound((unit) => ({ asked: critical(unit).length, found: count(unit, critical(unit), foundWithTags) }));
+  const criticalWordsOnly = bound((unit) => ({ asked: critical(unit).length, found: count(unit, critical(unit), foundWordsOnly) }));
+  const gain = bound((unit) => ({ asked: missed(unit).length, found: count(unit, missed(unit), foundWithTags) }));
   const eventCoverage = bound((unit) => ({ asked: eventQuotes(unit).length,
-    found: eventQuotes(unit).filter((unitId) => eventTaggedUnitIds.has(unitId)).length }));
+    found: searched(unit) ? eventQuotes(unit).filter((unitId) => eventTaggedUnitIds.has(unitId)).length : 0 }));
   return deepFreeze({
     recall,
     recall_estimate: recall.estimate,
@@ -499,22 +573,24 @@ export function measurePointerRecall({ reference, foundWithTags, foundWordsOnly,
     gain: gain.estimate === null ? null : gain,
     event_coverage: eventCoverage.estimate === null ? null : eventCoverage,
     words_only: wordsOnly,
-    units: reference.units.map((unit) => ({ unit_id: unit.unit_id, questions: unit.questions.length,
-      found_with_tags: count(unit.questions, foundWithTags), found_words_only: count(unit.questions, foundWordsOnly),
+    units: reference.units.map((unit) => ({ unit_id: unit.unit_id, status: unit.status, questions: unit.questions.length,
+      found_with_tags: count(unit, unit.questions, foundWithTags), found_words_only: count(unit, unit.questions, foundWordsOnly),
       critical_questions: critical(unit).length, event_quotes: eventQuotes(unit).length }))
   });
 }
 
 /**
  * Recall on calibration's units, reported on its own (plan Part 3, "Calibration as a challenge set"): they were chosen,
- * not drawn, so the counts are plain, unweighted, and never stand in for a floor. Over the units whose questions are
- * complete (a nonresponse is counted), all questions and the critical ones, with tags and with words only, for every
- * unit, for the units chosen only by their place, and for each hazard type apart. Content-free.
+ * not drawn, so the counts are plain, unweighted, and never stand in for a floor. Over the units with questions,
+ * complete or unconfirmed (an unconfirmed unit's questions count, all missed, since none was searched; a nonresponse is
+ * counted), all questions and the critical ones, with tags and with words only, for every unit, for the units chosen
+ * only by their place, and for each hazard type apart. Content-free.
  */
 export function measurePointerChallenge({ reference, foundWithTags, foundWordsOnly } = {}) {
   invariant(reference && Array.isArray(reference.units) && foundWithTags instanceof Set && foundWordsOnly instanceof Set,
     "POINTER_CHALLENGE_INPUT_INVALID");
-  const complete = reference.units.filter((unit) => unit.status === "complete");
+  // An unconfirmed unit's questions were never searched, so none is in the found sets: they count as missed.
+  const counted = reference.units.filter((unit) => unit.status === "complete" || unit.status === "unconfirmed");
   const share = (found, asked) => (asked === 0 ? null : found / asked);
   const tally = (units) => {
     const questions = units.flatMap((unit) => unit.questions);
@@ -525,13 +601,14 @@ export function measurePointerChallenge({ reference, foundWithTags, foundWordsOn
       recall_words_only: share(found(questions, foundWordsOnly), questions.length), critical_questions: critical.length,
       critical_found_with_tags: found(critical, foundWithTags), critical_found_words_only: found(critical, foundWordsOnly) };
   };
-  const hazards = [...new Set(complete.flatMap((unit) => unit.hazards ?? []))].sort();
+  const hazards = [...new Set(counted.flatMap((unit) => unit.hazards ?? []))].sort();
   return deepFreeze({
     units: reference.units.length,
-    nonresponse_units: reference.units.length - complete.length,
-    all: tally(complete),
-    by_place_only: tally(complete.filter((unit) => (unit.hazards ?? []).length === 0)),
-    by_hazard: Object.fromEntries(hazards.map((hazard) => [hazard, tally(complete.filter((unit) => (unit.hazards ?? []).includes(hazard)))]))
+    unconfirmed_units: counted.filter((unit) => unit.status === "unconfirmed").length,
+    nonresponse_units: reference.units.length - counted.length,
+    all: tally(counted),
+    by_place_only: tally(counted.filter((unit) => (unit.hazards ?? []).length === 0)),
+    by_hazard: Object.fromEntries(hazards.map((hazard) => [hazard, tally(counted.filter((unit) => (unit.hazards ?? []).includes(hazard)))]))
   });
 }
 
@@ -628,11 +705,13 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
   const indexes = pointerTagIndexes({ batches: pass.checked.map((result) => ({ units: result.unit_ids.map((unitId) => input.unitsById.get(unitId)),
     kept: result.kept, passageIdForUnit: input.passageIdForUnit })) });
 
-  // Recall, words with tags and words only, on the generation itself.
+  // Recall, words with tags and words only, on the generation itself. An unconfirmed unit has no searches: it counts
+  // with every question missed.
   const eventTagged = new Set(indexes.pairs.filter((pair) => pair.kind === "event").map((pair) => pair.unit_id));
+  const searchedUnits = reference.units.filter((unit) => unit.status === "complete");
   const recall = measurePointerRecall({ reference,
-    foundWithTags: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
-    foundWordsOnly: await foundQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }),
+    foundWithTags: await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: true }),
+    foundWordsOnly: await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: false }),
     eventTaggedUnitIds: eventTagged });
   // Calibration's units, reported apart.
   const challengeUnits = challenge ? challenge.units.filter((unit) => unit.status === "complete") : [];
