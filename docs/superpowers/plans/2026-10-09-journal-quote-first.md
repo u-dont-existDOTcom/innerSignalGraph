@@ -496,8 +496,9 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     could be true or false on its own: something that happened, a feeling, a thought, a fact, a plan, a wish, a dream or
     a denial. It includes its details: who did or said it, with or to whom, when, where, how and why (a reason or a
     cause included), what it concerned (a list included) and its qualifiers. The details go in that thing's question,
-    so a question with a thing's details asks about one thing, and a question about a detail alone repeats that thing's
-    question. A verb that only frames a statement ("I think", "I remember", "I dreamed that", "I wish") makes one thing
+    and a question that leaves out a detail the quote gives leaves that detail uncovered; a question with a thing's
+    details asks about one thing, and a question about a detail alone repeats that thing's question. A question in
+    other words than a judge would use still covers its thing, as long as it keeps every detail the quote gives it. A verb that only frames a statement ("I think", "I remember", "I dreamed that", "I wish") makes one thing
     with it. A thing said twice is one thing. Inside a longer quote, a date line or a heading gives the when or the
     subject of what follows, and a greeting, a sign-off, filler and the quote's tone or wording are not things; a quote
     with nothing else, such as a date line or a heading on its own (the quote index keeps short date lines as quotes of

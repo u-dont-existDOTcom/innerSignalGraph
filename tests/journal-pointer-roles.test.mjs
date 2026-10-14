@@ -492,7 +492,8 @@ test("the reference roles' instructions are installed, and each call goes only t
   assert.match(rules("question_writer") ?? "", /A quote with nothing else, such as a date line or a heading on its own, says one thing, what it is, and gets one question about it/);
   assert.match(journalRoleInstruction("coverage_judge"), /a question about a detail alone included/);
   assert.match(journalRoleInstruction("coverage_judge"), /Hold a quote back only for a thing left out, a repeated question or a combined one/);
-  assert.match(journalRoleInstruction("coverage_judge"), /broader or narrower words than you would use still covers it/);
+  assert.match(journalRoleInstruction("coverage_judge"), /still covers its thing, as long as it keeps every detail the quote gives that thing/);
+  assert.match(rules("question_writer") ?? "", /a question that leaves out a detail the quote gives leaves that detail uncovered/);
   // No question may copy its quote's wording, or word search would find the quote by its own phrasing. Code checks a run
   // of the quote's words (owner decision 30), so the judge doesn't judge copying.
   assert.match(journalRoleInstruction("coverage_judge"), /`copied_question_ids` stays empty: code checks whether a question copies a run/);
