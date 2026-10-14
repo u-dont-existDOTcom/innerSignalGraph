@@ -73,56 +73,90 @@ const COPY_WORD = new RegExp(String.raw`(?=[\p{L}\p{N}])[${UNSPACED}]|(?:(?![${U
 // spaces), lowercased and without accents.
 const copyWords = (text) => text.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().match(COPY_WORD) ?? [];
 
+// The suffix automaton of a string of letters: a state for each set of its substrings that end in the same places, with
+// `next` (the state each letter leads to), `link` (the state of the longest suffix in another set) and `length` (the
+// longest substring of the state). Every substring of the string, and nothing else, is a path from the first state.
+// Built in time linear in the string's length.
+function suffixAutomaton(letters) {
+  const next = [new Map()];
+  const link = [-1];
+  const length = [0];
+  let last = 0;
+  for (const letter of letters) {
+    const current = next.length;
+    next.push(new Map());
+    link.push(0);
+    length.push(length[last] + 1);
+    let state = last;
+    while (state !== -1 && !next[state].has(letter)) {
+      next[state].set(letter, current);
+      state = link[state];
+    }
+    if (state !== -1) {
+      const target = next[state].get(letter);
+      if (length[state] + 1 === length[target]) link[current] = target;
+      else {
+        const clone = next.length;
+        next.push(new Map(next[target]));
+        link.push(link[target]);
+        length.push(length[state] + 1);
+        while (state !== -1 && next[state].get(letter) === target) {
+          next[state].set(letter, clone);
+          state = link[state];
+        }
+        link[target] = clone;
+        link[current] = clone;
+      }
+    }
+    last = current;
+  }
+  return { next, link, length };
+}
+
 /**
  * The longest run of a quote's words, in the quote's order, that a question holds: its length in words, and the run
  * itself as the copy check compares it (the quote's own words, for the writer's retry note only). Only letters and
  * digits are compared, lowercased and without accents: spaces and punctuation are skipped on both sides, so "don't",
- * "dont" and "don t" are the same, and a run counts the quote's words it holds whole.
+ * "dont" and "don t" are the same, and a run counts the quote's words it holds whole. The question's letters go into a
+ * suffix automaton, and the quote's words are read once against it, a window of whole words that drops words from its
+ * front when the next letter can't follow, so the work grows with the two texts' lengths added, never multiplied,
+ * however repetitive the text.
  */
 export function longestSharedRun(quoteText, questionText) {
   invariant(typeof quoteText === "string" && typeof questionText === "string", "POINTER_COPY_CHECK_INPUT_INVALID");
   const words = copyWords(quoteText);
-  // The quote's letters in order, each with the word it belongs to, and each word's first and last letter.
-  const wordOf = [];
-  const first = [];
-  const last = [];
-  // Where each letter occurs in the quote.
-  const places = new Map();
-  for (const [word, text] of words.entries()) {
-    for (const letter of text) {
-      const at = wordOf.length;
-      if (first[word] === undefined) first[word] = at;
-      last[word] = at;
-      wordOf.push(word);
-      if (!places.has(letter)) places.set(letter, []);
-      places.get(letter).push(at);
-    }
-  }
+  const letters = words.map((word) => [...word]);
+  const { next, link, length } = suffixAutomaton(copyWords(questionText).join(""));
   let best = 0;
   let from = 0;
-  // For each place in the quote, the length of the shared stretch of letters ending there and at the question's
-  // previous letter (`previous`, whose set places are `set`) or at its current one (`current`).
-  let previous = new Int32Array(wordOf.length);
-  let current = new Int32Array(wordOf.length);
-  let set = [];
-  for (const letter of copyWords(questionText).join("")) {
-    const now = [];
-    for (const end of places.get(letter) ?? []) {
-      const length = (end > 0 ? previous[end - 1] : 0) + 1;
-      current[end] = length;
-      now.push(end);
-      // The quote's words this stretch holds whole.
-      const start = end - length + 1;
-      const opening = first[wordOf[start]] === start ? wordOf[start] : wordOf[start] + 1;
-      const closing = last[wordOf[end]] === end ? wordOf[end] : wordOf[end] - 1;
-      if (closing - opening + 1 > best) {
-        best = closing - opening + 1;
-        from = opening;
+  // The window: its first word, how many letters it holds, and the state they lead to.
+  let start = 0;
+  let held = 0;
+  let state = 0;
+  for (let word = 0; word < words.length; word += 1) {
+    let whole = true;
+    for (const letter of letters[word]) {
+      while (!next[state].has(letter) && start < word) {
+        held -= letters[start].length;
+        start += 1;
+        while (state !== 0 && length[link[state]] >= held) state = link[state];
       }
+      if (!next[state].has(letter)) {
+        whole = false;
+        break;
+      }
+      state = next[state].get(letter);
+      held += 1;
     }
-    for (const place of set) previous[place] = 0;
-    [previous, current] = [current, previous];
-    set = now;
+    // No run holds this word whole, so the next starts after it.
+    if (!whole) {
+      start = word + 1;
+      held = 0;
+      state = 0;
+    } else if (word - start + 1 > best) {
+      best = word - start + 1;
+      from = start;
+    }
   }
   return { words: best, run: words.slice(from, from + best).join(" ") };
 }

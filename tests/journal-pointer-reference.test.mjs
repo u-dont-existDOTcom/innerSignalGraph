@@ -293,6 +293,17 @@ test("code checks copying: the longest run of its quote's words a question holds
   }
 });
 
+test("the copy check's work grows with the two texts' lengths added, however repetitive they are", () => {
+  // 4,000 one-letter words against 800 questions of 400: matched place by place, that is over a billion steps; read once
+  // against each question it takes a fraction of a second. The bound is generous, so a slow machine doesn't fail it.
+  const quote = Array.from({ length: 4000 }, () => "a").join(" ");
+  const question = Array.from({ length: 400 }, () => "a").join(" ");
+  const started = performance.now();
+  for (let index = 0; index < 800; index += 1) assert.equal(longestSharedRun(quote, question).words, 400);
+  assert.ok(performance.now() - started < 10_000);
+  assert.equal(longestSharedRun("a".repeat(50_000), "a".repeat(400)).words, 0, "a word longer than the question is never held whole");
+});
+
 test("in a script written without spaces between words, each letter counts as a word, so copying shows there too", () => {
   // Chinese: a question that repeats its quote shares all eleven characters; one in other words shares four.
   const quote = "我昨天去医院看我妈妈了。";
