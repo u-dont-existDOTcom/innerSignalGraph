@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: f6d7f2b6f1697f2379a4ec0aad99d5befe97297cea46f1dcc05804fcf1abce4c
 source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
-projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
+projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
 ---
 
 # AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION

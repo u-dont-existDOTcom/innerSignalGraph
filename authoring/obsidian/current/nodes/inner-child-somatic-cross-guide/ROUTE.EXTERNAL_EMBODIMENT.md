@@ -28,7 +28,7 @@ regression_refs:
   - G063
 base_record_sha256: ec80b7d2873da67f7eb19d3319036bd703881ca1d40e1e9cb2f862f2c538bb01
 base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
+projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
 ---
 
 # Shift from inward monitoring to external embodiment
