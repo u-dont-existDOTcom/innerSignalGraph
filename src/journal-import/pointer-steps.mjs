@@ -879,9 +879,10 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
  * more"), on the reference sample's questions, as the measurement counts them. `measured` is how many the search the
  * measurement ran (find_journal_quotes by words, its first POINTER_RECALL_TOP results) finds; `replica` compares that with
  * the in-memory ranking of search-check.mjs's "current" variant, which leaves out the call's byte budget, so a question
- * only the replica finds is one the budget cut; and each variant (exact words, accents folded, French stop words, English
- * or French word forms, all of them) gives the questions found in the first 12, 24 and 40 results, where the others'
- * quotes rank, and the design-weighted recall the measurement reports. `population` is the generation's node count, as
+ * only the replica finds is one the budget cut; and each variant (ways of reading words: exact, accents folded, French stop
+ * words, English or French word forms, all of them; and ways of ranking: the search's own, more of the searched words
+ * first, BM25, BM25 with more of the words first, also on word forms with accents folded) gives the questions found in the
+ * first 12, 24 and 40 results, where the others' quotes rank, and the design-weighted recall the measurement reports. `population` is the generation's node count, as
  * the search reads it. It follows owner decision 32's rules, the only ones a new run uses (every searched unit complete or
  * marked, a unit without questions left out of the design): a run under earlier rules, whose unconfirmed units count
  * every question missed without a search, is refused. It sends nothing, saves nothing and returns counts only.

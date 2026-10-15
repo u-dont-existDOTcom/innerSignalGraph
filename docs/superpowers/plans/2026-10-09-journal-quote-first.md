@@ -458,7 +458,13 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   counts only: how many questions the measurement's search found by words; how far down the other questions' quotes
   rank; and, for each way of matching words (exact words as now, accents folded, French stop words skipped, English or
   French word forms, or all of these), how many questions the first 12, 24 and 40 results would find, with the same
-  design-weighted recall the measurement reports. The ways of matching words are an in-memory copy of the search's word
+  design-weighted recall the measurement reports. Its first run (15 Oct, run `e5d1e64a`) found the misses mostly a
+  matter of ranking: of 944 questions whose quote wasn't in the first 12 results, 856 had it further down and 88 shared no
+  word with their searches; recall was 0.706, 0.771 and 0.818 in the first 12, 24 and 40 results, word forms and folded
+  accents added about two points, and skipping French stop words lost half a point. So the check also compares ways of
+  ranking (amended 15 Oct 2026): the search's own (the sum of each matched word's rarity), more of the searched words
+  first, Okapi BM25 (k1 1.2, b 0.75: how often a quote uses each word, for its length), and BM25 with more of the words
+  first, each on exact words and on word forms with accents folded and French stop words kept. The ways of matching words are an in-memory copy of the search's word
   ranking (`src/journal-import/search-check.mjs`); a test checks that its exact-words way orders results as the search
   does, and the report compares the two on the run's own questions, so a question only the copy finds is one the search
   call's byte budget cut. A question the copy check flagged is left out of every count, as in the measurement. The check

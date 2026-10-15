@@ -260,7 +260,8 @@ test("pointer-search-check reads the measured run back and says, in counts only,
   assert.equal(check.measured.recall_estimate, measure.floors.no_loss.recall_words_only_estimate);
   // The in-memory copy of the search agrees with it on every question (these quotes are short: the byte budget cuts nothing).
   assert.deepEqual([check.replica.found, check.replica.measured_only, check.replica.replica_only], [check.measured.found, 0, 0]);
-  assert.deepEqual(Object.keys(check.variants), ["current", "accents", "french_stopwords", "english_forms", "french_forms", "all"]);
+  assert.deepEqual(Object.keys(check.variants), ["current", "accents", "french_stopwords", "english_forms", "french_forms", "all",
+    "coordination", "bm25", "bm25_coordination", "forms", "forms_coordination", "forms_bm25", "forms_bm25_coordination"]);
   assert.deepEqual([check.variants.current.found[12], check.variants.current.recall_estimate[12]],
     [check.measured.found, check.measured.recall_estimate]);
   for (const variant of Object.values(check.variants)) {
