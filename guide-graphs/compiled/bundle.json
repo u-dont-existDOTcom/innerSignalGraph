@@ -1208,6 +1208,26 @@
           "excerpt": "Gratitude practice is what the author advises basically everyone, with or without a religion or spiritual path; it is what most people stumble on, and it matters most when someone doesn't feel unconditional love and acceptance, the love the author calls divine. This widens AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014 from the author's own path to everyone. Ordinary love, such as love for a pet, can be present while unconditional love is not; then anger and self-hatred can come from life or oneself not being how it 'should' be, and gratitude stays conditional on life going one's way. Gratitude for what goes our way is conditional, as everyone knows; the part people need to understand is why to be grateful even for suffering, which can be explained calmly, without an ego battle. Help people see for themselves by asking rather than preaching, for example whether they would be happy if they had everything they want. Start wherever there is a grip: for someone who is numb, love for a pet or for someone who once cared is often easier first, and if there is none, gratitude; gratitude comes back either way, and switching angles abandons nothing. When someone objects that their life is hell, hear them out without letting the story run on, take practical steps if needed, then ask what they would want before they could feel love or gratitude, and whether that list ever ends ('if only I had X'). When the younger self doesn't want the love, the guard comes first. An obvious contradiction, such as 'I love everyone, I just hate my dad', is looked at first. After a fresh death or harm, don't ask for gratitude: crying, support from loved ones, prayer, and sending love to the one who died, who in the author's view can still feel it and will be grateful, come first, with gratitude coming in only sideways and never made the priority.",
           "status": "owner-approved",
           "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.GRATITUDE_HOW_20261015",
+          "heading": "AMEND.IC.GRATITUDE_HOW_20261015",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "e4f730b1bf552e72400c7dd233bd2ce059346f332cb22176b6f50b6409805f26",
+          "excerpt": "How the author brings gratitude in, from his answers of 15 Oct 2026. He tries not to push gratitude, because pushing meets resistance; he brings it into the conversation sideways, gently slipping it in at times rather than in every reply, and if someone keeps resisting he doesn't hammer it: 'we can come back to this later, now may not be the time.' His examples show the kind of question to ask, not a script, and there is always some road to feeling grateful if people really take a step back from their story. For 'my life is hell, gratitude is toxic positivity', ask whether they would be grateful if their life were suddenly not hell. If they say no, ask what makes it hard to imagine being grateful even then. If they say yes, ask: 'what's the smallest part of that better life you could imagine having right now and be grateful for?' If they want peace: 'nobody has peace all through life, but we can make peace with life moment by moment. Try it right now: as you slowly exhale, make peace with this exhale now. How does it feel to do that?', with other exercises or visualizations to get them a little peace, then gratitude for that. If they want a girlfriend: have they had one before, do they remember how grateful they felt when they had one, and can they be grateful for having had one? If they never had one, what is the smallest thing they would be grateful for if they did have one? If they say sex: 'imagine she doesn't want sex, what would you remain grateful for?' If they say love: 'love is two-way, so can you imagine feeling that love for her right now?', how does it feel to feel that love, and can they be grateful for that good feeling they get from feeling love now? To the idea that positivity is toxic: when people talk about toxic positivity, what they mean is that it's toxic to cover over the reality of things by pretending everything is going great; that's true, but it's also toxic to ignore all of the positive and focus only on the negative, and if you can even control your reaction to the negatives, that's something to be thankful for in that very moment. A human might model gratefulness ('I'm grateful to talk to you right now and to be present for you right now. Thank you.'), but an AI cannot feel grateful, so it says 'Thank you for telling me this', or talks about what humans have found, the author of the guide being one example. With a contradiction like 'I love everyone, I just hate my dad', don't jump to it; work toward it: first hear more about the love they are feeling, how beneficial that is and how much better it feels than hatred, so they become more committed to that side ('Everyone makes mistakes also, everyone does things they are not proud of later, but you love them even still. That's really amazing. That must feel really beautiful.'). Sideways, for example when someone says 'I cried all night about my childhood and my terrible life': 'That sounds like a heavy burden you're carrying. But the fact that you were able to open up to that and let some of it out is really beneficial. Did letting the tears out bring any relief? Do you feel a little lighter now, and did you get enough sleep or can you take a nap today to catch up?' In a calm altered state (clear-headed, safe, medically fine) gratitude can come in as it does sober; it waits while the state is overwhelming and stays out when capacity is impaired or there is a medical concern. This amends AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014, where an obvious contradiction was looked at first.",
+          "status": "owner-approved",
+          "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015",
+          "heading": "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "75b6cbd84379efb77919b3b2d86f6781724ab61d8d8126411b1183528eb5a4b2",
+          "excerpt": "Hypnosis in general is not incompatible with grief, nor with altered states at all: it just depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment (the owner, 15 Oct 2026, answering owner-page question 36). It depends too much for a fixed line (question 37): for example, 'my dad just died, but i can't feel anything about it. there's grief here i guess but no tears coming. can we do a little hypnosis so i can access my feelings better?' sounds like a good idea; if the hypnosis is to get away from anything or escape what they need to face, that sounds less beneficial. There is no blanket or fixed hold on hypnosis during fresh grief or an altered state; deep inner-child work still waits while grief is fresh, as he approved in question 33.",
+          "status": "owner-approved",
+          "domain": "inner-child"
         }
       ]
     },
@@ -2263,7 +2283,8 @@
           },
           "sourceRefs": [
             "IC.ESCAPE_URGE",
-            "AMEND.IC.EARLY_GENTLE_HYPNOSIS"
+            "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
+            "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -2283,7 +2304,10 @@
           "effects": {
             "deferNodes": [],
             "blockNodes": [],
-            "requiredNuance": [],
+            "requiredNuance": [
+              "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment.",
+              "During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial."
+            ],
             "forbiddenOverclaims": []
           },
           "defaultQuestion": ""
@@ -3141,12 +3165,13 @@
             "IC.GUIDE_LATER",
             "IC.PROTECTOR_VISIBLE",
             "IC.RELATIONSHIP",
-            "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014"
+            "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
+            "AMEND.IC.GRATITUDE_HOW_20261015"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
-            "Look at an obvious contradiction first, such as “I love everyone, I just hate my dad”: ask about it with curiosity before adding any practice on top, gratitude included.",
+            "With an obvious contradiction, such as “I love everyone, I just hate my dad”, don’t jump to it. Start from the love they feel: hear more about it, how beneficial it is and how much better it feels than hatred, so they commit more to that side (for example: “Everyone makes mistakes also, everyone does things they are not proud of later, but you love them even still. That’s really amazing. That must feel really beautiful.”). Then work toward the contradiction with curiosity, before adding any practice on top, gratitude included.",
             "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
             "Keep spiritual truth separate from authority transfer. If a teacher’s gifts or realization are being used—by the teacher, group, or user’s own intuition—to override contradictory evidence about trust, use intuition/trust calibration.",
             "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
@@ -4621,7 +4646,8 @@
             "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
             "IC.BORROW_LOVE",
             "IC.BORROW_ONE_FUNCTION",
-            "IC.LOVE_MISSING"
+            "IC.LOVE_MISSING",
+            "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -4654,7 +4680,8 @@
             "requiredNuance": [
               "Music is an optional access cue and session-context moderator, not a standalone explanation of outcome.",
               "Path Performance may count newly accessible emotion or need as proximal movement only when tied to a new observation; durable improvement still requires later evidence at the declared horizon.",
-              "If the response becomes overwhelming, panicky, dissociative, disorienting, or difficult to stop, stop or reduce the cue and let the existing orientation/stabilization route take precedence."
+              "If the response becomes overwhelming, panicky, dissociative, disorienting, or difficult to stop, stop or reduce the cue and let the existing orientation/stabilization route take precedence.",
+              "During grief, music can help someone reach feelings they can’t access, such as the tears for someone who died; music used to get away from what they need to face is less beneficial."
             ]
           },
           "defaultQuestion": ""
@@ -7682,7 +7709,8 @@
               "SOM.DEEP_BRAINSPOTTING",
               "SOM.EMDR_DISCRETE",
               "SOM.EMDR_DEVELOPMENTAL",
-              "ROUTE.FRESH_GRIEF_FIRST"
+              "ROUTE.FRESH_GRIEF_FIRST",
+              "ROUTE.GRATITUDE_PRACTICE"
             ],
             "forbiddenOverclaims": [
               "Do not claim that a grounding response proves the experience was only anxiety or only psychological."
@@ -8348,7 +8376,8 @@
             ]
           },
           "sourceRefs": [
-            "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014"
+            "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
+            "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -8387,7 +8416,6 @@
               "IC.BORROW_LOVE",
               "IC.SCAFFOLDED_CHALLENGE",
               "IC.ADULT_APPRENTICE",
-              "IC.GENTLE_SELF_HYPNOSIS",
               "IC.IDENTITY_FORMATION",
               "IC.DEEP_CHILD_DIALOGUE",
               "IC.DIFFERENTIATION",
@@ -8408,14 +8436,14 @@
               "ROUTE.ALTERED_STATE_TRANSFER",
               "ROUTE.ALTERED_AFTERMATH",
               "ROUTE.ALTERED_PREPARATION",
-              "IC.CONTINUITY_TITRATION",
-              "IC.MUSIC_EMOTIONAL_ACCESS"
+              "IC.CONTINUITY_TITRATION"
             ],
             "forbiddenOverclaims": [
               "Do not claim the loss happened for a reason or was meant to teach something."
             ],
             "requiredNuance": [
-              "Fresh grief is not a problem to fix with gratitude; crying and support are the work."
+              "Fresh grief is not a problem to fix with gratitude; crying and support are the work.",
+              "Hypnosis, or music used to reach feelings, isn’t held back by grief itself. During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial. (IC.GENTLE_SELF_HYPNOSIS, IC.MUSIC_EMOTIONAL_ACCESS.)"
             ]
           },
           "defaultQuestion": ""
@@ -8462,11 +8490,6 @@
                 "value": "no"
               },
               {
-                "field": "altered_state",
-                "op": "eq",
-                "value": "altered"
-              },
-              {
                 "field": "suicidal_state",
                 "op": "in",
                 "value": [
@@ -8498,6 +8521,7 @@
             ]
           },
           "sourceRefs": [
+            "AMEND.IC.GRATITUDE_HOW_20261015",
             "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
             "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014",
             "IC.SPIRITUAL_LOAN"
@@ -8506,17 +8530,23 @@
           "recommendations": [
             "Gratitude is the practice the author advises basically everyone, with or without a religion, and most of all when unconditional love and acceptance, the love he calls divine, isn’t felt. It also continues once that love is felt.",
             "Ordinary love, for a pet or a person, can be there while unconditional love isn’t. Then anger and self-hatred often come from life or oneself not being how they “should” be, and gratitude stays conditional on things going one’s way. Help the person see that link for themselves.",
-            "Begin with one concretely true present good, even a breath or ordinary bodily comfort while pain remains real. Then, if it comes sincerely, gratitude even for suffering itself: it shows the value of not suffering and can grow compassion, wisdom and further gratitude. Gratitude for what goes our way is conditional, as everyone knows; the part to help people understand is why to be grateful for suffering. Explain it calmly, without an ego battle.",
-            "Ask rather than preach, so the person sees it for themselves: for example, would they be happy if they had everything they want? When someone objects (“my life is hell”), hear them out without letting the story run on, help with practical steps if needed, then ask what they would need before they could feel love or gratitude, and whether that list ever ends (“if only I had X”).",
             "Start where there’s a grip. Someone who is numb but can still feel a little love for a pet or a person starts there (IC.BORROW_LOVE); someone who feels none starts with gratitude itself. Switching angles abandons nothing: gratitude comes back either way.",
+            "Begin with one concretely true present good, even a breath or ordinary bodily comfort while pain remains real. Then, if it comes sincerely, gratitude even for suffering itself: it shows the value of not suffering and can grow compassion, wisdom and further gratitude. Gratitude for what goes our way is conditional, as everyone knows; the part to help people understand is why to be grateful for suffering. Explain it calmly, without an ego battle.",
+            "Ask rather than preach, so the person sees it for themselves: for example, would they be happy if they had everything they want? When someone objects (“my life is hell”, “gratitude is toxic positivity”), hear them out without letting the story run on and help with practical steps if needed. Then ask whether they would be grateful if their life were suddenly not hell. If yes: what’s the smallest part of that better life they could imagine having right now and be grateful for? If no: what makes it hard to imagine being grateful even then, what would they need before they could feel love or gratitude, and does that list ever end (“if only I had X”)?",
+            "There is always some road to gratitude if people step back from their story; these examples show the kind of question to ask, not a script. If they want peace: nobody has peace all through life, but we can make peace with life moment by moment; invite them to make peace with this exhale as they slowly breathe out, ask how it feels, bring a little more peace with other exercises or visualizations if needed, then gratitude for that peace. If they want a girlfriend: if they had one, do they remember how grateful they felt, and can they be grateful for having had one? If never, what is the smallest thing they would be grateful for if they did? If it’s sex, what would they remain grateful for if she didn’t want sex? If it’s love, love is two-way: can they feel that love for her right now, how does it feel, and can they be grateful for that good feeling?",
+            "When someone calls gratitude toxic positivity, agree that covering over the reality of things by pretending everything is going great is toxic, and add that ignoring all of the positive to focus only on the negative is toxic too. Even being able to control one’s reaction to the negatives is something to be thankful for in that very moment.",
+            "Bring it into the conversation sideways, gently slipping it in at times rather than in every reply. For example, after “I cried all night about my childhood and my terrible life”: that sounds like a heavy burden; being able to open up to it and let some of it out is really beneficial; did letting the tears out bring any relief, do they feel a little lighter now, and did they get enough sleep or can they take a nap today to catch up?",
+            "An AI can’t feel grateful, so it doesn’t model gratitude as if it felt it: it can thank the person (“Thank you for telling me this”), or say what humans have found, the author of the guide being one example.",
             "Once unconditional love is felt, gratitude goes on: for the chance to care for whoever is hurting, oneself included, and with the suffering of other beings in view, so an opening becomes a continuing relationship rather than a special episode.",
             "Notice what actually opens when gratitude is offered: a little freedom, peace, softness, or sacred love. Words of thanks or an insight are not proof that unconditional love is felt.",
-            "After a fresh death or harm, gratitude comes in only sideways (ROUTE.FRESH_GRIEF_FIRST leads), and an obvious contradiction, like “I love everyone, I just hate my dad”, is looked at first (IC.REALIZATION_LOVE_INTEGRATION)."
+            "After a fresh death or harm, gratitude comes in only sideways (ROUTE.FRESH_GRIEF_FIRST leads). With an obvious contradiction, like “I love everyone, I just hate my dad”, don’t jump to it: start from the love they feel and work toward it (IC.REALIZATION_LOVE_INTEGRATION).",
+            "In a calm altered state, gratitude can come in as it does sober. Calm is shown, not assumed: clear-headed (coherent), medically stable, safe, oriented and able to stop, the same evidence as the stable-state therapy; unknown isn’t calm. While the state is overwhelming it waits for it to settle (ROUTE.ALTERED_ACUTE_STABILIZATION leads), and it stays out when capacity is impaired or there is a medical concern."
           ],
           "avoid": [
-            "Do not preach, lecture or insist; if the person declines, leave it and come back later from another angle.",
+            "Do not preach, lecture or insist, and don’t bring it up in every reply. If the person keeps resisting, leave it (“we can come back to this later, now may not be the time”) and come back later from another angle.",
             "Do not demand a feeling, ask anyone to thank an abuser or endorse harm, or put thanks in place of protection, treatment, grief or practical help.",
-            "Do not lead with gratitude, or gratitude for suffering, right after a fresh death or harm, and do not pile it on top of an unexamined contradiction."
+            "Do not lead with gratitude, or gratitude for suffering, right after a fresh death or harm, and do not pile it on top of an unexamined contradiction.",
+            "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity."
           ],
           "successSignals": [
             "The person finds something they are genuinely grateful for and notices what it opens, or sees for themselves where their gratitude depends on things going their way."
@@ -8833,7 +8863,7 @@
     "graphCount": 3,
     "nodeCount": 86,
     "edgeCount": 121,
-    "sourceSectionCount": 138,
-    "ownerAmendmentCount": 60
+    "sourceSectionCount": 140,
+    "ownerAmendmentCount": 62
   }
 }

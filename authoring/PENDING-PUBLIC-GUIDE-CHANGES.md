@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-15-r6`
+Queue version: `2026-10-15-r8`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -226,6 +226,27 @@ Teaching point: Gratitude that waits for conditions never arrives. When someone 
 Reader need: Readers who postpone gratitude until life is right need to see that the conditions keep moving.
 Already covered: “Four Pairs That Commonly Hook the Child” (“Notice when they have become conditions for having a self”) covers pleasure, praise, gain and belonging becoming conditions for a self, not gratitude or love that waits for conditions, and not asking whether the list ever ends.
 Where: “Ask God for a Loan,” next to the gratitude part of the owner's October 14 revision of that section.
+
+### PGQ-034 — Bringing gratitude in without pushing it
+Caused by: `AMEND.IC.GRATITUDE_HOW_20261015`, `ROUTE.GRATITUDE_PRACTICE` and `IC.REALIZATION_LOVE_INTEGRATION` (the owner's points of October 15).
+Teaching point: Gratitude is brought in sideways and at times, not pushed, because pushing meets resistance; if someone keeps resisting, “we can come back to this later, now may not be the time.” The owner's questions show the kind of question to ask, not a script. For “my life is hell”: would you be grateful if your life were suddenly not hell, and if so, what's the smallest part of that better life you could imagine having right now and be grateful for? Peace isn't had all through life, but we can make peace with life moment by moment, starting with this exhale. Someone who wants a partner can be grateful for having had one, for the smallest part of what they want, or for the good feeling of love felt now. To “toxic positivity”: covering reality over by pretending everything is going great is toxic, and so is ignoring every positive; even controlling one's reaction to the negatives is something to be thankful for in that moment. A contradiction like “I love everyone, I just hate my dad” is worked toward from the love side, not jumped to. The author shares how much gratitude helps him rather than prescribing it.
+Reader need: Readers who resist gratitude, or were pushed toward it before, need to see it offered as an invitation they can come back to, with small concrete steps.
+Already covered: “Ask God for a Loan” (the owner's October 14 revision) gives the practice and gratitude even for suffering, and PGQ-033 adds “if only I had X”; neither shows how to bring gratitude in without pushing, the example questions, the answer to toxic positivity, or working toward a contradiction from the love side.
+Where: “Ask God for a Loan,” after its gratitude part. The owner said on October 15 that he will write the guide changes himself.
+
+### PGQ-035 — Gratitude in a calm altered state
+Caused by: `AMEND.IC.GRATITUDE_HOW_20261015` and `ROUTE.GRATITUDE_PRACTICE` (owner-page question 35, October 15).
+Teaching point: In an altered state that is calm (clear-headed, safe, medically fine), gratitude can be practiced as it is sober. While the state is overwhelming, settling comes first; with impaired capacity or a medical concern, safety and care come first.
+Reader need: Readers who work with altered states need to know whether gratitude has a place during one, and when it doesn't.
+Already covered: “Altered States Can Deepen the Therapy” says what to notice afterward (“Afterward, notice where the access actually is…”) and that the goal is to carry what became real into sober love, protection, grief, practice or action; it doesn't say whether gratitude belongs during a calm altered state.
+Where: “Altered States Can Deepen the Therapy,” near the “Afterward, notice where the access actually is” paragraph. The owner will write this himself.
+
+### PGQ-036 — Hypnosis isn't ruled out by grief or an altered state
+Caused by: `AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015`, `ROUTE.FRESH_GRIEF_FIRST` and `IC.GENTLE_SELF_HYPNOSIS` (owner-page question 36, October 15).
+Teaching point: Hypnosis in general isn't incompatible with grief, nor with altered states: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment, and above all on its purpose. Hypnosis to reach feelings someone can't access (numb after a death, no tears coming) can help; hypnosis to get away from or escape what they need to face is less beneficial. Deep inner-child work still waits until the grief is less raw.
+Reader need: Grieving readers, and readers who work with altered states, need to know hypnosis isn't off-limits for them, and what to weigh.
+Already covered: The guide's passage “Gentle meditation or self-hypnosis can still help. My warning is about intensive versions.” says gentle self-hypnosis can calm the nervous system; it doesn't say whether hypnosis fits during fresh grief or an altered state.
+Where: Next to that passage on gentle meditation and self-hypnosis. The owner will write this himself.
 
 ## EMPTY sentinel
 

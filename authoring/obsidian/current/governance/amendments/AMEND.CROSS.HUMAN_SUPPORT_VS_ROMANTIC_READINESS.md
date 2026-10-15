@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
 status: owner-approved
 domain: cross-guide
-base_record_sha256: c2de5d6955e693b4932683a441fcadf6f0d595c595a5aa8b8dbcbed6f4b5515e
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 9afb57dde12922a6721517fb16068d982b1c6e6dc773cbc461938f1e708f7aca
+source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
+projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
 ---
 
 # AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "Distinguish friendship and ordinary human support from romantic or sexual readiness. When a person has chosen to pause active romance-seeking for current severe distress, self-testing or inability to relate authentically, support that bounded decision and cultivate honest, reciprocal connection without promising that romantic intimacy is earned, owed or curative, or imposing a universal perfect-healing prerequisite."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

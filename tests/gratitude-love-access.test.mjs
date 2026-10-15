@@ -10,7 +10,10 @@ import { evaluatePathPerformance } from "../src/case-formulation/path-performanc
 // The owner's answers of 14 Oct 2026 (22:15 and 23:26 UTC, AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014): gratitude is what
 // he advises basically everyone, with or without a religion, aimed at unconditional love; the guard comes first when the
 // younger self doesn't want the love; an obvious contradiction is looked at first; after a fresh death or harm, grief
-// and support lead and gratitude comes in sideways.
+// and support lead and gratitude comes in sideways. His points of 15 Oct 2026 (10:28 UTC, AMEND.IC.GRATITUDE_HOW_20261015),
+// with his answers to owner-page questions 34 and 35 (11:19 UTC): sideways and at times rather than pushed, his example
+// questions, toxic positivity, no modeled thanks from an AI, a contradiction worked toward from the love side, and
+// gratitude in a calm altered state.
 
 const steady = { present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes", suicidal_state: "absent",
   activation: "moderate", dissociation: "none", altered_state: "sober", witness_capacity: "present", inner_adult_access: "available" };
@@ -22,7 +25,7 @@ const selected = (result) => result.selectedNodes.map((node) => node.id);
 test("gratitude is offered to everyone, with or without a religion, toward unconditional love, by asking rather than preaching", () => {
   const node = byId.get("ROUTE.GRATITUDE_PRACTICE");
   assert.deepEqual(node.sourceRefs.filter((ref) => ref.startsWith("AMEND.")),
-    ["AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014", "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014"]);
+    ["AMEND.IC.GRATITUDE_HOW_20261015", "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014", "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014"]);
   const says = (pattern) => node.recommendations.some((line) => pattern.test(line));
   assert.ok(says(/basically everyone, with or without a religion/));
   assert.ok(says(/unconditional love and acceptance/));
@@ -32,8 +35,9 @@ test("gratitude is offered to everyone, with or without a religion, toward uncon
   assert.ok(says(/if only I had X/) && says(/without letting the story run on/));
   assert.ok(says(/Start where there’s a grip/) && says(/Switching angles abandons nothing/));
   // Child-free, so it stays when inner-child work is declined or paused (Codex, 4cfc8f3f); the child route carries the
-  // rule that gratitude is never a gate before the child.
-  assert.ok([node.title, ...node.recommendations, ...node.avoid, ...node.effects.requiredNuance].every((line) => !/child|younger/i.test(line)));
+  // rule that gratitude is never a gate before the child. ("Childhood" in a person's own words, as in the owner's
+  // example "I cried all night about my childhood", is not inner-child framing.)
+  assert.ok([node.title, ...node.recommendations, ...node.avoid, ...node.effects.requiredNuance].every((line) => !/\bchild(?:ren)?\b|younger/i.test(line)));
   assert.equal(plan({ deep_love_access: "none_known", ic_status: "declined" }).primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   assert.ok(node.avoid.some((line) => /Do not preach, lecture or insist/.test(line)));
   assert.ok(node.effects.requiredNuance.some((line) => /someone can love their pets and still feel no unconditional love/.test(line)));
@@ -67,7 +71,7 @@ test("where gratitude leads, and where something else comes first", () => {
   assert.ok(selected(untested).includes("ROUTE.GRATITUDE_PRACTICE"));
   // It reaches the child already: gratitude goes on as the practice.
   assert.equal(plan({ deep_love_access: "reliable", child_love_inclusion: "reliable" }).primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
-  // An obvious contradiction is looked at first.
+  // An obvious contradiction is worked toward from the love side, and gratitude waits until it has been looked at.
   const contradiction = plan({ love_access: "accessible", deep_love_access: "state_dependent", spiritual_bypass_pattern: "attainment_outpaces_love" });
   assert.equal(contradiction.primaryJob.id, "IC.REALIZATION_LOVE_INTEGRATION");
   assert.ok(contradiction.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), "gratitude waits until it has been looked at");
@@ -257,7 +261,7 @@ test("the child route asks gratitude of everyone, and never as a gate before the
   const lines = [...node.recommendations, ...node.effects.requiredNuance];
   assert.ok(lines.some((line) => /never a prerequisite that must be completed before the child can receive care/.test(line)));
   assert.ok(lines.every((line) => !/gratitude path|different or secular practice/i.test(line)), "no path scoping");
-  // Only the gratitude route asks for gratitude, so its waits (a crisis, an altered state, fresh grief) hold: neither child
+  // Only the gratitude route asks for gratitude, so its waits (a crisis, an overwhelming altered state, fresh grief) hold: neither child
   // route recommends it (Codex, 32c6fee0).
   for (const id of ["IC.DEEP_LOVE_TO_CHILD", "IC.GUARD_BEFORE_CHILD_LOVE"]) {
     assert.ok(byId.get(id).recommendations.every((line) => !/gratitude/i.test(line) || /owes no thanks|never/i.test(line)), id);
@@ -395,7 +399,7 @@ test("every node either waits during fresh grief or is named as staying beside i
   // a decision: it fails here until it is put on one side.
   const grief = byId.get("ROUTE.FRESH_GRIEF_FIRST");
   const held = new Set(grief.effects.deferNodes);
-  assert.ok(held.has("IC.MUSIC_EMOTIONAL_ACCESS"));
+  assert.ok(!held.has("IC.MUSIC_EMOTIONAL_ACCESS"), "music used to reach feelings stays (the owner, question 37)");
   const stays = new Set([
     "IC.BEST_FRIEND_PERSPECTIVE",
     "IC.CARING_COMPANY",
@@ -405,9 +409,11 @@ test("every node either waits during fresh grief or is named as staying beside i
     "IC.CRITICISM_KERNEL",
     "IC.DRAFT_EDITOR",
     "IC.DRAFT_RETURN_TO_CARE",
+    "IC.GENTLE_SELF_HYPNOSIS",
     "IC.GOODWILL_BRIDGE",
     "IC.INTUITION_TRUST_CALIBRATION",
     "IC.MEET_GUARD",
+    "IC.MUSIC_EMOTIONAL_ACCESS",
     "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
     "IC.PAST_COMPETENCE",
     "IC.PHOTO_EPISTEMIC_CAUTION",
@@ -448,5 +454,99 @@ test("every node either waits during fresh grief or is named as staying beside i
   assert.deepEqual([...stays].filter((id) => held.has(id)), []);
   const music = plan({ fresh_grief: "present", current_intent: "conversation", love_access: "limited" });
   assert.equal(music.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
-  assert.ok(!selected(music).includes("IC.MUSIC_EMOTIONAL_ACCESS"));
+  assert.ok(!music.deferredNodes.some((node) => node.id === "IC.MUSIC_EMOTIONAL_ACCESS"));
+});
+
+test("how gratitude comes in: sideways and at times, by asking, with the owner's example questions (15 Oct)", async () => {
+  const node = byId.get("ROUTE.GRATITUDE_PRACTICE");
+  const says = (pattern) => node.recommendations.some((line) => pattern.test(line));
+  assert.ok(says(/gently slipping it in at times rather than in every reply/));
+  assert.ok(says(/would be grateful if their life were suddenly not hell/) && says(/smallest part of that better life/));
+  assert.ok(says(/what makes it hard to imagine being grateful even then/), "question 34, first line: the AI's wording");
+  assert.ok(says(/make peace with this exhale/) && says(/love is two-way/) && says(/the kind of question to ask, not a script/));
+  assert.ok(says(/covering over the reality of things/) && says(/ignoring all of the positive/));
+  assert.ok(says(/An AI can’t feel grateful/) && says(/Thank you for telling me this/) && says(/the author of the guide being one example/));
+  assert.ok(says(/did letting the tears out bring any relief/), "question 34, third line: the AI's wording");
+  assert.ok(node.avoid.some((line) => /don’t bring it up in every reply/.test(line) && /we can come back to this later, now may not be the time/.test(line)));
+  assert.ok(node.avoid.some((line) => /every cloud has a silver lining/.test(line)), "question 34, second line: left out");
+  // The four lines the owner agreed to have reworded (question 34) appear nowhere, in the route or in his amendment.
+  const amendments = JSON.parse(await fs.readFile(new URL("../guides/owner-amendments.json", import.meta.url), "utf8"));
+  assert.equal(amendments.version, "owner-amendments-2026-10-15-r11");
+  const how = amendments.items.find((item) => item.id === "AMEND.IC.GRATITUDE_HOW_20261015");
+  assert.equal(how.status, "owner-approved");
+  for (const text of [how.text, ...node.recommendations, ...node.avoid]) {
+    assert.ok(!/universe give you that|sure you were thankful|If I were human/i.test(text), text.slice(0, 60));
+  }
+  assert.ok(!/silver ?lining/i.test(how.text));
+  // A contradiction is worked toward from the love side, not jumped to.
+  const realization = byId.get("IC.REALIZATION_LOVE_INTEGRATION");
+  assert.ok(realization.sourceRefs.includes("AMEND.IC.GRATITUDE_HOW_20261015"));
+  assert.ok(realization.recommendations.some((line) => /don’t jump to it/.test(line) && /Start from the love they feel/.test(line)
+    && /Everyone makes mistakes also/.test(line)));
+  assert.ok(says(/don’t jump to it: start from the love they feel/));
+});
+
+test("a calm altered state lets gratitude in; an overwhelming one, limited capacity included, holds it back; impaired or unknown capacity leaves it out (question 35)", () => {
+  const altered = { deep_love_access: "none_known", altered_state: "altered", altered_capacity: "coherent", altered_medical_status: "stable" };
+  const calm = plan(altered);
+  assert.ok(selected(calm).includes("ROUTE.GRATITUDE_PRACTICE"));
+  assert.ok(selected(calm).includes("ROUTE.ALTERED_STABLE_THERAPY"));
+  const overwhelming = plan({ ...altered, activation: "high" });
+  assert.equal(overwhelming.primaryJob.id, "ROUTE.ALTERED_ACUTE_STABILIZATION");
+  assert.ok(!selected(overwhelming).includes("ROUTE.GRATITUDE_PRACTICE"));
+  assert.ok(overwhelming.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), "it waits for the state to settle");
+  // Limited capacity is one of the overwhelming states: gratitude waits there too, rather than being left out (Codex,
+  // 9412ee67).
+  const limited = plan({ ...altered, altered_capacity: "limited" });
+  assert.equal(limited.primaryJob.id, "ROUTE.ALTERED_ACUTE_STABILIZATION");
+  assert.ok(!selected(limited).includes("ROUTE.GRATITUDE_PRACTICE"));
+  assert.ok(limited.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), "limited capacity: it waits");
+  // Calm is shown, not assumed (Codex, 1ab74341): with capacity, medical state, orientation or stopping unknown, it
+  // stays out, neither selected nor waiting.
+  for (const out of [{ altered_capacity: "impaired" }, { altered_medical_status: "concerning" }, { altered_capacity: "unknown" },
+    { altered_medical_status: "unknown" }, { orientation: "unknown" }, { ability_to_stop: "unknown" },
+    { altered_capacity: "unknown", activation: "high" }, { altered_medical_status: "unknown", panic_instability: "present" }]) {
+    const result = plan({ ...altered, ...out });
+    assert.ok(!selected(result).includes("ROUTE.GRATITUDE_PRACTICE"), JSON.stringify(out));
+    assert.ok(!result.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), JSON.stringify(out));
+  }
+  assert.ok(!byId.get("ROUTE.GRATITUDE_PRACTICE").activation.none.some((condition) => condition.field === "altered_state"));
+  assert.ok(byId.get("ROUTE.GRATITUDE_PRACTICE").recommendations.some((line) => /In a calm altered state/.test(line)));
+});
+
+test("a little ordinary love keeps its place in the plan whenever it holds gratitude back", async () => {
+  // Before, in two earlier cases with unconditional love not felt, borrowed love was crowded out of the plan's five
+  // places while it still held gratitude back, so the turn offered neither.
+  for (const id of ["G002", "G047"]) {
+    const item = JSON.parse(await fs.readFile(new URL(`../corpus/graph-cases/${id}.json`, import.meta.url), "utf8"));
+    const result = planFromGraphs({ graphs: bundle.graphs, variables: { ...item.variables, deep_love_access: "none_known" },
+      unknowns: item.unknowns, turnTask: item.turn_task ?? null });
+    assert.ok(selected(result).includes("IC.BORROW_LOVE"), id);
+    assert.ok(result.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), id);
+    assert.equal(result.selectedNodes.length, 5, id);
+    assert.equal(result.primaryJob.id, item.expected.primary, id);
+  }
+  // Where gratitude isn't held back by it, borrowed love takes no place it didn't have.
+  const felt = plan({ love_access: "limited", deep_love_access: "reliable", child_love_inclusion: "reliable" });
+  assert.equal(felt.primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
+});
+
+test("hypnosis isn't held back by grief itself; it depends on its kind (owner, question 36)", () => {
+  const grief = byId.get("ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(!grief.effects.deferNodes.includes("IC.GENTLE_SELF_HYPNOSIS"));
+  assert.ok(grief.sourceRefs.includes("AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"));
+  assert.ok(grief.effects.requiredNuance.some((line) => /isn’t held back by grief itself/.test(line)
+    && /reach feelings someone can’t access/.test(line) && /escape what they need to face is less beneficial/.test(line)));
+  assert.ok(byId.get("IC.GENTLE_SELF_HYPNOSIS").effects.requiredNuance.some((line) => /my dad just died/.test(line)));
+  assert.ok(byId.get("IC.MUSIC_EMOTIONAL_ACCESS").effects.requiredNuance.some((line) => /get away from what they need to face/.test(line)));
+  const hypnosis = byId.get("IC.GENTLE_SELF_HYPNOSIS");
+  assert.ok(hypnosis.effects.requiredNuance.some((line) => /isn’t incompatible with grief, nor with an altered state/.test(line)
+    && /what kind of hypnosis, what level of grief, and what is appropriate at the moment/.test(line)));
+  // Gentle self-hypnosis is the preparation route for someone not yet ready for deep work.
+  const gentle = plan({ fresh_grief: "present", current_intent: "hypnosis", activation: "unknown" });
+  assert.equal(gentle.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(!gentle.deferredNodes.some((node) => node.id === "IC.GENTLE_SELF_HYPNOSIS"));
+  assert.ok(gentle.trace.some((node) => node.id === "IC.GENTLE_SELF_HYPNOSIS"));
+  // Deep inner-child dialogue still waits while grief is fresh (question 33).
+  assert.ok(grief.effects.deferNodes.includes("IC.DEEP_CHILD_DIALOGUE"));
 });

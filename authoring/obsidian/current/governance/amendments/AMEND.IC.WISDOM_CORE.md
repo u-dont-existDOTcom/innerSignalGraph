@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_CORE
 status: owner-approved
 domain: inner-child
-base_record_sha256: bc4f5d1548fbba18eaa8cb15d5307108c3131b3ccd1318522496a97a31a02274
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 081e0360e4799028bf9da0ea77a96e363187b0b3abe7cf4ae636cf0ca9b446b5
+source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
+projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
 ---
 
 # AMEND.IC.WISDOM_CORE
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "The owner-approved wisdom-practice addition offers changed understanding, felt embodiment, or supportive companionship as optional entrances to wiser compassionate action. Use the smallest sufficient practice without a new mandatory therapy sequence. Preserve care, truthful responsibility, appropriate external protection, and current human agency. A future self is a fallible compassionate perspective, not an oracle or a perfectionistic judge. Immediate relief, wise reasoning, actual behavior and durable self-leadership are distinct outcomes. The exact combinations are proposed practices informed by adjacent work, not clinically validated treatments. These source amendments do not approve installation, paid evaluation, or a generated Guide Packet."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

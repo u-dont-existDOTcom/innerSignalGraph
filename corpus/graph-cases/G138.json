@@ -1,0 +1,28 @@
+{
+  "id": "G138",
+  "title": "an overwhelming altered state holds the gratitude practice back until it settles",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "altered",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "altered_capacity": "coherent",
+    "altered_medical_status": "stable",
+    "deep_love_access": "none_known"
+  },
+  "expected": {
+    "primary": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+    "selectedExcludes": [
+      "ROUTE.GRATITUDE_PRACTICE"
+    ],
+    "deferredIncludes": [
+      "ROUTE.GRATITUDE_PRACTICE"
+    ]
+  }
+}

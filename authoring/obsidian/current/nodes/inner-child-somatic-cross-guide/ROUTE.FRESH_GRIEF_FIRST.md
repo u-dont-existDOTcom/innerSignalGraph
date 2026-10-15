@@ -16,6 +16,7 @@ graph_tags:
   - support
 source_refs:
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+  - AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
 regression_refs:
   - G117
   - G122
@@ -31,9 +32,9 @@ regression_refs:
   - G134
   - G135
   - G136
-base_record_sha256: 35cc27f65b9ae7b25a06a299f577f9e00d403683397f8a0f06d7940d2f8069d2
-base_graph_sha256: f056f0ba9598e5d53dcbb75ea5688aba540abe76df30b8076fc54b2533820d7b
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 01303504033e6e236b7ebdef4b3775fc44393fa1c1e242b845d4f313fb7c57f8
+base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
+projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -77,7 +78,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
       "IC.BORROW_LOVE",
       "IC.SCAFFOLDED_CHALLENGE",
       "IC.ADULT_APPRENTICE",
-      "IC.GENTLE_SELF_HYPNOSIS",
       "IC.IDENTITY_FORMATION",
       "IC.DEEP_CHILD_DIALOGUE",
       "IC.DIFFERENTIATION",
@@ -98,14 +98,14 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
       "ROUTE.ALTERED_STATE_TRANSFER",
       "ROUTE.ALTERED_AFTERMATH",
       "ROUTE.ALTERED_PREPARATION",
-      "IC.CONTINUITY_TITRATION",
-      "IC.MUSIC_EMOTIONAL_ACCESS"
+      "IC.CONTINUITY_TITRATION"
     ],
     "forbiddenOverclaims": [
       "Do not claim the loss happened for a reason or was meant to teach something."
     ],
     "requiredNuance": [
-      "Fresh grief is not a problem to fix with gratitude; crying and support are the work."
+      "Fresh grief is not a problem to fix with gratitude; crying and support are the work.",
+      "Hypnosis, or music used to reach feelings, isn’t held back by grief itself. During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial. (IC.GENTLE_SELF_HYPNOSIS, IC.MUSIC_EMOTIONAL_ACCESS.)"
     ]
   },
   "recommendations": [
@@ -124,3 +124,5 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
 ## Source navigation
 
 [[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]
+
+[[current/governance/amendments/AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015]]
