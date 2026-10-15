@@ -23,9 +23,9 @@ regression_refs:
   - G114
   - G115
   - G121
-base_record_sha256: 16a92fdcb4b368c2b574568945473f1baccfa557a8b0397a1abb5f3b49a13839
-base_graph_sha256: 473bb34454750390e4690fb3869baa8a2fcb1615df5b7d61e6a901ab168b82e0
-projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91ae5c35d14d
+base_record_sha256: 4f001be5457bbc3237d82d5b0d2d92aaf5209c732bc5cc4d41231d15f16fd2be
+base_graph_sha256: 300a5c19b1f99c0bb4fa05fddd2efe37777ef438ef34d32e1925d848c5829f55
+projection_input_sha256: d41c2270919fe211da80852aa745df5954f5bb203eb0b65cc9c067d11e5508fa
 ---
 
 # Hear the guard first when the younger self doesn’t want the love
@@ -106,7 +106,7 @@ projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91a
     "When the younger self doesn’t want the love (it recoils, freezes, distrusts or refuses, and a guard shows), hear its guard first instead of pressing the love on it.",
     "Ask what it expects would happen if the love came in, and acknowledge the answer before saying anything back.",
     "Treat the refusal as honest information. Show care that doesn’t depend on the child accepting it, and offer the love again once the guard has been heard and allows it, without arguing.",
-    "The adult can keep their own love and gratitude going meanwhile; the child owes no thanks and no proof of readiness."
+    "The child owes no thanks and no proof of readiness."
   ],
   "successSignals": [
     "The guard’s concern is heard, and the younger self can stay present without being pushed to receive the love."

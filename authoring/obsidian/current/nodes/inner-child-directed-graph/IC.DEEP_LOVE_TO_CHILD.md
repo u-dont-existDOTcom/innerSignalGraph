@@ -30,9 +30,9 @@ regression_refs:
   - G118
   - G121
   - G123
-base_record_sha256: fc40e46473949311619e89eea305a56ed131bf0c9b163f07c046dbed2c3b69ad
-base_graph_sha256: 473bb34454750390e4690fb3869baa8a2fcb1615df5b7d61e6a901ab168b82e0
-projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91ae5c35d14d
+base_record_sha256: 4f9dcf7d9937f07b4f1fa02e671121b7235bf9a685f61aaeb70249c64355dedf
+base_graph_sha256: 300a5c19b1f99c0bb4fa05fddd2efe37777ef438ef34d32e1925d848c5829f55
+projection_input_sha256: d41c2270919fe211da80852aa745df5954f5bb203eb0b65cc9c067d11e5508fa
 ---
 
 # Bring already-accessible deep love to the younger self without force
@@ -101,7 +101,6 @@ projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91a
   },
   "recommendations": [
     "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
-    "Gratitude continues even when profound love is currently accessible: recognizing the suffering of other beings and feeling grateful for the chance to care for the hurting child turn a spiritual opening into continuing relationship rather than a special episode. Offer it by asking, not preaching.",
     "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
     "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.",
     "If the younger state rejects or cannot receive the love, regard that as a potentially important honest response. Listen humbly and patiently, be thankful for that honesty only when genuine, and demonstrate non-contingent care without interpreting refusal as a deliberate test or asking the child to be grateful.",

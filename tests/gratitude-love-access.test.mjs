@@ -163,7 +163,7 @@ test("when the younger self doesn't want the love, the guard comes first and the
   assert.ok(refuses.forbiddenOverclaims.some((line) => /testing whether the adult/i.test(line)));
   const guard = byId.get("IC.GUARD_BEFORE_CHILD_LOVE");
   assert.ok(guard.recommendations.some((line) => /hear its guard first/.test(line)));
-  assert.ok(guard.recommendations.some((line) => /the child owes no thanks/.test(line)));
+  assert.ok(guard.recommendations.some((line) => /child owes no thanks/i.test(line)));
   // "Blocked" also covers numbness or inability; with no guard showing, the love route keeps leading (Codex, 06a84b8c).
   const numbChild = plan({ deep_love_access: "intermittent", child_love_inclusion: "blocked", protective_response: "absent", urge_to_escape: "absent" });
   assert.equal(numbChild.primaryJob.id, "IC.DEEP_LOVE_TO_CHILD");
@@ -189,9 +189,16 @@ test("even a spiritual opening does not certify inner-child reception or authori
 test("the child route asks gratitude of everyone, and never as a gate before the child", () => {
   const node = byId.get("IC.DEEP_LOVE_TO_CHILD");
   const lines = [...node.recommendations, ...node.effects.requiredNuance];
-  assert.ok(lines.some((line) => /^Gratitude continues even when profound love is currently accessible/.test(line)));
   assert.ok(lines.some((line) => /never a prerequisite that must be completed before the child can receive care/.test(line)));
   assert.ok(lines.every((line) => !/gratitude path|different or secular practice/i.test(line)), "no path scoping");
+  // Only the gratitude route asks for gratitude, so its waits (a crisis, an altered state, fresh grief) hold: neither child
+  // route recommends it (Codex, 32c6fee0).
+  for (const id of ["IC.DEEP_LOVE_TO_CHILD", "IC.GUARD_BEFORE_CHILD_LOVE"]) {
+    assert.ok(byId.get(id).recommendations.every((line) => !/gratitude/i.test(line) || /owes no thanks|never/i.test(line)), id);
+  }
+  const crisis = plan({ deep_love_access: "intermittent", child_love_inclusion: "untested", suicidal_state: "ideation" });
+  assert.ok(!crisis.selectedNodes.flatMap((item) => item.recommendations).some((line) => /gratitude (continues|goes on)|Gratitude is the practice|gratitude even for suffering/i.test(line)));
+  assert.ok(byId.get("ROUTE.GRATITUDE_PRACTICE").recommendations.some((line) => /for the chance to care for whoever is hurting, oneself included/.test(line)));
 });
 
 test("the horizon node is back to exploring a deeper horizon for the curious, just below gratitude", () => {

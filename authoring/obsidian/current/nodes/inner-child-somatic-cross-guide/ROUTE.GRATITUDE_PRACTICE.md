@@ -37,9 +37,9 @@ regression_refs:
   - G122
   - G123
   - G125
-base_record_sha256: b16a25cccd765ac5b0723f4f10de0aacb5636b5ebea8573a9d7d418cb6d3b172
-base_graph_sha256: a0a60285ceb0bb6e39a59e9339a901441ef6a2063bd5d9c90dd37f8784290061
-projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91ae5c35d14d
+base_record_sha256: 740e919aea1c7bf7b167275ba946c510ae4324b1e98eaa853b3a61388dd35fa8
+base_graph_sha256: e8233012b3eb0bd28e25b8632f9911fdd168a8ab9aaad723c46094f264e92f44
+projection_input_sha256: d41c2270919fe211da80852aa745df5954f5bb203eb0b65cc9c067d11e5508fa
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching
@@ -126,6 +126,7 @@ projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91a
     "Begin with one concretely true present good, even a breath or ordinary bodily comfort while pain remains real. Then, if it comes sincerely, gratitude even for suffering itself: it shows the value of not suffering and can grow compassion, wisdom and further gratitude. Gratitude for what goes our way is conditional, as everyone knows; the part to help people understand is why to be grateful for suffering. Explain it calmly, without an ego battle.",
     "Ask rather than preach, so the person sees it for themselves: for example, would they be happy if they had everything they want? When someone objects (“my life is hell”), hear them out without letting the story run on, help with practical steps if needed, then ask what they would need before they could feel love or gratitude, and whether that list ever ends (“if only I had X”).",
     "Start where there’s a grip. Someone who is numb but can still feel a little love for a pet or a person starts there (IC.BORROW_LOVE); someone who feels none starts with gratitude itself. Switching angles abandons nothing: gratitude comes back either way.",
+    "Once unconditional love is felt, gratitude goes on: for the chance to care for whoever is hurting, oneself included, and with the suffering of other beings in view, so an opening becomes a continuing relationship rather than a special episode.",
     "Notice what actually opens when gratitude is offered: a little freedom, peace, softness, or sacred love. Words of thanks or an insight are not proof that unconditional love is felt.",
     "After a fresh death or harm, gratitude comes in only sideways (ROUTE.FRESH_GRIEF_FIRST leads), and an obvious contradiction, like “I love everyone, I just hate my dad”, is looked at first (IC.REALIZATION_LOVE_INTEGRATION)."
   ],
