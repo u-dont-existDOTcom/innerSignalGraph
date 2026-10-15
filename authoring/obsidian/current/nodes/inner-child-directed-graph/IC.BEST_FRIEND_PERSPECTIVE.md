@@ -49,7 +49,7 @@ regression_refs:
   - G109
 base_record_sha256: 5474d5ff4fa1c7c74908569a728d25d197c61dfe11cf3d5bc99bb3b8684523e8
 base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
-projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
+projection_input_sha256: 9fc2b17ae6ec0cac0f87b4d8f9939f3526d747c88c72f9b3320846bd9f9519de
 ---
 
 # Borrow the best-friend standard of care

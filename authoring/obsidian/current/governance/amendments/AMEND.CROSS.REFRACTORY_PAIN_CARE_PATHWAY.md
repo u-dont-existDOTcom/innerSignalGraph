@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: 1ec09ae058bb16884d294d5cf819b68e28566ce89a88de89549ebba065509031
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
+projection_input_sha256: 9fc2b17ae6ec0cac0f87b4d8f9939f3526d747c88c72f9b3320846bd9f9519de
 ---
 
 # AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY

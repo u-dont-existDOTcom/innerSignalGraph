@@ -11,7 +11,7 @@ source_hash: 79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c
 section_hash: 79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c
 locator_kind: pdf-pages
 cited_by_node_ids: []
-projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
+projection_input_sha256: 9fc2b17ae6ec0cac0f87b4d8f9939f3526d747c88c72f9b3320846bd9f9519de
 ---
 
 # VAGAL.PROTOCOL.P7_8

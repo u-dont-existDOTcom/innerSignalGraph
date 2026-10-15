@@ -24,7 +24,7 @@ regression_refs:
   - G007
 base_record_sha256: cdf2d671e8e5672cd396102867d321516e9b93b3a2a3a722cebca64db6b2efb8
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
+projection_input_sha256: 9fc2b17ae6ec0cac0f87b4d8f9939f3526d747c88c72f9b3320846bd9f9519de
 ---
 
 # Optional advanced release for a stable, informed person

@@ -22,7 +22,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 8b3d9a709cfbf6aa1dd9ac841ce1378d449b4460db7b60f6199d823578abf6d8
 base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
-projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
+projection_input_sha256: 9fc2b17ae6ec0cac0f87b4d8f9939f3526d747c88c72f9b3320846bd9f9519de
 ---
 
 # Match the work to existential hunger without making spirituality mandatory

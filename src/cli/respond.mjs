@@ -17,7 +17,7 @@ await runCliMain(async () => {
   // or an outbound delivery contract. The returned artifact remains unsent.
   if (input?.pendingReplyRevision) return reviseUnsentSupervisorCandidate(input.pendingReplyRevision);
   const config = loadConfig();
-  const context = await buildContext(input, config);
+  const context = await buildContext(input, config, { currentTurnAt: new Date().toISOString() });
   const providers = createProviders(config);
   return await runFormulatedPipeline({
     context,

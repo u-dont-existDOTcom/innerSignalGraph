@@ -190,6 +190,12 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   assert.equal(transferGrief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   assert.ok(!selected(transferGrief).includes("ROUTE.ALTERED_STATE_TRANSFER"));
   assert.ok(transferGrief.deferredNodes.some((item) => item.id === "ROUTE.ALTERED_STATE_TRANSFER"));
+  // ...and so does the aftermath route's meaning-making, while its safety cautions stay in the plan (Codex, 59e8d2f6).
+  const aftermathGrief = plan({ fresh_grief: "present", altered_phase: "aftermath" });
+  assert.equal(aftermathGrief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(aftermathGrief.trace.some((item) => item.id === "ROUTE.ALTERED_AFTERMATH"));
+  assert.ok(!selected(aftermathGrief).includes("ROUTE.ALTERED_AFTERMATH"));
+  assert.ok(aftermathGrief.requiredNuance.some((line) => /psychotic-type reaction/.test(line)));
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.
@@ -347,14 +353,14 @@ test("fresh grief is carried by the durable case state, and the current time is 
   assert.equal(carryFreshGrief(snapshot("unknown"), null, second).variables.fresh_grief, "present");
   assert.equal(carryFreshGrief(snapshot("unknown"), null, eased).variables.fresh_grief, "unknown");
   assert.equal(carryFreshGrief(snapshot("absent"), null, second).variables.fresh_grief, "absent");
-  // Every entry point gets a trusted current time: the runtime's receipt time when it passes one, else the clock at
-  // invocation; never a time from request input.
+  // Every live entry point passes a trusted current time: the private runtime its receipt time, the server and the CLI
+  // their clock; a time in request input is ignored, and replays and evaluations, which pass none, stay deterministic.
   const config = loadConfig({ mode: "mock", ledgerMode: "off" });
   const given = await buildContext({ userMessage: "synthetic", currentTurnAt: "1999-01-01T00:00:00Z" }, config, { currentTurnAt: "2026-10-15T03:00:00Z" });
   assert.equal(given.currentTurnAt, "2026-10-15T03:00:00Z");
-  const before = Date.now();
-  const defaulted = await buildContext({ userMessage: "synthetic", currentTurnAt: "1999-01-01T00:00:00Z" }, config);
-  assert.ok(Date.parse(defaulted.currentTurnAt) >= before - 1000 && Date.parse(defaulted.currentTurnAt) <= Date.now() + 1000);
-  const runtime = await fs.readFile(new URL("../src/supervisor/private-therapy-model-runtime.mjs", import.meta.url), "utf8");
-  assert.match(runtime, /\{ currentTurnAt: runtimeTurn\.inbound\.received_at \}/);
+  assert.equal((await buildContext({ userMessage: "synthetic", currentTurnAt: "1999-01-01T00:00:00Z" }, config)).currentTurnAt, null);
+  const source = async (file) => fs.readFile(new URL(file, import.meta.url), "utf8");
+  assert.match(await source("../src/supervisor/private-therapy-model-runtime.mjs"), /\{ currentTurnAt: runtimeTurn\.inbound\.received_at \}/);
+  assert.equal((await source("../src/server/create-server.mjs")).match(/\{ currentTurnAt: new Date\(\)\.toISOString\(\) \}/g).length, 2);
+  assert.match(await source("../src/cli/respond.mjs"), /buildContext\(input, config, \{ currentTurnAt: new Date\(\)\.toISOString\(\) \}\)/);
 });

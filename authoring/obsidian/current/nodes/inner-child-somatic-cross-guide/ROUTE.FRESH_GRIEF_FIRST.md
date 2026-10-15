@@ -29,9 +29,10 @@ regression_refs:
   - G132
   - G133
   - G134
-base_record_sha256: f0e237f5457f47699c923c8d37401fcba30df8cbcaf9560520cb9160a615806e
-base_graph_sha256: 25b9bd3d10daf5fd90713fad96fbe51951c8ce064c69c2abb636831b677e4d53
-projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
+  - G135
+base_record_sha256: e32d9b0bc5a10eb1dc77f60cd66028dad7da3bcf17d528fa55d55c21e334298d
+base_graph_sha256: c37cf914e9367005415e76787b4604ed14b48558ebc916f766a217f7ef83b988
+projection_input_sha256: 9fc2b17ae6ec0cac0f87b4d8f9939f3526d747c88c72f9b3320846bd9f9519de
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -94,7 +95,8 @@ projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca4
       "ROUTE.REFRACTORY_PAIN_NAVIGATION",
       "ROUTE.ALTERED_STABLE_THERAPY",
       "IC.ALTERED_STATE_GATE",
-      "ROUTE.ALTERED_STATE_TRANSFER"
+      "ROUTE.ALTERED_STATE_TRANSFER",
+      "ROUTE.ALTERED_AFTERMATH"
     ],
     "forbiddenOverclaims": [
       "Do not claim the loss happened for a reason or was meant to teach something."

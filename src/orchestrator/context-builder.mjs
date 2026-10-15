@@ -35,9 +35,10 @@ export async function buildContext(input, config, { currentTurnAt = null } = {})
 
   return {
     userMessage: input.userMessage.trim(),
-    // Trusted time of the current message: the runtime's receipt time when it has one, else this invocation's clock.
-    // Never taken from request input.
-    currentTurnAt: typeof currentTurnAt === "string" && currentTurnAt.trim() ? currentTurnAt.trim() : new Date().toISOString(),
+    // Trusted time of the current message, from the entry point (the private runtime's receipt time, or the server's or
+    // CLI's clock); never taken from request input. Replays and evaluations pass none, so their prompts stay
+    // deterministic.
+    currentTurnAt: typeof currentTurnAt === "string" && currentTurnAt.trim() ? currentTurnAt.trim() : null,
     pendingReplyRevision: normalizePendingReplyRevision(input.pendingReplyRevision ?? null),
     recentTranscript,
     userFacts,
