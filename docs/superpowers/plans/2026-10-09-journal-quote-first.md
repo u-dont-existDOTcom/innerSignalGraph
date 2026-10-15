@@ -471,6 +471,17 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   follows owner decision 32's rules, which every new run uses; a run under earlier rules, whose unconfirmed units count
   every question missed without a search, is refused. The check decides nothing: a change to the search is its own
   amendment.
+- **Results per search, then better ranking (amended 15 Oct 2026, owner decision 39: C).** The ranking check (15 Oct,
+  run `e5d1e64a`) found recall 0.748 in the first 12 results for Okapi BM25 with more of the searched words first, on word
+  forms with accents folded and French stop words kept, against 0.706 for the search's own ranking; 0.771 for the search's
+  own ranking in the first 24 results; and 0.813 for both together. The owner chose both. First, a search returns up to
+  24 quotes and 24,000 bytes by default instead of 12 and 12,000 (`QUOTE_SEARCH_LIMITS`; a caller can still ask for 1 to
+  40 and 1,000 to 48,000 bytes), which goes live with the connector. The measurement keeps counting a question found in
+  the first 12 results (`POINTER_RECALL_TOP`), so runs stay comparable with the floors fixed before them; the search check
+  reports the first 24 and 40 beside it. Second, a new quote index version holds the word forms, how often each quote uses
+  each word and each quote's length, and ranks by BM25 with more of the searched words first; with it, a check that the
+  journal's dates run forward and, where they do, a range for the undated quotes between two dates. That version is its
+  own amendment.
 - **The examples, for the owner (amended 14 Oct 2026).** The owner asked to see what exactly fails and why, not only
   the counts. `pointer-examples` reads a finished reference step back the same way, after its deadline, sending nothing
   and saving nothing, and writes each sampled piece that wasn't confirmed to a new HTML file: its quotes, the questions

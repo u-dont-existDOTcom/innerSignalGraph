@@ -6,9 +6,9 @@ import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_UNDATED_KEY, quoteCues } from 
 import { POINTER_TAG_KINDS } from "./pointer-tags.mjs";
 
 export const QUOTE_SEARCH_LIMITS = Object.freeze({
-  limitDefault: 12,
+  limitDefault: 24,
   limitMax: 40,
-  byteBudgetDefault: 12_000,
+  byteBudgetDefault: 24_000,
   byteBudgetMin: 1_000,
   byteBudgetMax: 48_000,
   termsMax: 24,
