@@ -212,4 +212,20 @@ test("under owner decision 32's rules the examples are the pieces marked as not 
   assert.match(html, /code: copies 9 words in a row; flagged, left out of recall/u);
   assert.match(html, /the question is flagged and left out of the recall measure, and holds nothing back\./u);
   assert.doesNotMatch(html, /A covered passage|Covered, but its searches ran out/u, "confirmed pieces aren't shown");
+  // Out of time: a piece marked and then late with its searches keeps its mark (Codex, d7476fa9); one whose rewrite
+  // never came, or whose judge ran out of time, is the deadline's.
+  const late = (unitId) => ({ unit_id: unitId, quote_ids: [`q:${unitId}`], status: "nonresponse", reason: "deadline", deadline_cause: "unanswered" });
+  const lateUnits = ["a", "b", "c"].map((id) => ({ unit_id: `q:page:${id}`, page: 10, text: `Late passage ${id}.` }));
+  const lateEvents = [
+    writer("page:a", "q:page:a", 0), codex("q:page:a", 0, { covered: false, missing: "when" }),
+    writer("page:a", "q:page:a", 1), codex("q:page:a", 1, { covered: false, missing: "when" }),
+    writer("page:b", "q:page:b", 0), codex("q:page:b", 0, { covered: false, missing: "when" }),
+    writer("page:c", "q:page:c", 0), { kind: "judge", round: 0, tier: "standard", quote_ids: ["q:page:c"], status: "deadline", judgments: null }
+  ];
+  const lateCollected = collectPointerExamples({ reference: { units: ["page:a", "page:b", "page:c"].map(late) }, units: lateUnits,
+    events: lateEvents, copyRunWords: 8, rules: 3 });
+  assert.deepEqual(lateCollected.pieces.map((piece) => [piece.unit_id, piece.marked]), [["page:a", "coverage_unconfirmed"], ["page:b", null], ["page:c", null]]);
+  const lateHtml = renderPointerExamples(lateCollected, { runId: "run-3", generatedAt: "2026-10-15T10:30:00.000Z" });
+  assert.match(lateHtml, /Piece 1: marked as not understood: not covered, even after the rewrite; then the step&#39;s time ran out<\/h2>/u);
+  assert.equal((lateHtml.match(/the step&#39;s time ran out before its questions were confirmed/gu) ?? []).length, 2);
 });

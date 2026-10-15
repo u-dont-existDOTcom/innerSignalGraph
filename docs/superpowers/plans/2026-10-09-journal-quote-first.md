@@ -492,8 +492,8 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
     marked with its reason (`coverage_unconfirmed` or `coverage_check_failed`). It keeps its questions, gets its
     searches and is measured like a complete unit. The marked units are what the owner reads in the examples file:
     `pointer-examples` follows the rules a run ran under, so for such a run its page shows the marked pieces (and those
-    left without usable questions) with Codex's verdict alone, a marked piece whose searches then fell short with the
-    reason its last try gives, and only something left out as a reason to hold a quote back.
+    left without usable questions) with Codex's verdict alone, a marked piece whose searches then fell short or ran out
+    of time with the reason its last try gives, and only something left out as a reason to hold a quote back.
   - Nothing in the reference step stops the run. A unit left without questions or searches (a writer short twice, a
     search plan short twice, or out of time) is listed (`unmeasured_units`) and left out of the measurement, which runs
     over the units that have questions; the recall floor's reach isn't checked.

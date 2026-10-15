@@ -49,7 +49,8 @@ const triedAndConfirmed = (attempt, rules) => Boolean(attempt && attempt.writer.
  * its `observe` was told, `copyRunWords` the run's copy setting (null for a run from before owner decision 30) and
  * `rules` the run's rules (pointer-reference.mjs, POINTER_RULES). Under owner decision 32's rules (3) the pieces are the
  * ones marked as not understood, with their reason (`marked`), and those whose questions fell short or ran out of time;
- * a marked piece whose searches then fell short, recorded as a nonresponse, is shown with the reason its last try gives.
+ * a marked piece whose searches then fell short or ran out of time, recorded as a nonresponse, is shown with the reason
+ * its last try gives.
  */
 export function collectPointerExamples({ reference, units, events, copyRunWords, rules = 2 } = {}) {
   invariant(isObject(reference) && Array.isArray(reference.units) && Array.isArray(units) && Array.isArray(events)
@@ -91,10 +92,18 @@ export function collectPointerExamples({ reference, units, events, copyRunWords,
         verdicts: unit.quote_ids.map((id) => ({ quote_id: id,
           judges: judges.map(([tier, name]) => verdict(judged.get(`${id}\u0000${round}\u0000${tier}`), name, copyRunWords, rules)) })) };
     });
+    // A marked piece whose searches then fell short, or ran out of time, is recorded as a nonresponse. Its last try says
+    // it was marked: the rewrite judged and something still not covered, or a judge whose answer wasn't usable (not one
+    // that ran out of time, or never ran, which is the deadline's).
     const last = attempts.at(-1);
-    const judgeFailed = Boolean(last?.verdicts.some((entry) => entry.judges.some((judge) => !["confirmed", "held_back"].includes(judge.status))));
+    const answered = (judge) => judge.status === "confirmed" || judge.status === "held_back";
+    const lastJudged = Boolean(last && last.writer.status === "complete" && last.verdicts.length > 0);
+    const unusable = lastJudged && last.verdicts.some((entry) => entry.judges.some((judge) => !answered(judge)
+      && judge.status !== "deadline" && judge.status !== "not_judged"));
+    const uncovered = lastJudged && last.round === 1 && last.verdicts.every((entry) => entry.judges.every(answered))
+      && !triedAndConfirmed(last, rules);
     const marked = rules !== 3 ? null : unit.status === "marked" ? unit.reason ?? null
-      : unit.reason === "searches_incomplete" && !triedAndConfirmed(last, rules) ? (judgeFailed ? "coverage_check_failed" : "coverage_unconfirmed")
+      : ["searches_incomplete", "deadline"].includes(unit.reason) ? (unusable ? "coverage_check_failed" : uncovered ? "coverage_unconfirmed" : null)
         : null;
     return { unit_id: unit.unit_id, status: unit.status, reason: unit.reason ?? null, deadline_cause: unit.deadline_cause ?? null, marked,
       quotes: unit.quote_ids.map((id) => ({ quote_id: id, page: quotes.get(id)?.page ?? null, text: quotes.get(id)?.text ?? "" })),
@@ -160,7 +169,8 @@ const MARKED_WORDS = Object.freeze({
   coverage_check_failed: "marked as not understood: the judge gave no usable answer"
 });
 const pieceStatus = (piece) => (piece.marked
-  ? `${MARKED_WORDS[piece.marked] ?? `marked (${piece.marked})`}${piece.status === "nonresponse" ? "; its searches didn't finish either" : ""}`
+  ? `${MARKED_WORDS[piece.marked] ?? `marked (${piece.marked})`}${piece.status !== "nonresponse" ? ""
+    : piece.reason === "deadline" ? "; then the step's time ran out" : "; its searches didn't finish either"}`
   : STATUS_WORDS[piece.status === "unconfirmed" ? "unconfirmed" : piece.reason] ?? `stopped short (${piece.reason ?? piece.status})`);
 const writerWords = (writer) => (writer.status === "complete" ? null : ({
   deadline: "The question writer gave no answer before the time ran out.",
