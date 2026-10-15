@@ -31,7 +31,7 @@ import { createDurableJournalInferencePort } from "./durable-inference.mjs";
 import { QUOTE_SEARCH_LIMITS, openPrivateJournalGraph } from "./retrieval.mjs";
 import { buildPointerGeneration, pointerPassInput } from "./pointer-pass.mjs";
 import { POINTER_RECALL_TOP, pointerRecallReach, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
-  runPointerReference } from "./pointer-steps.mjs";
+  runPointerReference, runPointerSearchCheck } from "./pointer-steps.mjs";
 import { pointerChallengeUnits } from "./pointer-reference.mjs";
 import { checkReviewDirectory, collectPointerExamples, renderPointerExamples, writeReviewFile } from "./pointer-examples.mjs";
 import { lexicalTerms } from "./graph.mjs";
@@ -3093,6 +3093,40 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return summary();
     }
 
+    // A content-free check of the measured generation's word search (owner page, 15 Oct 2026, "Searches that find more"):
+    // for the reference sample's questions, how many the measurement's search found, where the others' quotes rank, and how
+    // many each way of matching words would find (pointer-steps.mjs, runPointerSearchCheck). Like pointer-recount it reads the
+    // stored run back: it sends nothing, saves nothing and says only counts.
+    async function pointerSearchCheck() {
+      const run = state.pointer;
+      invariant(run?.measure?.status === "done" && run.persisted?.step_id === run.measure.measured_step_id, "POINTER_NOT_MEASURED");
+      await authorize();
+      const quoteGeneration = await quoteGenerationInput(run.generation);
+      const reference = await readLarge(run.reference.result_ref);
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: run.persisted.corpus_id, corpusKey: key,
+        resumeMatchingObjects: true });
+      try {
+        const manifest = await quoteStore.readJsonObject({ objectId: run.persisted.manifest_object_id });
+        invariant(manifest.generation === run.generation && manifest.graph_sha256 === run.persisted.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH");
+        const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId: run.persisted.manifest_object_id, caseId,
+          corpusId: run.persisted.corpus_id, generation: run.generation, visibilityEpoch: 0, cursorSecret: key });
+        try {
+          // find_journal_quotes on the measured generation, exactly as the measurement ran it.
+          const search = async ({ query, matchTags }) => {
+            try {
+              const found = await reader.findQuotes({ query, limit: POINTER_RECALL_TOP, byteBudget: QUOTE_SEARCH_LIMITS.byteBudgetMax, matchTags });
+              return found.quotes.map((quote) => quote.quote_id);
+            } catch (error) {
+              if (["SEARCH_QUERY_HAS_NO_TERMS", "QUOTE_QUERY_INVALID"].includes(error?.code)) return [];
+              throw error;
+            }
+          };
+          const check = await runPointerSearchCheck({ quoteGeneration, reference, search, population: manifest.node_count, rules: runRules(run) });
+          return { ...summary(), search_check: { run_id: run.run_id, ...check } };
+        } finally { reader.close(); }
+      } finally { quoteStore.close(); }
+    }
+
     // Step 6, on the owner's `deploy`: exactly the measured generation, identified by its manifest's reference and its
     // graph's digest, and, under owner decision 30's rules, only when every floor held. It replaces the published quote
     // generation.
@@ -3152,6 +3186,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "pointer-new-run") return pointerNewRun();
         if (command === "pointer-recount") return pointerRecount();
         if (command === "pointer-examples") return pointerExamples();
+        if (command === "pointer-search-check") return pointerSearchCheck();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();

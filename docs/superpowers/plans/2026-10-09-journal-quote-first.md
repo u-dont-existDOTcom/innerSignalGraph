@@ -452,6 +452,16 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   `pointer-recount` counts a finished reference step again from its stored answers once its deadline has passed, so
   nothing can be sent; it saves nothing, and says whether the stored counts still follow. A step stored before these
   counts gets them that way. The rule changes follow from the counts, in an amendment of their own.
+- **The search check (amended 15 Oct 2026).** The run of 15 Oct found 71% of what the reference questions ask for, and
+  the owner kept the current search for now (owner page, question 38: B). To show where the misses come from before
+  anything changes, `pointer-search-check` reads the measured run back, sending nothing and saving nothing, and reports
+  counts only: how many questions the measurement's search found by words; how far down the other questions' quotes
+  rank; and, for each way of matching words (exact words as now, accents folded, French stop words skipped, English or
+  French word forms, or all of these), how many questions the first 12, 24 and 40 results would find, with the same
+  design-weighted recall the measurement reports. The ways of matching words are an in-memory copy of the search's word
+  ranking (`src/journal-import/search-check.mjs`); a test checks that its exact-words way orders results as the search
+  does, and the report compares the two on the run's own questions, so a question only the copy finds is one the search
+  call's byte budget cut. The check decides nothing: a change to the search is its own amendment.
 - **The examples, for the owner (amended 14 Oct 2026).** The owner asked to see what exactly fails and why, not only
   the counts. `pointer-examples` reads a finished reference step back the same way, after its deadline, sending nothing
   and saving nothing, and writes each sampled piece that wasn't confirmed to a new HTML file: its quotes, the questions
