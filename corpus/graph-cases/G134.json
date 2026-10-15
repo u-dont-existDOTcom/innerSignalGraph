@@ -1,0 +1,33 @@
+{
+  "id": "G134",
+  "title": "while overwhelming music is stopped during fresh grief, going inward and borrowed love wait with the grief route",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "music_emotional_access": "overwhelming",
+    "fresh_grief": "present",
+    "love_access": "accessible",
+    "unresolved_inner_material": "present"
+  },
+  "expected": {
+    "primary": "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
+    "selectedExcludes": [
+      "ROUTE.FRESH_GRIEF_FIRST",
+      "ROUTE.GO_INWARD",
+      "IC.BORROW_LOVE"
+    ],
+    "deferredIncludes": [
+      "ROUTE.FRESH_GRIEF_FIRST",
+      "ROUTE.GO_INWARD",
+      "IC.BORROW_LOVE"
+    ]
+  }
+}

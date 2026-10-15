@@ -2,6 +2,7 @@ import {
   runUnauditedCaseSnapshot,
   runCaseAuditWithRecovery,
   applyCaseAudit,
+  carryFreshGrief,
   planCaseSnapshot,
   preflightGraphPlanningAvailability
 } from "../case-formulation/run.mjs";
@@ -17,14 +18,16 @@ const CRITICAL_DELTA_FIELDS = [
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
   "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
   "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access", "spiritual_support_access",
-  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle"
+  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle", "fresh_grief"
 ];
 
 function criticalDeltaCount(snapshot, priorSnapshot) {
   if (!priorSnapshot?.variables) return Number.POSITIVE_INFINITY;
   const now = snapshot?.variables ?? {};
   const before = priorSnapshot.variables ?? {};
-  return CRITICAL_DELTA_FIELDS.reduce((count, field) => count + (now[field] !== before[field] ? 1 : 0), 0);
+  // A field a snapshot doesn't hold yet (one saved before the field existed, like fresh_grief) is unknown, so a schema
+  // change isn't counted as a change in the case.
+  return CRITICAL_DELTA_FIELDS.reduce((count, field) => count + ((now[field] ?? "unknown") !== (before[field] ?? "unknown") ? 1 : 0), 0);
 }
 
 // Owner decision 2026-09-26 (tasks/focus-discipline-20260926/OWNER-DECISIONS.json, D1):
@@ -52,7 +55,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     && ["same", "distinct", "blend", "unresolved"].includes(v.internal_speaker_relation);
   const intentHard = HARD_INTENTS.has(v.current_intent);
   const importantUnknown = Math.max(0, ...(snapshot?.unknowns ?? []).map((item) => item.importance ?? 0));
-  const reviewedSignal = Boolean(snapshot?.path_update || snapshot?._path_prior) || Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.protective_response === "present"
+  const reviewedSignal = Boolean(snapshot?.path_update || snapshot?._path_prior) || Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.fresh_grief === "present" || v.protective_response === "present"
     || v.altered_state === "altered"
     || ["state_bound", "fading", "partial"].includes(v.altered_state_transfer)
     || ["restore_access", "mixed"].includes(v.altered_repeat_motive)
@@ -216,7 +219,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   }
 
   const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
-  const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
+  const auditedSnapshot = carryFreshGrief(applyCaseAudit(initial.snapshot, audit.value), context.priorCaseSnapshot, context.durableCaseState);
   const planningStarted = Date.now();
   const planned = await planCaseSnapshot(auditedSnapshot, {
     onPlanningPass: instrumentation.onPlanningPass,

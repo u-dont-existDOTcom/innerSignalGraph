@@ -1,0 +1,33 @@
+{
+  "id": "G109",
+  "title": "gratitude leads toward unconditional love for anger at how life should be, with or without a religion",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "love_access": "accessible",
+    "deep_love_access": "none_known",
+    "spiritual_curiosity": "absent",
+    "self_directed_love": "inaccessible",
+    "self_criticism": "present"
+  },
+  "expected": {
+    "primary": "ROUTE.GRATITUDE_PRACTICE",
+    "selectedIncludes": [
+      "IC.BORROW_LOVE"
+    ],
+    "selectedExcludes": [
+      "IC.LOVE_HORIZON_EXPLORATION"
+    ],
+    "requiredNuancePatterns": [
+      "someone can love their pets and still feel no unconditional love"
+    ]
+  }
+}

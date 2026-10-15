@@ -122,7 +122,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         recentTranscriptEntries: record.raw_transcript,
         durableCaseState: previousCaseState,
         trackerEntries: record.tracker_entries
-      }, { ...config, ledgerMode: "off", devAutomationEnabled: false });
+      }, { ...config, ledgerMode: "off", devAutomationEnabled: false }, { currentTurnAt: runtimeTurn.inbound.received_at });
       const result = await runTieredTherapyPipeline({
         context: journalEvidence ? {
           ...context,

@@ -1,0 +1,28 @@
+{
+  "id": "G130",
+  "title": "while overwhelming music is stopped during fresh grief, the gratitude practice waits",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "fresh_grief": "present",
+    "music_emotional_access": "overwhelming",
+    "deep_love_access": "none_known"
+  },
+  "expected": {
+    "primary": "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
+    "selectedExcludes": [
+      "ROUTE.GRATITUDE_PRACTICE"
+    ],
+    "deferredIncludes": [
+      "ROUTE.GRATITUDE_PRACTICE"
+    ]
+  }
+}

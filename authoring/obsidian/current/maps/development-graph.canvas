@@ -247,6 +247,12 @@
       "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
     },
     {
+      "fromNode": "e231863765ec5ac9c1dda5ead31728fbff097733a02ac7d3348f581b15407658",
+      "id": "3d099ae618ead6d6663840a9340c0fc6a2d88112ee45828093e80aed2a4f0eb5",
+      "label": "precedes",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
+    },
+    {
       "fromNode": "8baf31acaf8d336737862a0829a413ed5fbb8c1301ef4d142cdabbbc96543dc2",
       "id": "3d216f309b888978092712501732358bbc173b22a5ad55a941c687bbb427b56c",
       "label": "calibrates",
@@ -269,6 +275,12 @@
       "id": "4199a55d0566afa3356b56ab04ef2fd0199cb72092847239476fba70ac15919b",
       "label": "clarifies",
       "toNode": "d9201eb93608aeec31488f96ee8fcc1ddcefc2068328bb44e94185bfd151e36c"
+    },
+    {
+      "fromNode": "94512f9c11e6e924c34ac00069d021e47bcfacdc730546b378f75be940844718",
+      "id": "41f3aa91241c8c7b40972a62c3e49c7afac988bc869b1ae4e899cd4dde85bc55",
+      "label": "precedes",
+      "toNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d"
     },
     {
       "fromNode": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
@@ -499,6 +511,12 @@
       "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
     },
     {
+      "fromNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d",
+      "id": "975dbf119896593c654983a53b8b98a35918fe35619f44b994c1ab113dddc884",
+      "label": "may-use",
+      "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
+    },
+    {
       "fromNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
       "id": "99d56077b4e97a9f5f60877bf3c300afe7a3af6a2a78663f5026cf6d05a8b2ac",
       "label": "calibrates",
@@ -583,6 +601,12 @@
       "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
+      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "id": "cac229e59750689b7df9ce2a3cc1866447b8b9d25ba9a23dfb837bb95e4ccb15",
+      "label": "precedes",
+      "toNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d"
+    },
+    {
       "fromNode": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5",
       "id": "cbbd40873c5910350f678bf4141bb4deb795909b53a40fc775d31be252ea2113",
       "label": "parallel-preparation",
@@ -593,6 +617,12 @@
       "id": "ccb40506ccca7c38657c8b15a024f0889bacf7a343c9bebe8026327ee58e3a45",
       "label": "requires-reality-check",
       "toNode": "d162e5224e2d1b3b86c3871646337e27c6435b06998ee2f030fd86de810aec00"
+    },
+    {
+      "fromNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d",
+      "id": "d00476f476b9320b054f664a6584cd870f58e498e51bb97c925e7c766fce3f3b",
+      "label": "can-enable",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
     },
     {
       "fromNode": "5b91fcf746965f269d73e86e17cffe794a7ccca7868a114606e3452e6d5cc337",
@@ -771,6 +801,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.GRATITUDE_PRACTICE.md",
+      "height": 140,
+      "id": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 3520
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.CONTINUITY_TITRATION.md",
       "height": 140,
       "id": "11ca2d3306f1f4a7c1cff30f816b018246951081828372f4777b95227d3097ef",
@@ -867,7 +906,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1540
+      "y": 1760
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
@@ -876,7 +915,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 1100
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.MEET_GUARD.md",
@@ -885,7 +924,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1760
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
@@ -920,8 +959,8 @@
       "id": "3be9ef03cd8e21c387677f3c6476444199ba8823aabc856d8b0079aea25b4238",
       "type": "file",
       "width": 300,
-      "x": 440,
-      "y": 880
+      "x": 880,
+      "y": 1980
     },
     {
       "color": "3",
@@ -1200,6 +1239,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.FRESH_GRIEF_FIRST.md",
+      "height": 140,
+      "id": "94512f9c11e6e924c34ac00069d021e47bcfacdc730546b378f75be940844718",
+      "type": "file",
+      "width": 300,
+      "x": 4200,
+      "y": 660
+    },
+    {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_INTERNAL.md",
       "height": 140,
       "id": "992ca77b91daf7f5aeee92909dadd17def5a6cf8a22514f8d5d5ed6870f3d91f",
@@ -1279,7 +1327,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1980
+      "y": 2420
     },
     {
       "color": "3",
@@ -1408,7 +1456,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1320
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
@@ -1435,7 +1483,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2200
+      "y": 2640
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
@@ -1445,6 +1493,15 @@
       "width": 300,
       "x": 440,
       "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.GUARD_BEFORE_CHILD_LOVE.md",
+      "height": 140,
+      "id": "e231863765ec5ac9c1dda5ead31728fbff097733a02ac7d3348f581b15407658",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_MEDICAL_SAFETY.md",
@@ -1554,7 +1611,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1100
+      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",

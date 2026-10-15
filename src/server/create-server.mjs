@@ -256,7 +256,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       }
       if (req.method === "POST" && url.pathname === "/v1/plan") {
         const input = await readJson(req);
-        const context = await buildContext(input, config);
+        const context = await buildContext(input, config, { currentTurnAt: new Date().toISOString() });
         const result = await runCaseFormulation({ context, providers });
         return send(res, 200, result);
       }
@@ -315,7 +315,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           recentTranscriptEntries: priorTranscriptEntries,
           durableCaseState: previousCaseState,
           trackerEntries
-        }, config);
+        }, config, { currentTurnAt: new Date().toISOString() });
         const result = await runTieredTherapyPipeline({
           context,
           providers,

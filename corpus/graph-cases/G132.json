@@ -1,0 +1,31 @@
+{
+  "id": "G132",
+  "title": "an acute altered state during fresh grief is stabilized first; the grief route waits and its holds stay",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "altered",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "altered_capacity": "coherent",
+    "altered_medical_status": "stable",
+    "fresh_grief": "present",
+    "love_access": "accessible"
+  },
+  "expected": {
+    "primary": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+    "selectedExcludes": [
+      "ROUTE.FRESH_GRIEF_FIRST",
+      "IC.BORROW_LOVE"
+    ],
+    "deferredIncludes": [
+      "ROUTE.FRESH_GRIEF_FIRST",
+      "IC.BORROW_LOVE"
+    ]
+  }
+}

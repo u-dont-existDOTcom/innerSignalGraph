@@ -11,8 +11,9 @@ source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
 section_hash: 827d28ad3cea4f58bc04e3e144b5d6f345899a1a9335c834c3222aad3169b171
 locator_kind: text-lines
 cited_by_node_ids:
+  - IC.GUARD_BEFORE_CHILD_LOVE
   - IC.MEET_GUARD
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Two Common Protective Patterns

@@ -84,6 +84,7 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   loop_target_relation: ["unknown", "live_work", "distinct_repetitive_process", "not_applicable"],
   guard_engagement: ["unknown", "unassessed", "blocking", "willing_to_allow", "not_applicable"],
   spiritual_struggle: ["unknown", "absent", "present"],
+  fresh_grief: ["present", "absent", "unknown"],
   leave_alone_eligibility: ["unknown", "eligible", "ineligible"],
   current_intent: ["conversation", "gentle_practice", "deep_dialogue", "hypnosis", "memory_processing", "photo_work", "altered_state", "integration", "trust_decision", "advanced_release", "unknown"],
   memory_source_risk: ["present", "absent", "unknown"],

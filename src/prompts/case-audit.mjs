@@ -1,5 +1,5 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
-import { durableCaseContextBlock, longitudinalClinicalRules } from "./common.mjs";
+import { durableCaseContextBlock, longitudinalClinicalRules, timedTranscriptBlock } from "./common.mjs";
 import { PERSPECTIVE_PRACTICES_AUDIT_RULES_V9 as PERSPECTIVE_PRACTICES_AUDIT_RULES } from "./perspective-practices.mjs";
 import { focusDisciplineAuditRules } from "./focus-discipline.mjs";
 
@@ -25,6 +25,7 @@ Pay special attention to:
 - imagery or body experience being treated as historical fact;
 - completion or guard permission carried into a new issue, inferred from silence, or retained after relevant new evidence/refusal;
 - redundant checking mistaken for all unresolved grief, and practical noncompletion mistaken for resistance without reviewing barriers;
+- fresh_grief from an earlier turn corrected because the current message is about something else; correct it only when the person says or shows that the rawness has eased, or the recorded date of the loss and the current message time show it is no longer recent;
 - a current task repeated after a meaningful reported response, or a valid correction of the app mistaken for pathology;
 - spiritual struggle mistaken for bypass, identity mistaken for consent, or emotion-focused work mistaken for tapping;
 - a client's appraisal that an event is minor being treated as proof the event is irrelevant, or a vivid adverse event being allowed to replace the established longitudinal target without evidence that the target changed;
@@ -62,8 +63,7 @@ Return exactly the requested JSON object.`;
 
   const user = `${durableCaseContextBlock(context)}
 
-RECENT TRANSCRIPT:
-${context.recentTranscript || "(none supplied)"}
+${timedTranscriptBlock(context)}
 
 CURRENT USER MESSAGE:
 ${context.userMessage}

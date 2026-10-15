@@ -22,10 +22,17 @@ source_refs:
   - IC.BOTTOM_UP_SEQUENCE
   - IC.BORROW_LOVE
   - IC.SPIRITUAL_LOAN
-regression_refs: []
-base_record_sha256: cb841a7b51e7b303a96a8fc33d3efa8af92c56e730dc2466750652f5a070fdd1
-base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+  - AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
+  - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+regression_refs:
+  - G114
+  - G115
+  - G118
+  - G121
+  - G123
+base_record_sha256: 4f9dcf7d9937f07b4f1fa02e671121b7235bf9a685f61aaeb70249c64355dedf
+base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Bring already-accessible deep love to the younger self without force
@@ -80,19 +87,23 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [
-      "Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state."
+      "Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state.",
+      "Do not assert that numbness, refusal, or cynicism means the child is testing whether the adult is sufficiently grateful or humble."
     ],
     "requiredNuance": [
       "Having access to profound love and being able to let the wounded child receive it are separate capacities.",
       "Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away.",
       "This node is for present intermittent or reliable access, not merely a remembered or substance-associated glimpse.",
-      "Present deep-love access, usable adult caring/protective function, and the child’s reception are distinct evidence states."
+      "Present deep-love access, usable adult caring/protective function, and the child’s reception are distinct evidence states.",
+      "Adult spiritual gratitude and the younger self’s actual reception are separate; a child who cannot join the feast does not owe thanks or proof of readiness.",
+      "Gratitude cultivation continues before, during, and after felt divine love; it is never a prerequisite that must be completed before the child can receive care."
     ]
   },
   "recommendations": [
     "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
     "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
     "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.",
+    "If the younger state rejects or cannot receive the love, regard that as a potentially important honest response. Listen humbly and patiently, be thankful for that honesty only when genuine, and demonstrate non-contingent care without interpreting refusal as a deliberate test or asking the child to be grateful.",
     "If current positive adult preparation is still active, use remembered or present love as a resource for the adult side first and complete that preparation before attempting transfer.",
     "After preparation becomes usable and existing safety, permission, and readiness still allow the step, offer inclusion without treating refusal or partial reception as failure."
   ],
@@ -116,3 +127,7 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
 [[current/sources/inner-child-guide/IC.BORROW_LOVE]]
 
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]

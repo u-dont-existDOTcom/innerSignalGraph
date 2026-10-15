@@ -37,9 +37,29 @@ regression_refs:
   - G090
   - G091
   - G104
+  - G117
+  - G118
+  - G119
+  - G120
+  - G121
+  - G122
+  - G123
+  - G124
+  - G125
+  - G126
+  - G127
+  - G128
+  - G129
+  - G130
+  - G131
+  - G132
+  - G133
+  - G134
+  - G135
+  - G136
 base_record_sha256: 9abd685a7a54c9265c03891516135ff34ba0fcbe17e24b3ed3bcea7eb54283d0
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Use gentle shaking for regulation and judge benefit by carryover

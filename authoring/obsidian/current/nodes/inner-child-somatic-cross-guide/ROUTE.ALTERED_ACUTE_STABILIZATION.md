@@ -20,10 +20,11 @@ source_refs:
   - ALT.GROUNDING
   - ALT.PANIC_LOOP
   - ALT.TOUCH
-regression_refs: []
-base_record_sha256: 41ef01592f786e3897a4f85fea1e5cec2bcded04183686ce185d1465602205bd
-base_graph_sha256: 132aafbbeb7617e37fee8610d89f36a03c1d10136b3d6fdc28d261f10c0776c9
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+regression_refs:
+  - G132
+base_record_sha256: d0c10198f9cd5ec2563940dbd5736470b08b728c2487c482569840f638357f05
+base_graph_sha256: f056f0ba9598e5d53dcbb75ea5688aba540abe76df30b8076fc54b2533820d7b
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Simplify the acute altered state before adding interpretation
@@ -97,7 +98,8 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
       "IC.DEEP_CHILD_DIALOGUE",
       "SOM.DEEP_BRAINSPOTTING",
       "SOM.EMDR_DISCRETE",
-      "SOM.EMDR_DEVELOPMENTAL"
+      "SOM.EMDR_DEVELOPMENTAL",
+      "ROUTE.FRESH_GRIEF_FIRST"
     ],
     "forbiddenOverclaims": [
       "Do not claim that a grounding response proves the experience was only anxiety or only psychological."

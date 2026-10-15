@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 guide_id: owner-amendments
 heading: AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 source_role: owner-approved-extension
-source_hash: aeda44ccfc7b90bab4f36b460af3b5ed53ed58d14710e7d422699a66af1b99cd
+source_hash: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
 section_hash: e1a22ccb5657d767904dcb775d1e4f63da317f521f13c2de09ce127904e4e9f0
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - ROUTE.INFLUENCE_SOCIAL_PROTECTION
   - ROUTE.LEAVE_ALONE
   - ROUTE.THREE_WAY_GATE
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE

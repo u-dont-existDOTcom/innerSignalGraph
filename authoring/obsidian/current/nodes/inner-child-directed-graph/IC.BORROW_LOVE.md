@@ -23,14 +23,28 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - IC.SPIRITUAL_LOAN
   - IC.ALTERED_STATES
+  - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
 regression_refs:
   - G003
   - G005
   - G008
   - G011
-base_record_sha256: 8993322fe54b4dc698fbc3f2653a9550d43e66897da5f7871b7700182b9c8892
-base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+  - G109
+  - G110
+  - G111
+  - G113
+  - G116
+  - G117
+  - G120
+  - G122
+  - G124
+  - G126
+  - G131
+  - G132
+  - G134
+base_record_sha256: 61461a7787a6f651dd64494ef55d8a40ead4c79892bb094e88b10666d73807cc
+base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -81,7 +95,24 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
-    "deferNodes": [],
+    "deferNodes": [
+      "ROUTE.GRATITUDE_PRACTICE"
+    ],
+    "deferralUnless": [
+      {
+        "field": "love_access",
+        "op": "notEq",
+        "value": "limited"
+      },
+      {
+        "field": "deep_love_access",
+        "op": "in",
+        "value": [
+          "intermittent",
+          "reliable"
+        ]
+      }
+    ],
     "forbiddenOverclaims": [
       "Do not call reluctance proof that the child rejects love."
     ],
@@ -99,7 +130,8 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
     "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
     "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.",
     "Start with what is actually accessible in the present. If a profound loving state is only remembered, use sober recollection or a chosen benevolent reference as preparation and see whether any caring function becomes available now.",
-    "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity."
+    "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity.",
+    "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing."
   ],
   "successSignals": [
     "The capacity for love becomes experientially available without coercion."
@@ -125,3 +157,5 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
 
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]

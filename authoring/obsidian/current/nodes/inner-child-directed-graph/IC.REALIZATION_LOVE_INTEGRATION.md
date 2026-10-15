@@ -24,10 +24,13 @@ source_refs:
   - IC.GUIDE_LATER
   - IC.PROTECTOR_VISIBLE
   - IC.RELATIONSHIP
-regression_refs: []
-base_record_sha256: 53c9410fd7cd8698d0a9b3de898361fd39f9dd5c8eb5c268bd82f39cc319c0e2
-base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+  - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+regression_refs:
+  - G116
+  - G122
+base_record_sha256: 0ce95ebb1e9561fc92e960f7e487777203322b00290292e9528fa12b3d6732cb
+base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Keep realization, doctrine, and community answerable to lived love
@@ -86,7 +89,9 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
-    "deferNodes": [],
+    "deferNodes": [
+      "ROUTE.GRATITUDE_PRACTICE"
+    ],
     "forbiddenOverclaims": [
       "Do not say that awakening, religious belief, church or sangha membership, mystical experience, psychic-seeming ability, or spiritual gifts certify moral reliability or authority.",
       "Do not say that ordinary practical care is worthless because profound spiritual love is not accessible."
@@ -99,6 +104,7 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
   },
   "recommendations": [
     "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
+    "Look at an obvious contradiction first, such as “I love everyone, I just hate my dad”: ask about it with curiosity before adding any practice on top, gratitude included.",
     "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
     "Keep spiritual truth separate from authority transfer. If a teacher’s gifts or realization are being used—by the teacher, group, or user’s own intuition—to override contradictory evidence about trust, use intuition/trust calibration.",
     "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
@@ -125,3 +131,5 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
 [[current/sources/inner-child-guide/IC.PROTECTOR_VISIBLE]]
 
 [[current/sources/inner-child-guide/IC.RELATIONSHIP]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]

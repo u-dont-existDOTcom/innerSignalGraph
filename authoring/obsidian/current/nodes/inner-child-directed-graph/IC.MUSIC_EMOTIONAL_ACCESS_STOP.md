@@ -19,10 +19,13 @@ source_refs:
   - AMEND.IC.MUSIC_EMOTIONAL_ACCESS
   - IC.BEFORE_DEEP
   - IC.REGULATION_BEFORE_DIALOGUE
-regression_refs: []
-base_record_sha256: e3adc01d9a27eea439e7ac857c07f473b8cd79a11d7201869780d8f82e322c09
-base_graph_sha256: 2dbd3b3481a9dfef47b6259ade2306e453b40983020854f05beff9378fc6946f
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+regression_refs:
+  - G128
+  - G130
+  - G134
+base_record_sha256: 94a3d6c1dcdbb21619834b3d876fbdc77489b2d4220875d45a2b691f070206c2
+base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Stop music when it overwhelms rather than opens
@@ -52,7 +55,10 @@ projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3
     "blockNodes": [
       "IC.MUSIC_EMOTIONAL_ACCESS"
     ],
-    "deferNodes": [],
+    "deferNodes": [
+      "ROUTE.GRATITUDE_PRACTICE",
+      "ROUTE.FRESH_GRIEF_FIRST"
+    ],
     "forbiddenOverclaims": [
       "Do not call overwhelm therapeutic progress or recovered memory evidence."
     ],

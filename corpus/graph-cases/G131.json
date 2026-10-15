@@ -1,0 +1,30 @@
+{
+  "id": "G131",
+  "title": "in present danger during fresh grief, safety leads with grief beside it, and borrowed love still waits",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "fresh_grief": "present",
+    "love_access": "accessible"
+  },
+  "expected": {
+    "primary": "IC.SAFETY_ORIENTATION",
+    "selectedIncludes": [
+      "ROUTE.FRESH_GRIEF_FIRST"
+    ],
+    "selectedExcludes": [
+      "IC.BORROW_LOVE"
+    ],
+    "deferredIncludes": [
+      "IC.BORROW_LOVE"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "G135",
+  "title": "after an altered state, fresh grief leads; the aftermath route's meaning work waits and its safety cautions stay",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "altered_phase": "aftermath",
+    "fresh_grief": "present"
+  },
+  "expected": {
+    "primary": "ROUTE.FRESH_GRIEF_FIRST",
+    "matchedIncludes": [
+      "ROUTE.ALTERED_AFTERMATH"
+    ],
+    "selectedExcludes": [
+      "ROUTE.ALTERED_AFTERMATH"
+    ],
+    "requiredNuancePatterns": [
+      "psychotic-type reaction"
+    ]
+  }
+}

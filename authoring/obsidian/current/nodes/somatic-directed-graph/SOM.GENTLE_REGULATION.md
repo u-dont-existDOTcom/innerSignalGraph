@@ -72,9 +72,34 @@ regression_refs:
   - G106
   - G107
   - G108
+  - G109
+  - G110
+  - G113
+  - G114
+  - G115
+  - G116
+  - G117
+  - G118
+  - G119
+  - G120
+  - G121
+  - G122
+  - G123
+  - G124
+  - G125
+  - G126
+  - G127
+  - G128
+  - G129
+  - G130
+  - G132
+  - G133
+  - G134
+  - G135
+  - G136
 base_record_sha256: 3d196d52c0dce8edef13b2006d5ce50103396b946f775778eed6e8eb8e233d77
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: ec4a7909c2fb0e5bdc4aa78ebedf02685d9b97bd54a9f494331f7d3d0048166d
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Gentle regulation and embodiment

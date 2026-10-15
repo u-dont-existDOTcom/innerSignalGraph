@@ -1,0 +1,22 @@
+{
+  "id": "G124",
+  "title": "fresh grief keeps its route when inner-child work is declined",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "love_access": "accessible",
+    "fresh_grief": "present",
+    "ic_status": "declined"
+  },
+  "expected": {
+    "primary": "ROUTE.FRESH_GRIEF_FIRST"
+  }
+}
