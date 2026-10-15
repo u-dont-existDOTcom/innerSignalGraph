@@ -274,3 +274,22 @@ test("audit-green plus adversarial accept performs zero repair-provider calls", 
   assert.equal(providerCalls.hypnosis_repair ?? 0, 0);
   assert.equal(providerCalls.hypnosis_final_review, 1);
 });
+
+test("while grief is fresh, the compiler holds hypnosis back before any model call (Codex, 1f3ad67e)", async () => {
+  const { config, context, providers, providerCalls } = await h001();
+  const at = "2026-10-15T00:00:00.000Z";
+  context.durableCaseState = { ...(context.durableCaseState ?? {}),
+    fresh_grief: { status: "present", since_at: at, since_turn_id: "turn-1", updated_at: at, updated_turn_id: "turn-1" } };
+  const result = await runHypnosisCompilerPipeline({ context, providers, config, caseId: "H001" });
+  assert.equal(result.status, "blocked");
+  assert.equal(result.releaseable, false);
+  assert.equal(result.repairFailure.code, "FRESH_GRIEF_HOLD");
+  assert.equal(result.playbackPlan, null);
+  assert.match(result.safeAlternative, /With grief this fresh, the hypnosis can wait/);
+  assert.deepEqual(providerCalls, {});
+  // An old loss recorded as absent compiles as before.
+  const later = await h001();
+  later.context.durableCaseState = { ...(later.context.durableCaseState ?? {}), fresh_grief: { status: "absent", updated_at: at, updated_turn_id: "turn-2" } };
+  const compiled = await runHypnosisCompilerPipeline({ context: later.context, providers: later.providers, config: later.config, caseId: "H001" });
+  assert.equal(compiled.status, "releaseable");
+});
