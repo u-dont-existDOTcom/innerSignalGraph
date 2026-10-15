@@ -17,7 +17,7 @@ const CRITICAL_DELTA_FIELDS = [
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
   "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
   "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access", "spiritual_support_access",
-  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle"
+  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle", "fresh_grief"
 ];
 
 function criticalDeltaCount(snapshot, priorSnapshot) {
@@ -52,7 +52,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     && ["same", "distinct", "blend", "unresolved"].includes(v.internal_speaker_relation);
   const intentHard = HARD_INTENTS.has(v.current_intent);
   const importantUnknown = Math.max(0, ...(snapshot?.unknowns ?? []).map((item) => item.importance ?? 0));
-  const reviewedSignal = Boolean(snapshot?.path_update || snapshot?._path_prior) || Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.protective_response === "present"
+  const reviewedSignal = Boolean(snapshot?.path_update || snapshot?._path_prior) || Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.fresh_grief === "present" || v.protective_response === "present"
     || v.altered_state === "altered"
     || ["state_bound", "fading", "partial"].includes(v.altered_state_transfer)
     || ["restore_access", "mixed"].includes(v.altered_repeat_motive)

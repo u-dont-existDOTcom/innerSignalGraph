@@ -24,10 +24,12 @@ source_refs:
   - IC.GUIDE_LATER
   - IC.PROTECTOR_VISIBLE
   - IC.RELATIONSHIP
-regression_refs: []
-base_record_sha256: 53c9410fd7cd8698d0a9b3de898361fd39f9dd5c8eb5c268bd82f39cc319c0e2
-base_graph_sha256: 75b1dc74386153edfa674a1b5ec6d47c3b7cc67ea4ca1202217aee8704c31e48
-projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
+  - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+regression_refs:
+  - G116
+base_record_sha256: 8b3739e322a057dc7611609426a4a6408f69319eff396bfe7d76376820ad2366
+base_graph_sha256: 39c850d6cdd5645a37a2bf85db327a0cdc58f37156821809d5910ddafbe412a0
+projection_input_sha256: c90efbba47c2fc6e3fb90f764d20fa64f7c5660cdf4f274500fdfa47ee92c63f
 ---
 
 # Keep realization, doctrine, and community answerable to lived love
@@ -99,6 +101,7 @@ projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106
   },
   "recommendations": [
     "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
+    "Look at an obvious contradiction first, such as “I love everyone, I just hate my dad”: ask about it with curiosity before adding any practice on top, gratitude included.",
     "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
     "Keep spiritual truth separate from authority transfer. If a teacher’s gifts or realization are being used—by the teacher, group, or user’s own intuition—to override contradictory evidence about trust, use intuition/trust calibration.",
     "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
@@ -125,3 +128,5 @@ projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106
 [[current/sources/inner-child-guide/IC.PROTECTOR_VISIBLE]]
 
 [[current/sources/inner-child-guide/IC.RELATIONSHIP]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]

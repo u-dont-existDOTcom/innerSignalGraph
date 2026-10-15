@@ -133,6 +133,12 @@
       "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
     },
     {
+      "fromNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33",
+      "id": "205a4701d576ccca39fb059261a851437bbc595659aab515d7212173340b571f",
+      "label": "can-enable",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
+    },
+    {
       "fromNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96",
       "id": "20fbb69347ec65147b3ed41ecf42bce2ef13bc98d78ffcdc44c4901c473c195c",
       "label": "capacity-prerequisite",
@@ -247,6 +253,12 @@
       "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
     },
     {
+      "fromNode": "e231863765ec5ac9c1dda5ead31728fbff097733a02ac7d3348f581b15407658",
+      "id": "3d099ae618ead6d6663840a9340c0fc6a2d88112ee45828093e80aed2a4f0eb5",
+      "label": "precedes",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
+    },
+    {
       "fromNode": "8baf31acaf8d336737862a0829a413ed5fbb8c1301ef4d142cdabbbc96543dc2",
       "id": "3d216f309b888978092712501732358bbc173b22a5ad55a941c687bbb427b56c",
       "label": "calibrates",
@@ -269,6 +281,18 @@
       "id": "4199a55d0566afa3356b56ab04ef2fd0199cb72092847239476fba70ac15919b",
       "label": "clarifies",
       "toNode": "d9201eb93608aeec31488f96ee8fcc1ddcefc2068328bb44e94185bfd151e36c"
+    },
+    {
+      "fromNode": "75eece254ecd4ec7de1cc3b1e45f2352b1f55848e8ce8cb9b77f6c2dc8ebc835",
+      "id": "451c3bb89b17c28c8c75710909513b1746e78a3e1e112eb48c963d0c20220929",
+      "label": "precedes",
+      "toNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33"
+    },
+    {
+      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "id": "4882ed433d72a7ed628953bc56a12ee1f68a1a91caa4c2cec7ce7002fc49e327",
+      "label": "precedes",
+      "toNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33"
     },
     {
       "fromNode": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
@@ -521,6 +545,12 @@
       "id": "a299f8873d2221b265f37f1e3ece9bd050c502c7ef5688f1a447242b30f4e9c5",
       "label": "supports",
       "toNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41"
+    },
+    {
+      "fromNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33",
+      "id": "a6f008af688a0dd6b6767c7b7c137eef460139efc2d4c7f1a018a7d32f814e64",
+      "label": "may-use",
+      "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
     },
     {
       "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
@@ -867,7 +897,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1540
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
@@ -885,7 +915,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1980
+      "y": 2640
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
@@ -921,7 +951,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1760
+      "y": 2420
     },
     {
       "color": "3",
@@ -1098,6 +1128,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-directed-graph/IC.FRESH_GRIEF_FIRST.md",
+      "height": 140,
+      "id": "75eece254ecd4ec7de1cc3b1e45f2352b1f55848e8ce8cb9b77f6c2dc8ebc835",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 880
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.CARING_COMPANY.md",
       "height": 140,
       "id": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5",
@@ -1260,7 +1299,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 880
+      "y": 1100
     },
     {
       "color": "3",
@@ -1279,7 +1318,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2200
+      "y": 2860
     },
     {
       "color": "3",
@@ -1374,6 +1413,15 @@
       "y": 1100
     },
     {
+      "file": "current/nodes/inner-child-directed-graph/IC.GRATITUDE_PRACTICE.md",
+      "height": 140,
+      "id": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 1760
+    },
+    {
       "color": "3",
       "height": 140,
       "id": "cdfbaa43da9f7124e0981d994eeb5fa2b12564a26d2eaee66dbcd01b6baf208f",
@@ -1408,7 +1456,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1320
+      "y": 1980
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
@@ -1435,7 +1483,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2420
+      "y": 3080
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
@@ -1445,6 +1493,15 @@
       "width": 300,
       "x": 440,
       "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.GUARD_BEFORE_CHILD_LOVE.md",
+      "height": 140,
+      "id": "e231863765ec5ac9c1dda5ead31728fbff097733a02ac7d3348f581b15407658",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_MEDICAL_SAFETY.md",
@@ -1554,7 +1611,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1100
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",

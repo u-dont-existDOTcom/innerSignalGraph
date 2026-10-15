@@ -1,0 +1,28 @@
+{
+  "id": "G117",
+  "title": "after a fresh death, grief and support lead and gratitude comes in sideways",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "love_access": "accessible",
+    "deep_love_access": "none_known",
+    "fresh_grief": "present"
+  },
+  "expected": {
+    "primary": "IC.FRESH_GRIEF_FIRST",
+    "selectedIncludes": [
+      "IC.GRATITUDE_PRACTICE"
+    ],
+    "requiredNuancePatterns": [
+      "Fresh grief is not a problem to fix with gratitude"
+    ]
+  }
+}

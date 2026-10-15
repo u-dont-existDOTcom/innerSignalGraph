@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-14-r5`
+Queue version: `2026-10-15-r6`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -203,15 +203,29 @@ Reader need: People with prior involuntary or traumatic care may be harmed by un
 Already covered: Also Look Outward already distinguishes privacy from dishonesty in unsafe relationships; r6 extends that principle to medical settings while retaining the existing concrete-safety floor.
 Where: Also Look Outward, following the paragraph on safe graded disclosure and before general relationship/community support.
 
-## Pending bundle H — gratitude as ongoing cultivation that can open into sacred love
+## Pending bundle H — gratitude for everyone, as ongoing cultivation toward unconditional love
 
 ### PGQ-031 — Gratitude is essential ongoing cultivation; the child is not required to perform it
-Caused by: owner-authored October 14 revision of “Ask God for a Loan,” `AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014`, `IC.LOVE_HORIZON_EXPLORATION`, `IC.DEEP_LOVE_TO_CHILD`, and the updated extraction distinction.
-Teaching point: Preserve the FULL progression in the already owner-edited prose: (1) recognize ordinary good and relief, even something as small as painless urination; (2) when genuine, become grateful even for suffering itself, insofar as it reveals the value of not suffering and can foster compassion, wisdom and further gratitude; (3) directly notice whether such thankfulness opens the heart into softness, stillness, freedom or divine love—do not reduce it to intellectual positive reframing; (4) invite the younger self into what is actually accessible, while listening to any BS, numbness or refusal. The owner explicitly says gratitude itself is essential in this spiritual practice, including for those already experiencing divine love, not an optional technique limited to beginners or moments when love fades. The ongoing intention to practice must be distinguished from forcing a particular feeling; no one is required to thank an abuser, excuse harm or decline care, and neither felt love nor child inclusion is guaranteed. Do not claim the child is knowingly testing the adult, and do not demand gratitude from the child.
+Caused by: owner-authored October 14 revision of “Ask God for a Loan,” `AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014`, `AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014`, `IC.GRATITUDE_PRACTICE`, `IC.DEEP_LOVE_TO_CHILD`, and the updated extraction distinction.
+Teaching point: Preserve the FULL progression in the already owner-edited prose: (1) recognize ordinary good and relief, even something as small as painless urination; (2) when genuine, become grateful even for suffering itself, insofar as it reveals the value of not suffering and can foster compassion, wisdom and further gratitude; (3) directly notice whether such thankfulness opens the heart into softness, stillness, freedom or divine love—do not reduce it to intellectual positive reframing; (4) invite the younger self into what is actually accessible, while listening to any BS, numbness or refusal. The owner explicitly says gratitude itself is essential in this spiritual practice, including for those already experiencing divine love, not an optional technique limited to beginners or moments when love fades. The ongoing intention to practice must be distinguished from forcing a particular feeling; no one is required to thank an abuser, excuse harm or decline care, and neither felt love nor child inclusion is guaranteed. Do not claim the child is knowingly testing the adult, and do not demand gratitude from the child. Since the owner's answers later on October 14, gratitude is what he advises basically everyone, with or without a religion, most of all when unconditional love isn't felt, so the passage must not read as his own path only.
 Reader need: Without this sequence, gratitude may become toxic positivity, or a beautiful spiritual opening may be mistaken for achieved reparenting. Without the ongoing-necessity sentence, “one practical door” misleadingly sounds like a menu of optional tricks for first-time or lost access. The practice needs to be woven into daily reparenting and compassion for suffering beings, not just a way to produce a special experience.
 Already covered: The owner has provided a new public draft adding lived compassion for suffering beings and gratitude for the chance to care for the hurting inner child, but its opening still says “one practical door.” Preserve the latest exact owner text and voice. A minimal proposal should make the continuing necessary practice explicit without a sermon, and **must not duplicate the section**. The humanizer should compare the new public passage with the operational nuance and disposition this entry as already incorporated when verified, not overwrite it with generic AI prose.
 Evidence boundary: Preserve the owner's account that severe painful bloody urination resolved after drinking roselle and that he experienced recovery; absence of a laboratory parasite test does not negate his reported clinical resolution. The specific infection was unconfirmed. This first-person experience does not itself assert general roselle efficacy, so do not insert a cure-denying disclaimer into the memoir. Review evidence separately only if a general treatment recommendation is added.
 Where: “Ask God for a Loan” (the existing owner-edited passage).
+
+### PGQ-032 — A drug peak that changes nothing
+Caused by: `AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014` (the owner's answer of October 14, 23:26 UTC) and `IC.GRATITUDE_PRACTICE`.
+Teaching point: The owner's example: someone who wants enlightenment together with money, partners and everything else, as one package, can reach a drug peak (ketamine, say) without letting go of a single attachment or of the anger. A peak reached that way is not the unconditional love the practice is after, and wanting everything is the conditional gratitude the practice works on. Help readers see it for themselves rather than preach it.
+Reader need: Readers chasing peaks may take a drug's peak for the love the practice aims at, while keeping the anger and the attachments that block it.
+Already covered: “The beautiful state can become a hook too” covers a state becoming the new standard, not a peak reached while holding on to everything.
+Where: “Altered States Can Deepen the Therapy,” right after the paragraph that begins “The beautiful state can become a hook too.” One or two sentences in the owner's voice. The owner's own example named a public figure; whether to name one is his choice.
+
+### PGQ-033 — “If only I had X”
+Caused by: `AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014` and `IC.GRATITUDE_PRACTICE`.
+Teaching point: Gratitude that waits for conditions never arrives. When someone says they could be grateful “if only I had X,” ask what they would need before they could feel love or gratitude, and whether that list ever ends. The owner recalls a survey in which almost nobody wished for happiness directly; no source has been found for it, so don't cite it unless one turns up. Research on “miswanting” (Gilbert and Wilson, 2000), on how people mispredict what will make them happy, makes a related point and can be cited instead if the owner wants a source.
+Reader need: Readers who postpone gratitude until life is right need to see that the conditions keep moving.
+Already covered: Not in r6.
+Where: “Ask God for a Loan,” next to the gratitude part of the owner's October 14 revision of that section.
 
 ## EMPTY sentinel
 

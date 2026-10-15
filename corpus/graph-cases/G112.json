@@ -1,0 +1,21 @@
+{
+  "id": "G112",
+  "title": "numb with no love for anyone starts with gratitude",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "love_access": "absent",
+    "spiritual_curiosity": "absent"
+  },
+  "expected": {
+    "primary": "IC.GRATITUDE_PRACTICE"
+  }
+}

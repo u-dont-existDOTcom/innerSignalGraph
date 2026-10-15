@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.BLOCKED_ACTION_WAIT
 status: owner-approved
 domain: cross-guide
-base_record_sha256: a4049b520ac21bfa46a1fa15582d5595805d81551ba093da4fdb62013626c6ad
-source_file_sha256: b807626c278bb06b715e45f0fbb06b7904fc8078bc336fa43eba86f90bed8578
-projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
+base_record_sha256: 6c0016be65f0b1dd1360ae059e67849dfeb785490828648e3e699d98ab7a5e0c
+source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
+projection_input_sha256: c90efbba47c2fc6e3fb90f764d20fa64f7c5660cdf4f274500fdfa47ee92c63f
 ---
 
 # AMEND.CROSS.BLOCKED_ACTION_WAIT
@@ -24,6 +24,6 @@ projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106
     "status": "owner-approved",
     "text": "A concrete practical problem can remain real while no useful action is currently available. Distinguish action available now from blocked waiting. Use blocked waiting only when the relevant next steps are all constrained by an explicitly known external prerequisite, permission, timing condition, unavailable resource, or other condition outside the person's present control. Preserve the actual constraint chain and the event or condition that would reopen action. Do not invent a workaround that silently requires one of the known constraints to be false. An alternative is worth pursuing only when it is genuinely independent of the blocker and supported by available evidence. Waiting for a real external condition is not passivity, avoidance, lack of motivation, or therapeutic failure; redirect available effort toward another useful priority until the route reopens."
   },
-  "version": "owner-amendments-2026-10-14-r9"
+  "version": "owner-amendments-2026-10-14-r10"
 }
 ```

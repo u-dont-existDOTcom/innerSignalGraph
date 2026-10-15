@@ -1,0 +1,25 @@
+{
+  "id": "G111",
+  "title": "numb with a little love left for a pet starts from that love, gratitude later",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "love_access": "limited",
+    "deep_love_access": "none_known",
+    "spiritual_curiosity": "absent"
+  },
+  "expected": {
+    "primary": "IC.BORROW_LOVE",
+    "selectedExcludes": [
+      "IC.GRATITUDE_PRACTICE"
+    ]
+  }
+}

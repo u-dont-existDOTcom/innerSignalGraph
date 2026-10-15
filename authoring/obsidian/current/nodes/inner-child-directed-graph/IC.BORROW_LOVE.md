@@ -23,14 +23,21 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - IC.SPIRITUAL_LOAN
   - IC.ALTERED_STATES
+  - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
 regression_refs:
   - G003
   - G005
   - G008
   - G011
-base_record_sha256: 8993322fe54b4dc698fbc3f2653a9550d43e66897da5f7871b7700182b9c8892
-base_graph_sha256: 75b1dc74386153edfa674a1b5ec6d47c3b7cc67ea4ca1202217aee8704c31e48
-projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106c3bf5fcc9
+  - G109
+  - G110
+  - G111
+  - G113
+  - G116
+  - G117
+base_record_sha256: 82199328edcb96e1ccd2750cd8cd3d1a32c7ab661af8f5d7ef7f8d74c1914dcd
+base_graph_sha256: 39c850d6cdd5645a37a2bf85db327a0cdc58f37156821809d5910ddafbe412a0
+projection_input_sha256: c90efbba47c2fc6e3fb90f764d20fa64f7c5660cdf4f274500fdfa47ee92c63f
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -99,7 +106,8 @@ projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106
     "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
     "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.",
     "Start with what is actually accessible in the present. If a profound loving state is only remembered, use sober recollection or a chosen benevolent reference as preparation and see whether any caring function becomes available now.",
-    "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity."
+    "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity.",
+    "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing."
   ],
   "successSignals": [
     "The capacity for love becomes experientially available without coercion."
@@ -125,3 +133,5 @@ projection_input_sha256: 0d893b3532d45f09cc07b6f0a3417e031d6a0f04d0e424edaece106
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
 
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]
