@@ -9,6 +9,7 @@ import { batchPointerQuotes, checkPointerTags, pointerPageOf, pointerTagIndexes 
 import { POINTER_COPY_RUN_WORDS, POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_RULES, checkCoverageJudgments, checkQuestionSet, checkSearchPlan,
   coverageJudgeCalls, pointerJudgeTiers, pointerReferenceSample, referenceUnitStep } from "./pointer-reference.mjs";
 import { buildQuoteGeneration } from "./quote-index.mjs";
+import { checkQuestions } from "./search-check.mjs";
 
 // The pointer pass's steps as sequences of deadline-bound call rounds (plan 2026-10-09-journal-quote-first.md, Part
 // 3). Each step is deterministic given its inputs and the answers the durable port has stored, so a resumed step runs
@@ -870,5 +871,48 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
       ...(rules === 3 ? { unmeasured_units: recall.unmeasured_units } : {})
     },
     samples: scored.map((sample) => ({ name: sample.counts.name, items: sample.items }))
+  });
+}
+
+/**
+ * A content-free check of the word search on the measured generation (owner page, 15 Oct 2026, "Searches that find
+ * more"), on the reference sample's questions, as the measurement counts them. `measured` is how many the search the
+ * measurement ran (find_journal_quotes by words, its first POINTER_RECALL_TOP results) finds; `replica` compares that with
+ * the in-memory ranking of search-check.mjs's "current" variant, which leaves out the call's byte budget, so a question
+ * only the replica finds is one the budget cut; and each variant (exact words, accents folded, French stop words, English
+ * or French word forms, all of them) gives the questions found in the first 12, 24 and 40 results, where the others'
+ * quotes rank, and the design-weighted recall the measurement reports. `population` is the generation's node count, as
+ * the search reads it. It follows owner decision 32's rules, the only ones a new run uses (every searched unit complete or
+ * marked, a unit without questions left out of the design): a run under earlier rules, whose unconfirmed units count
+ * every question missed without a search, is refused. It sends nothing, saves nothing and returns counts only.
+ */
+export async function runPointerSearchCheck({ quoteGeneration, reference, search, population, rules = 3 } = {}) {
+  invariant(rules === 3, "POINTER_SEARCH_CHECK_RULES");
+  invariant(quoteGeneration && reference && Array.isArray(reference.units) && typeof search === "function"
+    && Number.isSafeInteger(population) && population > 0, "POINTER_STEP_INPUT_INVALID");
+  const built = buildQuoteGeneration(quoteGeneration);
+  const input = pointerPassInput({ built });
+  // The questions the measurement counts: a question the copy check flagged is left out, here as in every count.
+  const searchedUnits = reference.units.filter((unit) => unit.status === "complete" || unit.status === "marked")
+    .map((unit) => ({ ...unit, questions: unit.questions.filter((question) => question.copied !== true) }));
+  const measured = await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: false });
+  const passages = built.graph.nodes.filter((node) => node.kind === "passage").map((node) => ({ id: node.id, quote: node.data.quote }));
+  const check = checkQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, passages, population });
+  // The same estimate the measurement reports for words only, over the same design.
+  const estimate = (found) => measurePointerRecall({ reference, excludeUnmeasured: true, foundWithTags: found, foundWordsOnly: found,
+    eventTaggedUnitIds: new Set() });
+  const current = check.variants.current.found[POINTER_RECALL_TOP];
+  const both = [...current].filter((questionId) => measured.has(questionId)).length;
+  const byCutoff = (found, pick) => Object.fromEntries(Object.entries(found).map(([cutoff, set]) => [cutoff, pick(estimate(set))]));
+  return deepFreeze({
+    questions: check.questions,
+    measured: { found: measured.size, recall_estimate: estimate(measured).recall_estimate },
+    replica: { found: current.size, found_by_both: both, measured_only: measured.size - both, replica_only: current.size - both },
+    variants: Object.fromEntries(Object.entries(check.variants).map(([id, variant]) => [id, {
+      found: variant.counts,
+      ranks: variant.buckets,
+      recall_estimate: byCutoff(variant.found, (result) => result.recall_estimate),
+      critical_recall_estimate: byCutoff(variant.found, (result) => result.critical_recall_estimate)
+    }]))
   });
 }
