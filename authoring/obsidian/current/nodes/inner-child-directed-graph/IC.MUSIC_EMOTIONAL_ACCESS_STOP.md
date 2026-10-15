@@ -22,9 +22,10 @@ source_refs:
 regression_refs:
   - G128
   - G130
-base_record_sha256: 3e72824a5116da28b5a6cd8a2bba252ccfac86837a6c0fae0adb0f32a5565a49
-base_graph_sha256: f795edce55cf0df641adcdbc643b69d70a764687fa4bad13c46548b6b12d339c
-projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
+  - G134
+base_record_sha256: 94a3d6c1dcdbb21619834b3d876fbdc77489b2d4220875d45a2b691f070206c2
+base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
+projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
 ---
 
 # Stop music when it overwhelms rather than opens
@@ -55,7 +56,8 @@ projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb554992
       "IC.MUSIC_EMOTIONAL_ACCESS"
     ],
     "deferNodes": [
-      "ROUTE.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE",
+      "ROUTE.FRESH_GRIEF_FIRST"
     ],
     "forbiddenOverclaims": [
       "Do not call overwhelm therapeutic progress or recovered memory evidence."

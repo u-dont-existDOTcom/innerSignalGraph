@@ -21,7 +21,7 @@ regression_refs:
   - G053
 base_record_sha256: 096eff3100bda6f048bbd4275860df49c85f63c65feedc95336c82ca7d66af3b
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
+projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
 ---
 
 # Resource-oriented or titrated Brainspotting

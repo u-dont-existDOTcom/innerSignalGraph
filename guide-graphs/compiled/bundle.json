@@ -4702,7 +4702,8 @@
               "IC.MUSIC_EMOTIONAL_ACCESS"
             ],
             "deferNodes": [
-              "ROUTE.GRATITUDE_PRACTICE"
+              "ROUTE.GRATITUDE_PRACTICE",
+              "ROUTE.FRESH_GRIEF_FIRST"
             ],
             "forbiddenOverclaims": [
               "Do not call overwhelm therapeutic progress or recovered memory evidence."
@@ -7580,7 +7581,9 @@
           ],
           "effects": {
             "blockNodes": [],
-            "deferNodes": [],
+            "deferNodes": [
+              "ROUTE.FRESH_GRIEF_FIRST"
+            ],
             "forbiddenOverclaims": [
               "Do not say the revelation is false merely because action is being postponed; the claim remains open to sober review."
             ],
@@ -7678,7 +7681,8 @@
               "IC.DEEP_CHILD_DIALOGUE",
               "SOM.DEEP_BRAINSPOTTING",
               "SOM.EMDR_DISCRETE",
-              "SOM.EMDR_DEVELOPMENTAL"
+              "SOM.EMDR_DEVELOPMENTAL",
+              "ROUTE.FRESH_GRIEF_FIRST"
             ],
             "forbiddenOverclaims": [
               "Do not claim that a grounding response proves the experience was only anxiety or only psychological."
@@ -8340,28 +8344,6 @@
                 "field": "fresh_grief",
                 "op": "eq",
                 "value": "present"
-              }
-            ],
-            "none": [
-              {
-                "field": "present_safety",
-                "op": "eq",
-                "value": "unsafe"
-              },
-              {
-                "field": "orientation",
-                "op": "eq",
-                "value": "disoriented"
-              },
-              {
-                "field": "altered_state",
-                "op": "eq",
-                "value": "altered"
-              },
-              {
-                "field": "music_emotional_access",
-                "op": "eq",
-                "value": "overwhelming"
               }
             ]
           },

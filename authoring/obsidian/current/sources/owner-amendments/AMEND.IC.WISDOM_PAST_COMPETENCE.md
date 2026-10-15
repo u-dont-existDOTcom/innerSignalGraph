@@ -12,7 +12,7 @@ section_hash: b3f573a0f976ffa53c2923a4149dfbf0154cc3e8ff7e81edd84ce424fb4aa491
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.PAST_COMPETENCE
-projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
+projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
 ---
 
 # AMEND.IC.WISDOM_PAST_COMPETENCE

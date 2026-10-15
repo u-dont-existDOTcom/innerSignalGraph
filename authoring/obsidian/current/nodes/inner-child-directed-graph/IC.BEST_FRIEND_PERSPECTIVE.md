@@ -48,8 +48,8 @@ regression_refs:
   - G104
   - G109
 base_record_sha256: 5474d5ff4fa1c7c74908569a728d25d197c61dfe11cf3d5bc99bb3b8684523e8
-base_graph_sha256: f795edce55cf0df641adcdbc643b69d70a764687fa4bad13c46548b6b12d339c
-projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
+base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
+projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
 ---
 
 # Borrow the best-friend standard of care

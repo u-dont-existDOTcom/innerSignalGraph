@@ -224,7 +224,7 @@ Where: “Altered States Can Deepen the Therapy,” right after the paragraph th
 Caused by: `AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014` and `ROUTE.GRATITUDE_PRACTICE`.
 Teaching point: Gratitude that waits for conditions never arrives. When someone says they could be grateful “if only I had X,” ask what they would need before they could feel love or gratitude, and whether that list ever ends. The owner recalls a survey in which almost nobody wished for happiness directly; no source has been found for it, so don't cite it unless one turns up. Research on “miswanting” (Gilbert and Wilson, 2000), on how people mispredict what will make them happy, makes a related point and can be cited instead if the owner wants a source.
 Reader need: Readers who postpone gratitude until life is right need to see that the conditions keep moving.
-Already covered: Not in r6.
+Already covered: “Four Pairs That Commonly Hook the Child” (“Notice when they have become conditions for having a self”) covers pleasure, praise, gain and belonging becoming conditions for a self, not gratitude or love that waits for conditions, and not asking whether the list ever ends.
 Where: “Ask God for a Loan,” next to the gratitude part of the owner's October 14 revision of that section.
 
 ## EMPTY sentinel

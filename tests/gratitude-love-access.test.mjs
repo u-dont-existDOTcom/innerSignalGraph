@@ -151,6 +151,34 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   const musicAndGrief = plan({ fresh_grief: "present", music_emotional_access: "overwhelming", deep_love_access: "none_known" });
   assert.ok(!selected(musicAndGrief).includes("ROUTE.GRATITUDE_PRACTICE"));
   assert.ok(musicAndGrief.deferredNodes.some((item) => item.id === "ROUTE.GRATITUDE_PRACTICE"));
+  // No stop or safety state switches the grief route off, so its holds stay while that route leads (Codex, df7befda).
+  // Immediate safety leads with grief beside it...
+  const unsafeGrief = plan({ love_access: "accessible", fresh_grief: "present", present_safety: "unsafe" });
+  assert.equal(unsafeGrief.primaryJob.id, "IC.SAFETY_ORIENTATION");
+  assert.ok(selected(unsafeGrief).includes("ROUTE.FRESH_GRIEF_FIRST"));
+  assert.ok(!selected(unsafeGrief).includes("IC.BORROW_LOVE"));
+  // ...an acute altered state and overwhelming music hold the grief route back while they lead...
+  const acuteGrief = plan({ love_access: "accessible", fresh_grief: "present", altered_state: "altered", activation: "high",
+    altered_capacity: "coherent", altered_medical_status: "stable" });
+  assert.equal(acuteGrief.primaryJob.id, "ROUTE.ALTERED_ACUTE_STABILIZATION");
+  for (const id of ["ROUTE.FRESH_GRIEF_FIRST", "IC.BORROW_LOVE"]) assert.ok(acuteGrief.deferredNodes.some((item) => item.id === id), id);
+  const musicInward = plan({ love_access: "accessible", fresh_grief: "present", music_emotional_access: "overwhelming",
+    unresolved_inner_material: "present" });
+  for (const id of ["ROUTE.FRESH_GRIEF_FIRST", "ROUTE.GO_INWARD", "IC.BORROW_LOVE"]) {
+    assert.ok(!selected(musicInward).includes(id), id);
+    assert.ok(musicInward.deferredNodes.some((item) => item.id === id), id);
+  }
+  // ...and an active strategy yields to the music stop, with or without grief, instead of continuing past it.
+  const musicVariables = { ...steady, unresolved_inner_material: "present", music_emotional_access: "overwhelming" };
+  for (const fresh_grief of ["present", "absent"]) {
+    const stopped = planFromGraphs({ graphs: bundle.graphs, variables: { ...musicVariables, fresh_grief }, pathPerformance: structuredClone(active) });
+    assert.equal(stopped.primaryJob.id, "IC.MUSIC_EMOTIONAL_ACCESS_STOP", fresh_grief);
+  }
+  // In a stable altered state grief leads, and going inward waits.
+  const stableGrief = plan({ fresh_grief: "present", unresolved_inner_material: "present", altered_state: "altered",
+    altered_capacity: "coherent", altered_medical_status: "stable" });
+  assert.equal(stableGrief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(stableGrief.deferredNodes.some((item) => item.id === "ROUTE.GO_INWARD"));
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.

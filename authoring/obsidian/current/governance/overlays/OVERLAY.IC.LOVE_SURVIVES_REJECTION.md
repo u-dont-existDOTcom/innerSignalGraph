@@ -14,7 +14,7 @@ reconciled_nodes:
   - IC.BORROW_ONE_FUNCTION
   - IC.CREDIBILITY_REPAIR
 base_record_sha256: fc2bdf6a4d8d0ea62d06dd9bf2b2a451ab3faadb6eb116750ca129301e39f298
-projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
+projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
 ---
 
 # Care does not retaliate under rejection

@@ -21,8 +21,8 @@ source_refs:
   - AMEND.IC.WELLBEING_HORIZON
 regression_refs: []
 base_record_sha256: 8b3d9a709cfbf6aa1dd9ac841ce1378d449b4460db7b60f6199d823578abf6d8
-base_graph_sha256: f795edce55cf0df641adcdbc643b69d70a764687fa4bad13c46548b6b12d339c
-projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
+base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
+projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
 ---
 
 # Match the work to existential hunger without making spirituality mandatory

@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: 081f3c0e75070013ce70bb3f6187beefec7a1623e4df06461527b045751920d5
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
+projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
 ---
 
 # AMEND.IC.WISDOM_DRAFT_EDITOR
