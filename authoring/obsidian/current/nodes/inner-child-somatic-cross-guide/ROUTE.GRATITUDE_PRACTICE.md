@@ -38,8 +38,8 @@ regression_refs:
   - G123
   - G125
 base_record_sha256: 740e919aea1c7bf7b167275ba946c510ae4324b1e98eaa853b3a61388dd35fa8
-base_graph_sha256: e8233012b3eb0bd28e25b8632f9911fdd168a8ab9aaad723c46094f264e92f44
-projection_input_sha256: d41c2270919fe211da80852aa745df5954f5bb203eb0b65cc9c067d11e5508fa
+base_graph_sha256: f74c1c95ff133da471df62718968860a9d2bc5147af0b9eec0c48928fb8450a4
+projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2507f00f97
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching

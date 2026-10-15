@@ -23,9 +23,9 @@ regression_refs:
   - G124
   - G126
   - G127
-base_record_sha256: 6cefcf1615f7a4a7e7360199cc6560f3f7753a28a3adf674f322f251157e2682
-base_graph_sha256: e8233012b3eb0bd28e25b8632f9911fdd168a8ab9aaad723c46094f264e92f44
-projection_input_sha256: d41c2270919fe211da80852aa745df5954f5bb203eb0b65cc9c067d11e5508fa
+base_record_sha256: d35f309d87cb65f08323770aa05c3c461a2c995790d575409be5b0ad6b27207f
+base_graph_sha256: f74c1c95ff133da471df62718968860a9d2bc5147af0b9eec0c48928fb8450a4
+projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2507f00f97
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -60,6 +60,11 @@ projection_input_sha256: d41c2270919fe211da80852aa745df5954f5bb203eb0b65cc9c067d
         "field": "altered_state",
         "op": "eq",
         "value": "altered"
+      },
+      {
+        "field": "music_emotional_access",
+        "op": "eq",
+        "value": "overwhelming"
       }
     ]
   },

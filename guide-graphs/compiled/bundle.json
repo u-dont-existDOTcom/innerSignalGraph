@@ -8355,6 +8355,11 @@
                 "field": "altered_state",
                 "op": "eq",
                 "value": "altered"
+              },
+              {
+                "field": "music_emotional_access",
+                "op": "eq",
+                "value": "overwhelming"
               }
             ]
           },
