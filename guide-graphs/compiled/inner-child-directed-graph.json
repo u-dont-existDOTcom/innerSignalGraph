@@ -308,7 +308,9 @@
       ],
       "effects": {
         "blockNodes": [],
-        "deferNodes": [],
+        "deferNodes": [
+          "IC.GRATITUDE_PRACTICE"
+        ],
         "forbiddenOverclaims": [
           "Do not call reluctance proof that the child rejects love."
         ],
@@ -317,6 +319,13 @@
           "Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making.",
           "Past-glimpse or state-dependent access can identify a possible sober preparation resource, but it does not establish that deep love is accessible now.",
           "Current access to love and the younger state’s reception of that love are separate observations."
+        ],
+        "deferralUnless": [
+          {
+            "field": "love_access",
+            "op": "notEq",
+            "value": "limited"
+          }
         ]
       },
       "defaultQuestion": ""
@@ -1793,11 +1802,6 @@
               "intent",
               "imminent"
             ]
-          },
-          {
-            "field": "love_access",
-            "op": "eq",
-            "value": "limited"
           }
         ]
       },

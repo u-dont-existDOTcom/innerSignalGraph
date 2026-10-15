@@ -21,6 +21,7 @@ source_refs:
   - IC.SPIRITUAL_LOAN
 regression_refs:
   - G017
+  - G047
   - G109
   - G110
   - G111
@@ -32,9 +33,9 @@ regression_refs:
   - G117
   - G118
   - G119
-base_record_sha256: 2b7d011cdfd6c90587bcf54def37c0b77d55959d9b0eb0f3c2f5e8f8701b27a8
-base_graph_sha256: 39c850d6cdd5645a37a2bf85db327a0cdc58f37156821809d5910ddafbe412a0
-projection_input_sha256: c90efbba47c2fc6e3fb90f764d20fa64f7c5660cdf4f274500fdfa47ee92c63f
+base_record_sha256: e73ca234f44bf37fdcbe90a0ddd6def8c31252f67ed9e77ff4a28f40904adf87
+base_graph_sha256: a37748e96254d781cdd7f5103e086448b05fead950c2808f6243a2db1e30dbe6
+projection_input_sha256: 4cbd78cb1d4446a9a4ed59195bdd736c2cde93b5e8cc13b1d191dca4de36371d
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching
@@ -99,11 +100,6 @@ projection_input_sha256: c90efbba47c2fc6e3fb90f764d20fa64f7c5660cdf4f274500fdfa4
           "intent",
           "imminent"
         ]
-      },
-      {
-        "field": "love_access",
-        "op": "eq",
-        "value": "limited"
       }
     ]
   },

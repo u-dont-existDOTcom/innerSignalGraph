@@ -49,6 +49,7 @@ test("where gratitude leads, and where something else comes first", () => {
   const numbWithDog = plan({ activation: "low", love_access: "limited", deep_love_access: "none_known" });
   assert.equal(numbWithDog.primaryJob.id, "IC.BORROW_LOVE");
   assert.ok(!selected(numbWithDog).includes("IC.GRATITUDE_PRACTICE"));
+  assert.ok(numbWithDog.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"), "gratitude waits rather than disappears");
   assert.ok(byId.get("IC.BORROW_LOVE").recommendations.some((line) => /gratitude comes back later either way/.test(line)));
   // Numb, with no love for anyone: gratitude itself, even while unconditional love hasn't been asked about.
   assert.equal(plan({ activation: "low", love_access: "absent" }).primaryJob.id, "IC.GRATITUDE_PRACTICE");

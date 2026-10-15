@@ -1,6 +1,6 @@
 {
   "id": "G111",
-  "title": "numb with a little love left for a pet starts from that love, gratitude later",
+  "title": "numb with a little love left for a pet starts from that love, gratitude waiting",
   "variables": {
     "present_safety": "safe",
     "orientation": "oriented",
@@ -19,6 +19,9 @@
   "expected": {
     "primary": "IC.BORROW_LOVE",
     "selectedExcludes": [
+      "IC.GRATITUDE_PRACTICE"
+    ],
+    "deferredIncludes": [
       "IC.GRATITUDE_PRACTICE"
     ]
   }

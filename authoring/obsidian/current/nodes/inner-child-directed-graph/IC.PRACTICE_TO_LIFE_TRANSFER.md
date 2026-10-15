@@ -26,8 +26,8 @@ regression_refs:
   - G090
   - G091
 base_record_sha256: cb7f26f11608d00eb62283de8ca3409c7a3e93be7b06b7ce23d4ea17a249c132
-base_graph_sha256: 39c850d6cdd5645a37a2bf85db327a0cdc58f37156821809d5910ddafbe412a0
-projection_input_sha256: c90efbba47c2fc6e3fb90f764d20fa64f7c5660cdf4f274500fdfa47ee92c63f
+base_graph_sha256: a37748e96254d781cdd7f5103e086448b05fead950c2808f6243a2db1e30dbe6
+projection_input_sha256: 4cbd78cb1d4446a9a4ed59195bdd736c2cde93b5e8cc13b1d191dca4de36371d
 ---
 
 # Carry a working inner adult into ordinary life
