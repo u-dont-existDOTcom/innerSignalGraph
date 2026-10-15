@@ -4,18 +4,20 @@ import { randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
+import { lexicalTerms, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { QUOTE_STOPWORDS, buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
-import { FRENCH_STOPWORDS, SEARCH_CHECK_VARIANTS, buildVariantIndex, checkQuestions, foldAccents, frenchLightStem, porterStem,
-  rankPassages, variantStopwords, variantTerm, variantTermsOf } from "../src/journal-import/search-check.mjs";
+import { FRENCH_STOPWORDS, SEARCH_CHECK_SCORINGS, SEARCH_CHECK_VARIANTS, buildVariantIndex, checkQuestions, foldAccents,
+  frenchLightStem, porterStem, rankPassages, variantStopwords, variantTerm, variantTermsOf,
+  variantTokensOf } from "../src/journal-import/search-check.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 
 // The search check (src/journal-import/search-check.mjs): the journal quote search's word ranking computed again in memory, for the
-// search as it is and for variants of its word matching, and the count of test questions each variant would find. All text here is
-// invented.
+// search as it is and for variants of its word matching and of its scoring, and the count of test questions each variant would find.
+// All text here is invented.
 
-const [CURRENT, ACCENTS, FRENCH_STOP, ENGLISH_FORMS, FRENCH_FORMS, ALL] = SEARCH_CHECK_VARIANTS;
+const [CURRENT, ACCENTS, FRENCH_STOP, ENGLISH_FORMS, FRENCH_FORMS, ALL, COORDINATION, BM25, BM25_COORDINATION, FORMS, FORMS_COORDINATION,
+  FORMS_BM25, FORMS_BM25_COORDINATION] = SEARCH_CHECK_VARIANTS;
 const INVALID = { code: "SEARCH_CHECK_INPUT_INVALID" };
 
 const deepFreeze = (value) => {
@@ -26,6 +28,10 @@ const deepFreeze = (value) => {
   return value;
 };
 const passage = (number, quote) => ({ id: `passage:${String(number).padStart(3, "0")}`, quote });
+const idsOf = (...numbers) => numbers.map((number) => `passage:${String(number).padStart(3, "0")}`);
+const repeat = (count, word) => Array(count).fill(word).join(" ");
+const rankWith = (variant, passages, query, population = 10) => rankPassages({ index: buildVariantIndex(passages, variant), query,
+  population });
 
 test("the Porter stemmer gives the classic examples of the 1980 paper", () => {
   const classic = { caresses: "caress", ponies: "poni", ties: "ti", caress: "caress", cats: "cat", feed: "feed", agreed: "agre",
@@ -117,10 +123,12 @@ test("the French stop word list is a frozen set of lower case function words wit
   for (const word of ["maison", "jour", "mère", "pluie", "heureux", "dormir", "lettre"]) assert.ok(!FRENCH_STOPWORDS.has(word), word);
 });
 
-test("the variants are the six ways of matching words, in order, each a frozen record of four flags", () => {
+const VARIANT_IDS = ["current", "accents", "french_stopwords", "english_forms", "french_forms", "all", "coordination", "bm25",
+  "bm25_coordination", "forms", "forms_coordination", "forms_bm25", "forms_bm25_coordination"];
+
+test("the variants are the thirteen ways of ranking, in order, each a frozen record of four flags and a scoring", () => {
   assert.ok(Object.isFrozen(SEARCH_CHECK_VARIANTS));
-  assert.deepEqual(SEARCH_CHECK_VARIANTS.map(({ id }) => id),
-    ["current", "accents", "french_stopwords", "english_forms", "french_forms", "all"]);
+  assert.deepEqual(SEARCH_CHECK_VARIANTS.map(({ id }) => id), VARIANT_IDS);
   const flags = (variant) => Object.keys(variant).filter((key) => variant[key] === true);
   assert.deepEqual(flags(CURRENT), []);
   assert.deepEqual(flags(ACCENTS), ["foldAccents"]);
@@ -128,9 +136,42 @@ test("the variants are the six ways of matching words, in order, each a frozen r
   assert.deepEqual(flags(ENGLISH_FORMS), ["englishForms"]);
   assert.deepEqual(flags(FRENCH_FORMS), ["frenchForms"]);
   assert.deepEqual(flags(ALL), ["foldAccents", "frenchStopwords", "englishForms", "frenchForms"]);
+  // The three that change only the scoring read words exactly, as "current" does.
+  for (const variant of [COORDINATION, BM25, BM25_COORDINATION]) assert.deepEqual(flags(variant), [], variant.id);
+  // The four "forms" read words with accents folded and both stemmers, and keep the French stop words in.
+  for (const variant of [FORMS, FORMS_COORDINATION, FORMS_BM25, FORMS_BM25_COORDINATION]) {
+    assert.deepEqual(flags(variant), ["foldAccents", "englishForms", "frenchForms"], variant.id);
+    assert.equal(variant.frenchStopwords, false);
+  }
+  assert.deepEqual(SEARCH_CHECK_VARIANTS.map(({ scoring }) => scoring), ["idf_sum", "idf_sum", "idf_sum", "idf_sum", "idf_sum", "idf_sum",
+    "coordination", "bm25", "bm25_coordination", "idf_sum", "coordination", "bm25", "bm25_coordination"]);
   for (const variant of SEARCH_CHECK_VARIANTS) {
     assert.ok(Object.isFrozen(variant));
-    assert.deepEqual(Object.keys(variant), ["id", "foldAccents", "frenchStopwords", "englishForms", "frenchForms"]);
+    assert.deepEqual(Object.keys(variant), ["id", "foldAccents", "frenchStopwords", "englishForms", "frenchForms", "scoring"]);
+  }
+  assert.ok(Object.isFrozen(SEARCH_CHECK_SCORINGS));
+  assert.deepEqual(SEARCH_CHECK_SCORINGS, ["idf_sum", "coordination", "bm25", "bm25_coordination"]);
+});
+
+test("a variant must name one of the scorings, and a record of one's own that does is as good as the listed ones", () => {
+  const withoutScoring = Object.fromEntries(Object.entries(CURRENT).filter(([key]) => key !== "scoring"));
+  const refused = [withoutScoring, { ...CURRENT, scoring: "tf_idf" }, { ...CURRENT, scoring: "" }, { ...CURRENT, scoring: undefined },
+    { ...CURRENT, scoring: null }, { ...CURRENT, scoring: 2 }, { ...CURRENT, scoring: ["bm25"] }, { ...CURRENT, scoring: "BM25" }];
+  for (const bad of refused) {
+    assert.throws(() => variantTerm("kettle", bad), INVALID);
+    assert.throws(() => variantTermsOf("kettle", bad), INVALID);
+    assert.throws(() => variantTokensOf("kettle", bad), INVALID);
+    assert.throws(() => variantStopwords(bad), INVALID);
+    assert.throws(() => buildVariantIndex([passage(1, "kettle")], bad), INVALID);
+    assert.throws(() => checkQuestions({ units: [], passageIdForUnit: () => "passage:001", passages: [], population: 1, variants: [bad] }),
+      INVALID);
+  }
+  for (const scoring of SEARCH_CHECK_SCORINGS) {
+    const own = { ...ENGLISH_FORMS, id: `own_${scoring}`, scoring };
+    assert.equal(variantTerm("hopping", own), "hop");
+    assert.deepEqual(variantTermsOf("hopping hops", own), ["hop"]);
+    const index = buildVariantIndex([passage(1, "A hopping gull")], own);
+    assert.deepEqual(rankPassages({ index, query: "hops", population: 4 }), ["passage:001"], scoring);
   }
 });
 
@@ -167,6 +208,33 @@ test("the terms of a text follow lexicalTerms, are read by the variant, and keep
   assert.throws(() => variantTermsOf("text", null), INVALID);
 });
 
+test("the tokens of a text keep every repeat in order, and with the repeats taken out they are the terms of the text", () => {
+  assert.deepEqual(variantTokensOf("The harbour, the HARBOUR! A quiet harbour.", CURRENT),
+    ["the", "harbour", "the", "harbour", "a", "quiet", "harbour"]);
+  assert.deepEqual(variantTokensOf("Caresses and caress, cats and cat", ENGLISH_FORMS), ["caress", "and", "caress", "cat", "and", "cat"],
+    "every token is read, so words that read alike repeat");
+  assert.deepEqual(variantTokensOf("Déprimé, deprime et DÉPRIMÉE", ACCENTS), ["deprime", "deprime", "et", "deprimee"]);
+  assert.deepEqual(variantTokensOf("Déprimé, deprime et DÉPRIMÉE", ALL), ["deprim", "deprim", "et", "deprim"],
+    "stop words are tokens too: the length of a text counts them");
+  // The text is normalized (NFKC) and cut into runs of letters and digits, as lexicalTerms does.
+  assert.deepEqual(variantTokensOf("ＨＡＲＢＯＵＲ 2019 harbour-2019 ﬁnal", CURRENT), ["harbour", "2019", "harbour", "2019", "final"]);
+  assert.deepEqual(variantTokensOf("", ALL), []);
+  assert.deepEqual(variantTokensOf("... !", ALL), []);
+  assert.deepEqual(variantTokensOf(null, ALL), [], "like lexicalTerms, a value that is not text has no tokens");
+  assert.deepEqual(variantTokensOf(undefined, CURRENT), []);
+  assert.throws(() => variantTokensOf("text", null), INVALID);
+  assert.throws(() => variantTokensOf("text", { id: "x" }), INVALID);
+  const texts = ["The harbour, the HARBOUR! A quiet harbour.", "Caresses and caress, cats and cat; Cats! CAT?",
+    "Déprimé, deprime et DÉPRIMÉE", "Les chevaux, le cheval; les chevaux.", "walking walked walks, WALKING",
+    "ＨＡＲＢＯＵＲ 2019 harbour-2019 ﬁnal ﬁnal", "co-op co op coop", "L'ami de l'ami est l'ami", "", "... --", "42 42 4 2"];
+  for (const text of texts) {
+    assert.deepEqual([...new Set(variantTokensOf(text, CURRENT))], lexicalTerms(text), text);
+    for (const variant of SEARCH_CHECK_VARIANTS) {
+      assert.deepEqual([...new Set(variantTokensOf(text, variant))], variantTermsOf(text, variant), `${variant.id}: ${text}`);
+    }
+  }
+});
+
 test("stop words are the search's English list, plus the French list where the variant says so, each read like a term", () => {
   const isStopword = (text, variant) => variantStopwords(variant).has(variantTermsOf(text, variant)[0]);
   // The French article is a stop word only where the French list is on.
@@ -187,6 +255,12 @@ test("stop words are the search's English list, plus the French list where the v
   assert.deepEqual(variantStopwords(CURRENT), QUOTE_STOPWORDS);
   assert.deepEqual(variantStopwords(ACCENTS), QUOTE_STOPWORDS);
   assert.ok(!variantStopwords(CURRENT).has("les"));
+  // The scoring leaves the stop words as the reading made them.
+  for (const variant of [COORDINATION, BM25, BM25_COORDINATION]) assert.deepEqual(variantStopwords(variant), QUOTE_STOPWORDS, variant.id);
+  for (const variant of [FORMS_COORDINATION, FORMS_BM25, FORMS_BM25_COORDINATION]) {
+    assert.deepEqual(variantStopwords(variant), variantStopwords(FORMS), variant.id);
+  }
+  assert.ok(!variantStopwords(FORMS).has("les"), "the forms variants keep the French stop words in");
   // One set for each variant, kept; a record that borrows a variant's id but differs in its flags gets a list of its own.
   assert.equal(variantStopwords(ALL), variantStopwords(ALL));
   const borrowed = { ...CURRENT, frenchStopwords: true };
@@ -215,6 +289,20 @@ test("an index lists, for each term as the variant reads it, the sorted ids of t
   assert.deepEqual(buildVariantIndex([passage(1, "")], ALL).postings.size, 0);
   // A passage listed twice counts once.
   assert.deepEqual(buildVariantIndex([passage(1, "kettle"), passage(1, "kettle")], CURRENT).postings.get("kettle"), ["passage:001"]);
+  assert.deepEqual(buildVariantIndex([passage(1, "kettle"), passage(1, "kettle")], BM25).postings.get("kettle"), ["passage:001"]);
+  // The scoring does not change what an index lists: the same postings, in a frozen record of the variant and the postings alone.
+  for (const [reading, scored] of [[CURRENT, COORDINATION], [CURRENT, BM25], [CURRENT, BM25_COORDINATION], [FORMS, FORMS_COORDINATION],
+    [FORMS, FORMS_BM25], [FORMS, FORMS_BM25_COORDINATION]]) {
+    const plain = buildVariantIndex(passages, reading);
+    const other = buildVariantIndex(passages, scored);
+    assert.equal(other.variant, scored);
+    assert.deepEqual(other.postings, plain.postings, scored.id);
+    assert.deepEqual([...other.postings.keys()], [...plain.postings.keys()], `${scored.id}: terms in the same order`);
+    assert.deepEqual(Object.keys(other), ["variant", "postings"], "what BM25 counts is not on the index");
+    assert.ok(Object.isFrozen(other) && Object.isFrozen(other.postings.get("kettle")), scored.id);
+  }
+  assert.deepEqual(buildVariantIndex([], BM25).postings.size, 0);
+  assert.deepEqual(buildVariantIndex([passage(1, "")], BM25).postings.size, 0);
 });
 
 test("bad input to the index is refused with a bare code, and the code carries no text", () => {
@@ -227,7 +315,13 @@ test("bad input to the index is refused with a bare code, and the code carries n
     () => buildVariantIndex([{ id: "passage:001" }], CURRENT),
     () => buildVariantIndex([{ id: "passage:001", quote: 7 }], CURRENT),
     () => buildVariantIndex([passage(1, secret)], { id: "mine" }),
-    () => buildVariantIndex([passage(1, secret)], null)
+    () => buildVariantIndex([passage(1, secret)], null),
+    // The same under a scoring that counts: a passage that is not valid is refused, listed first or listed again.
+    () => buildVariantIndex([null], BM25),
+    () => buildVariantIndex([{ id: "entity:001", quote: secret }], BM25_COORDINATION),
+    () => buildVariantIndex([{ id: "passage:001", quote: 7 }], BM25),
+    () => buildVariantIndex([passage(1, secret), { id: "passage:001", quote: 7 }], BM25),
+    () => buildVariantIndex([passage(1, secret), { id: 1, quote: secret }], FORMS_BM25)
   ];
   for (const attempt of attempts) {
     assert.throws(attempt, (error) => error.code === "SEARCH_CHECK_INPUT_INVALID" && error.message === "SEARCH_CHECK_INPUT_INVALID"
@@ -238,20 +332,25 @@ test("bad input to the index is refused with a bare code, and the code carries n
 test("words match only under the variants that make them alike", () => {
   const matches = (stored, query) => Object.fromEntries(SEARCH_CHECK_VARIANTS.map((variant) => [variant.id,
     rankPassages({ index: buildVariantIndex([passage(1, stored)], variant), query, population: 2 }).length === 1]));
+  // The scoring does not change which words match. The three variants that only change it read words as "current" does, and the four
+  // "forms" read them as "all" does (the French stop words only change which words of a query count, and these queries are one word).
+  const expected = (six) => ({ ...six, coordination: six.current, bm25: six.current, bm25_coordination: six.current, forms: six.all,
+    forms_coordination: six.all, forms_bm25: six.all, forms_bm25_coordination: six.all });
   // An accent: "déprimé" and "deprime" match under accents and all.
-  assert.deepEqual(matches("Il était déprimé ce matin", "deprime"), { current: false, accents: true, french_stopwords: false,
-    english_forms: false, french_forms: false, all: true });
+  assert.deepEqual(matches("Il était déprimé ce matin", "deprime"), expected({ current: false, accents: true, french_stopwords: false,
+    english_forms: false, french_forms: false, all: true }));
   // An English word form.
-  assert.deepEqual(matches("The gulls counted nothing", "count"), { current: false, accents: false, french_stopwords: false,
-    english_forms: true, french_forms: false, all: true });
+  assert.deepEqual(matches("The gulls counted nothing", "count"), expected({ current: false, accents: false, french_stopwords: false,
+    english_forms: true, french_forms: false, all: true }));
   // A French word form.
-  assert.deepEqual(matches("Le cheval dort", "chevaux"), { current: false, accents: false, french_stopwords: false,
-    english_forms: false, french_forms: true, all: true });
-  assert.deepEqual(matches("Elle est déprimée", "déprimé"), { current: false, accents: false, french_stopwords: false,
-    english_forms: false, french_forms: true, all: true });
+  assert.deepEqual(matches("Le cheval dort", "chevaux"), expected({ current: false, accents: false, french_stopwords: false,
+    english_forms: false, french_forms: true, all: true }));
+  assert.deepEqual(matches("Elle est déprimée", "déprimé"), expected({ current: false, accents: false, french_stopwords: false,
+    english_forms: false, french_forms: true, all: true }));
   // The same word matches everywhere.
-  assert.deepEqual(matches("The harbour wall", "harbour"), { current: true, accents: true, french_stopwords: true, english_forms: true,
-    french_forms: true, all: true });
+  assert.deepEqual(matches("The harbour wall", "harbour"), expected({ current: true, accents: true, french_stopwords: true,
+    english_forms: true, french_forms: true, all: true }));
+  assert.deepEqual(Object.keys(matches("The harbour wall", "harbour")), VARIANT_IDS);
 });
 
 test("French stop words leave the ranking only under the variants that list them", () => {
@@ -333,6 +432,223 @@ test("ranking refuses input it cannot rank", () => {
   assert.throws(() => rankPassages({ index, query: "kettle", population: -1 }), INVALID);
   assert.throws(() => rankPassages({ index, query: "kettle", population: 1.5 }), INVALID);
   assert.throws(() => rankPassages({ index, query: "kettle", population: 1, termsMax: 0 }), INVALID);
+});
+
+test("an index for a BM25 scoring must be the one buildVariantIndex made, while the other scorings rank any index of postings", () => {
+  const passages = [passage(1, "kettle kettle"), passage(2, "kettle")];
+  assert.deepEqual(rankPassages({ index: buildVariantIndex(passages, BM25), query: "kettle", population: 3 }), idsOf(1, 2));
+  // A copy of the record, or one put together from its parts, has lost what BM25 counted. It is refused before the query is read.
+  for (const variant of [BM25, BM25_COORDINATION, FORMS_BM25, FORMS_BM25_COORDINATION]) {
+    const index = buildVariantIndex(passages, variant);
+    for (const query of ["kettle", ""]) {
+      assert.throws(() => rankPassages({ index: { ...index }, query, population: 3 }), INVALID, variant.id);
+      assert.throws(() => rankPassages({ index: { variant, postings: index.postings }, query, population: 3 }), INVALID, variant.id);
+    }
+  }
+  // An index made for another scoring does not become a BM25 one by changing its variant.
+  const exact = buildVariantIndex(passages, CURRENT);
+  assert.throws(() => rankPassages({ index: { ...exact, variant: BM25 }, query: "kettle", population: 3 }), INVALID);
+  // The idf_sum and coordination scorings need the postings alone, as idf_sum always did (the term in them is the variant's reading).
+  for (const variant of [CURRENT, COORDINATION, FORMS, FORMS_COORDINATION]) {
+    const postings = new Map([[variantTerm("kettle", variant), ["passage:001", "passage:002"]]]);
+    assert.deepEqual(rankPassages({ index: { variant, postings }, query: "kettle", population: 3 }), idsOf(1, 2), variant.id);
+  }
+  // Under every scoring a query with no terms, or none that a passage holds, ranks nothing.
+  for (const variant of SEARCH_CHECK_VARIANTS) {
+    const index = buildVariantIndex(passages, variant);
+    for (const query of ["", "... --", "delta", "the and"]) assert.deepEqual(rankPassages({ index, query, population: 3 }), [], variant.id);
+  }
+});
+
+test("coordination puts the passages that hold more of the query's words first, then the idf_sum score, then the id", () => {
+  // Population 10. "quince" is in 1 passage, "ripple" and "saddle" in 5 each, and passage 1 holds both of those two. By idf_sum,
+  // passage 10 (log(11) = 2.40) leads passage 1 (2 * log(3) = 2.20). Under coordination passage 1 comes first, as it holds two words.
+  const passages = [passage(1, "ripple saddle"), ...[2, 3, 4, 5].map((number) => passage(number, "ripple")),
+    ...[6, 7, 8, 9].map((number) => passage(number, "saddle")), passage(10, "quince")];
+  const query = "quince ripple saddle";
+  assert.deepEqual(rankWith(CURRENT, passages, query), idsOf(10, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+  // Passages with one word each stay in the idf_sum order: passage 10, with the rarest word, ahead of the rest though its id is last.
+  assert.deepEqual(rankWith(COORDINATION, passages, query), idsOf(1, 10, 2, 3, 4, 5, 6, 7, 8, 9));
+  assert.deepEqual(rankWith(FORMS_COORDINATION, passages, query), idsOf(1, 10, 2, 3, 4, 5, 6, 7, 8, 9));
+  // Among passages that hold as many words, the idf_sum score decides, so the population it is computed with does too. Passage 1 holds
+  // the rarest word and a common one, passage 2 two middling ones. A population of 1 favours the first (log(1 + 1 / 1) + log(1 + 1 / 6)
+  // = 0.85 against 2 * log(1 + 1 / 2) = 0.81) and a population of 100 the second (4.6 + 2.9 = 7.5 against 2 * 3.9 = 7.9).
+  const flip = [passage(1, "aaa bbb"), passage(2, "ccc ddd"), ...[3, 4, 5, 6, 7].map((number) => passage(number, "bbb")),
+    passage(8, "ccc"), passage(9, "ddd")];
+  assert.deepEqual(rankWith(COORDINATION, flip, "aaa bbb ccc ddd", 1), idsOf(1, 2, 8, 9, 3, 4, 5, 6, 7));
+  assert.deepEqual(rankWith(COORDINATION, flip, "aaa bbb ccc ddd", 100), idsOf(2, 1, 8, 9, 3, 4, 5, 6, 7));
+  // The terms are chosen as for every scoring: stop words are left out, and so are the terms past termsMax.
+  const index = buildVariantIndex(flip, COORDINATION);
+  assert.deepEqual(rankPassages({ index, query: "the aaa of bbb", population: 100 }), idsOf(1, 3, 4, 5, 6, 7));
+  assert.deepEqual(rankPassages({ index, query: "ccc ddd aaa bbb", population: 100, termsMax: 2 }), idsOf(2, 8, 9));
+});
+
+test("bm25 lets a passage that uses a word more often, or is shorter, outrank another that holds the same word", () => {
+  // "tide" is in three of the four passages. Passage 1 uses it once among 12 tokens, passage 2 twice among 3, passage 3 once among 3. By
+  // idf_sum the three score alike and the ids settle it. BM25 puts the short passage that uses the word twice first, then the short one
+  // that uses it once, and the long one last.
+  const passages = [passage(1, `tide ${repeat(11, "gull")}`), passage(2, "tide tide pier"), passage(3, "tide pier gull"),
+    passage(4, "rope")];
+  assert.deepEqual(rankWith(CURRENT, passages, "tide"), idsOf(1, 2, 3));
+  assert.deepEqual(rankWith(COORDINATION, passages, "tide"), idsOf(1, 2, 3));
+  assert.deepEqual(rankWith(BM25, passages, "tide"), idsOf(2, 3, 1));
+  assert.deepEqual(rankWith(BM25_COORDINATION, passages, "tide"), idsOf(2, 3, 1), "one word: every passage holds one");
+  assert.deepEqual(rankWith(FORMS_BM25, passages, "tide"), idsOf(2, 3, 1));
+});
+
+test("bm25 follows the Okapi formula with k1 = 1.2 and b = 0.75, checked against a hand computation", () => {
+  // Five passages, so P = 5, and a query of two words:
+  //   passage 1  "bell"                         1 token,  bell once
+  //   passage 2  "rope" six times               6 tokens, neither word
+  //   passage 3  "lamp" and "rope" five times   6 tokens, lamp once
+  //   passage 4  "rope" four times              4 tokens, neither word
+  //   passage 5  "bell rope"                    2 tokens, bell once
+  // The mean length is (1 + 6 + 6 + 4 + 2) / 5 = 3.8. "lamp" is in one passage: idf = ln(1 + (5 - 1 + 0.5) / (1 + 0.5)) = ln 4 = 1.3863.
+  // "bell" is in two: idf = ln(1 + (5 - 2 + 0.5) / (2 + 0.5)) = ln 2.4 = 0.8755. With k1 + 1 = 2.2, a passage that uses a word once scores
+  // idf * 2.2 / (1 + 1.2 * (0.25 + 0.75 * length / 3.8)), so
+  //   passage 1  0.8755 * 2.2 / (1 + 1.2 * (0.25 + 0.75 * 1 / 3.8)) = 1.2532
+  //   passage 3  1.3863 * 2.2 / (1 + 1.2 * (0.25 + 0.75 * 6 / 3.8)) = 1.1208
+  //   passage 5  0.8755 * 2.2 / (1 + 1.2 * (0.25 + 0.75 * 2 / 3.8)) = 1.0859
+  // and the order is 1, 3, 5. By idf_sum passage 3 leads, as "lamp" is the rarer word, and 1 and 5 follow by id.
+  const passages = [passage(1, "bell"), passage(2, repeat(6, "rope")), passage(3, `lamp ${repeat(5, "rope")}`),
+    passage(4, repeat(4, "rope")), passage(5, "bell rope")];
+  const idfOf = (count, holding) => Math.log(1 + (count - holding + 0.5) / (holding + 0.5));
+  // The same sum written out for [passage, idf of its word, its length]. Each option changes one part of the formula or of the counts.
+  const hand = ({ k1 = 1.2, b = 0.75, mean = 3.8, count = 5, idf = idfOf } = {}) => [[1, idf(count, 2), 1], [3, idf(count, 1), 6],
+    [5, idf(count, 2), 2]].map(([number, weight, length]) => [number, weight * (k1 + 1) / (1 + k1 * (1 - b + b * length / mean))]);
+  const handOrder = (options) => hand(options).sort((left, right) => right[1] - left[1] || left[0] - right[0]).map(([number]) => number);
+  assert.deepEqual(hand().map(([, score]) => score.toFixed(4)), ["1.2532", "1.1208", "1.0859"]);
+  assert.deepEqual(handOrder(), [1, 3, 5]);
+  assert.deepEqual(rankWith(BM25, passages, "lamp bell"), idsOf(1, 3, 5));
+  assert.deepEqual(rankWith(FORMS_BM25, passages, "lamp bell"), idsOf(1, 3, 5), "the same words under the forms reading");
+  assert.deepEqual(rankWith(CURRENT, passages, "lamp bell"), idsOf(3, 1, 5));
+  // The passages are chosen so that the order tells the constants and the counts apart: each of these changes it when worked by hand.
+  const changes = { "b = 0": { b: 0 }, "b = 1": { b: 1 }, "b = 0.5": { b: 0.5 }, "b = 0.9": { b: 0.9 }, "k1 = 0.8": { k1: 0.8 },
+    "k1 = 2": { k1: 2 }, "a mean over the three passages that hold a word": { mean: 3 }, "P counted as 3": { count: 3 },
+    "an idf that can go negative": { idf: (count, holding) => Math.log((count - holding + 0.5) / (holding + 0.5)) } };
+  for (const [name, options] of Object.entries(changes)) assert.notDeepEqual(handOrder(options), [1, 3, 5], name);
+});
+
+test("bm25 counts every token in a passage's length, stop words included, though the query leaves its stop words out", () => {
+  // Both passages use "tide" once. Passage 2 has 2 tokens and passage 1 has 6, of which four are stop words. The query's "the" is left out.
+  const passages = [passage(1, "the tide the and of pier"), passage(2, "tide pier"), passage(3, "rope")];
+  assert.deepEqual(rankWith(CURRENT, passages, "the tide"), idsOf(1, 2));
+  assert.deepEqual(rankWith(BM25, passages, "the tide"), idsOf(2, 1));
+  assert.deepEqual(rankWith(BM25_COORDINATION, passages, "the tide"), idsOf(2, 1));
+  // A query of nothing but stop words ranks by them all, as under every scoring; only passage 1 holds "the" or "and".
+  assert.deepEqual(rankWith(BM25, passages, "the and"), idsOf(1));
+});
+
+test("bm25 does not use the population, and chooses the query's words as every scoring does", () => {
+  const passages = [passage(1, "bell"), passage(2, repeat(6, "rope")), passage(3, `lamp ${repeat(5, "rope")}`),
+    passage(4, repeat(4, "rope")), passage(5, "bell rope")];
+  for (const variant of [BM25, BM25_COORDINATION, FORMS_BM25, FORMS_BM25_COORDINATION]) {
+    const index = buildVariantIndex(passages, variant);
+    const ranked = (population, extra = {}) => rankPassages({ index, query: "lamp bell", population, ...extra });
+    assert.equal(ranked(5).length, 3, variant.id);
+    assert.deepEqual(ranked(0), ranked(1), variant.id);
+    assert.deepEqual(ranked(5), ranked(1_000_000), variant.id);
+    // termsMax keeps the first words of the query ("lamp"), and a word no passage holds is skipped.
+    assert.deepEqual(ranked(5, { termsMax: 1 }), idsOf(3), variant.id);
+    assert.deepEqual(rankPassages({ index, query: "delta lamp bell", population: 5 }), ranked(5), variant.id);
+    assert.deepEqual(rankPassages({ index, query: "delta lamp bell", population: 5, termsMax: 2 }), idsOf(3), variant.id);
+    assert.deepEqual(rankPassages({ index, query: "Lamp, LAMP! bell", population: 5 }), ranked(5), "a repeated word counts once");
+  }
+});
+
+test("under bm25 a passage with no words still counts as a passage of the index, and a passage listed twice counts once", () => {
+  // Query "mast sail". Three passages of 4, 1 and 2 tokens (P = 3, mean 7 / 3) rank 1, 2, 3. A fourth passage that has no words makes
+  // P = 4 and the mean 7 / 4, and then passage 2 comes first. Counted in only one of the two it would leave the order as it was.
+  const [first, second, third] = [passage(1, `mast ${repeat(3, "rope")}`), passage(2, "sail"), passage(3, "sail rope")];
+  const passages = [first, second, third];
+  assert.deepEqual(rankWith(BM25, passages, "mast sail"), idsOf(1, 2, 3));
+  assert.deepEqual(rankWith(BM25, [...passages, passage(9, "... !")], "mast sail"), idsOf(2, 1, 3));
+  assert.deepEqual(rankWith(BM25, [...passages, passage(9, "")], "mast sail"), idsOf(2, 1, 3));
+  assert.deepEqual(rankWith(BM25_COORDINATION, [...passages, passage(9, "")], "mast sail"), idsOf(2, 1, 3));
+  assert.deepEqual(rankWith(CURRENT, [...passages, passage(9, "")], "mast sail"), rankWith(CURRENT, passages, "mast sail"),
+    "idf_sum does not count the passages: it takes the population");
+  // A passage listed twice is read once, from its first listing: it is not another passage, and its words are not counted again.
+  assert.deepEqual(rankWith(BM25, [...passages, first, third, first], "mast sail"), idsOf(1, 2, 3));
+  assert.deepEqual(rankWith(BM25, [second, first, third, second, third], "mast sail"), idsOf(1, 2, 3));
+  assert.deepEqual(rankWith(BM25, [first, { ...first, quote: repeat(5, "sail") }, second, third], "mast sail"), idsOf(1, 2, 3),
+    "the first listing is the one read");
+  assert.deepEqual(rankWith(BM25, [...passages, passage(9, ""), passage(9, "")], "mast sail"), idsOf(2, 1, 3), "an empty one too, once");
+});
+
+test("bm25's constants are k1 = 1.2 and b = 0.75: the order of these passages changes if either moves a little", () => {
+  // Query "mast sail", four passages, P = 4, mean length 11 / 4 = 2.75, each word in two passages (idf = ln 2).
+  //   passage 1  "sail" twice and "rope"                3 tokens
+  //   passage 2  "mast", "sail" and "rope" four times    6 tokens
+  //   passage 3  "rope"                                 1 token, neither word
+  //   passage 4  "mast"                                 1 token
+  // The scores are close: passage 4 0.9371, passage 2 0.9345, passage 1 0.9293. The order 4, 2, 1 holds for k1 only from about 1.19 to
+  // 1.22 and for b only from about 0.747 to 0.763, so it is a different order if either constant is moved even by 0.05.
+  const passages = [passage(1, `${repeat(2, "sail")} rope`), passage(2, `mast sail ${repeat(4, "rope")}`), passage(3, "rope"),
+    passage(4, "mast")];
+  const idf = Math.log(1 + (4 - 2 + 0.5) / (2 + 0.5));
+  // The sum worked out here, for [passage, its length, how often it uses each query word it holds].
+  const hand = ({ k1 = 1.2, b = 0.75 } = {}) => {
+    const scores = [[1, 3, [2]], [2, 6, [1, 1]], [4, 1, [1]]].map(([number, length, uses]) => [number,
+      uses.reduce((sum, tf) => sum + idf * tf * (k1 + 1) / (tf + k1 * (1 - b + b * length / 2.75)), 0)]);
+    return scores.sort((left, right) => right[1] - left[1] || left[0] - right[0]).map(([number]) => number);
+  };
+  assert.deepEqual(hand(), [4, 2, 1]);
+  assert.deepEqual(rankWith(BM25, passages, "mast sail"), idsOf(4, 2, 1));
+  assert.deepEqual(rankWith(FORMS_BM25, passages, "mast sail"), idsOf(4, 2, 1));
+  assert.deepEqual(rankWith(BM25_COORDINATION, passages, "mast sail"), idsOf(2, 4, 1), "the passage with both words first");
+  assert.deepEqual(rankWith(CURRENT, passages, "mast sail"), idsOf(2, 1, 4));
+  for (const options of [{ k1: 1.1 }, { k1: 1.15 }, { k1: 1.25 }, { k1: 1.3 }, { b: 0.7 }, { b: 0.8 }]) {
+    assert.notDeepEqual(hand(options), [4, 2, 1], JSON.stringify(options));
+  }
+  assert.deepEqual(hand({ k1: 1.15 }), [2, 4, 1]);
+  assert.deepEqual(hand({ k1: 1.25 }), [4, 1, 2]);
+});
+
+test("bm25_coordination puts the passages that hold more of the query's words first, then orders them by BM25, then by id", () => {
+  // "anchor" and "buoy" are each in two of the six passages. Passage 1 holds both, among 30 tokens. Passage 2 is "buoy" alone, passage 3 is
+  // "anchor" three times in three tokens. By idf_sum (and coordination) passages 2 and 3 score the same and the id puts 2 first. BM25 puts
+  // 3 first, as it uses its word three times in a short passage, and the long passage 1 last, though it holds both words.
+  const passages = [passage(1, `anchor buoy ${repeat(28, "rope")}`), passage(2, "buoy"), passage(3, "anchor anchor anchor"),
+    passage(4, "rope"), passage(5, "chain"), passage(6, "rope chain")];
+  const query = "anchor buoy";
+  assert.deepEqual(rankWith(CURRENT, passages, query), idsOf(1, 2, 3));
+  assert.deepEqual(rankWith(COORDINATION, passages, query), idsOf(1, 2, 3));
+  assert.deepEqual(rankWith(BM25, passages, query), idsOf(3, 2, 1));
+  assert.deepEqual(rankWith(BM25_COORDINATION, passages, query), idsOf(1, 3, 2));
+  assert.deepEqual(rankWith(FORMS_BM25_COORDINATION, passages, query), idsOf(1, 3, 2));
+  // Passages that tie on the words they hold and on the score are told apart by the id.
+  const tied = [passage(1, "anchor rope"), passage(2, "buoy rope"), passage(3, "anchor buoy"), passage(4, "anchor buoy"),
+    passage(5, "rope rope")];
+  assert.deepEqual(rankWith(BM25_COORDINATION, tied, query), idsOf(3, 4, 1, 2));
+});
+
+test("the forms variants put walking and walked together by the Porter stem, and déjà and deja by folding the accent", () => {
+  const passages = [passage(1, "She was walking along the pier."), passage(2, "He walked home, and walks on."),
+    passage(3, "Déjà vu, again."), passage(4, "A quiet pier."), passage(5, "Les chevaux dorment."), passage(6, "Les nuages passent.")];
+  const exact = [CURRENT, COORDINATION, BM25, BM25_COORDINATION];
+  const forms = [FORMS, FORMS_COORDINATION, FORMS_BM25, FORMS_BM25_COORDINATION];
+  for (const variant of exact) {
+    assert.deepEqual(rankWith(variant, passages, "walked"), idsOf(2), variant.id);
+    assert.deepEqual(rankWith(variant, passages, "deja"), [], variant.id);
+    assert.deepEqual(rankWith(variant, passages, "cheval"), [], variant.id);
+  }
+  for (const variant of forms) {
+    assert.deepEqual(rankWith(variant, passages, "walked").sort(), idsOf(1, 2), `${variant.id}: walked meets walking and walks`);
+    assert.deepEqual(rankWith(variant, passages, "walking").sort(), idsOf(1, 2), variant.id);
+    assert.deepEqual(rankWith(variant, passages, "deja"), idsOf(3), `${variant.id}: deja meets déjà`);
+    assert.deepEqual(rankWith(variant, passages, "DÉJÀ"), idsOf(3), variant.id);
+    assert.deepEqual(rankWith(variant, passages, "cheval"), idsOf(5), `${variant.id}: cheval meets chevaux`);
+  }
+  // The French stop words stay in the query under forms ("les" counts there), and go out of it under "all".
+  assert.deepEqual(rankWith(FORMS, passages, "les dorment"), idsOf(5, 6));
+  assert.deepEqual(rankWith(ALL, passages, "les dorment"), idsOf(5));
+  // BM25 counts the uses of a term as the variant reads it. "walked", "walking" and "walks" are three uses of "walk" under forms, so
+  // passage 1, short and using the term thrice, leads passage 3, which uses it once in a single token, and passage 2, once among three.
+  const uses = [passage(1, "walked walking walks"), passage(2, "walk pier gull"), passage(3, "walking"), passage(4, "rope")];
+  assert.deepEqual(rankWith(FORMS, uses, "walking"), idsOf(1, 2, 3), "idf_sum: the three score the same");
+  assert.deepEqual(rankWith(FORMS_BM25, uses, "walking"), idsOf(1, 3, 2));
+  // Under the exact reading only the passages that hold the word itself match, and each counts its own uses.
+  assert.deepEqual(rankWith(BM25, uses, "walking"), idsOf(3, 1));
 });
 
 // A synthetic corpus of invented paragraphs. The words are drawn by a fixed arithmetic sequence (no clock, no randomness), so every run
@@ -444,7 +760,7 @@ const RANK_UNITS = [
 test("questions are counted by the best rank of their passage across their queries, in the same ranges for every variant", () => {
   const result = checkQuestions({ units: RANK_UNITS, passageIdForUnit: passageOfUnit, passages: RANKED, population: 131 });
   assert.equal(result.questions, 16, "the 16 questions of complete and marked units that are not flagged as copied");
-  assert.deepEqual(Object.keys(result.variants), ["current", "accents", "french_stopwords", "english_forms", "french_forms", "all"]);
+  assert.deepEqual(Object.keys(result.variants), VARIANT_IDS, "all thirteen variants by default");
   const names = (set) => [...set].map((id) => id.slice("question:".length)).sort();
   const current = result.variants.current;
   assert.deepEqual(Object.keys(current), ["found", "counts", "buckets"]);
@@ -456,8 +772,12 @@ test("questions are counted by the best rank of their passage across their queri
   assert.deepEqual(current.buckets, { top_12: 4, from_13_to_24: 3, from_25_to_40: 2, from_41_to_100: 2, over_100: 2, not_ranked: 3 });
   assert.deepEqual(Object.keys(current.buckets), ["top_12", "from_13_to_24", "from_25_to_40", "from_41_to_100", "over_100", "not_ranked"]);
   assert.equal(Object.values(current.buckets).reduce((total, count) => total + count, 0), result.questions);
-  // These words read the same under every variant, so every variant finds the same questions.
+  // These words read the same under every variant, and the passages hold them once each, so every variant finds the same questions.
+  // The BM25 ones do put passage 100, the only passage of two tokens, last instead of 101st, and move 101 to 129 up by one. All of them
+  // stay beyond the 100th place, so the counts and the ranges do not change here.
   for (const variant of SEARCH_CHECK_VARIANTS) assert.deepEqual(result.variants[variant.id], current, variant.id);
+  assert.equal(rankWith(CURRENT, RANKED, "zorbit", 131).indexOf("passage:100"), 100);
+  assert.equal(rankWith(BM25, RANKED, "zorbit", 131).indexOf("passage:100"), 129);
 });
 
 test("a question is found at a cutoff exactly when its best rank is at most the cutoff", () => {
@@ -501,10 +821,89 @@ test("each variant finds the questions its word matching makes alike", () => {
   assert.deepEqual(found("english_forms"), ["english"]);
   assert.deepEqual(found("french_forms"), ["french"]);
   assert.deepEqual(found("all"), ["accent", "english", "french"]);
+  // The scoring does not change which questions their words find: the variants that only change it read like "current", the four
+  // "forms" like "all".
+  for (const id of ["coordination", "bm25", "bm25_coordination"]) assert.deepEqual(found(id), [], id);
+  for (const id of ["forms", "forms_coordination", "forms_bm25", "forms_bm25_coordination"]) {
+    assert.deepEqual(found(id), ["accent", "english", "french"], id);
+  }
   const buckets = (top, notRanked) => ({ top_12: top, from_13_to_24: 0, from_25_to_40: 0, from_41_to_100: 0, over_100: 0,
     not_ranked: notRanked });
   assert.deepEqual(result.variants.current.buckets, buckets(0, 3));
   assert.deepEqual(result.variants.all.buckets, buckets(3, 0));
+  assert.deepEqual(result.variants.bm25_coordination.buckets, buckets(0, 3));
+  assert.deepEqual(result.variants.forms_bm25.buckets, buckets(3, 0));
+});
+
+// 130 passages that all hold "zorbit" once, with other words besides: passage number n has n % 7 of them, so 1 + n % 7 tokens. By
+// idf_sum a search for "zorbit" ranks them by id, and by BM25 the shortest first (the ones of equal length by id).
+const LENGTHS = Array.from({ length: 130 }, (_, number) => passage(number, `zorbit ${repeat(number % 7, "filler")}`));
+const SHORTEST_FIRST = Array.from({ length: 130 }, (_, number) => number).sort((left, right) => (left % 7) - (right % 7) || left - right);
+const rangeOf = (rank) => {
+  if (rank === Infinity) return "not_ranked";
+  if (rank <= 12) return "top_12";
+  if (rank <= 24) return "from_13_to_24";
+  if (rank <= 40) return "from_25_to_40";
+  return rank <= 100 ? "from_41_to_100" : "over_100";
+};
+
+test("all thirteen variants are counted the same way: found sets, counts and ranges agree with each variant's own ranking", () => {
+  // Each question is named n<number> after its passage, and the three others are the odd ones out: no passage holds its word, its
+  // passage is not among the passages, and the best of its two queries counts.
+  const units = [{ status: "complete", questions: [
+    ...Array.from({ length: 130 }, (_, number) => question(`n${number}`, number, ["zorbit"])),
+    question("none", 5, ["unmatchable"]),
+    question("absent", 500, ["zorbit"]),
+    question("either", 129, ["unmatchable", "zorbit"])
+  ] }];
+  const result = checkQuestions({ units, passageIdForUnit: passageOfUnit, passages: LENGTHS, population: 131 });
+  assert.equal(result.questions, 133);
+  assert.deepEqual(Object.keys(result.variants), VARIANT_IDS);
+  // [question, the passage that ranks for it or null]
+  const subjects = [...Array.from({ length: 130 }, (_, number) => [`n${number}`, idsOf(number)[0]]), ["none", null], ["absent", null],
+    ["either", idsOf(129)[0]]];
+  const names = (set) => [...set].map((id) => id.slice("question:".length)).sort();
+  for (const variant of SEARCH_CHECK_VARIANTS) {
+    const { found, counts, buckets } = result.variants[variant.id];
+    // The variant's own ranking of the one query that finds anything gives every question's best rank.
+    const rankOf = new Map(rankWith(variant, LENGTHS, "zorbit", 131).map((id, position) => [id, position + 1]));
+    const best = (passageId) => (passageId === null ? Infinity : rankOf.get(passageId));
+    const expectedBuckets = { top_12: 0, from_13_to_24: 0, from_25_to_40: 0, from_41_to_100: 0, over_100: 0, not_ranked: 0 };
+    for (const [, passageId] of subjects) expectedBuckets[rangeOf(best(passageId))] += 1;
+    assert.deepEqual(buckets, expectedBuckets, variant.id);
+    for (const cutoff of [12, 24, 40]) {
+      const expected = subjects.filter(([, passageId]) => best(passageId) <= cutoff).map(([name]) => name).sort();
+      assert.deepEqual(names(found[cutoff]), expected, `${variant.id} at ${cutoff}`);
+      assert.equal(counts[cutoff], found[cutoff].size, `${variant.id} at ${cutoff}`);
+    }
+    // The ranges add up to the questions, the first is what is found at 12, and what is found at one cutoff is found at the next.
+    assert.equal(Object.values(buckets).reduce((total, count) => total + count, 0), result.questions, variant.id);
+    assert.equal(buckets.top_12, counts[12], variant.id);
+    assert.equal(buckets.top_12 + buckets.from_13_to_24, counts[24], variant.id);
+    assert.equal(buckets.top_12 + buckets.from_13_to_24 + buckets.from_25_to_40, counts[40], variant.id);
+    for (const name of found[12]) assert.ok(found[24].has(name) && found[40].has(name), `${variant.id}: ${name}`);
+    for (const name of found[24]) assert.ok(found[40].has(name), `${variant.id}: ${name}`);
+    assert.equal(buckets.not_ranked, 2, `${variant.id}: the question no passage answers and the one whose passage is not there`);
+  }
+  // Where the scorings differ is the order. By idf_sum (and coordination, and the forms readings) the first twelve places go to passages
+  // 0 to 11. By BM25 they go to the twelve shortest passages that come first by id: 0, 7, 14 and so on, and the next twelve places to the
+  // rest of the one-token passages and the first two-token ones.
+  const top = (id, cutoff) => names(result.variants[id].found[cutoff]).filter((name) => name.startsWith("n"));
+  const named = (numbers) => numbers.map((number) => `n${number}`).sort();
+  for (const id of ["current", "coordination", "forms", "forms_coordination"]) {
+    assert.deepEqual(top(id, 12), named(Array.from({ length: 12 }, (_, number) => number)), id);
+  }
+  assert.deepEqual(SHORTEST_FIRST.slice(0, 12), [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77]);
+  for (const id of ["bm25", "bm25_coordination", "forms_bm25", "forms_bm25_coordination"]) {
+    assert.deepEqual(top(id, 12), named(SHORTEST_FIRST.slice(0, 12)), id);
+    assert.deepEqual(top(id, 24), named(SHORTEST_FIRST.slice(0, 24)), id);
+  }
+  // A variant is counted on its own: a shorter list gives the same numbers for the variants it names, in the order it names them.
+  const some = checkQuestions({ units, passageIdForUnit: passageOfUnit, passages: LENGTHS, population: 131,
+    variants: [FORMS_BM25_COORDINATION, CURRENT] });
+  assert.deepEqual(Object.keys(some.variants), ["forms_bm25_coordination", "current"]);
+  assert.deepEqual(some.variants.forms_bm25_coordination, result.variants.forms_bm25_coordination);
+  assert.deepEqual(some.variants.current, result.variants.current);
 });
 
 test("the result is frozen, holds ids and counts only, is the same on every run, and the input is not changed", () => {
@@ -544,7 +943,8 @@ test("checkQuestions refuses input it cannot count, with a bare code", () => {
   assert.throws(() => checkQuestions(), INVALID);
   for (const bad of [{ units: {} }, { units: null }, { passageIdForUnit: "passageOfUnit" }, { passages: {} }, { population: undefined },
     { population: -1 }, { population: 1.5 }, { population: "131" }, { variants: [] }, { variants: [{ id: "x" }] },
-    { variants: [CURRENT, CURRENT] },
+    { variants: [CURRENT, CURRENT] }, { variants: [BM25, { ...BM25 }] }, { variants: [{ ...CURRENT, scoring: "tf_idf" }] },
+    { variants: [CURRENT, { ...BM25, scoring: undefined }] },
     { variants: "all" }, { cutoffs: [] }, { cutoffs: [0] }, { cutoffs: [12, 12] }, { cutoffs: [1.5] }, { cutoffs: "12" }]) {
     assert.throws(() => checkQuestions({ ...good, ...bad }), INVALID, JSON.stringify(Object.keys(bad)));
   }
