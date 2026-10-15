@@ -24,12 +24,12 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  revision: "gratitude-for-everyone-2026-10-15-r6",
+  revision: "hypnosis-and-music-purpose-2026-10-15-r7",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "b84845b273c115809d913c8b4578d283543f6089844dede1f33e2ec92ea3a776"
+    semanticHash: "954b60bb217d9dd2dd18c51c01994ea145341dc93d153225d67d1edb326c5102"
   })
 });
 

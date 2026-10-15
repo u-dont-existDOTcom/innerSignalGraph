@@ -5,11 +5,13 @@ import { sharedHypnosisCompilerRules } from "./hypnosis-common.mjs";
 // no fixed line: the writer judges the purpose from the person's own words.
 export const FRESH_GRIEF_HYPNOSIS_PURPOSE = "During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial.";
 
-// Empty unless the case record says fresh grief is present, so every other prompt stays as it was.
-export function freshGriefWriterSection(record) {
+// Empty unless the case record says fresh grief is present, so every other prompt stays as it was. Every stage that
+// writes the script gets it (the writer and the repairer); the reviewers don't, since a purpose check at release would
+// be the fixed line the owner ruled out.
+export function freshGriefWriterSection(record, { where = "in the request and the transcript" } = {}) {
   if (record?.status !== "present") return "";
   const since = typeof record.since_at === "string" && record.since_at ? `, recorded ${record.since_at}` : "";
-  return `\n\nFRESH GRIEF (case record):\nPresent${since}. Hypnosis isn’t held back by grief itself. ${FRESH_GRIEF_HYPNOSIS_PURPOSE} Judge the purpose from the person’s own words in the request and the transcript, and write what is appropriate for them now.`;
+  return `\n\nFRESH GRIEF (case record):\nPresent${since}. Hypnosis isn’t held back by grief itself. ${FRESH_GRIEF_HYPNOSIS_PURPOSE} Judge the purpose from the person’s own words ${where}, and write what is appropriate for them now.`;
 }
 
 export function hypnosisDraftPrompt(context, providerName) {

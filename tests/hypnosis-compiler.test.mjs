@@ -8,6 +8,9 @@ import { buildHypnosisContext } from "../src/orchestrator/context-builder.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
 import { runHypnosisCompilerPipeline } from "../src/orchestrator/run-hypnosis-compiler.mjs";
 import { FRESH_GRIEF_HYPNOSIS_PURPOSE, hypnosisDraftPrompt } from "../src/prompts/hypnosis-draft.mjs";
+import { hypnosisRepairPrompt } from "../src/prompts/hypnosis-repair.mjs";
+import { hypnosisReviewPrompt } from "../src/prompts/hypnosis-review.mjs";
+import { hypnosisFinalReviewPrompt } from "../src/prompts/hypnosis-final-review.mjs";
 import { auditHypnosisDraft } from "../src/hypnosis/deterministic-audit.mjs";
 import { buildHypnosisPlaybackPlan, renderHypnosisRoute } from "../src/hypnosis/compiler.mjs";
 
@@ -294,7 +297,14 @@ test("fresh grief alone doesn't stop a script: the writer judges its purpose (ow
   const writer = hypnosisDraftPrompt(context, "synthetic").user;
   assert.match(writer, /FRESH GRIEF \(case record\):\nPresent, recorded 2026-10-15T00:00:00\.000Z\. Hypnosis isn’t held back by grief itself\./);
   assert.ok(writer.includes(FRESH_GRIEF_HYPNOSIS_PURPOSE));
-  assert.match(writer, /Judge the purpose from the person’s own words/);
+  assert.match(writer, /Judge the purpose from the person’s own words in the request and the transcript/);
+  // The repairer writes part of the script too, so it gets the same record and sentence; the reviewers judge release, and
+  // a purpose check there would be the fixed line the owner ruled out.
+  const repairer = hypnosisRepairPrompt(context, {}, {}, {}, { componentIds: [], dependencyEdgesApplied: [] }, "synthetic").user;
+  assert.ok(repairer.includes(FRESH_GRIEF_HYPNOSIS_PURPOSE));
+  assert.match(repairer, /Judge the purpose from the person’s own words in the request and the original draft/);
+  assert.doesNotMatch(hypnosisReviewPrompt(context, {}, {}, "synthetic", "synthetic").user, /FRESH GRIEF/);
+  assert.doesNotMatch(hypnosisFinalReviewPrompt(context, {}, {}, "synthetic").user, /FRESH GRIEF/);
   // The same sentence as the map's, so the two can't drift apart.
   const map = JSON.parse(await fs.readFile(path.join(projectRoot, "guide-graphs/candidates/inner-child.graph.json"), "utf8"));
   const hypnosis = map.nodes.find((node) => node.id === "IC.GENTLE_SELF_HYPNOSIS");
@@ -304,5 +314,6 @@ test("fresh grief alone doesn't stop a script: the writer judges its purpose (ow
     const other = await h001();
     other.context.durableCaseState = { ...(other.context.durableCaseState ?? {}), fresh_grief: record };
     assert.doesNotMatch(hypnosisDraftPrompt(other.context, "synthetic").user, /FRESH GRIEF/);
+    assert.doesNotMatch(hypnosisRepairPrompt(other.context, {}, {}, {}, { componentIds: [], dependencyEdgesApplied: [] }, "synthetic").user, /FRESH GRIEF/);
   }
 });

@@ -104,3 +104,13 @@ misread. The valid part is that the writer didn't know: when the record says fre
 now carries it with the owner's principle, the same sentence as the map's `IC.GENTLE_SELF_HYPNOSIS` nuance (a test checks
 the two match), and is told to judge the purpose from the person's own words. Without a fresh-grief record the prompt is
 byte-identical. Nothing is held back; H001 still releases with fresh grief present.
+
+Codex's review of `5b08958f` asked for the same context in every release stage: the reviewer, the repairer and the final
+reviewer. The repairer writes part of the script, so it now gets the same record and sentence, and a scoped repair keeps
+to the purpose. The reviewers stay as they are: they decide whether a draft may be released, and a purpose check there
+would be the fixed line the owner ruled out in question 37. Every stage that writes the script carries the principle; no
+stage gates on it.
+
+The package gate failed on `f6f6f185` and `5b08958f` at the therapy latency benchmark: its reviewed case (A001) now
+carries the music node's new purpose line, the only semantic change in that case, so the policy fingerprint moves to
+`hypnosis-and-music-purpose-2026-10-15-r7`.
