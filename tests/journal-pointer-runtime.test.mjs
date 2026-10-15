@@ -292,6 +292,76 @@ test("a finished reference step is counted again from its stored answers after i
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(JSON.stringify(older).includes(word), false, word);
 });
 
+test("pointer-examples writes the pieces the judges didn't confirm to a new owner-only file in the operator's review directory, and says only its name and counts", async (t) => {
+  const later = { ms: 0 };
+  let sends = 0;
+  const parent = await fs.mkdtemp(path.join(os.tmpdir(), "pointer-review-"));
+  t.after(() => fs.rm(parent, { recursive: true, force: true }));
+  const reviewDir = path.join(parent, "review");
+  await fs.mkdir(reviewDir, { mode: 0o700 });
+  await fs.chmod(reviewDir, 0o700);
+  // Both judges hold back a page's first quote on the even pages, as something left out.
+  const f = await runtimeEnvironment(t, { refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
+    now: () => new Date(Date.now() + later.ms),
+    wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => {
+      sends += 1;
+      const result = await port.invoke(...args);
+      return { ...result, receipt: { ...result.receipt, provider_route_receipt: { received_at: new Date(Date.now() + later.ms).toISOString() } } };
+    } }) });
+  const { reference } = (await f.run("stage", "build-quotes", "pointer-reference")).pointer;
+  // Without a review directory in the run config, no command writes journal text.
+  await assert.rejects(f.run("pointer-examples"), { code: "POINTER_EXAMPLES_NOT_GRANTED" });
+  f.config.operator_review_dir = reviewDir;
+  await assert.rejects(f.run("pointer-examples"), { code: "POINTER_RECOUNT_BEFORE_DEADLINE" });
+  later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;
+  const open = path.join(parent, "open");
+  await fs.mkdir(open);
+  await fs.chmod(open, 0o755);
+  for (const [dir, code] of [[open, "POINTER_EXAMPLES_DIR_UNSAFE"], [path.join(parent, "missing"), "POINTER_EXAMPLES_DIR_UNSAFE"],
+    ["relative/review", "JOURNAL_OPERATOR_REVIEW_DIR_INVALID"],
+    // Never inside the public repository, where a routine commit could publish the file.
+    [path.resolve(new URL("../", import.meta.url).pathname, "review"), "JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED"]]) {
+    f.config.operator_review_dir = dir;
+    await assert.rejects(f.run("pointer-examples"), { code }, dir);
+  }
+  const link = path.join(parent, "link");
+  await fs.symlink(reviewDir, link);
+  f.config.operator_review_dir = link;
+  await assert.rejects(f.run("pointer-examples"), { code: "POINTER_EXAMPLES_DIR_UNSAFE" }, "a link to the directory");
+  f.config.operator_review_dir = reviewDir;
+  const sent = sends;
+  const before = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
+  const result = await f.run("pointer-examples");
+  assert.equal(sends, sent, "nothing is sent");
+  assert.deepEqual(JSON.parse(await fs.readFile(f.stateFile, "utf8")).pointer, before.pointer, "nothing is saved");
+  const { examples } = result;
+  assert.match(examples.file, /^pointer-examples-[A-Za-z0-9_-]+-\d{8}T\d{9}Z-[0-9a-f]{6}\.html$/u);
+  assert.equal(examples.pieces, reference.counts.unconfirmed_units + reference.counts.nonresponse_units);
+  assert.ok(examples.pieces > 0);
+  assert.equal(examples.sampled, 96);
+  for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained", "left out"]) assert.equal(JSON.stringify(result).includes(word), false, word);
+  // One handle for the mode and the text, so both are the same file's.
+  const handle = await fs.open(path.join(reviewDir, examples.file), "r");
+  let html;
+  try {
+    assert.equal((await handle.stat()).mode & 0o777, 0o600);
+    html = await handle.readFile("utf8");
+  } finally { await handle.close(); }
+  for (const unitId of reference.unconfirmed_units) assert.ok(html.includes(`saw a quolp${unitId.slice("page:".length)}.`), unitId);
+  assert.equal((html.match(/<section>/gu) ?? []).length, examples.pieces, "only the pieces not confirmed");
+  assert.match(html, /<strong>Codex<\/strong>: held back \(something left out\)\.<div class="note">Its note: “something is left out”<\/div>/u);
+  assert.match(html, /<strong>Claude<\/strong>: held back \(something left out\)/u);
+  assert.match(html, /<h3>First try<\/h3>/u);
+  assert.match(html, /<h3>Rewrite<\/h3><p class="small">Notes the judges gave the writer for this rewrite:/u);
+  assert.doesNotMatch(html, /The question writer/u, "a writer that answered in full needs no line of its own");
+  const pages = [...html.matchAll(/<figcaption>Page (\d+) /gu)].map((match) => Number(match[1]));
+  assert.deepEqual(pages, [...pages].sort((a, b) => a - b), "in journal order");
+  // Each run writes a file of its own; none is ever written over.
+  const again = await f.run("pointer-examples");
+  assert.notEqual(again.examples.file, examples.file);
+  assert.deepEqual((await fs.readdir(reviewDir)).sort(), [examples.file, again.examples.file].sort());
+});
+
 test("a run from before owner decision 30 keeps its rules, so its recount follows it: a copying flag holds a quote back, and an unconfirmed unit is a nonresponse", async (t) => {
   const later = { ms: 0 };
   // Both judges list the question of every even page's quote that asks about its word as copying it, in both rounds.

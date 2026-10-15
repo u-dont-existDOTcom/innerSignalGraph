@@ -64,6 +64,16 @@ export function journalPointerDeadlines(config) {
 
 // The pointer pass's copy check (owner decision 30, 12 Oct 2026): a question copies its quote when it holds this many
 // of the quote's words in a row. A run keeps the value it started with.
+// Where the operator reads review files (`pointer-examples`), named in the private run config: an absolute directory
+// that only its owner can open, checked when the command runs. Unset, no command writes journal text anywhere.
+export function journalOperatorReviewDir(config) {
+  const dir = config.operator_review_dir;
+  if (dir === undefined || dir === null) return null;
+  if (typeof dir !== "string" || !path.isAbsolute(dir) || dir.includes("\0") || path.normalize(dir) !== dir || path.parse(dir).root === dir)
+    throw new ValidationError("JOURNAL_OPERATOR_REVIEW_DIR_INVALID", { code: "JOURNAL_OPERATOR_REVIEW_DIR_INVALID" });
+  return dir;
+}
+
 export function journalPointerCopyRunWords(config) {
   const value = config.pointer_copy_run_words ?? POINTER_COPY_RUN_WORDS;
   if (!Number.isSafeInteger(value) || value < POINTER_COPY_RUN_LIMITS.min || value > POINTER_COPY_RUN_LIMITS.max)
