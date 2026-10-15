@@ -119,6 +119,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       const context = await buildContext({
         caseId,
         userMessage: runtimeTurn.inbound.exact_text,
+        currentTurnAt: runtimeTurn.inbound.received_at,
         recentTranscriptEntries: record.raw_transcript,
         durableCaseState: previousCaseState,
         trackerEntries: record.tracker_entries

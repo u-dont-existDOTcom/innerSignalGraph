@@ -35,6 +35,7 @@ export async function buildContext(input, config) {
 
   return {
     userMessage: input.userMessage.trim(),
+    currentTurnAt: typeof input.currentTurnAt === "string" && input.currentTurnAt.trim() ? input.currentTurnAt.trim() : null,
     pendingReplyRevision: normalizePendingReplyRevision(input.pendingReplyRevision ?? null),
     recentTranscript,
     userFacts,

@@ -2,6 +2,7 @@ import {
   runUnauditedCaseSnapshot,
   runCaseAuditWithRecovery,
   applyCaseAudit,
+  carryFreshGrief,
   planCaseSnapshot,
   preflightGraphPlanningAvailability
 } from "../case-formulation/run.mjs";
@@ -218,7 +219,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   }
 
   const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
-  const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
+  const auditedSnapshot = carryFreshGrief(applyCaseAudit(initial.snapshot, audit.value), context.priorCaseSnapshot);
   const planningStarted = Date.now();
   const planned = await planCaseSnapshot(auditedSnapshot, {
     onPlanningPass: instrumentation.onPlanningPass,

@@ -1,6 +1,6 @@
 import { roleBeliefIntegrityRules } from "./role-belief-integrity.mjs";
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
-import { durableCaseContextBlock } from "./common.mjs";
+import { durableCaseContextBlock, timedTranscriptBlock } from "./common.mjs";
 import { protocolProvenanceRules } from "./protocol-provenance.mjs";
 import { focusDisciplineExtractionRules, focusDisciplineRules } from "./focus-discipline.mjs";
 import { PERSPECTIVE_PRACTICES_EXTRACTION_RULES_V9 as PERSPECTIVE_PRACTICES_EXTRACTION_RULES } from "./perspective-practices.mjs";
@@ -11,7 +11,7 @@ export function caseExtractionPrompt(context) {
 
 ${hasPrior ? `INCREMENTAL SESSION MODE
 - A prior validated case snapshot is supplied. Update it from the current message instead of reconstructing the person from scratch.
-- Preserve prior values unless the current message changes, clarifies, or contradicts them. A time-sensitive state (fresh_grief) is checked again on every turn, but a turn that says nothing about the loss is no evidence that it has eased: keep present until the person says or shows that the rawness has eased, or the turn dates show the loss is no longer recent.
+- Preserve prior values unless the current message changes, clarifies, or contradicts them. A time-sensitive state (fresh_grief) is checked again on every turn, but a turn that says nothing about the loss is no evidence that it has eased: keep present until the person says or shows that the rawness has eased, or the turn times and the current message time show the loss is no longer recent.
 - A direct answer to a prior discriminating question should update the relevant variable and remove obsolete ambiguity.
 - Do not keep an old hypothesis merely because it existed before when the user's new statement resolves it.
 - Return a complete updated snapshot, not a patch.` : "This is the first case snapshot in the session."}
@@ -75,7 +75,7 @@ ${focusDisciplineExtractionRules}
 - relational_check_status concerns this current issue only: pending for a needed reality check, completed for an explicitly completed assessment, reopened for new relevant evidence/changed decisions, not_needed when no relational assessment is needed. Repeated reassurance urges alone do not reopen a completed check. Reset issue-specific states to unknown when the issue changes; do not carry completion or permission to a different problem.
 - loop_target_relation distinguishes live useful work from a distinct repetitive checking operation around it. Background grief can coexist with redundant checking; do not infer either from topic alone. leave_alone_eligibility is computed by the planner; report unknown for this derived field.
 - guard_engagement records the protective response's reported current stance. willing_to_allow requires explicit willingness for a bounded step, not its disappearance. unknown or silence is not permission; refusal updates blocking.
-- fresh_grief is present when the person reports a recent death or other loss, or a harm to them or someone close, that is still raw; absent when no such recent loss or harm is in play; unknown otherwise. An old loss still being worked through is not fresh grief unless the person describes it as raw now. It is time-sensitive: when the person says when the loss or harm happened, record that, with the date of the turn in which they said it, as a direct observation; keep it present while the loss is recent and still raw, and don't change it, or set it to unknown, because a message is about something else; set it absent once the person says or shows that the rawness has eased, or the turn dates show the loss is no longer recent.
+- fresh_grief is present when the person reports a recent death or other loss, or a harm to them or someone close, that is still raw; absent when no such recent loss or harm is in play; unknown otherwise. An old loss still being worked through is not fresh grief unless the person describes it as raw now. It is time-sensitive: when the person says when the loss or harm happened, record that as a direct observation, with the date it works out to from the time of the turn in which they said it; keep it present while the loss is recent and still raw, and don't change it, or set it to unknown, because a message is about something else; set it absent, not unknown, once the person says or shows that the rawness has eased, or the recorded date and the current message time show the loss is no longer recent.
 - spiritual_struggle requires reported distress within a valued sacred relationship/pathway, not mere religion, doctrinal language, secular preference, uncertainty or declining prayer. Absence of felt love does not on its own prove spiritual bypass.
 - turn_task is null unless a current request or prior agreed task is sufficiently evidenced. Reuse user_goal/current_issue; do not invent another goal or a hidden task. Bind issue exactly to current_issue, keep it stable for the same issue, and cite direct observation IDs. Use node_id only for a supported current route or prior agreed node; use an empty string when unknown. Do not invent capacity or consent.
 - Track task phase assess/offer/practice/review/close and agreement unknown/accepted/declined. A refusal withdraws the exercise, not care. A report of an attempt or partial emotional change updates last_response and phase rather than restarting. Correct a real app misunderstanding before labeling the user's objection a protector. Recognize valid correction without endorsing unrelated factual allegations.
@@ -126,12 +126,6 @@ ${JSON.stringify(CASE_VARIABLE_ENUMS, null, 2)}
 
 Return exactly the requested JSON object.`;
 
-  // Turn dates let time-sensitive fields such as fresh_grief be checked against elapsed time; the verbatim window itself
-  // carries no timestamps.
-  const datedTurns = (context.recentTranscriptEntries ?? []).filter((turn) => typeof turn?.at === "string" && turn.at.trim());
-  const turnDates = datedTurns.length
-    ? `the recent transcript runs from ${datedTurns[0].at} to ${datedTurns.at(-1).at}; the current message comes after that.`
-    : "(not supplied)";
   const user = `GUIDE BUNDLE: ${context.guideManifest.version}
 
 RELEVANT GUIDE EXCERPTS:
@@ -148,11 +142,7 @@ ${context.priorInterventionContract ? JSON.stringify(context.priorInterventionCo
 
 ${durableCaseContextBlock(context)}
 
-TURN DATES (for time-sensitive fields such as fresh_grief):
-${turnDates}
-
-RECENT TRANSCRIPT:
-${context.recentTranscript || "(none supplied)"}
+${timedTranscriptBlock(context)}
 
 CURRENT USER MESSAGE:
 ${context.userMessage}

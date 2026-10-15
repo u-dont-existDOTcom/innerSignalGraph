@@ -84,6 +84,15 @@ function romanceGuideObservationIds(context) {
   ])];
 }
 
+// Fresh grief is checked again every turn, but a turn that says nothing about the loss is no evidence that it has eased:
+// neither an extraction nor an audit correction of unknown erases a prior present. Only absent, from evidence, clears it.
+export function carryFreshGrief(snapshot, priorSnapshot) {
+  if (priorSnapshot?.variables?.fresh_grief === "present" && snapshot?.variables?.fresh_grief === "unknown") {
+    snapshot.variables.fresh_grief = "present";
+  }
+  return snapshot;
+}
+
 export function applyCaseAudit(snapshot, audit) {
   const removeObservations = new Set(audit.remove_observation_ids);
   const removeHypotheses = new Set(audit.remove_hypothesis_ids);
@@ -399,11 +408,7 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
       extraction.value.variables.support_mode_current = durableSupportMode;
     }
   }
-  // Fresh grief is checked again every turn, but a turn that says nothing about the loss is no evidence that it has
-  // eased: an extraction of unknown never erases a prior present. Only absent, from evidence, clears it.
-  if (context.priorCaseSnapshot?.variables?.fresh_grief === "present" && extraction.value.variables.fresh_grief === "unknown") {
-    extraction.value.variables.fresh_grief = "present";
-  }
+  carryFreshGrief(extraction.value, context.priorCaseSnapshot);
   // Ignore model-supplied controller state. Only the existing session state owns history.
   delete extraction.value.path_performance;
   delete extraction.value._path_prior;
@@ -552,7 +557,7 @@ export async function runUnauditedCaseFormulation({ context, provider, onProgres
 export async function runAuditedCaseFormulation({ context, extractorProvider, auditorProvider, onProgress, recovery, loadPlanningGraphBundle }) {
   const extraction = await resolveCaseExtraction({ context, provider: extractorProvider, onProgress, recovery });
   const audit = await runCaseAuditWithRecovery({ context, snapshot: extraction.value, provider: auditorProvider, onProgress, recovery });
-  const snapshot = applyCaseAudit(extraction.value, audit.value);
+  const snapshot = carryFreshGrief(applyCaseAudit(extraction.value, audit.value), context.priorCaseSnapshot);
   const { plan, graphBundleVersion } = await planSnapshot(snapshot, {
     loadPlanningGraphBundle,
     romanceGuideAlreadyOffered: hasCanonicalRomanceReference(context.recentTranscript)

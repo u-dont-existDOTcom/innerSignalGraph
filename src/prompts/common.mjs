@@ -4,6 +4,21 @@ import { renderInnerSignalConstitution } from "../therapy/constitution.mjs";
 import { protocolProvenanceRules } from "./protocol-provenance.mjs";
 import { focusDisciplineRules } from "./focus-discipline.mjs";
 
+// The shared verbatim window carries no timestamps. The extraction and its audit get each turn's recorded time and the
+// current message's time, so time-sensitive fields such as fresh_grief can be checked against elapsed time.
+export function timedTranscriptBlock(context) {
+  const turns = (context?.recentTranscriptEntries ?? []).filter((turn) => typeof turn?.at === "string" && turn.at.trim()
+    && typeof turn?.role === "string" && typeof turn?.text === "string");
+  const transcript = turns.length
+    ? turns.map((turn) => `[${turn.at}] ${turn.role.toUpperCase()}: ${turn.text}`).join("\n\n")
+    : (context?.recentTranscript || "(none supplied)");
+  const now = typeof context?.currentTurnAt === "string" && context.currentTurnAt.trim() ? context.currentTurnAt.trim() : "(not supplied)";
+  return `RECENT TRANSCRIPT (${turns.length ? "each turn with the time it was recorded" : "turn times not supplied"}):
+${transcript}
+
+CURRENT MESSAGE TIME: ${now}`;
+}
+
 export function durableCaseContextBlock(context) {
   const state = projectEvidenceAuthority(context?.durableCaseState ?? null);
   const episode = context?.currentTherapeuticEpisode ?? null;

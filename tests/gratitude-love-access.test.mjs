@@ -264,29 +264,46 @@ test("extraction instructions tell ordinary love from unconditional love, and sa
   // is no evidence that the loss has eased (Codex, 535a1b20).
   assert.match(prompt, /A time-sensitive state \(fresh_grief\) is checked again on every turn, but a turn that says nothing about the loss is no evidence/);
   assert.match(prompt, /don't change it, or set it to unknown, because a message is about something else/);
-  assert.match(prompt, /or the turn dates show the loss is no longer recent/);
+  assert.match(prompt, /or the turn times and the current message time show the loss is no longer recent/);
+  assert.match(prompt, /set it absent, not unknown, once the person says or shows that the rawness has eased/);
   assert.doesNotMatch(prompt, /author’s gratitude path/);
 });
 
-test("fresh grief is checked against turn dates and never lapses on a turn about something else", async () => {
+test("fresh grief is checked against each turn's time and never lapses on a turn about something else", async () => {
   const { caseExtractionPrompt } = await import("../src/prompts/case-extract.mjs");
-  const { runCaseExtraction } = await import("../src/case-formulation/run.mjs");
+  const { caseAuditPrompt } = await import("../src/prompts/case-audit.mjs");
+  const { runCaseExtraction, carryFreshGrief } = await import("../src/case-formulation/run.mjs");
   const { blankCaseVariables } = await import("../src/guide-graph/contract.mjs");
   const base = { guideManifest: { version: "synthetic" }, guideExcerpts: "", userFacts: [], userMessage: "Work was busy today.",
-    recentTranscript: "", pathPerformanceEnabled: false, perspectivePracticesEnabled: false };
-  // The extractor sees when the recent turns happened, though the verbatim window has no timestamps.
-  const dated = caseExtractionPrompt({ ...base, recentTranscriptEntries: [
-    { id: "t1", exchange_id: "e1", role: "user", text: "synthetic", at: "2026-10-14T21:00:00Z" },
-    { id: "t2", exchange_id: "e1", role: "assistant", text: "synthetic", at: "2026-10-14T21:01:00Z" }] });
-  assert.match(dated.user, /TURN DATES[^\n]*\nthe recent transcript runs from 2026-10-14T21:00:00Z to 2026-10-14T21:01:00Z; the current message comes after that\./);
-  assert.match(caseExtractionPrompt(base).user, /TURN DATES[^\n]*\n\(not supplied\)/);
-  // An extraction of unknown keeps a prior present; absent, from evidence, clears it.
+    recentTranscript: "USER: synthetic", pathPerformanceEnabled: false, perspectivePracticesEnabled: false };
+  // The extractor and the auditor see when each turn was recorded and when the current message came (Codex, 68154e71),
+  // though the shared verbatim window has no timestamps.
+  const timed = { ...base, currentTurnAt: "2026-10-16T09:00:00Z", recentTranscriptEntries: [
+    { id: "t1", exchange_id: "e1", role: "user", text: "My mother died yesterday.", at: "2026-10-14T21:00:00Z" },
+    { id: "t2", exchange_id: "e1", role: "assistant", text: "I'm so sorry.", at: "2026-10-14T21:01:00Z" }] };
   const snapshot = (fresh_grief) => ({ user_goal: "synthetic", current_issue: "synthetic", direct_observations: [], hypotheses: [], unknowns: [],
     variables: { ...blankCaseVariables(), fresh_grief } });
+  for (const prompt of [caseExtractionPrompt(timed).user, caseAuditPrompt(timed, snapshot("present")).user]) {
+    assert.match(prompt, /RECENT TRANSCRIPT \(each turn with the time it was recorded\):\n\[2026-10-14T21:00:00Z\] USER: My mother died yesterday\.\n\n\[2026-10-14T21:01:00Z\] ASSISTANT: I'm so sorry\./);
+    assert.match(prompt, /CURRENT MESSAGE TIME: 2026-10-16T09:00:00Z/);
+  }
+  const untimed = caseExtractionPrompt(base).user;
+  assert.match(untimed, /RECENT TRANSCRIPT \(turn times not supplied\):\nUSER: synthetic/);
+  assert.match(untimed, /CURRENT MESSAGE TIME: \(not supplied\)/);
+  const audit = caseAuditPrompt(timed, snapshot("present")).system;
+  assert.match(audit, /fresh_grief from an earlier turn corrected because the current message is about something else/);
+  // An extraction of unknown keeps a prior present, and so does an audit correction to unknown; absent, from evidence,
+  // clears it.
   const extract = async (prior, extracted) => (await runCaseExtraction({ context: { ...base, priorCaseSnapshot: snapshot(prior) },
     provider: { id: "synthetic", model: "synthetic", async generate() { return { text: JSON.stringify(snapshot(extracted)) }; } } })).value.variables.fresh_grief;
   assert.equal(await extract("present", "unknown"), "present");
   assert.equal(await extract("present", "absent"), "absent");
   assert.equal(await extract("unknown", "unknown"), "unknown");
   assert.equal(await extract("absent", "present"), "present");
+  assert.equal(carryFreshGrief(snapshot("unknown"), snapshot("present")).variables.fresh_grief, "present");
+  assert.equal(carryFreshGrief(snapshot("absent"), snapshot("present")).variables.fresh_grief, "absent");
+  for (const file of ["../src/case-formulation/run.mjs", "../src/orchestrator/run-tiered-pipeline.mjs"]) {
+    const source = await fs.readFile(new URL(file, import.meta.url), "utf8");
+    assert.match(source, /carryFreshGrief\(applyCaseAudit\(/, file);
+  }
 });
