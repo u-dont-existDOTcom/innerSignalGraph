@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: 9c5e396ea0209797a26aefb391d1f7d77302e8e031a9debb9f1fa41aa42eb0d5
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: c19c958d0e00a03c87c9a33a407e97730c9e4606220bfadccbc7725d6376ae3c
+projection_input_sha256: 4a8ed36d28a10fdbb65ca0ea5834e2237c0a97076407ce4639a888968b01ddb4
 ---
 
 # AMEND.CROSS.LITERATURE_TASK_PROGRESS

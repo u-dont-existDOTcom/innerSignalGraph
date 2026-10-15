@@ -11,7 +11,7 @@ source_hash: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
 section_hash: 6ade0347968283c87b1371bccdfd837c913a0b3c8ffec0375c666e5a5c0a5849
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: c19c958d0e00a03c87c9a33a407e97730c9e4606220bfadccbc7725d6376ae3c
+projection_input_sha256: 4a8ed36d28a10fdbb65ca0ea5834e2237c0a97076407ce4639a888968b01ddb4
 ---
 
 # AMEND.IC.SEMANTIC_ASSET_NOTES

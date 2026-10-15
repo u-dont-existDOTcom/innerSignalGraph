@@ -27,9 +27,9 @@ source_refs:
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
 regression_refs:
   - G116
-base_record_sha256: 8b3739e322a057dc7611609426a4a6408f69319eff396bfe7d76376820ad2366
-base_graph_sha256: 753548520b3d009a9d46a23b411d08b003b50a8e6e485e9487f9a1e3b4345f28
-projection_input_sha256: c19c958d0e00a03c87c9a33a407e97730c9e4606220bfadccbc7725d6376ae3c
+base_record_sha256: 79824e6ef49938ceaaad65d7cf096fe9494405050c12a7a1a84a66c4ff57f06e
+base_graph_sha256: 13e424a5b2577481990b155f4846b7dc5d1b00d01b8ff61f317658b453eb755c
+projection_input_sha256: 4a8ed36d28a10fdbb65ca0ea5834e2237c0a97076407ce4639a888968b01ddb4
 ---
 
 # Keep realization, doctrine, and community answerable to lived love
@@ -88,7 +88,9 @@ projection_input_sha256: c19c958d0e00a03c87c9a33a407e97730c9e4606220bfadccbc7725
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
-    "deferNodes": [],
+    "deferNodes": [
+      "IC.GRATITUDE_PRACTICE"
+    ],
     "forbiddenOverclaims": [
       "Do not say that awakening, religious belief, church or sangha membership, mystical experience, psychic-seeming ability, or spiritual gifts certify moral reliability or authority.",
       "Do not say that ordinary practical care is worthless because profound spiritual love is not accessible."

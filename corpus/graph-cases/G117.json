@@ -1,6 +1,6 @@
 {
   "id": "G117",
-  "title": "after a fresh death, grief and support lead and gratitude comes in sideways",
+  "title": "after a fresh death, grief and support lead; the full gratitude practice waits and gratitude comes in sideways",
   "variables": {
     "present_safety": "safe",
     "orientation": "oriented",
@@ -18,11 +18,14 @@
   },
   "expected": {
     "primary": "IC.FRESH_GRIEF_FIRST",
-    "selectedIncludes": [
-      "IC.GRATITUDE_PRACTICE"
-    ],
     "requiredNuancePatterns": [
       "Fresh grief is not a problem to fix with gratitude"
+    ],
+    "selectedExcludes": [
+      "IC.GRATITUDE_PRACTICE"
+    ],
+    "deferredIncludes": [
+      "IC.GRATITUDE_PRACTICE"
     ]
   }
 }

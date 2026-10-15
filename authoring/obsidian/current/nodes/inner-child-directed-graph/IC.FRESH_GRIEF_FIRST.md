@@ -18,9 +18,9 @@ source_refs:
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
 regression_refs:
   - G117
-base_record_sha256: 6e3bd39cf7a0ce267c6ad928d684b07cde89d8014c80fd8818bede749127e0a3
-base_graph_sha256: 753548520b3d009a9d46a23b411d08b003b50a8e6e485e9487f9a1e3b4345f28
-projection_input_sha256: c19c958d0e00a03c87c9a33a407e97730c9e4606220bfadccbc7725d6376ae3c
+base_record_sha256: 1db88ab03d9df25acd44ab85a53edde08e6b62ba90970748da2566c425351515
+base_graph_sha256: 13e424a5b2577481990b155f4846b7dc5d1b00d01b8ff61f317658b453eb755c
+projection_input_sha256: 4a8ed36d28a10fdbb65ca0ea5834e2237c0a97076407ce4639a888968b01ddb4
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -59,7 +59,9 @@ projection_input_sha256: c19c958d0e00a03c87c9a33a407e97730c9e4606220bfadccbc7725
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
-    "deferNodes": [],
+    "deferNodes": [
+      "IC.GRATITUDE_PRACTICE"
+    ],
     "forbiddenOverclaims": [
       "Do not claim the loss happened for a reason or was meant to teach something."
     ],

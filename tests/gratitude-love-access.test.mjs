@@ -66,7 +66,8 @@ test("where gratitude leads, and where something else comes first", () => {
   // An obvious contradiction is looked at first.
   const contradiction = plan({ love_access: "accessible", deep_love_access: "state_dependent", spiritual_bypass_pattern: "attainment_outpaces_love" });
   assert.equal(contradiction.primaryJob.id, "IC.REALIZATION_LOVE_INTEGRATION");
-  assert.ok(selected(contradiction).includes("IC.GRATITUDE_PRACTICE"));
+  assert.ok(contradiction.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"), "gratitude waits until it has been looked at");
+  assert.ok(!selected(contradiction).includes("IC.GRATITUDE_PRACTICE"));
   assert.ok(byId.get("IC.REALIZATION_LOVE_INTEGRATION").recommendations.some((line) => /I love everyone, I just hate my dad/.test(line)));
   // An objection to gratitude is heard inside the gratitude route, with the guard beside it.
   const objection = plan({ love_access: "accessible", deep_love_access: "none_known", protective_response: "present" });
@@ -84,7 +85,11 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   assert.ok(node.recommendations.some((line) => /Gratitude can come in sideways/.test(line) && /never made the priority/.test(line)));
   const grief = plan({ love_access: "accessible", deep_love_access: "none_known", fresh_grief: "present" });
   assert.equal(grief.primaryJob.id, "IC.FRESH_GRIEF_FIRST");
-  assert.ok(selected(grief).includes("IC.GRATITUDE_PRACTICE"));
+  // The full practice (gratitude even for suffering) waits; the grief step's own line brings gratitude in sideways
+  // (Codex, 4c4a80bd: a selected node's recommendations all reach the reply).
+  assert.ok(!selected(grief).includes("IC.GRATITUDE_PRACTICE"));
+  assert.ok(grief.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"));
+  assert.ok(!grief.selectedNodes.flatMap((node) => node.recommendations).some((line) => /gratitude even for suffering/i.test(line)));
   assert.ok(grief.avoid.some((line) => /grateful for the loss/.test(line)));
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.
   const calm = { ...steady, activation: "low", inner_adult_access: "available", witness_capacity: "present" };

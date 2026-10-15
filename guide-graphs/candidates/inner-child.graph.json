@@ -1666,7 +1666,9 @@
       ],
       "effects": {
         "blockNodes": [],
-        "deferNodes": [],
+        "deferNodes": [
+          "IC.GRATITUDE_PRACTICE"
+        ],
         "forbiddenOverclaims": [
           "Do not claim the loss happened for a reason or was meant to teach something."
         ],
@@ -2046,7 +2048,9 @@
       ],
       "effects": {
         "blockNodes": [],
-        "deferNodes": [],
+        "deferNodes": [
+          "IC.GRATITUDE_PRACTICE"
+        ],
         "forbiddenOverclaims": [
           "Do not say that awakening, religious belief, church or sangha membership, mystical experience, psychic-seeming ability, or spiritual gifts certify moral reliability or authority.",
           "Do not say that ordinary practical care is worthless because profound spiritual love is not accessible."

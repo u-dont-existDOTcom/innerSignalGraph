@@ -1,6 +1,6 @@
 {
   "id": "G116",
-  "title": "an obvious contradiction is looked at before gratitude",
+  "title": "an obvious contradiction is looked at first, and gratitude waits until it has been",
   "variables": {
     "present_safety": "safe",
     "orientation": "oriented",
@@ -19,7 +19,10 @@
   },
   "expected": {
     "primary": "IC.REALIZATION_LOVE_INTEGRATION",
-    "selectedIncludes": [
+    "selectedExcludes": [
+      "IC.GRATITUDE_PRACTICE"
+    ],
+    "deferredIncludes": [
       "IC.GRATITUDE_PRACTICE"
     ]
   }
