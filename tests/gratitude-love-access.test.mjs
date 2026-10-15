@@ -90,6 +90,10 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   const calm = { ...steady, activation: "low", inner_adult_access: "available", witness_capacity: "present" };
   assert.equal(classifyTherapyTier({ variables: calm }).tier, "fast");
   assert.equal(classifyTherapyTier({ variables: { ...calm, fresh_grief: "present" } }).tier, "reviewed");
+  // A prior snapshot saved before the field existed counts it as unknown, not as a change (Codex, 272662d7).
+  const legacy = { variables: { ...calm } };
+  assert.equal(classifyTherapyTier({ variables: { ...calm, fresh_grief: "unknown" } }, "auto", { priorCaseSnapshot: legacy }).deltaCount, 0);
+  assert.equal(classifyTherapyTier({ variables: { ...calm, fresh_grief: "present" } }, "auto", { priorCaseSnapshot: legacy }).deltaCount, 1);
 });
 
 test("when the younger self doesn't want the love, the guard comes first and the love route waits", () => {

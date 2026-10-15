@@ -24,7 +24,9 @@ function criticalDeltaCount(snapshot, priorSnapshot) {
   if (!priorSnapshot?.variables) return Number.POSITIVE_INFINITY;
   const now = snapshot?.variables ?? {};
   const before = priorSnapshot.variables ?? {};
-  return CRITICAL_DELTA_FIELDS.reduce((count, field) => count + (now[field] !== before[field] ? 1 : 0), 0);
+  // A field a snapshot doesn't hold yet (one saved before the field existed, like fresh_grief) is unknown, so a schema
+  // change isn't counted as a change in the case.
+  return CRITICAL_DELTA_FIELDS.reduce((count, field) => count + ((now[field] ?? "unknown") !== (before[field] ?? "unknown") ? 1 : 0), 0);
 }
 
 // Owner decision 2026-09-26 (tasks/focus-discipline-20260926/OWNER-DECISIONS.json, D1):
