@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
 status: owner-approved
 domain: cross-guide
-base_record_sha256: fce94ee71fbb44f0bfd6eae85ee6a33cfbb8ec2ccb07bab27f880b14a11b22bb
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 01cbdeada521364d2afcaf2f274ed523740d775aaf0dbb8ede619b3afc1787d6
+source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
+projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
 ---
 
 # AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "Before adding more therapy, classify the useful movement as go inward, act outward, or leave it alone. Go inward when there is genuinely avoided, disowned, or unfinished emotional, relational, somatic, memory, or part-level material and enough capacity to contact it; act outward when a concrete current problem can yield a decision or observable action; leave it alone when rumination, symptom checking, reassurance seeking, repeated self-analysis, or searching for the right healing method repeats without producing new information, a decision, or an action. 'Leave it alone' means notice thoughts or sensations without suppressing them or repeatedly answering them, then re-engage ordinary life; it is not denial of safety, medical, relational, or practical problems. If inward attention reliably worsens derealization, panic, or hypermonitoring, prefer eyes-open external orientation and ordinary embodied activity such as walking, gym, sport, chores, or social contact without concluding that all somatic therapy is contraindicated. If a concrete problem or clearly avoided material emerges, route back to outward action or inward processing."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

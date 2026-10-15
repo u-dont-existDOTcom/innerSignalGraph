@@ -73,8 +73,6 @@ function failureTargets(error) {
   return componentId ? [componentId] : [];
 }
 
-const FRESH_GRIEF_HYPNOSIS_HOLD = "With grief this fresh, the hypnosis can wait. For now, crying, the people who love you, prayer if you pray, and gently settling your body come first. We can come back to it later.";
-
 export async function runHypnosisCompilerPipeline({ context, providers, config, caseId = null, onProgress }) {
   const startedAt = new Date().toISOString();
   const writer = providers[config.hypnosisWriterProvider];
@@ -117,43 +115,6 @@ export async function runHypnosisCompilerPipeline({ context, providers, config, 
       completedAt: new Date().toISOString(),
       context,
       evidence: { protectiveCompatibility: compatibility, providerMetadata: { writer: null, reviewer: null, repairer: null, finalReviewer: null } },
-      result
-    });
-    return { ...result, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };
-  }
-
-  // While grief is fresh, going inward waits, hypnosis included (owner, 14 Oct 2026; ROUTE.FRESH_GRIEF_FIRST defers
-  // IC.GENTLE_SELF_HYPNOSIS and the child routes). The compiler paths don't go through the planner, so the durable grief
-  // record holds them back here, before any model call (Codex, 1f3ad67e).
-  if (context.durableCaseState?.fresh_grief?.status === "present") {
-    const result = {
-      mode: "hypnosis-compiler",
-      status: "blocked",
-      releaseable: false,
-      contractVersion: null,
-      guideVersion: context.guideManifest.version,
-      guidePacketVersion: context.guidePacketVersion ?? null,
-      graphBundleVersion: context.graphBundleVersion,
-      target: context.hypnosisRequest.target,
-      relationship: context.hypnosisRequest.relationship,
-      deterministicAudit: { ok: false, issues: [{ code: "fresh_grief_hold", field: "durableCaseState.fresh_grief" }] },
-      finalReview: null,
-      repairScope: null,
-      repairFailure: { code: "FRESH_GRIEF_HOLD", stage: "pre_draft", targetIds: [] },
-      playbackPlan: null,
-      aftercare: null,
-      safeAlternative: [
-        /(?:CHILD|REPAR|HYPNOSIS|MEMORY)/i.test(String(context.currentTherapeuticEpisode?.route ?? "")) ? ACTIVE_EXERCISE_EXIT : "",
-        FRESH_GRIEF_HYPNOSIS_HOLD
-      ].filter(Boolean).join("\n\n")
-    };
-    const ledger = await writeLedger(config, {
-      kind: "hypnosis-compiler",
-      caseId,
-      startedAt,
-      completedAt: new Date().toISOString(),
-      context,
-      evidence: { freshGrief: { status: "present" }, providerMetadata: { writer: null, reviewer: null, repairer: null, finalReviewer: null } },
       result
     });
     return { ...result, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };

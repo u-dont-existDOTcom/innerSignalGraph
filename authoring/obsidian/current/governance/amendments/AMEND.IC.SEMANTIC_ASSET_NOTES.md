@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SEMANTIC_ASSET_NOTES
 status: owner-approved
 domain: inner-child
-base_record_sha256: 42641809f063507353a87db459af8b189f98029d5c9589596501da707bd470b1
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 801135e512429c2ffb6863a680ff7dd87c2e54a126f329cd559daad0e6e1efa6
+source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
+projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
 ---
 
 # AMEND.IC.SEMANTIC_ASSET_NOTES
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "Instructional images, infographics, diagrams, captions, and other visual assets may carry therapeutic or doctrinal meaning beyond nearby prose. The guide-to-map pipeline must preserve that meaning through compact semantic asset notes identifying the asset, its role, its explicit claims, and related guide sections or graph nodes. Decorative images need no semantic note. Asset notes are source provenance, not permission for the extractor to invent claims that are not actually present in the image or owner description."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

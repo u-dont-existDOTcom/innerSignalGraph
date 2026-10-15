@@ -981,7 +981,8 @@
       },
       "sourceRefs": [
         "IC.ESCAPE_URGE",
-        "AMEND.IC.EARLY_GENTLE_HYPNOSIS"
+        "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
+        "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1001,7 +1002,10 @@
       "effects": {
         "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [],
+        "requiredNuance": [
+          "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment.",
+          "During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial."
+        ],
         "forbiddenOverclaims": []
       },
       "defaultQuestion": ""
@@ -1859,12 +1863,13 @@
         "IC.GUIDE_LATER",
         "IC.PROTECTOR_VISIBLE",
         "IC.RELATIONSHIP",
-        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014"
+        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
+        "AMEND.IC.GRATITUDE_HOW_20261015"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
-        "Look at an obvious contradiction first, such as “I love everyone, I just hate my dad”: ask about it with curiosity before adding any practice on top, gratitude included.",
+        "With an obvious contradiction, such as “I love everyone, I just hate my dad”, don’t jump to it. Start from the love they feel: hear more about it, how beneficial it is and how much better it feels than hatred, so they commit more to that side (for example: “Everyone makes mistakes also, everyone does things they are not proud of later, but you love them even still. That’s really amazing. That must feel really beautiful.”). Then work toward the contradiction with curiosity, before adding any practice on top, gratitude included.",
         "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
         "Keep spiritual truth separate from authority transfer. If a teacher’s gifts or realization are being used—by the teacher, group, or user’s own intuition—to override contradictory evidence about trust, use intuition/trust calibration.",
         "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
@@ -3339,7 +3344,8 @@
         "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
         "IC.BORROW_LOVE",
         "IC.BORROW_ONE_FUNCTION",
-        "IC.LOVE_MISSING"
+        "IC.LOVE_MISSING",
+        "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -3372,7 +3378,8 @@
         "requiredNuance": [
           "Music is an optional access cue and session-context moderator, not a standalone explanation of outcome.",
           "Path Performance may count newly accessible emotion or need as proximal movement only when tied to a new observation; durable improvement still requires later evidence at the declared horizon.",
-          "If the response becomes overwhelming, panicky, dissociative, disorienting, or difficult to stop, stop or reduce the cue and let the existing orientation/stabilization route take precedence."
+          "If the response becomes overwhelming, panicky, dissociative, disorienting, or difficult to stop, stop or reduce the cue and let the existing orientation/stabilization route take precedence.",
+          "During grief, music can help someone reach feelings they can’t access, such as the tears for someone who died; music used to get away from what they need to face is less beneficial."
         ]
       },
       "defaultQuestion": ""
