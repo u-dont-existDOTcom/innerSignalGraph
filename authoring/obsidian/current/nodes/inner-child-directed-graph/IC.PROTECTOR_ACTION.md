@@ -36,7 +36,7 @@ regression_refs:
   - G115
 base_record_sha256: bd3438f6edbe8fb7fd75893132de50fa04b5817d0c1c0564e19ccb696acb29bc
 base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
-projection_input_sha256: f6c2e3a2dcd5813e860383bfba066a717397d80f9af0bcd979ed65be48827951
+projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
 ---
 
 # Make the Protector visible in ordinary life

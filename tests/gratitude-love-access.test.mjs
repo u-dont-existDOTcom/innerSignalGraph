@@ -5,6 +5,7 @@ import { compileGuideGraphs } from "../src/guide-graph/compiler.mjs";
 import { CASE_VARIABLE_ENUMS } from "../src/guide-graph/contract.mjs";
 import { planFromGraphs } from "../src/guide-graph/planner.mjs";
 import { classifyTherapyTier } from "../src/orchestrator/run-tiered-pipeline.mjs";
+import { evaluatePathPerformance } from "../src/case-formulation/path-performance.mjs";
 
 // The owner's answers of 14 Oct 2026 (22:15 and 23:26 UTC, AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014): gratitude is what
 // he advises basically everyone, with or without a religion, aimed at unconditional love; the guard comes first when the
@@ -105,6 +106,23 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   assert.ok(griefAndLove.deferredNodes.some((item) => item.id === "IC.DEEP_LOVE_TO_CHILD"));
   assert.ok(!griefAndLove.selectedNodes.filter((item) => item.id !== "ROUTE.FRESH_GRIEF_FIRST").flatMap((item) => item.recommendations)
     .some((line) => /gratitude/i.test(line)));
+  // Grief comes before every route but immediate safety (Codex, 713e5f86): a trust check at the same old tier...
+  const griefAndTrust = plan({ love_access: "accessible", fresh_grief: "present", external_authority_pull: "strong" });
+  assert.ok(griefAndTrust.trace.some((item) => item.id === "IC.INTUITION_TRUST_CALIBRATION"));
+  assert.equal(griefAndTrust.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  // ...and an active strategy, which yields to it as to a protective route.
+  const observationIds = new Set(["O1", "O2"]);
+  const active = evaluatePathPerformance({ prior: null, variables: { ...steady, unresolved_inner_material: "present" }, observationIds,
+    update: { strategy: { process_id: "self-attack", target: "access the blocked need", formulation: "Care may soften self-attack",
+      family: "responsive_care", node_id: "ROUTE.GO_INWARD", selection_reason: "Synthetic", observation_ids: ["O1"],
+      predictions: [{ id: "P1", sign: "need_access", description: "Identify a blocked need", horizon: "immediate" }], adverse_signs: ["shame"] },
+    response: "not_observed", signals: [], failure_hypotheses: [], probe: null } });
+  active.active.delivery = { node_id: "ROUTE.GO_INWARD", review: 0, evidence: "synthetic_delivered_intervention" };
+  const continuing = planFromGraphs({ graphs: bundle.graphs, variables: { ...steady, unresolved_inner_material: "present" }, pathPerformance: structuredClone(active) });
+  assert.equal(continuing.primaryJob.id, "ROUTE.GO_INWARD", "without grief the strategy continues");
+  const interrupted = planFromGraphs({ graphs: bundle.graphs, variables: { ...steady, unresolved_inner_material: "present", fresh_grief: "present" },
+    pathPerformance: structuredClone(active) });
+  assert.equal(interrupted.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.

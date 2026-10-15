@@ -25,7 +25,7 @@ regression_refs:
   - G116
 base_record_sha256: 21880c4d24d006ae65281b3261ee8e0f2f7838d7e56756445e325cae987e99fe
 base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
-projection_input_sha256: f6c2e3a2dcd5813e860383bfba066a717397d80f9af0bcd979ed65be48827951
+projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
 ---
 
 # Explore a deeper horizon of wellbeing when curiosity is genuine

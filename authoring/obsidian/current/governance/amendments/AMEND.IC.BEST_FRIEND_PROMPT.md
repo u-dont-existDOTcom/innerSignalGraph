@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: c9d5604b5864eaa911741f8a2025c64b61abc880bc7841ebe36ee3830f05514c
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: f6c2e3a2dcd5813e860383bfba066a717397d80f9af0bcd979ed65be48827951
+projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
 ---
 
 # AMEND.IC.BEST_FRIEND_PROMPT

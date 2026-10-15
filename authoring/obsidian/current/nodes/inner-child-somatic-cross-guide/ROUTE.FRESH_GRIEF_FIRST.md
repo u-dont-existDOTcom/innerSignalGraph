@@ -7,8 +7,8 @@ graph_id: inner-child-somatic-cross-guide
 node_id: ROUTE.FRESH_GRIEF_FIRST
 title: After a fresh death or harm, let grief and support come first
 kind: decision-node
-tier: 2
-priority: 100
+tier: 1
+priority: 90
 authority: author-framework
 graph_tags:
   - grief
@@ -21,9 +21,9 @@ regression_refs:
   - G122
   - G123
   - G124
-base_record_sha256: cb4095179e89574b601bc62aff736b27cf15c462732bd2264dff9f29b33732e5
-base_graph_sha256: 956e81ab6ff92a91f6221dbfed2b0b1071bf45f42d4b5284aef099215f35b7b2
-projection_input_sha256: f6c2e3a2dcd5813e860383bfba066a717397d80f9af0bcd979ed65be48827951
+base_record_sha256: 68905b7ecbaf2730df0dee225b8ab290d3b8051c352fbb57949b6f56151e33e0
+base_graph_sha256: 759779ed630dc174f3f5106ad553c072cc6b6ac79478fb1ee750024e6e026989
+projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
 ---
 
 # After a fresh death or harm, let grief and support come first

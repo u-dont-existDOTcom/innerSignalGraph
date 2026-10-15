@@ -942,7 +942,7 @@
       "type": "file",
       "width": 300,
       "x": 4640,
-      "y": 220
+      "y": 0
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.LOVE_HORIZON_EXPLORATION.md",
@@ -998,7 +998,7 @@
       "type": "file",
       "width": 300,
       "x": 4640,
-      "y": 440
+      "y": 220
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.GO_INWARD.md",
@@ -1235,8 +1235,8 @@
       "id": "94512f9c11e6e924c34ac00069d021e47bcfacdc730546b378f75be940844718",
       "type": "file",
       "width": 300,
-      "x": 4640,
-      "y": 0
+      "x": 4200,
+      "y": 660
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_INTERNAL.md",

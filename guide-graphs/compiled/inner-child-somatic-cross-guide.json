@@ -1794,8 +1794,8 @@
       "id": "ROUTE.FRESH_GRIEF_FIRST",
       "title": "After a fresh death or harm, let grief and support come first",
       "kind": "decision-node",
-      "tier": 2,
-      "priority": 100,
+      "tier": 1,
+      "priority": 90,
       "activation": {
         "all": [
           {

@@ -52,7 +52,7 @@ regression_refs:
   - G110
 base_record_sha256: 01393a748f7fe114ae4bfe3accd95804c2f58c095c44333a4557bc667ad6dda4
 base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
-projection_input_sha256: f6c2e3a2dcd5813e860383bfba066a717397d80f9af0bcd979ed65be48827951
+projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
 ---
 
 # Borrow one bounded adult function
