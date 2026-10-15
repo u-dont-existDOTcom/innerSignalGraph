@@ -77,15 +77,18 @@ function rolePacket(role, { generation, grantPurpose, assigned, tag, fields }) {
  * marks (and, when complete or marked, their searches). With `sample` (calibration's
  * units, from pointerChallengeUnits) in place of a seed, the same step runs on those units, and each keeps its hazards.
  * Every step here passes `oneAtATime` (the tiers whose route takes one call at a time) to runDeadlineCalls, so those
- * tiers' calls take turns.
+ * tiers' calls take turns. `observe`, when given, is told each writer's and each judge's answer as the step reads it
+ * (journal text included, in memory only): only `pointer-examples` passes it, to show the operator why pieces weren't
+ * confirmed; a live step never does, and nothing it is told is stored or returned.
  */
 export async function runPointerReference({ units, seed = null, sample: given = null, stepId, deadline, port, grant, generation,
-  now = () => new Date(), beforeHardestSend = null, oneAtATime = [], copyRunWords = POINTER_COPY_RUN_WORDS, rules = 2 } = {}) {
+  now = () => new Date(), beforeHardestSend = null, oneAtATime = [], copyRunWords = POINTER_COPY_RUN_WORDS, rules = 2, observe = null } = {}) {
   invariant(POINTER_RULES.includes(rules) && (rules === 2 || copyRunWords !== null), "POINTER_STEP_INPUT_INVALID");
   // The coverage judges this run's rules use: Codex and Claude, or under owner decision 32's, Codex alone.
   const tiers = pointerJudgeTiers(rules);
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && typeof generation === "string" && generation.length > 0, "POINTER_STEP_INPUT_INVALID");
+  invariant(observe === null || typeof observe === "function", "POINTER_STEP_INPUT_INVALID");
   invariant((seed === null) !== (given === null) && (given === null || (Array.isArray(given.units) && given.units.every((unit) => unit
     && typeof unit.unit_id === "string" && Number.isSafeInteger(unit.stratum) && unit.inclusion_probability > 0 && unit.inclusion_probability <= 1
     && Array.isArray(unit.quote_ids) && unit.quote_ids.length > 0))), "POINTER_STEP_INPUT_INVALID");
@@ -147,6 +150,10 @@ export async function runPointerReference({ units, seed = null, sample: given = 
           for (const words of set.longest_runs) copyCheck.longest_run[words] = (copyCheck.longest_run[words] ?? 0) + 1;
         }
         unit.attempts.push({ set, coverage: null });
+        // The writer's own questions too: an incomplete set keeps none (checkQuestionSet), and the examples show them.
+        observe?.({ kind: "writer", unit_id: unit.unit_id, round, status: outcome.status, set,
+          raw_questions: outcome.status === "answered" && Array.isArray(outcome.output?.questions) ? outcome.output.questions : null,
+          coverage_notes: calls[position].packet.coverage_notes ?? [] });
       });
     }
     // Both coverage judges, on every quote whose unit's questions are complete, at most 25 quotes to a call (fewer when
@@ -187,6 +194,13 @@ export async function runPointerReference({ units, seed = null, sample: given = 
           for (const result of checked.quotes) results.set(result.unit_id, result);
           for (const note of checked.notes) notes.set(note.unit_id, note);
         });
+        if (observe) {
+          groups.forEach((group, groupIndex) => {
+            const outcome = outcomes[tierIndex * groups.length + groupIndex];
+            observe({ kind: "judge", round, tier, quote_ids: group.quotes.map((quote) => quote.unit_id), status: outcome.status,
+              judgments: outcome.status === "answered" ? outcome.output.judgments : null });
+          });
+        }
         return { results, notes, failed, late };
       });
       for (const unit of judging) {

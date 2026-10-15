@@ -5,9 +5,9 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalPointerCopyRunWords, journalPointerDeadlines,
-  journalPointerRules, journalQuoteNumericDateOrder, journalSemanticConcurrency, JOURNAL_HARDEST_EFFORTS, normalizeJournalHardestLaneConfig,
-  vaultRootMatchesConfig } from "./run-config.mjs";
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalOperatorReviewDir, journalPointerCopyRunWords,
+  journalPointerDeadlines, journalPointerRules, journalQuoteNumericDateOrder, journalSemanticConcurrency, JOURNAL_HARDEST_EFFORTS,
+  normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -33,6 +33,7 @@ import { buildPointerGeneration, pointerPassInput } from "./pointer-pass.mjs";
 import { POINTER_RECALL_TOP, pointerRecallReach, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
   runPointerReference } from "./pointer-steps.mjs";
 import { pointerChallengeUnits } from "./pointer-reference.mjs";
+import { checkReviewDirectory, collectPointerExamples, renderPointerExamples, writeReviewFile } from "./pointer-examples.mjs";
 import { lexicalTerms } from "./graph.mjs";
 import { applyReconciliationResult, validateReconciliationResult } from "./reconcile.mjs";
 import { createAuditScopeIndex, createReconciledAuditScope, summarizeFidelityCoverage } from "./audit-scope.mjs";
@@ -2862,6 +2863,42 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // deadline. Zero means the recount followed every call as the step did.
         closes_inferred: reference.closes_inferred ?? 0, counts } };
     }
+    // Writes the finished reference step's pieces that weren't confirmed, each with its quotes, the questions of each try
+    // and both judges' verdicts and reasons, to a new private file in the directory the run config names for operator
+    // review (owner, 14 Oct 2026: "show me examples and why they fail"). The one command that writes journal text: only
+    // there, only to a file it creates (owner-only, never one that exists), and never to its output, which says only the
+    // file's name and counts. Like pointer-recount it reads the step back from the durable store after its deadline,
+    // sending nothing and saving nothing.
+    async function pointerExamples() {
+      const dir = journalOperatorReviewDir(config);
+      invariant(dir, "POINTER_EXAMPLES_NOT_GRANTED");
+      const run = state.pointer;
+      const step = run?.reference;
+      invariant(step?.status === "done", "POINTER_REFERENCE_NOT_DONE");
+      invariant(Date.parse(step.deadline) <= now().getTime(), "POINTER_RECOUNT_BEFORE_DEADLINE");
+      // Never inside the public repository, where a routine commit could publish it (as execution_root).
+      invariant(isOutside(repositoryRoot, dir), "JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED");
+      const verified = await checkReviewDirectory(dir);
+      await authorize();
+      const refuse = (code) => async () => { throw new ValidationError(code, { code }); };
+      const readOnly = Object.freeze({ invoke: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
+        getCompletion: (operationKey) => port.storedCompletion(operationKey),
+        wasSent: (operationKey) => port.wasSent(operationKey) });
+      const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
+      const events = [];
+      const copyRunWords = runCopyRunWords(run);
+      const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline,
+        port: readOnly, grant, generation: run.generation, now, beforeHardestSend: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
+        oneAtATime: pointerTurns, copyRunWords, observe: (event) => { events.push(event); } });
+      const examples = collectPointerExamples({ reference, units: input.units, events, copyRunWords });
+      const written = now();
+      const html = renderPointerExamples(examples, { runId: run.run_id, generatedAt: written.toISOString() });
+      const name = `pointer-examples-${run.run_id}-${written.toISOString().replace(/[^0-9TZ]/gu, "")}-${randomBytes(3).toString("hex")}.html`;
+      await writeReviewFile({ dir, name, verified, content: html });
+      return { ...summary(), examples: { run_id: run.run_id, step: "reference", file: name, pieces: examples.pieces.length,
+        sampled: examples.sampled, quotes: examples.pieces.reduce((sum, piece) => sum + piece.quotes.length, 0),
+        bytes: Buffer.byteLength(html) } };
+    }
     // A step's record, made and saved when it first starts: its ID, its deadline and, for a step that draws a sample,
     // its seed.
     const pointerStep = async (run, name, minutes, { seed = false } = {}) => {
@@ -3112,6 +3149,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "pointer-publish") return pointerPublish();
         if (command === "pointer-new-run") return pointerNewRun();
         if (command === "pointer-recount") return pointerRecount();
+        if (command === "pointer-examples") return pointerExamples();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();
