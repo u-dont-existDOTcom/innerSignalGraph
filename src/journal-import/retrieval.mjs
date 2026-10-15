@@ -587,7 +587,8 @@ export async function openPrivateJournalGraph({
    * like search's, to the snapshot, query and filters, holding the position in the ranking where the
    * next page starts. Each quote comes with its page, the date it was written under with that date's
    * line (`year_inferred` when the line gave no year and it came from the entries before; `ambiguous`
-   * when the numbers could be read either way), and the wording cues found in it (`quoteCues`). Works on
+   * when the numbers could be read either way; `between` with the `date_line_after` when the quote sits between two dates
+   * and was written some time from the first to the second, precision `interval`), and the wording cues found in it (`quoteCues`). Works on
    * any generation. On a
    * quote index, the `quote_meta` index gives each quote's span, page and date line, so no record is
    * decrypted; elsewhere the passage record supplies the span and there are no dates.
@@ -738,7 +739,10 @@ export async function openPrivateJournalGraph({
       }
       const line = date?.line ? await exactText({ representationId: date.line.representation_id, startByte: date.line.start_byte,
         endByte: date.line.end_byte, expectedSha256: date.line.sha256 }) : null;
-      const size = Buffer.byteLength(text, "utf8") + (line ? Buffer.byteLength(line, "utf8") : 0);
+      // A quote between two dates (version 3, `between`) also shows the line of the date after it.
+      const lineAfter = date?.line_after ? await exactText({ representationId: date.line_after.representation_id, startByte: date.line_after.start_byte,
+        endByte: date.line_after.end_byte, expectedSha256: date.line_after.sha256 }) : null;
+      const size = Buffer.byteLength(text, "utf8") + (line ? Buffer.byteLength(line, "utf8") : 0) + (lineAfter ? Buffer.byteLength(lineAfter, "utf8") : 0);
       if (quotes.length > 0 && bytes + size > byteBudget) break;
       bytes += size;
       quotes.push(Object.freeze({
@@ -750,6 +754,7 @@ export async function openPrivateJournalGraph({
           to: date.to,
           precision: date.precision,
           date_line: line,
+          ...(date.between ? { between: true, date_line_after: lineAfter } : {}),
           ...(date.ambiguous ? { ambiguous: true } : {}),
           ...(date.year_inferred ? { year_inferred: true } : {})
         }) : null,
