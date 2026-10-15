@@ -399,6 +399,11 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
       extraction.value.variables.support_mode_current = durableSupportMode;
     }
   }
+  // Fresh grief is checked again every turn, but a turn that says nothing about the loss is no evidence that it has
+  // eased: an extraction of unknown never erases a prior present. Only absent, from evidence, clears it.
+  if (context.priorCaseSnapshot?.variables?.fresh_grief === "present" && extraction.value.variables.fresh_grief === "unknown") {
+    extraction.value.variables.fresh_grief = "present";
+  }
   // Ignore model-supplied controller state. Only the existing session state owns history.
   delete extraction.value.path_performance;
   delete extraction.value._path_prior;
