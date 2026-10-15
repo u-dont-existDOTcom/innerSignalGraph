@@ -10,6 +10,7 @@ import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { FRENCH_STOPWORDS, SEARCH_CHECK_SCORINGS, SEARCH_CHECK_VARIANTS, buildVariantIndex, checkQuestions, foldAccents,
   frenchLightStem, porterStem, rankPassages, variantStopwords, variantTerm, variantTermsOf,
   variantTokensOf } from "../src/journal-import/search-check.mjs";
+import * as wordForms from "../src/journal-import/word-forms.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 
 // The search check (src/journal-import/search-check.mjs): the journal quote search's word ranking computed again in memory, for the
@@ -965,4 +966,28 @@ test("checkQuestions refuses input it cannot count, with a bare code", () => {
   assert.doesNotThrow(() => checkQuestions({ ...good, units: [{ status: "unconfirmed" }, { status: "nonresponse", questions: 7 }] }));
   assert.equal(checkQuestions({ ...good, units: [] }).questions, 0);
   assert.deepEqual(checkQuestions({ ...good, units: [] }).variants.all.counts, { 12: 0, 24: 0, 40: 0 });
+});
+
+test("the word reading lives in word-forms.mjs, which search-check re-exports, and its forms reading is the forms variants' reading", () => {
+  assert.equal(foldAccents, wordForms.foldAccents);
+  assert.equal(porterStem, wordForms.porterStem);
+  assert.equal(frenchLightStem, wordForms.frenchLightStem);
+  assert.equal(FRENCH_STOPWORDS, wordForms.FRENCH_STOPWORDS);
+  const text = "Déprimée, les chevaux couraient; Running RUNS ran 3 fois — l'amie d'Hélène œuvre, naïve café 2019!";
+  for (const variant of [FORMS, FORMS_COORDINATION, FORMS_BM25, FORMS_BM25_COORDINATION]) {
+    assert.deepEqual(wordForms.formsReadingTokens(text), variantTokensOf(text, variant));
+    assert.deepEqual(wordForms.formsReadingTokens(text, new Map()), variantTokensOf(text, variant), "a memo changes nothing");
+    assert.deepEqual([...wordForms.formsReadingStopwords()].sort(), [...variantStopwords(variant)].sort(), "English stop words only, French kept in");
+  }
+  assert.deepEqual(wordForms.formsReadingTokens(null), []);
+  assert.equal(wordForms.formsReadingTerm("déprimées"), variantTerm("déprimées", FORMS));
+  // The query's terms: read, each once in order, the stop words left out unless none is left, cut to the first `termsMax`.
+  const query = "The running of the Horses, la déprimée; horse RUNNING and the";
+  const { all, terms } = wordForms.formsQueryTerms(query, 24);
+  assert.deepEqual(all, variantTermsOf(query, FORMS_BM25_COORDINATION));
+  assert.deepEqual(terms, all.filter((term) => !variantStopwords(FORMS_BM25_COORDINATION).has(term)));
+  assert.deepEqual(wordForms.formsQueryTerms(query, 2).terms, terms.slice(0, 2));
+  assert.deepEqual(wordForms.formsQueryTerms("the and of", 24).terms, wordForms.formsQueryTerms("the and of", 24).all, "only common words: all of them");
+  assert.throws(() => wordForms.formsQueryTerms("horses", 0), INVALID);
+  assert.throws(() => wordForms.formsQueryTerms(7, 24), INVALID);
 });
