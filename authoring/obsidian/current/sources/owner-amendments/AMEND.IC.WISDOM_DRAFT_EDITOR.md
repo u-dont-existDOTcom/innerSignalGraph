@@ -12,7 +12,7 @@ section_hash: 6355a682caf18d4ec2c40eeb300cbedfff70313c109138c19d6200a85cc7f3a5
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DRAFT_EDITOR
-projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
+projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91ae5c35d14d
 ---
 
 # AMEND.IC.WISDOM_DRAFT_EDITOR

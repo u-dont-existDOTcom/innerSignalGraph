@@ -25,7 +25,7 @@ regression_refs:
   - G121
 base_record_sha256: 16a92fdcb4b368c2b574568945473f1baccfa557a8b0397a1abb5f3b49a13839
 base_graph_sha256: 473bb34454750390e4690fb3869baa8a2fcb1615df5b7d61e6a901ab168b82e0
-projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
+projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91ae5c35d14d
 ---
 
 # Hear the guard first when the younger self doesn’t want the love

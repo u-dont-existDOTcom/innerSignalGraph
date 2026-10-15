@@ -30,7 +30,7 @@ regression_refs:
   - G088
 base_record_sha256: 1ecb8c30862c45cb361f6f35312de3ad57fd48a02e2bb7450c8702a49eff88ac
 base_graph_sha256: 473bb34454750390e4690fb3869baa8a2fcb1615df5b7d61e6a901ab168b82e0
-projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
+projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91ae5c35d14d
 ---
 
 # Titrate difficult material instead of equating distress with harm

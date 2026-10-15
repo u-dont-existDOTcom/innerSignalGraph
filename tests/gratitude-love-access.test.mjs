@@ -135,6 +135,12 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   }
   assert.ok(griefWithOrdinaryLove.deferredNodes.some((item) => item.id === "IC.BORROW_LOVE"));
   assert.ok(selected(griefWithOrdinaryLove).includes("SOM.GENTLE_REGULATION"));
+  // Nonurgent chronic-pain navigation is tier 1 too, but it is referral work, not immediate safety: it waits (Codex,
+  // 5d6f6aaf); an urgent medical problem still leads.
+  const griefAndPain = plan({ fresh_grief: "present", refractory_pain_care: "indicated", medical_urgency: "none" });
+  assert.equal(griefAndPain.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(griefAndPain.deferredNodes.some((item) => item.id === "ROUTE.REFRACTORY_PAIN_NAVIGATION"));
+  assert.equal(plan({ fresh_grief: "present", medical_urgency: "urgent" }).primaryJob.id, "ROUTE.MEDICAL_RED_FLAG");
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.

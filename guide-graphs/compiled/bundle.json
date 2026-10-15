@@ -8414,7 +8414,8 @@
               "SOM.EMDR_DEVELOPMENTAL",
               "SOM.MEANING_INTEGRATION",
               "SOM.ADVANCED_RELEASE_OPTIONAL",
-              "SOM.AQUATIC_BODYWORK"
+              "SOM.AQUATIC_BODYWORK",
+              "ROUTE.REFRACTORY_PAIN_NAVIGATION"
             ],
             "forbiddenOverclaims": [
               "Do not claim the loss happened for a reason or was meant to teach something."

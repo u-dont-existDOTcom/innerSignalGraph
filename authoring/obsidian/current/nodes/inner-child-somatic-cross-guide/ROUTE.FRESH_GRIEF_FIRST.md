@@ -22,9 +22,10 @@ regression_refs:
   - G123
   - G124
   - G126
-base_record_sha256: 83d68e53f49b8d0653235881663c84809bd20404e87b57a2ed402523151e2eb1
-base_graph_sha256: efb0556b76356a81b85358d80b14d6929f6dc7360f8543d882314113847966c2
-projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
+  - G127
+base_record_sha256: 6cefcf1615f7a4a7e7360199cc6560f3f7753a28a3adf674f322f251157e2682
+base_graph_sha256: a0a60285ceb0bb6e39a59e9339a901441ef6a2063bd5d9c90dd37f8784290061
+projection_input_sha256: 92d995883b6de99d524fd35ff1c5b7e8ea4a928245c686920d1d91ae5c35d14d
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -100,7 +101,8 @@ projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce
       "SOM.EMDR_DEVELOPMENTAL",
       "SOM.MEANING_INTEGRATION",
       "SOM.ADVANCED_RELEASE_OPTIONAL",
-      "SOM.AQUATIC_BODYWORK"
+      "SOM.AQUATIC_BODYWORK",
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION"
     ],
     "forbiddenOverclaims": [
       "Do not claim the loss happened for a reason or was meant to teach something."

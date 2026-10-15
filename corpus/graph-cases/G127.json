@@ -1,0 +1,25 @@
+{
+  "id": "G127",
+  "title": "fresh grief leads ahead of nonurgent chronic-pain navigation, which waits",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "fresh_grief": "present",
+    "refractory_pain_care": "indicated",
+    "medical_urgency": "none"
+  },
+  "expected": {
+    "primary": "ROUTE.FRESH_GRIEF_FIRST",
+    "deferredIncludes": [
+      "ROUTE.REFRACTORY_PAIN_NAVIGATION"
+    ]
+  }
+}
