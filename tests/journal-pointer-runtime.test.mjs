@@ -28,12 +28,14 @@ const distinct = (text) => text.match(/(?:quolp|vemmet)\d+/u)[0];
 // Answers by rule: each quote's question asks about its own word, or for the rain, about "pluie" and its page, and
 // the search writer searches the question's last word; the tagger tags Jean, each quote's word, and the rain; the
 // judges confirm and accept everything except the quotes whose word `refuse` picks, and list as copied the first
-// question of each quote whose word `copied` picks.
-function handlers({ refuse = () => false, copied = () => false, pairs = () => true } = {}) {
+// question of each quote whose word `copied` picks. On the quotes whose word `copyText` picks, the first question is the
+// quote's first sentence, word for word, which the copy check of owner decision 30 catches.
+function handlers({ refuse = () => false, copied = () => false, pairs = () => true, copyText = () => false } = {}) {
   const rainTerm = (text) => `pluie${text.match(/vemmet(\d+)/u)[1]}`;
   return {
     question_writer: (packet) => ({ schema_version: "1.0", questions: packet.quote_units.flatMap((quote) => [
-      { unit_id: quote.unit_id, question: `What was seen, ask about ${distinct(quote.text)}`, critical: false, event: false },
+      { unit_id: quote.unit_id, question: copyText(distinct(quote.text)) ? quote.text.split("\n")[0] : `What was seen, ask about ${distinct(quote.text)}`,
+        critical: false, event: false },
       { unit_id: quote.unit_id, question: `What was the weather, ask about ${rainTerm(quote.text)}`, critical: false, event: false }]) }),
     coverage_judge: (packet) => ({ schema_version: "1.0", judgments: packet.quotes.map((quote) => {
       const refused = refuse(distinct(quote.text));
@@ -235,13 +237,17 @@ test("under owner decision 32's rules Codex alone judges, a piece still not cove
 
 test("pointer-search-check reads the measured run back and says, in counts only, where the questions' quotes rank and what each way of matching words would find", async (t) => {
   let sends = 0;
+  // On the even pages a question copies its quote's first sentence: flagged by the copy check, left out of every count.
   const f = await runtimeEnvironment(t, { rules: 3, attested: false,
+    copyText: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
     wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => { sends += 1; return port.invoke(...args); } }) });
   await f.run("stage", "publish-quotes");
   await assert.rejects(f.run("pointer-search-check"), { code: "POINTER_NOT_MEASURED" });
   await f.run("pointer-reference", "pointer-pilot", "pointer-pass", "pointer-challenge");
   await assert.rejects(f.run("pointer-search-check"), { code: "POINTER_NOT_MEASURED" });
-  const { measure } = (await f.run("pointer-measure")).pointer;
+  const measuredRun = (await f.run("pointer-measure")).pointer;
+  const { measure } = measuredRun;
+  assert.ok(measuredRun.reference.counts.copy_check.copying > 0, "some questions copy their quote");
   const sent = sends;
   const before = await fs.readFile(f.stateFile, "utf8");
   const result = await f.run("pointer-search-check");

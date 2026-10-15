@@ -461,7 +461,10 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   design-weighted recall the measurement reports. The ways of matching words are an in-memory copy of the search's word
   ranking (`src/journal-import/search-check.mjs`); a test checks that its exact-words way orders results as the search
   does, and the report compares the two on the run's own questions, so a question only the copy finds is one the search
-  call's byte budget cut. The check decides nothing: a change to the search is its own amendment.
+  call's byte budget cut. A question the copy check flagged is left out of every count, as in the measurement. The check
+  follows owner decision 32's rules, which every new run uses; a run under earlier rules, whose unconfirmed units count
+  every question missed without a search, is refused. The check decides nothing: a change to the search is its own
+  amendment.
 - **The examples, for the owner (amended 14 Oct 2026).** The owner asked to see what exactly fails and why, not only
   the counts. `pointer-examples` reads a finished reference step back the same way, after its deadline, sending nothing
   and saving nothing, and writes each sampled piece that wasn't confirmed to a new HTML file: its quotes, the questions

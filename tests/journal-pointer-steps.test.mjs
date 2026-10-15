@@ -8,7 +8,7 @@ import { applyPointerEventCheck, checkPointerBatches, pointerEventCheckCalls, po
 import { pointerChallengeUnits, pointerReferenceSample } from "../src/journal-import/pointer-reference.mjs";
 import { POINTER_MEASURE_SAMPLE_NAMES, POINTER_PILOT_PAGES, POINTER_RECALL_TOP, measurePointerChallenge, measurePointerRecall, pointerBrokenAnchors,
   pointerMeasureSamples, pointerPilotPages, pointerRecallReach, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
-  runPointerReference } from "../src/journal-import/pointer-steps.mjs";
+  runPointerReference, runPointerSearchCheck } from "../src/journal-import/pointer-steps.mjs";
 import { buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
 
 // The reference step, the pass, the coverage pass and the pilot in rounds of deadline-bound calls (plan
@@ -913,4 +913,11 @@ test("calibration's units are a challenge set: the reference step runs on their 
   foundWithTags: new Set(page2.questions.map((question) => question.question_id)), foundWordsOnly: new Set() });
   assert.deepEqual([markedReport.marked_units, markedReport.nonresponse_units, markedReport.all.questions, markedReport.all.found_with_tags], [1, 0, 1, 1]);
   assert.equal("marked_units" in report, false);
+});
+
+test("the search check follows owner decision 32's rules: a run under earlier rules is refused before anything is read", async () => {
+  // Under earlier rules an unconfirmed unit counts every question missed without a search, which the check can't show.
+  const unread = { get units() { throw new Error("read"); } };
+  await assert.rejects(runPointerSearchCheck({ quoteGeneration: unread, reference: unread, search: async () => [], population: 1, rules: 2 }),
+    { code: "POINTER_SEARCH_CHECK_RULES" });
 });

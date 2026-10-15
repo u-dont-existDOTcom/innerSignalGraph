@@ -882,19 +882,24 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
  * only the replica finds is one the budget cut; and each variant (exact words, accents folded, French stop words, English
  * or French word forms, all of them) gives the questions found in the first 12, 24 and 40 results, where the others'
  * quotes rank, and the design-weighted recall the measurement reports. `population` is the generation's node count, as
- * the search reads it. It sends nothing, saves nothing and returns counts only.
+ * the search reads it. It follows owner decision 32's rules, the only ones a new run uses (every searched unit complete or
+ * marked, a unit without questions left out of the design): a run under earlier rules, whose unconfirmed units count
+ * every question missed without a search, is refused. It sends nothing, saves nothing and returns counts only.
  */
 export async function runPointerSearchCheck({ quoteGeneration, reference, search, population, rules = 3 } = {}) {
+  invariant(rules === 3, "POINTER_SEARCH_CHECK_RULES");
   invariant(quoteGeneration && reference && Array.isArray(reference.units) && typeof search === "function"
-    && Number.isSafeInteger(population) && population > 0 && POINTER_RULES.includes(rules), "POINTER_STEP_INPUT_INVALID");
+    && Number.isSafeInteger(population) && population > 0, "POINTER_STEP_INPUT_INVALID");
   const built = buildQuoteGeneration(quoteGeneration);
   const input = pointerPassInput({ built });
-  const searchedUnits = reference.units.filter((unit) => unit.status === "complete" || unit.status === "marked");
+  // The questions the measurement counts: a question the copy check flagged is left out, here as in every count.
+  const searchedUnits = reference.units.filter((unit) => unit.status === "complete" || unit.status === "marked")
+    .map((unit) => ({ ...unit, questions: unit.questions.filter((question) => question.copied !== true) }));
   const measured = await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: false });
   const passages = built.graph.nodes.filter((node) => node.kind === "passage").map((node) => ({ id: node.id, quote: node.data.quote }));
   const check = checkQuestions({ units: reference.units, passageIdForUnit: input.passageIdForUnit, passages, population });
   // The same estimate the measurement reports for words only, over the same design.
-  const estimate = (found) => measurePointerRecall({ reference, excludeUnmeasured: rules === 3, foundWithTags: found, foundWordsOnly: found,
+  const estimate = (found) => measurePointerRecall({ reference, excludeUnmeasured: true, foundWithTags: found, foundWordsOnly: found,
     eventTaggedUnitIds: new Set() });
   const current = check.variants.current.found[POINTER_RECALL_TOP];
   const both = [...current].filter((questionId) => measured.has(questionId)).length;
