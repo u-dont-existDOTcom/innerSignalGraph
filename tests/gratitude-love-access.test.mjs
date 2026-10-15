@@ -147,6 +147,10 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   assert.equal(plan({ fresh_grief: "present", medical_urgency: "urgent" }).primaryJob.id, "ROUTE.MEDICAL_RED_FLAG");
   // Music that overwhelms is stopped first; the grief route comes once it is (Codex, 54a46dbf).
   assert.equal(plan({ fresh_grief: "present", music_emotional_access: "overwhelming" }).primaryJob.id, "IC.MUSIC_EMOTIONAL_ACCESS_STOP");
+  // ...and the gratitude practice waits meanwhile, though the grief route isn't there to defer it (Codex, 50975677).
+  const musicAndGrief = plan({ fresh_grief: "present", music_emotional_access: "overwhelming", deep_love_access: "none_known" });
+  assert.ok(!selected(musicAndGrief).includes("ROUTE.GRATITUDE_PRACTICE"));
+  assert.ok(musicAndGrief.deferredNodes.some((item) => item.id === "ROUTE.GRATITUDE_PRACTICE"));
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.

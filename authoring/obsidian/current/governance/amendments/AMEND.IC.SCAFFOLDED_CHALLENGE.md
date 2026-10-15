@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: d9e50eff92ceefa46e304fe4ce05c94a45cd5e441d0f1f15fdb004d45511306a
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 8002f0df468386bedcc4d946288a20b8412660f3a41b88ef836c05bed10da237
+projection_input_sha256: eb34789685440c90c630eb98a9021bae082c5b5f6b2b6f0fb55499246d8b4e72
 ---
 
 # AMEND.IC.SCAFFOLDED_CHALLENGE

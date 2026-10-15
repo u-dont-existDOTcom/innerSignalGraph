@@ -3419,7 +3419,9 @@
         "blockNodes": [
           "IC.MUSIC_EMOTIONAL_ACCESS"
         ],
-        "deferNodes": [],
+        "deferNodes": [
+          "ROUTE.GRATITUDE_PRACTICE"
+        ],
         "forbiddenOverclaims": [
           "Do not call overwhelm therapeutic progress or recovered memory evidence."
         ],
