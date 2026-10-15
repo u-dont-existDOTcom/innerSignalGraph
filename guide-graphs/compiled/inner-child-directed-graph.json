@@ -981,7 +981,8 @@
       },
       "sourceRefs": [
         "IC.ESCAPE_URGE",
-        "AMEND.IC.EARLY_GENTLE_HYPNOSIS"
+        "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
+        "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1001,7 +1002,9 @@
       "effects": {
         "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [],
+        "requiredNuance": [
+          "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment."
+        ],
         "forbiddenOverclaims": []
       },
       "defaultQuestion": ""

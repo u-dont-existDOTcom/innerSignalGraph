@@ -7,8 +7,8 @@ amendment_id: AMEND.IC.BORROW_LOVE_EXTERNAL
 status: owner-approved
 domain: inner-child
 base_record_sha256: 3c1a57f984908c0a47bf698e0d374e927d2623673699a06c5e1be96f9445ac90
-source_file_sha256: 845a2f7318f38a55cbd92869191d3c00c54b89dfdfb7eb9c874787e5981c189c
-projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
+source_file_sha256: 26b80839f8d65784a0cb15a17c1968613d20fbad48a9bbbad988516cb8a6433a
+projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
 ---
 
 # AMEND.IC.BORROW_LOVE_EXTERNAL

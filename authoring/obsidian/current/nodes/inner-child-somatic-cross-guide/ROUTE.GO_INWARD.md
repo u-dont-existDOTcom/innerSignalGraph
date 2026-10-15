@@ -51,8 +51,8 @@ regression_refs:
   - G134
   - G138
 base_record_sha256: 79ed6b9be32af80893f152e503022c08d38150d026f8b2ac34a4c628b0d8a73b
-base_graph_sha256: 03c6015543d91e0e4ed2663806d04e5870acb99305b2ba522a6ad847c3189a21
-projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
+base_graph_sha256: 2e6ef3c801da0dd49f44b9c96bce194c1823f986072fd40008e73ef5964d27b4
+projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
 ---
 
 # Go inward only for material that is actually there

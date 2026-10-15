@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.LITERATURE_TASK_PROGRESS
 guide_id: owner-amendments
 heading: AMEND.CROSS.LITERATURE_TASK_PROGRESS
 source_role: owner-approved-extension
-source_hash: 845a2f7318f38a55cbd92869191d3c00c54b89dfdfb7eb9c874787e5981c189c
+source_hash: 26b80839f8d65784a0cb15a17c1968613d20fbad48a9bbbad988516cb8a6433a
 section_hash: 421582517725cb52d9eaff0cc41caae341098b3e2342524ae9e0aa143cf56816
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -18,7 +18,7 @@ cited_by_node_ids:
   - ROUTE.LEAVE_ALONE
   - ROUTE.RELATIONAL_REALITY_CHECK
   - SOM.GENTLE_REGULATION
-projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
+projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
 ---
 
 # AMEND.CROSS.LITERATURE_TASK_PROGRESS

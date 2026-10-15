@@ -1810,7 +1810,8 @@
         ]
       },
       "sourceRefs": [
-        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014"
+        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
+        "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1849,7 +1850,6 @@
           "IC.BORROW_LOVE",
           "IC.SCAFFOLDED_CHALLENGE",
           "IC.ADULT_APPRENTICE",
-          "IC.GENTLE_SELF_HYPNOSIS",
           "IC.IDENTITY_FORMATION",
           "IC.DEEP_CHILD_DIALOGUE",
           "IC.DIFFERENTIATION",
@@ -1877,7 +1877,8 @@
           "Do not claim the loss happened for a reason or was meant to teach something."
         ],
         "requiredNuance": [
-          "Fresh grief is not a problem to fix with gratitude; crying and support are the work."
+          "Fresh grief is not a problem to fix with gratitude; crying and support are the work.",
+          "Hypnosis isn’t held back by grief itself: gentle, present-focused hypnosis can fit, and whether any hypnosis fits depends on what kind, how raw the grief is, and what is appropriate at the moment (IC.GENTLE_SELF_HYPNOSIS)."
         ]
       },
       "defaultQuestion": ""

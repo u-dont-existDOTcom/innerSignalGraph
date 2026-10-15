@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-15-r7`
+Queue version: `2026-10-15-r8`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -240,6 +240,13 @@ Teaching point: In an altered state that is calm (clear-headed, safe, medically 
 Reader need: Readers who work with altered states need to know whether gratitude has a place during one, and when it doesn't.
 Already covered: “Altered States Can Deepen the Therapy” says what to notice afterward (“Afterward, notice where the access actually is…”) and that the goal is to carry what became real into sober love, protection, grief, practice or action; it doesn't say whether gratitude belongs during a calm altered state.
 Where: “Altered States Can Deepen the Therapy,” near the “Afterward, notice where the access actually is” paragraph. The owner will write this himself.
+
+### PGQ-036 — Hypnosis isn't ruled out by grief or an altered state
+Caused by: `AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015`, `ROUTE.FRESH_GRIEF_FIRST` and `IC.GENTLE_SELF_HYPNOSIS` (owner-page question 36, October 15).
+Teaching point: Hypnosis in general isn't incompatible with grief, nor with altered states: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment. Gentle, present-focused hypnosis can calm and comfort while grief is fresh; deep inner-child work still waits until the grief is less raw.
+Reader need: Grieving readers, and readers who work with altered states, need to know hypnosis isn't off-limits for them, and what to weigh.
+Already covered: The guide's passage “Gentle meditation or self-hypnosis can still help. My warning is about intensive versions.” says gentle self-hypnosis can calm the nervous system; it doesn't say whether hypnosis fits during fresh grief or an altered state.
+Where: Next to that passage on gentle meditation and self-hypnosis. The owner will write this himself.
 
 ## EMPTY sentinel
 

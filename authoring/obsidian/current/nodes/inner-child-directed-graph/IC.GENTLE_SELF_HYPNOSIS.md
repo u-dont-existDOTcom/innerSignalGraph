@@ -17,11 +17,12 @@ graph_tags:
 source_refs:
   - IC.ESCAPE_URGE
   - AMEND.IC.EARLY_GENTLE_HYPNOSIS
+  - AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
 regression_refs:
   - G011
-base_record_sha256: c3ff9bb3dc6faa4b3f0b673403aa4d16ea3ccb6256fd9e54ccf2cc79d362aa8b
-base_graph_sha256: 07c8d16b821543aefb1c150e8a7b1b0da59bf15c15a6251ac5231444d48fe06e
-projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
+base_record_sha256: 638c0e76a9ddf7bb6988ab2fe9411e461442ad11a783a8eb86cb1279dcc614ca
+base_graph_sha256: c5cc40bbc7f9a4c73c3e4b754897c259e78e524b41069642a10a7ebc8d412464
+projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
 ---
 
 # Use gentle present-focused self-hypnosis only as preparation
@@ -72,7 +73,9 @@ projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fe
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment."
+    ]
   },
   "recommendations": [
     "Keep the practice present-focused: calming, warmth, non-cruelty, borrowed adulthood, or a simple Protector rehearsal."
@@ -89,3 +92,5 @@ projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fe
 [[current/sources/inner-child-guide/IC.ESCAPE_URGE]]
 
 [[current/governance/amendments/AMEND.IC.EARLY_GENTLE_HYPNOSIS]]
+
+[[current/governance/amendments/AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015]]

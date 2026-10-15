@@ -409,6 +409,7 @@ test("every node either waits during fresh grief or is named as staying beside i
     "IC.CRITICISM_KERNEL",
     "IC.DRAFT_EDITOR",
     "IC.DRAFT_RETURN_TO_CARE",
+    "IC.GENTLE_SELF_HYPNOSIS",
     "IC.GOODWILL_BRIDGE",
     "IC.INTUITION_TRUST_CALIBRATION",
     "IC.MEET_GUARD",
@@ -521,4 +522,21 @@ test("a little ordinary love keeps its place in the plan whenever it holds grati
   // Where gratitude isn't held back by it, borrowed love takes no place it didn't have.
   const felt = plan({ love_access: "limited", deep_love_access: "reliable", child_love_inclusion: "reliable" });
   assert.equal(felt.primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
+});
+
+test("hypnosis isn't held back by grief itself; it depends on its kind (owner, question 36)", () => {
+  const grief = byId.get("ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(!grief.effects.deferNodes.includes("IC.GENTLE_SELF_HYPNOSIS"));
+  assert.ok(grief.sourceRefs.includes("AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"));
+  assert.ok(grief.effects.requiredNuance.some((line) => /Hypnosis isn’t held back by grief itself/.test(line)));
+  const hypnosis = byId.get("IC.GENTLE_SELF_HYPNOSIS");
+  assert.ok(hypnosis.effects.requiredNuance.some((line) => /isn’t incompatible with grief, nor with an altered state/.test(line)
+    && /what kind of hypnosis, what level of grief, and what is appropriate at the moment/.test(line)));
+  // Gentle self-hypnosis is the preparation route for someone not yet ready for deep work.
+  const gentle = plan({ fresh_grief: "present", current_intent: "hypnosis", activation: "unknown" });
+  assert.equal(gentle.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(!gentle.deferredNodes.some((node) => node.id === "IC.GENTLE_SELF_HYPNOSIS"));
+  assert.ok(gentle.trace.some((node) => node.id === "IC.GENTLE_SELF_HYPNOSIS"));
+  // Deep inner-child dialogue still waits while grief is fresh (question 33).
+  assert.ok(grief.effects.deferNodes.includes("IC.DEEP_CHILD_DIALOGUE"));
 });

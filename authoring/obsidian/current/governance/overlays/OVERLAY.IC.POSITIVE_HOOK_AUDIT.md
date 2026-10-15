@@ -14,7 +14,7 @@ reconciled_nodes:
   - IC.ALTERED_STATE_GATE
   - SOM.BYPASS_AUDIT
 base_record_sha256: b48b8fb00a2dfd4db4e20d2a84eb3cb0d37a8468fd0fe9e38394bdc04c5a3634
-projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
+projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
 ---
 
 # Do not treat positive intensity as proof

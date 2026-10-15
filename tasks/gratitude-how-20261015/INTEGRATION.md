@@ -64,3 +64,19 @@ one earlier altered-state case, doesn't move: its capacity and medical state are
 
 Node 24.18.0: authoring check, validate and maps-check; graph regressions 109/109; therapy-lesson verifier; repository
 audit; `tests/gratitude-love-access.test.mjs` 13/13. Graph regressions now 110/110. Full suite: exact-head CI.
+
+## Owner answer to question 36 (15 Oct, 13:19 UTC): hypnosis during grief depends on its kind
+
+His words: "what does that mean, when grief is fresh? how fresh? what level of grief? what level of hypnosis? for what
+purpose? i don't think hypnosis in general is incompatible with grief nor with altered states at all... but it just
+depends on what kind of hypnosis, what level of grief, what is appropriate at the moment etc". Recorded as
+`AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015` (owner amendments r11, with the gratitude amendment).
+
+The map change (#159, merged) had two blanket holds I added: the hypnosis compiler refused every script while the
+durable record said grief was fresh (`FRESH_GRIEF_HOLD`, from Codex's review of `1f3ad67e`), and the grief route deferred
+`IC.GENTLE_SELF_HYPNOSIS` (gentle, present-focused self-hypnosis). Both go. The compiler holds nothing back for grief
+alone; the conversation judges whether hypnosis fits. The grief route keeps gentle self-hypnosis beside grief, with his
+principle as nuance on both nodes; deep inner-child dialogue still waits while grief is fresh (question 33). Nothing in
+the map ruled hypnosis out in an altered state. The grief test's list of nodes that stay beside grief gains
+`IC.GENTLE_SELF_HYPNOSIS` (38 deferrals: the gratitude practice, nonurgent pain navigation and 36 inward-work nodes). Pending
+guide queue r8: PGQ-036. Inventory: 62 amendments, 140 source records.

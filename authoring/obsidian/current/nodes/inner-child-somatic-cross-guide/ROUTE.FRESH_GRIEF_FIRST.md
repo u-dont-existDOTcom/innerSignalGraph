@@ -16,6 +16,7 @@ graph_tags:
   - support
 source_refs:
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+  - AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
 regression_refs:
   - G117
   - G122
@@ -31,9 +32,9 @@ regression_refs:
   - G134
   - G135
   - G136
-base_record_sha256: 35cc27f65b9ae7b25a06a299f577f9e00d403683397f8a0f06d7940d2f8069d2
-base_graph_sha256: 03c6015543d91e0e4ed2663806d04e5870acb99305b2ba522a6ad847c3189a21
-projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
+base_record_sha256: 87c133f513dd5d1ed0a7cfd90ea8a68d308556104ada089f289c535f475824a9
+base_graph_sha256: 2e6ef3c801da0dd49f44b9c96bce194c1823f986072fd40008e73ef5964d27b4
+projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -77,7 +78,6 @@ projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fe
       "IC.BORROW_LOVE",
       "IC.SCAFFOLDED_CHALLENGE",
       "IC.ADULT_APPRENTICE",
-      "IC.GENTLE_SELF_HYPNOSIS",
       "IC.IDENTITY_FORMATION",
       "IC.DEEP_CHILD_DIALOGUE",
       "IC.DIFFERENTIATION",
@@ -105,7 +105,8 @@ projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fe
       "Do not claim the loss happened for a reason or was meant to teach something."
     ],
     "requiredNuance": [
-      "Fresh grief is not a problem to fix with gratitude; crying and support are the work."
+      "Fresh grief is not a problem to fix with gratitude; crying and support are the work.",
+      "Hypnosis isn’t held back by grief itself: gentle, present-focused hypnosis can fit, and whether any hypnosis fits depends on what kind, how raw the grief is, and what is appropriate at the moment (IC.GENTLE_SELF_HYPNOSIS)."
     ]
   },
   "recommendations": [
@@ -124,3 +125,5 @@ projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fe
 ## Source navigation
 
 [[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]
+
+[[current/governance/amendments/AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015]]
