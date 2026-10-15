@@ -37,9 +37,11 @@ regression_refs:
   - G117
   - G120
   - G122
-base_record_sha256: 5589ffaad78b5dcbb8bdf7a43015ed854b0684099bd7dd130a29086c71c381b3
-base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
-projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
+  - G124
+  - G126
+base_record_sha256: 61461a7787a6f651dd64494ef55d8a40ead4c79892bb094e88b10666d73807cc
+base_graph_sha256: 473bb34454750390e4690fb3869baa8a2fcb1615df5b7d61e6a901ab168b82e0
+projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -91,7 +93,7 @@ projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912d
   "effects": {
     "blockNodes": [],
     "deferNodes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ],
     "deferralUnless": [
       {

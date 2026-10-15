@@ -20,11 +20,11 @@
     "primary": "ROUTE.FRESH_GRIEF_FIRST",
     "deferredIncludes": [
       "IC.DEEP_LOVE_TO_CHILD",
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ],
     "selectedExcludes": [
       "IC.DEEP_LOVE_TO_CHILD",
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ]
   }
 }

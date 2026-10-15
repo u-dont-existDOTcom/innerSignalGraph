@@ -56,9 +56,11 @@ regression_refs:
   - G122
   - G123
   - G124
+  - G125
+  - G126
 base_record_sha256: 06ba98fd307149cdb274cd0fd010d741c68e55d8816ae21fcbae2b25960dcc21
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
+projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
 ---
 
 # Portable EFT for real-world triggers

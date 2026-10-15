@@ -22,10 +22,10 @@
       "Fresh grief is not a problem to fix with gratitude"
     ],
     "selectedExcludes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ],
     "deferredIncludes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ]
   }
 }

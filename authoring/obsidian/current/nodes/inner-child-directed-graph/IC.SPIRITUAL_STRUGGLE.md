@@ -20,8 +20,8 @@ regression_refs:
   - G034
   - G035
 base_record_sha256: df62359ad1ed82554fbd6ef9c8b0bcdfa920becb876ec2e0e411aca54af90d93
-base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
-projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
+base_graph_sha256: 473bb34454750390e4690fb3869baa8a2fcb1615df5b7d61e6a901ab168b82e0
+projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
 ---
 
 # Work with spiritual struggle or sacred loss

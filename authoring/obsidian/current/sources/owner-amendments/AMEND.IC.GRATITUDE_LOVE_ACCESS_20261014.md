@@ -12,9 +12,9 @@ section_hash: 47061d5fa8b3f0c181f80fc47ddf53ba2b9902534f0a41cb2a63641f323b501e
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DEEP_LOVE_TO_CHILD
-  - IC.GRATITUDE_PRACTICE
   - IC.GUARD_BEFORE_CHILD_LOVE
-projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
+  - ROUTE.GRATITUDE_PRACTICE
+projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
 ---
 
 # AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014

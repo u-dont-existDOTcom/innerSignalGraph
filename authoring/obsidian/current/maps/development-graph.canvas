@@ -115,12 +115,6 @@
       "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
     },
     {
-      "fromNode": "94512f9c11e6e924c34ac00069d021e47bcfacdc730546b378f75be940844718",
-      "id": "1c75c80336b79d10658e594436217222760295722d06f417224bcc34e10a1f63",
-      "label": "precedes",
-      "toNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33"
-    },
-    {
       "fromNode": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
       "id": "1d31be36b310d9bd30cb0f6b73ae3542a2a6035964feefc772605b5dd90f70d4",
       "label": "may-use-practical-protection-without-verdict",
@@ -137,12 +131,6 @@
       "id": "202fb9356923a08c998f2ee69f00ef6bb5ce4ecc95deb64d7a3910f56ef7c359",
       "label": "may-route-to",
       "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
-    },
-    {
-      "fromNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33",
-      "id": "205a4701d576ccca39fb059261a851437bbc595659aab515d7212173340b571f",
-      "label": "can-enable",
-      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
     },
     {
       "fromNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96",
@@ -289,10 +277,10 @@
       "toNode": "d9201eb93608aeec31488f96ee8fcc1ddcefc2068328bb44e94185bfd151e36c"
     },
     {
-      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
-      "id": "4882ed433d72a7ed628953bc56a12ee1f68a1a91caa4c2cec7ce7002fc49e327",
+      "fromNode": "94512f9c11e6e924c34ac00069d021e47bcfacdc730546b378f75be940844718",
+      "id": "41f3aa91241c8c7b40972a62c3e49c7afac988bc869b1ae4e899cd4dde85bc55",
       "label": "precedes",
-      "toNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33"
+      "toNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d"
     },
     {
       "fromNode": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
@@ -523,6 +511,12 @@
       "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
     },
     {
+      "fromNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d",
+      "id": "975dbf119896593c654983a53b8b98a35918fe35619f44b994c1ab113dddc884",
+      "label": "may-use",
+      "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
+    },
+    {
       "fromNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
       "id": "99d56077b4e97a9f5f60877bf3c300afe7a3af6a2a78663f5026cf6d05a8b2ac",
       "label": "calibrates",
@@ -545,12 +539,6 @@
       "id": "a299f8873d2221b265f37f1e3ece9bd050c502c7ef5688f1a447242b30f4e9c5",
       "label": "supports",
       "toNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41"
-    },
-    {
-      "fromNode": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33",
-      "id": "a6f008af688a0dd6b6767c7b7c137eef460139efc2d4c7f1a018a7d32f814e64",
-      "label": "may-use",
-      "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
     },
     {
       "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
@@ -613,6 +601,12 @@
       "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
+      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "id": "cac229e59750689b7df9ce2a3cc1866447b8b9d25ba9a23dfb837bb95e4ccb15",
+      "label": "precedes",
+      "toNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d"
+    },
+    {
       "fromNode": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5",
       "id": "cbbd40873c5910350f678bf4141bb4deb795909b53a40fc775d31be252ea2113",
       "label": "parallel-preparation",
@@ -623,6 +617,12 @@
       "id": "ccb40506ccca7c38657c8b15a024f0889bacf7a343c9bebe8026327ee58e3a45",
       "label": "requires-reality-check",
       "toNode": "d162e5224e2d1b3b86c3871646337e27c6435b06998ee2f030fd86de810aec00"
+    },
+    {
+      "fromNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d",
+      "id": "d00476f476b9320b054f664a6584cd870f58e498e51bb97c925e7c766fce3f3b",
+      "label": "can-enable",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
     },
     {
       "fromNode": "5b91fcf746965f269d73e86e17cffe794a7ccca7868a114606e3452e6d5cc337",
@@ -801,6 +801,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.GRATITUDE_PRACTICE.md",
+      "height": 140,
+      "id": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 3520
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.CONTINUITY_TITRATION.md",
       "height": 140,
       "id": "11ca2d3306f1f4a7c1cff30f816b018246951081828372f4777b95227d3097ef",
@@ -897,7 +906,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1980
+      "y": 1760
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
@@ -915,7 +924,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2420
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
@@ -951,7 +960,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2200
+      "y": 1980
     },
     {
       "color": "3",
@@ -1318,7 +1327,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2640
+      "y": 2420
     },
     {
       "color": "3",
@@ -1413,15 +1422,6 @@
       "y": 1100
     },
     {
-      "file": "current/nodes/inner-child-directed-graph/IC.GRATITUDE_PRACTICE.md",
-      "height": 140,
-      "id": "cdd7c71a72e268755efa8760822eeab523465ffab3d237ce2b5f0c27af3ccb33",
-      "type": "file",
-      "width": 300,
-      "x": 880,
-      "y": 1540
-    },
-    {
       "color": "3",
       "height": 140,
       "id": "cdfbaa43da9f7124e0981d994eeb5fa2b12564a26d2eaee66dbcd01b6baf208f",
@@ -1456,7 +1456,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1760
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
@@ -1483,7 +1483,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 2860
+      "y": 2640
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",

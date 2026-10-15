@@ -20,7 +20,7 @@ const plan = (variables) => planFromGraphs({ graphs: bundle.graphs, variables: {
 const selected = (result) => result.selectedNodes.map((node) => node.id);
 
 test("gratitude is offered to everyone, with or without a religion, toward unconditional love, by asking rather than preaching", () => {
-  const node = byId.get("IC.GRATITUDE_PRACTICE");
+  const node = byId.get("ROUTE.GRATITUDE_PRACTICE");
   assert.deepEqual(node.sourceRefs.filter((ref) => ref.startsWith("AMEND.")),
     ["AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014", "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014"]);
   const says = (pattern) => node.recommendations.some((line) => pattern.test(line));
@@ -31,17 +31,20 @@ test("gratitude is offered to everyone, with or without a religion, toward uncon
   assert.ok(says(/Ask rather than preach/) && says(/would they be happy if they had everything they want/));
   assert.ok(says(/if only I had X/) && says(/without letting the story run on/));
   assert.ok(says(/Start where there’s a grip/) && says(/Switching angles abandons nothing/));
-  assert.ok(says(/gratitude never has to come first before the child can be invited/));
+  // Child-free, so it stays when inner-child work is declined or paused (Codex, 4cfc8f3f); the child route carries the
+  // rule that gratitude is never a gate before the child.
+  assert.ok([node.title, ...node.recommendations, ...node.avoid, ...node.effects.requiredNuance].every((line) => !/child|younger/i.test(line)));
+  assert.equal(plan({ deep_love_access: "none_known", ic_status: "declined" }).primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   assert.ok(node.avoid.some((line) => /Do not preach, lecture or insist/.test(line)));
   assert.ok(node.effects.requiredNuance.some((line) => /someone can love their pets and still feel no unconditional love/.test(line)));
   // No spiritual curiosity, no religion: an angry man who loves his cats, hates himself, and feels no unconditional love.
   const louka = plan({ love_access: "accessible", deep_love_access: "none_known", spiritual_curiosity: "absent", self_directed_love: "inaccessible",
     self_criticism: "present" });
-  assert.equal(louka.primaryJob.id, "IC.GRATITUDE_PRACTICE");
+  assert.equal(louka.primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   assert.ok(!selected(louka).includes("IC.LOVE_HORIZON_EXPLORATION"), "exploring a deeper horizon is for the curious");
   // With curiosity, gratitude still leads and the horizon supports it.
   const curious = plan({ love_access: "accessible", deep_love_access: "none_known", spiritual_curiosity: "present", self_directed_love: "inaccessible" });
-  assert.equal(curious.primaryJob.id, "IC.GRATITUDE_PRACTICE");
+  assert.equal(curious.primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   assert.ok(selected(curious).includes("IC.LOVE_HORIZON_EXPLORATION"));
 });
 
@@ -49,33 +52,33 @@ test("where gratitude leads, and where something else comes first", () => {
   // Numb, with a little love left for the dog: that love leads, and gratitude comes back later.
   const numbWithDog = plan({ activation: "low", love_access: "limited", deep_love_access: "none_known" });
   assert.equal(numbWithDog.primaryJob.id, "IC.BORROW_LOVE");
-  assert.ok(!selected(numbWithDog).includes("IC.GRATITUDE_PRACTICE"));
-  assert.ok(numbWithDog.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"), "gratitude waits rather than disappears");
+  assert.ok(!selected(numbWithDog).includes("ROUTE.GRATITUDE_PRACTICE"));
+  assert.ok(numbWithDog.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), "gratitude waits rather than disappears");
   // Once unconditional love is felt, gratitude goes on, however little ordinary love there is (Codex, 00d81e51).
   const feltWithLittleOrdinaryLove = plan({ love_access: "limited", deep_love_access: "reliable", child_love_inclusion: "reliable" });
-  assert.equal(feltWithLittleOrdinaryLove.primaryJob.id, "IC.GRATITUDE_PRACTICE");
-  assert.ok(!feltWithLittleOrdinaryLove.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"));
+  assert.equal(feltWithLittleOrdinaryLove.primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
+  assert.ok(!feltWithLittleOrdinaryLove.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"));
   assert.ok(byId.get("IC.BORROW_LOVE").recommendations.some((line) => /gratitude comes back later either way/.test(line)));
   // Numb, with no love for anyone: once unconditional love is assessed (not felt), gratitude itself.
-  assert.equal(plan({ activation: "low", love_access: "absent", deep_love_access: "none_known" }).primaryJob.id, "IC.GRATITUDE_PRACTICE");
+  assert.equal(plan({ activation: "low", love_access: "absent", deep_love_access: "none_known" }).primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   // Unconditional love felt and not yet brought to the child: the child route leads, gratitude continues beside it.
   const untested = plan({ deep_love_access: "reliable", child_love_inclusion: "untested" });
   assert.equal(untested.primaryJob.id, "IC.DEEP_LOVE_TO_CHILD");
-  assert.ok(selected(untested).includes("IC.GRATITUDE_PRACTICE"));
+  assert.ok(selected(untested).includes("ROUTE.GRATITUDE_PRACTICE"));
   // It reaches the child already: gratitude goes on as the practice.
-  assert.equal(plan({ deep_love_access: "reliable", child_love_inclusion: "reliable" }).primaryJob.id, "IC.GRATITUDE_PRACTICE");
+  assert.equal(plan({ deep_love_access: "reliable", child_love_inclusion: "reliable" }).primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   // An obvious contradiction is looked at first.
   const contradiction = plan({ love_access: "accessible", deep_love_access: "state_dependent", spiritual_bypass_pattern: "attainment_outpaces_love" });
   assert.equal(contradiction.primaryJob.id, "IC.REALIZATION_LOVE_INTEGRATION");
-  assert.ok(contradiction.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"), "gratitude waits until it has been looked at");
-  assert.ok(!selected(contradiction).includes("IC.GRATITUDE_PRACTICE"));
+  assert.ok(contradiction.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), "gratitude waits until it has been looked at");
+  assert.ok(!selected(contradiction).includes("ROUTE.GRATITUDE_PRACTICE"));
   assert.ok(byId.get("IC.REALIZATION_LOVE_INTEGRATION").recommendations.some((line) => /I love everyone, I just hate my dad/.test(line)));
   // An objection to gratitude is heard inside the gratitude route, with the guard beside it.
   const objection = plan({ love_access: "accessible", deep_love_access: "none_known", protective_response: "present" });
-  assert.equal(objection.primaryJob.id, "IC.GRATITUDE_PRACTICE");
+  assert.equal(objection.primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   assert.ok(selected(objection).includes("IC.MEET_GUARD"));
   // Not unknown: until unconditional love has been asked about, gratitude isn't routed for someone who feels ordinary love.
-  assert.ok(!selected(plan({ love_access: "accessible" })).includes("IC.GRATITUDE_PRACTICE"));
+  assert.ok(!selected(plan({ love_access: "accessible" })).includes("ROUTE.GRATITUDE_PRACTICE"));
 });
 
 test("after a fresh death or harm, grief and support lead and gratitude comes in sideways", () => {
@@ -88,8 +91,8 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   assert.equal(grief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // The full practice (gratitude even for suffering) waits; the grief step's own line brings gratitude in sideways
   // (Codex, 4c4a80bd: a selected node's recommendations all reach the reply).
-  assert.ok(!selected(grief).includes("IC.GRATITUDE_PRACTICE"));
-  assert.ok(grief.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"));
+  assert.ok(!selected(grief).includes("ROUTE.GRATITUDE_PRACTICE"));
+  assert.ok(grief.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"));
   assert.ok(!grief.selectedNodes.flatMap((node) => node.recommendations).some((line) => /gratitude even for suffering/i.test(line)));
   assert.ok(grief.avoid.some((line) => /grateful for the loss/.test(line)));
   // The death line is for a death only (Codex, 62fe3220).
@@ -123,6 +126,15 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   const interrupted = planFromGraphs({ graphs: bundle.graphs, variables: { ...steady, unresolved_inner_material: "present", fresh_grief: "present" },
     pathPerformance: structuredClone(active) });
   assert.equal(interrupted.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  // While grief is fresh, borrowed love and the rest of the inward work wait too (Codex, 4cfc8f3f); support and gentle
+  // settling of the body stay.
+  const griefWithOrdinaryLove = plan({ love_access: "accessible", fresh_grief: "present" });
+  assert.equal(griefWithOrdinaryLove.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  for (const id of ["IC.BORROW_LOVE", "IC.BORROW_ONE_FUNCTION"]) {
+    assert.ok(!selected(griefWithOrdinaryLove).includes(id), id);
+  }
+  assert.ok(griefWithOrdinaryLove.deferredNodes.some((item) => item.id === "IC.BORROW_LOVE"));
+  assert.ok(selected(griefWithOrdinaryLove).includes("SOM.GENTLE_REGULATION"));
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.

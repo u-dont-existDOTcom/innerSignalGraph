@@ -20,10 +20,10 @@
   "expected": {
     "primary": "IC.REALIZATION_LOVE_INTEGRATION",
     "selectedExcludes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ],
     "deferredIncludes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ]
   }
 }

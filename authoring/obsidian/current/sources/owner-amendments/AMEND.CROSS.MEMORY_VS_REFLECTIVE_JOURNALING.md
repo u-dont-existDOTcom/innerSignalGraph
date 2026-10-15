@@ -11,7 +11,7 @@ source_hash: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
 section_hash: 24ce3110868f726866fcc6d755fc9f8b05ee6d8cfe24f7c3a927fe7591b5c1e2
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
+projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
 ---
 
 # AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING

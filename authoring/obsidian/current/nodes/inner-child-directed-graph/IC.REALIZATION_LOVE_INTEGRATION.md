@@ -28,9 +28,9 @@ source_refs:
 regression_refs:
   - G116
   - G122
-base_record_sha256: 79824e6ef49938ceaaad65d7cf096fe9494405050c12a7a1a84a66c4ff57f06e
-base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
-projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
+base_record_sha256: 0ce95ebb1e9561fc92e960f7e487777203322b00290292e9528fa12b3d6732cb
+base_graph_sha256: 473bb34454750390e4690fb3869baa8a2fcb1615df5b7d61e6a901ab168b82e0
+projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
 ---
 
 # Keep realization, doctrine, and community answerable to lived love
@@ -90,7 +90,7 @@ projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912d
   "effects": {
     "blockNodes": [],
     "deferNodes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ],
     "forbiddenOverclaims": [
       "Do not say that awakening, religious belief, church or sangha membership, mystical experience, psychic-seeming ability, or spiritual gifts certify moral reliability or authority.",

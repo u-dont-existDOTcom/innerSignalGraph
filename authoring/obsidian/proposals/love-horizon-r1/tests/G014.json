@@ -28,7 +28,7 @@
   },
   "unknowns": [],
   "expected": {
-    "primary": "IC.GRATITUDE_PRACTICE",
+    "primary": "ROUTE.GRATITUDE_PRACTICE",
     "selectedIncludes": [
       "IC.LOVE_HORIZON_EXPLORATION"
     ],

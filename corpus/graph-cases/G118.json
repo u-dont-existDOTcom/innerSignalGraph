@@ -19,7 +19,7 @@
   "expected": {
     "primary": "IC.DEEP_LOVE_TO_CHILD",
     "selectedIncludes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ]
   }
 }

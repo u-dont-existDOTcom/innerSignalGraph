@@ -19,10 +19,10 @@
   "expected": {
     "primary": "IC.BORROW_LOVE",
     "selectedExcludes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ],
     "deferredIncludes": [
-      "IC.GRATITUDE_PRACTICE"
+      "ROUTE.GRATITUDE_PRACTICE"
     ]
   }
 }

@@ -3,8 +3,8 @@ authoring_contract: inner-signal-authoring-node-current-v1
 entity_type: graph-node
 projection_mode: current
 generated: true
-graph_id: inner-child-directed-graph
-node_id: IC.GRATITUDE_PRACTICE
+graph_id: inner-child-somatic-cross-guide
+node_id: ROUTE.GRATITUDE_PRACTICE
 title: Offer gratitude toward unconditional love, asking rather than preaching
 kind: decision-node
 tier: 3
@@ -36,9 +36,10 @@ regression_refs:
   - G121
   - G122
   - G123
-base_record_sha256: 1376dd47d8c9173a0a942f4ef1aad0197d546490bf59b05b2a0fdd876a981348
-base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
-projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912dd2cdeb1cc
+  - G125
+base_record_sha256: b16a25cccd765ac5b0723f4f10de0aacb5636b5ebea8573a9d7d418cb6d3b172
+base_graph_sha256: efb0556b76356a81b85358d80b14d6929f6dc7360f8543d882314113847966c2
+projection_input_sha256: 9b75f7b17d7d231a21571b662b7e35b8997a7bef3fdef75505d21ce4a4873d69
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching
@@ -125,7 +126,7 @@ projection_input_sha256: 2495b3017a645b940190c53f9ba2fa724b442ad014fc2e1846a912d
     "Begin with one concretely true present good, even a breath or ordinary bodily comfort while pain remains real. Then, if it comes sincerely, gratitude even for suffering itself: it shows the value of not suffering and can grow compassion, wisdom and further gratitude. Gratitude for what goes our way is conditional, as everyone knows; the part to help people understand is why to be grateful for suffering. Explain it calmly, without an ego battle.",
     "Ask rather than preach, so the person sees it for themselves: for example, would they be happy if they had everything they want? When someone objects (“my life is hell”), hear them out without letting the story run on, help with practical steps if needed, then ask what they would need before they could feel love or gratitude, and whether that list ever ends (“if only I had X”).",
     "Start where there’s a grip. Someone who is numb but can still feel a little love for a pet or a person starts there (IC.BORROW_LOVE); someone who feels none starts with gratitude itself. Switching angles abandons nothing: gratitude comes back either way.",
-    "Notice what actually opens when gratitude is offered: a little freedom, peace, softness, or sacred love. Words of thanks or an insight are not proof that unconditional love is felt. When that love is felt, inviting the younger self is a separate next step, and gratitude never has to come first before the child can be invited.",
+    "Notice what actually opens when gratitude is offered: a little freedom, peace, softness, or sacred love. Words of thanks or an insight are not proof that unconditional love is felt.",
     "After a fresh death or harm, gratitude comes in only sideways (ROUTE.FRESH_GRIEF_FIRST leads), and an obvious contradiction, like “I love everyone, I just hate my dad”, is looked at first (IC.REALIZATION_LOVE_INTEGRATION)."
   ],
   "successSignals": [
