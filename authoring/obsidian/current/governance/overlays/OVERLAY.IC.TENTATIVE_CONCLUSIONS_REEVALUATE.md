@@ -14,7 +14,7 @@ anchors:
   - IC.ALTERED_STATE_GATE
 reconciled_nodes: []
 base_record_sha256: 4126da58d241436b74753f1c893e071c7790a5928dd5dc572f4fb37d3b7ae6ed
-projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533efcca704660
+projection_input_sha256: 4cf6c9adde3cc6f0f8c2c7f3f36fc0d55824b14758d2e2c2070849837465cfff
 ---
 
 # Re-evaluate tentative activated conclusions when calm

@@ -19,7 +19,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 003ae2954c5b90662580813ea8156252c51249fb9d3793fa74e12588a6b1a107
 base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
-projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533efcca704660
+projection_input_sha256: 4cf6c9adde3cc6f0f8c2c7f3f36fc0d55824b14758d2e2c2070849837465cfff
 ---
 
 # Approach forgiveness without bypassing accountability

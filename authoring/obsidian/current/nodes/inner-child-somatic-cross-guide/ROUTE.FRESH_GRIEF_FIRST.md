@@ -31,9 +31,9 @@ regression_refs:
   - G134
   - G135
   - G136
-base_record_sha256: 97e79d0f7e205b4d164347d047f4a042a53d6f0ecbaee56ad4891a44a79de6c5
-base_graph_sha256: 1260c7591bc499521d85228561ecd6d7e8e8d7edd8477eddf9bd58c817c874ab
-projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533efcca704660
+base_record_sha256: 9b4006869cc35cb96c30902d086454f2eee5efa7885beb5f99e3839aa5c83ff6
+base_graph_sha256: 9d574b90ab319290da2a857bb877ac9dfd4326a43e23c45626adc31ce6212f9f
+projection_input_sha256: 4cf6c9adde3cc6f0f8c2c7f3f36fc0d55824b14758d2e2c2070849837465cfff
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -75,7 +75,6 @@ projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533ef
       "IC.AGE_RESPONSIBILITY_CLARIFICATION",
       "IC.SOLAR_PLEXUS_RELAXATION",
       "IC.BORROW_LOVE",
-      "IC.PROTECTOR_ACTION",
       "IC.SCAFFOLDED_CHALLENGE",
       "IC.ADULT_APPRENTICE",
       "IC.GENTLE_SELF_HYPNOSIS",
@@ -112,7 +111,7 @@ projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533ef
     "After a fresh death or harm, don’t ask for gratitude, and never gratitude for the loss. Encourage crying, support from loved ones, and prayer if they pray.",
     "After a death, if it fits what the person believes, invite them to send love to the one who died; in the author’s view it can still be felt, and the one who died will be grateful for it. Don’t present that as fact to someone who doesn’t share it, and don’t speak of anyone dying when the loss or harm was something else.",
     "Gratitude can come in sideways, if at all: for the love itself, the time together, or the people helping now, offered lightly and never made the priority.",
-    "After a harm, safety and practical help come before anything inward. While the grief is fresh, inner-child work, going inward, trauma processing, meaning-making and forgiveness wait; support, prayer, gentle settling of the body and practical help stay."
+    "After a harm, safety and practical help come before anything inward. While the grief is fresh, inner-child work, going inward, trauma processing, meaning-making and forgiveness wait; support, prayer, gentle settling of the body and practical help stay, including one bounded protective or caring step: a meal, sleep, a boundary, an unsafe exchange ended, or help asked for."
   ],
   "successSignals": [
     "The grief is allowed and shared, and the person feels less alone with it."

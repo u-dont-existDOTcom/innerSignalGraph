@@ -23,8 +23,8 @@ source_refs:
 regression_refs:
   - G132
 base_record_sha256: d0c10198f9cd5ec2563940dbd5736470b08b728c2487c482569840f638357f05
-base_graph_sha256: 1260c7591bc499521d85228561ecd6d7e8e8d7edd8477eddf9bd58c817c874ab
-projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533efcca704660
+base_graph_sha256: 9d574b90ab319290da2a857bb877ac9dfd4326a43e23c45626adc31ce6212f9f
+projection_input_sha256: 4cf6c9adde3cc6f0f8c2c7f3f36fc0d55824b14758d2e2c2070849837465cfff
 ---
 
 # Simplify the acute altered state before adding interpretation

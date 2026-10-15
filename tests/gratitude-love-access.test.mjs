@@ -375,3 +375,17 @@ test("fresh grief is carried by the durable case state, and the current time is 
   assert.equal((await source("../src/server/create-server.mjs")).match(/\{ currentTurnAt: new Date\(\)\.toISOString\(\) \}/g).length, 2);
   assert.match(await source("../src/cli/respond.mjs"), /buildContext\(input, config, \{ currentTurnAt: new Date\(\)\.toISOString\(\) \}\)/);
 });
+
+test("while grief is fresh, a bounded protective or caring step stays beside it (Codex, fb19ca19)", () => {
+  // IC.PROTECTOR_ACTION carries concrete steps (a meal, sleep, a boundary, an unsafe exchange ended, help asked for) and
+  // says not to postpone a necessary protective action; the grief route keeps practical help beside it.
+  for (const variables of [{ protective_response: "present" }, { inner_adult_access: "partial" }]) {
+    const result = plan({ fresh_grief: "present", ...variables });
+    assert.equal(result.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+    assert.ok(selected(result).includes("IC.PROTECTOR_ACTION"), JSON.stringify(variables));
+    assert.ok(!result.deferredNodes.some((node) => node.id === "IC.PROTECTOR_ACTION"), JSON.stringify(variables));
+  }
+  const grief = byId.get("ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(!grief.effects.deferNodes.includes("IC.PROTECTOR_ACTION"));
+  assert.ok(grief.recommendations.some((line) => /one bounded protective or caring step/.test(line)));
+});

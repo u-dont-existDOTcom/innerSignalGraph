@@ -24,8 +24,8 @@ regression_refs:
   - G058
   - G136
 base_record_sha256: a5e3cee863d0d87f8aabbfb4d7fe4db8be24af9f47bf6ebc512091cd3d22c535
-base_graph_sha256: 1260c7591bc499521d85228561ecd6d7e8e8d7edd8477eddf9bd58c817c874ab
-projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533efcca704660
+base_graph_sha256: 9d574b90ab319290da2a857bb877ac9dfd4326a43e23c45626adc31ce6212f9f
+projection_input_sha256: 4cf6c9adde3cc6f0f8c2c7f3f36fc0d55824b14758d2e2c2070849837465cfff
 ---
 
 # Give planned altered-state work a beginning, support plan, and ending
