@@ -2827,6 +2827,23 @@
                 "value": "blocked"
               }
             ],
+            "any": [
+              {
+                "field": "protective_response",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "urge_to_escape",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "guard_engagement",
+                "op": "eq",
+                "value": "blocking"
+              }
+            ],
             "none": [
               {
                 "field": "present_safety",
@@ -2852,7 +2869,7 @@
           ],
           "authority": "author-framework",
           "recommendations": [
-            "When the younger self doesn’t want the love (it recoils, goes numb, freezes, distrusts or refuses), hear its guard first instead of pressing the love on it.",
+            "When the younger self doesn’t want the love (it recoils, freezes, distrusts or refuses, and a guard shows), hear its guard first instead of pressing the love on it.",
             "Ask what it expects would happen if the love came in, and acknowledge the answer before saying anything back.",
             "Treat the refusal as honest information. Show care that doesn’t depend on the child accepting it, and offer the love again once the guard has been heard and allows it, without arguing.",
             "The adult can keep their own love and gratitude going meanwhile; the child owes no thanks and no proof of readiness."
@@ -3040,7 +3057,7 @@
           "tier": 3,
           "priority": 95,
           "activation": {
-            "any": [
+            "all": [
               {
                 "field": "deep_love_access",
                 "op": "in",
@@ -3051,11 +3068,6 @@
                   "intermittent",
                   "reliable"
                 ]
-              },
-              {
-                "field": "love_access",
-                "op": "eq",
-                "value": "absent"
               }
             ],
             "none": [

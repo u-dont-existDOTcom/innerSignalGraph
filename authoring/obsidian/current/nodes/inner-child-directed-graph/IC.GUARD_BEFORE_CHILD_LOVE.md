@@ -22,9 +22,10 @@ source_refs:
 regression_refs:
   - G114
   - G115
-base_record_sha256: ead7b18dda81ee72257c9f6c8b0eff12f8d22bb38e101e31cac8f30bd550a867
-base_graph_sha256: 41158d742e786dffad816d431995d660dc20d9fcc31b8d8d8a1b92b01ad88913
-projection_input_sha256: 3c78c83c806fb468e2f73ddb65219b21545242594b087b0cd9345d34057e71b3
+  - G121
+base_record_sha256: 16a92fdcb4b368c2b574568945473f1baccfa557a8b0397a1abb5f3b49a13839
+base_graph_sha256: 753548520b3d009a9d46a23b411d08b003b50a8e6e485e9487f9a1e3b4345f28
+projection_input_sha256: c19c958d0e00a03c87c9a33a407e97730c9e4606220bfadccbc7725d6376ae3c
 ---
 
 # Hear the guard first when the younger self doesn’t want the love
@@ -50,6 +51,23 @@ projection_input_sha256: 3c78c83c806fb468e2f73ddb65219b21545242594b087b0cd9345d3
         "field": "child_love_inclusion",
         "op": "eq",
         "value": "blocked"
+      }
+    ],
+    "any": [
+      {
+        "field": "protective_response",
+        "op": "eq",
+        "value": "present"
+      },
+      {
+        "field": "urge_to_escape",
+        "op": "eq",
+        "value": "present"
+      },
+      {
+        "field": "guard_engagement",
+        "op": "eq",
+        "value": "blocking"
       }
     ],
     "none": [
@@ -85,7 +103,7 @@ projection_input_sha256: 3c78c83c806fb468e2f73ddb65219b21545242594b087b0cd9345d3
     ]
   },
   "recommendations": [
-    "When the younger self doesn’t want the love (it recoils, goes numb, freezes, distrusts or refuses), hear its guard first instead of pressing the love on it.",
+    "When the younger self doesn’t want the love (it recoils, freezes, distrusts or refuses, and a guard shows), hear its guard first instead of pressing the love on it.",
     "Ask what it expects would happen if the love came in, and acknowledge the answer before saying anything back.",
     "Treat the refusal as honest information. Show care that doesn’t depend on the child accepting it, and offer the love again once the guard has been heard and allows it, without arguing.",
     "The adult can keep their own love and gratitude going meanwhile; the child owes no thanks and no proof of readiness."

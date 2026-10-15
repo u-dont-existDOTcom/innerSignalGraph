@@ -55,8 +55,8 @@ test("where gratitude leads, and where something else comes first", () => {
   assert.equal(feltWithLittleOrdinaryLove.primaryJob.id, "IC.GRATITUDE_PRACTICE");
   assert.ok(!feltWithLittleOrdinaryLove.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"));
   assert.ok(byId.get("IC.BORROW_LOVE").recommendations.some((line) => /gratitude comes back later either way/.test(line)));
-  // Numb, with no love for anyone: gratitude itself, even while unconditional love hasn't been asked about.
-  assert.equal(plan({ activation: "low", love_access: "absent" }).primaryJob.id, "IC.GRATITUDE_PRACTICE");
+  // Numb, with no love for anyone: once unconditional love is assessed (not felt), gratitude itself.
+  assert.equal(plan({ activation: "low", love_access: "absent", deep_love_access: "none_known" }).primaryJob.id, "IC.GRATITUDE_PRACTICE");
   // Unconditional love felt and not yet brought to the child: the child route leads, gratitude continues beside it.
   const untested = plan({ deep_love_access: "reliable", child_love_inclusion: "untested" });
   assert.equal(untested.primaryJob.id, "IC.DEEP_LOVE_TO_CHILD");
@@ -103,6 +103,10 @@ test("when the younger self doesn't want the love, the guard comes first and the
   const guard = byId.get("IC.GUARD_BEFORE_CHILD_LOVE");
   assert.ok(guard.recommendations.some((line) => /hear its guard first/.test(line)));
   assert.ok(guard.recommendations.some((line) => /the child owes no thanks/.test(line)));
+  // "Blocked" also covers numbness or inability; with no guard showing, the love route keeps leading (Codex, 06a84b8c).
+  const numbChild = plan({ deep_love_access: "intermittent", child_love_inclusion: "blocked", protective_response: "absent", urge_to_escape: "absent" });
+  assert.equal(numbChild.primaryJob.id, "IC.DEEP_LOVE_TO_CHILD");
+  assert.ok(!selected(numbChild).includes("IC.GUARD_BEFORE_CHILD_LOVE"));
   // Once the guard allows it, the love route leads again.
   const allows = plan({ deep_love_access: "intermittent", child_love_inclusion: "blocked", protective_response: "present", guard_engagement: "willing_to_allow" });
   assert.equal(allows.primaryJob.id, "IC.DEEP_LOVE_TO_CHILD");

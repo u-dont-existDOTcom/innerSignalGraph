@@ -1,0 +1,27 @@
+{
+  "id": "G121",
+  "title": "a child blocked by numbness with no guard showing keeps the love route, without the guard route",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "deep_love_access": "intermittent",
+    "child_love_inclusion": "blocked",
+    "protective_response": "absent",
+    "urge_to_escape": "absent",
+    "guard_engagement": "not_applicable"
+  },
+  "expected": {
+    "primary": "IC.DEEP_LOVE_TO_CHILD",
+    "selectedExcludes": [
+      "IC.GUARD_BEFORE_CHILD_LOVE"
+    ]
+  }
+}

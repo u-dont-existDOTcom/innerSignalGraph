@@ -13,7 +13,8 @@
     "witness_capacity": "present",
     "inner_adult_access": "available",
     "love_access": "absent",
-    "spiritual_curiosity": "absent"
+    "spiritual_curiosity": "absent",
+    "deep_love_access": "none_known"
   },
   "expected": {
     "primary": "IC.GRATITUDE_PRACTICE"
