@@ -179,5 +179,8 @@ test("extraction instructions tell ordinary love from unconditional love, and sa
   assert.match(prompt, /Someone numb who can still feel a little love for a pet or a person is limited/);
   assert.match(prompt, /I love everyone, I just hate my dad/);
   assert.match(prompt, /fresh_grief is present when the person reports a recent death or other loss/);
+  // Time-sensitive: re-checked every turn, never carried forward as a trait (Codex, 440a75e2).
+  assert.match(prompt, /A time-sensitive state \(fresh_grief\) is the exception: check it again against the current message/);
+  assert.match(prompt, /re-evaluate it on every turn rather than carrying it forward like a trait/);
   assert.doesNotMatch(prompt, /author’s gratitude path/);
 });
