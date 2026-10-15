@@ -28,7 +28,7 @@ regression_refs:
   - G058
 base_record_sha256: 84f40c052600da9cf481d6238222ec74541f7814b37ebe3f88ec2df167629c28
 base_graph_sha256: 300a5c19b1f99c0bb4fa05fddd2efe37777ef438ef34d32e1925d848c5829f55
-projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2507f00f97
+projection_input_sha256: 8002f0df468386bedcc4d946288a20b8412660f3a41b88ef836c05bed10da237
 ---
 
 # Calibrate therapy depth during altered states instead of assuming incapacity

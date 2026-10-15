@@ -77,6 +77,10 @@ test("where gratitude leads, and where something else comes first", () => {
   const objection = plan({ love_access: "accessible", deep_love_access: "none_known", protective_response: "present" });
   assert.equal(objection.primaryJob.id, "ROUTE.GRATITUDE_PRACTICE");
   assert.ok(selected(objection).includes("IC.MEET_GUARD"));
+  // Crisis states wait for stabilization or urgent care first (Codex, bce5ceae).
+  for (const crisis of [{ medical_urgency: "urgent" }, { dissociation: "high" }, { altered_medical_status: "concerning" }, { altered_capacity: "impaired" }]) {
+    assert.ok(!selected(plan({ deep_love_access: "none_known", ...crisis })).includes("ROUTE.GRATITUDE_PRACTICE"), JSON.stringify(crisis));
+  }
   // Not unknown: until unconditional love has been asked about, gratitude isn't routed for someone who feels ordinary love.
   assert.ok(!selected(plan({ love_access: "accessible" })).includes("ROUTE.GRATITUDE_PRACTICE"));
 });

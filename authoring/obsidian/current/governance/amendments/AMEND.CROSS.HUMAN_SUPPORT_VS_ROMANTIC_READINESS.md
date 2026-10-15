@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: c2de5d6955e693b4932683a441fcadf6f0d595c595a5aa8b8dbcbed6f4b5515e
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2507f00f97
+projection_input_sha256: 8002f0df468386bedcc4d946288a20b8412660f3a41b88ef836c05bed10da237
 ---
 
 # AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS

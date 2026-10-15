@@ -21,7 +21,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 67f1f7fdb2953b8f87def0213588e1234b4927017bd03873cded71893a810c6c
 base_graph_sha256: 300a5c19b1f99c0bb4fa05fddd2efe37777ef438ef34d32e1925d848c5829f55
-projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2507f00f97
+projection_input_sha256: 8002f0df468386bedcc4d946288a20b8412660f3a41b88ef836c05bed10da237
 ---
 
 # Return to the first draft for understanding and care

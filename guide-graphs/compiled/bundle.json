@@ -8484,6 +8484,26 @@
                   "intent",
                   "imminent"
                 ]
+              },
+              {
+                "field": "medical_urgency",
+                "op": "eq",
+                "value": "urgent"
+              },
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "altered_medical_status",
+                "op": "eq",
+                "value": "concerning"
+              },
+              {
+                "field": "altered_capacity",
+                "op": "eq",
+                "value": "impaired"
               }
             ]
           },

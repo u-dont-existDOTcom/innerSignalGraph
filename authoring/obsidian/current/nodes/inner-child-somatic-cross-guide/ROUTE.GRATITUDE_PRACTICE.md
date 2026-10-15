@@ -37,9 +37,10 @@ regression_refs:
   - G122
   - G123
   - G125
-base_record_sha256: 740e919aea1c7bf7b167275ba946c510ae4324b1e98eaa853b3a61388dd35fa8
-base_graph_sha256: f74c1c95ff133da471df62718968860a9d2bc5147af0b9eec0c48928fb8450a4
-projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2507f00f97
+  - G129
+base_record_sha256: a37434d11f04d9a9825ca8d4718c7db96fab97065e91f69564304c96450a474e
+base_graph_sha256: fb56323a8971efd88a7fba8678db766e3a6cca90dafc25e42bf5ae3de39f7298
+projection_input_sha256: 8002f0df468386bedcc4d946288a20b8412660f3a41b88ef836c05bed10da237
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching
@@ -99,6 +100,26 @@ projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2
           "intent",
           "imminent"
         ]
+      },
+      {
+        "field": "medical_urgency",
+        "op": "eq",
+        "value": "urgent"
+      },
+      {
+        "field": "dissociation",
+        "op": "eq",
+        "value": "high"
+      },
+      {
+        "field": "altered_medical_status",
+        "op": "eq",
+        "value": "concerning"
+      },
+      {
+        "field": "altered_capacity",
+        "op": "eq",
+        "value": "impaired"
       }
     ]
   },

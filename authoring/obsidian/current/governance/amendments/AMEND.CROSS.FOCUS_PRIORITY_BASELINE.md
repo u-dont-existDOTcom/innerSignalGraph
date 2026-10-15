@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: 68952a5ed6ed2a898adbe03e0a3f2977b8ed30c92ae7765c57ea8f285e3834eb
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 87b9e540f2a618156fc7fed6336d93247d0d4637dcf5a5f9760d2c2507f00f97
+projection_input_sha256: 8002f0df468386bedcc4d946288a20b8412660f3a41b88ef836c05bed10da237
 ---
 
 # AMEND.CROSS.FOCUS_PRIORITY_BASELINE
