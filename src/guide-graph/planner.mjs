@@ -175,6 +175,14 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   let matched = nodes
     .filter((node) => activationMatches(node.activation, variables))
     .sort((a, b) => a.tier - b.tier || b.priority - a.priority || a.id.localeCompare(b.id));
+  // The owner's answer to question 35 (15 Oct 2026): gratitude comes into an altered state only once the state is shown
+  // to be calm, on the same evidence as the stable-state therapy (Codex, 1ab74341): coherent, medically stable, safe,
+  // oriented and able to stop. Unknown is not calm. An overwhelming state that is otherwise calm defers it instead
+  // (ROUTE.ALTERED_ACUTE_STABILIZATION).
+  const gratitudeShutOut = variables.altered_state === "altered" && !(variables.altered_capacity === "coherent"
+    && variables.altered_medical_status === "stable" && variables.present_safety === "safe"
+    && variables.orientation === "oriented" && variables.ability_to_stop === "yes");
+  if (gratitudeShutOut) matched = matched.filter((node) => node.id !== "ROUTE.GRATITUDE_PRACTICE");
 
   // Declining inner-child framing is a hard execution boundary, not a pacing state.
   // Keep only the ordinary safety-orientation node from the IC namespace so the
@@ -189,6 +197,8 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
 
   const matchedIds = new Set(matched.map((node) => node.id));
   const deferredIds = new Set(matched.flatMap(deferTargets));
+  // Shut out is neither selected nor waiting: no deferral lists it either (Codex, 4f34eb2d).
+  if (gratitudeShutOut) deferredIds.delete("ROUTE.GRATITUDE_PRACTICE");
   const blockedIds = new Set(matched.flatMap((node) => node.effects?.blockNodes ?? []));
 
   // Backward-compatible fallback for installed r5 and preserved r01 packets.
@@ -312,9 +322,18 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const draftEditorSupport = eligibleDraftEditorSupport({
     primary, eligible, task, variables, interrupt, emergency
   });
-  const secondary = draftEditorSupport
+  let secondary = draftEditorSupport
     ? [draftEditorSupport, ...eligible.filter(n => n.id !== primary?.id && n.id !== draftEditorSupport.id)].slice(0, 4)
     : eligible.slice(1, 5);
+  // Start where there's a grip (owner, 14 and 15 Oct 2026): when a little ordinary love holds the gratitude practice
+  // back, that love keeps a place in the plan, in the last secondary slot, the place gratitude would have had beside
+  // the primary. Like any secondary it is context, not a required exercise (Codex, 1ab74341, answered on the PR).
+  const borrowLove = eligible.find((node) => node.id === "IC.BORROW_LOVE");
+  if (borrowLove && primary?.id !== borrowLove.id && !secondary.includes(borrowLove)
+      && matchedIds.has("ROUTE.GRATITUDE_PRACTICE") && !blockedIds.has("ROUTE.GRATITUDE_PRACTICE")
+      && deferTargets(borrowLove).includes("ROUTE.GRATITUDE_PRACTICE")) {
+    secondary = secondary.length < 4 ? [...secondary, borrowLove] : [...secondary.slice(0, 3), borrowLove];
+  }
   const deferredNodes = nodes
     .filter((node) => deferredIds.has(node.id))
     .filter((node) => !blockedIds.has(node.id))

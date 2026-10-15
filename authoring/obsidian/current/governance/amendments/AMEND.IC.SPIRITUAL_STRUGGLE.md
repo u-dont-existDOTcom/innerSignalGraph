@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SPIRITUAL_STRUGGLE
 status: owner-approved
 domain: inner-child
-base_record_sha256: db09ac9e2381af08ed0d264d4e6b8bd46a5f67e8f8e65dec617c58c2761c344a
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 1624131f72b139fa4b11fa8c8ce7d5355ad3d646eee81f17bf7027081da78d4e
+source_file_sha256: 845a2f7318f38a55cbd92869191d3c00c54b89dfdfb7eb9c874787e5981c189c
+projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
 ---
 
 # AMEND.IC.SPIRITUAL_STRUGGLE
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "Treat distress within a valued sacred relationship, practice or community as a possible current therapeutic job in its own right. Follow what the person wants to preserve, mourn, reconsider or change. Neither stronger belief nor rejection of the tradition is required. Do not infer spiritual failure, divine judgment, a literal entity or a parental projection. Do not send the person back into a distressing spiritual resource without examining its fit and willingness. Mature capacity can include action where possible and surrender of control that is not theirs; ongoing prayer is not failed development. Ordinary safety and human support remain independent."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-14
+Updated: 2026-10-15
+
+
+## How gratitude comes in (2026-10-15, the owner's points; stacked on the gratitude map change)
+
+- **Owner outcome:** carry the owner's points of 15 Oct (10:28 UTC) on how he brings gratitude in, with his answers to owner-page questions 34 (all four suggested rewordings) and 35 (gratitude in a calm altered state), 11:19 UTC. He writes the public-guide changes himself; the pending queue records them (PGQ-034, PGQ-035).
+- **Change (branch `task/gratitude-owner-points-20261015`, `tasks/gratitude-how-20261015/INTEGRATION.md`):** `AMEND.IC.GRATITUDE_HOW_20261015` (owner amendments r11); `ROUTE.GRATITUDE_PRACTICE` lines (sideways and at times, his example questions, toxic positivity, no modeled thanks, a calm altered state) and avoid lines; `IC.REALIZATION_LOVE_INTEGRATION` works toward a contradiction from the love side; `ROUTE.ALTERED_ACUTE_STABILIZATION` defers gratitude, and in an altered state the planner admits it only once calm is shown; the planner keeps borrowed love in the plan when it holds gratitude back; graph cases G137 to G140.
+- **What moves:** as written, G047's last secondary (borrowed love for borrowing one adult function); with unconditional love not felt, also G002, G132 and G133.
+- **Next:** after the map change merges, rebase onto main, open the pull request, Codex review, merge statement.
 
 
 ## Gratitude for everyone in the inner-child map (2026-10-15, rebuilt from the owner's answers; routing check with the owner)

@@ -22,8 +22,8 @@ source_refs:
 regression_refs:
   - G008
 base_record_sha256: 9b8b14532a85240dad58a4d4cba65a487ec8894e7221122463998e05393a4aa1
-base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_graph_sha256: 07c8d16b821543aefb1c150e8a7b1b0da59bf15c15a6251ac5231444d48fe06e
+projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
 ---
 
 # Build identity through private preference and experimental play

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EARLY_GENTLE_HYPNOSIS
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4d3f34475f292216cc84db0f7f6a89ed41074f7c0d9d8947fc9f4c07192a5535
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: a24c72927ff905f1d517e5ea65605b3cec2fffcd697262724fdea15c8ab43232
+source_file_sha256: 845a2f7318f38a55cbd92869191d3c00c54b89dfdfb7eb9c874787e5981c189c
+projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
 ---
 
 # AMEND.IC.EARLY_GENTLE_HYPNOSIS
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "Gentle, present-focused self-hypnosis may be used early to calm the nervous system or support warmth and borrowed adulthood. It must not go deeply into memories or immersive child dialogue before enough stopping and recovery capacity exists."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

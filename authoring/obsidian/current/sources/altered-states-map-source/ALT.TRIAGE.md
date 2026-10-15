@@ -12,7 +12,7 @@ section_hash: cd7bfd2bf395cdfa58dbb085f64ace7bce01d326fae5c11fb48470a598b1c755
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_MEDICAL_SAFETY
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
 ---
 
 # Acute Triage Order

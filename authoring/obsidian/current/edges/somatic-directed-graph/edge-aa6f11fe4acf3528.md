@@ -10,7 +10,7 @@ from_node_id: SOM.GENTLE_SHAKING
 to_node_id: SOM.DISCHARGE_SETTLE_STACK
 relation: requires-aftercare
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
 ---
 
 # SOM.GENTLE_SHAKING requires-aftercare SOM.DISCHARGE_SETTLE_STACK

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_STORY
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4efba774900cea82ea6e869393a117f03cbcb432c19a979798831e9e91daa391
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 8feaf43a60ff0c6d2d032cadcfc00ca58b43b275de08a4c6066f04da8ba658dc
+source_file_sha256: 845a2f7318f38a55cbd92869191d3c00c54b89dfdfb7eb9c874787e5981c189c
+projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
 ---
 
 # AMEND.IC.WISDOM_STORY
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "Offer the owner-reported phrase “And so that's the way it happened!” after a manageable difficult memory; “Once upon a time…” is optional when the tone fits. Let a short helpful phrase stay short. Narrative punctuation may provide compassionate distance or acknowledge that an event occurred; the exact phrase has no established efficacy from this research scan. Do not imply the memory is fictional or verified, that harm was acceptable, that a threat has ended, or that repair no longer matters. A sneering observer, escalating shame, forced humor, numbness or unreality is a bad-fit signal. Change route rather than intensifying distance. An optional follow-through asks what the person in the story needs now."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

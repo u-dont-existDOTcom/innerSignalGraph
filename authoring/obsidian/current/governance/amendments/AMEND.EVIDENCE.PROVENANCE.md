@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.EVIDENCE.PROVENANCE
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 30b3e9f81ca418862b4d19ddc314d8eb39c5577aeebf70eea51959eb3f1256d7
-source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
+base_record_sha256: 18234ca6210922298331826d35af07441bc3416b71eeda8d1cee70c27916b0f9
+source_file_sha256: 845a2f7318f38a55cbd92869191d3c00c54b89dfdfb7eb9c874787e5981c189c
+projection_input_sha256: 037505daea788bf32562c596e9fbae7607733048c7f8e0896f5e2fed4cb8b71d
 ---
 
 # AMEND.EVIDENCE.PROVENANCE
@@ -24,6 +24,6 @@ projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782a
     "status": "owner-approved",
     "text": "Personal outcomes remain author experience, community reports remain community signal, first-principles explanations remain provisional mechanism models, and strong physiological claims do not become deterministic medical facts without separate evidence review."
   },
-  "version": "owner-amendments-2026-10-14-r10"
+  "version": "owner-amendments-2026-10-15-r11"
 }
 ```

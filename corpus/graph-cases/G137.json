@@ -1,0 +1,26 @@
+{
+  "id": "G137",
+  "title": "a calm altered state lets the gratitude practice in",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "altered",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "altered_capacity": "coherent",
+    "altered_medical_status": "stable",
+    "deep_love_access": "none_known"
+  },
+  "expected": {
+    "primary": "ROUTE.GRATITUDE_PRACTICE",
+    "selectedIncludes": [
+      "ROUTE.GRATITUDE_PRACTICE",
+      "ROUTE.ALTERED_STABLE_THERAPY"
+    ]
+  }
+}
