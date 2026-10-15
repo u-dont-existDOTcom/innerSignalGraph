@@ -7,6 +7,7 @@ import { loadConfig, projectRoot } from "../src/core/config.mjs";
 import { buildHypnosisContext } from "../src/orchestrator/context-builder.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
 import { runHypnosisCompilerPipeline } from "../src/orchestrator/run-hypnosis-compiler.mjs";
+import { FRESH_GRIEF_HYPNOSIS_PURPOSE, hypnosisDraftPrompt } from "../src/prompts/hypnosis-draft.mjs";
 import { auditHypnosisDraft } from "../src/hypnosis/deterministic-audit.mjs";
 import { buildHypnosisPlaybackPlan, renderHypnosisRoute } from "../src/hypnosis/compiler.mjs";
 
@@ -275,7 +276,7 @@ test("audit-green plus adversarial accept performs zero repair-provider calls", 
   assert.equal(providerCalls.hypnosis_final_review, 1);
 });
 
-test("fresh grief alone doesn't stop a script: whether hypnosis fits depends on its kind (owner, question 36)", async () => {
+test("fresh grief alone doesn't stop a script: the writer judges its purpose (owner, questions 36 and 37)", async () => {
   // The owner, 15 Oct 2026: hypnosis in general isn't incompatible with grief; it depends on the kind of hypnosis, the
   // level of grief and what is appropriate at the moment, which the conversation judges. The compiler holds nothing back
   // for grief alone.
@@ -288,4 +289,20 @@ test("fresh grief alone doesn't stop a script: whether hypnosis fits depends on 
   assert.notEqual(result.repairFailure?.code, "FRESH_GRIEF_HOLD");
   const source = await fs.readFile(path.join(projectRoot, "src/orchestrator/run-hypnosis-compiler.mjs"), "utf8");
   assert.doesNotMatch(source, /FRESH_GRIEF/);
+  // Question 37: no fixed line; it depends on the purpose. The writer gets the record and the owner's principle, in his
+  // words, and judges the purpose from the person's own words.
+  const writer = hypnosisDraftPrompt(context, "synthetic").user;
+  assert.match(writer, /FRESH GRIEF \(case record\):\nPresent, recorded 2026-10-15T00:00:00\.000Z\. Hypnosis isn’t held back by grief itself\./);
+  assert.ok(writer.includes(FRESH_GRIEF_HYPNOSIS_PURPOSE));
+  assert.match(writer, /Judge the purpose from the person’s own words/);
+  // The same sentence as the map's, so the two can't drift apart.
+  const map = JSON.parse(await fs.readFile(path.join(projectRoot, "guide-graphs/candidates/inner-child.graph.json"), "utf8"));
+  const hypnosis = map.nodes.find((node) => node.id === "IC.GENTLE_SELF_HYPNOSIS");
+  assert.ok(hypnosis.effects.requiredNuance.includes(FRESH_GRIEF_HYPNOSIS_PURPOSE));
+  // With no fresh grief recorded, or an old loss recorded as absent, the writer's prompt is as it was.
+  for (const record of [undefined, { status: "absent", updated_at: at, updated_turn_id: "turn-2" }]) {
+    const other = await h001();
+    other.context.durableCaseState = { ...(other.context.durableCaseState ?? {}), fresh_grief: record };
+    assert.doesNotMatch(hypnosisDraftPrompt(other.context, "synthetic").user, /FRESH GRIEF/);
+  }
 });

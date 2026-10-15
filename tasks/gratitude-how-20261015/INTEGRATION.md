@@ -93,3 +93,14 @@ route, `IC.GENTLE_SELF_HYPNOSIS` and `IC.MUSIC_EMOTIONAL_ACCESS`, in his words, 
 used to reach feelings, which #159 made wait during fresh grief (Codex's review of `ec09f8d9`), stays beside grief again,
 since his example is that purpose (37 deferrals: the gratitude practice, nonurgent pain navigation and 35 inward-work
 nodes). Deep inner-child dialogue still waits while grief is fresh (question 33). PGQ-036 names the purpose.
+
+## Codex's review of `f6f6f185`: the writer judges the purpose; no gate
+
+Codex asked for a mechanically recorded purpose decision before a script is released while grief is fresh, since the
+writer knew neither the case record's fresh grief nor the owner's principle, and H001 still released with an escape
+purpose in its notes. A required decision would be a fixed line by another name, which the owner ruled out in question
+37 ("i think it depends too much"); a refusal would also fall on requests like his own example whenever the purpose is
+misread. The valid part is that the writer didn't know: when the record says fresh grief is present, the writer's prompt
+now carries it with the owner's principle, the same sentence as the map's `IC.GENTLE_SELF_HYPNOSIS` nuance (a test checks
+the two match), and is told to judge the purpose from the person's own words. Without a fresh-grief record the prompt is
+byte-identical. Nothing is held back; H001 still releases with fresh grief present.
