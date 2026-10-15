@@ -21,8 +21,8 @@ source_refs:
   - IC.REGULATION_BEFORE_DIALOGUE
 regression_refs: []
 base_record_sha256: e3adc01d9a27eea439e7ac857c07f473b8cd79a11d7201869780d8f82e322c09
-base_graph_sha256: a37748e96254d781cdd7f5103e086448b05fead950c2808f6243a2db1e30dbe6
-projection_input_sha256: 4cbd78cb1d4446a9a4ed59195bdd736c2cde93b5e8cc13b1d191dca4de36371d
+base_graph_sha256: 41158d742e786dffad816d431995d660dc20d9fcc31b8d8d8a1b92b01ad88913
+projection_input_sha256: 3c78c83c806fb468e2f73ddb65219b21545242594b087b0cd9345d34057e71b3
 ---
 
 # Stop music when it overwhelms rather than opens

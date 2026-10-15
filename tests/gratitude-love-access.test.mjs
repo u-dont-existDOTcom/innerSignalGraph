@@ -50,6 +50,10 @@ test("where gratitude leads, and where something else comes first", () => {
   assert.equal(numbWithDog.primaryJob.id, "IC.BORROW_LOVE");
   assert.ok(!selected(numbWithDog).includes("IC.GRATITUDE_PRACTICE"));
   assert.ok(numbWithDog.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"), "gratitude waits rather than disappears");
+  // Once unconditional love is felt, gratitude goes on, however little ordinary love there is (Codex, 00d81e51).
+  const feltWithLittleOrdinaryLove = plan({ love_access: "limited", deep_love_access: "reliable", child_love_inclusion: "reliable" });
+  assert.equal(feltWithLittleOrdinaryLove.primaryJob.id, "IC.GRATITUDE_PRACTICE");
+  assert.ok(!feltWithLittleOrdinaryLove.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"));
   assert.ok(byId.get("IC.BORROW_LOVE").recommendations.some((line) => /gratitude comes back later either way/.test(line)));
   // Numb, with no love for anyone: gratitude itself, even while unconditional love hasn't been asked about.
   assert.equal(plan({ activation: "low", love_access: "absent" }).primaryJob.id, "IC.GRATITUDE_PRACTICE");

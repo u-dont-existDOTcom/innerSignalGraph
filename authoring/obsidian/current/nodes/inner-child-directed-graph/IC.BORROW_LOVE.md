@@ -35,9 +35,10 @@ regression_refs:
   - G113
   - G116
   - G117
-base_record_sha256: 42561a9aa41f2c3ba011bdb8bccbd9c60bfcb0822ea6b3ea2fa8a39f4adfd087
-base_graph_sha256: a37748e96254d781cdd7f5103e086448b05fead950c2808f6243a2db1e30dbe6
-projection_input_sha256: 4cbd78cb1d4446a9a4ed59195bdd736c2cde93b5e8cc13b1d191dca4de36371d
+  - G120
+base_record_sha256: 5589ffaad78b5dcbb8bdf7a43015ed854b0684099bd7dd130a29086c71c381b3
+base_graph_sha256: 41158d742e786dffad816d431995d660dc20d9fcc31b8d8d8a1b92b01ad88913
+projection_input_sha256: 3c78c83c806fb468e2f73ddb65219b21545242594b087b0cd9345d34057e71b3
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -96,6 +97,14 @@ projection_input_sha256: 4cbd78cb1d4446a9a4ed59195bdd736c2cde93b5e8cc13b1d191dca
         "field": "love_access",
         "op": "notEq",
         "value": "limited"
+      },
+      {
+        "field": "deep_love_access",
+        "op": "in",
+        "value": [
+          "intermittent",
+          "reliable"
+        ]
       }
     ],
     "forbiddenOverclaims": [

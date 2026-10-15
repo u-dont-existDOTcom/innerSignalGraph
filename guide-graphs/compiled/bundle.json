@@ -1607,6 +1607,14 @@
                 "field": "love_access",
                 "op": "notEq",
                 "value": "limited"
+              },
+              {
+                "field": "deep_love_access",
+                "op": "in",
+                "value": [
+                  "intermittent",
+                  "reliable"
+                ]
               }
             ]
           },
