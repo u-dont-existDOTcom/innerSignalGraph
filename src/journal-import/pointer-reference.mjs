@@ -46,6 +46,23 @@ export const POINTER_REFERENCE_SAMPLE = Object.freeze({ strata: 12, units_per_st
 export const POINTER_COPY_RUN_WORDS = 8;
 export const POINTER_COPY_RUN_LIMITS = Object.freeze({ min: 3, max: 20 });
 
+/**
+ * The pointer pass's rules, kept by a run like its other settings. 2 is owner decision 30's: both judges, a quote held
+ * back for something left out, a repeated question or a combined one, a unit still not confirmed after its rewrite
+ * counted as missed, and a reference step that can stop the run. 3 is owner decision 32's (14 Oct 2026: "why not allow
+ * multiple ways to split into questions? there truly are multiple ways to ask questions about a passage, it's not that
+ * we have to agree right?", and earlier: "just mark the things that aren't understood and move on"): any way of splitting
+ * a quote into questions is fine, so one judge, the Codex one, holds a quote back only for something left out; a piece
+ * still not covered after its rewrite is marked, keeps its questions and is measured like any other; a question the copy
+ * check catches is flagged and left out of the measurement instead of holding its quote back; nothing in the reference
+ * step stops the run, and the measurement's floors are reported without blocking publication.
+ */
+export const POINTER_RULES = Object.freeze([2, 3]);
+export const POINTER_RULES_DEFAULT = 3;
+const isRules = (value) => POINTER_RULES.includes(value);
+/** The coverage and pair judges' tiers under a run's rules: Codex (standard) and Claude (hardest), or Codex alone. */
+export const pointerJudgeTiers = (rules) => Object.freeze(rules === 3 ? ["standard"] : ["standard", "hardest"]);
+
 const ID_PATTERN = /^[A-Za-z0-9:_-]+$/;
 const isId = (value) => typeof value === "string" && value.length > 0 && value.length <= 160 && ID_PATTERN.test(value);
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -267,8 +284,10 @@ export function coverageJudgeCalls({ quotes } = {}) {
 // A quote is confirmed by a judge only when it is covered and no question is listed as repeated or combined. Copying is
 // the code's check now (checkQuestionSet), so a question a judge lists as copied is counted but holds nothing back,
 // except in a run from before owner decision 30 (copyRunWords null), where it holds the quote back as it did then.
-const confirmedBy = (judgment, copyRunWords) => judgment.covered && judgment.repeated_question_ids.length === 0
-  && judgment.combined_question_ids.length === 0 && (copyRunWords !== null || judgment.copied_question_ids.length === 0);
+// Under owner decision 32's rules (3) any way of splitting is fine, so a quote is confirmed when it is covered.
+const confirmedBy = (judgment, copyRunWords, rules = 2) => (rules === 3 ? judgment.covered === true
+  : judgment.covered && judgment.repeated_question_ids.length === 0 && judgment.combined_question_ids.length === 0
+    && (copyRunWords !== null || judgment.copied_question_ids.length === 0));
 
 /**
  * Checks one coverage judge's answer for one call against the call's quotes. The answer is valid when it judges every
@@ -276,14 +295,17 @@ const confirmedBy = (judgment, copyRunWords) => judgment.covered && judgment.rep
  * with every quote it doesn't confirm; an invalid answer gets the call's one retry. The judge confirms a quote only
  * when it says the quote is covered and lists no question as repeating another or asking about two things. A question
  * it lists as copying the quote's wording is counted (`copied`) and decides nothing: code checks copying (owner decision
- * 30). In a run from before that decision (`copyRunWords` null) it holds the quote back, as it did then. A question is
+ * 30). In a run from before that decision (`copyRunWords` null) it holds the quote back, as it did then. Under owner
+ * decision 32's rules (`rules` 3) any way of splitting is fine: the judge confirms a quote when it says it is covered,
+ * and the questions it lists as repeating or combining are counted and hold nothing back. A question is
  * critical, or about an event, when the writer or the judge marks it so. `notes` are the judge's words for the writer's
  * retry packet, and never go into a log or a report.
  */
-export function checkCoverageJudgments({ quotes, answer, copyRunWords = POINTER_COPY_RUN_WORDS } = {}) {
+export function checkCoverageJudgments({ quotes, answer, copyRunWords = POINTER_COPY_RUN_WORDS, rules = 2 } = {}) {
   invariant(Array.isArray(quotes) && quotes.length > 0 && quotes.every((quote) => isObject(quote) && isId(quote.unit_id)
     && Array.isArray(quote.questions) && quote.questions.length > 0 && quote.questions.every(isMarkedQuestion))
-    && isDistinctIds(quotes.map((quote) => quote.unit_id)) && isCopyRun(copyRunWords), "POINTER_COVERAGE_CHECK_INPUT_INVALID");
+    && isDistinctIds(quotes.map((quote) => quote.unit_id)) && isCopyRun(copyRunWords) && isRules(rules)
+    && (rules === 2 || copyRunWords !== null), "POINTER_COVERAGE_CHECK_INPUT_INVALID");
   const invalid = (reason) => deepFreeze({ valid: false, reason, quotes: [], notes: [] });
   if (!isObject(answer) || !Array.isArray(answer.judgments)) return invalid("answer_invalid");
   const byQuote = new Map(quotes.map((quote) => [quote.unit_id, quote]));
@@ -299,7 +321,7 @@ export function checkCoverageJudgments({ quotes, answer, copyRunWords = POINTER_
       return invalid("answer_invalid");
     }
     if (!lists.every((list) => list.every((id) => own.has(id)))) return invalid("question_outside_quote");
-    if (!confirmedBy(judgment, copyRunWords) && judgment.missing.trim().length === 0) return invalid("unconfirmed_without_note");
+    if (!confirmedBy(judgment, copyRunWords, rules) && judgment.missing.trim().length === 0) return invalid("unconfirmed_without_note");
   }
   if (seen.size !== quotes.length) return invalid("quote_not_judged");
   const judgmentFor = new Map(answer.judgments.map((judgment) => [judgment.unit_id, judgment]));
@@ -309,7 +331,7 @@ export function checkCoverageJudgments({ quotes, answer, copyRunWords = POINTER_
     const judgeEvent = new Set(judgment.event_question_ids);
     return {
       unit_id: quote.unit_id,
-      confirmed: confirmedBy(judgment, copyRunWords),
+      confirmed: confirmedBy(judgment, copyRunWords, rules),
       covered: judgment.covered,
       repeated: judgment.repeated_question_ids.length,
       combined: judgment.combined_question_ids.length,
@@ -340,11 +362,15 @@ export function checkCoverageJudgments({ quotes, answer, copyRunWords = POINTER_
  * or about an event when the writer or either judge marked it so), `unconfirmed` (owner decision 30: the retry's
  * questions are complete and both judges answered, but a quote is still unconfirmed; the questions, marked the same way,
  * count in recall with every one missed; in a run from before that decision, `copyRunWords` null, such a unit is a
- * nonresponse, `coverage_unconfirmed`, as it was then) or `nonresponse` (with its reason).
+ * nonresponse, `coverage_unconfirmed`, as it was then) or `nonresponse` (with its reason). Under owner decision 32's
+ * rules (`rules` 3) there is one judge, a copying question is flagged `copied` instead of holding its quote back, and a
+ * unit whose retry still leaves something uncovered, or whose judge gave no usable answer, is `marked` (with its reason
+ * and its questions, measured like a complete unit's) instead of unconfirmed or a nonresponse.
  */
-export function referenceUnitStep({ quoteIds, attempts, copyRunWords = POINTER_COPY_RUN_WORDS } = {}) {
+export function referenceUnitStep({ quoteIds, attempts, copyRunWords = POINTER_COPY_RUN_WORDS, rules = 2 } = {}) {
   invariant(isDistinctIds(quoteIds) && quoteIds.length > 0 && Array.isArray(attempts) && attempts.length <= 2
-    && attempts.every((attempt) => isObject(attempt)) && isCopyRun(copyRunWords), "POINTER_REFERENCE_STEP_INPUT_INVALID");
+    && attempts.every((attempt) => isObject(attempt)) && isCopyRun(copyRunWords) && isRules(rules)
+    && (rules === 2 || copyRunWords !== null), "POINTER_REFERENCE_STEP_INPUT_INVALID");
   if (attempts.length === 0) return deepFreeze({ step: "write", attempt: 0, notes: [] });
   const index = attempts.length - 1;
   const last = attempts[index];
@@ -354,9 +380,20 @@ export function referenceUnitStep({ quoteIds, attempts, copyRunWords = POINTER_C
     return index === 0 ? retry([]) : deepFreeze({ step: "nonresponse", reason: "questions_incomplete" });
   }
   if (last.coverage === null || last.coverage === undefined) return deepFreeze({ step: "judge", attempt: index });
-  invariant(Array.isArray(last.coverage) && last.coverage.length === 2 && last.coverage.every(isObject),
+  invariant(Array.isArray(last.coverage) && last.coverage.length === pointerJudgeTiers(rules).length && last.coverage.every(isObject),
     "POINTER_REFERENCE_STEP_INPUT_INVALID");
-  if (last.coverage.some((judge) => judge.failed === true)) return deepFreeze({ step: "nonresponse", reason: "coverage_check_failed" });
+  // The copy check's copying questions: under owner decision 32's rules each is flagged and left out of the measurement;
+  // before, the first of each quote holds that quote back.
+  const copyingIds = new Set((last.set.copied ?? []).filter((item) => quoteIds.includes(item.unit_id)).map((item) => item.question_id));
+  const flagged = (item) => (rules === 3 && copyingIds.has(item.question_id) ? { copied: true } : {});
+  if (last.coverage.some((judge) => judge.failed === true)) {
+    // Under owner decision 32's rules a judge that gave no usable answer leaves the piece marked, its questions as the
+    // writer marked them, measured like any other; before, it was a nonresponse.
+    if (rules !== 3) return deepFreeze({ step: "nonresponse", reason: "coverage_check_failed" });
+    return deepFreeze({ step: "marked", attempt: index, reason: "coverage_check_failed", questions: last.set.questions.map((item) => ({
+      question_id: item.question_id, unit_id: item.unit_id, question: item.question, critical: item.critical === true,
+      event: item.event === true, ...flagged(item) })) });
+  }
   const judges = last.coverage.map((judge) => {
     invariant(Array.isArray(judge.quotes) && Array.isArray(judge.notes), "POINTER_REFERENCE_STEP_INPUT_INVALID");
     const byQuote = new Map(judge.quotes.map((quote) => [quote.unit_id, quote]));
@@ -368,14 +405,16 @@ export function referenceUnitStep({ quoteIds, attempts, copyRunWords = POINTER_C
   const critical = marked("critical_question_ids");
   const event = marked("event_question_ids");
   const questions = () => last.set.questions.map((item) => ({ question_id: item.question_id, unit_id: item.unit_id,
-    question: item.question, critical: critical.has(item.question_id), event: event.has(item.question_id) }));
+    question: item.question, critical: critical.has(item.question_id), event: event.has(item.question_id), ...flagged(item) }));
   // The copy check's first copying question for each quote that has one.
   const copied = new Map();
   for (const item of last.set.copied ?? []) if (quoteIds.includes(item.unit_id) && !copied.has(item.unit_id)) copied.set(item.unit_id, item);
-  if (quoteIds.every((id) => judges.every((judge) => judge.byQuote.get(id).confirmed) && !copied.has(id))) {
+  const heldByCopy = (id) => rules !== 3 && copied.has(id);
+  if (quoteIds.every((id) => judges.every((judge) => judge.byQuote.get(id).confirmed) && !heldByCopy(id))) {
     return deepFreeze({ step: "complete", attempt: index, questions: questions() });
   }
   if (index === 0) return retry([...judges.flatMap((judge) => judge.notes), ...[...copied.values()].map(copyNote)]);
+  if (rules === 3) return deepFreeze({ step: "marked", attempt: index, reason: "coverage_unconfirmed", questions: questions() });
   if (copyRunWords === null) return deepFreeze({ step: "nonresponse", reason: "coverage_unconfirmed" });
   return deepFreeze({ step: "unconfirmed", attempt: index, questions: questions() });
 }

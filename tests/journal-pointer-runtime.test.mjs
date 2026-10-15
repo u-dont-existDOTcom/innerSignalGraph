@@ -7,7 +7,7 @@ import path from "node:path";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
-import { POINTER_DEADLINE_DEFAULTS, journalPointerCopyRunWords, journalPointerDeadlines } from "../src/journal-import/run-config.mjs";
+import { POINTER_DEADLINE_DEFAULTS, journalPointerCopyRunWords, journalPointerDeadlines, journalPointerRules } from "../src/journal-import/run-config.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 
 // The pointer pass's commands in the private runtime (plan 2026-10-09-journal-quote-first.md, Part 3): the reference
@@ -29,7 +29,7 @@ const distinct = (text) => text.match(/(?:quolp|vemmet)\d+/u)[0];
 // the search writer searches the question's last word; the tagger tags Jean, each quote's word, and the rain; the
 // judges confirm and accept everything except the quotes whose word `refuse` picks, and list as copied the first
 // question of each quote whose word `copied` picks.
-function handlers({ refuse = () => false, copied = () => false } = {}) {
+function handlers({ refuse = () => false, copied = () => false, pairs = () => true } = {}) {
   const rainTerm = (text) => `pluie${text.match(/vemmet(\d+)/u)[1]}`;
   return {
     question_writer: (packet) => ({ schema_version: "1.0", questions: packet.quote_units.flatMap((quote) => [
@@ -52,7 +52,7 @@ function handlers({ refuse = () => false, copied = () => false } = {}) {
       if (quote.text.includes("rained")) tags.push({ kind: "topic", label: rainTerm(quote.text), anchors: anchor("rained") });
       return tags;
     }) }),
-    pair_judge: (packet) => ({ schema_version: "1.0", judgments: packet.pairs.map((pair) => ({ pair_id: pair.pair_id, mentions: true, kind_right: true })) })
+    pair_judge: (packet) => ({ schema_version: "1.0", judgments: packet.pairs.map((pair) => ({ pair_id: pair.pair_id, mentions: pairs(pair), kind_right: true })) })
   };
 }
 
@@ -83,7 +83,10 @@ async function runtimeEnvironment(t, options = {}) {
   await service.appendJournal(CASE_ID, { id: "legacy-pointer", observed_at: "2026-01-01T00:00:00.000Z", kind: "journal", text: "Invented legacy entry" }, { bearerToken: WRITER });
   const config = { schema_version: 1, max_external_spend_usd: 0, execution_root: path.join(root, "execution"), private_runtime_root: root,
     source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(text), sha256: sha256(text) },
-    target_profile: { case_id: CASE_ID }, existing_grant_ref: "synthetic:grant" };
+    target_profile: { case_id: CASE_ID }, existing_grant_ref: "synthetic:grant",
+    // These tests were written for owner decision 30's rules; owner decision 32's (the default for a new run) pass
+    // `rules: 3`.
+    pointer_rules: options.rules ?? 2 };
   const configPath = path.join(root, "private", "config.json");
   await fs.writeFile(configPath, JSON.stringify(config), { mode: 0o600 });
   const sourceParser = async () => ({
@@ -191,6 +194,53 @@ test("the pointer run goes from the reference sample to publication, each step w
   assert.deepEqual(found.quotes.map((quote) => [quote.text, quote.matched_by]), [[PAGES[16].trimEnd(), "tag"]]);
   // Publishing again changes nothing.
   assert.equal((await f.run("pointer-publish")).pointer.published.at, deployed.pointer.published.at);
+});
+
+test("under owner decision 32's rules Codex alone judges, a piece still not covered is marked and measured, nothing in the reference step stops the run, and the floors don't block publication", async (t) => {
+  const tiers = [];
+  // The judge never confirms a page's first quote on the even pages, about half the sample; the pair judge accepts no
+  // pair, so the precision floors fail; and the route attests nothing for Claude, whom these rules never call.
+  const f = await runtimeEnvironment(t, { rules: 3, attested: false, pairs: () => false,
+    refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
+    wrapPort: (port) => Object.freeze({ ...port, invoke: async (input, options) => { tiers.push(input.tier ?? "standard"); return port.invoke(input, options); } }) });
+  await f.run("stage", "publish-quotes");
+  const referenced = await f.run("pointer-reference");
+  const { reference } = referenced.pointer;
+  assert.deepEqual([referenced.pointer.pointer_rules, referenced.pointer.blocker], [3, null]);
+  assert.ok(reference.counts.marked_units > 30, "the even pages' units are marked");
+  assert.deepEqual([reference.counts.complete_units + reference.counts.marked_units, reference.counts.nonresponse_units,
+    reference.counts.unconfirmed_units], [96, 0, 0]);
+  assert.deepEqual(reference.counts.marked_by_reason, { coverage_unconfirmed: reference.counts.marked_units });
+  assert.equal(reference.recall_reach, null);
+  assert.deepEqual(reference.unconfirmed_units, []);
+  const { judges } = reference.counts;
+  assert.deepEqual([judges.claude_confirmed, judges.agreement, judges.held_back.claude, judges.copying_flagged.claude], [null, null, null, null]);
+  assert.ok(judges.held_back.codex.left_out > 0);
+  // Nothing stops the run: the pilot, the pass and calibration's set go on.
+  assert.equal((await f.run("pointer-pilot")).pointer.pilot.status, "done");
+  await f.run("pointer-pass", "pointer-challenge");
+  const measured = await f.run("pointer-measure");
+  const { measure } = measured.pointer;
+  assert.deepEqual([measure.publish, measure.floors_block, measured.pointer.blocker], [true, false, null]);
+  assert.ok(measure.failed_floors.length > 0, "the precision floors fail, and are reported");
+  // The marked units' questions were searched and measured like the complete ones': with tags, every one is found.
+  assert.equal(measure.floors.recall.estimate, 1);
+  assert.deepEqual([...new Set(tiers)], ["standard"], "no call went to Claude");
+  const deployed = await f.run("pointer-publish");
+  assert.ok(deployed.pointer.published);
+  // A run keeps the rules it started with: other rules call for a new run.
+  f.config.pointer_rules = 2;
+  await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
+});
+
+test("the pointer rules are a run setting, owner decision 32's by default, checked before anything runs", async (t) => {
+  assert.equal(journalPointerRules({}), 3);
+  assert.equal(journalPointerRules({ pointer_rules: 2 }), 2);
+  for (const value of [1, 4, "3", false]) {
+    assert.throws(() => journalPointerRules({ pointer_rules: value }), { code: "JOURNAL_POINTER_RULES_INVALID" });
+  }
+  const f = await runtimeEnvironment(t, { rules: 4 });
+  await assert.rejects(f.open(), { code: "JOURNAL_POINTER_RULES_INVALID" });
 });
 
 test("reference units the coverage judges never confirm count as missed, and stop the run before the pilot when that puts recall out of reach", async (t) => {
@@ -360,6 +410,40 @@ test("pointer-examples writes the pieces the judges didn't confirm to a new owne
   const again = await f.run("pointer-examples");
   assert.notEqual(again.examples.file, examples.file);
   assert.deepEqual((await fs.readdir(reviewDir)).sort(), [examples.file, again.examples.file].sort());
+});
+
+test("under owner decision 32's rules pointer-examples shows the pieces marked as not understood, with Codex's verdicts alone", async (t) => {
+  const later = { ms: 0 };
+  let sends = 0;
+  const parent = await fs.mkdtemp(path.join(os.tmpdir(), "pointer-review-marked-"));
+  t.after(() => fs.rm(parent, { recursive: true, force: true }));
+  const reviewDir = path.join(parent, "review");
+  await fs.mkdir(reviewDir, { mode: 0o700 });
+  await fs.chmod(reviewDir, 0o700);
+  // The judge never confirms a page's first quote on the even pages; the route attests nothing for Claude, whom these
+  // rules never call, so the readback can't need it either.
+  const f = await runtimeEnvironment(t, { rules: 3, attested: false,
+    refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
+    now: () => new Date(Date.now() + later.ms),
+    wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => {
+      sends += 1;
+      const result = await port.invoke(...args);
+      return { ...result, receipt: { ...result.receipt, provider_route_receipt: { received_at: new Date(Date.now() + later.ms).toISOString() } } };
+    } }) });
+  const { reference } = (await f.run("stage", "build-quotes", "pointer-reference")).pointer;
+  assert.ok(reference.counts.marked_units > 0);
+  later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;
+  f.config.operator_review_dir = reviewDir;
+  const sent = sends;
+  const { examples } = await f.run("pointer-examples");
+  assert.equal(sends, sent, "nothing is sent");
+  assert.equal(examples.pieces, reference.counts.marked_units + reference.counts.nonresponse_units);
+  const html = await fs.readFile(path.join(reviewDir, examples.file), "utf8");
+  assert.equal((html.match(/<section>/gu) ?? []).length, examples.pieces);
+  assert.match(html, /<h1>Journal pieces marked as not understood<\/h1>/u);
+  assert.match(html, /marked as not understood: not covered, even after the rewrite/u);
+  assert.match(html, /<strong>Codex<\/strong>: held back \(something left out\)/u);
+  assert.doesNotMatch(html, /<strong>Claude<\/strong>/u, "only the run's one judge");
 });
 
 test("a run from before owner decision 30 keeps its rules, so its recount follows it: a copying flag holds a quote back, and an unconfirmed unit is a nonresponse", async (t) => {

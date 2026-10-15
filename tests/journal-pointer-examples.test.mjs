@@ -149,3 +149,83 @@ test("a writer's incomplete answer still shows the questions it wrote", () => {
   assert.match(html, /<span class="q">Q1<\/span> Where did I go on Sunday\?/u);
   assert.match(html, /Piece 1: the question writer&#39;s questions fell short twice/u);
 });
+
+test("under owner decision 32's rules the examples are the pieces marked as not understood, with Codex's verdict alone", () => {
+  const units3 = [
+    { unit_id: "q:1", page: 1, text: "A covered passage." },
+    { unit_id: "q:2", page: 2, text: "A passage left uncovered." },
+    { unit_id: "q:3", page: 3, text: "Marked, and then its searches ran out." },
+    { unit_id: "q:4", page: 4, text: "Covered, but its searches ran out." },
+    { unit_id: "q:5", page: 5, text: "The judge gave no usable answer." }
+  ];
+  const reference3 = { units: [
+    { unit_id: "page:1", quote_ids: ["q:1"], status: "complete", reason: null, deadline_cause: null },
+    { unit_id: "page:2", quote_ids: ["q:2"], status: "marked", reason: "coverage_unconfirmed", deadline_cause: null },
+    { unit_id: "page:3", quote_ids: ["q:3"], status: "nonresponse", reason: "searches_incomplete", deadline_cause: null },
+    { unit_id: "page:4", quote_ids: ["q:4"], status: "nonresponse", reason: "searches_incomplete", deadline_cause: null },
+    { unit_id: "page:5", quote_ids: ["q:5"], status: "marked", reason: "coverage_check_failed", deadline_cause: null }
+  ] };
+  const two = (unitId, quoteId, copied) => ({ complete: true, answer_valid: true,
+    copied: copied ? [{ question_id: `question:${unitId}:0`, unit_id: quoteId, words: 9 }] : [],
+    questions: [{ question_id: `question:${unitId}:0`, unit_id: quoteId, question: "What happened?", critical: false, event: false },
+      { question_id: `question:${unitId}:1`, unit_id: quoteId, question: "What happened, said again?", critical: false, event: false }] });
+  const writer = (unitId, quoteId, round, copied = false) => ({ kind: "writer", unit_id: unitId, round, status: "answered",
+    set: two(unitId, quoteId, copied), coverage_notes: [] });
+  const codex = (quoteId, round, fields) => ({ kind: "judge", round, tier: "standard", quote_ids: [quoteId], status: "answered",
+    judgments: [judgment(quoteId, fields)] });
+  const events3 = [
+    writer("page:2", "q:2", 0), codex("q:2", 0, { covered: false, missing: "where it happened" }),
+    writer("page:2", "q:2", 1, true), codex("q:2", 1, { covered: false, repeated_question_ids: ["question:page:2:1"], missing: "where it happened" }),
+    writer("page:3", "q:3", 0), codex("q:3", 0, { covered: false, missing: "who was there" }),
+    writer("page:3", "q:3", 1), codex("q:3", 1, { covered: false, missing: "who was there" }),
+    // Covered, with a repeated question and a copying one: confirmed under these rules, so only its searches fell short.
+    writer("page:4", "q:4", 0, true), codex("q:4", 0, { repeated_question_ids: ["question:page:4:1"] }),
+    writer("page:5", "q:5", 0), { kind: "judge", round: 0, tier: "standard", quote_ids: ["q:5"], status: "deadline", judgments: null }
+  ];
+  const collected = collectPointerExamples({ reference: reference3, units: units3, events: events3, copyRunWords: 8, rules: 3 });
+  assert.equal(collected.rules, 3);
+  assert.deepEqual(collected.pieces.map((piece) => [piece.unit_id, piece.marked]),
+    [["page:2", "coverage_unconfirmed"], ["page:3", "coverage_unconfirmed"], ["page:5", "coverage_check_failed"]]);
+  const rewrite = collected.pieces[0].attempts[1];
+  assert.deepEqual(rewrite.verdicts[0].judges.map((item) => [item.judge, item.status]), [["Codex", "held_back"]]);
+  assert.equal(rewrite.questions[0].copied_words, 9);
+  // Any split is fine: a covered quote with a repeated question is confirmed, so its try isn't an example; under owner
+  // decision 30's rules the same try is held back.
+  const covered = [writer("page:2", "q:2", 0), codex("q:2", 0, { repeated_question_ids: ["question:page:2:1"] })];
+  const shown = (rules, unit) => collectPointerExamples({ reference: { units: [unit] }, units: units3, events: covered, copyRunWords: 8, rules }).pieces;
+  assert.equal(shown(2, { ...reference3.units[1], status: "unconfirmed", reason: null })[0].attempts[0].verdicts[0].judges[0].status, "held_back");
+  assert.deepEqual(shown(3, reference3.units[1]), []);
+  // These rules always have a copy setting.
+  assert.throws(() => collectPointerExamples({ reference: reference3, units: units3, events: events3, copyRunWords: null, rules: 3 }),
+    { code: "POINTER_EXAMPLES_INPUT_INVALID" });
+  const html = renderPointerExamples(collected, { runId: "run-3", generatedAt: "2026-10-15T10:30:00.000Z" });
+  assert.match(html, /<title>Journal pieces marked as not understood<\/title>/u);
+  assert.match(html, /<h1>Journal pieces marked as not understood<\/h1>/u);
+  assert.match(html, /what Codex, this run&#39;s one judge, decided|what Codex, this run's one judge, decided/u);
+  assert.match(html, /Piece 1: marked as not understood: not covered, even after the rewrite<\/h2>/u);
+  assert.match(html, /Piece 2: marked as not understood: not covered, even after the rewrite; its searches didn&#39;t finish either<\/h2>/u);
+  assert.match(html, /Piece 3: marked as not understood: the judge gave no usable answer<\/h2>/u);
+  assert.match(html, /<strong>Codex<\/strong>: held back \(something left out\)\.<div class="note">Its note: “where it happened”<\/div>/u);
+  assert.match(html, /<strong>Codex<\/strong>: no usable answer \(deadline\)\./u);
+  assert.doesNotMatch(html, /<strong>Claude<\/strong>/u);
+  assert.doesNotMatch(html, /repeated: Q2|<dt>Repeated<\/dt>|<dt>Two things in one<\/dt>/u);
+  assert.match(html, /code: copies 9 words in a row; flagged, left out of recall/u);
+  assert.match(html, /the question is flagged and left out of the recall measure, and holds nothing back\./u);
+  assert.doesNotMatch(html, /A covered passage|Covered, but its searches ran out/u, "confirmed pieces aren't shown");
+  // Out of time: a piece marked and then late with its searches keeps its mark (Codex, d7476fa9); one whose rewrite
+  // never came, or whose judge ran out of time, is the deadline's.
+  const late = (unitId) => ({ unit_id: unitId, quote_ids: [`q:${unitId}`], status: "nonresponse", reason: "deadline", deadline_cause: "unanswered" });
+  const lateUnits = ["a", "b", "c"].map((id) => ({ unit_id: `q:page:${id}`, page: 10, text: `Late passage ${id}.` }));
+  const lateEvents = [
+    writer("page:a", "q:page:a", 0), codex("q:page:a", 0, { covered: false, missing: "when" }),
+    writer("page:a", "q:page:a", 1), codex("q:page:a", 1, { covered: false, missing: "when" }),
+    writer("page:b", "q:page:b", 0), codex("q:page:b", 0, { covered: false, missing: "when" }),
+    writer("page:c", "q:page:c", 0), { kind: "judge", round: 0, tier: "standard", quote_ids: ["q:page:c"], status: "deadline", judgments: null }
+  ];
+  const lateCollected = collectPointerExamples({ reference: { units: ["page:a", "page:b", "page:c"].map(late) }, units: lateUnits,
+    events: lateEvents, copyRunWords: 8, rules: 3 });
+  assert.deepEqual(lateCollected.pieces.map((piece) => [piece.unit_id, piece.marked]), [["page:a", "coverage_unconfirmed"], ["page:b", null], ["page:c", null]]);
+  const lateHtml = renderPointerExamples(lateCollected, { runId: "run-3", generatedAt: "2026-10-15T10:30:00.000Z" });
+  assert.match(lateHtml, /Piece 1: marked as not understood: not covered, even after the rewrite; then the step&#39;s time ran out<\/h2>/u);
+  assert.equal((lateHtml.match(/the step&#39;s time ran out before its questions were confirmed/gu) ?? []).length, 2);
+});

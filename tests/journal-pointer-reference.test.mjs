@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { POINTER_COPY_RUN_LIMITS, POINTER_COPY_RUN_WORDS, POINTER_COVERAGE_CALL_CHARS, POINTER_COVERAGE_QUOTES_PER_CALL,
   POINTER_REFERENCE_NONRESPONSE_REASONS, POINTER_REFERENCE_SAMPLE, checkCoverageJudgments, checkQuestionSet, checkSearchPlan, coverageJudgeCalls,
-  longestSharedRun, pointerChallengeUnits, pointerReferenceSample, referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
+  longestSharedRun, pointerChallengeUnits, pointerJudgeTiers, pointerReferenceSample, referenceUnitStep } from "../src/journal-import/pointer-reference.mjs";
 import { POINTER_PAGELESS_STRETCH } from "../src/journal-import/pointer-tags.mjs";
 import { MAX_HARDEST_PACKET_CHARS, hardestJournalPacketFits } from "../src/journal-import/packet-bounds.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket } from "../src/journal-import/provider-port.mjs";
@@ -259,6 +259,60 @@ test("a unit gets one writer retry in all; still unconfirmed after it, its quest
   assert.throws(() => step([{ set: set(0), coverage: [judge([true, true]), { quotes: judge([true, true]).quotes.slice(0, 1), notes: [] }] }]),
     { code: "POINTER_REFERENCE_STEP_COVERAGE_MISMATCH" });
   assert.throws(() => step([{}, {}, {}]), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
+});
+
+test("under owner decision 32's rules any split is fine: a covered quote is confirmed whatever the judge lists as repeated or combined", () => {
+  assert.deepEqual([pointerJudgeTiers(2), pointerJudgeTiers(3)], [["standard", "hardest"], ["standard"]]);
+  const checked = checkCoverageJudgments({ quotes: callQuotes(), rules: 3, answer: { judgments: [
+    judgment("unit:one", { repeated_question_ids: ["question:7:0:1"], missing: "two questions ask the same thing" }),
+    judgment("unit:two", { combined_question_ids: ["question:7:0:2"], missing: "one question asks two things" })] } });
+  assert.deepEqual(checked.quotes.map((quote) => [quote.confirmed, quote.repeated, quote.combined]), [[true, 1, 0], [true, 0, 1]]);
+  assert.deepEqual(checked.notes, []);
+  // Something left out still holds the quote back, and still needs its note.
+  const uncovered = checkCoverageJudgments({ quotes: callQuotes(), rules: 3, answer: { judgments: [
+    judgment("unit:one", { covered: false, missing: "the call from the workshop" }), judgment("unit:two")] } });
+  assert.deepEqual([uncovered.quotes.map((quote) => quote.confirmed), uncovered.notes], [[false, true], [{ unit_id: "unit:one", missing: "the call from the workshop" }]]);
+  assert.equal(checkCoverageJudgments({ quotes: callQuotes(), rules: 3, answer: { judgments: [
+    judgment("unit:one", { covered: false }), judgment("unit:two")] } }).reason, "unconfirmed_without_note");
+  // These rules came after the copy check, so a run under them always has its run length.
+  for (const fields of [{ rules: 4 }, { rules: 3, copyRunWords: null }]) {
+    assert.throws(() => checkCoverageJudgments({ quotes: callQuotes(), answer: { judgments: [] }, ...fields }), { code: "POINTER_COVERAGE_CHECK_INPUT_INVALID" });
+  }
+});
+
+test("under owner decision 32's rules one judge decides, a copying question is flagged instead of holding its quote back, and a unit still uncovered after its retry is marked and keeps its questions", () => {
+  const set = (attempt, copied = []) => ({ ...checkQuestionSet({ sampleIndex: 7, attempt, quoteIds: QUOTES, texts: TEXTS, answer: writerAnswer() }), copied });
+  // A judge's results for the try `round`, its marks naming that try's questions.
+  const judge = (confirmed, notes = [], round = 0) => ({ quotes: [
+    { unit_id: "unit:one", confirmed: confirmed[0], critical_question_ids: [], event_question_ids: [`question:7:${round}:0`] },
+    { unit_id: "unit:two", confirmed: confirmed[1], critical_question_ids: [`question:7:${round}:2`], event_question_ids: [] }], notes });
+  const step = (attempts) => referenceUnitStep({ quoteIds: QUOTES, attempts, rules: 3 });
+  // One judge's results: Codex alone.
+  const done = step([{ set: set(0), coverage: [judge([true, true])] }]);
+  assert.equal(done.step, "complete");
+  assert.equal(done.questions.some((item) => "copied" in item), false);
+  assert.throws(() => step([{ set: set(0), coverage: [judge([true, true]), judge([true, true])] }]), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
+  // A copying question is flagged and its quote confirmed all the same.
+  const copying = step([{ set: set(0, [{ question_id: "question:7:0:1", unit_id: "unit:one", words: 9 }]), coverage: [judge([true, true])] }]);
+  assert.equal(copying.step, "complete");
+  assert.deepEqual(copying.questions.map((item) => [item.question_id, item.copied === true]),
+    [["question:7:0:0", false], ["question:7:0:1", true], ["question:7:0:2", false]]);
+  // Something left out uses the retry with the judge's note; still left out after it, the unit is marked.
+  const notes = [{ unit_id: "unit:two", missing: "the call from the workshop" }];
+  assert.deepEqual(step([{ set: set(0), coverage: [judge([true, false], notes)] }]), { step: "write", attempt: 1, notes });
+  const stillShort = step([{ set: set(0), coverage: [judge([true, false], notes)] }, { set: set(1), coverage: [judge([true, false], notes, 1)] }]);
+  assert.deepEqual([stillShort.step, stillShort.attempt, stillShort.reason], ["marked", 1, "coverage_unconfirmed"]);
+  assert.deepEqual(stillShort.questions.map((item) => [item.question_id, item.critical, item.event]), [
+    ["question:7:1:0", false, true], ["question:7:1:1", false, false], ["question:7:1:2", true, false]]);
+  // A judge with no usable answer leaves the unit marked, its questions as the writer marked them.
+  const unjudged = step([{ set: set(0), coverage: [{ failed: true }] }]);
+  assert.deepEqual([unjudged.step, unjudged.attempt, unjudged.reason], ["marked", 0, "coverage_check_failed"]);
+  assert.deepEqual(unjudged.questions.map((item) => [item.question_id, item.critical, item.event]), writerAnswer().questions
+    .map((item, index) => [`question:7:0:${index}`, item.critical, item.event]));
+  // A writer that falls short twice still leaves the unit without questions: a nonresponse, listed and not measured.
+  const incomplete = checkQuestionSet({ sampleIndex: 7, attempt: 0, quoteIds: QUOTES, texts: TEXTS, answer: { questions: writerAnswer().questions.slice(0, 1) } });
+  assert.deepEqual(step([{ set: incomplete, coverage: null }, { set: null, coverage: null }]), { step: "nonresponse", reason: "questions_incomplete" });
+  assert.throws(() => referenceUnitStep({ quoteIds: QUOTES, attempts: [], rules: 3, copyRunWords: null }), { code: "POINTER_REFERENCE_STEP_INPUT_INVALID" });
 });
 
 test("code checks copying: the longest run of its quote's words a question holds, accents, case, punctuation and spaces aside", () => {
