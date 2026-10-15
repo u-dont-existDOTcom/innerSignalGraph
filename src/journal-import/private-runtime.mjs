@@ -22,7 +22,8 @@ import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "./graph.mjs";
-import { QUOTE_INDEX_VERSION, buildQuoteGeneration } from "./quote-index.mjs";
+import { QUOTE_INDEX_VERSION, QUOTE_POINTER_VERSION, buildQuoteGeneration, quoteIndexVersionOf } from "./quote-index.mjs";
+import { buildQuoteTermsFromGraph } from "./quote-terms.mjs";
 import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibration, referenceScorePasses,
   reviewAfterWithholding, reviewFindingTargets, reviewStatusFromContent, scopeReviewAfterRepair,
   sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
@@ -2708,15 +2709,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       return quoteSourceCache;
     };
-    // buildQuoteGeneration's input for a generation of the quote corpus: the quote index's own, or a pointer pass's.
+    // buildQuoteGeneration's input for a generation of the quote corpus: the quote index's own, or a pointer pass's. The index
+    // version it is built as follows from the generation's name, so a generation named for version 2 (the one published before
+    // version 3, and every pointer run) is rebuilt exactly as it was.
     const quoteGenerationInput = async (generation) => {
       const { mediaType, representations } = await quoteSource();
       return { caseId, corpusId: `${state.corpus_id}:quotes`, generation, originalObjectId: state.original.object_id, mediaType, representations,
-        dateOptions: { numericOrder: quoteNumericDateOrder } };
+        dateOptions: { numericOrder: quoteNumericDateOrder }, version: quoteIndexVersionOf(generation) };
     };
 
     // The quote index's generation: its version and how it reads all-numeric dates.
     const quoteIndexGeneration = () => `${state.generation}:quotes:${QUOTE_INDEX_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
+    // A pointer run's own generation is named for version 2 (owner decision 38: B), not for the index version, so its steps rebuild
+    // the quotes the way the run started.
+    const pointerBaseGeneration = () => `${state.generation}:quotes:${QUOTE_POINTER_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
 
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
@@ -2737,7 +2743,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const published = state.quote_published?.generation ?? null;
           const supersedes = published === generation ? null : published;
           const { representations } = await quoteSource();
-          const built = buildQuoteGeneration(await quoteGenerationInput(generation));
+          const input = await quoteGenerationInput(generation);
+          const built = buildQuoteGeneration(input);
           // The quote corpus carries the archived original its locators name, so it is complete on its own.
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
@@ -2745,7 +2752,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const persisted = await persistGraphGeneration({ corpusStore: quoteStore, graph: built.graph,
             sourceRepresentations: Object.fromEntries(representations.map((item) => [item.representation_id, item.text])),
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
-            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
+            // Version 3 adds the word list the search ranks by.
+            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths,
+              ...(input.version === 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) }, indexRepresentations: true });
           // The manifest stays in the store, not in the run state, which is rewritten on every save.
           state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
             manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null,
@@ -2796,7 +2805,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
       if (!state.pointer) {
         const runId = randomBytes(4).toString("hex");
-        state.pointer = { run_id: runId, generation: `${quoteIndexGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
+        state.pointer = { run_id: runId, generation: `${pointerBaseGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
           copy_run_words: pointerCopyRunWords, pointer_rules: pointerRules, started_at: now().toISOString(), blocker: null };
         await save();
       }

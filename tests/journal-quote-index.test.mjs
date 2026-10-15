@@ -5,10 +5,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
-import { adaptExtractionToGraph, persistGraphGeneration } from "../src/journal-import/graph.mjs";
+import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
-import { QUOTE_MONTHS_KEY, QUOTE_UNDATED_KEY, buildQuoteGeneration, dateLineValue, entryDateLine, quoteCues, quoteDateOptions,
-  splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+import { QUOTE_INDEX_VERSION, QUOTE_MONTHS_KEY, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_UNIT_NAMESPACE, buildQuoteGeneration, dateLineValue,
+  entryDateLine, quoteCues, quoteDateOptions, quoteIndexVersionOf, splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+import { buildQuoteTerms, buildQuoteTermsFromGraph } from "../src/journal-import/quote-terms.mjs";
+import { formsReadingTerm } from "../src/journal-import/word-forms.mjs";
 import { journalQuoteNumericDateOrder } from "../src/journal-import/run-config.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
@@ -270,6 +272,93 @@ test("the numeric date order is a run setting, month first unless the journal sa
     assert.throws(() => journalQuoteNumericDateOrder({ quote_numeric_date_order: value }), { code: "JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID" });
   }
   assert.deepEqual(quoteDateOptions(), { numericOrder: "month_first", carryPages: 2, carryQuotes: 24 });
+});
+
+// A small made-up journal for the version 2 and version 3 tests that follow: dates with and without a year, a year alone, a weekday alone, a page
+// that wasn't fully read, and pages past the carry limit.
+const GOLDEN_PAGES = [
+  page("2018\n\nUne année au bord du lac.\n\n28 décembre\n\nLe sapin est encore là.\n\n2 janvier\n\nPremière marche de l'année.\n\nDimanche\n\nSans date écrite.", 1),
+  page("March 3, 2019\n\nI dreamt that Mara left the house. It was only a dream.\n\nApril 10, 2019\n\nMara said she would visit in June.", 2),
+  page("Native words around a scanned picture.", 3, "visual_pending"),
+  page("The next readable page about the orchard.\n\n5/6/19\n\nAmbiguous numbers here.\n\n3 mars\n\nUne date sans année.", 4),
+  page("Page cinq.", 5), page("Page six.", 6), page("Page sept.", 7), page("Page huit.", 8)
+].map((item) => ({ ...item, representation_id: `golden:${item.page_number}` }));
+const goldenInput = (extra = {}) => ({ caseId: "golden-case", corpusId: "golden-corpus:quotes", generation: "golden:quotes:quote-index-v2-month-first",
+  originalObjectId: "original:golden", mediaType: "application/pdf", representations: GOLDEN_PAGES, ...extra });
+// Everything a build makes, as one string: the graph, the units, the two indexes and the counts.
+const builtJson = (built) => JSON.stringify({ graph: built.graph, units: built.units, quoteMeta: [...built.quoteMeta], quoteMonths: [...built.quoteMonths], stats: built.stats });
+
+test("a version 2 generation is rebuilt exactly as it was: the same units, ids, indexes and counts", () => {
+  // The digest was taken of the build made by the code before version 3 existed; the build must still give it, by default and as version 2.
+  const DIGEST = "cc0d1b00bcaa6899829033b7648cb1a63b6aa2db049ad68dd4f4d99a8d207bf3";
+  for (const options of [{}, { version: 2 }]) {
+    const built = buildQuoteGeneration(goldenInput(options));
+    assert.equal(sha256(builtJson(built)), DIGEST);
+    assert.deepEqual(Object.keys(built.stats), ["pages", "quotes", "dated_quotes", "date_lines", "ambiguous_date_lines", "date_line_kinds", "carry_capped_quotes",
+      "unread_date_like", "numeric_date_order"], "no count of version 3 appears");
+    assert.equal(built.quoteMeta.size, built.stats.quotes);
+    for (const [, [meta]] of built.quoteMeta) assert.equal(meta.written?.between ?? false, false, "no range");
+  }
+  assert.throws(() => buildQuoteGeneration(goldenInput({ version: 4 })), { code: "QUOTE_GENERATION_VERSION_INVALID" });
+  assert.throws(() => buildQuoteGeneration(goldenInput({ version: "3" })), { code: "QUOTE_GENERATION_VERSION_INVALID" });
+});
+
+test("version 3 names new generations, but unit and passage ids keep version 2's namespace", () => {
+  assert.equal(QUOTE_INDEX_VERSION, "quote-index-v3");
+  assert.equal(QUOTE_UNIT_NAMESPACE, "quote-index-v2");
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v3-month-first"), 3);
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v3-day-first:pointer-0a1b2c3d"), 3);
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v2-month-first"), 2);
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v2-day-first:pointer-0a1b2c3d"), 2);
+  assert.equal(quoteIndexVersionOf("quote-generation"), 2);
+  assert.equal(quoteIndexVersionOf(undefined), 2);
+  const [unit] = splitQuoteUnits({ representationId: "ns:1", text: "A single quote of the journal." });
+  assert.equal(unit.unit_id, `unit:${sha256(`quote-index-v2\0ns:1\0${unit.start_byte}\0${unit.end_byte}\0${unit.sha256}`).slice(0, 32)}`);
+  const v2 = buildQuoteGeneration(goldenInput({ version: 2 }));
+  const v3 = buildQuoteGeneration(goldenInput({ version: 3 }));
+  assert.deepEqual(v3.units.map(({ unit_id: id }) => id), v2.units.map(({ unit_id: id }) => id));
+  assert.deepEqual(v3.graph.nodes.map(({ id }) => id), v2.graph.nodes.map(({ id }) => id));
+  assert.deepEqual(v3.graph, v2.graph, "the same quotes, so the same graph");
+  const passage = v3.graph.nodes.find((node) => node.kind === "passage");
+  assert.equal(passage.id, journalLocalNodeId({ caseId: "golden-case", corpusId: "golden-corpus:quotes", generation: "golden:quotes:quote-index-v2-month-first",
+    localIdNamespace: QUOTE_UNIT_NAMESPACE, kind: "passage", localId: `${passage.data.representation_id}:${passage.data.start_byte}:${passage.data.end_byte}:${passage.data.quote_sha256}` }));
+});
+
+test("the word list holds each term of the forms reading with the quotes that use it, and the totals under a key no term can be", () => {
+  const texts = ["The cats chat with the cat.", "Chats et chat; déprimée déprimé", "", "Déprimé!  Le chat; 2019 2019."];
+  const pages = texts.map((text, index) => ({ representation_id: `terms:${index}`, text, page_number: index + 1, parse_status: "readable" }));
+  const built = buildQuoteGeneration({ caseId: "terms-case", corpusId: "terms-corpus:quotes", generation: "terms:quotes:quote-index-v3-month-first",
+    originalObjectId: "original:terms", mediaType: "application/pdf", representations: pages, unitOptions: { minimumBytes: 0 }, version: 3 });
+  const idOf = (fragment) => built.graph.nodes.find((node) => node.kind === "passage" && node.data.quote.includes(fragment)).id;
+  const cats = idOf("cats"), french = idOf("et chat"), last = idOf("Le chat");
+  const terms = buildQuoteTermsFromGraph(built.graph);
+  assert.equal(built.stats.quotes, 3, "a blank page has no quote");
+  assert.deepEqual(terms.get("cat"), [cats].map((id) => [id, 2, 6]), "cats and cat are one term, used twice in a quote of six tokens");
+  const inIdOrder = (...entries) => entries.sort(([left], [right]) => left.localeCompare(right));
+  assert.deepEqual(terms.get("chat"), inIdOrder([cats, 1, 6], [french, 2, 5], [last, 1, 5]), "chats and chat; in passage id order");
+  assert.deepEqual(terms.get("the"), [[cats, 2, 6]], "the stop words are in, as is");
+  assert.deepEqual(terms.get("et"), [[french, 1, 5]]);
+  assert.deepEqual(terms.get(formsReadingTerm("déprimée")), inIdOrder([french, 2, 5], [last, 1, 5]), "accents folded, French forms reduced");
+  assert.equal(formsReadingTerm("déprimée"), "deprim");
+  assert.deepEqual(terms.get("2019"), [[last, 2, 5]], "numbers are terms too");
+  assert.deepEqual(terms.get(QUOTE_TERMS_STATS_KEY), [{ quotes: 3, mean_length: (6 + 5 + 5) / 3 }]);
+  assert.equal(terms.has("déprimé"), false, "terms are read, not raw");
+  // Keys are in order, and every posting list is in passage id order.
+  const keys = [...terms.keys()];
+  assert.deepEqual(keys, [...keys].sort((left, right) => left.localeCompare(right)));
+  for (const [key, postings] of terms) {
+    if (key === QUOTE_TERMS_STATS_KEY) continue;
+    assert.match(key, /^[\p{L}\p{N}]+$/u);
+    assert.deepEqual(postings.map(([id]) => id), postings.map(([id]) => id).sort((left, right) => left.localeCompare(right)));
+  }
+  // No journal text is kept: only stems, ids and counts.
+  assert.equal(JSON.stringify([...terms]).includes("cats chat"), false);
+  // Nothing to count.
+  assert.deepEqual([...buildQuoteTerms([])], [[QUOTE_TERMS_STATS_KEY, [{ quotes: 0, mean_length: 1 }]]]);
+  assert.deepEqual(buildQuoteTerms([{ id: "passage:a", quote: "" }]).get(QUOTE_TERMS_STATS_KEY), [{ quotes: 1, mean_length: 1 }], "empty quotes: a mean of 1");
+  // A passage listed twice is read once, and the input is checked.
+  assert.deepEqual(buildQuoteTerms([{ id: "passage:a", quote: "horse" }, { id: "passage:a", quote: "other words" }]).get(formsReadingTerm("horse")), [["passage:a", 1, 1]]);
+  for (const bad of [null, [{ id: "a", quote: "x" }], [{ id: "passage:a", quote: null }], [null]]) assert.throws(() => buildQuoteTerms(bad), { code: "QUOTE_TERMS_INPUT_INVALID" });
 });
 
 async function persistedQuotes(t, { quoteIndexes = true } = {}) {
@@ -565,11 +654,12 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   const corpora = record.journal_corpora.filter((item) => item.active_generation != null);
   assert.equal(corpora.length, 1, "only the quote corpus is active");
   assert.match(corpora[0].corpus_id, /:quotes$/u);
-  assert.match(corpora[0].active_generation, /:quotes:quote-index-v2-month-first$/u);
+  assert.match(corpora[0].active_generation, /:quotes:quote-index-v3-month-first$/u);
   // The published quote corpus carries the archived original its locators name.
   await f.service.withJournalCorpus(CASE_ID, corpora[0].corpus_id, { requiredScope: "case:write", requiredPurpose: "archive" }, async ({ corpusStore, reference }) => {
     const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
     assert.equal(manifest.archive_references.length, 1);
+    assert.ok(Array.isArray(manifest.indexes.quote_terms), "a version 3 generation lists its word list");
     const original = await corpusStore.reassembleOriginal(manifest.archive_references[0]);
     try { assert.equal(original.toString("utf8"), PAGES.join("\n")); } finally { original.fill(0); }
   }, { bearerToken: WRITER });
@@ -607,7 +697,7 @@ test("a quote index built another way replaces exactly the one published before 
   let runtime = await f.open();
   try { await runtime.execute("stage"); await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
   const first = await quoteCorpus();
-  assert.match(first.active_generation, /:quotes:quote-index-v2-month-first$/u);
+  assert.match(first.active_generation, /:quotes:quote-index-v3-month-first$/u);
   const api = createJournalPrivateApi({ caseAccessService: f.service });
   const query = { caseId: CASE_ID, corpusId: first.corpus_id, query: "Mara cardamom running", limit: 1, purpose: "session_use" };
   const oldPage = await api.findQuotes(query, reader);
@@ -622,7 +712,7 @@ test("a quote index built another way replaces exactly the one published before 
   runtime = await f.open();
   let built;
   try { built = await runtime.execute("build-quotes"); } finally { await runtime.close(); }
-  assert.match(built.quote_index.generation, /:quotes:quote-index-v2-day-first$/u);
+  assert.match(built.quote_index.generation, /:quotes:quote-index-v3-day-first$/u);
   assert.equal(built.quote_index.supersedes, first.active_generation);
   assert.equal(built.quote_index.numeric_date_order, "day_first");
   assert.equal(built.quote_index.published_at, null);

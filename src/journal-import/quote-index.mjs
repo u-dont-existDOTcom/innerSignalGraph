@@ -12,12 +12,31 @@ import { adaptExtractionToGraph } from "./graph.mjs";
 // and weekday names, marks before a date, year-first dates), a year taken from the entries before a date
 // written without one, and a date that ends at the next entry's first line and is carried no further
 // than a couple of pages.
-export const QUOTE_INDEX_VERSION = "quote-index-v2";
+//
+// v3 (15 Oct 2026): a word list of the forms reading (`quote_terms`) that the search ranks by, the order of the dates
+// counted, and a range for the quotes left undated between two dates that run forward. The split into quotes is the
+// same as v2's, so unit and passage ids keep v2's namespace (`QUOTE_UNIT_NAMESPACE`) while the version names the
+// generation. Everything v3 adds is built only for a generation whose name holds the version (`quoteIndexVersionOf`);
+// a v2 generation rebuilds exactly as it was.
+export const QUOTE_INDEX_VERSION = "quote-index-v3";
+// The namespace unit and passage ids are made under. It is the version the split into quotes was made in, and it stays
+// while the split does, so a later index version maps onto the same units and passages.
+export const QUOTE_UNIT_NAMESPACE = "quote-index-v2";
+// The version a pointer run's own generation is named for (owner decision 38: B): the pointer pass tags the v2 quotes and
+// is not published, so it keeps v2's name and reads dates as v2 does.
+export const QUOTE_POINTER_VERSION = "quote-index-v2";
+
+/** The index version (2 or 3) a generation is built as, from its name: 3 when the name holds `QUOTE_INDEX_VERSION`, else 2. */
+export function quoteIndexVersionOf(generation) {
+  return typeof generation === "string" && generation.includes(QUOTE_INDEX_VERSION) ? 3 : 2;
+}
 // Keys of the `quote_months` index besides the periods themselves (a month, "2019-03", or a year, "2019",
 // for quotes under a year written on a line of its own): the list of those periods, and the quotes with
 // no date.
 export const QUOTE_MONTHS_KEY = "months";
 export const QUOTE_UNDATED_KEY = "undated";
+// The key of the `quote_terms` index that holds its totals instead of a term. No term can be it: terms are runs of letters and digits.
+export const QUOTE_TERMS_STATS_KEY = "#stats";
 export const QUOTE_UNIT_DEFAULTS = Object.freeze({ maximumBytes: 1600, minimumBytes: 160, headingMaximumBytes: 80 });
 // How dates are read. An all-numeric date both ways could read (3/4) is month-first unless the journal's
 // owner writes day-first. A date dates the quotes after it on its own page and the next `carryPages`
@@ -355,7 +374,7 @@ export function splitQuoteUnits({ representationId, text, maximumBytes = QUOTE_U
     const core = bytes.subarray(piece.start, piece.end);
     const digest = sha256(core);
     return Object.freeze({
-      unit_id: `unit:${sha256(Buffer.from(`${QUOTE_INDEX_VERSION}\0${representationId}\0${piece.start}\0${piece.end}\0${digest}`, "utf8")).slice(0, 32)}`,
+      unit_id: `unit:${sha256(Buffer.from(`${QUOTE_UNIT_NAMESPACE}\0${representationId}\0${piece.start}\0${piece.end}\0${digest}`, "utf8")).slice(0, 32)}`,
       representation_id: representationId,
       start_byte: piece.start,
       end_byte: piece.end,
@@ -397,6 +416,11 @@ const EMPTY_EXTRACTION = (units) => ({
  * `stats` counts all of it without content: the entry lines of each kind, the quotes left undated by
  * the carry limit, and the line openings that look like a date but weren't read as one.
  *
+ * `version` (2 by default; `quoteIndexVersionOf(generation)` gives it from a generation's name) says which index version
+ * the generation is built as. Version 3 adds, beyond what version 2 builds and leaving that exactly as it was, the count of
+ * the dates' order and the ranges for the quotes left undated between two dates (below). The word list `quote_terms` is
+ * built from the passages by quote-terms.mjs, which the runtime calls for a version 3 generation.
+ *
  * Each quote unit carries its place in the whole journal (`source_order`), so anything an extraction
  * makes from it is ordered across pages; `units` lists them all, in that order, each with its page. `extractionFor({ representation, units, quoteMeta,
  * passageIdForUnit })`, when given, supplies a page's extraction in place of the empty one, once the
@@ -404,8 +428,9 @@ const EMPTY_EXTRACTION = (units) => ({
  * and episodes, but no passage: the page's passages stay exactly its quotes.
  */
 export function buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId, mediaType, representations, unitOptions = {}, dateOptions = {},
-  extractionFor = null }) {
+  extractionFor = null, version = 2 }) {
   invariant(typeof caseId === "string" && typeof corpusId === "string" && typeof generation === "string", "QUOTE_GENERATION_IDENTITY_INVALID");
+  invariant(version === 2 || version === 3, "QUOTE_GENERATION_VERSION_INVALID");
   invariant(typeof originalObjectId === "string" && originalObjectId.length > 0 && typeof mediaType === "string", "QUOTE_GENERATION_SOURCE_INVALID");
   invariant(Array.isArray(representations), "QUOTE_GENERATION_REPRESENTATIONS_INVALID");
   invariant(extractionFor === null || typeof extractionFor === "function", "QUOTE_GENERATION_EXTRACTION_INVALID");
@@ -446,8 +471,8 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
       },
       units,
       extraction,
-      producerRef: QUOTE_INDEX_VERSION,
-      localIdNamespace: QUOTE_INDEX_VERSION
+      producerRef: QUOTE_UNIT_NAMESPACE,
+      localIdNamespace: QUOTE_UNIT_NAMESPACE
     });
     let graph = adapt(EMPTY_EXTRACTION(units));
     const passageByUnit = new Map(graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.unit_id, node.id]));
