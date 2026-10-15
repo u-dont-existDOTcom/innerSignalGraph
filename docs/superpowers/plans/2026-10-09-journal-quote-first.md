@@ -475,6 +475,30 @@ Measured from the Codex worker's content-free log, 1 to 11 Oct:
   same written rules for what one thing is ("What counts as one thing", under "Measuring it" below), and a judge holds a
   quote back only for one of those three reasons, judged by those rules: never for style, word choice, the questions'
   order or how it would have asked.
+- **The rules, third part (amended 14 Oct 2026, owner decision 32).** The owner asked for a much simpler import: "if
+  there are things that can't be understood in the journal that's normal, i'm sure i wouldn't understand everything
+  either, so just mark the things that aren't understood and move on", and, on the judges splitting over how a quote is
+  divided into questions: "why not allow multiple ways to split into questions? there truly are multiple ways to ask
+  questions about a passage, it's not that we have to agree right?" So a new run (the run setting `pointer_rules`, 3 by
+  default; 2 keeps the rules above) works this way, and a run keeps the rules it started with, so a run from before
+  this amendment, and its recount, keep both judges and the stops:
+  - Codex is the only coverage judge and the only pair judge, so a run needs neither the owner's laptop nor Claude's
+    daily slots, and no step checks Claude's route.
+  - Any way of splitting a quote into questions is fine: the judge holds a quote back only for something it says that
+    no question asks about. The questions it lists as repeating or combining are counted and hold nothing back.
+  - A question the copy check catches is flagged `copied`, kept, and left out of every recall count, instead of sending
+    its unit back to the writer.
+  - A unit still not covered after its one rewrite, or whose judge gave no usable answer after the call's retry, is
+    marked with its reason (`coverage_unconfirmed` or `coverage_check_failed`). It keeps its questions, gets its
+    searches and is measured like a complete unit. The marked units are what the owner reads in the examples file:
+    `pointer-examples` follows the rules a run ran under, so for such a run its page shows the marked pieces (and those
+    left without usable questions) with Codex's verdict alone, a marked piece whose searches then fell short or ran out
+    of time with the reason its last try gives, and only something left out as a reason to hold a quote back.
+  - Nothing in the reference step stops the run. A unit left without questions or searches (a writer short twice, a
+    search plan short twice, or out of time) is listed (`unmeasured_units`) and left out of the measurement, which runs
+    over the units that have questions; the recall floor's reach isn't checked.
+  - The floors are measured and reported as before, but they no longer block publication (`floors_block` false).
+    Publication still waits for the owner's `deploy`.
 - **For the public.** The same pass on pay-per-use keys can run many more than eight calls at once, so a journal this
   size takes minutes to an hour. The provider, the model and who pays are owner decisions before any public run.
 
