@@ -389,3 +389,64 @@ test("while grief is fresh, a bounded protective or caring step stays beside it 
   assert.ok(!grief.effects.deferNodes.includes("IC.PROTECTOR_ACTION"));
   assert.ok(grief.recommendations.some((line) => /one bounded protective or caring step/.test(line)));
 });
+
+test("every node either waits during fresh grief or is named as staying beside it (Codex, ec09f8d9)", () => {
+  // Music used as a doorway into feeling or memory waits like the other inward work. Naming what stays makes a new node
+  // a decision: it fails here until it is put on one side.
+  const grief = byId.get("ROUTE.FRESH_GRIEF_FIRST");
+  const held = new Set(grief.effects.deferNodes);
+  assert.ok(held.has("IC.MUSIC_EMOTIONAL_ACCESS"));
+  const stays = new Set([
+    "IC.BEST_FRIEND_PERSPECTIVE",
+    "IC.CARING_COMPANY",
+    "IC.CHALLENGE_CHECK_IN",
+    "IC.COMMON_HUMANITY",
+    "IC.COMPASSIONATE_STORY",
+    "IC.CRITICISM_KERNEL",
+    "IC.DRAFT_EDITOR",
+    "IC.DRAFT_RETURN_TO_CARE",
+    "IC.GOODWILL_BRIDGE",
+    "IC.INTUITION_TRUST_CALIBRATION",
+    "IC.MEET_GUARD",
+    "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
+    "IC.PAST_COMPETENCE",
+    "IC.PHOTO_EPISTEMIC_CAUTION",
+    "IC.PRECIOUS_HUMAN_OPPORTUNITY",
+    "IC.PROTECTOR_ACTION",
+    "IC.SAFETY_ORIENTATION",
+    "IC.SPIRITUAL_STRUGGLE",
+    "IC.SUICIDAL_ADULT_SEAT",
+    "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+    "IC.WISER_SELF_PERSPECTIVE",
+    "ROUTE.ACT_OUTWARD",
+    "ROUTE.ALTERED_ACTION_LOCK",
+    "ROUTE.ALTERED_ACUTE_STABILIZATION",
+    "ROUTE.ALTERED_MEDICAL_SAFETY",
+    "ROUTE.COMMUNITY_SUPPORT",
+    "ROUTE.DEFINED_WAIT",
+    "ROUTE.EXTERNAL_EMBODIMENT",
+    "ROUTE.INFLUENCE_INTERNAL",
+    "ROUTE.INFLUENCE_LOVE_CAPACITY",
+    "ROUTE.INFLUENCE_NONORDINARY_METTA",
+    "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+    "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+    "ROUTE.LEAVE_ALONE",
+    "ROUTE.MEDICAL_RED_FLAG",
+    "ROUTE.RELATIONAL_REALITY_CHECK",
+    "ROUTE.THREE_WAY_GATE",
+    "SOM.ADVANCED_RELEASE_BLOCK",
+    "SOM.BYPASS_AUDIT",
+    "SOM.CONSENSUAL_TOUCH",
+    "SOM.DISCHARGE_SETTLE_STACK",
+    "SOM.EFT_PORTABLE",
+    "SOM.EMDR_DEVELOPMENTAL_DEFER",
+    "SOM.GENTLE_REGULATION",
+    "SOM.GENTLE_SHAKING",
+    "SOM.SAFETY_STABILIZATION",
+  ]);
+  assert.deepEqual([...byId.keys()].filter((id) => id !== grief.id && !held.has(id) && !stays.has(id)), []);
+  assert.deepEqual([...stays].filter((id) => held.has(id)), []);
+  const music = plan({ fresh_grief: "present", current_intent: "conversation", love_access: "limited" });
+  assert.equal(music.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(!selected(music).includes("IC.MUSIC_EMOTIONAL_ACCESS"));
+});

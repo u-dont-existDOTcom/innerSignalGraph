@@ -21,7 +21,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 62c7cad11b9a91d60787d4b886c94243ad09d55e4478a72d5f8b9f223900d991
 base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
-projection_input_sha256: 4cf6c9adde3cc6f0f8c2c7f3f36fc0d55824b14758d2e2c2070849837465cfff
+projection_input_sha256: 7099c45f17159aaa072402321aa4e566a730acb14489d793a2f782ad2770913b
 ---
 
 # Meet the moment with remembered or imagined caring company
