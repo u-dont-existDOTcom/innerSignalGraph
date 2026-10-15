@@ -1789,6 +1789,77 @@
         "purpose": "discriminate",
         "unresolvedFields": []
       }
+    },
+    {
+      "id": "ROUTE.FRESH_GRIEF_FIRST",
+      "title": "After a fresh death or harm, let grief and support come first",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "fresh_grief",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "After a fresh death or harm, don’t ask for gratitude, and never gratitude for the loss. Encourage crying, support from loved ones, and prayer if they pray.",
+        "After a death, if it fits what the person believes, invite them to send love to the one who died; in the author’s view it can still be felt, and the one who died will be grateful for it. Don’t present that as fact to someone who doesn’t share it, and don’t speak of anyone dying when the loss or harm was something else.",
+        "Gratitude can come in sideways, if at all: for the love itself, the time together, or the people helping now, offered lightly and never made the priority.",
+        "After a harm, safety and practical help come before anything inward."
+      ],
+      "avoid": [
+        "Do not tell a grieving person to be grateful for the loss, that it happened for a reason, or that they should already be at peace."
+      ],
+      "successSignals": [
+        "The grief is allowed and shared, and the person feels less alone with it."
+      ],
+      "tags": [
+        "grief",
+        "loss",
+        "support"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.GRATITUDE_PRACTICE",
+          "IC.DEEP_LOVE_TO_CHILD",
+          "IC.GUARD_BEFORE_CHILD_LOVE",
+          "IC.REALIZATION_LOVE_INTEGRATION",
+          "IC.LOVE_HORIZON_EXPLORATION"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim the loss happened for a reason or was meant to teach something."
+        ],
+        "requiredNuance": [
+          "Fresh grief is not a problem to fix with gratitude; crying and support are the work."
+        ]
+      },
+      "defaultQuestion": ""
     }
   ],
   "edges": [
@@ -2056,6 +2127,11 @@
       "from": "ROUTE.DEFINED_WAIT",
       "to": "ROUTE.ACT_OUTWARD",
       "relation": "reopens-to-when-feasible"
+    },
+    {
+      "from": "ROUTE.FRESH_GRIEF_FIRST",
+      "to": "IC.GRATITUDE_PRACTICE",
+      "relation": "precedes"
     }
   ],
   "taskPolicyVersion": 1,

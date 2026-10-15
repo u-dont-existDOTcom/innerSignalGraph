@@ -1,0 +1,31 @@
+{
+  "id": "G122",
+  "title": "fresh grief leads ahead of contradiction work, which waits",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "witness_capacity": "present",
+    "inner_adult_access": "available",
+    "love_access": "accessible",
+    "deep_love_access": "state_dependent",
+    "spiritual_bypass_pattern": "attainment_outpaces_love",
+    "fresh_grief": "present"
+  },
+  "expected": {
+    "primary": "ROUTE.FRESH_GRIEF_FIRST",
+    "deferredIncludes": [
+      "IC.REALIZATION_LOVE_INTEGRATION",
+      "IC.GRATITUDE_PRACTICE"
+    ],
+    "selectedExcludes": [
+      "IC.REALIZATION_LOVE_INTEGRATION",
+      "IC.GRATITUDE_PRACTICE"
+    ]
+  }
+}

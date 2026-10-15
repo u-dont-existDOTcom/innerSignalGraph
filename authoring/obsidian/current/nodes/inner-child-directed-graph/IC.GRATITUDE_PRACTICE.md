@@ -34,9 +34,11 @@ regression_refs:
   - G119
   - G120
   - G121
-base_record_sha256: c187a7e0cf75bea4bf983cba5ae33e56fedbda01d8ca5a5f8764a157c1fd6b8d
-base_graph_sha256: 13e424a5b2577481990b155f4846b7dc5d1b00d01b8ff61f317658b453eb755c
-projection_input_sha256: 4a8ed36d28a10fdbb65ca0ea5834e2237c0a97076407ce4639a888968b01ddb4
+  - G122
+  - G123
+base_record_sha256: 1376dd47d8c9173a0a942f4ef1aad0197d546490bf59b05b2a0fdd876a981348
+base_graph_sha256: 003da06b0af01a73d11f2320ad8d486afff5b845c475eb408fe605ab8cb9dfef
+projection_input_sha256: f6c2e3a2dcd5813e860383bfba066a717397d80f9af0bcd979ed65be48827951
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching
@@ -124,7 +126,7 @@ projection_input_sha256: 4a8ed36d28a10fdbb65ca0ea5834e2237c0a97076407ce4639a8889
     "Ask rather than preach, so the person sees it for themselves: for example, would they be happy if they had everything they want? When someone objects (“my life is hell”), hear them out without letting the story run on, help with practical steps if needed, then ask what they would need before they could feel love or gratitude, and whether that list ever ends (“if only I had X”).",
     "Start where there’s a grip. Someone who is numb but can still feel a little love for a pet or a person starts there (IC.BORROW_LOVE); someone who feels none starts with gratitude itself. Switching angles abandons nothing: gratitude comes back either way.",
     "Notice what actually opens when gratitude is offered: a little freedom, peace, softness, or sacred love. Words of thanks or an insight are not proof that unconditional love is felt. When that love is felt, inviting the younger self is a separate next step, and gratitude never has to come first before the child can be invited.",
-    "After a fresh death or harm, gratitude comes in only sideways (IC.FRESH_GRIEF_FIRST leads), and an obvious contradiction, like “I love everyone, I just hate my dad”, is looked at first (IC.REALIZATION_LOVE_INTEGRATION)."
+    "After a fresh death or harm, gratitude comes in only sideways (ROUTE.FRESH_GRIEF_FIRST leads), and an obvious contradiction, like “I love everyone, I just hate my dad”, is looked at first (IC.REALIZATION_LOVE_INTEGRATION)."
   ],
   "successSignals": [
     "The person finds something they are genuinely grateful for and notices what it opens, or sees for themselves where their gratitude depends on things going their way."

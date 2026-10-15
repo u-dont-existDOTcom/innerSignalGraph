@@ -79,18 +79,34 @@ test("where gratitude leads, and where something else comes first", () => {
 
 test("after a fresh death or harm, grief and support lead and gratitude comes in sideways", () => {
   assert.deepEqual(CASE_VARIABLE_ENUMS.fresh_grief, ["present", "absent", "unknown"]);
-  const node = byId.get("IC.FRESH_GRIEF_FIRST");
+  const node = byId.get("ROUTE.FRESH_GRIEF_FIRST");
   assert.ok(node.recommendations.some((line) => /Encourage crying, support from loved ones, and prayer if they pray/.test(line)));
   assert.ok(node.recommendations.some((line) => /send love to the one who died/.test(line) && /Don’t present that as fact/.test(line)));
   assert.ok(node.recommendations.some((line) => /Gratitude can come in sideways/.test(line) && /never made the priority/.test(line)));
   const grief = plan({ love_access: "accessible", deep_love_access: "none_known", fresh_grief: "present" });
-  assert.equal(grief.primaryJob.id, "IC.FRESH_GRIEF_FIRST");
+  assert.equal(grief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // The full practice (gratitude even for suffering) waits; the grief step's own line brings gratitude in sideways
   // (Codex, 4c4a80bd: a selected node's recommendations all reach the reply).
   assert.ok(!selected(grief).includes("IC.GRATITUDE_PRACTICE"));
   assert.ok(grief.deferredNodes.some((node) => node.id === "IC.GRATITUDE_PRACTICE"));
   assert.ok(!grief.selectedNodes.flatMap((node) => node.recommendations).some((line) => /gratitude even for suffering/i.test(line)));
   assert.ok(grief.avoid.some((line) => /grateful for the loss/.test(line)));
+  // The death line is for a death only (Codex, 62fe3220).
+  assert.ok(node.recommendations.filter((line) => /the one who died/.test(line)).every((line) => /^After a death,/.test(line)));
+  // Grief leads ahead of contradiction work, which waits (Codex, 62fe3220).
+  const griefAndContradiction = plan({ love_access: "accessible", deep_love_access: "state_dependent", spiritual_bypass_pattern: "attainment_outpaces_love",
+    fresh_grief: "present" });
+  assert.equal(griefAndContradiction.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(griefAndContradiction.deferredNodes.some((item) => item.id === "IC.REALIZATION_LOVE_INTEGRATION"));
+  // With felt love and the child not yet reached, the love route waits too, so no selected line asks a bereaved
+  // person for gratitude (Codex, 6fba89a8).
+  const griefAndLove = plan({ deep_love_access: "reliable", child_love_inclusion: "untested", fresh_grief: "present" });
+  assert.equal(griefAndLove.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(griefAndLove.deferredNodes.some((item) => item.id === "IC.DEEP_LOVE_TO_CHILD"));
+  assert.ok(!griefAndLove.selectedNodes.filter((item) => item.id !== "ROUTE.FRESH_GRIEF_FIRST").flatMap((item) => item.recommendations)
+    .some((line) => /gratitude/i.test(line)));
+  // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
+  assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.
   const calm = { ...steady, activation: "low", inner_adult_access: "available", witness_capacity: "present" };
   assert.equal(classifyTherapyTier({ variables: calm }).tier, "fast");
