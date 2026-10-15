@@ -20,8 +20,8 @@ source_refs:
   - AMEND.IC.WISDOM_SOURCES
 regression_refs: []
 base_record_sha256: ee2911addbed31f169a7c35c62a894265c324ca678c7c4d533b5d02574e9c9f7
-base_graph_sha256: c5cc40bbc7f9a4c73c3e4b754897c259e78e524b41069642a10a7ebc8d412464
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Retrieve a real occasion of responding well

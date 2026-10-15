@@ -243,7 +243,7 @@ Where: “Altered States Can Deepen the Therapy,” near the “Afterward, notic
 
 ### PGQ-036 — Hypnosis isn't ruled out by grief or an altered state
 Caused by: `AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015`, `ROUTE.FRESH_GRIEF_FIRST` and `IC.GENTLE_SELF_HYPNOSIS` (owner-page question 36, October 15).
-Teaching point: Hypnosis in general isn't incompatible with grief, nor with altered states: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment. Gentle, present-focused hypnosis can calm and comfort while grief is fresh; deep inner-child work still waits until the grief is less raw.
+Teaching point: Hypnosis in general isn't incompatible with grief, nor with altered states: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment, and above all on its purpose. Hypnosis to reach feelings someone can't access (numb after a death, no tears coming) can help; hypnosis to get away from or escape what they need to face is less beneficial. Deep inner-child work still waits until the grief is less raw.
 Reader need: Grieving readers, and readers who work with altered states, need to know hypnosis isn't off-limits for them, and what to weigh.
 Already covered: The guide's passage “Gentle meditation or self-hypnosis can still help. My warning is about intensive versions.” says gentle self-hypnosis can calm the nervous system; it doesn't say whether hypnosis fits during fresh grief or an altered state.
 Where: Next to that passage on gentle meditation and self-hypnosis. The owner will write this himself.

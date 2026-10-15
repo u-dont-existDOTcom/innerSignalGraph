@@ -1003,7 +1003,8 @@
         "deferNodes": [],
         "blockNodes": [],
         "requiredNuance": [
-          "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment."
+          "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment.",
+          "During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial."
         ],
         "forbiddenOverclaims": []
       },
@@ -3343,7 +3344,8 @@
         "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
         "IC.BORROW_LOVE",
         "IC.BORROW_ONE_FUNCTION",
-        "IC.LOVE_MISSING"
+        "IC.LOVE_MISSING",
+        "AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -3376,7 +3378,8 @@
         "requiredNuance": [
           "Music is an optional access cue and session-context moderator, not a standalone explanation of outcome.",
           "Path Performance may count newly accessible emotion or need as proximal movement only when tied to a new observation; durable improvement still requires later evidence at the declared horizon.",
-          "If the response becomes overwhelming, panicky, dissociative, disorienting, or difficult to stop, stop or reduce the cue and let the existing orientation/stabilization route take precedence."
+          "If the response becomes overwhelming, panicky, dissociative, disorienting, or difficult to stop, stop or reduce the cue and let the existing orientation/stabilization route take precedence.",
+          "During grief, music can help someone reach feelings they can’t access, such as the tears for someone who died; music used to get away from what they need to face is less beneficial."
         ]
       },
       "defaultQuestion": ""

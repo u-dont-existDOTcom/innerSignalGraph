@@ -80,3 +80,16 @@ principle as nuance on both nodes; deep inner-child dialogue still waits while g
 the map ruled hypnosis out in an altered state. The grief test's list of nodes that stay beside grief gains
 `IC.GENTLE_SELF_HYPNOSIS` (38 deferrals: the gratitude practice, nonurgent pain navigation and 36 inward-work nodes). Pending
 guide queue r8: PGQ-036. Inventory: 62 amendments, 140 source records.
+
+## Owner answer to question 37 (15 Oct, 13:38 UTC): no fixed line; it depends on purpose
+
+Codex's review of `aa9db8b0` asked for a kind-specific gate in the hypnosis compiler (inner-child and inner-adult scripts
+waiting during fresh grief). Put to the owner as question 37 (A: the tool follows the conversation's line; B: no line). His
+answer: "idk i think it depends too much, like let's say 'my dad just died, but i can't feel anything about it. there's
+grief here i guess but no tears coming. can we do a little hypnosis so i can access my feelings better?' that sounds like
+a good idea to me. on the other hand if the hypnosis is to get away from anything or escape what they need to face, then
+that sounds less beneficial..". So no mechanical hold in the tool or the map: the purpose goes in as nuance on the grief
+route, `IC.GENTLE_SELF_HYPNOSIS` and `IC.MUSIC_EMOTIONAL_ACCESS`, in his words, and the amendment holds his example. Music
+used to reach feelings, which #159 made wait during fresh grief (Codex's review of `ec09f8d9`), stays beside grief again,
+since his example is that purpose (37 deferrals: the gratitude practice, nonurgent pain navigation and 35 inward-work
+nodes). Deep inner-child dialogue still waits while grief is fresh (question 33). PGQ-036 names the purpose.

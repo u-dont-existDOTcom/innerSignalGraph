@@ -20,9 +20,9 @@ source_refs:
   - AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
 regression_refs:
   - G011
-base_record_sha256: 638c0e76a9ddf7bb6988ab2fe9411e461442ad11a783a8eb86cb1279dcc614ca
-base_graph_sha256: c5cc40bbc7f9a4c73c3e4b754897c259e78e524b41069642a10a7ebc8d412464
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+base_record_sha256: 623c2ee97f1e430a481166ea70c50a1a8d96cb49834db78197e88b5098df1ab5
+base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Use gentle present-focused self-hypnosis only as preparation
@@ -74,7 +74,8 @@ projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c327
     "deferNodes": [],
     "forbiddenOverclaims": [],
     "requiredNuance": [
-      "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment."
+      "Hypnosis in general isn’t incompatible with grief, nor with an altered state: whether it fits depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment.",
+      "During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial."
     ]
   },
   "recommendations": [

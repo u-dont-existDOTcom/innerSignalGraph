@@ -32,9 +32,9 @@ regression_refs:
   - G134
   - G135
   - G136
-base_record_sha256: 87c133f513dd5d1ed0a7cfd90ea8a68d308556104ada089f289c535f475824a9
-base_graph_sha256: 2e6ef3c801da0dd49f44b9c96bce194c1823f986072fd40008e73ef5964d27b4
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+base_record_sha256: 01303504033e6e236b7ebdef4b3775fc44393fa1c1e242b845d4f313fb7c57f8
+base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # After a fresh death or harm, let grief and support come first
@@ -98,15 +98,14 @@ projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c327
       "ROUTE.ALTERED_STATE_TRANSFER",
       "ROUTE.ALTERED_AFTERMATH",
       "ROUTE.ALTERED_PREPARATION",
-      "IC.CONTINUITY_TITRATION",
-      "IC.MUSIC_EMOTIONAL_ACCESS"
+      "IC.CONTINUITY_TITRATION"
     ],
     "forbiddenOverclaims": [
       "Do not claim the loss happened for a reason or was meant to teach something."
     ],
     "requiredNuance": [
       "Fresh grief is not a problem to fix with gratitude; crying and support are the work.",
-      "Hypnosis isn’t held back by grief itself: gentle, present-focused hypnosis can fit, and whether any hypnosis fits depends on what kind, how raw the grief is, and what is appropriate at the moment (IC.GENTLE_SELF_HYPNOSIS)."
+      "Hypnosis, or music used to reach feelings, isn’t held back by grief itself. During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial. (IC.GENTLE_SELF_HYPNOSIS, IC.MUSIC_EMOTIONAL_ACCESS.)"
     ]
   },
   "recommendations": [

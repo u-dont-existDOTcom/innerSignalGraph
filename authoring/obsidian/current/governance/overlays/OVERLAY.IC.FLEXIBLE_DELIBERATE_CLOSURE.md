@@ -13,7 +13,7 @@ anchors:
   - IC.ALTERED_STATE_GATE
 reconciled_nodes: []
 base_record_sha256: 4e3e4a264d7fbc2dd343547b2c0f00df29d658687110534ab6023c4bf3dacca2
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Close inner work deliberately and flexibly

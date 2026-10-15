@@ -13,7 +13,7 @@ anchors:
   - IC.GUIDE_LATER
 reconciled_nodes: []
 base_record_sha256: 8a308d83b67852ad9da03c74a28173272377e0e8aba76bacf4aa2caa8d6c808c
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Separate intrinsic worth from developed adult capacity

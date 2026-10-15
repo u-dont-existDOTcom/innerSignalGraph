@@ -7,8 +7,8 @@ amendment_id: AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
 status: owner-approved
 domain: inner-child
 base_record_sha256: 2e56ce7a93ea07495eeb6fdc5f36a23a527e5c8d82847a869fc7cb7012e4ed0e
-source_file_sha256: 26b80839f8d65784a0cb15a17c1968613d20fbad48a9bbbad988516cb8a6433a
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # AMEND.IC.PRACTICE_TO_LIFE_TRANSFER

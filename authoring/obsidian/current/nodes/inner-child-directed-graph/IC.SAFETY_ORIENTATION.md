@@ -28,8 +28,8 @@ regression_refs:
   - G106
   - G131
 base_record_sha256: b1e65d2504260a9a984e57eccfe96057e0116ab9e8b7aeba5957e00552b94344
-base_graph_sha256: c5cc40bbc7f9a4c73c3e4b754897c259e78e524b41069642a10a7ebc8d412464
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Outside safety and present orientation first

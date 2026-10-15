@@ -11,7 +11,7 @@ source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
 section_hash: 2ce5c09cda65122145017fdf01fe8ed40813f8964f8b1f3f3008cf3f3c5ee4b6
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Somatic Heart Opening

@@ -1870,15 +1870,14 @@
           "ROUTE.ALTERED_STATE_TRANSFER",
           "ROUTE.ALTERED_AFTERMATH",
           "ROUTE.ALTERED_PREPARATION",
-          "IC.CONTINUITY_TITRATION",
-          "IC.MUSIC_EMOTIONAL_ACCESS"
+          "IC.CONTINUITY_TITRATION"
         ],
         "forbiddenOverclaims": [
           "Do not claim the loss happened for a reason or was meant to teach something."
         ],
         "requiredNuance": [
           "Fresh grief is not a problem to fix with gratitude; crying and support are the work.",
-          "Hypnosis isn’t held back by grief itself: gentle, present-focused hypnosis can fit, and whether any hypnosis fits depends on what kind, how raw the grief is, and what is appropriate at the moment (IC.GENTLE_SELF_HYPNOSIS)."
+          "Hypnosis, or music used to reach feelings, isn’t held back by grief itself. During grief, what matters most is the purpose: hypnosis to reach feelings someone can’t access, for example “my dad just died, but I can’t feel anything about it… can we do a little hypnosis so I can access my feelings better?”, can help; hypnosis to get away from or escape what they need to face is less beneficial. (IC.GENTLE_SELF_HYPNOSIS, IC.MUSIC_EMOTIONAL_ACCESS.)"
         ]
       },
       "defaultQuestion": ""

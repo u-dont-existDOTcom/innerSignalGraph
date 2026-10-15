@@ -31,8 +31,8 @@ regression_refs:
   - G025
   - G031
 base_record_sha256: 0bcbb7b27ce3a298c2d1b12dc5a5bab2f23951b888a486f977ae57c11822205c
-base_graph_sha256: 2e6ef3c801da0dd49f44b9c96bce194c1823f986072fd40008e73ef5964d27b4
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Build the capacities that make protective love accessible

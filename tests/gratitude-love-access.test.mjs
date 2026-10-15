@@ -399,7 +399,7 @@ test("every node either waits during fresh grief or is named as staying beside i
   // a decision: it fails here until it is put on one side.
   const grief = byId.get("ROUTE.FRESH_GRIEF_FIRST");
   const held = new Set(grief.effects.deferNodes);
-  assert.ok(held.has("IC.MUSIC_EMOTIONAL_ACCESS"));
+  assert.ok(!held.has("IC.MUSIC_EMOTIONAL_ACCESS"), "music used to reach feelings stays (the owner, question 37)");
   const stays = new Set([
     "IC.BEST_FRIEND_PERSPECTIVE",
     "IC.CARING_COMPANY",
@@ -413,6 +413,7 @@ test("every node either waits during fresh grief or is named as staying beside i
     "IC.GOODWILL_BRIDGE",
     "IC.INTUITION_TRUST_CALIBRATION",
     "IC.MEET_GUARD",
+    "IC.MUSIC_EMOTIONAL_ACCESS",
     "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
     "IC.PAST_COMPETENCE",
     "IC.PHOTO_EPISTEMIC_CAUTION",
@@ -453,7 +454,7 @@ test("every node either waits during fresh grief or is named as staying beside i
   assert.deepEqual([...stays].filter((id) => held.has(id)), []);
   const music = plan({ fresh_grief: "present", current_intent: "conversation", love_access: "limited" });
   assert.equal(music.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
-  assert.ok(!selected(music).includes("IC.MUSIC_EMOTIONAL_ACCESS"));
+  assert.ok(!music.deferredNodes.some((node) => node.id === "IC.MUSIC_EMOTIONAL_ACCESS"));
 });
 
 test("how gratitude comes in: sideways and at times, by asking, with the owner's example questions (15 Oct)", async () => {
@@ -528,7 +529,10 @@ test("hypnosis isn't held back by grief itself; it depends on its kind (owner, q
   const grief = byId.get("ROUTE.FRESH_GRIEF_FIRST");
   assert.ok(!grief.effects.deferNodes.includes("IC.GENTLE_SELF_HYPNOSIS"));
   assert.ok(grief.sourceRefs.includes("AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015"));
-  assert.ok(grief.effects.requiredNuance.some((line) => /Hypnosis isn’t held back by grief itself/.test(line)));
+  assert.ok(grief.effects.requiredNuance.some((line) => /isn’t held back by grief itself/.test(line)
+    && /reach feelings someone can’t access/.test(line) && /escape what they need to face is less beneficial/.test(line)));
+  assert.ok(byId.get("IC.GENTLE_SELF_HYPNOSIS").effects.requiredNuance.some((line) => /my dad just died/.test(line)));
+  assert.ok(byId.get("IC.MUSIC_EMOTIONAL_ACCESS").effects.requiredNuance.some((line) => /get away from what they need to face/.test(line)));
   const hypnosis = byId.get("IC.GENTLE_SELF_HYPNOSIS");
   assert.ok(hypnosis.effects.requiredNuance.some((line) => /isn’t incompatible with grief, nor with an altered state/.test(line)
     && /what kind of hypnosis, what level of grief, and what is appropriate at the moment/.test(line)));

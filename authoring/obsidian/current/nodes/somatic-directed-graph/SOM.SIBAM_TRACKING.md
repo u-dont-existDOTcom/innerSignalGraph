@@ -28,7 +28,7 @@ regression_refs:
   - G134
 base_record_sha256: 3276fcad13ef3f0c9984a36dccfa5da18dd4d5546d0bed446d18223c5fd6a647
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 39cf48048fa0c4ec9c4e50e68782b19d594ee8a82913adc7a87c32764fd8cd57
+projection_input_sha256: 5a4174ca87dab58e7440544d6b41e44b5ebd259246502d09ff8033ce8f548ab3
 ---
 
 # Track sensation, image, behavior, affect, and meaning without privileging one channel
