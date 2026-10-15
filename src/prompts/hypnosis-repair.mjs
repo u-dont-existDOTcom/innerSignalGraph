@@ -1,5 +1,5 @@
 import { sharedHypnosisCompilerRules } from "./hypnosis-common.mjs";
-import { freshGriefWriterSection } from "./hypnosis-draft.mjs";
+import { freshGriefRepairSection } from "./hypnosis-draft.mjs";
 
 export function hypnosisRepairPrompt(context, draft, audit, review, repairScope, repairerName) {
   const system = `You are the ${repairerName} hypnosis repairer.${sharedHypnosisCompilerRules}
@@ -28,7 +28,7 @@ DETERMINISTIC AUDIT:
 ${JSON.stringify(audit, null, 2)}
 
 ADVERSARIAL REVIEW:
-${JSON.stringify(review, null, 2)}${freshGriefWriterSection(context.durableCaseState?.fresh_grief, { where: "in the request and the original draft" })}
+${JSON.stringify(review, null, 2)}${freshGriefRepairSection(context)}
 
 EXACT REPAIR COMPONENT IDS:
 ${JSON.stringify(repairScope.componentIds, null, 2)}

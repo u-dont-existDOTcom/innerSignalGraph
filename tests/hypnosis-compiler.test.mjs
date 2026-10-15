@@ -302,7 +302,10 @@ test("fresh grief alone doesn't stop a script: the writer judges its purpose (ow
   // a purpose check there would be the fixed line the owner ruled out.
   const repairer = hypnosisRepairPrompt(context, {}, {}, {}, { componentIds: [], dependencyEdgesApplied: [] }, "synthetic").user;
   assert.ok(repairer.includes(FRESH_GRIEF_HYPNOSIS_PURPOSE));
-  assert.match(repairer, /Judge the purpose from the person’s own words in the request and the original draft/);
+  assert.match(repairer, /Judge the purpose from the person’s own words in the request, the transcript and the current message below/);
+  // It gets the person's own words too, since it may rewrite purpose-sensitive work (Codex, 511e7e2a).
+  assert.ok(repairer.includes(`RECENT TRANSCRIPT:\n${context.recentTranscript || "(none supplied)"}`));
+  assert.ok(repairer.includes(`CURRENT USER REQUEST:\n${context.userMessage}`));
   assert.doesNotMatch(hypnosisReviewPrompt(context, {}, {}, "synthetic", "synthetic").user, /FRESH GRIEF/);
   assert.doesNotMatch(hypnosisFinalReviewPrompt(context, {}, {}, "synthetic").user, /FRESH GRIEF/);
   // The same sentence as the map's, so the two can't drift apart.

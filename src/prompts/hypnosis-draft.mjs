@@ -14,6 +14,15 @@ export function freshGriefWriterSection(record, { where = "in the request and th
   return `\n\nFRESH GRIEF (case record):\nPresent${since}. Hypnosis isn’t held back by grief itself. ${FRESH_GRIEF_HYPNOSIS_PURPOSE} Judge the purpose from the person’s own words ${where}, and write what is appropriate for them now.`;
 }
 
+// The repairer's version: the same record and sentence with the person's own words, the transcript and the current
+// message, since it may rewrite purpose-sensitive work (Codex, 511e7e2a). Empty unless fresh grief is present.
+export function freshGriefRepairSection(context) {
+  const section = freshGriefWriterSection(context.durableCaseState?.fresh_grief,
+    { where: "in the request, the transcript and the current message below" });
+  if (!section) return "";
+  return `${section}\n\nRECENT TRANSCRIPT:\n${context.recentTranscript || "(none supplied)"}\n\nCURRENT USER REQUEST:\n${context.userMessage}`;
+}
+
 export function hypnosisDraftPrompt(context, providerName) {
   const system = `You are the ${providerName} hypnosis writer.${sharedHypnosisCompilerRules}
 Write a coherent structured draft for the exact request. Use rich, permissive hypnosis craft without filler. Command may be more direct only inside the already-authorized low-risk process; Communion must not imply a response began before choice.

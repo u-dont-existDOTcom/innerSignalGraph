@@ -120,3 +120,7 @@ and deferred gratitude, but the shut-out rule, which counted anything short of c
 that deferral, so gratitude was neither offered nor waiting. Limited capacity is one of the acute route's overwhelming
 states, and the owner approved that gratitude waits through an overwhelming state (question 35), so it now waits there
 too; impaired or unknown capacity still leaves it out. The question 35 test checks it.
+
+Codex's review of `511e7e2a`: the repairer was told to judge the purpose from the person's own words but didn't get them.
+When fresh grief is present, its prompt now carries the transcript and the current message with the record and the
+sentence, as the writer's does; without a fresh-grief record it is byte-identical.
