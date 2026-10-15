@@ -2864,7 +2864,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         closes_inferred: reference.closes_inferred ?? 0, counts } };
     }
     // Writes the finished reference step's pieces that weren't confirmed, each with its quotes, the questions of each try
-    // and both judges' verdicts and reasons, to a new private file in the directory the run config names for operator
+    // and the judges' verdicts and reasons (under owner decision 32's rules, Codex's on the marked pieces), to a new private file in the directory the run config names for operator
     // review (owner, 14 Oct 2026: "show me examples and why they fail"). The one command that writes journal text: only
     // there, only to a file it creates (owner-only, never one that exists), and never to its output, which says only the
     // file's name and counts. Like pointer-recount it reads the step back from the durable store after its deadline,
@@ -2887,10 +2887,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const input = pointerPassInput({ built: buildQuoteGeneration(await quoteGenerationInput(run.generation)) });
       const events = [];
       const copyRunWords = runCopyRunWords(run);
+      // The rules the step ran under: under owner decision 32's, Codex's verdicts alone and the marked pieces.
+      const rules = runRules(run);
       const reference = await runPointerReference({ units: input.units, seed: step.seed, stepId: step.step_id, deadline: step.deadline,
         port: readOnly, grant, generation: run.generation, now, beforeHardestSend: refuse("POINTER_RECOUNT_SENDS_NOTHING"),
-        oneAtATime: pointerTurns, copyRunWords, observe: (event) => { events.push(event); } });
-      const examples = collectPointerExamples({ reference, units: input.units, events, copyRunWords });
+        oneAtATime: pointerTurns, copyRunWords, rules, observe: (event) => { events.push(event); } });
+      const examples = collectPointerExamples({ reference, units: input.units, events, copyRunWords, rules });
       const written = now();
       const html = renderPointerExamples(examples, { runId: run.run_id, generatedAt: written.toISOString() });
       const name = `pointer-examples-${run.run_id}-${written.toISOString().replace(/[^0-9TZ]/gu, "")}-${randomBytes(3).toString("hex")}.html`;

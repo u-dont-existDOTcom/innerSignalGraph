@@ -412,6 +412,40 @@ test("pointer-examples writes the pieces the judges didn't confirm to a new owne
   assert.deepEqual((await fs.readdir(reviewDir)).sort(), [examples.file, again.examples.file].sort());
 });
 
+test("under owner decision 32's rules pointer-examples shows the pieces marked as not understood, with Codex's verdicts alone", async (t) => {
+  const later = { ms: 0 };
+  let sends = 0;
+  const parent = await fs.mkdtemp(path.join(os.tmpdir(), "pointer-review-marked-"));
+  t.after(() => fs.rm(parent, { recursive: true, force: true }));
+  const reviewDir = path.join(parent, "review");
+  await fs.mkdir(reviewDir, { mode: 0o700 });
+  await fs.chmod(reviewDir, 0o700);
+  // The judge never confirms a page's first quote on the even pages; the route attests nothing for Claude, whom these
+  // rules never call, so the readback can't need it either.
+  const f = await runtimeEnvironment(t, { rules: 3, attested: false,
+    refuse: (word) => word.startsWith("quolp") && Number(word.slice("quolp".length)) % 2 === 0,
+    now: () => new Date(Date.now() + later.ms),
+    wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => {
+      sends += 1;
+      const result = await port.invoke(...args);
+      return { ...result, receipt: { ...result.receipt, provider_route_receipt: { received_at: new Date(Date.now() + later.ms).toISOString() } } };
+    } }) });
+  const { reference } = (await f.run("stage", "build-quotes", "pointer-reference")).pointer;
+  assert.ok(reference.counts.marked_units > 0);
+  later.ms = Date.parse(reference.deadline) - Date.now() + 60_000;
+  f.config.operator_review_dir = reviewDir;
+  const sent = sends;
+  const { examples } = await f.run("pointer-examples");
+  assert.equal(sends, sent, "nothing is sent");
+  assert.equal(examples.pieces, reference.counts.marked_units + reference.counts.nonresponse_units);
+  const html = await fs.readFile(path.join(reviewDir, examples.file), "utf8");
+  assert.equal((html.match(/<section>/gu) ?? []).length, examples.pieces);
+  assert.match(html, /<h1>Journal pieces marked as not understood<\/h1>/u);
+  assert.match(html, /marked as not understood: not covered, even after the rewrite/u);
+  assert.match(html, /<strong>Codex<\/strong>: held back \(something left out\)/u);
+  assert.doesNotMatch(html, /<strong>Claude<\/strong>/u, "only the run's one judge");
+});
+
 test("a run from before owner decision 30 keeps its rules, so its recount follows it: a copying flag holds a quote back, and an unconfirmed unit is a nonresponse", async (t) => {
   const later = { ms: 0 };
   // Both judges list the question of every even page's quote that asks about its word as copying it, in both rounds.

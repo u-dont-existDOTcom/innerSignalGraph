@@ -1,50 +1,61 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
+import { POINTER_RULES } from "./pointer-reference.mjs";
 
 // The operator's view of why the reference step didn't confirm pieces of the journal (owner, 14 Oct 2026: "i'd like to
 // see what exactly is failing ... can you show me examples and why they fail?"). From the step's result and what its
 // question writer and coverage judges answered (runPointerReference's `observe`), it gathers each piece that wasn't
-// confirmed: its quotes, the questions of each try, and both judges' verdicts with their reasons, and renders them as one
-// self-contained HTML page with nothing loaded from elsewhere. What these functions return holds journal text: only the
+// confirmed: its quotes, the questions of each try, and the judges' verdicts with their reasons, and renders them as one
+// self-contained HTML page with nothing loaded from elsewhere. It follows the rules the run ran under: under owner
+// decision 32's, Codex is the one judge and the pieces shown are the ones marked as not understood. What these functions return holds journal text: only the
 // `pointer-examples` command calls them, and it writes the page to a new private file in the directory the run config
 // names for operator review, never to an output or a log.
 
 const invariant = (condition, code) => { if (!condition) throw new ValidationError(code, { code }); };
 const JUDGES = Object.freeze([["standard", "Codex"], ["hardest", "Claude"]]);
+// The judges a run's rules use (pointer-reference.mjs, pointerJudgeTiers): both, or under owner decision 32's, Codex alone.
+const judgesFor = (rules) => (rules === 3 ? JUDGES.slice(0, 1) : JUDGES);
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const ids = (value) => (Array.isArray(value) ? value.filter((item) => typeof item === "string") : []);
 
-function verdict(entry, judge, copyRunWords) {
+function verdict(entry, judge, copyRunWords, rules) {
   if (!entry) return { judge, status: "not_judged" };
   if (entry.status !== "answered") return { judge, status: entry.status };
   const judgment = entry.judgment;
   const repeated = ids(judgment.repeated_question_ids);
   const combined = ids(judgment.combined_question_ids);
   const copied = ids(judgment.copied_question_ids);
-  // The rule the step judged by (pointer-reference.mjs, confirmedBy): since owner decision 30 a judge's copying flag
-  // decides nothing; in a run from before it (`copyRunWords` null) it held the quote back.
-  const confirmed = judgment.covered === true && repeated.length === 0 && combined.length === 0
-    && (copyRunWords !== null || copied.length === 0);
+  // The rule the step judged by (pointer-reference.mjs, referenceUnitStep): under owner decision 32's rules any split
+  // into questions is fine, so a covered quote is confirmed; before, a repeated or a combined question held it back too,
+  // and in a run from before owner decision 30 (`copyRunWords` null) so did a judge's copying flag.
+  const confirmed = judgment.covered === true && (rules === 3 || (repeated.length === 0 && combined.length === 0
+    && (copyRunWords !== null || copied.length === 0)));
   return { judge, status: confirmed ? "confirmed" : "held_back", covered: judgment.covered === true,
     missing: typeof judgment.missing === "string" ? judgment.missing : "", repeated, combined, copied };
 }
 
-// Whether a try's questions were confirmed: complete, both judges confirmed every quote, and the code's copy check held
-// none back. Such a piece fell short only after its questions (its searches), so it isn't an example of what fails here.
-const triedAndConfirmed = (attempt) => Boolean(attempt && attempt.writer.status === "complete" && attempt.verdicts.length > 0
+// Whether a try's questions were confirmed: complete, every judge confirmed every quote, and the code's copy check held
+// none back (under owner decision 32's rules it only flags a question). Such a piece fell short only after its questions
+// (its searches), so it isn't an example of what fails here.
+const triedAndConfirmed = (attempt, rules) => Boolean(attempt && attempt.writer.status === "complete" && attempt.verdicts.length > 0
   && attempt.verdicts.every((entry) => entry.judges.every((judge) => judge.status === "confirmed"))
-  && attempt.questions.every((item) => item.copied_words === null));
+  && (rules === 3 || attempt.questions.every((item) => item.copied_words === null)));
 
 /**
  * Each sampled piece whose questions the reference step didn't confirm, oldest try first: not complete, and its last
  * try's questions not confirmed (a piece stopped only at its searches is left out).
  * `reference` is runPointerReference's result, `units` the quote units it ran on (unit_id, page, text), `events` what
- * its `observe` was told, and `copyRunWords` the run's copy setting (null for a run from before owner decision 30).
+ * its `observe` was told, `copyRunWords` the run's copy setting (null for a run from before owner decision 30) and
+ * `rules` the run's rules (pointer-reference.mjs, POINTER_RULES). Under owner decision 32's rules (3) the pieces are the
+ * ones marked as not understood, with their reason (`marked`), and those whose questions fell short or ran out of time;
+ * a marked piece whose searches then fell short, recorded as a nonresponse, is shown with the reason its last try gives.
  */
-export function collectPointerExamples({ reference, units, events, copyRunWords } = {}) {
+export function collectPointerExamples({ reference, units, events, copyRunWords, rules = 2 } = {}) {
   invariant(isObject(reference) && Array.isArray(reference.units) && Array.isArray(units) && Array.isArray(events)
-    && (copyRunWords === null || Number.isSafeInteger(copyRunWords)), "POINTER_EXAMPLES_INPUT_INVALID");
+    && (copyRunWords === null || Number.isSafeInteger(copyRunWords)) && POINTER_RULES.includes(rules)
+    && (rules === 2 || copyRunWords !== null), "POINTER_EXAMPLES_INPUT_INVALID");
+  const judges = judgesFor(rules);
   const quotes = new Map(units.map((unit) => [unit.unit_id, unit]));
   const writers = new Map();
   const judged = new Map();
@@ -78,17 +89,22 @@ export function collectPointerExamples({ reference, units, events, copyRunWords 
               foreign_questions: set.foreign_questions, quotes_too_long: set.quotes_too_long };
       return { round, writer: shortfall, coverage_notes: Array.isArray(writer.coverage_notes) ? writer.coverage_notes : [], questions,
         verdicts: unit.quote_ids.map((id) => ({ quote_id: id,
-          judges: JUDGES.map(([tier, name]) => verdict(judged.get(`${id}\u0000${round}\u0000${tier}`), name, copyRunWords)) })) };
+          judges: judges.map(([tier, name]) => verdict(judged.get(`${id}\u0000${round}\u0000${tier}`), name, copyRunWords, rules)) })) };
     });
-    return { unit_id: unit.unit_id, status: unit.status, reason: unit.reason ?? null, deadline_cause: unit.deadline_cause ?? null,
+    const last = attempts.at(-1);
+    const judgeFailed = Boolean(last?.verdicts.some((entry) => entry.judges.some((judge) => !["confirmed", "held_back"].includes(judge.status))));
+    const marked = rules !== 3 ? null : unit.status === "marked" ? unit.reason ?? null
+      : unit.reason === "searches_incomplete" && !triedAndConfirmed(last, rules) ? (judgeFailed ? "coverage_check_failed" : "coverage_unconfirmed")
+        : null;
+    return { unit_id: unit.unit_id, status: unit.status, reason: unit.reason ?? null, deadline_cause: unit.deadline_cause ?? null, marked,
       quotes: unit.quote_ids.map((id) => ({ quote_id: id, page: quotes.get(id)?.page ?? null, text: quotes.get(id)?.text ?? "" })),
       attempts };
-  }).filter((piece) => piece.reason !== "searches_incomplete" && !triedAndConfirmed(piece.attempts.at(-1)));
+  }).filter((piece) => (rules === 3 || piece.reason !== "searches_incomplete") && !triedAndConfirmed(piece.attempts.at(-1), rules));
   // In journal order: by the first quote's page, then the step's order.
   const page = (piece) => piece.quotes.find((quote) => Number.isSafeInteger(quote.page))?.page ?? Number.MAX_SAFE_INTEGER;
   const ordered = pieces.map((piece, index) => ({ piece, index })).sort((a, b) => page(a.piece) - page(b.piece) || a.index - b.index)
     .map(({ piece }) => piece);
-  return { sampled: reference.units.length, pieces: ordered, copy_run_words: copyRunWords };
+  return { sampled: reference.units.length, pieces: ordered, copy_run_words: copyRunWords, rules };
 }
 
 // The operator's review directory as checked before the work: a real directory (not a link), the process's own, closed to
@@ -138,8 +154,14 @@ const STATUS_WORDS = Object.freeze({
   coverage_check_failed: "a judge gave no usable answer",
   deadline: "the step's time ran out before its questions were confirmed"
 });
-const pieceStatus = (piece) => STATUS_WORDS[piece.status === "unconfirmed" ? "unconfirmed" : piece.reason]
-  ?? `stopped short (${piece.reason ?? piece.status})`;
+// Under owner decision 32's rules a piece whose questions weren't confirmed is marked as not understood.
+const MARKED_WORDS = Object.freeze({
+  coverage_unconfirmed: "marked as not understood: not covered, even after the rewrite",
+  coverage_check_failed: "marked as not understood: the judge gave no usable answer"
+});
+const pieceStatus = (piece) => (piece.marked
+  ? `${MARKED_WORDS[piece.marked] ?? `marked (${piece.marked})`}${piece.status === "nonresponse" ? "; its searches didn't finish either" : ""}`
+  : STATUS_WORDS[piece.status === "unconfirmed" ? "unconfirmed" : piece.reason] ?? `stopped short (${piece.reason ?? piece.status})`);
 const writerWords = (writer) => (writer.status === "complete" ? null : ({
   deadline: "The question writer gave no answer before the time ran out.",
   invalid: "The question writer's answer wasn't usable.",
@@ -151,17 +173,18 @@ const writerWords = (writer) => (writer.status === "complete" ? null : ({
   ].filter(Boolean).join("; ") || "incomplete"}.`
 })[writer.status] ?? `The question writer's call ended: ${writer.status}.`);
 
-function verdictHtml(item, labels) {
+function verdictHtml(item, labels, rules) {
   const name = `<strong>${escapeHtml(item.judge)}</strong>`;
   if (item.status === "confirmed") return `<li class="ok">${name}: confirmed.</li>`;
   if (item.status === "not_judged") return `<li class="muted">${name}: didn't judge this try.</li>`;
   if (item.status !== "held_back") return `<li class="muted">${name}: no usable answer (${escapeHtml(item.status)}).</li>`;
   const label = (list) => list.map((id) => labels.get(id) ?? id).join(", ");
+  // Under owner decision 32's rules only something left out holds a quote back.
   const reasons = [
     item.covered ? null : "something left out",
-    item.repeated.length ? `repeated: ${escapeHtml(label(item.repeated))}` : null,
-    item.combined.length ? `two things in one: ${escapeHtml(label(item.combined))}` : null,
-    item.copied.length ? `copies the passage's words: ${escapeHtml(label(item.copied))}` : null
+    rules !== 3 && item.repeated.length ? `repeated: ${escapeHtml(label(item.repeated))}` : null,
+    rules !== 3 && item.combined.length ? `two things in one: ${escapeHtml(label(item.combined))}` : null,
+    rules !== 3 && item.copied.length ? `copies the passage's words: ${escapeHtml(label(item.copied))}` : null
   ].filter(Boolean);
   const note = item.missing.trim() ? `<div class="note">Its note: “${escapeHtml(item.missing.trim())}”</div>` : "";
   return `<li class="held">${name}: held back (${reasons.join("; ") || "no reason listed"}).${note}</li>`;
@@ -170,6 +193,8 @@ function verdictHtml(item, labels) {
 /** The examples as one self-contained HTML page. */
 export function renderPointerExamples(collected, { runId, generatedAt } = {}) {
   invariant(isObject(collected) && Array.isArray(collected.pieces), "POINTER_EXAMPLES_INPUT_INVALID");
+  const rules = collected.rules ?? 2;
+  const title = rules === 3 ? "Journal pieces marked as not understood" : "Journal pieces the reference step didn't confirm";
   const parts = [];
   collected.pieces.forEach((piece, index) => {
     const quoteHtml = piece.quotes.map((quote) => `<figure><figcaption>${quote.page === null ? "Passage" : `Page ${escapeHtml(quote.page)}`}`
@@ -182,10 +207,10 @@ export function renderPointerExamples(collected, { runId, generatedAt } = {}) {
       const writer = writerWords(attempt.writer);
       const questions = attempt.questions.length ? `<ol class="questions">${attempt.questions.map((item) => `<li><span class="q">${escapeHtml(labels.get(item.question_id))}</span> `
         + `${escapeHtml(item.question)}${item.critical ? " <span class=\"tag\">essential</span>" : ""}${item.event ? " <span class=\"tag\">event</span>" : ""}`
-        + `${item.copied_words !== null ? ` <span class="tag warn">code: copies ${escapeHtml(item.copied_words)} words in a row</span>` : ""}`
+        + `${item.copied_words !== null ? ` <span class="tag warn">code: copies ${escapeHtml(item.copied_words)} words in a row${rules === 3 ? "; flagged, left out of recall" : ""}</span>` : ""}`
         + `${piece.quotes.length > 1 ? ` <span class="small">(${escapeHtml(item.quote_id)})</span>` : ""}</li>`).join("")}</ol>` : "";
       const verdicts = attempt.verdicts.map((entry) => `<div class="verdict">${piece.quotes.length > 1 ? `<p class="small">${escapeHtml(entry.quote_id)}</p>` : ""}`
-        + `<ul>${entry.judges.map((item) => verdictHtml(item, labels)).join("")}</ul></div>`).join("");
+        + `<ul>${entry.judges.map((item) => verdictHtml(item, labels, rules)).join("")}</ul></div>`).join("");
       return `<div class="try"><h3>${attempt.round === 0 ? "First try" : "Rewrite"}</h3>${notes}${writer ? `<p class="small">${escapeHtml(writer)}</p>` : ""}`
         + `${questions}${attempt.questions.length ? verdicts : ""}</div>`;
     }).join("");
@@ -197,7 +222,7 @@ export function renderPointerExamples(collected, { runId, generatedAt } = {}) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Journal pieces not confirmed</title>
+<title>${rules === 3 ? "Journal pieces marked as not understood" : "Journal pieces not confirmed"}</title>
 <style>
   :root { --ink: #1d2422; --muted: #5a6662; --ground: #f5f7f6; --panel: #ffffff; --rule: #d6dfdb; --ok: #2f6b3a; --held: #8a3b12; --tag: #e7eeeb; }
   @media (prefers-color-scheme: dark) { :root { --ink: #e3ebe8; --muted: #9fb1ab; --ground: #101614; --panel: #18211e; --rule: #2c3a35; --ok: #8fcf9b; --held: #f0a46c; --tag: #22302b; } }
@@ -218,13 +243,17 @@ export function renderPointerExamples(collected, { runId, generatedAt } = {}) {
 <body>
 <main>
 <div class="intro">
-<h1>Journal pieces the reference step didn't confirm</h1>
-<p>Run ${escapeHtml(runId ?? "")}, written ${escapeHtml(generatedAt ?? "")}. Of the ${escapeHtml(collected.sampled)} pieces in the sample, ${escapeHtml(collected.pieces.length)} didn't get their questions confirmed, and all of them are below. For each one: the passage, the questions the writer asked, and what each judge decided. A piece's questions are confirmed only when both judges confirm every one of its quotes and no question copies its passage's words.</p>
+<h1>${title}</h1>
+<p>Run ${escapeHtml(runId ?? "")}, written ${escapeHtml(generatedAt ?? "")}. Of the ${escapeHtml(collected.sampled)} pieces in the sample, ${escapeHtml(collected.pieces.length)} didn't get their questions confirmed, and all of them are below. ${rules === 3
+  ? "For each one: the passage, the questions the writer asked, and what Codex, this run's one judge, decided. Any way of splitting a passage into questions is fine, so a piece's questions are confirmed when Codex finds every one of its quotes covered. A piece still not covered after its rewrite, or whose judge gave no usable answer, is marked as not understood: it keeps its questions and is searched and measured like any other."
+  : "For each one: the passage, the questions the writer asked, and what each judge decided. A piece's questions are confirmed only when both judges confirm every one of its quotes and no question copies its passage's words."}</p>
 <dl>
 <dt>Something left out</dt><dd>The judge says the questions miss something the passage says; its note says what.</dd>
-<dt>Repeated</dt><dd>A question asks again about something another question already covers, often a detail asked on its own.</dd>
+${rules === 3 ? "" : `<dt>Repeated</dt><dd>A question asks again about something another question already covers, often a detail asked on its own.</dd>
 <dt>Two things in one</dt><dd>One question asks about two separate things.</dd>
-<dt>Copies the passage's words</dt><dd>The question repeats a run of the passage's own words. ${collected.copy_run_words === null ? "In this run the judges' flag held a quote back." : `Code checks this (${escapeHtml(collected.copy_run_words)} words in a row); a judge's flag decides nothing.`}</dd>
+`}<dt>Copies the passage's words</dt><dd>The question repeats a run of the passage's own words. ${collected.copy_run_words === null ? "In this run the judges' flag held a quote back."
+  : rules === 3 ? `Code checks this (${escapeHtml(collected.copy_run_words)} words in a row): the question is flagged and left out of the recall measure, and holds nothing back.`
+    : `Code checks this (${escapeHtml(collected.copy_run_words)} words in a row); a judge's flag decides nothing.`}</dd>
 </dl>
 <p class="small">This file holds journal text. It's for you to read on this computer; please don't upload or share it.</p>
 </div>
