@@ -40,6 +40,34 @@ const record = (value, name) => {
 const unique = (values) => [...new Set(values)];
 const clone = (value) => structuredClone(value);
 
+// Fresh grief is a time-sensitive case variable that every runtime must be able to carry between turns, including the
+// encrypted private runtime, which passes no prior snapshot: the durable state keeps whether it is present and since when.
+function validateFreshGriefState(value) {
+  record(value, "caseState.fresh_grief");
+  if (!["present", "absent"].includes(value.status)) throw new ValidationError("caseState.fresh_grief.status is invalid.");
+  if (value.status === "present") {
+    bounded(value.since_at, "caseState.fresh_grief.since_at", 80);
+    bounded(value.since_turn_id, "caseState.fresh_grief.since_turn_id", 160);
+  } else if (value.since_at != null || value.since_turn_id != null) {
+    throw new ValidationError("caseState.fresh_grief has a start only while present.");
+  }
+  bounded(value.updated_at, "caseState.fresh_grief.updated_at", 80);
+  bounded(value.updated_turn_id, "caseState.fresh_grief.updated_turn_id", 160);
+  return value;
+}
+
+function nextFreshGriefState(previous, extracted, { turnId, recordedAt }) {
+  if (!["present", "absent"].includes(extracted)) return previous ?? null;
+  const continuing = extracted === "present" && previous?.status === "present";
+  return {
+    status: extracted,
+    since_at: extracted === "present" ? (continuing ? previous.since_at : recordedAt) : null,
+    since_turn_id: extracted === "present" ? (continuing ? previous.since_turn_id : turnId) : null,
+    updated_at: recordedAt,
+    updated_turn_id: turnId
+  };
+}
+
 function validateSource(source, name) {
   record(source, name);
   bounded(source.kind, `${name}.kind`, 80);
@@ -176,6 +204,7 @@ export function validateCaseState(value) {
   if (Object.hasOwn(value, "protective_compatibility")) validateProtectiveCompatibilityState(value.protective_compatibility);
   if (Object.hasOwn(value, "support_mode_preference") && !SUPPORT_MODE_PREFERENCES.includes(value.support_mode_preference)) throw new ValidationError("caseState.support_mode_preference is invalid.");
   if (Object.hasOwn(value, "focus_discipline")) validateFocusState(value.focus_discipline);
+  if (Object.hasOwn(value, "fresh_grief") && value.fresh_grief !== null) validateFreshGriefState(value.fresh_grief);
   return value;
 }
 
@@ -211,6 +240,7 @@ export function applyCaseStatePatch(previous, patch = {}) {
   };
   // Parked side questions are optional runtime memory; historical states without them stay valid.
   if (Object.hasOwn(patch, "focus_discipline")) next.focus_discipline = clone(patch.focus_discipline);
+  if (Object.hasOwn(patch, "fresh_grief")) next.fresh_grief = clone(patch.fresh_grief);
   return validateCaseState(next);
 }
 
@@ -269,6 +299,7 @@ export function diffCaseStates(previous, next) {
     protective_compatibility_changed: JSON.stringify(before.protective_compatibility ?? null) !== JSON.stringify(after.protective_compatibility ?? null),
     support_mode_preference_changed: (before.support_mode_preference ?? "unknown") !== (after.support_mode_preference ?? "unknown"),
     focus_discipline_changed: JSON.stringify(before.focus_discipline ?? null) !== JSON.stringify(after.focus_discipline ?? null),
+    fresh_grief_changed: JSON.stringify(before.fresh_grief ?? null) !== JSON.stringify(after.fresh_grief ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
 }
@@ -282,6 +313,7 @@ export function projectCaseStateForInspection(state) {
     threatPathway: value.threat_pathway ?? null,
     protectiveCompatibility: value.protective_compatibility ?? null,
     supportModePreference: value.support_mode_preference ?? "unknown",
+    freshGrief: value.fresh_grief ?? null,
     factsAndHypotheses: value.items,
     contradictions: value.contradiction_clusters,
     settledAnswers: value.answered_questions,
@@ -398,6 +430,8 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
     threat_pathway: threatPathway,
     protective_compatibility: protectiveCompatibility,
     support_mode_preference: supportModePreference,
-    ...(snapshot?.focus_discipline ? { focus_discipline: snapshot.focus_discipline } : {})
+    ...(snapshot?.focus_discipline ? { focus_discipline: snapshot.focus_discipline } : {}),
+    ...(["present", "absent"].includes(snapshot?.variables?.fresh_grief)
+      ? { fresh_grief: nextFreshGriefState(previous.fresh_grief ?? null, snapshot.variables.fresh_grief, { turnId, recordedAt }) } : {})
   });
 }

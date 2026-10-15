@@ -307,3 +307,43 @@ test("fresh grief is checked against each turn's time and never lapses on a turn
     assert.match(source, /carryFreshGrief\(applyCaseAudit\(/, file);
   }
 });
+
+test("fresh grief is carried by the durable case state, and the current time is trusted, in every runtime", async () => {
+  const { carryFreshGrief } = await import("../src/case-formulation/run.mjs");
+  const { blankCaseVariables } = await import("../src/guide-graph/contract.mjs");
+  const { createEmptyCaseState, mergeRuntimeSnapshotIntoCaseState, validateCaseState, diffCaseStates } = await import("../src/case-state/longitudinal-state.mjs");
+  const { loadConfig } = await import("../src/core/config.mjs");
+  const { buildContext } = await import("../src/orchestrator/context-builder.mjs");
+  const snapshot = (fresh_grief) => ({ user_goal: "synthetic", current_issue: "synthetic", direct_observations: [], hypotheses: [], unknowns: [],
+    variables: { ...blankCaseVariables(), fresh_grief } });
+  // The encrypted private runtime passes no prior snapshot, so the durable state keeps whether grief is present and since
+  // when (Codex, b62b4029); a historical state without the record stays valid.
+  const empty = createEmptyCaseState({ caseId: "synthetic-grief" });
+  assert.doesNotThrow(() => validateCaseState(structuredClone(empty)));
+  const first = mergeRuntimeSnapshotIntoCaseState(empty, snapshot("present"), { turnId: "u1", recordedAt: "2026-10-14T21:00:00Z" });
+  assert.deepEqual(first.fresh_grief, { status: "present", since_at: "2026-10-14T21:00:00Z", since_turn_id: "u1",
+    updated_at: "2026-10-14T21:00:00Z", updated_turn_id: "u1" });
+  assert.equal(diffCaseStates(empty, first).fresh_grief_changed, true);
+  const second = mergeRuntimeSnapshotIntoCaseState(first, snapshot("present"), { turnId: "u2", recordedAt: "2026-10-15T08:00:00Z" });
+  assert.equal(second.fresh_grief.since_at, "2026-10-14T21:00:00Z");
+  assert.equal(second.fresh_grief.updated_turn_id, "u2");
+  assert.deepEqual(mergeRuntimeSnapshotIntoCaseState(second, snapshot("unknown"), { turnId: "u3", recordedAt: "2026-10-15T09:00:00Z" }).fresh_grief,
+    second.fresh_grief);
+  const eased = mergeRuntimeSnapshotIntoCaseState(second, snapshot("absent"), { turnId: "u4", recordedAt: "2026-11-20T09:00:00Z" });
+  assert.deepEqual([eased.fresh_grief.status, eased.fresh_grief.since_at], ["absent", null]);
+  assert.throws(() => validateCaseState({ ...structuredClone(empty), fresh_grief: { status: "raw" } }), /fresh_grief.status/);
+  // The carry reads that record where no prior snapshot is passed.
+  assert.equal(carryFreshGrief(snapshot("unknown"), null, second).variables.fresh_grief, "present");
+  assert.equal(carryFreshGrief(snapshot("unknown"), null, eased).variables.fresh_grief, "unknown");
+  assert.equal(carryFreshGrief(snapshot("absent"), null, second).variables.fresh_grief, "absent");
+  // Every entry point gets a trusted current time: the runtime's receipt time when it passes one, else the clock at
+  // invocation; never a time from request input.
+  const config = loadConfig({ mode: "mock", ledgerMode: "off" });
+  const given = await buildContext({ userMessage: "synthetic", currentTurnAt: "1999-01-01T00:00:00Z" }, config, { currentTurnAt: "2026-10-15T03:00:00Z" });
+  assert.equal(given.currentTurnAt, "2026-10-15T03:00:00Z");
+  const before = Date.now();
+  const defaulted = await buildContext({ userMessage: "synthetic", currentTurnAt: "1999-01-01T00:00:00Z" }, config);
+  assert.ok(Date.parse(defaulted.currentTurnAt) >= before - 1000 && Date.parse(defaulted.currentTurnAt) <= Date.now() + 1000);
+  const runtime = await fs.readFile(new URL("../src/supervisor/private-therapy-model-runtime.mjs", import.meta.url), "utf8");
+  assert.match(runtime, /\{ currentTurnAt: runtimeTurn\.inbound\.received_at \}/);
+});

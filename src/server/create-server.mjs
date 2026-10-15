@@ -312,7 +312,6 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         const context = await buildContext({
           ...input,
           caseId,
-          currentTurnAt: new Date().toISOString(),
           recentTranscriptEntries: priorTranscriptEntries,
           durableCaseState: previousCaseState,
           trackerEntries

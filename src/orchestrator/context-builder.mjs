@@ -6,7 +6,7 @@ import { normalizePendingReplyRevision } from "./pending-reply-revision.mjs";
 import { buildDurableCaseContext, formatVerbatimWindow } from "../case-state/context-window.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
 
-export async function buildContext(input, config) {
+export async function buildContext(input, config, { currentTurnAt = null } = {}) {
   if (!input || typeof input !== "object") throw new ValidationError("Input must be an object.");
   if (typeof input.userMessage !== "string" || !input.userMessage.trim()) {
     throw new ValidationError("userMessage is required.");
@@ -35,7 +35,9 @@ export async function buildContext(input, config) {
 
   return {
     userMessage: input.userMessage.trim(),
-    currentTurnAt: typeof input.currentTurnAt === "string" && input.currentTurnAt.trim() ? input.currentTurnAt.trim() : null,
+    // Trusted time of the current message: the runtime's receipt time when it has one, else this invocation's clock.
+    // Never taken from request input.
+    currentTurnAt: typeof currentTurnAt === "string" && currentTurnAt.trim() ? currentTurnAt.trim() : new Date().toISOString(),
     pendingReplyRevision: normalizePendingReplyRevision(input.pendingReplyRevision ?? null),
     recentTranscript,
     userFacts,
