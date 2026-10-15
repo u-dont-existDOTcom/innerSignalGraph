@@ -178,8 +178,9 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   // The owner's answer to question 35 (15 Oct 2026): gratitude comes into an altered state only once the state is shown
   // to be calm, on the same evidence as the stable-state therapy (Codex, 1ab74341): coherent, medically stable, safe,
   // oriented and able to stop. Unknown is not calm. An overwhelming state that is otherwise calm defers it instead
-  // (ROUTE.ALTERED_ACUTE_STABILIZATION).
-  const gratitudeShutOut = variables.altered_state === "altered" && !(variables.altered_capacity === "coherent"
+  // (ROUTE.ALTERED_ACUTE_STABILIZATION), and limited capacity is one of that route's overwhelming states, so there
+  // gratitude waits too (Codex, 9412ee67); impaired or unknown capacity leaves it out.
+  const gratitudeShutOut = variables.altered_state === "altered" && !(["coherent", "limited"].includes(variables.altered_capacity)
     && variables.altered_medical_status === "stable" && variables.present_safety === "safe"
     && variables.orientation === "oriented" && variables.ability_to_stop === "yes");
   if (gratitudeShutOut) matched = matched.filter((node) => node.id !== "ROUTE.GRATITUDE_PRACTICE");

@@ -114,3 +114,9 @@ stage gates on it.
 The package gate failed on `f6f6f185` and `5b08958f` at the therapy latency benchmark: its reviewed case (A001) now
 carries the music node's new purpose line, the only semantic change in that case, so the policy fingerprint moves to
 `hypnosis-and-music-purpose-2026-10-15-r7`.
+
+Codex's review of `9412ee67`: with limited capacity in an altered state (everything else calm), the acute route matched
+and deferred gratitude, but the shut-out rule, which counted anything short of coherent capacity as not calm, removed
+that deferral, so gratitude was neither offered nor waiting. Limited capacity is one of the acute route's overwhelming
+states, and the owner approved that gratitude waits through an overwhelming state (question 35), so it now waits there
+too; impaired or unknown capacity still leaves it out. The question 35 test checks it.

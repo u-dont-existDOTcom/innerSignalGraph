@@ -486,7 +486,7 @@ test("how gratitude comes in: sideways and at times, by asking, with the owner's
   assert.ok(says(/don’t jump to it: start from the love they feel/));
 });
 
-test("a calm altered state lets gratitude in; an overwhelming one holds it back; impaired or unknown capacity leaves it out (question 35)", () => {
+test("a calm altered state lets gratitude in; an overwhelming one, limited capacity included, holds it back; impaired or unknown capacity leaves it out (question 35)", () => {
   const altered = { deep_love_access: "none_known", altered_state: "altered", altered_capacity: "coherent", altered_medical_status: "stable" };
   const calm = plan(altered);
   assert.ok(selected(calm).includes("ROUTE.GRATITUDE_PRACTICE"));
@@ -495,6 +495,12 @@ test("a calm altered state lets gratitude in; an overwhelming one holds it back;
   assert.equal(overwhelming.primaryJob.id, "ROUTE.ALTERED_ACUTE_STABILIZATION");
   assert.ok(!selected(overwhelming).includes("ROUTE.GRATITUDE_PRACTICE"));
   assert.ok(overwhelming.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), "it waits for the state to settle");
+  // Limited capacity is one of the overwhelming states: gratitude waits there too, rather than being left out (Codex,
+  // 9412ee67).
+  const limited = plan({ ...altered, altered_capacity: "limited" });
+  assert.equal(limited.primaryJob.id, "ROUTE.ALTERED_ACUTE_STABILIZATION");
+  assert.ok(!selected(limited).includes("ROUTE.GRATITUDE_PRACTICE"));
+  assert.ok(limited.deferredNodes.some((node) => node.id === "ROUTE.GRATITUDE_PRACTICE"), "limited capacity: it waits");
   // Calm is shown, not assumed (Codex, 1ab74341): with capacity, medical state, orientation or stopping unknown, it
   // stays out, neither selected nor waiting.
   for (const out of [{ altered_capacity: "impaired" }, { altered_medical_status: "concerning" }, { altered_capacity: "unknown" },
