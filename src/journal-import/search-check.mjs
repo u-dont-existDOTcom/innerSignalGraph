@@ -1,7 +1,7 @@
 import { ValidationError } from "../core/errors.mjs";
 import { lexicalTerms } from "./graph.mjs";
 import { QUOTE_STOPWORDS } from "./quote-index.mjs";
-import { QUOTE_SEARCH_LIMITS } from "./retrieval.mjs";
+import { QUOTE_BM25, QUOTE_SEARCH_LIMITS } from "./retrieval.mjs";
 import { FRENCH_STOPWORDS, foldAccents, frenchLightStem, porterStem } from "./word-forms.mjs";
 
 // The word reading itself (accents, the two stemmers, the French stop words) lives in word-forms.mjs, which the quote ranking shares;
@@ -150,8 +150,9 @@ export function variantStopwords(variant) {
 
 // Okapi BM25 with the usual constants: k1 limits how much using a word again adds, and b sets how much a passage's length counts
 // against it. Then the scorings that use BM25, and the ones that put the passages holding more of the query's words first.
-const BM25_K1 = 1.2;
-const BM25_B = 0.75;
+// They are the ones findQuotes uses for the ranking of version 3 of the quote index, which is defined there.
+const BM25_K1 = QUOTE_BM25.k1;
+const BM25_B = QUOTE_BM25.b;
 const BM25_SCORINGS = Object.freeze(new Set(["bm25", "bm25_coordination"]));
 const COORDINATION_SCORINGS = Object.freeze(new Set(["coordination", "bm25_coordination"]));
 

@@ -2,8 +2,9 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
 import { compareSourceOrder, knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
-import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_UNDATED_KEY, quoteCues } from "./quote-index.mjs";
+import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, quoteCues } from "./quote-index.mjs";
 import { POINTER_TAG_KINDS } from "./pointer-tags.mjs";
+import { formsQueryTerms, formsReadingTerm } from "./word-forms.mjs";
 
 export const QUOTE_SEARCH_LIMITS = Object.freeze({
   limitDefault: 24,
@@ -16,6 +17,12 @@ export const QUOTE_SEARCH_LIMITS = Object.freeze({
   // past what it looked at, so paging always moves on.
   scanMax: 5_000
 });
+
+// Okapi BM25's constants, as the search check uses them (search-check.mjs): k1 limits how much using a word again adds, and b sets how
+// much a quote's length counts against it.
+export const QUOTE_BM25 = Object.freeze({ k1: 1.2, b: 0.75 });
+// The name of the order version 3 of the quote index ranks in, which a cursor carries so one version's cursor can't page the other's.
+const QUOTE_RANKING_V3 = "quotes-v3";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const active = (record) => !["deleted", "revoked"].includes(record.lifecycle);
@@ -570,7 +577,11 @@ export async function openPrivateJournalGraph({
    * The person's own words for a question: exact quotes ranked by how many of the query's words they
    * hold, rarer words counting more (each word adds the log of how rare it is), with ties in a fixed
    * order so the same query pages the same way. Common function words (`QUOTE_STOPWORDS`) are left out
-   * of the ranking unless the query has nothing else. A time window keeps the quotes written under a
+   * of the ranking unless the query has nothing else. On a generation with a word list (`quote_terms`, version 3 of the quote
+   * index) the ranking is another: words are read across their forms (accents folded, English and French stems), the quotes
+   * holding more of the query's terms come first, then Okapi BM25, then the id, exactly the order of the search check's
+   * `forms_bm25_coordination`; the cursor's sort names it. `terms_ranked` and `matched_terms` still name the query's own words.
+   * A time window keeps the quotes written under a
    * date line inside it, and undated ones only when asked to. A page stops at its quote limit or byte
    * budget, and always holds at least one quote when any match. Later pages come from a cursor bound,
    * like search's, to the snapshot, query and filters, holding the position in the ranking where the
@@ -603,36 +614,70 @@ export async function openPrivateJournalGraph({
     invariant(kinds === null || tagIndexes, "QUOTE_TAGS_NOT_AVAILABLE");
     // Whether query words also match tag labels in this search.
     const tagged = matchTags && tagIndexes;
+    // Version 3 of the quote index lists the quotes holding each term as the forms reading takes it (`quote_terms`).
+    const wordList = Array.isArray(manifest.indexes.quote_terms);
     const allTerms = lexicalTerms(query);
     invariant(allTerms.length > 0, "SEARCH_QUERY_HAS_NO_TERMS");
     const expected = {
       query_sha256: sha256(Buffer.from(allTerms.join("\0"), "utf8")),
       filters_sha256: sha256(Buffer.from(JSON.stringify({ from, to, includeUndated, ...(kinds === null ? {} : { kinds: [...kinds].sort() }),
         ...(matchTags ? {} : { match_tags: false }) }), "utf8")),
-      sort: "quotes"
+      // A generation with a word list ranks another way, so its cursors say so.
+      sort: wordList ? QUOTE_RANKING_V3 : "quotes"
     };
     const start = cursor ? parseCursor(cursor, expected).offset : 0;
     const content = allTerms.filter((term) => !QUOTE_STOPWORDS.has(term));
     const terms = (content.length ? content : allTerms).slice(0, QUOTE_SEARCH_LIMITS.termsMax);
-    const ignored = allTerms.filter((term) => !terms.includes(term));
+    // The words the ranking goes by: the chosen ones, or, on a word list, the query's words that read as a term it ranks by.
+    let rankedWords = terms;
     const beforeReads = objectReads;
-    const postings = await Promise.all(terms.map((term) => readIndex("lexical", term)));
     const population = Math.max(1, manifest.node_count ?? 1);
     const scores = new Map();
     const matched = new Map();
-    terms.forEach((term, index) => {
-      const ids = [...new Set(postings[index])].filter((id) => id.startsWith("passage:"));
-      if (!ids.length) return;
-      const weight = Math.log(1 + population / ids.length);
-      for (const id of ids) {
-        scores.set(id, (scores.get(id) ?? 0) + weight);
-        if (!matched.has(id)) matched.set(id, []);
-        matched.get(id).push(term);
-      }
-    });
     const byScore = (scoreMap, termMap) => (left, right) => scoreMap.get(right) - scoreMap.get(left)
       || termMap.get(right).length - termMap.get(left).length || left.localeCompare(right);
-    const wordRanked = [...scores.keys()].sort(byScore(scores, matched));
+    let wordRanked;
+    if (wordList) {
+      // Version 3: the quotes holding more of the query's terms first, then Okapi BM25, then the id, the order of the search check's
+      // forms_bm25_coordination (search-check.mjs). The terms are chosen and read as it does, and the sums are made in its order,
+      // so the two give the same ranking.
+      const { terms: readTerms } = formsQueryTerms(query, QUOTE_SEARCH_LIMITS.termsMax);
+      const [totals = null] = await readIndex("quote_terms", QUOTE_TERMS_STATS_KEY);
+      invariant(totals !== null && Number.isSafeInteger(totals.quotes) && totals.quotes >= 0 && Number.isFinite(totals.mean_length) && totals.mean_length > 0,
+        "QUOTE_TERMS_INVALID");
+      const lists = await Promise.all(readTerms.map((term) => readIndex("quote_terms", term)));
+      const wordsOf = new Map(readTerms.map((term) => [term, allTerms.filter((word) => formsReadingTerm(word) === term)]));
+      const held = new Map();
+      readTerms.forEach((term, index) => {
+        const holders = lists[index];
+        if (!holders.length) return;
+        const weight = Math.log(1 + (totals.quotes - holders.length + 0.5) / (holders.length + 0.5));
+        for (const [id, uses, length] of holders) {
+          const factor = 1 - QUOTE_BM25.b + QUOTE_BM25.b * length / totals.mean_length;
+          scores.set(id, (scores.get(id) ?? 0) + weight * uses * (QUOTE_BM25.k1 + 1) / (uses + QUOTE_BM25.k1 * factor));
+          held.set(id, (held.get(id) ?? 0) + 1);
+          if (!matched.has(id)) matched.set(id, []);
+          matched.get(id).push(...wordsOf.get(term));
+        }
+      });
+      wordRanked = [...scores.keys()].sort((left, right) => held.get(right) - held.get(left) || scores.get(right) - scores.get(left) || left.localeCompare(right));
+      const ranking = new Set(readTerms);
+      rankedWords = allTerms.filter((word) => ranking.has(formsReadingTerm(word)));
+    } else {
+      const postings = await Promise.all(terms.map((term) => readIndex("lexical", term)));
+      terms.forEach((term, index) => {
+        const ids = [...new Set(postings[index])].filter((id) => id.startsWith("passage:"));
+        if (!ids.length) return;
+        const weight = Math.log(1 + population / ids.length);
+        for (const id of ids) {
+          scores.set(id, (scores.get(id) ?? 0) + weight);
+          if (!matched.has(id)) matched.set(id, []);
+          matched.get(id).push(term);
+        }
+      });
+      wordRanked = [...scores.keys()].sort(byScore(scores, matched));
+    }
+    const ignored = allTerms.filter((term) => !rankedWords.includes(term));
     // Tags: the same terms against topic and event labels, weighted the same way. A quote found only through a
     // tag ranks after every quote its own words match.
     const tagScores = new Map();
@@ -734,7 +779,7 @@ export async function openPrivateJournalGraph({
         expires_at: now() + cursorTtlMs
       }) : null,
       coverage: Object.freeze({
-        terms_ranked: Object.freeze([...terms]),
+        terms_ranked: Object.freeze([...rankedWords]),
         terms_ignored: Object.freeze(ignored),
         // Exact only when every match counts: a time window or a kind filter is checked quote by quote while scanning,
         // so with either the counts are unknown (null) rather than the unfiltered ones.
