@@ -12,7 +12,7 @@ section_hash: f71ae1c65d66a286b395ee808bbb894e6d80d06adf87e3281e78c4c6d6a295fa
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.MEDICAL_RED_FLAG
-projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
+projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
 ---
 
 # AMEND.CROSS.FOCUS_PRIORITY_BASELINE

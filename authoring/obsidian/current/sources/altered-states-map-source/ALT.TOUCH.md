@@ -12,7 +12,7 @@ section_hash: dd8f81acbd3469e1f134db3e40fdada631623e1eae6948509d18dc040bee4fa7
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_ACUTE_STABILIZATION
-projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
+projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
 ---
 
 # Consent and Touch

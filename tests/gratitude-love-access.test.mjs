@@ -174,11 +174,22 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
     const stopped = planFromGraphs({ graphs: bundle.graphs, variables: { ...musicVariables, fresh_grief }, pathPerformance: structuredClone(active) });
     assert.equal(stopped.primaryJob.id, "IC.MUSIC_EMOTIONAL_ACCESS_STOP", fresh_grief);
   }
-  // In a stable altered state grief leads, and going inward waits.
+  // In a stable altered state grief leads, and going inward waits, with the stable-state therapy and the altered-state
+  // routes that continue inner-child work or rehearse it (Codex, fffb9049).
   const stableGrief = plan({ fresh_grief: "present", unresolved_inner_material: "present", altered_state: "altered",
     altered_capacity: "coherent", altered_medical_status: "stable" });
   assert.equal(stableGrief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  for (const id of ["ROUTE.GO_INWARD", "ROUTE.ALTERED_STABLE_THERAPY", "IC.ALTERED_STATE_GATE"]) {
+    assert.ok(stableGrief.trace.some((item) => item.id === id), id);
+    assert.ok(!selected(stableGrief).includes(id), id);
+  }
+  // (The plan lists a waiting node only when something beyond the state gates triggered it.)
   assert.ok(stableGrief.deferredNodes.some((item) => item.id === "ROUTE.GO_INWARD"));
+  // Afterwards, sober, rehearsing what the altered state opened waits too.
+  const transferGrief = plan({ fresh_grief: "present", altered_state_transfer: "state_bound" });
+  assert.equal(transferGrief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(!selected(transferGrief).includes("ROUTE.ALTERED_STATE_TRANSFER"));
+  assert.ok(transferGrief.deferredNodes.some((item) => item.id === "ROUTE.ALTERED_STATE_TRANSFER"));
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.

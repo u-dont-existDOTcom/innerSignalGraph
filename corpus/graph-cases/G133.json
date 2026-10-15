@@ -1,6 +1,6 @@
 {
   "id": "G133",
-  "title": "in a stable altered state, fresh grief leads and going inward waits",
+  "title": "in a stable altered state, fresh grief leads; going inward and the stable-state therapy wait",
   "variables": {
     "present_safety": "safe",
     "orientation": "oriented",
@@ -19,11 +19,12 @@
   },
   "expected": {
     "primary": "ROUTE.FRESH_GRIEF_FIRST",
-    "selectedIncludes": [
+    "matchedIncludes": [
       "ROUTE.ALTERED_STABLE_THERAPY"
     ],
     "selectedExcludes": [
-      "ROUTE.GO_INWARD"
+      "ROUTE.GO_INWARD",
+      "ROUTE.ALTERED_STABLE_THERAPY"
     ],
     "deferredIncludes": [
       "ROUTE.GO_INWARD"

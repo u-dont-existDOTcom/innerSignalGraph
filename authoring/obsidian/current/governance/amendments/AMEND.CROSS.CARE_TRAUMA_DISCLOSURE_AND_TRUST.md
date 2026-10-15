@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: f983eee66d931684edaa11ab817ad621f45d1d8ddc435d2b69fca95b048cbd3a
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
+projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
 ---
 
 # AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST

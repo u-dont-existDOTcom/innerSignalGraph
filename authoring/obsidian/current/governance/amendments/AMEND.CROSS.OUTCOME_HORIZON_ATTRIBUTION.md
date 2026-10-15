@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: e68821c93ff78b051f7d668c4ba812d329fd462a8a482e2a1b585383e91987b4
 source_file_sha256: 935b26f936cf3cb5888bc31f79ec4375f4b4c7ff1449b8bfecdf936a4fd3f1f4
-projection_input_sha256: f5b684e6b1411d68fce6cee61e6c3ac911f7d2cb4155b340b3c8a7e844124ca0
+projection_input_sha256: c1d165124b7c327f9032e32273639681f574fa77ebf6f56b142cca47d7fcf5e3
 ---
 
 # AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION

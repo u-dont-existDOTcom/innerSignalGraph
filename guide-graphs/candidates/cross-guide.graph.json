@@ -1864,7 +1864,10 @@
           "SOM.MEANING_INTEGRATION",
           "SOM.ADVANCED_RELEASE_OPTIONAL",
           "SOM.AQUATIC_BODYWORK",
-          "ROUTE.REFRACTORY_PAIN_NAVIGATION"
+          "ROUTE.REFRACTORY_PAIN_NAVIGATION",
+          "ROUTE.ALTERED_STABLE_THERAPY",
+          "IC.ALTERED_STATE_GATE",
+          "ROUTE.ALTERED_STATE_TRANSFER"
         ],
         "forbiddenOverclaims": [
           "Do not claim the loss happened for a reason or was meant to teach something."
