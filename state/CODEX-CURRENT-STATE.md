@@ -3,12 +3,13 @@
 Updated: 2026-10-15
 
 
-## How gratitude comes in (2026-10-15, the owner's points; stacked on the gratitude map change)
+## How gratitude comes in, and hypnosis during grief (2026-10-15, the owner's points)
 
 - **Owner outcome:** carry the owner's points of 15 Oct (10:28 UTC) on how he brings gratitude in, with his answers to owner-page questions 34 (all four suggested rewordings) and 35 (gratitude in a calm altered state), 11:19 UTC. He writes the public-guide changes himself; the pending queue records them (PGQ-034, PGQ-035).
 - **Change (branch `task/gratitude-owner-points-20261015`, `tasks/gratitude-how-20261015/INTEGRATION.md`):** `AMEND.IC.GRATITUDE_HOW_20261015` (owner amendments r11); `ROUTE.GRATITUDE_PRACTICE` lines (sideways and at times, his example questions, toxic positivity, no modeled thanks, a calm altered state) and avoid lines; `IC.REALIZATION_LOVE_INTEGRATION` works toward a contradiction from the love side; `ROUTE.ALTERED_ACUTE_STABILIZATION` defers gratitude, and in an altered state the planner admits it only once calm is shown; the planner keeps borrowed love in the plan when it holds gratitude back; graph cases G137 to G140.
 - **What moves:** as written, G047's last secondary (borrowed love for borrowing one adult function); with unconditional love not felt, also G002, G132 and G133.
-- **Next:** after the map change merges, rebase onto main, open the pull request, Codex review, merge statement.
+- **Owner answer to question 36 (13:19 UTC):** hypnosis in general isn't incompatible with grief or altered states; it depends on the kind of hypnosis, the level of grief and what is appropriate at the moment. The compiler's grief hold and the grief route's hold on gentle self-hypnosis are removed (`AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015`, PGQ-036).
+- **Next:** rebuilt on main after the map change merged (#159); pull request #163 (ready), Codex review, merge statement, then the owner's merge and a connector rebuild on his `deploy`.
 
 
 ## Gratitude for everyone in the inner-child map (2026-10-15, rebuilt from the owner's answers; routing check with the owner)

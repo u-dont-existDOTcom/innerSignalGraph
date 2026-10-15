@@ -9,8 +9,8 @@ calm altered state). He said he will write the public-guide changes himself. The
 pending public-guide queue to record what the guide should teach (Codex's review of `4f34eb2d`), so this change adds
 PGQ-034 (bringing gratitude in without pushing it) and PGQ-035 (gratitude in a calm altered state) for his edits.
 
-The branch is stacked on the gratitude map change (`task/gratitude-love-child-bridge-20261014`); once that merges,
-rebase onto main and measure again.
+The branch was stacked on the gratitude map change; after that merged (#159, `f6e4846f`, 13:14 UTC) it was rebuilt on
+main and measured again against the merged map (same moves as below).
 
 ## What changes
 
