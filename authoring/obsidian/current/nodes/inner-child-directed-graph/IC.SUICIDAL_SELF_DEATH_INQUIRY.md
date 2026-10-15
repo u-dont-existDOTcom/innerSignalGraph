@@ -39,7 +39,7 @@ regression_refs:
   - G108
 base_record_sha256: dd60c4dbac1cdb8b7e266f27f7ec69a9a4341adccc290fcecc4318689cda47da
 base_graph_sha256: 9a9d0990dc3795821cd309c5a4a8adbfa79bee00637b9f8d8adae3739422ffc4
-projection_input_sha256: 9fc2b17ae6ec0cac0f87b4d8f9939f3526d747c88c72f9b3320846bd9f9519de
+projection_input_sha256: 9b0445ddbd5ddc57591dac3478f0dc5e1e690482d607ff9fd5533efcca704660
 ---
 
 # Examine the self/death assumption before an irreversible act

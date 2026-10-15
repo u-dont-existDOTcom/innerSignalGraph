@@ -196,6 +196,17 @@ test("after a fresh death or harm, grief and support lead and gratitude comes in
   assert.ok(aftermathGrief.trace.some((item) => item.id === "ROUTE.ALTERED_AFTERMATH"));
   assert.ok(!selected(aftermathGrief).includes("ROUTE.ALTERED_AFTERMATH"));
   assert.ok(aftermathGrief.requiredNuance.some((line) => /psychotic-type reaction/.test(line)));
+  // Preparing a planned session waits too, its safety cautions staying; and so does titrating inner-child work, which
+  // is waiting anyway (Codex, c975bcef).
+  const plannedGrief = plan({ fresh_grief: "present", altered_phase: "planned" });
+  assert.equal(plannedGrief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(plannedGrief.trace.some((item) => item.id === "ROUTE.ALTERED_PREPARATION"));
+  assert.ok(!selected(plannedGrief).includes("ROUTE.ALTERED_PREPARATION"));
+  assert.ok(plannedGrief.requiredNuance.some((line) => /psychotic-type reaction/.test(line)));
+  const titrationGrief = plan({ fresh_grief: "present", ic_status: "active", ic_titration_needed: "yes" });
+  assert.equal(titrationGrief.primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
+  assert.ok(titrationGrief.trace.some((item) => item.id === "IC.CONTINUITY_TITRATION"));
+  assert.ok(!selected(titrationGrief).includes("IC.CONTINUITY_TITRATION"));
   // Grief isn't inner-child work: its route stays when inner-child work is declined (Codex, 6fba89a8).
   assert.equal(plan({ love_access: "accessible", fresh_grief: "present", ic_status: "declined" }).primaryJob.id, "ROUTE.FRESH_GRIEF_FIRST");
   // A sensitive signal: it asks for a reviewed formulation, like a spiritual struggle.

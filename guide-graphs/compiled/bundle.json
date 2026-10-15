@@ -8407,7 +8407,9 @@
               "ROUTE.ALTERED_STABLE_THERAPY",
               "IC.ALTERED_STATE_GATE",
               "ROUTE.ALTERED_STATE_TRANSFER",
-              "ROUTE.ALTERED_AFTERMATH"
+              "ROUTE.ALTERED_AFTERMATH",
+              "ROUTE.ALTERED_PREPARATION",
+              "IC.CONTINUITY_TITRATION"
             ],
             "forbiddenOverclaims": [
               "Do not claim the loss happened for a reason or was meant to teach something."
