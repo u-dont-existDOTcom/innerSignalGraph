@@ -354,7 +354,8 @@ const KNOWN_PRECISIONS = Object.freeze(["instant", "day", "month", "year", "inte
 
 // The date a quote was written under (`quote_meta`), as an episode's authored time, or the unknown time when it has
 // none. A known time must name its evidence for the graph to accept it: the quote it dates. A date whose year was taken
-// from the entries before it is `relative_supported`, not `explicit`.
+// from the entries before it is `relative_supported`, not `explicit`, and so is a range a quote was given from the dates
+// around it (version 3 of the quote index, `between`): no date line above it gives it, so it is an interval between two.
 function writtenTime(unitId, quoteMeta, passageIdForUnit) {
   const entries = quoteMeta.get(passageIdForUnit(unitId));
   const meta = Array.isArray(entries) ? entries[0] : undefined;
@@ -368,7 +369,7 @@ function writtenTime(unitId, quoteMeta, passageIdForUnit) {
     to: written.to,
     precision: KNOWN_PRECISIONS.includes(written.precision) ? written.precision : "interval",
     timezone: null,
-    basis: written.year_inferred === true ? "relative_supported" : "explicit",
+    basis: written.year_inferred === true || written.between === true ? "relative_supported" : "explicit",
     evidence_ids: [unitId]
   };
 }

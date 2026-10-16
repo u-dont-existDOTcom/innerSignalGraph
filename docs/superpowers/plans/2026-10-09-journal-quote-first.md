@@ -279,6 +279,48 @@ ranges by overlap; the date-order counts; unit ids are the same in both versions
 search must find exactly what its replica finds; then `publish-quotes` replaces version 2. The pointer run's own
 generation stays on version 2 and unpublished (owner decision 38: B).
 
+**Live since 16 Oct 2026, 17:05 UTC.** The check held (2,398 of 3,207 questions found in the first 12 results by both
+the live search and its replica; recall 0.748 at 12 and 0.813 at 24, against 0.714 and 0.778 for the old ranking).
+
+## Finishing the graph on version 3 (plan, 16 Oct 2026, issue #168)
+
+The owner's newer direction (issue #168, 16 Oct 2026) is to finish the journal's graph and timeline, not to hold them
+back: it supersedes question 38's B for the pointer run. What was live that day: version 3 of the quote index, whose
+quote search works, while `search_journal_graph` and `get_journal_timeline` had nothing to show, since no tag was
+published. The 15 Oct run (`e5d1e64a`, rules of owner decision 32) had tagged the whole journal and been measured, but
+on version 2: publishing its own generation would take the published quotes back a version.
+
+**Carrying the tags (`pointer-rebase`).** For a measured run whose generation is named for an older index version, the
+kept tags of its measured pass are built again onto a generation named for the current version
+(`<quote index generation>:pointer-<run>`), through the same `buildPointerGeneration`: tags are kept by unit id, which
+every version keeps, and indexed under the new generation's passages, with the current version's word list
+(`quote_terms`) and dates (ranges included). Nothing is sent: the tags are the run's, already checked, and their
+precision stays what the run's measurement found. Retrieval is measured again on the new generation, with tags and with
+words only, on the run's reference questions (`runPointerRebaseMeasure`: recall, critical recall, gain and event
+coverage, as the measurement computes them), and reported in counts.
+
+**Publishing (`pointer-publish`).** For such a run it publishes the carried generation, and refuses
+(`POINTER_REBASE_NEEDED`) until it exists and is measured; a run already on the current version publishes its own, as
+before. The published generation then holds the quotes, their tags, and the version 3 search, so graph search, the
+subgraph, evidence and the timeline answer from it. Since the quote index alone would drop the tags, `publish-quotes`
+refuses over a published pointer generation (`QUOTE_PUBLISH_WOULD_DROP_TAGS`): a later index version goes out through
+`pointer-rebase` and `pointer-publish`.
+
+**Dates on the timeline.** An event's authored time is its quote's date, as before, and its event time stays unknown:
+the timeline shows when the journal says something happened, never a claim about when it did. A range a quote got from
+the dates around it (`between`) is an interval with basis `relative_supported`, like a year taken from the entries
+before.
+
+**Reading it back (`published-readback`).** A content-free readback, under the operator's grant, through the reader the
+connector opens: the live generation, its events by timeline lane, and for the first 20 events, whether graph search
+finds each event and each tag on its quote by its own label, whether its subgraph reaches its quote and whether that
+quote resolves to its exact words; and that a caller without a grant is refused. Counts only.
+
+**Putting it live.** On the owner's merge and `deploy`: connector, then import; `pointer-rebase` and its counts;
+`pointer-publish`; `published-readback`; then the owner asks a fresh InnerSignal chat about a person, a place and when
+something happened, which is the one check of the ChatGPT path no server command can make. Nothing is tagged again, and
+the slow semantic import stays stopped.
+
 ## Operating it (after the owner's `deploy`)
 
 The order matters. A case with a published journal corpus isn't continuation-safe for a connector that can't read

@@ -11,7 +11,7 @@ import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, jo
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
-import { createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
+import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
 import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
@@ -32,7 +32,7 @@ import { createDurableJournalInferencePort } from "./durable-inference.mjs";
 import { QUOTE_SEARCH_LIMITS, openPrivateJournalGraph } from "./retrieval.mjs";
 import { buildPointerGeneration, pointerPassInput } from "./pointer-pass.mjs";
 import { POINTER_RECALL_TOP, pointerRecallReach, pointerReferenceCounts, runPointerMeasure, runPointerPass, runPointerPilot,
-  runPointerReference, runPointerSearchCheck } from "./pointer-steps.mjs";
+  runPointerRebaseMeasure, runPointerReference, runPointerSearchCheck } from "./pointer-steps.mjs";
 import { pointerChallengeUnits } from "./pointer-reference.mjs";
 import { checkReviewDirectory, collectPointerExamples, renderPointerExamples, writeReviewFile } from "./pointer-examples.mjs";
 import { lexicalTerms } from "./graph.mjs";
@@ -451,12 +451,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return { ...structuredClone(rest), ...(seed ? { seed_sha256: hash(seed) } : {}) };
     };
     const pointerSummary = () => {
-      const { reference, challenge, pilot, pass, coverage_pass: coveragePass, measure, persisted, published, ...run } = state.pointer;
+      const { reference, challenge, pilot, pass, coverage_pass: coveragePass, measure, persisted, rebased, published, ...run } = state.pointer;
       return { ...structuredClone(run), reference: pointerStepSummary(reference), challenge: pointerStepSummary(challenge),
         pilot: pointerStepSummary(pilot), pass: pointerStepSummary(pass),
         coverage_pass: pointerStepSummary(coveragePass), measure: pointerStepSummary(measure),
         persisted: persisted ? { step_id: persisted.step_id, generation: persisted.generation, graph_sha256: persisted.graph_sha256,
           built_at: persisted.built_at } : null,
+        // The run's tags built again on the current quote index version (pointer-rebase), without its private references.
+        ...(rebased ? { rebased: { step_id: rebased.step_id, generation: rebased.generation, graph_sha256: rebased.graph_sha256,
+          built_at: rebased.built_at, measure: structuredClone(rebased.measure ?? null) } } : {}),
         published: published ? structuredClone(published) : null };
     };
     const calibrationStopStatus = (reason) => {
@@ -2766,6 +2769,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function publishQuotes() {
+      // Once a pointer run's generation is published, it holds the quotes and their tags: publishing the quote index alone
+      // over it would drop the tags. A new quote index version goes out through pointer-rebase and pointer-publish instead.
+      invariant(!(state.quote_published?.generation ?? "").includes(":pointer-"), "QUOTE_PUBLISH_WOULD_DROP_TAGS");
       const quoteStore = await buildQuotes();
       try {
         // The transfer checks every object it copies, the manifest included, against these references.
@@ -3136,6 +3142,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return { ...summary(), quote_search_check: { run_id: run.run_id, generation_version: version, ...check } };
     }
 
+    // find_journal_quotes on a stored generation's reader, exactly as the measurement runs it: its first results, as passage
+    // IDs. A search with no word in it finds nothing.
+    const measuredSearch = (reader) => async ({ query, matchTags }) => {
+      try {
+        const found = await reader.findQuotes({ query, limit: POINTER_RECALL_TOP, byteBudget: QUOTE_SEARCH_LIMITS.byteBudgetMax, matchTags });
+        return found.quotes.map((quote) => quote.quote_id);
+      } catch (error) {
+        if (["SEARCH_QUERY_HAS_NO_TERMS", "QUOTE_QUERY_INVALID"].includes(error?.code)) return [];
+        throw error;
+      }
+    };
+
     // runPointerSearchCheck (pointer-steps.mjs) on one stored generation of the quote corpus, with the measured run's reference
     // questions; `checkManifest` checks the generation's manifest before anything is searched.
     async function searchCheckOn({ run, corpusId, generation, manifestObjectId, checkManifest }) {
@@ -3148,23 +3166,124 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId, caseId, corpusId, generation,
           visibilityEpoch: 0, cursorSecret: key });
         try {
-          // find_journal_quotes on that generation, exactly as the measurement ran it.
-          const search = async ({ query, matchTags }) => {
-            try {
-              const found = await reader.findQuotes({ query, limit: POINTER_RECALL_TOP, byteBudget: QUOTE_SEARCH_LIMITS.byteBudgetMax, matchTags });
-              return found.quotes.map((quote) => quote.quote_id);
-            } catch (error) {
-              if (["SEARCH_QUERY_HAS_NO_TERMS", "QUOTE_QUERY_INVALID"].includes(error?.code)) return [];
-              throw error;
-            }
-          };
-          return await runPointerSearchCheck({ quoteGeneration, reference, search, population: manifest.node_count, rules: runRules(run) });
+          return await runPointerSearchCheck({ quoteGeneration, reference, search: measuredSearch(reader), population: manifest.node_count,
+            rules: runRules(run) });
         } finally { reader.close(); }
       } finally { quoteStore.close(); }
     }
 
+    // The measured run's tags on the quote index version this code builds (issue #168). A run whose own generation is named
+    // for an older version (the 15 Oct 2026 run was measured on version 2, before version 3 was published) has its kept
+    // tags built again, by unit id, onto a generation named for the current version, with that version's word list and
+    // dates. Nothing is sent: the tags are the run's, already checked, and their precision stays what its measurement
+    // found. Retrieval is then measured again on the new generation, with tags and with words only, on the run's
+    // reference questions. pointer-publish publishes this generation for such a run, so the published quotes never go
+    // back a version. The run state keeps counts, the generation's name and digest, and private-store references only.
+    async function pointerRebase() {
+      const run = state.pointer;
+      invariant(run?.measure?.status === "done" && run.persisted?.step_id === run.measure.measured_step_id, "POINTER_NOT_MEASURED");
+      invariant(pointerSettingsHold(run), "POINTER_RUN_SETTING_CHANGED");
+      const generation = `${quoteIndexGeneration()}:pointer-${run.run_id}`;
+      invariant(generation !== run.generation, "POINTER_REBASE_NOT_NEEDED");
+      const measured = run.coverage_pass?.status === "done" ? run.coverage_pass : run.pass;
+      invariant(measured?.step_id === run.measure.measured_step_id, "POINTER_MEASURED_GENERATION_CHANGED");
+      await authorize();
+      const quoteGeneration = await quoteGenerationInput(generation);
+      const stored = await readLarge(measured.result_ref);
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: quoteGeneration.corpusId, corpusKey: key,
+        resumeMatchingObjects: true });
+      try {
+        if (run.rebased?.generation !== generation || run.rebased.step_id !== measured.step_id) {
+          // The same build the measurement's generation came from, on the current version's quotes: the tags are kept by
+          // unit id, which every version keeps, and indexed under this generation's passages.
+          const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
+          const { built, indexes } = buildPointerGeneration({ quoteGeneration, input, checked: stored.checked });
+          const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
+            objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
+          invariant(original.byte_length === state.original.byte_length && original.sha256 === state.original.sha256, "QUOTE_ARCHIVE_COPY_MISMATCH");
+          const persisted = await persistGraphGeneration({ corpusStore: quoteStore, graph: built.graph,
+            sourceRepresentations: Object.fromEntries(quoteGeneration.representations.map((item) => [item.representation_id, item.text])),
+            permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
+            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_tags: indexes.quote_tags, tag_terms: indexes.tag_terms,
+              ...(quoteGeneration.version === 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) },
+            indexRepresentations: true });
+          run.rebased = { step_id: measured.step_id, generation, corpus_id: quoteGeneration.corpusId,
+            manifest_object_id: persisted.manifest_object_id, manifest_reference: persisted.manifest_reference,
+            graph_sha256: persisted.manifest.graph_sha256, built_at: now().toISOString(), measure: null };
+          await save();
+        }
+        if (!run.rebased.measure) {
+          const reference = await readLarge(run.reference.result_ref);
+          const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId: run.rebased.manifest_object_id, caseId,
+            corpusId: quoteGeneration.corpusId, generation, visibilityEpoch: 0, cursorSecret: key });
+          try {
+            const result = await runPointerRebaseMeasure({ quoteGeneration, pass: stored, reference, search: measuredSearch(reader), rules: runRules(run) });
+            run.rebased.measure = { ...structuredClone(result), measured_at: now().toISOString() };
+            await save();
+          } finally { reader.close(); }
+        }
+      } finally { quoteStore.close(); }
+      return summary();
+    }
+
+    // A content-free readback of the published quote corpus through the reader the connector opens, under the operator's
+    // grant (issue #168): which generation is live, its timeline's events by lane, and, for the first READBACK_EVENTS events
+    // in the timeline's own order, whether a graph search for the event's label finds it, whether each tag node on the
+    // event's quote is found by its own label, whether the event's subgraph reaches its quote, and whether that quote
+    // resolves to its exact words; and that a caller without a grant is refused. Every answer is counted, never shown.
+    // Sends nothing, saves nothing.
+    const READBACK_EVENTS = 20;
+    async function publishedReadback() {
+      await authorize();
+      const corpusId = `${state.corpus_id}:quotes`;
+      const access = { requiredScope: PRIVATE_CASE_SCOPES.WRITE, requiredPurpose: PRIVATE_JOURNAL_PURPOSES.SESSION_USE };
+      const readback = await service.withJournalCorpus(caseId, corpusId, access, async ({ corpusStore, cursorSecret, reference }) => {
+        invariant(reference?.active_generation, "SOURCE_UNAVAILABLE");
+        const reader = await openPrivateJournalGraph({ corpusStore, manifestObjectId: reference.manifest_object_id, caseId, corpusId,
+          generation: reference.active_generation, visibilityEpoch: reference.visibility_epoch, purpose: PRIVATE_JOURNAL_PURPOSES.SESSION_USE,
+          cursorSecret });
+        try {
+          // Whether a graph search for a label finds this node, paging through the matches of its kind.
+          const finds = async (record) => {
+            if (!lexicalTerms(record.data?.label ?? "").length) return false;
+            let cursor = null;
+            do {
+              const page = await reader.search({ query: record.data.label, filters: { kinds: [record.kind] }, pageSize: 250, cursor });
+              if (page.records.some((item) => item.id === record.id)) return true;
+              cursor = page.next_cursor;
+            } while (cursor);
+            return false;
+          };
+          const timeline = await reader.timeline({});
+          const events = timeline.records.filter((record) => record.kind === "episode");
+          const counts = { events_checked: 0, events_found: 0, tags_checked: 0, tags_found: 0, subgraphs_reaching_quote: 0, quotes_resolved: 0 };
+          for (const event of events.slice(0, READBACK_EVENTS)) {
+            counts.events_checked += 1;
+            if (await finds(event)) counts.events_found += 1;
+            const [quoteId] = event.data.evidence_ids;
+            const group = await reader.evidenceGroup([event.id], { maximumNodes: 100, maximumEdges: 200 });
+            if (group.nodes.some((node) => node.id === quoteId)) counts.subgraphs_reaching_quote += 1;
+            if ((await reader.resolveEvidence([quoteId])).exact_spans.length === 1) counts.quotes_resolved += 1;
+            for (const tag of (await reader.reverseDependencies(quoteId)).filter((record) => record.kind === "entity")) {
+              counts.tags_checked += 1;
+              if (await finds(tag)) counts.tags_found += 1;
+            }
+          }
+          return { generation: reference.active_generation, pointer_generation: reference.active_generation.includes(":pointer-"),
+            node_count: reader.manifest.node_count, word_list: Array.isArray(reader.manifest.indexes?.quote_terms),
+            events: { known_lane: events.filter((record) => record.timeline_entry.lane === "known").length,
+              unknown_lane: events.filter((record) => record.timeline_entry.lane === "unknown").length },
+            ...counts };
+        } finally { reader.close(); }
+      }, auth);
+      // Without a grant, the same read is refused.
+      const refused = await service.withJournalCorpus(caseId, corpusId, access, async () => false, {}).then(() => false, () => true);
+      return { ...summary(), published_readback: { ...readback, refused_without_grant: refused } };
+    }
+
     // Step 6, on the owner's `deploy`: exactly the measured generation, identified by its manifest's reference and its
-    // graph's digest, and, under owner decision 30's rules, only when every floor held. It replaces the published quote
+    // graph's digest, and, under owner decision 30's rules, only when every floor held; for a run measured on an older
+    // quote index version, its tags carried onto the current one (pointer-rebase). It replaces the published quote
     // generation.
     async function pointerPublish() {
       const run = state.pointer;
@@ -3173,12 +3292,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // The measured generation reads dates as the run setting said when the run started, and was measured under the copy
       // check's run length the run started with; a setting changed since calls for a new run, as every other step does.
       invariant(pointerSettingsHold(run), "POINTER_RUN_SETTING_CHANGED");
-      if (run.published) return summary();
-      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: run.persisted.corpus_id, corpusKey: key, resumeMatchingObjects: true });
+      // A run measured on an older quote index version publishes its tags built again on the current one (pointer-rebase),
+      // never its own generation, which would take the published quotes back a version.
+      const current = `${quoteIndexGeneration()}:pointer-${run.run_id}`;
+      const behind = quoteIndexVersionOf(run.generation) < quoteIndexVersionOf(current);
+      invariant(!behind || (run.rebased?.generation === current && run.rebased.step_id === run.measure.measured_step_id && run.rebased.measure),
+        "POINTER_REBASE_NEEDED");
+      const target = behind ? run.rebased : run.persisted;
+      // Publishing the same generation again changes nothing.
+      if (run.published && (run.published.generation ?? run.generation) === target.generation) return summary();
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: target.corpus_id, corpusKey: key, resumeMatchingObjects: true });
       try {
-        const manifest = await quoteStore.readJsonObject({ objectId: run.persisted.manifest_object_id });
-        invariant(manifest.generation === run.generation && manifest.graph_sha256 === run.persisted.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH");
-        const persisted = { manifest, manifest_reference: run.persisted.manifest_reference, manifest_object_id: run.persisted.manifest_object_id };
+        const manifest = await quoteStore.readJsonObject({ objectId: target.manifest_object_id });
+        invariant(manifest.generation === target.generation && manifest.graph_sha256 === target.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH");
+        const persisted = { manifest, manifest_reference: target.manifest_reference, manifest_object_id: target.manifest_object_id };
         const supersedes = state.quote_published?.generation ?? null;
         await authorize();
         const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize, supersedes });
@@ -3186,8 +3313,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
           : await publish();
         const at = now().toISOString();
-        run.published = { at, supersedes, legacy_state_unchanged: receipt.legacy_state_unchanged, objects_verified: receipt.transfer.objects_verified };
-        state.quote_published = { generation: run.generation, manifest_object_id: run.persisted.manifest_object_id, at };
+        run.published = { at, generation: target.generation, supersedes, legacy_state_unchanged: receipt.legacy_state_unchanged,
+          objects_verified: receipt.transfer.objects_verified };
+        state.quote_published = { generation: target.generation, manifest_object_id: target.manifest_object_id, at };
         await save();
       } finally { quoteStore.close(); }
       return summary();
@@ -3224,6 +3352,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "pointer-examples") return pointerExamples();
         if (command === "pointer-search-check") return pointerSearchCheck();
         if (command === "quote-search-check") return quoteSearchCheck();
+        if (command === "pointer-rebase") return pointerRebase();
+        if (command === "published-readback") return publishedReadback();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();
