@@ -766,6 +766,7 @@ test("on a generation with a word list, the quote search gives the order of form
   // What a page says about how the words matched: the query's own words, not the stems the ranking goes by.
   const found = await reader.findQuotes({ query: "deprimé chevaux", limit: 40, byteBudget: 48_000, matchTags: false });
   assert.deepEqual(found.coverage.terms_ranked, ["deprimé", "chevaux"]);
+  assert.equal(found.coverage.ranking, "word_forms", "the result says how its words matched");
   assert.deepEqual(found.coverage.terms_ignored, []);
   assert.equal(found.coverage.matching_quotes, ranked("deprimé chevaux").length);
   const both = found.quotes.find((quote) => quote.text.startsWith("Il a déprimé"));

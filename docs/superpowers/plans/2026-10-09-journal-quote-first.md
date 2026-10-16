@@ -238,7 +238,11 @@ length. The generic `lexical` index stays as it is for the other graph searches.
 quotes holding them are ordered by how many of those terms they hold, then BM25 (k1 1.2, b 0.75, idf log(1 + (P - df +
 0.5) / (df + 0.5)), P the number of quotes), then id, exactly as the check's `forms_bm25_coordination`; a test holds the
 two to the same order. A version 2 generation ranks as before, so the live search works until version 3 is published.
-The cursor's expected `sort` names the ranking, so a cursor from one version can't page the other. The search check's
+The cursor's expected `sort` names the ranking, so a cursor from one version can't page the other. Each result says
+which ranking it has (`coverage.ranking`: `word_forms` on version 3, `exact_words` before), and `find_journal_quotes`'s
+description and query guidance say how words match under each (Codex's review of 16 Oct): the chat writing the query
+needn't spend words on a word's regular forms or accents under `word_forms`, and should leave out words that aren't about
+the question, since quotes holding more of the query's words rank first. The search check's
 replica (the check's copy of the live search, compared with what the search found) is the way the generation it reads
 ranks by: `current` on version 2, `forms_bm25_coordination` on version 3.
 

@@ -703,6 +703,7 @@ test("find quotes ranks the person's exact words by rare words first and pages w
     const common = await reader.findQuotes({ query: "the and of" });
     assert.deepEqual(common.coverage.terms_ranked, ["the", "and", "of"]);
     assert.ok(common.quotes.length > 0);
+    assert.equal(common.coverage.ranking, "exact_words", "a generation without a word list matches words exactly");
   } finally { reader.close(); }
 });
 
@@ -926,10 +927,15 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   const tool = listed.result.tools.find(({ name }) => name === "find_journal_quotes");
   assert.ok(tool && tool.annotations.readOnlyHint === true && tool.annotations.destructiveHint === false);
   assert.match(tool.description, /never as something that happened/u);
+  // The tool says how words match, and the result says which way it ranked: the published generation is version 3.
+  assert.match(tool.description, /coverage\.ranking says how: "word_forms" matches a word in its other forms/u);
+  assert.match(tool.inputSchema.properties.query.description, /"word_forms" a word's regular forms and accents match on their own/u);
+  assert.doesNotMatch(tool.inputSchema.properties.query.description, /^Words the quotes should contain: names, places, topics, feelings\. Words match exactly/u);
   const called = await call({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "find_journal_quotes",
     arguments: { case_id: CASE_ID, corpus_id: corpora[0].corpus_id, query: "Mara cardamom", from: "2019-04", to: "2019-04", include_undated: false, purpose: "session_use" } } });
   assert.equal(called.result.isError, false);
   assert.deepEqual(called.result.structuredContent.quotes.map(({ text }) => text.slice(0, 9)), ["Mara said"]);
+  assert.equal(called.result.structuredContent.coverage.ranking, "word_forms");
 
   // Publishing again is a no-op for the same quote generation.
   runtime = await f.open();

@@ -580,7 +580,8 @@ export async function openPrivateJournalGraph({
    * of the ranking unless the query has nothing else. On a generation with a word list (`quote_terms`, version 3 of the quote
    * index) the ranking is another: words are read across their forms (accents folded, English and French stems), the quotes
    * holding more of the query's terms come first, then Okapi BM25, then the id, exactly the order of the search check's
-   * `forms_bm25_coordination`; the cursor's sort names it. `terms_ranked` and `matched_terms` still name the query's own words.
+   * `forms_bm25_coordination`; the cursor's sort names it. `terms_ranked` and `matched_terms` still name the query's own words,
+   * and `coverage.ranking` says which ranking a result has ("word_forms" here, "exact_words" otherwise).
    * A time window keeps the quotes written under a
    * date line inside it, and undated ones only when asked to. A page stops at its quote limit or byte
    * budget, and always holds at least one quote when any match. Later pages come from a cursor bound,
@@ -786,6 +787,10 @@ export async function openPrivateJournalGraph({
       coverage: Object.freeze({
         terms_ranked: Object.freeze([...rankedWords]),
         terms_ignored: Object.freeze(ignored),
+        // How the words matched, for the model reading the result (find_journal_quotes's description): across their forms
+        // and accents, more of them first, on a generation with a word list (version 3); exactly, rarer ones counting more,
+        // elsewhere.
+        ranking: wordList ? "word_forms" : "exact_words",
         // Exact only when every match counts: a time window or a kind filter is checked quote by quote while scanning,
         // so with either the counts are unknown (null) rather than the unfiltered ones.
         matching_quotes: windowed || kinds !== null ? null : ranked.length,
