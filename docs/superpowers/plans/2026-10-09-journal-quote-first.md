@@ -227,8 +227,9 @@ id from a version 2 search stops resolving once version 3 is published; a new se
 id. Keeping the old ids would change how graph ids are made (`journalLocalNodeId` in `graph.mjs`, shared by every
 generation), which this version leaves alone.
 
-**The word list (`quote_terms`).** A new extra index built in `buildQuoteGeneration` from each quote's text with the
-check's forms reading (the same functions, moved to a module both use): for each term, the quotes holding it with how
+**The word list (`quote_terms`).** A new extra index, built from the generation's quotes by `quote-terms.mjs` (which the
+runtime calls for a version 3 generation, next to `buildQuoteGeneration`'s own indexes) with the check's forms reading
+(the same functions, moved to a module both use): for each term, the quotes holding it with how
 often each uses it and each quote's length in tokens, stop words included, as `[passage_id, uses, length]`, in id order.
 A reserved key that no term can be (terms are letters and digits only) holds how many quotes there are and their mean
 length. The generic `lexical` index stays as it is for the other graph searches.
