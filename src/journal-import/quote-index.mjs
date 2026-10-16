@@ -15,12 +15,15 @@ import { adaptExtractionToGraph } from "./graph.mjs";
 //
 // v3 (15 Oct 2026): a word list of the forms reading (`quote_terms`) that the search ranks by, the order of the dates
 // counted, and a range for the quotes left undated between two dates that run forward. The split into quotes is the
-// same as v2's, so unit and passage ids keep v2's namespace (`QUOTE_UNIT_NAMESPACE`) while the version names the
-// generation. Everything v3 adds is built only for a generation whose name holds the version (`quoteIndexVersionOf`);
-// a v2 generation rebuilds exactly as it was.
+// same as v2's, so unit ids keep v2's namespace (`QUOTE_UNIT_NAMESPACE`) while the version names the generation. Passage
+// ids, like every id of a graph, also hash the generation's name, so a v3 generation's passage ids are not its v2
+// predecessor's: a quote id from a v2 search doesn't resolve in v3, and the same quote has a new id there. Everything v3
+// adds is built only for a generation whose name holds the version (`quoteIndexVersionOf`); a v2 generation rebuilds
+// exactly as it was.
 export const QUOTE_INDEX_VERSION = "quote-index-v3";
-// The namespace unit and passage ids are made under. It is the version the split into quotes was made in, and it stays
-// while the split does, so a later index version maps onto the same units and passages.
+// The namespace unit ids, and the local ids passage ids are made from, are made under. It is the version the split into
+// quotes was made in, and it stays while the split does, so a later index version has the same units, and whatever goes by
+// unit id (a pointer run's reference, the search check) maps onto the same quotes.
 export const QUOTE_UNIT_NAMESPACE = "quote-index-v2";
 // The version a pointer run's own generation is named for (owner decision 38: B): the pointer pass tags the v2 quotes and
 // is not published, so it keeps v2's name and reads dates as v2 does.
@@ -237,8 +240,13 @@ function firstDayOf(date) {
   return date.from.length === 4 ? `${date.from}-01-01` : date.from.length === 7 ? `${date.from}-01` : date.from;
 }
 
+// The calendar month a date ends in, as YYYY-MM: a year alone ends in December, a month or a day in its own month.
+function lastMonthOf(date) {
+  return date.to.length === 4 ? `${date.to}-12` : date.to.slice(0, 7);
+}
+
 const dayNumber = (day) => Math.round(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
-// The calendar month of a first day, counted from year 0: months between two days are the difference of these.
+// The calendar month of a day (YYYY-MM-DD) or a month (YYYY-MM), counted from year 0: months between two are the difference of these.
 const monthNumber = (day) => Number(day.slice(0, 4)) * 12 + Number(day.slice(5, 7)) - 1;
 const monthKey = (number) => `${String(Math.floor(number / 12)).padStart(4, "0")}-${pad((number % 12) + 1)}`;
 
@@ -430,11 +438,13 @@ const EMPTY_EXTRACTION = (units) => ({
  * next in journal order (`steps`), how many go backwards, to an earlier first day (`backward`), and the largest of them in days
  * (`largest_backward_days`): version 2 assumes the journal runs forward and never checks it. And a quote left undated gets a
  * range when the nearest entry line before it that gave a date and the nearest one after it both exist, the later date's first
- * day is not earlier than the earlier date's, every page from the first line's to the second's was fully read, and the two
- * dates are at most `rangeMonthsMax` calendar months apart: `written` is then { from: the earlier date's from, to: the later
- * date's from, precision: "interval", between: true, ambiguous and year_inferred when either date is, line: the earlier date's
- * line, line_after: the later date's line }. A quote before the first date or after the last stays undated. `quote_months`
- * lists a ranged quote under every month it covers, and `stats` counts the ranged quotes and their widths.
+ * day is not earlier than the earlier date's, every page from the first line's to the second's was fully read, and the
+ * earlier date's first month and the later date's last month are at most `rangeMonthsMax` calendar months apart: `written` is
+ * then { from: the earlier date's from, to: the later date's to, precision: "interval", between: true, ambiguous and
+ * year_inferred when either date is, line: the earlier date's line, line_after: the later date's line }. A later date that
+ * gives only a month or a year ends the range at the end of that month or year (`to` is then that month or year, as on any
+ * date). A quote before the first date or after the last stays undated. `quote_months` lists a ranged quote under every month
+ * from the earlier date's first to the later date's last, and `stats` counts the ranged quotes and their widths in months.
  *
  * `stats` counts all of it without content: the entry lines of each kind, the quotes left undated by
  * the carry limit, and the line openings that look like a date but weren't read as one.
@@ -604,11 +614,12 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
       if (!earlier || !later || later.day < earlier.day) return;
       // A page that wasn't fully read may hide a date line, or turn the journal back, anywhere between the two lines.
       if (unreadUpTo[later.rep + 1] - unreadUpTo[earlier.rep] > 0) return;
-      const first = monthNumber(earlier.day), last = monthNumber(later.day);
+      // From the earlier date's first month to the month the later date ends in: a year alone runs to December.
+      const first = monthNumber(earlier.day), last = monthNumber(lastMonthOf(later.written));
       if (last - first > rangeMonthsMax) return;
       meta.written = {
         from: earlier.written.from,
-        to: later.written.from,
+        to: later.written.to,
         precision: "interval",
         between: true,
         ambiguous: earlier.written.ambiguous || later.written.ambiguous,

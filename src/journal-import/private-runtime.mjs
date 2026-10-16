@@ -3110,17 +3110,45 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const run = state.pointer;
       invariant(run?.measure?.status === "done" && run.persisted?.step_id === run.measure.measured_step_id, "POINTER_NOT_MEASURED");
       await authorize();
-      const quoteGeneration = await quoteGenerationInput(run.generation);
+      const check = await searchCheckOn({ run, corpusId: run.persisted.corpus_id, generation: run.generation,
+        manifestObjectId: run.persisted.manifest_object_id, checkManifest: (manifest) => invariant(manifest.generation === run.generation
+          && manifest.graph_sha256 === run.persisted.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH") });
+      return { ...summary(), search_check: { run_id: run.run_id, ...check } };
+    }
+
+    // The same check on the quote index's own generation, built and not yet published (plan, version 3, "Checking it before it
+    // goes live"): the measured run's reference questions, which go by unit id, searched there as find_journal_quotes will
+    // search once it is published. On version 3 the live search must find exactly what its replica, the check's
+    // forms_bm25_coordination, finds. It sends nothing, saves nothing and says only counts.
+    async function quoteSearchCheck() {
+      const run = state.pointer;
+      invariant(run?.measure?.status === "done" && run.persisted?.step_id === run.measure.measured_step_id, "POINTER_NOT_MEASURED");
+      const index = state.quote_index;
+      invariant(index?.generation === quoteIndexGeneration() && typeof index.manifest_object_id === "string", "QUOTE_INDEX_NOT_BUILT");
+      await authorize();
+      const version = quoteIndexVersionOf(index.generation);
+      const check = await searchCheckOn({ run, corpusId: index.corpus_id, generation: index.generation, manifestObjectId: index.manifest_object_id,
+        checkManifest: (manifest) => {
+          invariant(manifest.generation === index.generation, "QUOTE_INDEX_GENERATION_MISMATCH");
+          // A version 3 generation ranks by its word list, and only it has one.
+          invariant(Array.isArray(manifest.indexes?.quote_terms) === (version === 3), "QUOTE_INDEX_VERSION_MISMATCH");
+        } });
+      return { ...summary(), quote_search_check: { run_id: run.run_id, generation_version: version, ...check } };
+    }
+
+    // runPointerSearchCheck (pointer-steps.mjs) on one stored generation of the quote corpus, with the measured run's reference
+    // questions; `checkManifest` checks the generation's manifest before anything is searched.
+    async function searchCheckOn({ run, corpusId, generation, manifestObjectId, checkManifest }) {
+      const quoteGeneration = await quoteGenerationInput(generation);
       const reference = await readLarge(run.reference.result_ref);
-      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: run.persisted.corpus_id, corpusKey: key,
-        resumeMatchingObjects: true });
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
       try {
-        const manifest = await quoteStore.readJsonObject({ objectId: run.persisted.manifest_object_id });
-        invariant(manifest.generation === run.generation && manifest.graph_sha256 === run.persisted.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH");
-        const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId: run.persisted.manifest_object_id, caseId,
-          corpusId: run.persisted.corpus_id, generation: run.generation, visibilityEpoch: 0, cursorSecret: key });
+        const manifest = await quoteStore.readJsonObject({ objectId: manifestObjectId });
+        checkManifest(manifest);
+        const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId, caseId, corpusId, generation,
+          visibilityEpoch: 0, cursorSecret: key });
         try {
-          // find_journal_quotes on the measured generation, exactly as the measurement ran it.
+          // find_journal_quotes on that generation, exactly as the measurement ran it.
           const search = async ({ query, matchTags }) => {
             try {
               const found = await reader.findQuotes({ query, limit: POINTER_RECALL_TOP, byteBudget: QUOTE_SEARCH_LIMITS.byteBudgetMax, matchTags });
@@ -3130,8 +3158,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               throw error;
             }
           };
-          const check = await runPointerSearchCheck({ quoteGeneration, reference, search, population: manifest.node_count, rules: runRules(run) });
-          return { ...summary(), search_check: { run_id: run.run_id, ...check } };
+          return await runPointerSearchCheck({ quoteGeneration, reference, search, population: manifest.node_count, rules: runRules(run) });
         } finally { reader.close(); }
       } finally { quoteStore.close(); }
     }
@@ -3196,6 +3223,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "pointer-recount") return pointerRecount();
         if (command === "pointer-examples") return pointerExamples();
         if (command === "pointer-search-check") return pointerSearchCheck();
+        if (command === "quote-search-check") return quoteSearchCheck();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();

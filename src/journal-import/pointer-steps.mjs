@@ -876,10 +876,13 @@ export async function runPointerMeasure({ quoteGeneration, pass, reference, chal
 
 /**
  * A content-free check of the word search on the measured generation (owner page, 15 Oct 2026, "Searches that find
- * more"), on the reference sample's questions, as the measurement counts them. `measured` is how many the search the
- * measurement ran (find_journal_quotes by words, its first POINTER_RECALL_TOP results) finds; `replica` compares that with
- * the in-memory ranking of search-check.mjs's "current" variant, which leaves out the call's byte budget, so a question
- * only the replica finds is one the budget cut; and each variant (ways of reading words: exact, accents folded, French stop
+ * more"), or on another generation of the same quotes (the quote index's version 3, `quote-search-check`), on the reference
+ * sample's questions, as the measurement counts them; the questions go by unit id, which every version of the quote index
+ * keeps. `measured` is how many `search` (find_journal_quotes by words on that generation, its first POINTER_RECALL_TOP
+ * results) finds; `replica` compares that with the in-memory ranking of the search-check.mjs variant the generation ranks
+ * by (`replica.variant`: "current" on version 2, "forms_bm25_coordination" on version 3, from `quoteGeneration.version`),
+ * which leaves out the call's byte budget, so a question only the replica finds is one the budget cut; and each variant
+ * (ways of reading words: exact, accents folded, French stop
  * words, English or French word forms, all of them; and ways of ranking: the search's own, more of the searched words
  * first, BM25, BM25 with more of the words first, also on word forms with accents folded) gives the questions found in the
  * first 12, 24 and 40 results, where the others' quotes rank, and the design-weighted recall the measurement reports. `population` is the generation's node count, as
@@ -902,13 +905,15 @@ export async function runPointerSearchCheck({ quoteGeneration, reference, search
   // The same estimate the measurement reports for words only, over the same design.
   const estimate = (found) => measurePointerRecall({ reference, excludeUnmeasured: true, foundWithTags: found, foundWordsOnly: found,
     eventTaggedUnitIds: new Set() });
-  const current = check.variants.current.found[POINTER_RECALL_TOP];
-  const both = [...current].filter((questionId) => measured.has(questionId)).length;
+  // The check's copy of the live search: the variant the generation ranks by (findQuotes in retrieval.mjs).
+  const replicaVariant = quoteGeneration.version === 3 ? "forms_bm25_coordination" : "current";
+  const replica = check.variants[replicaVariant].found[POINTER_RECALL_TOP];
+  const both = [...replica].filter((questionId) => measured.has(questionId)).length;
   const byCutoff = (found, pick) => Object.fromEntries(Object.entries(found).map(([cutoff, set]) => [cutoff, pick(estimate(set))]));
   return deepFreeze({
     questions: check.questions,
     measured: { found: measured.size, recall_estimate: estimate(measured).recall_estimate },
-    replica: { found: current.size, found_by_both: both, measured_only: measured.size - both, replica_only: current.size - both },
+    replica: { variant: replicaVariant, found: replica.size, found_by_both: both, measured_only: measured.size - both, replica_only: replica.size - both },
     variants: Object.fromEntries(Object.entries(check.variants).map(([id, variant]) => [id, {
       found: variant.counts,
       ranks: variant.buckets,
