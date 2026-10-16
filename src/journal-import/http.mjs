@@ -70,8 +70,9 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
     title: "Find the person's own words in their journal",
     description: "Find exact, integrity-checked quotes from an authorized journal snapshot, ranked by the query's words "
       + "(coverage.ranking says how: \"word_forms\" matches a word in its other forms and without its accents, dream with "
-      + "dreams and dreamed, été with ete, and ranks quotes holding more of the query's words first, then those using them more "
-      + "in a shorter quote; \"exact_words\" matches words exactly, rarer words counting more), each with its page, the date "
+      + "dreams and dreamed, été with ete, and ranks quotes holding more of the query's words first, then by BM25 (rarer words, "
+      + "used more often in a shorter quote, count more); \"exact_words\" matches words exactly, rarer words counting more), "
+      + "each with its page, the date "
       + "line it was written under when there is one, and wording "
       + "cues found in it: dream, wish, plan, hypothetical, negation, hedge, reported speech. Answer from these quotes. Quote "
       + "the exact words you rely on. Keep the person's own qualifiers. Treat anything under a dream, wish, plan or "
