@@ -69,14 +69,20 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
     name: "find_journal_quotes",
     title: "Find the person's own words in their journal",
     description: "Find exact, integrity-checked quotes from an authorized journal snapshot, ranked by the query's words "
-      + "(rarer words count more), each with its page, the date line it was written under when there is one, and wording "
+      + "(coverage.ranking says how: \"word_forms\" matches a word in its other forms and without its accents, dream with "
+      + "dreams and dreamed, été with ete, and ranks quotes holding more of the query's words first, then by BM25 (rarer words, "
+      + "used more often in a shorter quote, count more); \"exact_words\" matches words exactly, rarer words counting more), "
+      + "each with its page, the date "
+      + "line it was written under when there is one, and wording "
       + "cues found in it: dream, wish, plan, hypothetical, negation, hedge, reported speech. Answer from these quotes. Quote "
       + "the exact words you rely on. Keep the person's own qualifiers. Treat anything under a dream, wish, plan or "
       + "hypothetical cue as that, never as something that happened, and say who said reported speech. Give the date a "
       + "quote was written under when you say what it shows, and don't present an old quote as still true. A written date "
-      + "is as precise as its precision (day, month or year); one with year_inferred took its year from the entries before "
+      + "is as precise as its precision (day, month, year or interval); one with year_inferred took its year from the entries before "
       + "it, so that year is probable, not certain; one marked ambiguous could be read the other way round, so check its "
-      + "date_line. A null written means the date is unknown: don't guess it. If no quote "
+      + "date_line. A written date with precision interval and between true is a range, never a day: the quote sits between "
+      + "two entries, the date_line above it and the date_line_after below it, and was written some time from the first date "
+      + "to the second; say it as that range. A null written means the date is unknown: don't guess it. If no quote "
       + "answers the question, say so; don't infer what the journal says. Use the case's journal corpus whose ID ends in "
       + "\":quotes\" when there is one. On a tagged journal (coverage.tags true), query words also match the labels of "
       + "topic and event tags, so a quote can be found by what it is about in words it doesn't use. Tags and their labels are "
@@ -90,7 +96,7 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
       properties: {
         case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" },
         corpus_id: { type: "string", pattern: "^[A-Za-z0-9:_-]{1,160}$" },
-        query: { type: "string", minLength: 1, maxLength: 4_000, description: "Words the quotes should contain: names, places, topics, feelings. Words match exactly, so add the variants and synonyms the person might have written (dream dreamt dreamed nightmare)." },
+        query: { type: "string", minLength: 1, maxLength: 4_000, description: "Words the quotes should contain: names, places, topics, feelings. Add the synonyms and other words the person might have written (dream nightmare) and a word's other forms (dreamt dreamed). With coverage.ranking \"exact_words\" words match exactly; with \"word_forms\" a word's regular forms and accents match on their own, irregular ones (dreamt) don't, and quotes holding more of the query's words rank first, so leave out words that aren't about the question." },
         purpose: { enum: [...READ_PURPOSES] },
         from: { type: ["string", "null"], description: `Keep quotes written on or after this. ${TIME_BOUND_DESCRIPTION}` },
         to: { type: ["string", "null"], description: `Keep quotes written on or before this. ${TIME_BOUND_DESCRIPTION}` },

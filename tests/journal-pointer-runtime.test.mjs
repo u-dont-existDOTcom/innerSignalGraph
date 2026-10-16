@@ -243,8 +243,10 @@ test("pointer-search-check reads the measured run back and says, in counts only,
     wrapPort: (port) => Object.freeze({ ...port, invoke: async (...args) => { sends += 1; return port.invoke(...args); } }) });
   await f.run("stage", "publish-quotes");
   await assert.rejects(f.run("pointer-search-check"), { code: "POINTER_NOT_MEASURED" });
+  await assert.rejects(f.run("quote-search-check"), { code: "POINTER_NOT_MEASURED" });
   await f.run("pointer-reference", "pointer-pilot", "pointer-pass", "pointer-challenge");
   await assert.rejects(f.run("pointer-search-check"), { code: "POINTER_NOT_MEASURED" });
+  await assert.rejects(f.run("quote-search-check"), { code: "POINTER_NOT_MEASURED" });
   const measuredRun = (await f.run("pointer-measure")).pointer;
   const { measure } = measuredRun;
   assert.ok(measuredRun.reference.counts.copy_check.copying > 0, "some questions copy their quote");
@@ -259,6 +261,8 @@ test("pointer-search-check reads the measured run back and says, in counts only,
   assert.equal(check.questions, measure.report.recall_units.reduce((total, unit) => total + unit.questions, 0));
   assert.equal(check.measured.recall_estimate, measure.floors.no_loss.recall_words_only_estimate);
   // The in-memory copy of the search agrees with it on every question (these quotes are short: the byte budget cuts nothing).
+  // The pointer run's generation is named for version 2, which ranks as it always did.
+  assert.equal(check.replica.variant, "current");
   assert.deepEqual([check.replica.found, check.replica.measured_only, check.replica.replica_only], [check.measured.found, 0, 0]);
   assert.deepEqual(Object.keys(check.variants), ["current", "accents", "french_stopwords", "english_forms", "french_forms", "all",
     "coordination", "bm25", "bm25_coordination", "forms", "forms_coordination", "forms_bm25", "forms_bm25_coordination"]);
@@ -271,6 +275,29 @@ test("pointer-search-check reads the measured run back and says, in counts only,
   }
   const shown = JSON.stringify(result);
   for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(shown.includes(word), false, word);
+
+  // The same questions on the quote index's own generation, version 3, built and published at the start: its live search finds
+  // exactly what its replica, the check's forms_bm25_coordination, finds on the same quotes.
+  const quoteResult = await f.run("quote-search-check");
+  const quoteCheck = quoteResult.quote_search_check;
+  assert.match(quoteResult.quote_index.generation, /:quotes:quote-index-v3-/u);
+  assert.equal(sends, sent, "nothing is sent");
+  assert.equal(await fs.readFile(f.stateFile, "utf8"), before, "nothing is saved");
+  assert.equal(quoteCheck.run_id, result.pointer.run_id);
+  assert.equal(quoteCheck.generation_version, 3);
+  assert.equal(quoteCheck.questions, check.questions, "the same questions: they go by unit id, which both versions keep");
+  assert.equal(quoteCheck.replica.variant, "forms_bm25_coordination");
+  assert.deepEqual([quoteCheck.replica.found, quoteCheck.replica.measured_only, quoteCheck.replica.replica_only], [quoteCheck.measured.found, 0, 0]);
+  assert.equal(quoteCheck.variants.forms_bm25_coordination.found[12], quoteCheck.measured.found);
+  assert.ok(quoteCheck.measured.found > 0);
+  const quoteShown = JSON.stringify(quoteResult);
+  for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(quoteShown.includes(word), false, word);
+  // A quote index built by an earlier version is not the one this version would publish: build it first.
+  const state = JSON.parse(before);
+  await fs.writeFile(f.stateFile, JSON.stringify({ ...state, quote_index: { ...state.quote_index,
+    generation: state.quote_index.generation.replace("quote-index-v3", "quote-index-v2") } }), { mode: 0o600 });
+  await assert.rejects(f.run("quote-search-check"), { code: "QUOTE_INDEX_NOT_BUILT" });
+  await fs.writeFile(f.stateFile, before, { mode: 0o600 });
 });
 
 test("the pointer rules are a run setting, owner decision 32's by default, checked before anything runs", async (t) => {

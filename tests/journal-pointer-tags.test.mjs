@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { validateJournalGraph, validateJournalSchema } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "../src/journal-import/graph.mjs";
-import { QUOTE_INDEX_VERSION, buildQuoteGeneration, splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+import { QUOTE_UNIT_NAMESPACE, buildQuoteGeneration, splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
 import { POINTER_DROP_REASONS, POINTER_NAME_KINDS, POINTER_PAGELESS_STRETCH, POINTER_TAG_KINDS, POINTER_TAG_LIMITS, batchPointerQuotes,
   checkPointerTags, normalizeForMatch, pointerExtraction, pointerPagelessStretches, pointerTagIndexes, untaggedPages } from "../src/journal-import/pointer-tags.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
@@ -428,7 +428,7 @@ function pointerGraph({ built, unitsByPage, kept, passageIdForUnit }) {
     const extraction = pointerExtraction({ units: unitsByPage[index], kept, quoteMeta: built.quoteMeta, passageIdForUnit });
     const source = built.graph.nodes.find((node) => node.kind === "source" && node.data.representation_id === page.representation_id);
     const graph = adaptExtractionToGraph({ caseId: CASE, corpusId: CORPUS, generation: GENERATION, source: { id: source.id, ...source.data, page: index + 1 },
-      units: unitsByPage[index], extraction, producerRef: QUOTE_INDEX_VERSION, localIdNamespace: QUOTE_INDEX_VERSION });
+      units: unitsByPage[index], extraction, producerRef: QUOTE_UNIT_NAMESPACE, localIdNamespace: QUOTE_UNIT_NAMESPACE });
     nodes.push(...graph.nodes);
     edges.push(...graph.edges);
     return { extraction, graph, source };
@@ -475,7 +475,7 @@ test("kept tags become a pointer-only extraction: one node per tag and quote, on
   assert.ok(!graph.nodes.some((node) => ["vin", "jardin"].includes(node.data?.label)), "topics stay out of the graph");
 
   // Each entity and episode rests on the whole quote it's tagged in: that quote's own passage.
-  const nodeId = (kind, localId) => journalLocalNodeId({ caseId: CASE, corpusId: CORPUS, generation: GENERATION, localIdNamespace: QUOTE_INDEX_VERSION,
+  const nodeId = (kind, localId) => journalLocalNodeId({ caseId: CASE, corpusId: CORPUS, generation: GENERATION, localIdNamespace: QUOTE_UNIT_NAMESPACE,
     kind, localId });
   for (const { extraction } of extractions) {
     for (const entity of extraction.entities) {

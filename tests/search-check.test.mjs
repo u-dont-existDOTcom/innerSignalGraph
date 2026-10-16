@@ -10,6 +10,8 @@ import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { FRENCH_STOPWORDS, SEARCH_CHECK_SCORINGS, SEARCH_CHECK_VARIANTS, buildVariantIndex, checkQuestions, foldAccents,
   frenchLightStem, porterStem, rankPassages, variantStopwords, variantTerm, variantTermsOf,
   variantTokensOf } from "../src/journal-import/search-check.mjs";
+import { buildQuoteTermsFromGraph } from "../src/journal-import/quote-terms.mjs";
+import * as wordForms from "../src/journal-import/word-forms.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 
 // The search check (src/journal-import/search-check.mjs): the journal quote search's word ranking computed again in memory, for the
@@ -678,26 +680,29 @@ function inventedParagraphs() {
 }
 
 // The corpus stored as the search reads it: a quote generation, persisted and opened. Returns its passages and node count, and a search.
-async function openedCorpus(t) {
+async function openedCorpus(t, { wordList = false, generation = "search-check-generation", cursorSecret = randomBytes(32),
+  paragraphs = inventedParagraphs() } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "search-check-"));
   let reader = null;
   t.after(async () => {
     reader?.close();
     await fs.rm(root, { recursive: true, force: true });
   });
-  const caseId = "search-check-case", corpusId = "search-check-corpus:quotes", generation = "search-check-generation";
+  const caseId = "search-check-case", corpusId = "search-check-corpus:quotes";
   const store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: randomBytes(32) });
-  const text = inventedParagraphs().join("\n\n");
+  const text = paragraphs.join("\n\n");
   const representations = [{ representation_id: "test:page:0", text, page_number: 1, parse_status: "readable" }];
   const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: "original:test", mediaType: "application/pdf",
-    representations, unitOptions: { minimumBytes: 0 } });
+    representations, unitOptions: { minimumBytes: 0 }, version: wordList ? 3 : 2 });
   const persisted = await persistGraphGeneration({ corpusStore: store, graph: built.graph,
     sourceRepresentations: Object.fromEntries(representations.map((item) => [item.representation_id, item.text])),
     permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096,
-    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
+    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, ...(wordList ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) },
+    indexRepresentations: true });
   reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId, corpusId,
-    generation, visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+    generation, visibilityEpoch: 0, purpose: "session_use", cursorSecret });
   return {
+    reader,
     passages: built.graph.nodes.filter((node) => node.kind === "passage").map((node) => ({ id: node.id, quote: node.data.quote })),
     population: persisted.manifest.node_count,
     // What the search returns by words alone, as the measurement reads it, with room for everything one call can hold.
@@ -730,6 +735,93 @@ test("under the current variant, ranking returns the passages in the order the r
   assert.notDeepEqual(ranked(long, 25).slice(0, 40), ranked(long).slice(0, 40), "the 25th term would change the order");
   // A smaller limit on terms reads as a shorter query to the real search.
   assert.deepEqual(ranked("kiln lantern mossy nectar", 2).slice(0, 40), await searched("kiln lantern"));
+});
+
+test("on a generation with a word list, the quote search gives the order of forms_bm25_coordination, whole and paged", async (t) => {
+  const { passages, population, reader } = await openedCorpus(t, { wordList: true });
+  const index = buildVariantIndex(passages, FORMS_BM25_COORDINATION);
+  const ranked = (query) => rankPassages({ index, query, population });
+  const all = async (query) => {
+    const ids = [];
+    let cursor = null;
+    do {
+      const page = await reader.findQuotes({ query, limit: 40, byteBudget: 48_000, matchTags: false, cursor });
+      ids.push(...page.quotes.map((quote) => quote.quote_id));
+      cursor = page.next_cursor;
+    } while (cursor);
+    return ids;
+  };
+  const queries = ["alder", "alder cobble", "Alder, COBBLE; alder!", "tide", "the tide and the alder", "the and of to", "quartz",
+    "alder quartz", "kiln lantern mossy nectar", "ember ember ember", "déprimée", "deprime", "Marguerite lettres", "les de la",
+    "la déprime des chevaux", "cheval chevaux horse horses", "running walks walked", `${WORDS.join(" ")} tide`];
+  for (const query of queries) assert.deepEqual(await all(query), ranked(query), query);
+  // The queries are not all alike: some tie, some run past one call's limit, some find nothing, and the forms reading finds more.
+  assert.equal(ranked("tide").length, 51);
+  assert.equal((await all("tide")).length, 51);
+  assert.deepEqual(await all("quartz"), []);
+  assert.equal(ranked("deprime").length, 3, "accents and French endings read alike: déprime, déprimé, déprimée");
+  assert.ok(ranked("la déprime des chevaux").length > ranked("deprime").length);
+  const exact = buildVariantIndex(passages, CURRENT);
+  assert.notDeepEqual(ranked("la déprime des chevaux"), rankPassages({ index: exact, query: "la déprime des chevaux", population }), "not the search's own order");
+  // What a page says about how the words matched: the query's own words, not the stems the ranking goes by.
+  const found = await reader.findQuotes({ query: "deprimé chevaux", limit: 40, byteBudget: 48_000, matchTags: false });
+  assert.deepEqual(found.coverage.terms_ranked, ["deprimé", "chevaux"]);
+  assert.equal(found.coverage.ranking, "word_forms", "the result says how its words matched");
+  assert.deepEqual(found.coverage.terms_ignored, []);
+  assert.equal(found.coverage.matching_quotes, ranked("deprimé chevaux").length);
+  const both = found.quotes.find((quote) => quote.text.startsWith("Il a déprimé"));
+  assert.deepEqual(both.matched_terms, ["deprimé", "chevaux"]);
+  assert.equal(found.quotes[0].quote_id, both.quote_id, "the quote that holds both words ranks first");
+  assert.deepEqual(found.quotes.find((quote) => quote.text.startsWith("Marguerite était déprimée")).matched_terms, ["deprimé"]);
+  const common = await reader.findQuotes({ query: "the and of", limit: 3, matchTags: false });
+  assert.deepEqual(common.coverage.terms_ranked, ["the", "and", "of"], "a query of only common words still searches by them");
+  const mixed = await reader.findQuotes({ query: "the tide and of", limit: 3, matchTags: false });
+  assert.deepEqual(mixed.coverage.terms_ranked, ["tide"]);
+  assert.deepEqual(mixed.coverage.terms_ignored, ["the", "and", "of"]);
+});
+
+test("quotes with the same words and length tie, and the word list orders them by id as the check does", async (t) => {
+  const paragraphs = ["Lantern and kiln.", "Lantern and kiln.", "Kiln and lantern.", "Lantern kiln lantern kiln.", "The kiln glowed.", "The kiln glowed.",
+    "Only a lantern here.", "Only a lantern here.", "Nothing at all.", "A lantern and a kiln and a mossy stone and a long wall."];
+  const { passages, population, reader } = await openedCorpus(t, { wordList: true, paragraphs });
+  const index = buildVariantIndex(passages, FORMS_BM25_COORDINATION);
+  for (const query of ["lantern kiln", "kiln", "lantern", "kiln glowed", "Lantern, KILN!"]) {
+    const page = await reader.findQuotes({ query, limit: 40, byteBudget: 48_000, matchTags: false });
+    const order = rankPassages({ index, query, population });
+    assert.deepEqual(page.quotes.map((quote) => quote.quote_id), order, query);
+    const ties = page.quotes.slice(1).filter((quote, number) => quote.score === page.quotes[number].score && quote.matched_terms.length === page.quotes[number].matched_terms.length);
+    assert.ok(ties.length > 0, `${query} has tied quotes`);
+    for (const quote of ties) {
+      const before = page.quotes[page.quotes.indexOf(quote) - 1];
+      assert.ok(before.quote_id.localeCompare(quote.quote_id) < 0, "tied quotes are in id order");
+    }
+  }
+});
+
+test("a cursor from a generation without a word list is refused on one with it, and the other way round", async (t) => {
+  const cursorSecret = randomBytes(32);
+  const query = "tide";
+  const [plain, listed] = [await openedCorpus(t, { cursorSecret }), await openedCorpus(t, { wordList: true, cursorSecret })];
+  const first = (corpus) => corpus.reader.findQuotes({ query, limit: 5, matchTags: false });
+  const [plainCursor, listedCursor] = [(await first(plain)).next_cursor, (await first(listed)).next_cursor];
+  assert.ok(plainCursor && listedCursor && plainCursor !== listedCursor, "the two rankings sign different cursors");
+  // The same generation and the same query: only the ranking differs.
+  await assert.rejects(listed.reader.findQuotes({ query, limit: 5, matchTags: false, cursor: plainCursor }), { code: "CURSOR_QUERY_MISMATCH" });
+  await assert.rejects(plain.reader.findQuotes({ query, limit: 5, matchTags: false, cursor: listedCursor }), { code: "CURSOR_QUERY_MISMATCH" });
+  // Each pages its own.
+  assert.equal((await listed.reader.findQuotes({ query, limit: 5, matchTags: false, cursor: listedCursor })).quotes.length, 5);
+  assert.equal((await plain.reader.findQuotes({ query, limit: 5, matchTags: false, cursor: plainCursor })).quotes.length, 5);
+  // Generations named for different versions are different snapshots as well.
+  const named = await openedCorpus(t, { wordList: true, generation: "search-check:quotes:quote-index-v3-month-first", cursorSecret });
+  await assert.rejects(named.reader.findQuotes({ query, limit: 5, matchTags: false, cursor: plainCursor }), { code: "CURSOR_SNAPSHOT_INVALID" });
+  await assert.rejects(plain.reader.findQuotes({ query, limit: 5, matchTags: false, cursor: (await first(named)).next_cursor }), { code: "CURSOR_SNAPSHOT_INVALID" });
+});
+
+test("a generation with a word list needs its totals, and a search reads only the terms it asks for", async (t) => {
+  const { reader } = await openedCorpus(t, { wordList: true });
+  const found = await reader.findQuotes({ query: "alder", limit: 2, matchTags: false });
+  assert.ok(found.coverage.encrypted_objects_read > 0 && found.coverage.encrypted_objects_read < 12, "a few index shards, not the whole index");
+  assert.equal(found.coverage.full_archive_loaded, false);
 });
 
 // 130 passages that all hold "zorbit", so a search for it ranks them by id: passage number n has rank n + 1.
@@ -965,4 +1057,28 @@ test("checkQuestions refuses input it cannot count, with a bare code", () => {
   assert.doesNotThrow(() => checkQuestions({ ...good, units: [{ status: "unconfirmed" }, { status: "nonresponse", questions: 7 }] }));
   assert.equal(checkQuestions({ ...good, units: [] }).questions, 0);
   assert.deepEqual(checkQuestions({ ...good, units: [] }).variants.all.counts, { 12: 0, 24: 0, 40: 0 });
+});
+
+test("the word reading lives in word-forms.mjs, which search-check re-exports, and its forms reading is the forms variants' reading", () => {
+  assert.equal(foldAccents, wordForms.foldAccents);
+  assert.equal(porterStem, wordForms.porterStem);
+  assert.equal(frenchLightStem, wordForms.frenchLightStem);
+  assert.equal(FRENCH_STOPWORDS, wordForms.FRENCH_STOPWORDS);
+  const text = "Déprimée, les chevaux couraient; Running RUNS ran 3 fois — l'amie d'Hélène œuvre, naïve café 2019!";
+  for (const variant of [FORMS, FORMS_COORDINATION, FORMS_BM25, FORMS_BM25_COORDINATION]) {
+    assert.deepEqual(wordForms.formsReadingTokens(text), variantTokensOf(text, variant));
+    assert.deepEqual(wordForms.formsReadingTokens(text, new Map()), variantTokensOf(text, variant), "a memo changes nothing");
+    assert.deepEqual([...wordForms.formsReadingStopwords()].sort(), [...variantStopwords(variant)].sort(), "English stop words only, French kept in");
+  }
+  assert.deepEqual(wordForms.formsReadingTokens(null), []);
+  assert.equal(wordForms.formsReadingTerm("déprimées"), variantTerm("déprimées", FORMS));
+  // The query's terms: read, each once in order, the stop words left out unless none is left, cut to the first `termsMax`.
+  const query = "The running of the Horses, la déprimée; horse RUNNING and the";
+  const { all, terms } = wordForms.formsQueryTerms(query, 24);
+  assert.deepEqual(all, variantTermsOf(query, FORMS_BM25_COORDINATION));
+  assert.deepEqual(terms, all.filter((term) => !variantStopwords(FORMS_BM25_COORDINATION).has(term)));
+  assert.deepEqual(wordForms.formsQueryTerms(query, 2).terms, terms.slice(0, 2));
+  assert.deepEqual(wordForms.formsQueryTerms("the and of", 24).terms, wordForms.formsQueryTerms("the and of", 24).all, "only common words: all of them");
+  assert.throws(() => wordForms.formsQueryTerms("horses", 0), INVALID);
+  assert.throws(() => wordForms.formsQueryTerms(7, 24), INVALID);
 });

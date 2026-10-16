@@ -1,7 +1,12 @@
 import { ValidationError } from "../core/errors.mjs";
 import { lexicalTerms } from "./graph.mjs";
 import { QUOTE_STOPWORDS } from "./quote-index.mjs";
-import { QUOTE_SEARCH_LIMITS } from "./retrieval.mjs";
+import { QUOTE_BM25, QUOTE_SEARCH_LIMITS } from "./retrieval.mjs";
+import { FRENCH_STOPWORDS, foldAccents, frenchLightStem, porterStem } from "./word-forms.mjs";
+
+// The word reading itself (accents, the two stemmers, the French stop words) lives in word-forms.mjs, which the quote ranking shares;
+// these names are still exported from here, unchanged.
+export { FRENCH_STOPWORDS, foldAccents, frenchLightStem, porterStem };
 
 function invariant(condition, code) { if (!condition) throw new ValidationError(code, { code }); }
 
@@ -12,202 +17,6 @@ function invariant(condition, code) { if (!condition) throw new ValidationError(
 // more of the query's words first, Okapi BM25, or both), and each question is looked up in every variant. Nothing is read from or
 // written to the stored journal: the caller hands in the passages and the questions. Results hold ids and counts only, never
 // text, and every error is a bare code.
-
-// Common French function words in lower case with their accents: articles, pronouns, prepositions, conjunctions and forms of the
-// two auxiliary verbs. The single letters are what an apostrophe leaves behind, as "l'ami" reads as "l" and "ami".
-export const FRENCH_STOPWORDS = Object.freeze(new Set(("à au aux avec ce ces c ça cela ceci cet cette celle celles celui ceux chez comme "
-  + "contre dans de des d depuis donc dont du elle elles en entre et eux il ils j je l la le les leur leurs lui m ma mais me même mes moi "
-  + "mon n ne ni nos notre nous on ou où par parce pas pendant plus pour qu quand que quel quelle quelles quels qui quoi s sa sans se "
-  + "selon ses si soi son sous sur t ta te tes toi ton tous tout toute toutes tu un une vers vos votre vous y or car alors ainsi aussi "
-  + "après avant lorsque puisque lorsqu puisqu jusqu suis es est sommes êtes sont été étais était étions étaient sera serait soit fut "
-  + "être ai as a avons avez ont avais avait avaient aura aurait eu avoir").split(" ")));
-
-/**
- * A term with its accents taken off: "déprimé" becomes "deprime". Ligatures such as "œ" are letters of their own and stay.
- * The term is decomposed, every combining mark is removed, and what is left is composed again.
- */
-export function foldAccents(term) {
-  invariant(typeof term === "string", "SEARCH_CHECK_INPUT_INVALID");
-  return term.normalize("NFD").replace(/\p{M}/gu, "").normalize("NFC");
-}
-
-// The English stemmer below follows M. F. Porter, "An algorithm for suffix stripping", Program 14(3), 1980: steps 1a, 1b (with its
-// tidying of the stem it leaves), 1c, 2, 3, 4, 5a and 5b, with the paper's rules as written ("abli" becomes "able", and there is
-// no "logi" rule). Like the usual reference code, it leaves words of two letters or fewer alone.
-
-// Whether each letter is a consonant: any letter but a, e, i, o, u, and a "y" is a vowel when a consonant comes just before it.
-function consonantFlags(word) {
-  const flags = [];
-  for (let index = 0; index < word.length; index += 1) {
-    const letter = word[index];
-    flags.push(letter === "y" ? index === 0 || !flags[index - 1] : !"aeiou".includes(letter));
-  }
-  return flags;
-}
-
-// Porter's measure m of a stem: how many times a run of vowels is followed by a run of consonants.
-function porterMeasure(stem) {
-  const flags = consonantFlags(stem);
-  let measure = 0;
-  for (let index = 1; index < flags.length; index += 1) if (flags[index] && !flags[index - 1]) measure += 1;
-  return measure;
-}
-
-const hasVowel = (stem) => consonantFlags(stem).some((isConsonant) => !isConsonant);
-
-function endsInDoubleConsonant(stem) {
-  const last = stem.length - 1;
-  return last >= 1 && stem[last] === stem[last - 1] && consonantFlags(stem)[last];
-}
-
-// The stem ends consonant, vowel, consonant, and that last consonant is not w, x or y (Porter's "*o").
-function endsInCvc(stem) {
-  const flags = consonantFlags(stem);
-  const last = stem.length - 1;
-  return last >= 2 && flags[last] && !flags[last - 1] && flags[last - 2] && !"wxy".includes(stem[last]);
-}
-
-// Rules are tried from the longest suffix to the shortest. The first suffix that matches decides: when its condition on the stem
-// fails, the word is left as it is and no shorter suffix is tried.
-const longestFirst = (rules) => Object.freeze(rules.sort((left, right) => right[0].length - left[0].length));
-const PORTER_STEP_2 = longestFirst([["ational", "ate"], ["tional", "tion"], ["enci", "ence"], ["anci", "ance"], ["izer", "ize"],
-  ["abli", "able"], ["alli", "al"], ["entli", "ent"], ["eli", "e"], ["ousli", "ous"], ["ization", "ize"], ["ation", "ate"],
-  ["ator", "ate"], ["alism", "al"], ["iveness", "ive"], ["fulness", "ful"], ["ousness", "ous"], ["aliti", "al"], ["iviti", "ive"],
-  ["biliti", "ble"]]);
-const PORTER_STEP_3 = longestFirst([["icate", "ic"], ["ative", ""], ["alize", "al"], ["iciti", "ic"], ["ical", "ic"], ["ful", ""],
-  ["ness", ""]]);
-const PORTER_STEP_4 = Object.freeze(["ement", "ance", "ence", "able", "ible", "ment", "ant", "ent", "ion", "ism", "ate", "iti", "ous",
-  "ive", "ize", "al", "er", "ic", "ou"]);
-
-// Step 1a: plurals. sses -> ss, ies -> i, ss -> ss, and a final s goes.
-function porterStep1a(word) {
-  if (word.endsWith("sses")) return word.slice(0, -2);
-  if (word.endsWith("ies")) return `${word.slice(0, -3)}i`;
-  if (word.endsWith("ss")) return word;
-  return word.endsWith("s") ? word.slice(0, -1) : word;
-}
-
-// Step 1b: -eed, -ed and -ing. "eed" becomes "ee" when the stem has m > 0. "ed" and "ing" go when the stem holds a vowel, and then
-// the stem is tidied: at -> ate, bl -> ble, iz -> ize, a double consonant other than l, s or z loses one letter, and a short stem
-// of the form consonant-vowel-consonant (m = 1) gets an "e" back.
-function porterStep1b(word) {
-  if (word.endsWith("eed")) return porterMeasure(word.slice(0, -3)) > 0 ? word.slice(0, -1) : word;
-  let stem;
-  if (word.endsWith("ed")) stem = word.slice(0, -2);
-  else if (word.endsWith("ing")) stem = word.slice(0, -3);
-  else return word;
-  if (!hasVowel(stem)) return word;
-  if (stem.endsWith("at") || stem.endsWith("bl") || stem.endsWith("iz")) return `${stem}e`;
-  if (endsInDoubleConsonant(stem)) return "lsz".includes(stem[stem.length - 1]) ? stem : stem.slice(0, -1);
-  return porterMeasure(stem) === 1 && endsInCvc(stem) ? `${stem}e` : stem;
-}
-
-// Step 1c: a final y becomes i when the stem before it holds a vowel.
-function porterStep1c(word) {
-  return word.endsWith("y") && hasVowel(word.slice(0, -1)) ? `${word.slice(0, -1)}i` : word;
-}
-
-// Steps 2 and 3: the longest matching suffix is replaced when the stem before it has m > 0.
-function porterReplace(word, rules) {
-  for (const [suffix, replacement] of rules) {
-    if (!word.endsWith(suffix)) continue;
-    const stem = word.slice(0, word.length - suffix.length);
-    return porterMeasure(stem) > 0 ? `${stem}${replacement}` : word;
-  }
-  return word;
-}
-
-// Step 4: the longest matching suffix goes when the stem before it has m > 1; "ion" goes only after an s or a t.
-function porterStep4(word) {
-  for (const suffix of PORTER_STEP_4) {
-    if (!word.endsWith(suffix)) continue;
-    const stem = word.slice(0, word.length - suffix.length);
-    if (suffix === "ion" && !/[st]$/u.test(stem)) return word;
-    return porterMeasure(stem) > 1 ? stem : word;
-  }
-  return word;
-}
-
-// Step 5a: a final e goes when m > 1, or when m = 1 and the stem does not end consonant-vowel-consonant. Step 5b: a double l at
-// the end loses one l when m > 1.
-function porterStep5(word) {
-  let result = word;
-  if (result.endsWith("e")) {
-    const stem = result.slice(0, -1);
-    const measure = porterMeasure(stem);
-    if (measure > 1 || (measure === 1 && !endsInCvc(stem))) result = stem;
-  }
-  return result.endsWith("ll") && porterMeasure(result) > 1 ? result.slice(0, -1) : result;
-}
-
-/**
- * The Porter (1980) stem of a lower case English word: "caresses" gives "caress", "relational" gives "relat". A word of two
- * letters or fewer, and any word with a character outside a-z (an accented French word, a number, a capital letter), comes back
- * unchanged.
- */
-export function porterStem(word) {
-  invariant(typeof word === "string", "SEARCH_CHECK_INPUT_INVALID");
-  if (word.length <= 2 || !/^[a-z]+$/u.test(word)) return word;
-  let stem = porterStep1c(porterStep1b(porterStep1a(word)));
-  stem = porterReplace(stem, PORTER_STEP_2);
-  stem = porterReplace(stem, PORTER_STEP_3);
-  return porterStep5(porterStep4(stem));
-}
-
-// A light French stemmer in the spirit of Jacques Savoy's light stemmer (the one behind Lucene's FrenchLightStemmer). It takes off
-// plural and feminine marks and the endings of the most common inflections, and does no more than that. Every rule leaves at
-// least three letters before the part it takes off, so short words stay whole. It works on lower case words, with or without
-// accents, and leaves a word of three letters or fewer, or one with a character that is not a letter, as it is. A stem can end up
-// the same as an unrelated short word (mois -> moi): that is the price of a light stemmer.
-//
-// Endings, [suffix, replacement, letters that must stay before the suffix (3 unless given)]. The first one that fits is used, and
-// only one is. A suffix fits when the word ends with it and enough letters come before it. Adverbs come first, because they end
-// in the longer suffixes.
-const FRENCH_ENDINGS = Object.freeze([
-  ["emment", "ent"], // évidemment -> évident: the adverb of an adjective in -ent
-  ["amment", "ant"], // constamment -> constant: the adverb of an adjective in -ant
-  ["eusement", "eu"], // heureusement -> heureu: as "heureuse" and "heureux" come out below
-  ["ivement", "if"], // activement -> actif: as "active" comes out below
-  ["ement", ""], // lentement -> lent, doucement -> douc: the adverb of the feminine form (also gouvernement -> gouvern)
-  ["ément", ""], // précisément -> précis
-  ["iment", "i"], // vraiment -> vrai: the adverb of an adjective in -i
-  ["ument", "u"], // absolument -> absolu: the adverb of an adjective in -u
-  ["ée", ""], // déprimée -> déprim: the feminine past participle
-  ["ee", ""], // the same once accents are folded
-  ["é", ""], // déprimé -> déprim: the past participle
-  ["er", ""], // déprimer -> déprim: the infinitive
-  ["ez", ""], // déprimez -> déprim: you (plural) form
-  ["euse", "eu"], // heureuse -> heureu: the feminine of -eux
-  ["ive", "if"], // active -> actif: the feminine of -if
-  ["ère", "", 4], // dernière -> derni: the feminine of -ier, which loses its -er as the infinitive does (four letters stay: colère)
-  ["ere", "", 4], // the same once accents are folded
-  ["e", ""] // petite -> petit: the feminine, and a final e in general
-]);
-
-/**
- * The light stem of a lower case French word. Steps, in order:
- * 1. Plural. "-aux" becomes "-al" when the word has six letters or more and the letter before the "aux" is not "e" (chevaux ->
- *    cheval); otherwise a final "x" or "s" goes (amis -> ami, prix -> pri, bateaux -> bateau).
- * 2. The first fitting ending in FRENCH_ENDINGS: adverbs (-ement, -iment, -ument), past participles (-é, -ée), the infinitive
- *    (-er), the "vous" form (-ez), the feminine of a few common adjectives (-euse, -ive, -ère) and a final "e".
- * 3. A stem of four letters or more that ends in a doubled consonant loses one (bonne -> bonn -> bon, ville -> vil). This is done
- *    for every word, so that a singular and its plural, or a masculine and its feminine, still come out the same.
- */
-export function frenchLightStem(word) {
-  invariant(typeof word === "string", "SEARCH_CHECK_INPUT_INVALID");
-  if (word.length <= 3 || !/^\p{L}+$/u.test(word)) return word;
-  let stem = word;
-  if (stem.endsWith("aux") && stem.length >= 6 && stem[stem.length - 4] !== "e") stem = `${stem.slice(0, -3)}al`;
-  else if ((stem.endsWith("x") || stem.endsWith("s")) && stem.length >= 4) stem = stem.slice(0, -1);
-  for (const [suffix, replacement, keep = 3] of FRENCH_ENDINGS) {
-    if (stem.endsWith(suffix) && stem.length - suffix.length >= keep) {
-      stem = `${stem.slice(0, stem.length - suffix.length)}${replacement}`;
-      break;
-    }
-  }
-  if (stem.length >= 4 && /([bcdfgklmnprstz])\1$/u.test(stem)) stem = stem.slice(0, -1);
-  return stem;
-}
 
 const VARIANT_FLAGS = Object.freeze(["foldAccents", "frenchStopwords", "englishForms", "frenchForms"]);
 
@@ -341,8 +150,9 @@ export function variantStopwords(variant) {
 
 // Okapi BM25 with the usual constants: k1 limits how much using a word again adds, and b sets how much a passage's length counts
 // against it. Then the scorings that use BM25, and the ones that put the passages holding more of the query's words first.
-const BM25_K1 = 1.2;
-const BM25_B = 0.75;
+// They are the ones findQuotes uses for the ranking of version 3 of the quote index, which is defined there.
+const BM25_K1 = QUOTE_BM25.k1;
+const BM25_B = QUOTE_BM25.b;
 const BM25_SCORINGS = Object.freeze(new Set(["bm25", "bm25_coordination"]));
 const COORDINATION_SCORINGS = Object.freeze(new Set(["coordination", "bm25_coordination"]));
 

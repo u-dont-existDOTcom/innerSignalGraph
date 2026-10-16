@@ -22,7 +22,8 @@ import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "./graph.mjs";
-import { QUOTE_INDEX_VERSION, buildQuoteGeneration } from "./quote-index.mjs";
+import { QUOTE_INDEX_VERSION, QUOTE_POINTER_VERSION, buildQuoteGeneration, quoteIndexVersionOf } from "./quote-index.mjs";
+import { buildQuoteTermsFromGraph } from "./quote-terms.mjs";
 import { calibrationScoreCounts, firstFailurePastCriticalLimit, pooledCalibration, referenceScorePasses,
   reviewAfterWithholding, reviewFindingTargets, reviewStatusFromContent, scopeReviewAfterRepair,
   sourceOnlyCalibrationCounts, withholdFlaggedItems } from "./review-convergence.mjs";
@@ -2708,15 +2709,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       return quoteSourceCache;
     };
-    // buildQuoteGeneration's input for a generation of the quote corpus: the quote index's own, or a pointer pass's.
+    // buildQuoteGeneration's input for a generation of the quote corpus: the quote index's own, or a pointer pass's. The index
+    // version it is built as follows from the generation's name, so a generation named for version 2 (the one published before
+    // version 3, and every pointer run) is rebuilt exactly as it was.
     const quoteGenerationInput = async (generation) => {
       const { mediaType, representations } = await quoteSource();
       return { caseId, corpusId: `${state.corpus_id}:quotes`, generation, originalObjectId: state.original.object_id, mediaType, representations,
-        dateOptions: { numericOrder: quoteNumericDateOrder } };
+        dateOptions: { numericOrder: quoteNumericDateOrder }, version: quoteIndexVersionOf(generation) };
     };
 
     // The quote index's generation: its version and how it reads all-numeric dates.
     const quoteIndexGeneration = () => `${state.generation}:quotes:${QUOTE_INDEX_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
+    // A pointer run's own generation is named for version 2 (owner decision 38: B), not for the index version, so its steps rebuild
+    // the quotes the way the run started.
+    const pointerBaseGeneration = () => `${state.generation}:quotes:${QUOTE_POINTER_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
 
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
@@ -2737,7 +2743,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const published = state.quote_published?.generation ?? null;
           const supersedes = published === generation ? null : published;
           const { representations } = await quoteSource();
-          const built = buildQuoteGeneration(await quoteGenerationInput(generation));
+          const input = await quoteGenerationInput(generation);
+          const built = buildQuoteGeneration(input);
           // The quote corpus carries the archived original its locators name, so it is complete on its own.
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
@@ -2745,7 +2752,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const persisted = await persistGraphGeneration({ corpusStore: quoteStore, graph: built.graph,
             sourceRepresentations: Object.fromEntries(representations.map((item) => [item.representation_id, item.text])),
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
-            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths }, indexRepresentations: true });
+            // Version 3 adds the word list the search ranks by.
+            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths,
+              ...(input.version === 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) }, indexRepresentations: true });
           // The manifest stays in the store, not in the run state, which is rewritten on every save.
           state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
             manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null,
@@ -2796,7 +2805,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
       if (!state.pointer) {
         const runId = randomBytes(4).toString("hex");
-        state.pointer = { run_id: runId, generation: `${quoteIndexGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
+        state.pointer = { run_id: runId, generation: `${pointerBaseGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
           copy_run_words: pointerCopyRunWords, pointer_rules: pointerRules, started_at: now().toISOString(), blocker: null };
         await save();
       }
@@ -3101,17 +3110,45 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const run = state.pointer;
       invariant(run?.measure?.status === "done" && run.persisted?.step_id === run.measure.measured_step_id, "POINTER_NOT_MEASURED");
       await authorize();
-      const quoteGeneration = await quoteGenerationInput(run.generation);
+      const check = await searchCheckOn({ run, corpusId: run.persisted.corpus_id, generation: run.generation,
+        manifestObjectId: run.persisted.manifest_object_id, checkManifest: (manifest) => invariant(manifest.generation === run.generation
+          && manifest.graph_sha256 === run.persisted.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH") });
+      return { ...summary(), search_check: { run_id: run.run_id, ...check } };
+    }
+
+    // The same check on the quote index's own generation, built and not yet published (plan, version 3, "Checking it before it
+    // goes live"): the measured run's reference questions, which go by unit id, searched there as find_journal_quotes will
+    // search once it is published. On version 3 the live search must find exactly what its replica, the check's
+    // forms_bm25_coordination, finds. It sends nothing, saves nothing and says only counts.
+    async function quoteSearchCheck() {
+      const run = state.pointer;
+      invariant(run?.measure?.status === "done" && run.persisted?.step_id === run.measure.measured_step_id, "POINTER_NOT_MEASURED");
+      const index = state.quote_index;
+      invariant(index?.generation === quoteIndexGeneration() && typeof index.manifest_object_id === "string", "QUOTE_INDEX_NOT_BUILT");
+      await authorize();
+      const version = quoteIndexVersionOf(index.generation);
+      const check = await searchCheckOn({ run, corpusId: index.corpus_id, generation: index.generation, manifestObjectId: index.manifest_object_id,
+        checkManifest: (manifest) => {
+          invariant(manifest.generation === index.generation, "QUOTE_INDEX_GENERATION_MISMATCH");
+          // A version 3 generation ranks by its word list, and only it has one.
+          invariant(Array.isArray(manifest.indexes?.quote_terms) === (version === 3), "QUOTE_INDEX_VERSION_MISMATCH");
+        } });
+      return { ...summary(), quote_search_check: { run_id: run.run_id, generation_version: version, ...check } };
+    }
+
+    // runPointerSearchCheck (pointer-steps.mjs) on one stored generation of the quote corpus, with the measured run's reference
+    // questions; `checkManifest` checks the generation's manifest before anything is searched.
+    async function searchCheckOn({ run, corpusId, generation, manifestObjectId, checkManifest }) {
+      const quoteGeneration = await quoteGenerationInput(generation);
       const reference = await readLarge(run.reference.result_ref);
-      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: run.persisted.corpus_id, corpusKey: key,
-        resumeMatchingObjects: true });
+      const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
       try {
-        const manifest = await quoteStore.readJsonObject({ objectId: run.persisted.manifest_object_id });
-        invariant(manifest.generation === run.generation && manifest.graph_sha256 === run.persisted.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH");
-        const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId: run.persisted.manifest_object_id, caseId,
-          corpusId: run.persisted.corpus_id, generation: run.generation, visibilityEpoch: 0, cursorSecret: key });
+        const manifest = await quoteStore.readJsonObject({ objectId: manifestObjectId });
+        checkManifest(manifest);
+        const reader = await openPrivateJournalGraph({ corpusStore: quoteStore, manifestObjectId, caseId, corpusId, generation,
+          visibilityEpoch: 0, cursorSecret: key });
         try {
-          // find_journal_quotes on the measured generation, exactly as the measurement ran it.
+          // find_journal_quotes on that generation, exactly as the measurement ran it.
           const search = async ({ query, matchTags }) => {
             try {
               const found = await reader.findQuotes({ query, limit: POINTER_RECALL_TOP, byteBudget: QUOTE_SEARCH_LIMITS.byteBudgetMax, matchTags });
@@ -3121,8 +3158,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               throw error;
             }
           };
-          const check = await runPointerSearchCheck({ quoteGeneration, reference, search, population: manifest.node_count, rules: runRules(run) });
-          return { ...summary(), search_check: { run_id: run.run_id, ...check } };
+          return await runPointerSearchCheck({ quoteGeneration, reference, search, population: manifest.node_count, rules: runRules(run) });
         } finally { reader.close(); }
       } finally { quoteStore.close(); }
     }
@@ -3187,6 +3223,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "pointer-recount") return pointerRecount();
         if (command === "pointer-examples") return pointerExamples();
         if (command === "pointer-search-check") return pointerSearchCheck();
+        if (command === "quote-search-check") return quoteSearchCheck();
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();

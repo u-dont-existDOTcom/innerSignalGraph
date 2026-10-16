@@ -208,6 +208,77 @@ cursor finishes on it, and a new search reads the new one.
    a common number shape, the journal writes its dates in a form this version doesn't read yet, and the next version
    reads it.
 
+## Version 3: better ranking and the dates between dates (plan, 15 Oct 2026, owner decision 39: C)
+
+The ranking check of 15 Oct (run `e5d1e64a`) measured recall 0.748 in the first 12 results for Okapi BM25 with more of the
+searched words first, on word forms with accents folded and French stop words kept (`forms_bm25_coordination` in
+`src/journal-import/search-check.mjs`), against 0.706 for the search's own ranking. The owner chose it together with 24
+results per search (its own change), and asked whether the journal's time order could be known by reading it. Version 3
+does both in one rebuild. Nothing in it calls a model: code rebuilds the index from the same quotes.
+
+**What stays the same.** The quotes, their exact spans, their unit ids and the dates already read. The split into
+quotes doesn't change, so unit ids keep their version 2 namespace (`QUOTE_UNIT_NAMESPACE`, the unit id hash input and
+the passages' `localIdNamespace`) while the generation name takes `quote-index-v3`; whatever goes by unit id (a pointer
+run's reference, the search check) maps onto the same quotes. Tag search (`tag_terms`, exact words) is unchanged.
+
+**What changes with the name: passage ids.** A passage id, like every graph id, hashes the generation's name too, so the
+version 3 generation gives each quote a new id, as every rebuild under a new name did (day first, month first). A quote
+id from a version 2 search stops resolving once version 3 is published; a new search finds the same quote under its new
+id. Keeping the old ids would change how graph ids are made (`journalLocalNodeId` in `graph.mjs`, shared by every
+generation), which this version leaves alone.
+
+**The word list (`quote_terms`).** A new extra index, built from the generation's quotes by `quote-terms.mjs` (which the
+runtime calls for a version 3 generation, next to `buildQuoteGeneration`'s own indexes) with the check's forms reading
+(the same functions, moved to a module both use): for each term, the quotes holding it with how
+often each uses it and each quote's length in tokens, stop words included, as `[passage_id, uses, length]`, in id order.
+A reserved key that no term can be (terms are letters and digits only) holds how many quotes there are and their mean
+length. The generic `lexical` index stays as it is for the other graph searches.
+
+**The ranking.** `findQuotes` on a generation whose manifest lists `quote_terms`: the query's terms are chosen as now
+(not in the English stop words, or all of them when none is left, the first 24), read with the forms reading, and the
+quotes holding them are ordered by how many of those terms they hold, then BM25 (k1 1.2, b 0.75, idf log(1 + (P - df +
+0.5) / (df + 0.5)), P the number of quotes), then id, exactly as the check's `forms_bm25_coordination`; a test holds the
+two to the same order. A version 2 generation ranks as before, so the live search works until version 3 is published.
+The cursor's expected `sort` names the ranking, so a cursor from one version can't page the other. Each result says
+which ranking it has (`coverage.ranking`: `word_forms` on version 3, `exact_words` before), and `find_journal_quotes`'s
+description and query guidance say how words match under each (Codex's review of 16 Oct): the chat writing the query
+needn't spend words on a word's regular forms or accents under `word_forms`, and should leave out words that aren't about
+the question, since quotes holding more of the query's words rank first. The search check's
+replica (the check's copy of the live search, compared with what the search found) is the way the generation it reads
+ranks by: `current` on version 2, `forms_bm25_coordination` on version 3.
+
+**Checking it before it goes live (`quote-search-check`).** `pointer-search-check` reads the measured pointer run's own
+generation, which stays on version 2. The new `quote-search-check` reads the quote index's generation instead, built and
+not yet published, with the same reference questions (they go by unit id): how many the live version 3 search finds in
+its first 12, and whether it finds exactly what the check's `forms_bm25_coordination` finds on the same quotes. Like the
+other checks it sends nothing, saves nothing and says only counts.
+
+**Time order.** Version 2 already assumes the journal runs forward when it gives a date without a year the year of the
+entries before it, and never checks it. Version 3 counts, over the dates read in journal order, the steps that go
+backwards (an earlier day than the date before) and the largest one, in days, in `stats.date_order`.
+
+**Dates between dates.** A quote left undated (past the carry limit, or after an entry line that gives no date) whose
+nearest date line before it and nearest date line after it both have a date, with the later one not earlier than the
+first and no page between them that wasn't fully read, gets a range: written between the earlier date's first day and
+the later date's end (its day, or the end of its month or year when the line gives only that), precision `interval`,
+marked `between: true`, with both date lines' references, and `year_inferred` or `ambiguous` when either date is. A
+quote before the first date or after the last stays undated, as does one whose range would run over more than
+`rangeMonthsMax` months (12 by default), counted from the earlier date's first month to the month the later one ends in:
+a range of years says little. The tool shows a range as a range, never as a day. `quote_months` lists a ranged quote
+under every one of those months, so a time window finds it by overlap as it finds any interval. `stats` counts ranged
+quotes and their widths (up to a month, three months, twelve).
+
+**Tests.** The order holds against the check's ranking on a made-up journal; a version 2 generation still ranks and
+pages as before; ranges: forward dates give ranges, a backward step, an unread page, the first and last stretches and
+an over-wide gap give none, a later month or year line ends a range at its end, and month lists and time windows treat
+ranges by overlap; the date-order counts; unit ids are the same in both versions and passage ids are not;
+`quote-search-check` on a version 3 index finds what the check's ranking finds.
+
+**Putting it live.** On the owner's merge and `deploy`: `build-quotes` builds the version 3 generation and its counts
+(quotes, dated, ranged and their widths, the date order) are read first; then `quote-search-check` on it, whose live
+search must find exactly what its replica finds; then `publish-quotes` replaces version 2. The pointer run's own
+generation stays on version 2 and unpublished (owner decision 38: B).
+
 ## Operating it (after the owner's `deploy`)
 
 The order matters. A case with a published journal corpus isn't continuation-safe for a connector that can't read

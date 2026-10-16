@@ -5,10 +5,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
-import { adaptExtractionToGraph, persistGraphGeneration } from "../src/journal-import/graph.mjs";
+import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
-import { QUOTE_MONTHS_KEY, QUOTE_UNDATED_KEY, buildQuoteGeneration, dateLineValue, entryDateLine, quoteCues, quoteDateOptions,
-  splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+import { QUOTE_INDEX_VERSION, QUOTE_MONTHS_KEY, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_UNIT_NAMESPACE, buildQuoteGeneration, dateLineValue,
+  entryDateLine, quoteCues, quoteDateOptions, quoteIndexVersionOf, splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+import { buildQuoteTerms, buildQuoteTermsFromGraph } from "../src/journal-import/quote-terms.mjs";
+import { formsReadingTerm } from "../src/journal-import/word-forms.mjs";
 import { journalQuoteNumericDateOrder } from "../src/journal-import/run-config.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
@@ -269,7 +271,339 @@ test("the numeric date order is a run setting, month first unless the journal sa
   for (const value of ["dmy", "DAY_FIRST", 1, true]) {
     assert.throws(() => journalQuoteNumericDateOrder({ quote_numeric_date_order: value }), { code: "JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID" });
   }
-  assert.deepEqual(quoteDateOptions(), { numericOrder: "month_first", carryPages: 2, carryQuotes: 24 });
+  assert.deepEqual(quoteDateOptions(), { numericOrder: "month_first", carryPages: 2, carryQuotes: 24, rangeMonthsMax: 12 });
+});
+
+// A small made-up journal for the version 2 and version 3 tests that follow: dates with and without a year, a year alone, a weekday alone, a page
+// that wasn't fully read, and pages past the carry limit.
+const GOLDEN_PAGES = [
+  page("2018\n\nUne année au bord du lac.\n\n28 décembre\n\nLe sapin est encore là.\n\n2 janvier\n\nPremière marche de l'année.\n\nDimanche\n\nSans date écrite.", 1),
+  page("March 3, 2019\n\nI dreamt that Mara left the house. It was only a dream.\n\nApril 10, 2019\n\nMara said she would visit in June.", 2),
+  page("Native words around a scanned picture.", 3, "visual_pending"),
+  page("The next readable page about the orchard.\n\n5/6/19\n\nAmbiguous numbers here.\n\n3 mars\n\nUne date sans année.", 4),
+  page("Page cinq.", 5), page("Page six.", 6), page("Page sept.", 7), page("Page huit.", 8)
+].map((item) => ({ ...item, representation_id: `golden:${item.page_number}` }));
+const goldenInput = (extra = {}) => ({ caseId: "golden-case", corpusId: "golden-corpus:quotes", generation: "golden:quotes:quote-index-v2-month-first",
+  originalObjectId: "original:golden", mediaType: "application/pdf", representations: GOLDEN_PAGES, ...extra });
+// Everything a build makes, as one string: the graph, the units, the two indexes and the counts.
+const builtJson = (built) => JSON.stringify({ graph: built.graph, units: built.units, quoteMeta: [...built.quoteMeta], quoteMonths: [...built.quoteMonths], stats: built.stats });
+
+test("a version 2 generation is rebuilt exactly as it was: the same units, ids, indexes and counts", () => {
+  // The digest was taken of the build made by the code before version 3 existed; the build must still give it, by default and as version 2.
+  const DIGEST = "cc0d1b00bcaa6899829033b7648cb1a63b6aa2db049ad68dd4f4d99a8d207bf3";
+  for (const options of [{}, { version: 2 }]) {
+    const built = buildQuoteGeneration(goldenInput(options));
+    assert.equal(sha256(builtJson(built)), DIGEST);
+    assert.deepEqual(Object.keys(built.stats), ["pages", "quotes", "dated_quotes", "date_lines", "ambiguous_date_lines", "date_line_kinds", "carry_capped_quotes",
+      "unread_date_like", "numeric_date_order"], "no count of version 3 appears");
+    assert.equal(built.quoteMeta.size, built.stats.quotes);
+    for (const [, [meta]] of built.quoteMeta) assert.equal(meta.written?.between ?? false, false, "no range");
+  }
+  assert.throws(() => buildQuoteGeneration(goldenInput({ version: 4 })), { code: "QUOTE_GENERATION_VERSION_INVALID" });
+  assert.throws(() => buildQuoteGeneration(goldenInput({ version: "3" })), { code: "QUOTE_GENERATION_VERSION_INVALID" });
+});
+
+test("version 3 names new generations: unit ids keep version 2's namespace, and passage ids change with the generation's name", () => {
+  assert.equal(QUOTE_INDEX_VERSION, "quote-index-v3");
+  assert.equal(QUOTE_UNIT_NAMESPACE, "quote-index-v2");
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v3-month-first"), 3);
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v3-day-first:pointer-0a1b2c3d"), 3);
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v2-month-first"), 2);
+  assert.equal(quoteIndexVersionOf("case:quotes:quote-index-v2-day-first:pointer-0a1b2c3d"), 2);
+  assert.equal(quoteIndexVersionOf("quote-generation"), 2);
+  assert.equal(quoteIndexVersionOf(undefined), 2);
+  const [unit] = splitQuoteUnits({ representationId: "ns:1", text: "A single quote of the journal." });
+  assert.equal(unit.unit_id, `unit:${sha256(`quote-index-v2\0ns:1\0${unit.start_byte}\0${unit.end_byte}\0${unit.sha256}`).slice(0, 32)}`);
+  // Built as the runtime builds them: each version under a name of its own, the version taken from the name.
+  const v3Name = "golden:quotes:quote-index-v3-month-first";
+  const v2 = buildQuoteGeneration(goldenInput());
+  const v3 = buildQuoteGeneration(goldenInput({ generation: v3Name, version: quoteIndexVersionOf(v3Name) }));
+  assert.deepEqual(v3.units.map(({ unit_id: id }) => id), v2.units.map(({ unit_id: id }) => id), "the same units, with the same ids");
+  const byUnit = (built) => new Map(built.graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.unit_id, node]));
+  const [older, newer] = [byUnit(v2), byUnit(v3)];
+  assert.deepEqual([...newer.keys()], [...older.keys()]);
+  for (const [unitId, node] of newer) {
+    const before = older.get(unitId);
+    assert.deepEqual(node.data, before.data, "the same quote, span and page");
+    assert.notEqual(node.id, before.id, "a passage id hashes the generation's name, so the same quote has a new id");
+    assert.equal(node.id, journalLocalNodeId({ caseId: "golden-case", corpusId: "golden-corpus:quotes", generation: v3Name, localIdNamespace: QUOTE_UNIT_NAMESPACE,
+      kind: "passage", localId: `${node.data.representation_id}:${node.data.start_byte}:${node.data.end_byte}:${node.data.quote_sha256}` }));
+    // Every date version 2 gave, version 3 gives the same; a quote version 2 left undated stays so or gets a range.
+    const [{ written: was }] = v2.quoteMeta.get(before.id), [{ written: is }] = v3.quoteMeta.get(node.id);
+    if (was) assert.deepEqual(is, was);
+    else assert.ok(is === null || is.between === true);
+  }
+  // The version, not the name, decides what is built: a version 2 build under any name has no ranges and no count of them.
+  assert.equal(Object.hasOwn(buildQuoteGeneration(goldenInput({ generation: v3Name, version: 2 })).stats, "ranged_quotes"), false);
+});
+
+test("the word list holds each term of the forms reading with the quotes that use it, and the totals under a key no term can be", () => {
+  const texts = ["The cats chat with the cat.", "Chats et chat; déprimée déprimé", "", "Déprimé!  Le chat; 2019 2019."];
+  const pages = texts.map((text, index) => ({ representation_id: `terms:${index}`, text, page_number: index + 1, parse_status: "readable" }));
+  const built = buildQuoteGeneration({ caseId: "terms-case", corpusId: "terms-corpus:quotes", generation: "terms:quotes:quote-index-v3-month-first",
+    originalObjectId: "original:terms", mediaType: "application/pdf", representations: pages, unitOptions: { minimumBytes: 0 }, version: 3 });
+  const idOf = (fragment) => built.graph.nodes.find((node) => node.kind === "passage" && node.data.quote.includes(fragment)).id;
+  const cats = idOf("cats"), french = idOf("et chat"), last = idOf("Le chat");
+  const terms = buildQuoteTermsFromGraph(built.graph);
+  assert.equal(built.stats.quotes, 3, "a blank page has no quote");
+  assert.deepEqual(terms.get("cat"), [cats].map((id) => [id, 2, 6]), "cats and cat are one term, used twice in a quote of six tokens");
+  const inIdOrder = (...entries) => entries.sort(([left], [right]) => left.localeCompare(right));
+  assert.deepEqual(terms.get("chat"), inIdOrder([cats, 1, 6], [french, 2, 5], [last, 1, 5]), "chats and chat; in passage id order");
+  assert.deepEqual(terms.get("the"), [[cats, 2, 6]], "the stop words are in, as is");
+  assert.deepEqual(terms.get("et"), [[french, 1, 5]]);
+  assert.deepEqual(terms.get(formsReadingTerm("déprimée")), inIdOrder([french, 2, 5], [last, 1, 5]), "accents folded, French forms reduced");
+  assert.equal(formsReadingTerm("déprimée"), "deprim");
+  assert.deepEqual(terms.get("2019"), [[last, 2, 5]], "numbers are terms too");
+  assert.deepEqual(terms.get(QUOTE_TERMS_STATS_KEY), [{ quotes: 3, mean_length: (6 + 5 + 5) / 3 }]);
+  assert.equal(terms.has("déprimé"), false, "terms are read, not raw");
+  // Keys are in order, and every posting list is in passage id order.
+  const keys = [...terms.keys()];
+  assert.deepEqual(keys, [...keys].sort((left, right) => left.localeCompare(right)));
+  for (const [key, postings] of terms) {
+    if (key === QUOTE_TERMS_STATS_KEY) continue;
+    assert.match(key, /^[\p{L}\p{N}]+$/u);
+    assert.deepEqual(postings.map(([id]) => id), postings.map(([id]) => id).sort((left, right) => left.localeCompare(right)));
+  }
+  // No journal text is kept: only stems, ids and counts.
+  assert.equal(JSON.stringify([...terms]).includes("cats chat"), false);
+  // Nothing to count.
+  assert.deepEqual([...buildQuoteTerms([])], [[QUOTE_TERMS_STATS_KEY, [{ quotes: 0, mean_length: 1 }]]]);
+  assert.deepEqual(buildQuoteTerms([{ id: "passage:a", quote: "" }]).get(QUOTE_TERMS_STATS_KEY), [{ quotes: 1, mean_length: 1 }], "empty quotes: a mean of 1");
+  // A passage listed twice is read once, and the input is checked.
+  assert.deepEqual(buildQuoteTerms([{ id: "passage:a", quote: "horse" }, { id: "passage:a", quote: "other words" }]).get(formsReadingTerm("horse")), [["passage:a", 1, 1]]);
+  for (const bad of [null, [{ id: "a", quote: "x" }], [{ id: "passage:a", quote: null }], [null]]) assert.throws(() => buildQuoteTerms(bad), { code: "QUOTE_TERMS_INPUT_INVALID" });
+});
+
+// Version 3: the order of the dates and the ranges for the quotes left undated between two dates.
+const V3_GENERATION = "dates-generation:quotes:quote-index-v3-month-first";
+const build3 = (pages, dateOptions = {}, unitOptions = {}) => buildQuoteGeneration({ caseId: "quote-case", corpusId: "quote-corpus:quotes",
+  generation: V3_GENERATION, originalObjectId: "original:test", mediaType: "application/pdf", representations: pages, dateOptions, unitOptions, version: 3 });
+const metaByText = (built) => new Map(built.graph.nodes.filter((node) => node.kind === "passage").map((node) => [node.data.quote, built.quoteMeta.get(node.id)[0]]));
+const lineOf = (written) => ({ representation_id: written.line.representation_id, start_byte: written.line.start_byte, end_byte: written.line.end_byte, sha256: written.line.sha256 });
+
+test("version 3 counts the steps of the dates in journal order that go backwards, and the largest in days; version 2 counts nothing", () => {
+  const pages = [page("3 mars 2020\n\nUn.", 1), page("10 mars 2020\n\nDeux.\n\n1 mars 2020\n\nTrois.", 2), page("5 mars 2020\n\nQuatre.\n\n20 février 2020\n\nCinq.", 3),
+    page("Mots autour d'un dessin.", 4, "visual_pending"), page("6 mars 2020\n\nSix.", 5)];
+  const { stats } = build3(pages);
+  assert.deepEqual(stats.date_order, { steps: 5, backward: 2, largest_backward_days: 14 }, "10 March to 1 March is 9 days, 5 March to 20 February is 14");
+  assert.equal(stats.date_lines, 6);
+  // A date written without a year, a month alone and a year alone count by their first day.
+  const kinds = build3([page("Février 2019\n\nUn.\n\n3 janvier 2019\n\nDeux.\n\n2019\n\nTrois.\n\n4 mai\n\nQuatre.", 1)]).stats.date_order;
+  assert.deepEqual(kinds, { steps: 3, backward: 2, largest_backward_days: 29 }, "1 February to 3 January is 29 days; 3 January to 1 January 2 days; then forward to 4 May");
+  assert.deepEqual(build3([page("3 mars 2020\n\nUn.", 1)]).stats.date_order, { steps: 0, backward: 0, largest_backward_days: 0 });
+  assert.deepEqual(build3([page("Rien de daté ici.", 1)]).stats.date_order, { steps: 0, backward: 0, largest_backward_days: 0 });
+  assert.deepEqual(build3([page("3 mars 2020\n\nUn.\n\n3 mars 2020\n\nDeux.", 1)]).stats.date_order, { steps: 1, backward: 0, largest_backward_days: 0 }, "the same day twice is not backwards");
+  assert.equal(Object.hasOwn(build(pages).stats, "date_order"), false);
+});
+
+test("a quote left undated between two dates that run forward gets a range from the first to the second, shown as a range", () => {
+  const pages = [page("3 mars 2020\n\nEntrée un.", 1), page("Deux.", 2), page("Trois.", 3), page("Quatre sans date.", 4), page("Cinq sans date.", 5),
+    page("10 mai 2020\n\nEntrée six.", 6)];
+  const built = build3(pages);
+  const meta = metaByText(built);
+  const first = meta.get("Entrée un.").written, last = meta.get("Entrée six.").written;
+  assert.equal(meta.get("Trois.").written.from, "2020-03-03", "a carried date is a date, not a range");
+  for (const text of ["Quatre sans date.", "Cinq sans date."]) {
+    assert.deepEqual(meta.get(text).written, { from: "2020-03-03", to: "2020-05-10", precision: "interval", between: true, ambiguous: false, year_inferred: false,
+      line: lineOf(first), line_after: lineOf(last) });
+  }
+  assert.equal(first.line.sha256, sha256("3 mars 2020"), "the line before is the first date's line");
+  assert.equal(last.line.sha256, sha256("10 mai 2020"));
+  // The quote lists: under every month the range covers, once, and the months list names them.
+  const ids = (text) => built.graph.nodes.find((node) => node.kind === "passage" && node.data.quote === text).id;
+  for (const month of ["2020-03", "2020-04", "2020-05"]) {
+    assert.ok(built.quoteMonths.get(month).includes(ids("Quatre sans date.")) && built.quoteMonths.get(month).includes(ids("Cinq sans date.")), month);
+  }
+  assert.deepEqual(built.quoteMonths.get(QUOTE_MONTHS_KEY), ["2020-03", "2020-04", "2020-05"]);
+  assert.equal(built.quoteMonths.has(QUOTE_UNDATED_KEY), false, "no quote is left without a date");
+  assert.deepEqual(built.quoteMonths.get("2020-04"), ["Quatre sans date.", "Cinq sans date."].map(ids).sort((left, right) => left.localeCompare(right)));
+  assert.equal(built.quoteMonths.get("2020-03").includes(ids("Trois.")), true);
+  assert.equal(built.quoteMonths.get("2020-05").includes(ids("Trois.")), false, "a day-precise date is under its own month only");
+  // Counts: the ranged quotes and how wide they are, apart from the dated ones.
+  assert.equal(built.stats.ranged_quotes, 2);
+  assert.deepEqual(built.stats.range_widths, { up_to_1_month: 0, up_to_3_months: 2, up_to_12_months: 0 });
+  assert.equal(built.stats.carry_capped_quotes, 2, "still counted as capped by the carry limit");
+  assert.equal(built.stats.dated_quotes, 6, "the ranged are not counted as dated");
+  // Version 2 leaves them undated, as it always did.
+  const older = metaByText(build(pages));
+  assert.equal(older.get("Quatre sans date.").written, null);
+  assert.equal(older.get("Cinq sans date.").written, null);
+});
+
+test("a range carries both dates' flags, spans the year's end, and covers a quote under a weekday line", () => {
+  const built = build3([page("28 novembre 2019\n\nPremier.\n\nDimanche\n\nSans date écrite.\n\n5/6/19\n\nSecond.", 1), page("Après.", 2), page("Encore.", 3),
+    page("Loin.", 4), page("3 février\n\nFinal.", 5)], { numericOrder: "month_first" });
+  const meta = metaByText(built);
+  // The weekday line has no date: the quote under it lies between the November line and the line after it (5 June 2019 is earlier, so no range).
+  assert.equal(meta.get("Sans date écrite.").written, null, "5/6/19 is earlier than 28 November 2019: the journal turns back");
+  assert.equal(meta.get("Dimanche").written, null);
+  assert.equal(built.stats.date_order.backward >= 1, true);
+  const yearEnd = build3([page("28 novembre 2019\n\nPremier.", 1), page("Deux.", 2), page("Trois.", 3), page("Quatre.", 4),
+    page("2 février\n\nFinal.", 5)]);
+  const written = metaByText(yearEnd).get("Quatre.").written;
+  assert.deepEqual([written.from, written.to, written.year_inferred, written.ambiguous], ["2019-11-28", "2020-02-02", true, false], "the later date took its year from before it");
+  assert.deepEqual(yearEnd.quoteMonths.get(QUOTE_MONTHS_KEY), ["2019-11", "2019-12", "2020-01", "2020-02"]);
+  assert.ok(["2019-11", "2019-12", "2020-01", "2020-02"].every((month) => yearEnd.quoteMonths.get(month).length > 0));
+  assert.deepEqual(yearEnd.stats.range_widths, { up_to_1_month: 0, up_to_3_months: 1, up_to_12_months: 0 });
+  // An ambiguous date line makes the range ambiguous.
+  const ambiguous = metaByText(build3([page("3 mars 2020\n\nPremier.", 1), page("Deux.", 2), page("Trois.", 3), page("Quatre.", 4), page("3/4/20\n\nFinal.", 5)])).get("Quatre.").written;
+  assert.deepEqual([ambiguous.from, ambiguous.to, ambiguous.ambiguous, ambiguous.year_inferred], ["2020-03-03", "2020-03-04", true, false]);
+  // A weekday line between two dates leaves its own entry in the range, as the quote after the carry limit is.
+  const weekday = metaByText(build3([page("3 mars 2020\n\nPremier.\n\nDimanche\n\nSans date écrite.", 1), page("Deux.", 2), page("12 mars 2020\n\nFinal.", 3)]));
+  assert.equal(weekday.get("Dimanche").written.between, true);
+  assert.equal(weekday.get("Sans date écrite.").written.to, "2020-03-12");
+  assert.equal(weekday.get("Dimanche").written.from, "2020-03-03");
+});
+
+test("no range is given across a step back in the dates, or past a page that wasn't fully read", () => {
+  // The journal turns back: 10 May is followed by 3 March.
+  const back = metaByText(build3([page("10 mai 2020\n\nUn.", 1), page("Deux.", 2), page("Trois.", 3), page("Entre les deux.", 4), page("3 mars 2020\n\nFin.", 5)]));
+  assert.equal(back.get("Entre les deux.").written, null);
+  assert.equal(build3([page("10 mai 2020\n\nUn.", 1), page("Entre.", 4), page("3 mars 2020\n\nFin.", 5)]).stats.ranged_quotes, 0);
+  // The same dates in order do give one.
+  assert.equal(metaByText(build3([page("3 mars 2020\n\nUn.", 1), page("Deux.", 2), page("Trois.", 3), page("Entre les deux.", 4), page("10 mai 2020\n\nFin.", 5)])).get("Entre les deux.").written.between, true);
+  // A page between the lines that wasn't fully read may hide a date line, so nothing there or around it is ranged.
+  const gap = metaByText(build3([page("3 mars 2020\n\nUn.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"), page("Après le dessin.", 3), page("Loin du dessin.", 4),
+    page("Encore.", 5), page("10 mai 2020\n\nFin.", 6)]));
+  for (const text of ["Mots autour d'un dessin.", "Après le dessin.", "Loin du dessin.", "Encore."]) assert.equal(gap.get(text).written, null, text);
+  // A date line on a page that wasn't fully read can't begin or end a range either.
+  const unreadLine = metaByText(build3([page("3 mars 2020\n\nUn.", 1), page("Deux.", 2), page("Trois.", 3), page("Entre les deux.", 4),
+    page("10 mai 2020\n\nFin.", 5, "visual_pending")]));
+  assert.equal(unreadLine.get("Entre les deux.").written, null);
+  // After a page that wasn't fully read, ranges between later dates still are.
+  const after = metaByText(build3([page("1 mars 2020\n\nAvant.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"), page("2 mars 2020\n\nUn.", 3), page("Deux.", 4),
+    page("Trois.", 5), page("Entre les deux.", 6), page("10 mai 2020\n\nFin.", 7)]));
+  assert.deepEqual([after.get("Entre les deux.").written.from, after.get("Entre les deux.").written.to], ["2020-03-02", "2020-05-10"]);
+  assert.equal(after.get("Mots autour d'un dessin.").written, null);
+});
+
+test("the stretch before the first date and after the last stays undated, and so does a range wider than the limit", () => {
+  const edges = metaByText(build3([page("Avant toute date.", 1), page("Encore avant.", 2), page("3 mars 2020\n\nUn.", 3), page("Deux.", 4), page("Trois.", 5), page("Quatre.", 6),
+    page("Cinq après la dernière.", 7), page("Six après la dernière.", 8)]));
+  assert.equal(edges.get("Avant toute date.").written, null);
+  assert.equal(edges.get("Encore avant.").written, null);
+  assert.equal(edges.get("Quatre.").written, null, "past the carry limit, and nothing after to end a range");
+  assert.equal(edges.get("Six après la dernière.").written, null);
+  // The widest range is `rangeMonthsMax` calendar months (12 by default), counted between the two dates' months.
+  const between = (from, to, options = {}) => metaByText(build3([page(`${from}\n\nUn.`, 1), page("Deux.", 2), page("Trois.", 3), page("Entre.", 4), page(`${to}\n\nFin.`, 5)], options)).get("Entre.").written;
+  assert.equal(between("3 mars 2019", "3 mars 2020").to, "2020-03-03", "twelve months is allowed");
+  assert.equal(between("3 mars 2019", "3 avril 2020"), null, "thirteen is not");
+  assert.equal(between("3 mars 2019", "3 mars 2021"), null);
+  assert.equal(between("3 mars 2019", "3 avril 2020", { rangeMonthsMax: 13 }).to, "2020-04-03");
+  assert.equal(between("3 mars 2019", "20 mars 2019").to, "2019-03-20", "within a month");
+  assert.equal(between("3 mars 2019", "3 mai 2019", { rangeMonthsMax: 1 }), null);
+  assert.equal(between("3 mars 2019", "3 avril 2019", { rangeMonthsMax: 1 }).to, "2019-04-03");
+  const wide = build3([page("3 mars 2019\n\nUn.", 1), page("Deux.", 2), page("Trois.", 3), page("Entre.", 4), page("3 mars 2025\n\nFin.", 5)], { rangeMonthsMax: 120 });
+  assert.equal(wide.stats.ranged_quotes, 1);
+  assert.deepEqual(wide.stats.range_widths, { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 0, over_12_months: 1 });
+  assert.equal(wide.quoteMonths.get(QUOTE_MONTHS_KEY).length, 6 * 12 + 1);
+  for (const rangeMonthsMax of [0, -1, 1.5, 121, "12", null]) {
+    assert.throws(() => build3([page("3 mars 2020\n\nUn.", 1)], { rangeMonthsMax }), { code: "QUOTE_DATE_OPTIONS_INVALID" });
+  }
+  // The widths are counted by class, each range in the narrowest that fits (a month, three, twelve): the quote past the carry limit of one
+  // date line, and the next after it, are in the range to the next date line.
+  const classes = build3([page("1 janvier 2020\n\nUn.", 1), page("Deux.", 2), page("Trois.", 3), page("Quatre, un mois.", 4), page("1 février 2020\n\nDeux.", 5),
+    page("Cinq.", 6), page("Six.", 7), page("Sept.", 8), page("Huit, trois mois.", 9), page("1 mai 2020\n\nTrois.", 10),
+    page("Onze.", 11), page("Douze.", 12), page("Treize.", 13), page("Quatorze, un an.", 14), page("1 mai 2021\n\nFin.", 15)]);
+  assert.deepEqual(classes.stats.range_widths, { up_to_1_month: 1, up_to_3_months: 2, up_to_12_months: 2 });
+  assert.equal(classes.stats.ranged_quotes, 5);
+});
+
+// The quote "Entre." past the carry limit of the date line `from`, before the date line `to`: its date, the months it is listed
+// under, and the build's counts.
+function rangedBetween(from, to, dateOptions = {}) {
+  const built = build3([page(`${from}\n\nUn.`, 1), page("Deux.", 2), page("Trois.", 3), page("Entre.", 4), page(`${to}\n\nFin.`, 5)], dateOptions);
+  const id = built.graph.nodes.find((node) => node.kind === "passage" && node.data.quote === "Entre.").id;
+  const months = [...built.quoteMonths.entries()].filter(([key, ids]) => key !== QUOTE_MONTHS_KEY && ids.includes(id)).map(([key]) => key);
+  return { written: built.quoteMeta.get(id)[0].written, months, stats: built.stats };
+}
+
+test("a later date that gives only a month or a year ends a range at the end of that month or year", () => {
+  const month = rangedBetween("3 janvier 2019", "Mars 2019");
+  assert.deepEqual([month.written.from, month.written.to, month.written.precision, month.written.between], ["2019-01-03", "2019-03", "interval", true],
+    "to is the month, as on any date that gives a month: the end of March");
+  assert.deepEqual(month.months, ["2019-01", "2019-02", "2019-03"]);
+  assert.deepEqual(month.stats.range_widths, { up_to_1_month: 0, up_to_3_months: 1, up_to_12_months: 0 });
+  // A year on a line of its own, at the turn of a year: the quote before it may be from any day up to the end of that year.
+  const year = rangedBetween("28 décembre 2018", "2019");
+  assert.deepEqual([year.written.from, year.written.to, year.written.between], ["2018-12-28", "2019", true]);
+  assert.deepEqual(year.months, ["2018-12", ...Array.from({ length: 12 }, (_, index) => `2019-${String(index + 1).padStart(2, "0")}`)],
+    "every month to December, so a time window anywhere in the year finds it");
+  assert.deepEqual(year.stats.range_widths, { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 1 });
+  // The limit counts to the month the later date ends in: March 2018 to December 2019 is 21 months on.
+  assert.equal(rangedBetween("3 mars 2018", "2019").written, null);
+  assert.equal(rangedBetween("3 mars 2018", "2019", { rangeMonthsMax: 20 }).written, null);
+  assert.equal(rangedBetween("3 mars 2018", "2019", { rangeMonthsMax: 21 }).written.to, "2019");
+  // An earlier date that gives only a year starts the range on its first day.
+  const fromYear = rangedBetween("2019", "3 mars 2019");
+  assert.deepEqual([fromYear.written.from, fromYear.written.to], ["2019", "2019-03-03"]);
+  assert.deepEqual(fromYear.months, ["2019-01", "2019-02", "2019-03"]);
+});
+
+test("a time window anywhere in the year a range ends in finds the quote, and none after that year or before its first day does", async (t) => {
+  const pages = [page("28 décembre 2018\n\nLe lac en hiver.", 1), page("Deux.", 2), page("Trois.", 3), page("Le lac encore, avant l'année.", 4), page("2019\n\nFin.", 5)];
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "quote-year-ranges-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const caseId = "quote-case", corpusId = "quote-corpus:quotes";
+  const store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: randomBytes(32) });
+  const built = build3(pages);
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph: built.graph, sourceRepresentations: Object.fromEntries(pages.map((item) => [item.representation_id, item.text])),
+    permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096,
+    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_terms: buildQuoteTermsFromGraph(built.graph) }, indexRepresentations: true });
+  const reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId, corpusId,
+    generation: V3_GENERATION, visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+  try {
+    const range = "Le lac encore, avant l'année.";
+    const finds = async (from, to) => (await reader.findQuotes({ query: "lac", from, to, includeUndated: false })).quotes.some(({ text }) => text === range);
+    assert.equal(await finds("2019-06", "2019-06"), true, "a month inside the year");
+    assert.equal(await finds("2019-12-31", null), true, "the year's last day");
+    assert.equal(await finds("2018-12-28", "2018-12-28"), true, "the first day");
+    assert.equal(await finds("2020-01", null), false, "after the year");
+    assert.equal(await finds(null, "2018-12-27"), false, "before the first day");
+    const [found] = (await reader.findQuotes({ query: "avant" })).quotes;
+    assert.deepEqual(found.written, { from: "2018-12-28", to: "2019", precision: "interval", date_line: "28 décembre 2018", between: true, date_line_after: "2019" });
+  } finally { reader.close(); }
+});
+
+test("a time window finds a ranged quote by overlap, shows it as a range, and keeps it when undated quotes are left out", async (t) => {
+  const pages = [page("3 mars 2020\n\nUne entrée du printemps.", 1), page("Au bord du lac.", 2), page("Le lac gelé.", 3), page("Le lac encore calme, un jour du printemps.", 4),
+    page("10 mai 2020\n\nLe lac en fleurs.", 5), page("Un matin du lac, après tout.", 9)];
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "quote-ranges-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const caseId = "quote-case", corpusId = "quote-corpus:quotes";
+  const store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: randomBytes(32) });
+  const built = build3(pages);
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph: built.graph, sourceRepresentations: Object.fromEntries(pages.map((item) => [item.representation_id, item.text])),
+    permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096,
+    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_terms: buildQuoteTermsFromGraph(built.graph) }, indexRepresentations: true });
+  const reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId, corpusId,
+    generation: V3_GENERATION, visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+  try {
+    const texts = async (from, to, includeUndated = false) => (await reader.findQuotes({ query: "lac", from, to, includeUndated })).quotes.map(({ text }) => text).sort();
+    const range = "Le lac encore calme, un jour du printemps.";
+    assert.deepEqual(await texts("2020-04", "2020-04"), [range], "a month inside the range");
+    assert.ok((await texts("2020-03", "2020-03")).includes(range), "the first month overlaps");
+    assert.ok((await texts("2020-05", "2020-05")).includes(range), "the last month overlaps");
+    assert.ok((await texts("2020-05-11", "2020-05-20")).includes(range) === false, "after the later date's day");
+    assert.ok((await texts("2020-04-15", "2020-04-16")).includes(range), "a day inside the range");
+    assert.equal((await texts("2020-06", "2020-06")).includes(range), false);
+    assert.equal((await texts("2020-02", "2020-02")).includes(range), false);
+    assert.equal((await texts("2021", "2021")).includes(range), false);
+    assert.ok((await texts(null, "2020-03-02")).includes(range) === false);
+    assert.ok((await texts("2020-04", null)).includes(range));
+    // It is shown as a range: both lines, a precision of interval, and no single day.
+    const [found] = (await reader.findQuotes({ query: "calme" })).quotes;
+    assert.equal(found.text, range);
+    assert.deepEqual(found.written, { from: "2020-03-03", to: "2020-05-10", precision: "interval", date_line: "3 mars 2020", between: true, date_line_after: "10 mai 2020" });
+    const day = (await reader.findQuotes({ query: "fleurs" })).quotes[0];
+    assert.deepEqual(day.written, { from: "2020-05-10", to: "2020-05-10", precision: "day", date_line: "10 mai 2020" }, "an ordinary date has no between");
+    // The stretch after the last date is undated.
+    assert.equal((await reader.findQuotes({ query: "matin" })).quotes[0].written, null);
+    // The byte budget counts both lines shown with a range.
+    const size = Buffer.byteLength(range) + Buffer.byteLength("3 mars 2020") + Buffer.byteLength("10 mai 2020");
+    const tight = await reader.findQuotes({ query: "calme lac", byteBudget: 1000, limit: 40 });
+    assert.ok(tight.quotes.length >= 1 && size < 1000);
+  } finally { reader.close(); }
 });
 
 async function persistedQuotes(t, { quoteIndexes = true } = {}) {
@@ -369,6 +703,7 @@ test("find quotes ranks the person's exact words by rare words first and pages w
     const common = await reader.findQuotes({ query: "the and of" });
     assert.deepEqual(common.coverage.terms_ranked, ["the", "and", "of"]);
     assert.ok(common.quotes.length > 0);
+    assert.equal(common.coverage.ranking, "exact_words", "a generation without a word list matches words exactly");
   } finally { reader.close(); }
 });
 
@@ -546,6 +881,9 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
     assert.equal(built.quote_index.pages, 3);
     assert.ok(built.quote_index.quotes >= 8);
     assert.equal(built.quote_index.date_lines, 3);
+    assert.deepEqual(built.quote_index.date_order, { steps: 2, backward: 0, largest_backward_days: 0 }, "a version 3 build counts the order of the dates");
+    assert.equal(built.quote_index.ranged_quotes, 0);
+    assert.deepEqual(built.quote_index.range_widths, { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 0 });
     assert.equal(built.quote_index.published_at, null);
     assert.match(built.quote_index.corpus_id, /^corpus:[0-9a-f-]+:quotes$/u);
     // The run state names the quote manifest; the manifest itself stays in the store.
@@ -565,11 +903,12 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   const corpora = record.journal_corpora.filter((item) => item.active_generation != null);
   assert.equal(corpora.length, 1, "only the quote corpus is active");
   assert.match(corpora[0].corpus_id, /:quotes$/u);
-  assert.match(corpora[0].active_generation, /:quotes:quote-index-v2-month-first$/u);
+  assert.match(corpora[0].active_generation, /:quotes:quote-index-v3-month-first$/u);
   // The published quote corpus carries the archived original its locators name.
   await f.service.withJournalCorpus(CASE_ID, corpora[0].corpus_id, { requiredScope: "case:write", requiredPurpose: "archive" }, async ({ corpusStore, reference }) => {
     const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
     assert.equal(manifest.archive_references.length, 1);
+    assert.ok(Array.isArray(manifest.indexes.quote_terms), "a version 3 generation lists its word list");
     const original = await corpusStore.reassembleOriginal(manifest.archive_references[0]);
     try { assert.equal(original.toString("utf8"), PAGES.join("\n")); } finally { original.fill(0); }
   }, { bearerToken: WRITER });
@@ -588,10 +927,15 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   const tool = listed.result.tools.find(({ name }) => name === "find_journal_quotes");
   assert.ok(tool && tool.annotations.readOnlyHint === true && tool.annotations.destructiveHint === false);
   assert.match(tool.description, /never as something that happened/u);
+  // The tool says how words match, and the result says which way it ranked: the published generation is version 3.
+  assert.match(tool.description, /coverage\.ranking says how: "word_forms" matches a word in its other forms/u);
+  assert.match(tool.inputSchema.properties.query.description, /"word_forms" a word's regular forms and accents match on their own/u);
+  assert.doesNotMatch(tool.inputSchema.properties.query.description, /^Words the quotes should contain: names, places, topics, feelings\. Words match exactly/u);
   const called = await call({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "find_journal_quotes",
     arguments: { case_id: CASE_ID, corpus_id: corpora[0].corpus_id, query: "Mara cardamom", from: "2019-04", to: "2019-04", include_undated: false, purpose: "session_use" } } });
   assert.equal(called.result.isError, false);
   assert.deepEqual(called.result.structuredContent.quotes.map(({ text }) => text.slice(0, 9)), ["Mara said"]);
+  assert.equal(called.result.structuredContent.coverage.ranking, "word_forms");
 
   // Publishing again is a no-op for the same quote generation.
   runtime = await f.open();
@@ -607,7 +951,7 @@ test("a quote index built another way replaces exactly the one published before 
   let runtime = await f.open();
   try { await runtime.execute("stage"); await runtime.execute("publish-quotes"); } finally { await runtime.close(); }
   const first = await quoteCorpus();
-  assert.match(first.active_generation, /:quotes:quote-index-v2-month-first$/u);
+  assert.match(first.active_generation, /:quotes:quote-index-v3-month-first$/u);
   const api = createJournalPrivateApi({ caseAccessService: f.service });
   const query = { caseId: CASE_ID, corpusId: first.corpus_id, query: "Mara cardamom running", limit: 1, purpose: "session_use" };
   const oldPage = await api.findQuotes(query, reader);
@@ -622,7 +966,7 @@ test("a quote index built another way replaces exactly the one published before 
   runtime = await f.open();
   let built;
   try { built = await runtime.execute("build-quotes"); } finally { await runtime.close(); }
-  assert.match(built.quote_index.generation, /:quotes:quote-index-v2-day-first$/u);
+  assert.match(built.quote_index.generation, /:quotes:quote-index-v3-day-first$/u);
   assert.equal(built.quote_index.supersedes, first.active_generation);
   assert.equal(built.quote_index.numeric_date_order, "day_first");
   assert.equal(built.quote_index.published_at, null);
