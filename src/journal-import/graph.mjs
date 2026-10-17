@@ -3,6 +3,9 @@ import { ValidationError } from "../core/errors.mjs";
 import { timeBoundOrderKey, validateExtractionReferences, validateJournalGraph } from "./contracts.mjs";
 import { resolveUnitQuote } from "./anchors.mjs";
 import { JOURNAL_OBJECT_PAYLOAD_MAX_BYTES } from "../storage/private-journal-corpus.mjs";
+import { lexicalTerms } from "./lexical.mjs";
+
+export { lexicalTerms };
 
 const DEFAULT_SHARD_TARGET_BYTES = 1024 * 1024;
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -15,11 +18,6 @@ function invariant(condition, code) {
 function add(map, key, value) {
   if (!map.has(key)) map.set(key, new Set());
   map.get(key).add(value);
-}
-
-export function lexicalTerms(value) {
-  if (typeof value !== "string") return [];
-  return [...new Set(value.normalize("NFKC").toLocaleLowerCase("und").match(/[\p{L}\p{N}]+/gu) ?? [])];
 }
 
 // The graph ID a local extraction ID binds to, as adaptExtractionToGraph computes it.
