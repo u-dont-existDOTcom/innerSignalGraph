@@ -58,7 +58,7 @@ files built from `main` `48b3421f`.
    caring answer is "not an enacted exercise", and the imaginal exercise is invited "if the next step is that" exercise.
    Two audit failures: `REPARENTING_EXERCISE_CONFLATION` and `REPARENTING_FALSE_CHOICE` (leaving the label out after a
    declined frame is not a failure). The served reference's heading names reparenting.
-4. **Served `SKILL.md`:** three sentences with the definition, including for advice to a supervisor, pointing to the rules.
+4. **Served `SKILL.md`:** a short paragraph with the definition, including for advice to a supervisor, pointing to the rules.
 5. **Extraction:** `not_in_play` transfer never means absent reparenting.
 6. **Connector trigger:** the server instructions and the `load_therapy_protocol` description also name reparenting work,
    advice to a supervisor about that work and a review of case records or the person's own writing for it. The wording
@@ -90,7 +90,7 @@ rules. These show delivery, not model adherence; no live model was called.
 
 Node 24.18.0 (see the state file for the final counts): authoring check, validate and maps-check; graph regressions
 110/110; 57 affected test files 621/621 after the rules change; every test file that runs the MCP server 248/248;
-provenance gate against `48b3421f` PASS; therapy-lesson verifier; repository audit.
+provenance gate against `48b3421f` PASS; therapy-lesson verifier; repository audit; the complete package gate (`npm run verify`) PASS at `bacf5e73`, full suite 2474/2474.
 
 ## Served route
 
