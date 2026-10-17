@@ -30,6 +30,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FALSE_CONTRAST = /(?:completed|enacted) reparenting/i;
 const cases = JSON.parse(await fs.readFile(new URL("../corpus/protocol-provenance-cases.json", import.meta.url), "utf8"));
 const byId = new Map(cases.map((fixture) => [fixture.id, fixture]));
+const deniedService = Object.freeze({
+  async loadCaseContext() { throw new PrivateCaseAccessDeniedError(); },
+  async loadCaseContextByAlias() { throw new PrivateCaseAccessDeniedError(); },
+  async retrieveCaseEvidence() { throw new PrivateCaseAccessDeniedError(); }
+});
 
 function producerAndReviewerPrompts(fixture) {
   const context = { guideManifest: { version: "synthetic" }, guideExcerpts: "", userFacts: [],
@@ -153,11 +158,6 @@ test("the therapy pipeline sends the reparenting rules to every model stage it r
 });
 
 test("the served MCP route delivers the correction and keeps the safeguards", async (t) => {
-  const deniedService = Object.freeze({
-    async loadCaseContext() { throw new PrivateCaseAccessDeniedError(); },
-    async loadCaseContextByAlias() { throw new PrivateCaseAccessDeniedError(); },
-    async retrieveCaseEvidence() { throw new PrivateCaseAccessDeniedError(); }
-  });
   const listener = await listenPrivateCaseMcp({ caseAccessService: deniedService });
   t.after(() => listener.close());
   const response = await fetch(listener.url, {
@@ -185,6 +185,21 @@ test("the served MCP route delivers the correction and keeps the safeguards", as
   assert.match(protective, /While the gate is HOLD or BLOCKED, prohibit direct and indirect child imagery, dialogue, regression, hypnosis/);
   assert.match(protective, /The restriction is not withdrawal of care\./);
   assert.match(protective, /not religion, Satanism, atheism, diagnosis, appearance, affiliation, anger, moral self-condemnation, a past act alone, unwanted intrusive thoughts/);
+});
+
+test("the connector asks for the protocol before supervisor advice and a review of case records or the person's writing, not only before a therapy reply", async (t) => {
+  const listener = await listenPrivateCaseMcp({ caseAccessService: deniedService });
+  t.after(() => listener.close());
+  const call = async (method, params = {}) => (await fetch(listener.url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
+  })).json();
+  const initialized = await call("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "0" } });
+  const trigger = /inner-child, younger-self, reparenting, or self-relationship (?:therapy response|work\)), including advice to a supervisor about that work or a review of case records or the person's own writing for it/;
+  assert.match(initialized.result.instructions, trigger);
+  const listed = await call("tools/list");
+  assert.match(listed.result.tools.find((tool) => tool.name === "load_therapy_protocol").description, trigger);
 });
 
 test("a child-contact hold still stops child contact but not the adult's own protective behavior", () => {
