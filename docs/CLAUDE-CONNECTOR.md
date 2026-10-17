@@ -3,7 +3,7 @@
 Claude uses InnerSignal as one custom MCP connector: the hosted private-case MCP. That connector carries both halves of the InnerSignal plugin:
 
 - **Therapy.** `load_therapy_protocol` returns the therapy skill's instructions and its reference files, including the inner-child therapy map. `get_therapy_protocol_manifest` returns only the version and SHA-256 hashes. Both tools are public and read-only; the content is the public packaged skill.
-- **Private continuity.** The eleven read-only case tools (`load_handoff`, `load_case_context`, `load_case_context_by_alias`, …) keep the existing OAuth, scopes and subject-to-case ACL. Named-case resolution is non-enumerable and still passes through the ordinary case authorization and key boundary.
+- **Private continuity.** The eleven read-only case tools (`load_handoff`, `load_case_context`, `load_case_context_by_alias`, …) keep the existing OAuth, scopes and subject-to-case ACL. The three that open a case also return `therapy_rules`: the protocol's reparenting and known-versus-new reference files, byte for byte with its version and hash, and a note to load the complete protocol before advising. Named-case resolution is non-enumerable and still passes through the ordinary case authorization and key boundary.
 
 The server's `initialize` instructions tell the host to call `load_therapy_protocol` before any inner-child, younger-self, reparenting or self-relationship therapy response, including advice to a supervisor about that work or a review of case records or the person's own writing (such as journal entries) for it, and to say the protocol is unavailable rather than improvise it if the call fails. The tool's own description carries the same trigger.
 
@@ -18,6 +18,8 @@ The packaged skill (`plugins/inner-signal-therapy/skills/inner-signal-therapy/`)
 1. Change the canonical source and the packaged skill copy as the existing authoring and sync gates require, on a task branch with a pull request. A new reference file must also be added to `THERAPY_PROTOCOL_FILES` in `src/protocol/therapy-protocol.mjs`. The skill and reference files may name a reference only as single-backtick inline code holding its exact path, such as `` `references/FOCUS-DISCIPLINE.md` ``. Any other mention of `references/`, or a missing entry, makes the server report the protocol unavailable.
 2. Merge, then redeploy the hosted MCP image through the normal release path, keeping the prior image for rollback.
 3. Confirm the change is live: `GET /health` reports `therapyProtocol.version` and `therapyProtocol.protocolSha256`, and `get_therapy_protocol_manifest` returns the same hash.
+
+The connector process writes one JSON line per tool call to stderr (`docker logs` on the hosted image): the tool's name (an advertised one, or `unknown`), whether it answered or its error code, the time it took and the response size. It never records arguments, case references or content, so it can show whether a conversation loaded the protocol without showing what it read.
 
 The version comes from the plugin manifest; the hash changes with any content change, so it is the identity to record. `load_therapy_protocol` asks the host to record `version` and `protocol_sha256` with any continuity handoff.
 

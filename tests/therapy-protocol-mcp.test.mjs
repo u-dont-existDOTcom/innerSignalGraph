@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
+import { createPrivateCaseMcpServer, listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
 import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/therapy-protocol.mjs";
 
@@ -20,6 +20,20 @@ const deniedService = Object.freeze({
   async loadCaseContextByAlias() { throw new PrivateCaseAccessDeniedError(); },
   async retrieveCaseEvidence() { throw new PrivateCaseAccessDeniedError(); }
 });
+
+// A synthetic case that opens for anyone: the access checks are tested elsewhere; here only what the connector adds.
+const SYNTHETIC_CASE_ID = "synthetic-case-opened";
+const openedCase = Object.freeze({ case_state: { case_id: SYNTHETIC_CASE_ID }, recent_verbatim: [{ text: "synthetic turn" }] });
+const openingService = Object.freeze({
+  async loadHandoff(handoffId) { return { handoff_id: handoffId, case_id: SYNTHETIC_CASE_ID }; },
+  async loadCaseContext() { return openedCase; },
+  async loadCaseContextByAlias() { return openedCase; },
+  async retrieveCaseEvidence(caseId) {
+    if (caseId === "synthetic-case-failing") throw Object.assign(new Error("synthetic failure"), { code: "free text that is not a code" });
+    return { case_id: caseId, results: [] };
+  }
+});
+const CASE_RULE_FILES = ["references/PROTOCOL-STATE-PROVENANCE.md", "references/LONGITUDINAL-SYNTHESIS.md"];
 
 async function post(url, method, params = {}, token = null) {
   const response = await fetch(url, {
@@ -248,4 +262,93 @@ test("a pathful resource gets no root MCP endpoint", async (t) => {
   assert.equal(root.status, 404);
   const atMcp = await post(listener.url, "tools/list");
   assert.equal(atMcp.response.status, 200);
+});
+
+test("opening a case carries the reparenting and known-versus-new rules, byte for byte, with the protocol's identity", async (t) => {
+  const protocol = loadTherapyProtocol();
+  const listener = await listen(t, { caseAccessService: openingService, therapyProtocol: protocol });
+  for (const [name, args] of [
+    ["load_handoff", { handoff_id: "handoff:00000000-0000-4000-8000-000000000172" }],
+    ["load_case_context", { case_id: SYNTHETIC_CASE_ID }],
+    ["load_case_context_by_alias", { case_alias: "synthetic alias" }]
+  ]) {
+    const { response, body } = await post(listener.url, "tools/call", { name, arguments: args });
+    assert.equal(response.status, 200, name);
+    const value = body.result.structuredContent;
+    assert.equal(value.case_state?.case_id ?? value.case_id, SYNTHETIC_CASE_ID, `${name} still returns the case`);
+    const rules = value.therapy_rules;
+    assert.equal(rules.available, true, name);
+    assert.equal(rules.protocol_id, protocol.protocolId);
+    assert.equal(rules.version, protocol.version);
+    assert.equal(rules.protocol_sha256, protocol.protocolSha256);
+    assert.match(rules.note, /call load_therapy_protocol for the complete rules and follow them/u);
+    assert.deepEqual(rules.files.map((file) => file.path), CASE_RULE_FILES);
+    for (const file of rules.files) {
+      const servedFile = protocol.files.find((entry) => entry.path === file.path);
+      assert.deepEqual(file, { path: servedFile.path, sha256: servedFile.sha256, bytes: servedFile.bytes, content: servedFile.content });
+    }
+    assert.match(rules.files[0].content, /A protective act the person takes for the vulnerable self in daily life/u);
+    assert.match(rules.files[1].content, /KNOWN VERSUS NEW/u);
+    assert.deepEqual(JSON.parse(body.result.content[0].text), value, `${name}: the text the model reads carries them too`);
+  }
+  // Other case tools are unchanged.
+  const evidence = await post(listener.url, "tools/call", { name: "retrieve_case_evidence", arguments: { case_id: SYNTHETIC_CASE_ID, query: "x" } });
+  assert.equal(evidence.response.status, 200);
+  assert.deepEqual(evidence.body.result.structuredContent, { case_id: SYNTHETIC_CASE_ID, results: [] });
+  const listed = await post(listener.url, "tools/list");
+  for (const name of ["load_handoff", "load_case_context", "load_case_context_by_alias"]) {
+    assert.match(listed.body.result.tools.find((tool) => tool.name === name).description, /The result also carries therapy_rules/u, name);
+  }
+});
+
+test("without a protocol, an opened case says the rules are unavailable and still loads", async (t) => {
+  const listener = await listen(t, { caseAccessService: openingService, therapyProtocol: null });
+  const { response, body } = await post(listener.url, "tools/call", { name: "load_case_context", arguments: { case_id: SYNTHETIC_CASE_ID } });
+  assert.equal(response.status, 200);
+  assert.equal(body.result.structuredContent.case_state.case_id, SYNTHETIC_CASE_ID);
+  assert.deepEqual(Object.keys(body.result.structuredContent.therapy_rules).sort(), ["available", "note"]);
+  assert.equal(body.result.structuredContent.therapy_rules.available, false);
+  assert.match(body.result.structuredContent.therapy_rules.note, /unavailable on this server; do not improvise it/u);
+});
+
+test("the call trace names each tool and its outcome, without arguments, case references or content", async (t) => {
+  const events = [];
+  const marker = "synthetic-private-marker-172";
+  const listener = await listen(t, { caseAccessService: openingService, callLog: (event) => events.push(event) });
+  await post(listener.url, "tools/list");
+  await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: {} });
+  const opened = await post(listener.url, "tools/call", { name: "load_case_context", arguments: { case_id: SYNTHETIC_CASE_ID, candidate_id: marker } });
+  await post(listener.url, "tools/call", { name: `no_such_tool_${marker}`, arguments: { text: marker } });
+  const failed = await post(listener.url, "tools/call", { name: "retrieve_case_evidence", arguments: { case_id: "synthetic-case-failing", query: marker } });
+  assert.equal(failed.response.status, 422);
+  assert.equal(failed.body.error.data.code, "free text that is not a code", "the response itself is unchanged");
+
+  const denied = await listen(t, { callLog: (event) => events.push(event) });
+  await post(denied.url, "tools/call", { name: "load_case_context", arguments: { case_id: marker } });
+
+  assert.deepEqual(events.map(({ tool, ok, code }) => [tool, ok, code]), [
+    ["load_therapy_protocol", true, null],
+    ["load_case_context", true, null],
+    ["unknown", false, "MCP_TOOL_NOT_FOUND"],
+    ["retrieve_case_evidence", false, "OTHER"],
+    ["load_case_context", false, "AUTHENTICATION_REQUIRED"]
+  ]);
+  for (const event of events) {
+    assert.deepEqual(Object.keys(event).sort(), ["at", "bytes", "code", "event", "ms", "ok", "tool"]);
+    assert.equal(event.event, "tool_call");
+    assert.ok(Number.isInteger(event.ms) && event.ms >= 0);
+    assert.ok(Number.isInteger(event.bytes) && event.bytes > 0);
+    assert.equal(new Date(event.at).toISOString(), event.at);
+  }
+  assert.equal(events[1].bytes, Buffer.byteLength(`${JSON.stringify(opened.body)}\n`), "bytes is the response size");
+  const trace = JSON.stringify(events);
+  for (const secret of [marker, SYNTHETIC_CASE_ID, "synthetic turn", "synthetic-case-failing", "free text"]) assert.equal(trace.includes(secret), false, secret);
+});
+
+test("a failing trace never breaks a call, and a trace must be a function", async (t) => {
+  const listener = await listen(t, { caseAccessService: openingService, callLog: () => { throw new Error("synthetic trace failure"); } });
+  const answered = await post(listener.url, "tools/call", { name: "load_case_context", arguments: { case_id: SYNTHETIC_CASE_ID } });
+  assert.equal(answered.response.status, 200);
+  assert.equal(answered.body.result.structuredContent.case_state.case_id, SYNTHETIC_CASE_ID);
+  assert.throws(() => createPrivateCaseMcpServer({ caseAccessService: openingService, callLog: "stderr" }), { name: "TypeError", message: /callLog must be a function/u });
 });

@@ -19,8 +19,10 @@ const headers = (extra = {}) => ({
 
 function send(res, status, payload, extraHeaders = {}) {
   const body = payload == null ? "" : `${JSON.stringify(payload)}\n`;
-  res.writeHead(status, headers({ "content-length": String(Buffer.byteLength(body)), ...extraHeaders }));
+  const bytes = Buffer.byteLength(body);
+  res.writeHead(status, headers({ "content-length": String(bytes), ...extraHeaders }));
   res.end(body);
+  return bytes;
 }
 
 async function readJson(req) {
@@ -59,7 +61,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_handoff",
     title: "Load private InnerSignal handoff",
-    description: "Primary fresh-session bootstrap. Resolve and verify an authorized immutable encrypted handoff using only its stable handoff identifier.",
+    description: "Primary fresh-session bootstrap. Resolve and verify an authorized immutable encrypted handoff using only its stable handoff identifier. The result also carries therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -71,7 +73,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_case_context",
     title: "Load private InnerSignal case context",
-    description: "Load a continuation-safe private case bundle for an authorized fresh supervisor session, including exact recent verbatim turns and the exact pending candidate response.",
+    description: "Load a continuation-safe private case bundle for an authorized fresh supervisor session, including exact recent verbatim turns and the exact pending candidate response. The result also carries therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -86,7 +88,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_case_context_by_alias",
     title: "Load private InnerSignal case context by alias",
-    description: "Resolve a non-enumerable private case alias and load that authorized continuation-safe case context. Use this when the user names a known case but does not provide an opaque case or handoff ID.",
+    description: "Resolve a non-enumerable private case alias and load that authorized continuation-safe case context. Use this when the user names a known case but does not provide an opaque case or handoff ID. The result also carries therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -330,6 +332,29 @@ function protocolText(value) {
   ].join("\n\n");
 }
 
+// The therapy rules a review of a case needs, carried in the results that open a case (issue #172): a session that loads a
+// case has them even if it never calls load_therapy_protocol. The protocol's own served files, byte for byte, with its
+// identity; the complete protocol stays one call away.
+const CASE_RULE_FILES = Object.freeze(["references/PROTOCOL-STATE-PROVENANCE.md", "references/LONGITUDINAL-SYNTHESIS.md"]);
+const CASE_OPENING_TOOLS = new Set(["load_handoff", "load_case_context", "load_case_context_by_alias"]);
+export function caseTherapyRules(protocol) {
+  if (!protocol) {
+    return { available: false, note: "The InnerSignal therapy protocol is unavailable on this server; do not improvise it." };
+  }
+  return {
+    available: true,
+    protocol_id: protocol.protocolId,
+    version: protocol.version,
+    protocol_sha256: protocol.protocolSha256,
+    note: "Two of the therapy protocol's reference files, carried with this case so any review of it has them: reparenting and exercises, and telling an established point from a new one across sessions, records and journal material. Before advising on this case, call load_therapy_protocol for the complete rules and follow them.",
+    files: protocol.files.filter((file) => CASE_RULE_FILES.includes(file.path))
+      .map(({ path, sha256: digest, bytes, content }) => ({ path, sha256: digest, bytes, content }))
+  };
+}
+
+// Error codes are fixed identifiers; anything else is traced as OTHER, so no text can reach the trace through a code.
+const traceCode = (code) => code === null ? null : typeof code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : "OTHER";
+
 function loadProtocolOrNull() {
   try { return loadTherapyProtocol(); }
   catch (error) {
@@ -553,7 +578,10 @@ async function callTool(service, name, args, authContext, journalApi = null) {
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }
 
-export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null } = {}) {
+// `callLog`, when given, receives one content-free record per tool call: the tool's name (an advertised one, else "unknown"),
+// whether it answered, its safe error code, the time it took and the response's size. Never its arguments, a case reference
+// or any content, so the trace shows which tools a session used without showing what it read.
+export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, callLog = null } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function" || typeof caseAccessService.loadCaseContextByAlias !== "function") throw new TypeError("caseAccessService with exact-ID and alias continuity is required.");
   if (journalWork !== null && (typeof journalWork?.call !== "function" || !(journalWork.names instanceof Set))) {
     throw new TypeError("journalWork must come from createJournalWorkTools.");
@@ -561,7 +589,9 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
   const normalizedOauth = normalizeOauth(oauth);
   if (journalApi != null && typeof journalApi.search !== "function") throw new TypeError("journalApi is invalid.");
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
+  if (callLog !== null && typeof callLog !== "function") throw new TypeError("callLog must be a function.");
   const tools = advertisedTools(Boolean(normalizedOauth), journalWork, journalApi);
+  const toolNames = new Set(tools.map((tool) => tool.name));
   const instructions = serverInstructions(journalWork);
   const serveRoot = !normalizedOauth || new URL(normalizedOauth.resource).pathname === "/";
   // Loaded once per process: a redeploy is what changes the served protocol.
@@ -604,12 +634,25 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
 
     const name = request.params?.name;
     const args = request.params?.arguments ?? {};
+    const started = performance.now();
+    const answer = await answerToolCall(req, request, name, args);
+    const bytes = send(res, answer.status, answer.payload, answer.headers);
+    if (callLog) {
+      try {
+        callLog({ event: "tool_call", at: new Date().toISOString(), tool: toolNames.has(name) ? name : "unknown", ok: answer.code === null,
+          code: traceCode(answer.code), ms: Math.round(performance.now() - started), bytes });
+      } catch { /* the trace never breaks a call */ }
+    }
+  });
+
+  async function answerToolCall(req, request, name, args) {
+    const reply = (status, payload, code = null, extraHeaders = {}) => ({ status, payload, code, headers: extraHeaders });
     if (PROTOCOL_TOOLS.has(name)) {
       try {
         const value = protocolToolResult(protocol, name);
-        return send(res, 200, success(request.id, { ...toolResult(value), content: [{ type: "text", text: protocolText(value) }] }));
+        return reply(200, success(request.id, { ...toolResult(value), content: [{ type: "text", text: protocolText(value) }] }));
       } catch {
-        return send(res, 200, failure(request.id, -32003, "InnerSignal therapy protocol is unavailable; do not improvise it.", { code: "THERAPY_PROTOCOL_UNAVAILABLE" }));
+        return reply(200, failure(request.id, -32003, "InnerSignal therapy protocol is unavailable; do not improvise it.", { code: "THERAPY_PROTOCOL_UNAVAILABLE" }), "THERAPY_PROTOCOL_UNAVAILABLE");
       }
     }
 
@@ -617,32 +660,32 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
     try {
       if (journalWork?.names.has(name)) {
         const outcome = await journalWork.call(name, args, { bearerToken: token });
-        return send(res, 200, success(request.id, outcome.toolError ? journalWorkToolError(outcome.toolError) : toolResult(outcome.value)));
+        return outcome.toolError
+          ? reply(200, success(request.id, journalWorkToolError(outcome.toolError)), outcome.toolError.code ?? "JOURNAL_WORK_TOOL_ERROR")
+          : reply(200, success(request.id, toolResult(outcome.value)));
       }
       const value = await callTool(caseAccessService, name, args, { bearerToken: token }, journalApi);
-      return send(res, 200, success(request.id, toolResult(value)));
+      return reply(200, success(request.id, toolResult(CASE_OPENING_TOOLS.has(name) ? { ...value, therapy_rules: caseTherapyRules(protocol) } : value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
         if (await deniedForSignedInAccount(caseAccessService, token, name, journalWork)) {
-          return send(res, 200, success(request.id, caseNotAuthorizedResult()));
+          return reply(200, success(request.id, caseNotAuthorizedResult()), "PRIVATE_CASE_NOT_AUTHORIZED");
         }
         const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.", challengeScopes(normalizedOauth, name, journalWork));
-        return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
-          "www-authenticate": challenge
-        });
+        return reply(401, success(request.id, authenticationRequiredResult(challenge)), "AUTHENTICATION_REQUIRED", { "www-authenticate": challenge });
       }
       const safeCode = error instanceof PrivateCaseKeyUnavailableError
         ? "PRIVATE_CASE_KEY_UNAVAILABLE"
         : error instanceof CaseNotContinuationSafeError
           ? "CASE_NOT_CONTINUATION_SAFE"
           : error?.code ?? "PRIVATE_CASE_TOOL_FAILED";
-      return send(res, 422, failure(request.id, -32002, "Private case tool failed safely.", { code: safeCode }));
+      return reply(422, failure(request.id, -32002, "Private case tool failed safely.", { code: safeCode }), safeCode);
     }
-  });
+  }
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService, journalApi, oauth, productionAuthReady, therapyProtocol, journalWork });
+export async function listenPrivateCaseMcp({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, callLog = null, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, journalApi, oauth, productionAuthReady, therapyProtocol, journalWork, callLog });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);
