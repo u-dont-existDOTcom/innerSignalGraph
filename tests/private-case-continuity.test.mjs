@@ -797,6 +797,29 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   const deniedText = await denied.text();
   assert.equal(denied.status, 401);
   assert.doesNotMatch(deniedText, new RegExp(environment.marker));
+
+  // Issue #172: the therapy rules travel with an opened case, and the process traces each tool call on stderr with its
+  // name and outcome only, never its arguments, a case reference or content.
+  for (const opened of [handoffResult, aliasResult]) {
+    assert.equal(opened.result.structuredContent.therapy_rules.available, true);
+    assert.deepEqual(opened.result.structuredContent.therapy_rules.files.map((file) => file.path), ["references/PROTOCOL-STATE-PROVENANCE.md", "references/LONGITUDINAL-SYNTHESIS.md"]);
+  }
+  const traced = () => serverStderr.split("\n").filter((line) => line.startsWith('{"event":"tool_call"')).map((line) => JSON.parse(line));
+  for (let attempt = 0; attempt < 400 && !traced().some((event) => event.tool === "load_case_context" && event.code === "AUTHENTICATION_REQUIRED"); attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.deepEqual(traced().slice(-6).map(({ tool, ok, code }) => [tool, ok, code]), [
+    ["load_handoff", true, null],
+    ["load_case_context_by_alias", true, null],
+    ["load_case_context_by_alias", false, "AUTHENTICATION_REQUIRED"],
+    ["get_pending_candidate", true, null],
+    ["get_source_artifact", true, null],
+    ["load_case_context", false, "AUTHENTICATION_REQUIRED"]
+  ]);
+  for (const secret of [CASE_ID, HANDOFF_ID, TOKEN, CANDIDATE_ID, SOURCE_ARTIFACT_ID, environment.marker, environment.payload.candidate_text,
+    environment.payload.exact_source_text, "named CASE", "Synthetic Named Case", "not bound", "wrong-token"]) {
+    assert.equal(serverStderr.includes(secret), false, `the connector's stderr carries no ${secret === TOKEN ? "token" : "case reference or content"}`);
+  }
 });
 
 test("synthetic private payload is not emitted into repository or public fixture paths", async (t) => {

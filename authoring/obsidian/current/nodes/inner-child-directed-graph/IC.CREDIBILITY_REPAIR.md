@@ -27,7 +27,7 @@ regression_refs:
   - G047
 base_record_sha256: d4df4b74f39f7cc1abfbef90666db0614c24aee056c0ee5433fcb0fe79db089f
 base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
+projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
 ---
 
 # Repair credibility through non-defensive follow-through

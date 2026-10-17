@@ -7,14 +7,14 @@ source_id: AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
 guide_id: owner-amendments
 heading: AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
 source_role: owner-approved-extension
-source_hash: 616c94be04852784f3996afeb899aa108e3a1db04688cb303faa29ff5c17c5e6
+source_hash: cc64603df78569c96aa1b900b5230c872f7a63fc67e759561134257cffc338a5
 section_hash: eb1054d5f88dd952cd6b43cde8f7e5a2b07967ff26dc9e2a7a3e541fcb17ad47
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.PRACTICE_TO_LIFE_TRANSFER
   - ROUTE.ACT_OUTWARD
   - SOM.GENTLE_SHAKING
-projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
+projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
 ---
 
 # AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION

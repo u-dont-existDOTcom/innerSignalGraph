@@ -71,3 +71,7 @@
 ## 2026-10-17: journal dates by the journal's order (quote index version 4)
 
 - Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `6629d489`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above (`2026-09-30-claim-integrity-checks.md`, `2026-10-09-teaching-points-for-map-changes.md`, `2026-10-11-therapy-r6-coordinated-journal-release.md`), unchanged since 12 Oct. This branch changes how the journal's quotes are dated and adds no new disposition.
+
+## 2026-10-17: known versus new, and the rules with every opened case (issue #172, change A)
+
+- Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `6629d489`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct. This branch changes the served protocol and the shared prompt rules. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C); nothing here adopts it. `2026-10-09-teaching-points-for-map-changes.md` is followed: the reader-facing part of the change is queued as PGQ-038 with its cause, reader need, prior coverage and placement, and the known-versus-new rule is recorded as not reader-facing. No new disposition.

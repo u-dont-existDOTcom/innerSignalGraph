@@ -631,6 +631,26 @@
       "excerpt": "'Reparenting is not an exercise' (the owner, 16 Oct 2026, issue #168). The work of helping a person internally experience safety while expressing authentic feelings, needs and boundaries is reparenting, not a separate therapeutic goal that reparenting might optionally support. Reparenting is an ongoing internal adult-to-vulnerable-self relationship and practice, enacted through care, emotional validation, protection, truthful boundaries, repair, self-guidance and ordinary-life choices, not only a guided visualization. Specific inner-child meditations, imagery, dialogue or affirmations can be methods within reparenting, not its definition, prerequisite or full measure of success. Track a particular exercise's states (taught, attempted, response reported, impact unknown) separately from ongoing reparenting behavior and outcomes: don't infer progress from saying words, and don't infer absent reparenting from absent imagery, emotional breakthrough or immediate relief. In this context reparenting and learning to feel safe expressing needs and boundaries are aspects of the same work, not a choice between them; concrete human support, specialist physical-pain care and other independent interventions stay distinct as appropriate. The existing protective-compatibility, noncoercion, uncertain-memory, self-harm and source-provenance limits stand: an intrusive thought, a dream or a lack of visualization is not proof of harmful intent, and a child-contact hold must not turn into a ban on permitted adult protective behavior. Calling an ordinary-life act reparenting still needs the person's welcome of the frame (AMEND.IC.COMMUNITY_REPARENTING, AMEND.IC.CONTINUITY_TITRATION).",
       "status": "owner-approved",
       "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017",
+      "heading": "AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "dc0e268f5f2fb08e5e91851db849b86e991706f188d68a1e904c4c232170d686",
+      "excerpt": "The owner, 17 Oct 2026 (issue #172), after a supervisor answer once again set everyday protective action and practical safety against reparenting, a false distinction the rules already forbid: ordinary self-protective acts should be recognized as reparenting when that is the client-welcomed frame, not reclassified as a separate therapy. Appropriate independent medical and safety actions remain independently available. Protective care is recognized as part of reparenting without labeling medical navigation itself as an exercise. Safety needs and consent can override ordinary priorities. The client keeps the ability to revise or decline the frame (AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016, AMEND.IC.COMMUNITY_REPARENTING).",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017",
+      "heading": "AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "59a34896e1aa71b22ed6348b516463466b98e11b8632e87d29f4eae93b889874",
+      "excerpt": "The owner, 17 Oct 2026 (issue #172), after a supervisor answer described as a new idea something already established repeatedly and did not distinguish what an imported journal changed in the case plan: any longitudinal synthesis gets a known versus genuinely new check. Identify whether a suggested insight is already established, a new supporting example, a contradiction, a new actionable lever, or a significant change to ranking. Search imported journals for decision-relevant deltas, not simply thousands of examples of a known problem. Do not call an old theme new because the source format is new. Do not treat an imported journal's model-generated tags as clinical diagnoses or as approval of treatment goals. Priorities are stated as explicit client preference, an authorized human or supervisor plan, or a provisional model recommendation, never silently conflated; safety needs and consent can override ordinary rank.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
     }
   ]
 }

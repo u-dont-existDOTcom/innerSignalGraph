@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-17-r9`
+Queue version: `2026-10-17-r10`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -256,6 +256,13 @@ Teaching point: Reparenting isn't an exercise you do or finish; it's the ongoing
 Reader need: Readers who can't visualize, feel little in meditation, or change mostly through everyday boundaries may conclude they aren't really reparenting or are failing at it; others may take one moving meditation as proof the work is done, or wait for imagery before counting the boundaries they already keep.
 Already covered: “The Three Adult Functions” says reparenting begins when the present-day person occupies an adult position and cares for the child, and that the Protector works through boundaries and ordinary action; “Make the Protector Visible” lists everyday protective acts and says completing one without immediate relief isn't automatically failure; “When More Processing Becomes the Hook” says the exercises shouldn't become a ritual you must complete before you're allowed to live; PGQ-012 and PGQ-013 cover leaving the exercise and carrying it into ordinary life. None of them says outright that reparenting isn't an exercise, or that feeling safe while expressing feelings, needs and boundaries is the reparenting itself.
 Where: “The Three Adult Functions”, right after “Reparenting begins when the present-day person occupies an adult position and cares for the child from there.” One or two sentences in the owner's voice; if PGQ-012 is still pending, share its point about leaving the exercise rather than repeating it. Keep the guide's permission not to call it reparenting when inner-child language doesn't fit (“Also Look Outward”).
+
+### PGQ-038 — Keeping yourself safe is part of the work, not a separate track
+Caused by: the owner's issue #172 of 17 Oct 2026, `AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017` and the revised served rule section “Reparenting and exercises”. After a journal import, a supervisor-facing assistant again set everyday protective action and practical safety against reparenting, as if safety were a separate track to finish first.
+Teaching point: Keeping yourself safe in everyday ways, such as leaving a place where you're being hurt, resting, keeping a boundary or arranging company or a safer place, is the adult you are now protecting the younger, vulnerable part of you: when that way of seeing it fits you, it is reparenting, not a separate therapy to finish before the real work starts. Help from outside, such as a doctor, crisis care, a shelter, the police or practical help from other people, stays its own thing: it can serve the same care, but it isn't an exercise, and reparenting doesn't replace it.
+Reader need: Readers who mostly protect themselves in practical ways may think that isn't the real work, or that reparenting has to wait until they're safe; others may feel they must turn a doctor's appointment or getting help into an inner-child exercise, or put off outside help because they're "doing the inner work".
+Already covered: “Make the Protector Visible” lists protective acts in daily life (“Set one boundary. Say no to something costly. … Leave a relationship that keeps eroding safety.”) and says care may first appear “as a locked door, a meal, a cancelled obligation, or a phone put down at midnight”; PGQ-037 says other help stays its own thing. Neither says that practical safety is not a separate track from reparenting, or that outside help isn't an exercise.
+Where: “Make the Protector Visible”, right after “Warmth can come later.” One or two sentences in the owner's voice; write it together with PGQ-037 if both are still pending, and keep the guide's permission not to call it reparenting when inner-child language doesn't fit (“Also Look Outward”).
 
 ## EMPTY sentinel
 

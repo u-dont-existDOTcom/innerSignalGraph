@@ -79,8 +79,16 @@ if (configuredJournalWork === 3) {
   });
 }
 
+// One content-free line per tool call on stderr (stdout carries only the ready line): which tool, whether it carried a bearer
+// token, whether it answered or its error code, the time it took and the response's size class. Never arguments, case
+// references or content.
+// A closed or broken stderr (EPIPE) loses trace lines, never the connector.
+process.stderr.on("error", () => {});
+const callLog = (event) => { process.stderr.write(`${JSON.stringify(event)}\n`); };
+
 const listener = await listenPrivateCaseMcp({
   caseAccessService: service,
+  callLog,
   journalApi: providers.journalEnabled ? createJournalPrivateApi({ caseAccessService: service }) : null,
   port,
   host: hosted ? "0.0.0.0" : "127.0.0.1",
