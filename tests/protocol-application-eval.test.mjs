@@ -297,9 +297,17 @@ test("the command refuses a command-line agent it can't isolate, before any mode
     fs.writeFileSync(file, `#!/bin/sh\nexec "${process.execPath}" "${path.join(root, "tests/fixtures", fixture)}" "$@"\n`, { mode: 0o755 });
     return file;
   };
-  const env = { ...process.env, INNER_SIGNAL_MODE: "", CODEX_COMMAND: wrapper("codex", "fake-codex-cli.mjs"), CLAUDE_COMMAND: wrapper("claude", "fake-claude-minimal-cli.mjs"), ANTHROPIC_MODEL: "fake-claude", OPENAI_MODEL: "fake-codex" };
-  const result = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "cli", "--calibration-only", "--case", "frame-declined", "--out", path.join(dir, "out")], { cwd: root, encoding: "utf8", env });
-  assert.equal(result.status, 3, result.stderr);
-  assert.match(result.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence/u);
+  const temp = path.join(dir, "tmp");
+  fs.mkdirSync(temp);
+  const env = { ...process.env, TMPDIR: temp, INNER_SIGNAL_MODE: "", CODEX_COMMAND: wrapper("codex", "fake-codex-cli.mjs"), CLAUDE_COMMAND: wrapper("claude", "fake-claude-minimal-cli.mjs"), ANTHROPIC_MODEL: "fake-claude", OPENAI_MODEL: "fake-codex" };
+  const run = (overrides) => spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "cli", "--calibration-only", "--case", "frame-declined", "--out", path.join(dir, "out")], { cwd: root, encoding: "utf8", env: { ...env, ...overrides } });
+  const lacking = run({});
+  assert.equal(lacking.status, 3, lacking.stderr);
+  assert.match(lacking.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence/u);
+  // A command that can't be started at all is a configuration error too, reported the same way.
+  const absent = run({ CODEX_COMMAND: path.join(dir, "no-such-codex") });
+  assert.equal(absent.status, 3, absent.stderr);
+  assert.match(absent.stderr, /The Codex CLI \(.*no-such-codex\) could not be started or checked/u);
   assert.equal(fs.existsSync(path.join(dir, "out", "protocol-application-report.json")), false, "nothing ran");
+  assert.deepEqual(fs.readdirSync(temp).filter((name) => name.startsWith("inner-signal-eval-agent-")), [], "the agents' empty folder is removed either way");
 });

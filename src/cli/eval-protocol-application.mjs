@@ -93,8 +93,23 @@ try {
   fail(error.message);
 }
 
-// An empty folder for the command-line agents to start in, so nothing of this checkout is within their reach by default.
-agentHome = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-agent-"));
+// The cases are read before anything is created, so a bad case file or an unknown case leaves nothing behind.
+let allCases;
+let calibrationEntries;
+try {
+  allCases = loadProtocolApplicationCases();
+  calibrationEntries = loadProtocolApplicationCalibration(allCases);
+} catch (error) {
+  fail(`The test's cases can't be read: ${error.message}`);
+}
+const wanted = values.case ?? [];
+const unknown = wanted.filter((id) => !allCases.some((spec) => spec.id === id));
+if (unknown.length) fail(`Unknown case: ${unknown.join(", ")}.`);
+const cases = wanted.length ? allCases.filter((spec) => wanted.includes(spec.id)) : allCases;
+const calibration = calibrationEntries.filter((entry) => cases.some((spec) => spec.id === entry.case_id));
+
+// A problem with the set-up (an agent that can't be checked or isolated) is a configuration error, reported after cleanup.
+class SetupError extends Error {}
 
 function provider(family, model) {
   if (values.mode === "mock") return new MockProvider({ id: family, model: `mock-${family}`, fixturePath: path.resolve(values.fixture) });
@@ -110,7 +125,8 @@ function provider(family, model) {
 
 // A command-line agent that can't be kept away from the user's own configuration (its MCP servers, InnerSignal's included),
 // its tools and its saved sessions isn't used: Codex in a read-only, ephemeral sandbox that ignores the user's configuration;
-// Claude with no tools, no MCP servers but an empty set, safe mode and no saved session.
+// Claude with no tools, no MCP servers but an empty set, safe mode and no saved session. An agent whose command can't be
+// started or checked isn't used either.
 const ISOLATION_FLAGS = new Map([
   [CodexCliProvider, ["ignoreUserConfig", "sandbox", "ephemeral", "outputSchema", "outputLastMessage"]],
   [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence"]]
@@ -118,67 +134,78 @@ const ISOLATION_FLAGS = new Map([
 async function requireIsolation(candidate) {
   const required = [...ISOLATION_FLAGS].find(([kind]) => candidate instanceof kind)?.[1];
   if (!required) return;
-  const flags = (await candidate.capabilities())?.flags;
+  const name = candidate instanceof CodexCliProvider ? "Codex" : "Claude";
+  let flags;
+  try {
+    flags = (await candidate.capabilities())?.flags;
+  } catch (error) {
+    throw new SetupError(`The ${name} CLI (${candidate.command}) could not be started or checked: ${error.message}`);
+  }
   const missing = required.filter((flag) => !flags?.[flag]);
-  if (missing.length) fail(`The installed ${candidate instanceof CodexCliProvider ? "Codex" : "Claude"} CLI lacks what this test needs to isolate it: ${missing.join(", ")}.`);
+  if (missing.length) throw new SetupError(`The installed ${name} CLI lacks what this test needs to isolate it: ${missing.join(", ")}.`);
 }
 
-const allCases = loadProtocolApplicationCases();
-const wanted = values.case ?? [];
-const unknown = wanted.filter((id) => !allCases.some((spec) => spec.id === id));
-if (unknown.length) fail(`Unknown case: ${unknown.join(", ")}.`);
-const cases = wanted.length ? allCases.filter((spec) => wanted.includes(spec.id)) : allCases;
-const calibration = loadProtocolApplicationCalibration(allCases).filter((entry) => cases.some((spec) => spec.id === entry.case_id));
-
-const answerer = provider(values.answerer, values["answer-model"]);
-const judge = provider(judgeFamily, values["judge-model"]);
-await requireIsolation(answerer);
-await requireIsolation(judge);
-const outDir = values.out ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-protocol-application-"));
-fs.mkdirSync(outDir, { recursive: true, mode: 0o700 });
+// An empty folder for the command-line agents to start in, so nothing of this checkout is within their reach by default. It
+// is removed however the run ends.
+agentHome = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-agent-"));
 const log = (line) => process.stderr.write(`${line}\n`);
-
-const report = {
-  version: PROTOCOL_APPLICATION_VERSION,
-  started_at: new Date().toISOString(),
-  mode: values.mode,
-  answerer: { family: values.answerer, model: answerer.model || "default" },
-  judge: { family: judgeFamily, model: judge.model || "default" },
-  samples,
-  cases: cases.map((spec) => spec.id),
-  outcome: "inconclusive"
-};
 let status = 2;
 try {
-  if (!values["skip-calibration"]) {
-    report.calibration = await runJudgeCalibration({ judge, cases, calibration, log });
-  } else {
-    report.calibration_skipped = true;
-  }
-  if (values["calibration-only"]) {
-    report.outcome = report.calibration.trusted ? "judge_trusted" : "judge_not_trusted";
-    status = report.calibration.trusted ? 0 : 2;
-  } else if (report.calibration && !report.calibration.trusted) {
-    report.outcome = "inconclusive";
+  const answerer = provider(values.answerer, values["answer-model"]);
+  const judge = provider(judgeFamily, values["judge-model"]);
+  await requireIsolation(answerer);
+  await requireIsolation(judge);
+  const outDir = values.out ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-protocol-application-"));
+  fs.mkdirSync(outDir, { recursive: true, mode: 0o700 });
+  const report = {
+    version: PROTOCOL_APPLICATION_VERSION,
+    started_at: new Date().toISOString(),
+    mode: values.mode,
+    answerer: { family: values.answerer, model: answerer.model || "default" },
+    judge: { family: judgeFamily, model: judge.model || "default" },
+    samples,
+    cases: cases.map((spec) => spec.id),
+    outcome: "inconclusive"
+  };
+  try {
+    if (!values["skip-calibration"]) {
+      report.calibration = await runJudgeCalibration({ judge, cases, calibration, log });
+    } else {
+      report.calibration_skipped = true;
+    }
+    if (values["calibration-only"]) {
+      report.outcome = report.calibration.trusted ? "judge_trusted" : "judge_not_trusted";
+      status = report.calibration.trusted ? 0 : 2;
+    } else if (report.calibration && !report.calibration.trusted) {
+      report.outcome = "inconclusive";
+      status = 2;
+    } else {
+      const source = await connectorSource({ ref: values["git-ref"] ?? null });
+      report.application = await runProtocolApplication({ answerer, judge, cases, samples, source, log });
+      report.outcome = report.application.outcome;
+      status = report.outcome === "pass" ? (report.calibration_skipped ? 2 : 0) : report.outcome === "fail" ? 1 : 2;
+      if (report.calibration_skipped && report.outcome === "pass") report.outcome = "pass_unchecked_judge";
+    }
+  } catch (error) {
+    report.error = { message: error.message, code: error.code ?? null };
+    log(`error: ${error.message}`);
     status = 2;
-  } else {
-    const source = await connectorSource({ ref: values["git-ref"] ?? null });
-    report.application = await runProtocolApplication({ answerer, judge, cases, samples, source, log });
-    report.outcome = report.application.outcome;
-    status = report.outcome === "pass" ? (report.calibration_skipped ? 2 : 0) : report.outcome === "fail" ? 1 : 2;
-    if (report.calibration_skipped && report.outcome === "pass") report.outcome = "pass_unchecked_judge";
   }
-} catch (error) {
-  report.error = { message: error.message, code: error.code ?? null };
-  log(`error: ${error.message}`);
-  status = 2;
-} finally {
   report.finished_at = new Date().toISOString();
   const reportPath = path.join(outDir, "protocol-application-report.json");
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
   const summary = summarizeProtocolApplication(report);
   fs.writeFileSync(path.join(outDir, "summary.txt"), `${summary.join("\n")}\n`, { mode: 0o600 });
   process.stdout.write(`${summary.join("\n")}\nReport: ${reportPath}\n`);
+} catch (error) {
+  if (error instanceof SetupError) {
+    process.stderr.write(`${error.message}\n\n${USAGE}\n`);
+    status = 3;
+  } else {
+    process.stderr.write(`error: ${error.message}\n`);
+    status = 2;
+  }
+} finally {
   fs.rmSync(agentHome, { recursive: true, force: true });
 }
 process.exit(status);
