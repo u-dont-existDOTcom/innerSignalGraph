@@ -79,3 +79,23 @@
 ## 2026-10-17: the plan in the case record (issue #172, change B)
 
 - Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `6629d489`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct. This branch adds the case plan to the encrypted case state, its view and a read-only check tool to the connector, and two sentences to the skills; nothing here is reader-facing (`2026-10-09-teaching-points-for-map-changes.md`: declared app-only), and `2026-09-30-claim-integrity-checks.md` stays deferred. No new disposition.
+
+## 2026-10-17: the second independent review of change B (issue #172)
+
+- Live lane: the Universal default branch is still `6629d489` (`git ls-remote`), the commit read above, so `suggested-fixes/innerSignalGraph/` holds the same three items; no new disposition. The review's findings, each with its outcome (tests in `tests/case-roadmap.test.mjs` unless named):
+- P1, other goals became the client's when she moved, parked or declined them (the take-over rule): fixed. `priority_source` is whose goal it is and changes only by her agreement or an authorized `adopt: true`; test "a goal stays whose it is when the client moves, parks or declines it".
+- P1, a swap put a goal ahead of the client's without changing her goal's number: fixed. Another source keeps the goals ahead of each goal it may not move, and the view lists the client's goals first; test "no other source slips a goal ahead of one it may not move".
+- Design question, whether an authorized step linked to the episode may take the current step from hers: answered no by the coordinator; `linked_elsewhere` and `episode_serves` show it; same test.
+- P2, a parent goal parked, superseded or moved out from under her step: fixed; test "no other source parks, supersedes or moves a goal that holds an active goal of the client's".
+- P2, her notes erased or overwritten by an authorized plan: fixed (lists only grow, notes are written only while empty); test "on a goal the client chose, another source keeps her notes".
+- P2, one date up to a day ahead held up every later decision: fixed (five minutes); the time-order test and the store test.
+- P2, a declined goal offered again by retitling another goal or adding an article: fixed; test "a goal the client declined isn't offered again".
+- P3, the audit and repair prompts carried the stored plan: fixed; test "the private audit and repair prompts show a stored plan as its view".
+- P3, the check tool failed on a plan it couldn't read and counted superseded items as current: fixed (`plan_problem`); the known-versus-new test and the store test.
+- P3, client references: goal references unchecked, any artifact accepted, journal entries refused: fixed for the first two; journal entries stay refused (a decision cites what the client said in a session; a journal entry is material), written in the operator doc; the store test.
+- P3, a plan decision found by its turn in place of the turn's own diff, and the `roadmap:` prefix open to other writers: fixed; the store test.
+- P3, no way to record on a plan another version wrote, and a whole-state write without a state threw a TypeError: the message now says another version wrote it and records decisions on it, a carried plan is ignored by design (documented), and a missing state is a validation error again; the store test.
+- P3, `proposals_only` counted finished and declined goals: fixed; test "a plan reads as proposals only while some goal is active".
+- P3, her review condition and episode link on a proposal could be undone, and were logged as notes: fixed; test "what the client decided last about a goal stays as she decided it".
+- P3, impossible dates such as 30 February passed: fixed (a time must round-trip); the time-order test.
+- The full verify of `c769d642` failed two liveness tests: the case store reached `ajv` through the known-versus-new check. Fixed with `src/journal-import/lexical.mjs`; `tests/private-case-store-imports.test.mjs` and `tests/runtime-service-liveness.test.mjs`.
