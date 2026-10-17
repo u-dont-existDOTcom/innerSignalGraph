@@ -28,7 +28,7 @@ regression_refs:
   - G087
 base_record_sha256: e0e1b69f725d2e11e736a8d02f06869c2ac9d5297fed86920382b49bf90411a5
 base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
+projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
 ---
 
 # Preserve the inner relationship while reducing depth

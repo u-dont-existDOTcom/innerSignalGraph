@@ -22,7 +22,7 @@ regression_refs:
   - G005
 base_record_sha256: 9002335be1848c984a09c4b9aecfad54de603d9cbdb13d51736b8aef7829a323
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
+projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
 ---
 
 # Defer developmental EMDR while reparenting capacity is missing

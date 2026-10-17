@@ -13,7 +13,7 @@ locator_kind: structured-record
 cited_by_node_ids:
   - IC.PRECIOUS_HUMAN_OPPORTUNITY
   - IC.SUICIDAL_SELF_DEATH_INQUIRY
-projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
+projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
 ---
 
 # If You Want to Kill Yourself > This human life is the most precious opportunity

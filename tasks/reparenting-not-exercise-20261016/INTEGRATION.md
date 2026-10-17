@@ -41,10 +41,11 @@ files built from `main` `48b3421f`.
 
 ## What changes
 
-1. **Owner amendment** `AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016` (owner amendments r12), in his words with the
-   repair rules from the issue. It reads `AMEND.IC.PRACTICE_TO_LIFE_TRANSFER`'s in-session capacity as one kind of
-   reparenting evidence, and keeps the frame-consent rule of `AMEND.IC.COMMUNITY_REPARENTING` and
-   `AMEND.IC.CONTINUITY_TITRATION`.
+1. **Owner amendment** `AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016` (owner amendments r12): his correction and the
+   repair rules from the issue, in the issue's words, and a reference to the frame-consent rule of
+   `AMEND.IC.COMMUNITY_REPARENTING` and `AMEND.IC.CONTINUITY_TITRATION`, which still holds. A sentence of the first
+   draft reading `AMEND.IC.PRACTICE_TO_LIFE_TRANSFER` in the light of the correction was left out on review: it was
+   the worker's reading, not the owner's words, and an owner amendment carries only what he said or asked.
 2. **Map:** the overlay is "Hypothetical care is not an enacted exercise"; its description says the ladder tracks one
    exercise, not reparenting, and cites the amendment. Regenerated: compiled bundle, owner-amendment source map, report,
    authoring projection (hash metadata in every note) and the byte-identical served map.
@@ -95,14 +96,19 @@ provenance gate against `48b3421f` PASS; therapy-lesson verifier; repository aud
 ## Served route
 
 This branch serves protocol 0.2.1 with `protocol_sha256`
-`ec329fca117eeeb71907aeec5551ef67b892e16a4cc101b1eccb57fd09debb4d`: the instructions, the map and the provenance reference
-change, and the other five files are byte-identical to the live ones. After a merge and the owner's `deploy`,
-`get_therapy_protocol_manifest` should report that hash (or a later one if `main` changes the plugin first). Behavior
-evidence the tests can't give: a fresh connector session on the three synthetic cases.
+`23ee74b857aa4a0595e5ef8adc20b496ad76cebcffde90c759c84fb63f7d054c`: the instructions, the map and the provenance reference
+change (the protocol grows from 47,676 to 52,135 bytes), and the other five files are byte-identical to the live ones.
+After a merge and the owner's `deploy`, `get_therapy_protocol_manifest` should report that hash (or a later one if `main`
+changes the plugin first). Behavior evidence the tests can't give, after the deploy: a worker with fresh context loads
+the protocol through the live connector and answers the three synthetic cases (no case or journal material), and the
+owner asks one supervisor question in a fresh InnerSignal chat in ChatGPT, the path where the failure was seen.
 
-## Open for the owner
+## For the owner
 
-- Whether the wider connector trigger (protocol loaded before supervisor advice and case review) is wanted; it is a
-  separate commit and can be dropped on its own.
-- Whether to run a live check of the three synthetic cases on the real connector before or after deploy.
-- The release route at deploy time, as for the earlier map changes (`docs/RELEASE-EVIDENCE.md`).
+- The connector now asks for the protocol before supervisor advice about this work and before a review of case records
+  or the person's own writing, not only before a therapy response. A supervisor's review of the journal may not have
+  loaded the protocol at all, one of the two causes found (the other is the provenance sentence). The cost: about 52 KB
+  more context in those conversations. Recommended: keep it. It is its own commit, so it can be dropped alone if the owner says so;
+  merging accepts it.
+- The release route is the one the earlier map changes took: a development merge doesn't deploy; the hosted connector
+  is rebuilt from a `main` commit that contains the change on the owner's explicit `deploy`.

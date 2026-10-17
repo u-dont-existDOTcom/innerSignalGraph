@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.BORROW_ONE_FUNCTION
   - IC.PRACTICE_TO_LIFE_TRANSFER
   - IC.PROTECTOR_ACTION
-projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
+projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
 ---
 
 # Become the Adult Apprentice

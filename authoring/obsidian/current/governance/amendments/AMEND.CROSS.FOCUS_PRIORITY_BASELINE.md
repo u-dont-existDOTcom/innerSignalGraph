@@ -7,8 +7,8 @@ amendment_id: AMEND.CROSS.FOCUS_PRIORITY_BASELINE
 status: owner-approved
 domain: cross-guide
 base_record_sha256: bc215dd4ccb1d598d0e69af26bb8e073c3e74d1539605fa132390b1e7a6552d9
-source_file_sha256: a042a455d8eba3f0bffafc00a4bca2a4fc4d0732016269419d31782eba8580b9
-projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
+source_file_sha256: 616c94be04852784f3996afeb899aa108e3a1db04688cb303faa29ff5c17c5e6
+projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
 ---
 
 # AMEND.CROSS.FOCUS_PRIORITY_BASELINE
