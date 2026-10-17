@@ -69,7 +69,8 @@ check exactly those things. This test calls models, so it runs by hand and not i
    - Codex starts in an empty folder, read-only, ephemeral, and ignoring the user's own configuration, so none of its
      MCP servers, InnerSignal's included, are reachable.
    - The test refuses a Codex command that can't be isolated that way.
-   - A reply from an agent that took any action (a command, a file, a tool, a search) is not counted.
+   - A reply or a judgment from an agent that took any action (a command, a file, a tool, a search) is not counted: a
+     judgment is asked for once more, then the reply counts as inconclusive.
    - Claude runs with no tools, no MCP servers (an empty strict set), safe mode and no saved session, from the same
      empty folder. The test refuses a Claude command that lacks any of those switches.
 

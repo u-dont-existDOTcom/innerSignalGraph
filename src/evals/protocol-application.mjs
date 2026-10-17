@@ -505,13 +505,18 @@ function parseReply(raw) {
   return typeof raw === "string" && raw.trim() ? raw : null;
 }
 
+// A judge grades from the rubric, the case's facts and the reply alone: a judgment from an agent that took any action (a
+// command, a file, a tool, a search) is unusable, like one that breaks the format.
 async function judgeOnce(judge, spec, reply, metadata) {
   const { system, user } = judgePrompt(spec, reply);
   const output = await judge.generate({ system, user, outputSchema: judgeSchema(spec), metadata });
-  return { judgment: parseJudgment(spec, reply, output.text), model: output.model, usage: output.usage ?? null };
+  const toolItems = output.toolItems ?? 0;
+  const judgment = toolItems > 0 ? { valid: false, verdicts: {}, problems: ["JUDGE_USED_TOOLS"] } : parseJudgment(spec, reply, output.text);
+  return { judgment, model: output.model, usage: output.usage ?? null, tool_items: toolItems };
 }
 
-// A judgment that breaks the format (a missing rule, a fail without a quote from the reply) is asked for once more.
+// A judgment that breaks the format (a missing rule, a fail without a quote from the reply) or came from an agent that acted
+// is asked for once more.
 async function judge(judgeProvider, spec, reply, metadata) {
   const first = await judgeOnce(judgeProvider, spec, reply, metadata);
   if (first.judgment.valid) return { ...first, attempts: 1 };

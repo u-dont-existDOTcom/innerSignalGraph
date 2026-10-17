@@ -231,7 +231,7 @@ test("a run passes only when every reply passes every rule, and one failing repl
   assert.ok(summary.every((line) => !line.includes(split.slice(0, 30))), "the summary carries counts, not replies");
 });
 
-test("a reply from an agent that reached outside the conversation, or an unusable judgment, makes the run inconclusive", async () => {
+test("a reply or a judgment from an agent that reached outside the conversation, or an unusable judgment, makes the run inconclusive", async () => {
   const source = await connectorSource();
   const spec = [caseById.get("frame-declined")];
   const reached = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId), { toolItems: 2 }), judge: oracleJudge(), cases: spec, samples: 1, source });
@@ -250,6 +250,13 @@ test("a reply from an agent that reached outside the conversation, or an unusabl
   const retried = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: flaky, cases: spec, samples: 1, source });
   assert.equal(retried.outcome, "pass", "a judgment that breaks the format is asked for once more");
   assert.equal(retried.cases[0].samples[0].judge_attempts, 2);
+  // Codex on #175 (P2): a judge that acted (a Codex judge with its tools) decides nothing, in the run or in the check.
+  const acting = { model: "acting-judge", async generate(args) { return { ...(await oracleJudge().generate(args)), toolItems: 1 }; } };
+  const acted = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: acting, cases: spec, samples: 1, source });
+  assert.deepEqual([acted.outcome, acted.cases[0].samples[0].problem, acted.cases[0].samples[0].judgment.problems], ["inconclusive", "JUDGMENT_INVALID", ["JUDGE_USED_TOOLS"]]);
+  const actingCheck = await runJudgeCalibration({ judge: acting, cases, calibration });
+  assert.equal(actingCheck.trusted, false);
+  assert.ok(actingCheck.results.every((result) => result.problems.includes("JUDGE_USED_TOOLS")));
   const broken = { model: "broken-judge", async generate() { return { model: "broken-judge", text: "not json" }; } };
   const unusable = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: broken, cases: spec, samples: 1, source });
   assert.equal(unusable.outcome, "inconclusive");
