@@ -46,7 +46,7 @@ regression_refs:
   - G139
 base_record_sha256: 61461a7787a6f651dd64494ef55d8a40ead4c79892bb094e88b10666d73807cc
 base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
+projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
 ---
 
 # Borrow already-accessible love without flattening its depth

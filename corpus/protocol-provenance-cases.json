@@ -38,5 +38,29 @@
     "expectedEvidence": "deliberately authored dialogue; spontaneous reception not established",
     "expectedNextMove": "Keep the scripted thanks distinct from an observed spontaneous response; do not require spontaneous words.",
     "rejectedClaims": ["child spontaneously expressed gratitude", "trust improved"]
+  },
+  {
+    "id": "everyday-protection-without-imagery",
+    "precedingPrompt": "How did the week go with your mother?",
+    "reply": "At dinner she started on my weight again. I told her I won't talk about my body and left early, and later I made myself a proper meal and went to bed on time. I didn't do the visualization at all this week.",
+    "expectedEvidence": "ongoing reparenting reported in daily life: a truthful boundary, a protective exit and self-care; exercise evidence: the visualization was not attempted this week",
+    "expectedNextMove": "Recognize the boundary, the exit and the self-care as the adult protecting and caring for the vulnerable self (called reparenting only if the person welcomes that frame) and review what they changed; do not treat the skipped visualization as the missing real work.",
+    "rejectedClaims": ["no reparenting happened this week", "reparenting only happens in imagery", "the boundary is separate from reparenting", "the younger self now trusts the adult"]
+  },
+  {
+    "id": "imaginal-exercise-no-emotional-shift",
+    "precedingPrompt": "What happened when you did the inner-child meditation?",
+    "reply": "I pictured her on the stairs and told her I'd keep her safe. I meant it. I felt nothing much: no tears, no relief.",
+    "expectedEvidence": "exercise enacted; response reported: no noticeable emotional shift; impact unknown; ongoing reparenting neither shown nor ruled out by this report",
+    "expectedNextMove": "Take the report as an observation; do not call reparenting absent, failed or complete; ask about daily-life care and protection only if the answer would change the next step.",
+    "rejectedClaims": ["reparenting did not happen", "reparenting is complete", "the meditation failed", "the child refused the care", "trust improved"]
+  },
+  {
+    "id": "supervisor-felt-safety-and-expression",
+    "precedingPrompt": "Supervisor reviewing synthetic journal excerpts in which a client freezes before saying no to a relative.",
+    "reply": "I want her to feel safe inside while she expresses her real feelings, needs and boundaries. Where does reparenting fit, and should the plan center on the inner-child meditation?",
+    "expectedEvidence": "supervisor goal statement: felt safety while expressing feelings, needs and boundaries; the client's progress is not established by the request",
+    "expectedNextMove": "Say that this goal is the reparenting work itself, practiced in everyday boundaries and choices as well as in any meditation, which is one optional method; keep human support and any medical care distinct; say what the excerpts do and do not show about her progress.",
+    "rejectedClaims": ["reparenting is an optional adjunct to felt safety and self-expression", "reparenting means doing the imaginal meditation", "the plan must center on the meditation", "the client already feels safe expressing her needs"]
   }
 ]

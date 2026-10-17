@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
 status: owner-approved
 domain: inner-child
-base_record_sha256: 0646e72683105d548c7610c4e25c8275d35aed26d8eca467b0c02b68ff6ed0b6
-source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
-projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
+base_record_sha256: 645cba0418932f419d23aca207af657d4f8f6a14f8a0460ab85b9b02d40dd888
+source_file_sha256: 616c94be04852784f3996afeb899aa108e3a1db04688cb303faa29ff5c17c5e6
+projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
 ---
 
 # AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
@@ -25,6 +25,6 @@ projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8
     "status": "owner-approved",
     "text": "Hypnosis in general is not incompatible with grief, nor with altered states at all: it just depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment (the owner, 15 Oct 2026, answering owner-page question 36). It depends too much for a fixed line (question 37): for example, 'my dad just died, but i can't feel anything about it. there's grief here i guess but no tears coming. can we do a little hypnosis so i can access my feelings better?' sounds like a good idea; if the hypnosis is to get away from anything or escape what they need to face, that sounds less beneficial. There is no blanket or fixed hold on hypnosis during fresh grief or an altered state; deep inner-child work still waits while grief is fresh, as he approved in question 33."
   },
-  "version": "owner-amendments-2026-10-15-r11"
+  "version": "owner-amendments-2026-10-16-r12"
 }
 ```

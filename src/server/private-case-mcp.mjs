@@ -241,7 +241,7 @@ const PROTOCOL_TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_therapy_protocol",
     title: "Load InnerSignal therapy protocol",
-    description: "Call before any InnerSignal therapy response (inner-child, younger-self, or self-relationship work). Returns the complete current therapy instructions and every reference file, including the therapy map, with version and hashes.",
+    description: "Call before any InnerSignal therapy response (inner-child, younger-self, reparenting, or self-relationship work), including advice to a supervisor about that work or a review of case records or the person's own writing for it. Returns the complete current therapy instructions and every reference file, including the therapy map, with version and hashes.",
     inputSchema: { type: "object", additionalProperties: false, properties: {} },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }
@@ -249,7 +249,7 @@ const PROTOCOL_TOOL_DEFINITIONS = Object.freeze([
 const PROTOCOL_TOOLS = new Set(PROTOCOL_TOOL_DEFINITIONS.map((tool) => tool.name));
 
 const THERAPY_INSTRUCTIONS = [
-  "InnerSignal. Before any inner-child, younger-self, or self-relationship therapy response, call load_therapy_protocol and follow its instructions and files; do not mention the map to the user.",
+  "InnerSignal. Before any inner-child, younger-self, reparenting, or self-relationship therapy response, including advice to a supervisor about that work or a review of case records or the person's own writing for it, call load_therapy_protocol and follow its instructions and files; do not mention the map to the user.",
   "If the protocol cannot be loaded, say that InnerSignal's therapy protocol is unavailable right now instead of improvising it from memory."
 ];
 const AUTHORIZATION_INSTRUCTION = "Authorization is transport-owned; never put bearer tokens or key material in tool arguments.";
