@@ -19,6 +19,7 @@ import {
   projectCaseStateForInspection,
   validateCaseState
 } from "../src/case-state/longitudinal-state.mjs";
+import { durableCaseContextBlock } from "../src/prompts/common.mjs";
 import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateCaseOrchestrator } from "../src/supervisor/private-case-orchestration.mjs";
 
@@ -86,7 +87,12 @@ test("a record without a plan stays valid and unchanged; the plan is an optional
   // A later patch that doesn't name the plan keeps it.
   const later = applyCaseStatePatch(after, { support_mode_preference: "mixed" });
   assert.deepEqual(later.roadmap, roadmap);
-  assert.throws(() => applyCaseStatePatch(before, { roadmap: { ...roadmap, version: "case-roadmap-v0" } }), /roadmap\.version is invalid/u);
+  // A plan this version can't read never makes the case unreadable: the state keeps it, the plan view says it is unavailable.
+  const unreadable = applyCaseStatePatch(before, { roadmap: { ...roadmap, version: "case-roadmap-v9" } });
+  assert.deepEqual(validateCaseState(structuredClone(unreadable)).roadmap.version, "case-roadmap-v9");
+  assert.deepEqual([projectCasePlan(unreadable).status, projectCasePlan(unreadable).problem], ["unavailable", "ROADMAP_VERSION_UNKNOWN"]);
+  assert.throws(() => applyRoadmapDecision(unreadable.roadmap, CASE_A_TRACK), { code: "ROADMAP_VERSION_UNKNOWN" });
+  assert.throws(() => applyCaseStatePatch(before, { roadmap: { goals: [] } }), /roadmap\.version is invalid/u);
 });
 
 test("a goal keeps the source of its priority, with agreement, ranks and history", () => {
@@ -215,7 +221,8 @@ test("the plan view says what is primary, what is being worked on now, what wait
   assert.deepEqual(plan.waiting.map((goal) => [goal.id, goal.why]), [["goal:family-visit", "She wants to wait until after the holidays."]]);
   assert.deepEqual(plan.priorities_change_when.map((entry) => entry.goal_id), ["goal:felt-safety", "goal:back-pain-care"]);
   assert.deepEqual(plan.sources, { client: 4, authorized_plan: 1, provisional: 0 });
-  assert.deepEqual(plan.safety, { ordinary_order_suspended: false, reasons: [] });
+  assert.deepEqual([plan.safety.ordinary_order_suspended, plan.safety.reasons], [false, []]);
+  assert.match(plan.safety.note, /comes before this order while it lasts, whether or not it is recorded here/u);
 });
 
 test("the current step is what the client or an authorized plan set; goals under a waiting goal are held, not current", () => {
@@ -236,17 +243,159 @@ test("the current step is what the client or an authorized plan set; goals under
   assert.deepEqual(plan.waiting.map((goal) => goal.id), ["goal:everyday-protection"]);
 });
 
-test("once the replay list is full, a decision dated before the oldest kept one is refused, not applied twice", () => {
+test("decisions come in time order with exact times; a replay list beyond its bound can't let an old decision in again", () => {
   let roadmap = planA();
-  for (let index = 0; index < 100; index += 1) {
+  for (let index = 0; index < 101; index += 1) {
     roadmap = applyRoadmapDecision(roadmap, { decision_id: `safety-${index}`, source: "authorized_plan", at: new Date(Date.UTC(2026, 9, 18, 0, index)).toISOString(), evidence_refs: [],
       changes: [{ op: "safety_override", reason: index % 2 ? null : "Synthetic safety reason." }] });
   }
   assert.equal(roadmap.applied_decisions.length, 100);
-  assert.equal(roadmap.applied_decisions[0].decision_id, "safety-0");
-  assert.throws(() => applyRoadmapDecision(roadmap, decision("plan-a-old", "authorized_plan", 30, [{ op: "safety_override", reason: null }])), { code: "ROADMAP_DECISION_TOO_OLD" });
+  assert.equal(roadmap.applied_decisions[0].decision_id, "safety-1", "the oldest kept decision is dropped first");
+  // safety-0 is no longer in the list, and it is dated before the plan's last change, so it is refused, not applied again.
+  assert.throws(() => applyRoadmapDecision(roadmap, { decision_id: "safety-0", source: "authorized_plan", at: new Date(Date.UTC(2026, 9, 18, 0, 0)).toISOString(), evidence_refs: [],
+    changes: [{ op: "safety_override", reason: "Synthetic safety reason." }] }), { code: "ROADMAP_DECISION_OUT_OF_ORDER" });
   const kept = roadmap.applied_decisions.at(-1);
-  assert.deepEqual(applyRoadmapDecision(roadmap, { decision_id: kept.decision_id, source: "authorized_plan", at: kept.at, evidence_refs: [], changes: [{ op: "safety_override", reason: null }] }), roadmap);
+  assert.equal(kept.decision_id, "safety-100");
+  assert.deepEqual(applyRoadmapDecision(roadmap, { decision_id: kept.decision_id, source: "authorized_plan", at: kept.at, evidence_refs: [], changes: [{ op: "safety_override", reason: "Synthetic safety reason." }] }), roadmap);
+  // Only exact UTC times; and with a clock, nothing dated more than a day ahead.
+  for (const at of ["0", "2026", "December 17, 1995 03:24:00", "2026-10-18T12:00:00+02:00"]) {
+    assert.throws(() => applyRoadmapDecision(planA(), { ...CASE_A_TRACK, decision_id: "plan-a-time", at }), /must be an ISO 8601 UTC time/u, at);
+  }
+  assert.throws(() => applyRoadmapDecision(planA(), decision("plan-a-future", "authorized_plan", 30, [{ op: "safety_override", reason: null }]), { now: AT(0).replace("12:00", "10:00").replace("2026-10-17", "2026-10-15") }),
+    { code: "ROADMAP_DECISION_IN_FUTURE" });
+});
+
+// The independent review's attacks on change B, each now refused (issue #172).
+test("ranks stay 1 to n, so no source can slip a goal ahead of one it may not move through a gap", () => {
+  const steps = applyRoadmapDecision(planA(), decision("plan-r-1", "client", 3, [
+    { op: "add", goal: { id: "goal:second-step", kind: "actionable_step", parent_id: "goal:everyday-protection", title: "A second step she chose" } }
+  ]));
+  const completed = applyRoadmapDecision(steps, decision("plan-r-2", "client", 4, [{ op: "update", goal_id: "goal:weekly-refusal", set: { status: "completed" } }]));
+  assert.equal(completed.goals.find((goal) => goal.id === "goal:second-step").rank, 1, "the gap closes");
+  for (const source of ["provisional", "authorized_plan"]) {
+    const added = applyRoadmapDecision(completed, decision(`plan-r-3-${source}`, source, 5, [
+      { op: "add", goal: { id: "goal:slipped-in", kind: "actionable_step", parent_id: "goal:everyday-protection", title: "A step from elsewhere" } }
+    ]));
+    assert.equal(added.goals.find((goal) => goal.id === "goal:slipped-in").rank, 2);
+    assert.throws(() => applyRoadmapDecision(added, decision(`plan-r-4-${source}`, source, 6, [
+      { op: "order", parent_id: "goal:everyday-protection", goal_ids: ["goal:slipped-in", "goal:second-step"] }
+    ])), { code: "ROADMAP_CHANGE_NOT_ALLOWED" });
+  }
+  // The same for primary aims: a model's aim can't go ahead of the client's once the client's first aim is finished.
+  const aims = applyRoadmapDecision(planA(), decision("plan-r-5", "client", 3, [
+    { op: "add", goal: { id: "goal:second-aim", kind: "primary_aim", title: "A second aim she chose" } },
+    { op: "update", goal_id: "goal:felt-safety", set: { status: "completed" } }
+  ]));
+  assert.throws(() => applyRoadmapDecision(aims, decision("plan-r-6", "provisional", 4, [
+    { op: "add", goal: { id: "goal:model-aim", kind: "primary_aim", title: "A model's aim" } },
+    { op: "order", parent_id: null, goal_ids: ["goal:model-aim", "goal:second-aim"] }
+  ])), { code: "ROADMAP_CHANGE_NOT_ALLOWED" });
+});
+
+test("a goal the client agreed to or declined is the client's: no other source rewrites, parks or reopens it", () => {
+  const proposed = applyRoadmapDecision(planA(), decision("plan-g-1", "provisional", 3, [
+    { op: "add", goal: { id: "goal:evening-routine", kind: "goal_within", parent_id: "goal:felt-safety", title: "A steadier evening routine" } },
+    { op: "add", goal: { id: "goal:family-call", kind: "goal_within", parent_id: "goal:felt-safety", title: "Call her sister weekly", status: "parked", status_reason: "Proposed for later." } }
+  ]));
+  const answered = applyRoadmapDecision(proposed, decision("plan-g-2", "client", 4, [
+    { op: "update", goal_id: "goal:evening-routine", set: { client_agreement: "agreed" } },
+    { op: "update", goal_id: "goal:family-call", set: { client_agreement: "declined" } }
+  ]));
+  const routine = answered.goals.find((goal) => goal.id === "goal:evening-routine");
+  assert.deepEqual([routine.priority_source, routine.client_agreement], ["client", "agreed"]);
+  assert.deepEqual(routine.history.slice(-2).map((entry) => [entry.field, entry.from, entry.to, entry.refs]),
+    [["client_agreement", "not_asked", "agreed", CLIENT_TURN], ["priority_source", "provisional", "client", CLIENT_TURN]]);
+  for (const [source, set] of [["provisional", { title: "A different routine" }], ["provisional", { status: "parked", status_reason: "Synthetic." }],
+    ["provisional", { client_agreement: "unknown" }], ["authorized_plan", { title: "A different routine" }], ["authorized_plan", { review_condition: "Synthetic." }]]) {
+    assert.throws(() => applyRoadmapDecision(answered, decision("plan-g-3", source, 5, [{ op: "update", goal_id: "goal:evening-routine", set }])), { code: "ROADMAP_CHANGE_NOT_ALLOWED" }, JSON.stringify(set));
+  }
+  // A declined goal stays declined until the client agrees again, whoever first proposed it.
+  for (const source of ["provisional", "authorized_plan"]) {
+    assert.throws(() => applyRoadmapDecision(answered, decision("plan-g-4", source, 5, [
+      { op: "update", goal_id: "goal:family-call", set: { client_agreement: "not_asked", status: "active" } }
+    ])), { code: "ROADMAP_CHANGE_NOT_ALLOWED" });
+    // Nor is it offered again under another id.
+    assert.throws(() => applyRoadmapDecision(answered, decision("plan-g-5", source, 5, [
+      { op: "add", goal: { id: "goal:family-call-again", kind: "goal_within", parent_id: "goal:felt-safety", title: "Call her sister, weekly!" } }
+    ])), { code: "ROADMAP_CHANGE_NOT_ALLOWED", message: /declined a goal with this title/u });
+  }
+});
+
+test("histories keep the record of decisions: one update per goal per decision, unchanged notes write nothing, notes go first", () => {
+  assert.throws(() => applyRoadmapDecision(planA(), decision("plan-h-1", "authorized_plan", 3, [
+    { op: "update", goal_id: "goal:weekly-refusal", set: { uncertainty: "One." } },
+    { op: "update", goal_id: "goal:weekly-refusal", set: { uncertainty: "Two." } }
+  ])), /at most once/u);
+  let roadmap = applyRoadmapDecision(planA(), decision("plan-h-2", "client", 3, [
+    { op: "add", goal: { id: "goal:second-step", kind: "actionable_step", parent_id: "goal:everyday-protection", title: "A second step she chose" } },
+    { op: "order", parent_id: "goal:everyday-protection", goal_ids: ["goal:second-step", "goal:weekly-refusal"] }
+  ]));
+  const unchanged = applyRoadmapDecision(roadmap, decision("plan-h-3", "authorized_plan", 4, [{ op: "update", goal_id: "goal:weekly-refusal", set: { expected_progress: "She reports a refusal and how it felt." } }]));
+  assert.deepEqual(unchanged.goals.find((goal) => goal.id === "goal:weekly-refusal").history, roadmap.goals.find((goal) => goal.id === "goal:weekly-refusal").history);
+  for (let index = 0; index < 45; index += 1) {
+    roadmap = applyRoadmapDecision(roadmap, { decision_id: `plan-h-note-${index}`, source: "authorized_plan", at: new Date(Date.UTC(2026, 9, 18, 0, index)).toISOString(), evidence_refs: [],
+      changes: [{ op: "update", goal_id: "goal:weekly-refusal", set: { uncertainty: `Synthetic note ${index}.` } }] });
+  }
+  const step = roadmap.goals.find((goal) => goal.id === "goal:weekly-refusal");
+  assert.equal(step.history.length, 40);
+  assert.ok(step.history_dropped > 0);
+  assert.deepEqual(step.history.filter((entry) => entry.field !== "notes").map((entry) => entry.field), ["created", "rank"], "the client's own decisions survive");
+});
+
+test("an authorized plan only adds references to a client's goal and can't make a step the current one", () => {
+  assert.throws(() => applyRoadmapDecision(planA(), decision("plan-e-1", "authorized_plan", 3, [{ op: "update", goal_id: "goal:weekly-refusal", set: { evidence_refs: [] } }])),
+    { code: "ROADMAP_CHANGE_NOT_ALLOWED", message: /add evidence references/u });
+  const added = applyRoadmapDecision(planA(), decision("plan-e-2", "authorized_plan", 3, [{ op: "update", goal_id: "goal:weekly-refusal", set: { evidence_refs: [...CLIENT_TURN, "turn:synthetic-supervisor-1"] } }]));
+  assert.deepEqual(added.goals.find((goal) => goal.id === "goal:weekly-refusal").evidence_refs, [...CLIENT_TURN, "turn:synthetic-supervisor-1"]);
+  assert.throws(() => applyRoadmapDecision(planA(), decision("plan-e-3", "authorized_plan", 3, [{ op: "update", goal_id: "goal:weekly-refusal", set: { serves_episode_id: "episode:other" } }])),
+    { code: "ROADMAP_CHANGE_NOT_ALLOWED" });
+});
+
+test("the current step prefers what the client or an authorized plan set; a plan of proposals only says so", () => {
+  // A model's step linked to the operational episode doesn't push out the client's first step.
+  const linkedProposal = applyRoadmapDecision(planA(), decision("plan-n-1", "provisional", 3, [
+    { op: "add", goal: { id: "goal:proposed-linked", kind: "actionable_step", parent_id: "goal:felt-safety", title: "A proposed step", serves_episode_id: "episode:acute" } },
+    { op: "add", goal: { id: "goal:proposed-track", kind: "independent_track", title: "A proposed support group", serves_episode_id: "episode:acute" } }
+  ]));
+  const state = applyCaseStatePatch(caseState(), { roadmap: linkedProposal, current_episode: episode("episode:acute", "An acute evening", "IC.ACUTE_SETTLING") });
+  const plan = projectCasePlan(state);
+  assert.equal(plan.now.step.id, "goal:weekly-refusal");
+  assert.equal(plan.now.episode_link, "linked_to_a_proposal");
+  const onlyProposals = applyRoadmapDecision(null, decision("plan-n-2", "provisional", 1, [
+    { op: "add", goal: { id: "goal:model-aim", kind: "primary_aim", title: "A model's aim" } },
+    { op: "add", goal: { id: "goal:model-step", kind: "actionable_step", parent_id: "goal:model-aim", title: "A model's step" } }
+  ]));
+  const proposed = projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: onlyProposals }));
+  assert.equal(proposed.status, "proposals_only");
+  assert.match(proposed.note, /nothing here is a decision, and the primary aim is the client's to choose/u);
+  const finished = applyRoadmapDecision(onlyProposals, decision("plan-n-3", "provisional", 2, [{ op: "update", goal_id: "goal:model-step", set: { status: "completed" } }]));
+  assert.deepEqual(projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: finished })).finished.map((goal) => [goal.id, goal.priority_source]), [["goal:model-step", "provisional"]]);
+});
+
+test("a goal is replaced by superseding it and adding another; kind and parent never change", () => {
+  const replaced = applyRoadmapDecision(planA(), decision("plan-s-1", "client", 3, [
+    { op: "update", goal_id: "goal:weekly-refusal", set: { status: "superseded", status_reason: "Replaced by a smaller step she chose." } },
+    { op: "add", goal: { id: "goal:smaller-refusal", kind: "actionable_step", parent_id: "goal:everyday-protection", title: "One small refusal every two weeks" } }
+  ]));
+  const plan = projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: replaced }));
+  assert.equal(plan.now.step.id, "goal:smaller-refusal");
+  assert.deepEqual(plan.finished.map((goal) => [goal.id, goal.status, goal.why]), [["goal:weekly-refusal", "superseded", "Replaced by a smaller step she chose."]]);
+  assert.throws(() => applyRoadmapDecision(replaced, decision("plan-s-2", "client", 4, [{ op: "update", goal_id: "goal:smaller-refusal", set: { kind: "goal_within" } }])), /cannot be changed; supersede the goal/u);
+});
+
+test("a stored plan beyond this version's limits is brought within them on read, and the case stays readable either way", () => {
+  const roadmap = planA();
+  const stretched = structuredClone(roadmap);
+  stretched.applied_decisions = Array.from({ length: 151 }, (_, index) => ({ ...roadmap.applied_decisions[0], decision_id: `old-${index}` }));
+  const state = applyCaseStatePatch(caseState(), { roadmap: stretched });
+  assert.equal(validateCaseState(structuredClone(state)).roadmap.applied_decisions.length, 151, "the stored plan is kept as stored");
+  const plan = projectCasePlan(state);
+  assert.equal(plan.status, "recorded");
+  const next = applyRoadmapDecision(stretched, decision("plan-m-1", "authorized_plan", 30, [{ op: "safety_override", reason: null }]));
+  assert.equal(next.applied_decisions.length, 100);
+  assert.equal(next.applied_decisions.at(-1).decision_id, "plan-m-1");
+  const broken = applyCaseStatePatch(caseState(), { roadmap: { ...roadmap, goals: [{ ...roadmap.goals[0], kind: "unknown_kind" }] } });
+  assert.deepEqual([projectCasePlan(broken).status, projectCasePlan(broken).problem], ["unavailable", "ROADMAP_UNREADABLE"]);
 });
 
 test("an acute event takes the operational episode without replacing the long-term aim", () => {
@@ -271,7 +420,8 @@ test("a safety need or imminent danger suspends the ordinary order without rewri
   const overridden = applyRoadmapDecision(planA(), decision("plan-a-14", "authorized_plan", 14, [{ op: "safety_override", reason: "Tonight's housing safety comes first." }]));
   assert.deepEqual(overridden.goals, planA().goals);
   const plan = projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: overridden }));
-  assert.deepEqual(plan.safety, { ordinary_order_suspended: true, reasons: ["Tonight's housing safety comes first."] });
+  assert.deepEqual([plan.safety.ordinary_order_suspended, plan.safety.reasons, plan.safety.set_by], [true, ["Tonight's housing safety comes first."], "authorized_plan"]);
+  assert.equal(plan.now.waits_for_safety, true, "the current step says it waits while the order is suspended");
   const cleared = applyRoadmapDecision(overridden, decision("plan-a-15", "client", 15, [{ op: "safety_override", reason: null }]));
   assert.equal(projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: cleared })).safety.ordinary_order_suspended, false);
   const danger = { ...applyCaseStatePatch(caseState(), { roadmap: planA() }), threat_pathway: { current: { level: "IMMINENT_OPERATIONAL_DANGER" } } };
@@ -298,6 +448,16 @@ test("without a recorded plan, a session gets a reconstruction labeled a proposa
   assert.deepEqual(plan.high_relevance_items.map((entry) => entry.id), ["evidence:freeze"]);
 });
 
+test("the app's prompts show a stored plan as its view, not its histories; a case without one shows as before", () => {
+  const without = caseState();
+  const plain = durableCaseContextBlock({ durableCaseState: without });
+  assert.equal(plain.includes("case_plan"), false);
+  const shown = durableCaseContextBlock({ durableCaseState: applyCaseStatePatch(without, { roadmap: planA() }) });
+  assert.match(shown, /"case_plan": \{\n\s+"status": "recorded"/u);
+  for (const stored of ["applied_decisions", "\"history\"", "digest"]) assert.equal(shown.includes(stored), false, stored);
+  assert.ok(shown.includes("goal:weekly-refusal"));
+});
+
 test("two cases keep their own plans and client priorities", () => {
   const caseB = applyRoadmapDecision(null, decision("plan-b-1", "client", 1, [
     { op: "add", goal: { id: "goal:grieve-at-own-pace", kind: "primary_aim", title: "Grieve her father at her own pace" } },
@@ -309,7 +469,8 @@ test("two cases keep their own plans and client priorities", () => {
   assert.deepEqual(projectCasePlan(stateB).primary.map((goal) => goal.id), ["goal:grieve-at-own-pace", "goal:felt-safety"]);
   const reordered = applyRoadmapDecision(caseB, decision("plan-b-2", "client", 2, [{ op: "order", parent_id: null, goal_ids: ["goal:felt-safety", "goal:grieve-at-own-pace"] }]));
   assert.deepEqual(projectCasePlan(applyCaseStatePatch(stateB, { roadmap: reordered })).primary.map((goal) => goal.id), ["goal:felt-safety", "goal:grieve-at-own-pace"]);
-  assert.deepEqual(stateA.roadmap, planA(), "case A is untouched");
+  // Case A's own plan and its order are its own; nothing case B records reaches it.
+  assert.deepEqual(projectCasePlan(stateA).within.map((goal) => goal.id), ["goal:everyday-protection", "goal:weekly-refusal"]);
 });
 
 test("known versus new: a repeated theme matches the record closely; a new lever does not", () => {
@@ -336,6 +497,15 @@ test("known versus new: a repeated theme matches the record closely; a new lever
   assert.equal(goal.matches[0].kind, "roadmap_goal");
   assert.equal(goal.matches[0].id, "goal:weekly-refusal");
   assert.equal(goal.matches[0].priority_source, "client");
+  // What the record no longer holds as current is shown, never counted as holding the point; one shared word says too little.
+  const retracted = applyCaseStatePatch(state, { items: [item("evidence:freeze", "She freezes before saying no to her older brother.", { still_current: false })] });
+  const [stale] = rankKnownVersusNew(retracted, ["She freezes before refusing her older brother."]);
+  assert.equal(stale.matches[0].id, "evidence:freeze");
+  assert.equal(stale.matches[0].current, false);
+  assert.equal(stale.record_holds_close_match, false);
+  const [oneWord] = rankKnownVersusNew(state, ["brother"]);
+  assert.equal(oneWord.matches[0].id, "evidence:freeze");
+  assert.equal(oneWord.record_holds_close_match, false);
   assert.throws(() => rankKnownVersusNew(state, []), { code: "KNOWN_VS_NEW_INPUT_INVALID" });
   assert.throws(() => rankKnownVersusNew(state, ["x".repeat(601)]), { code: "KNOWN_VS_NEW_INPUT_INVALID" });
 });
@@ -376,6 +546,8 @@ test("the plan lives in the encrypted record: decisions, replay, refusal across 
   const authB = { bearerToken: TOKEN_READ };
   const service = await open();
   await service.saveCaseState("synthetic-case-a", caseState("synthetic-case-a"), authA);
+  // The client's own words the client decisions point to.
+  await service.appendTranscriptTurn("synthetic-case-a", { id: CLIENT_TURN[0], exchange_id: "turn", role: "user", text: "Synthetic client words.", at: AT(0), episode_id: null }, authA);
   await service.saveCaseState("synthetic-case-b", caseState("synthetic-case-b"), authB);
 
   const first = await service.recordRoadmapDecision("synthetic-case-a", CASE_A_PLAN, authA);
@@ -412,3 +584,31 @@ test("the plan lives in the encrypted record: decisions, replay, refusal across 
   const checked = await restarted.checkCaseKnownVersusNew("synthetic-case-a", { points: ["one small refusal each week"], limit: 2 }, authA);
   assert.equal(checked.points[0].matches[0].id, "goal:weekly-refusal");
 });
+
+test("the plan has one writer: a whole-state write from an earlier read or another scope keeps the stored plan", async (t) => {
+  const { open } = await environment(t);
+  const authA = { bearerToken: TOKEN_A };
+  const service = await open();
+  await service.saveCaseState("synthetic-case-a", caseState("synthetic-case-a"), authA);
+  await service.appendTranscriptTurn("synthetic-case-a", { id: CLIENT_TURN[0], exchange_id: "turn", role: "user", text: "Synthetic client words.", at: AT(0), episode_id: null }, authA);
+  await service.saveCaseDiff("synthetic-case-a", { schema_version: 1, additions: ["evidence:synthetic"], current_episode_changed: true }, { turnId: "T1-user", diffId: "diff:T1" }, authA);
+  // A runtime reads the state, a decision is recorded, then the runtime writes the state it computed from its earlier read.
+  const earlierRead = await service.getCaseState("synthetic-case-a", authA);
+  await service.recordRoadmapDecision("synthetic-case-a", CASE_A_PLAN, authA);
+  await service.saveCaseState("synthetic-case-a", earlierRead, authA);
+  assert.deepEqual((await service.getCaseState("synthetic-case-a", authA)).roadmap, applyRoadmapDecision(null, CASE_A_PLAN), "the decision survives");
+  // A write that carries its own plan can't replace the stored one.
+  const forged = structuredClone(earlierRead);
+  forged.roadmap = applyRoadmapDecision(null, { ...CASE_A_TRACK, decision_id: "forged-1", source: "client", evidence_refs: CLIENT_TURN });
+  await service.saveCaseState("synthetic-case-a", forged, authA);
+  assert.deepEqual((await service.getCaseState("synthetic-case-a", authA)).roadmap, applyRoadmapDecision(null, CASE_A_PLAN));
+  // A plan decision joins the diff history without displacing the last turn's diff.
+  assert.equal((await service.getCaseDiff("synthetic-case-a", {}, authA)).id, "diff:T1", "the last diff is the last turn's");
+  assert.equal((await service.getCaseDiff("synthetic-case-a", { diffId: "roadmap:plan-a-1" }, authA)).diff.roadmap_changed, true, "the decision's diff is found by its id");
+  const context = await service.loadCaseContext("synthetic-case-a", authA, { requireContinuationSafe: false, requireAuditScope: true });
+  assert.deepEqual(context.last_state_diff.diff.additions, ["evidence:synthetic"], "the last turn's diff is still the case's last diff");
+  // A client decision must point to the client's own words in this case.
+  await assert.rejects(() => service.recordRoadmapDecision("synthetic-case-a", decision("plan-w-1", "client", 3, [{ op: "update", goal_id: "goal:weekly-refusal", set: { status: "completed" } }], { evidence_refs: ["turn:not-in-this-case"] }), authA),
+    { code: "ROADMAP_CLIENT_EVIDENCE_UNRESOLVED" });
+});
+
