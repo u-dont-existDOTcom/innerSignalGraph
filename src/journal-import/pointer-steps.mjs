@@ -922,3 +922,40 @@ export async function runPointerSearchCheck({ quoteGeneration, reference, search
     }]))
   });
 }
+
+// A ratio's estimate and the lower bound the floors read, or null when it has no questions.
+const ratioCounts = (bound) => (bound === null ? null : Object.freeze({ estimate: bound.estimate, lower_bound: bound.lower_bound }));
+
+/**
+ * The retrieval measurement of a pass's kept tags built again on another generation of the same quotes (`pointer-rebase`,
+ * issue #168): a run measured on version 2 of the quote index, carried by unit id onto the version published now. The
+ * run's reference questions, which go by unit id, are searched there with tags and with words only (`search({ query,
+ * matchTags })`, its first POINTER_RECALL_TOP results as passage IDs), and give the same design-weighted recall, critical
+ * recall, gain and event coverage the measurement reports (measurePointerRecall). Nothing is sent: the tags are the
+ * pass's, already checked, so their precision stays what the run's measurement found. Content-free counts only.
+ */
+export async function runPointerRebaseMeasure({ quoteGeneration, pass, reference, search, rules = 3 } = {}) {
+  invariant(POINTER_RULES.includes(rules), "POINTER_STEP_INPUT_INVALID");
+  invariant(quoteGeneration && typeof quoteGeneration.generation === "string" && typeof search === "function"
+    && reference && Array.isArray(reference.units) && pass && Array.isArray(pass.checked), "POINTER_STEP_INPUT_INVALID");
+  const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
+  // The quotes with a kept event tag, as the build indexes them, for event coverage.
+  const indexes = pointerTagIndexes({ batches: pass.checked.map((result) => ({ units: result.unit_ids.map((unitId) => input.unitsById.get(unitId)),
+    kept: result.kept, passageIdForUnit: input.passageIdForUnit })) });
+  const eventTagged = new Set(indexes.pairs.filter((pair) => pair.kind === "event").map((pair) => pair.unit_id));
+  const searchedUnits = reference.units.filter((unit) => unit.status === "complete" || unit.status === "marked");
+  const foundWithTags = await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: true });
+  const foundWordsOnly = await foundQuestions({ units: searchedUnits, passageIdForUnit: input.passageIdForUnit, search, matchTags: false });
+  const recall = measurePointerRecall({ reference, excludeUnmeasured: rules === 3, foundWithTags, foundWordsOnly, eventTaggedUnitIds: eventTagged });
+  return deepFreeze({
+    questions: recall.units.reduce((total, unit) => total + unit.questions, 0),
+    found_with_tags: recall.units.reduce((total, unit) => total + unit.found_with_tags, 0),
+    found_words_only: recall.units.reduce((total, unit) => total + unit.found_words_only, 0),
+    recall: ratioCounts(recall.recall),
+    recall_words_only: ratioCounts(recall.words_only),
+    critical_recall_estimate: recall.critical_recall_estimate,
+    critical_recall_words_only_estimate: recall.critical_recall_words_only_estimate,
+    gain: ratioCounts(recall.gain),
+    event_coverage: ratioCounts(recall.event_coverage)
+  });
+}
