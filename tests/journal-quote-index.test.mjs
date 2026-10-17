@@ -931,6 +931,9 @@ test("build-quotes stages the quote corpus and publish-quotes publishes it besid
   const tool = listed.result.tools.find(({ name }) => name === "find_journal_quotes");
   assert.ok(tool && tool.annotations.readOnlyHint === true && tool.annotations.destructiveHint === false);
   assert.match(tool.description, /never as something that happened/u);
+  // An inferred year may come from the dates after a quote, before the journal's first date (Codex, P2), and the tool says so.
+  assert.match(tool.description, /year_inferred had no year written, and took its year from the dated entries around it \(before it, or after it when it comes before the journal's first date\)/u);
+  assert.doesNotMatch(tool.description, /took its year from the entries before it/u);
   // The tool says how words match, and the result says which way it ranked: the published generation is version 3.
   assert.match(tool.description, /coverage\.ranking says how: "word_forms" matches a word in its other forms/u);
   assert.match(tool.inputSchema.properties.query.description, /"word_forms" a word's regular forms and accents match on their own/u);

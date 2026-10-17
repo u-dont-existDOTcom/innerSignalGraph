@@ -354,7 +354,7 @@ const KNOWN_PRECISIONS = Object.freeze(["instant", "day", "month", "year", "inte
 
 // The date a quote was written under (`quote_meta`), as an episode's authored time, or the unknown time when it has
 // none. A known time must name its evidence for the graph to accept it: the quote it dates. A date whose year was taken
-// from the entries before it is `relative_supported`, not `explicit`, and so is a range a quote was given from the dates
+// from the dated entries around it is `relative_supported`, not `explicit`, and so is a range a quote was given from the dates
 // around it (versions 3 and 4 of the quote index, `between`): no date line above it gives it, so it is an interval between
 // two. In version 4 such a range may be open at one end (a null `from` before the journal's first anchor, a null `to` after
 // its last), which the timeline reads as the unbounded past or future.

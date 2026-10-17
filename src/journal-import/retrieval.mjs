@@ -583,11 +583,11 @@ export async function openPrivateJournalGraph({
    * `forms_bm25_coordination`; the cursor's sort names it. `terms_ranked` and `matched_terms` still name the query's own words,
    * and `coverage.ranking` says which ranking a result has ("word_forms" here, "exact_words" otherwise).
    * A time window keeps the quotes written under a
-   * date line inside it, and undated ones only when asked to. A page stops at its quote limit or byte
+   * date line inside it, or with a range that overlaps it, and undated ones only when asked to. A page stops at its quote limit or byte
    * budget, and always holds at least one quote when any match. Later pages come from a cursor bound,
    * like search's, to the snapshot, query and filters, holding the position in the ranking where the
    * next page starts. Each quote comes with its page, the date it was written under with that date's
-   * line (`year_inferred` when the line gave no year and it came from the entries before; `ambiguous`
+   * line (`year_inferred` when the line gave no year and it came from the dated entries around it; `ambiguous`
    * when the numbers could be read either way; `between` with the `date_line_after` when the quote sits between two dates
    * and was written some time from the first to the second, precision `interval`), and the wording cues found in it (`quoteCues`). Works on
    * any generation. On a
