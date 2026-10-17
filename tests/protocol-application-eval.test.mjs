@@ -15,6 +15,7 @@ import {
   PROTOCOL_APPLICATION_CRITERION_IDS,
   answerPrompt,
   calibrationGaps,
+  judgeSchema,
   connectorSource,
   connectorTranscript,
   judgePrompt,
@@ -104,6 +105,7 @@ test("the model is asked with the connector's own results: the protocol exactly 
 
   const { system, user } = answerPrompt(spec, transcript);
   assert.ok(user.includes(served), "the prompt holds the served protocol unchanged");
+  assert.match(system, /Return only a JSON object of the form \{"reply": "\.\.\."\}/u, "the answer's JSON contract is in the prompt too");
   assert.ok(user.startsWith(`SUPERVISOR\n${spec.question}\n`), "the supervisor's question comes first, as in a chat");
   assert.ok(system.includes(transcript.instructions) && /call load_therapy_protocol/u.test(transcript.instructions), "the server's own instructions");
   for (const name of ["load_therapy_protocol", "load_case_context", "find_journal_quotes"]) assert.ok(system.includes(`- ${name}: `), name);
@@ -167,9 +169,16 @@ test("the judge's answer is read strictly: every rule once, and a fail must quot
     { id: "frame_consent", verdict: "pass", evidence: [], reason: "" }
   ] }).problems.sort(), ["BAD_VERDICT:services_stay_separate", "DUPLICATE_RULE:protective_acts_are_reparenting", "MISSING_RULE:services_stay_separate", "UNKNOWN_RULE:frame_consent"].sort());
   assert.deepEqual(parseJudgment(spec, reply, "not json").problems, ["NOT_JSON"]);
+  // Codex on #175 (P1): an API provider enforces no schema, so the prompt carries the JSON contract, and a judgment wrapped in a
+  // fence or a sentence is still read.
+  const verdicts = { criteria: [{ id: "protective_acts_are_reparenting", verdict: "pass", evidence: [], reason: "" }, { id: "services_stay_separate", verdict: "pass", evidence: [], reason: "" }] };
+  for (const wrapped of [`\`\`\`json\n${JSON.stringify(verdicts)}\n\`\`\``, `Here is the grade:\n${JSON.stringify(verdicts, null, 2)}\nDone.`]) {
+    assert.equal(parseJudgment(spec, reply, wrapped).valid, true, wrapped.slice(0, 20));
+  }
   // The judge sees the rules and the case's grading facts, never the protocol under test.
   const { system, user } = judgePrompt(spec, reply);
   assert.match(system, /breaks it anywhere, even once/u);
+  assert.ok(system.includes(`It must validate against this JSON Schema: ${JSON.stringify(judgeSchema(spec))}`), "the judge's JSON contract is in the prompt");
   assert.ok(user.includes(reply) && user.includes("RULE protective_acts_are_reparenting") && !user.includes("RULE frame_consent"));
   assert.doesNotMatch(user, /<<<BEGIN instructions/u);
 });
@@ -286,11 +295,11 @@ test("the command runs end to end in mock mode, keeps its report private and exi
       [`${JUDGE_STAGE}:${spec.id}`]: verdictJson(verdicts, reply)
     }
   });
-  const run = (name, value) => {
+  const run = (name, value, extra = []) => {
     const fixturePath = path.join(dir, `${name}.json`);
     fs.writeFileSync(fixturePath, JSON.stringify(value));
     const out = path.join(dir, name);
-    const result = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "mock", "--fixture", fixturePath, "--case", spec.id, "--samples", "2", "--out", out], { cwd: root, encoding: "utf8", env: { ...process.env, INNER_SIGNAL_MODE: "" } });
+    const result = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "mock", "--fixture", fixturePath, "--case", spec.id, "--samples", "2", "--out", out, ...extra], { cwd: root, encoding: "utf8", env: { ...process.env, INNER_SIGNAL_MODE: "" } });
     return { result, report: JSON.parse(fs.readFileSync(path.join(out, "protocol-application-report.json"), "utf8")), mode: fs.statSync(path.join(out, "protocol-application-report.json")).mode & 0o777 };
   };
   const good = goodReply(spec.id);
@@ -307,6 +316,10 @@ test("the command runs end to end in mock mode, keeps its report private and exi
   const failed = run("fail", fixture(split, { protective_acts_are_reparenting: "fail", services_stay_separate: "pass" }));
   assert.equal(failed.result.status, 1, failed.result.stderr);
   assert.equal(failed.report.outcome, "fail");
+  // Codex on #175 (P2): without the check of the judge, a fail is no more definite than a pass.
+  const unchecked = run("fail-unchecked", fixture(split, { protective_acts_are_reparenting: "fail", services_stay_separate: "pass" }), ["--skip-calibration"]);
+  assert.equal(unchecked.result.status, 2, unchecked.result.stderr);
+  assert.equal(unchecked.report.outcome, "fail_unchecked_judge");
 
   // A connector that can't be loaded is a configuration error found before any model is called.
   const wrongRef = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "mock", "--fixture", path.join(dir, "pass.json"), "--git-ref", "no-such-ref-for-this-test", "--out", path.join(dir, "wrong-ref")], { cwd: root, encoding: "utf8", env: { ...process.env, INNER_SIGNAL_MODE: "" } });

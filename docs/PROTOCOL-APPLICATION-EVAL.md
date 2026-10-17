@@ -84,6 +84,8 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
 ```
 
 - `--mode` is required: a live run uses the owner's model usage, so it is never the default.
+- In API mode the providers enforce no output schema, so both prompts state the JSON they expect, and the judge's prompt
+  carries its JSON Schema.
 - `--case ID` (repeatable) runs some cases only. `--answer-model` and `--judge-model` override the configured models
   (`OPENAI_MODEL`, `ANTHROPIC_MODEL`). `--out DIR` sets where the report goes.
 - Size: an answer prompt is about 80 to 90 KB, roughly 20,000 to 25,000 input tokens, mostly the protocol. A judgment is
@@ -94,7 +96,7 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
     judgment with quotes and reasons, its signals, the models and the protocol's identity.
   - A summary of counts and rule ids goes to the terminal and `summary.txt`.
   - Exit status: 0 every reply passed; 1 a reply failed a rule; 2 inconclusive (an unusable reply or judgment, a judge
-    that misgraded a known reply, or a skipped judge check); 3 a usage or configuration error.
+    that misgraded a known reply, or a skipped judge check, whatever the grades); 3 a usage or configuration error.
 
 ## Privacy and limits
 

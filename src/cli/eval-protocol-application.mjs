@@ -37,8 +37,8 @@ const USAGE = `Usage: npm run eval:protocol-application -- --mode cli|api|mock [
   --fixture FILE           mock mode: the fixture of replies and judgments
   --out DIR                where the report goes (default: a new private temporary folder)
 
-Exit status: 0 every reply passed; 1 a reply failed a rule; 2 inconclusive (a judgment or reply was unusable, or the
-judge misgraded a known reply); 3 a usage or configuration error.`;
+Exit status: 0 every reply passed; 1 a reply failed a rule; 2 inconclusive (a judgment or reply was unusable, the
+judge misgraded a known reply, or the judge check was skipped); 3 a usage or configuration error.`;
 
 let agentHome = null;
 function fail(message) {
@@ -191,8 +191,13 @@ try {
     } else {
       report.application = await runProtocolApplication({ answerer, judge, cases, samples, source, log });
       report.outcome = report.application.outcome;
-      status = report.outcome === "pass" ? (report.calibration_skipped ? 2 : 0) : report.outcome === "fail" ? 1 : 2;
-      if (report.calibration_skipped && report.outcome === "pass") report.outcome = "pass_unchecked_judge";
+      status = report.outcome === "pass" ? 0 : report.outcome === "fail" ? 1 : 2;
+      // Without the check of the judge, no outcome is definite: a judge that fails every rule fails replies as surely as one
+      // that passes every rule passes them.
+      if (report.calibration_skipped) {
+        if (report.outcome !== "inconclusive") report.outcome = `${report.outcome}_unchecked_judge`;
+        status = 2;
+      }
     }
   } catch (error) {
     report.error = { message: error.message, code: error.code ?? null };
