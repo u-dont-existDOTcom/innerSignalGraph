@@ -22,7 +22,8 @@ const withPlan = applyCaseStatePatch(withoutPlan, {
 
 function service({ state, calls = [] }) {
   return Object.freeze({
-    async loadHandoff() { return { handoff_id: "handoff:synthetic", case_id: "synthetic-case-a", case_state: state }; },
+    // A handoff packet holds the state as `canonical_state`, as compiled in src/storage/private-case-handoff.mjs.
+    async loadHandoff() { return { handoff_id: "handoff:synthetic", case_id: "synthetic-case-a", canonical_state: state }; },
     async loadCaseContext() { return { case_id: "synthetic-case-a", case_state: state }; },
     async loadCaseContextByAlias() { return { case_id: "synthetic-case-a", case_state: state }; },
     async retrieveCaseEvidence() { throw new PrivateCaseAccessDeniedError(); },
