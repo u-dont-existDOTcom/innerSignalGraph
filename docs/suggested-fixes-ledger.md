@@ -115,3 +115,7 @@
 ## 2026-10-17: the person's own protective steps next to a service (issue #172, the owner's answer 43a, change D)
 
 - Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `8e4bf31`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct. This branch changes the served reparenting rule, an owner amendment (r14) and the projection. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C); nothing here adopts it. `2026-10-09-teaching-points-for-map-changes.md` is followed: the reader-facing part is added to the pending PGQ-038 (queue r11) with its cause. No new disposition.
+
+## 2026-10-17: the post-deploy audit's last-mile gaps (issue #172, change E)
+
+- Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `8264d0a`; root `AGENTS.md` unchanged): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct (last change `5815e96`). This branch changes connector results, the known-versus-new check's wording, the plan reconstruction and the protocol application test; no served rule, map or amendment. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C). `2026-10-09-teaching-points-for-map-changes.md` isn't triggered: no map or reader-facing rule changes. `2026-10-11-therapy-r6-coordinated-journal-release.md` stays adopted and live. No new disposition.

@@ -128,11 +128,13 @@ export function rankKnownVersusNew(state, points, { limit = KNOWN_VS_NEW_LIMITS.
       ...entry.detail
     }));
     const closest = Math.round(current.reduce((best, match) => Math.max(best, match.overlap), 0) * 100) / 100;
+    // Named for what it measures, words (it was `record_holds_close_match` until ChatGPT's post-deploy audit on #172 showed
+    // how easily false reads as "the record doesn't hold this": a paraphrase of an established point shares few words).
     return Object.freeze({
       point,
       content_terms: terms.length,
       closest_overlap: closest,
-      record_holds_close_match: close.length > 0,
+      close_word_match: close.length > 0,
       matches
     });
   }));

@@ -24,7 +24,7 @@ When the user supplies an opaque authorized private case ID, use `load_case_cont
 - `get_tracker_window` for descriptive longitudinal tracker data;
 - `get_journal_entries` for exact journal/dream entries without promoting them into settled facts;
 - `get_source_artifact` for an authorized exact source artifact;
-- `check_case_known_vs_new` before presenting a pattern, insight or recommendation as new: it shows where the record already holds it.
+- `check_case_known_vs_new` before presenting a pattern, insight or recommendation as new: it shows where the record holds a point in the same words. It matches words, not meaning, so a point it finds no close match for may still be in the record in other words; read the record before calling anything new.
 
 Do not call tools merely to collect everything. Prefer `load_handoff` as the normal one-call bootstrap, then retrieve only missing evidence that materially changes the current response.
 
@@ -32,7 +32,7 @@ Do not call tools merely to collect everything. Prefer `load_handoff` as the nor
 
 If authentication is required, let the host surface its ordinary connection/authorization flow. Do not ask the user to paste bearer tokens, credentials, keys, private locator databases, or secret material into chat.
 
-If the current host does not expose the required tool, authentication fails, access is denied, or the handoff is not continuation-safe, state that exact boundary. Do not silently substitute a summary, public fixture, stale memory, regenerated candidate, or another person's context.
+If the current host does not expose the required tool, authentication fails, access is denied, or the handoff is not continuation-safe, state that exact boundary. An opened case's `connector_tools` names what the connector offers now: a tool named there that this chat can't call means the chat's tool list is older than the connector, and a new chat will have it. Do not silently substitute a summary, public fixture, stale memory, regenerated candidate, or another person's context.
 
 ## Therapy continuation
 

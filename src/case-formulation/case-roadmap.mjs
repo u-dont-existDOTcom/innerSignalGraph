@@ -748,12 +748,26 @@ function recordedPlan(state, roadmap) {
   };
 }
 
-const RECONSTRUCTION_LIMITS = Object.freeze({ routes: 10, parked: 10, high_relevance: 15, statement: 400 });
+const RECONSTRUCTION_LIMITS = Object.freeze({ routes: 10, other_intervention_ids: 10, parked: 10, high_relevance: 15, statement: 400 });
+
+// What routes_tried leaves out (ChatGPT's post-deploy audit on #172): it lists only the routes this app recorded as selected,
+// so a case whose interventions came from older or imported records showed an empty list that read as "nothing tried". The
+// other entries are counted and named by id, never shown as routes: an entry may record a source's account or a model's
+// reading rather than a completed intervention.
+function routesNote(others) {
+  const base = "routes_tried lists only the routes this app recorded as selected; an empty list means none is recorded that way, not that nothing was tried.";
+  if (!others) return base;
+  return `${base} The record's intervention_history also holds ${others} other ${others === 1 ? "entry" : "entries"}, not read as routes here (other_intervention_ids, most recent first): read them before saying what has or hasn't been tried. An entry may record a source's account or a model's reading rather than a completed intervention.`;
+}
 
 function reconstruction(state) {
   const routes = new Map();
+  const others = [];
   state.intervention_history.forEach((item, index) => {
-    if (item.domain !== "intervention_route") return;
+    if (item.domain !== "intervention_route") {
+      others.push(item.id);
+      return;
+    }
     const key = item.statement;
     const entry = routes.get(key) ?? { statement: key.slice(0, RECONSTRUCTION_LIMITS.statement), times: 0, first_ref: item.source?.turn_id ?? item.source?.ref ?? null, last_ref: null, last_index: -1 };
     entry.times += 1;
@@ -776,6 +790,9 @@ function reconstruction(state) {
     now: { step: null, current_episode: episodeView(state.current_episode ?? null), episode_link: state.current_episode ? "unlinked" : "no_episode" },
     routes_tried: [...routes.values()].sort((left, right) => right.last_index - left.last_index).slice(0, RECONSTRUCTION_LIMITS.routes)
       .map(({ statement, times, first_ref, last_ref }) => ({ statement, times, first_ref, last_ref })),
+    other_intervention_entries: others.length,
+    other_intervention_ids: others.slice(-RECONSTRUCTION_LIMITS.other_intervention_ids).reverse(),
+    routes_note: routesNote(others.length),
     parked_questions: parked,
     high_relevance_items: highRelevance,
     safety: safetyOverride(state)

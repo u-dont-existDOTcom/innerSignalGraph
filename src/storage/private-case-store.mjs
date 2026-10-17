@@ -1116,7 +1116,7 @@ export function createEncryptedPrivateCaseStore({
       const record = await readRequired(caseId);
       return Object.freeze({
         case_id: caseId,
-        note: "Shared word forms, best first; not a judgment of meaning. Read the matches and say whether each point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When plan_problem is set, the case's stored plan couldn't be read and its goals are left out.",
+        note: "Shared word forms, best first; not a judgment of meaning. close_word_match false means no entry shares most of a point's words, not that the record lacks the point: it may hold it in other words. Read the matches, and the record's own items for the same meaning, then say whether each point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When plan_problem is set, the case's stored plan couldn't be read and its goals are left out.",
         points: rankKnownVersusNew(projectEvidenceAuthority(record.case_state), points, { limit }),
         plan_problem: readCaseRoadmap(record.case_state.roadmap ?? null).problem
       });

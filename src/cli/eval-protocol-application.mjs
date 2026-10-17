@@ -16,6 +16,7 @@ import {
   CODEX_ISOLATION_CONFIG,
   PROTOCOL_APPLICATION_VERSION,
   connectorSource,
+  connectorTranscripts,
   loadProtocolApplicationCalibration,
   loadProtocolApplicationCases,
   runJudgeCalibration,
@@ -179,11 +180,19 @@ try {
   await requireIsolation(judge);
   // The connector under test is loaded before any model is called, so a wrong --git-ref costs nothing.
   let source = null;
+  let transcripts = null;
   if (!values["calibration-only"]) {
     try {
       source = await connectorSource({ ref: values["git-ref"] ?? null });
     } catch (error) {
       throw new SetupError(`The connector to test can't be loaded${values["git-ref"] ? ` from ${values["git-ref"]}` : ""}: ${error.message.split("\n")[0]}`);
+    }
+    // So are its answers on every selected case, so a case it can't serve (one that needs check_case_known_vs_new, on a
+    // commit from before that tool) stops the run before any model is called.
+    try {
+      transcripts = await connectorTranscripts(cases, source);
+    } catch (error) {
+      throw new SetupError(`The connector to test can't serve the selected cases${values["git-ref"] ? ` at ${values["git-ref"]}` : ""}: ${error.message.split("\n")[0]}`);
     }
   }
   const outDir = values.out ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-protocol-application-"));
@@ -212,7 +221,7 @@ try {
       report.outcome = "inconclusive";
       status = 2;
     } else {
-      report.application = await runProtocolApplication({ answerer, judge, cases, samples, source, log });
+      report.application = await runProtocolApplication({ answerer, judge, cases, samples, source, transcripts, log });
       report.outcome = report.application.outcome;
       status = report.outcome === "pass" ? 0 : report.outcome === "fail" ? 1 : 2;
       // Without the check of the judge, no outcome is definite: a judge that fails every rule fails replies as surely as one

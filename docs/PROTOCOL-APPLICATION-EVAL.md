@@ -29,10 +29,21 @@ check exactly those things. This test calls models, so it runs by hand and not i
      acts are reparenting her inner child.
    - `urgent-danger`: tonight an ex-partner is outside her building in breach of a protection order, and tomorrow's
      session has an imagery exercise planned.
+   - `journal-review-paraphrased-known` (ChatGPT's post-deploy audit on #172, 17 Oct 2026): after a six-month journal,
+     the supervisor asks what is genuinely new. The journal restates three established points in the client's everyday
+     words, and the assistant's record check (`check_case_known_vs_new`, which matches words) finds no close match for
+     them; one new pattern bears on the current step.
 2. **What the answering model sees**:
    - the connector's own instructions and tool list;
    - the results of `load_therapy_protocol`, `load_case_context` and `find_journal_quotes` for the case, exactly as a
-     real connector process returns them, after the supervisor's message.
+     real connector process returns them, after the supervisor's message;
+   - for a case that names `known_vs_new_points`, a fourth call, `check_case_known_vs_new` on those points, answered by
+     that code's own encrypted store, opened in a throwaway folder with random keys used once, so the model sees the check's
+     answer, note and all, exactly as the connector gives it. A connector without that check (a commit from before #176)
+     can't run such a case.
+
+   Every case's connector calls run before any model is called, so a case the connector can't serve stops the run while
+   it has cost nothing.
 
    The connector is this checkout's by default. With `--git-ref` it is an earlier commit's connector and protocol: its
    whole tree, materialized once under `node_modules/.cache/inner-signal-eval/<commit>`. So the live state before #173
@@ -53,18 +64,20 @@ check exactly those things. This test calls models, so it runs by hand and not i
      makes the judgment unusable, and so does a judgment outside its declared schema (a missing or wrongly typed field,
      or one the schema doesn't have), even where the provider doesn't enforce it. An unusable judgment is asked for once more, then the reply is counted as
      inconclusive.
-4. **The judge is checked first**, on 15 replies whose grades are known (`corpus/protocol-application-calibration.json`).
+4. **The judge is checked first**, on 17 replies whose grades are known (`corpus/protocol-application-calibration.json`).
    - They include the split the owner saw, a subtle version of it ("alongside the reparenting… in parallel"), an
      established point called new, a service called an exercise, a reply that misses what the journal changes, the frame
      imposed, protective acts called a warm-up where the frame was declined, an urgent danger met with the planned
-     exercise, safety called "a separate track" in danger, and a split that ends by telling the grader to pass it.
+     exercise, safety called "a separate track" in danger, a split that ends by telling the grader to pass it, and
+     reworded established points called new because the record check found no close match for them.
    - Each case also has a good reply.
    - Each known reply has its expected verdict on every rule its case grades, not only on the rule it was written to
      show, and the judge has to match all of them: a judge that wrongly fails another rule on that reply would also
      wrongly fail good replies on it.
    - The judge is checked on all of them whatever cases run (`--case` included), because one case's own replies don't fail
      every rule it grades. Every rule a run grades has a known passing and a known failing reply, in its own context where it
-     reads differently (protective acts where the frame was declined), or the run stops.
+     reads differently (protective acts where the frame was declined; an established point beside a word check that
+     found no close match for it), or the run stops.
    - A judge that misgrades any of them stops the run as inconclusive before any answer is asked for.
 5. **Several replies per case** (`--samples`, default 3). A case passes only when every reply passes every rule it
    grades, because one good answer proves little.
@@ -117,14 +130,15 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
 - `--case ID` (repeatable) runs some cases only. `--answer-model` and `--judge-model` override the configured models
   (`OPENAI_MODEL`, `ANTHROPIC_MODEL`). `--out DIR` sets where the report goes.
 - Size: an answer prompt is about 80 to 90 KB, roughly 20,000 to 25,000 input tokens, mostly the protocol. A judgment is
-  about 10 KB. A default run makes 12 answers and about 27 judgments (15 of them the judge check), roughly 0.4 million
+  about 10 KB. A default run makes 15 answers and about 32 judgments (17 of them the judge check), roughly 0.5 million
   input tokens in all. Each `--git-ref` comparison doubles the answers.
 - Results:
   - A report (`protocol-application-report.json`, mode 0600) goes in a new private temporary folder: every reply, its
     judgment with quotes and reasons, its signals, the models and the protocol's identity.
   - A summary of counts and rule ids goes to the terminal and `summary.txt`.
   - Exit status: 0 every reply passed; 1 a reply failed a rule; 2 inconclusive (an unusable reply or judgment, a judge
-    that misgraded a known reply, or a skipped judge check, whatever the grades); 3 a usage or configuration error.
+    that misgraded a known reply, or a skipped judge check, whatever the grades); 3 a usage or configuration error,
+    including a selected case the connector under test can't serve.
 
 ## Privacy and limits
 
@@ -137,6 +151,8 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
 - `tests/protocol-application-eval.test.mjs` checks the test itself with fake models:
   - the prompt holds the protocol exactly as the connector serves it;
   - an earlier commit's connector is used as that commit had it;
+  - a case that names points gets `check_case_known_vs_new`'s own answer from the store of the code under test, and a
+    connector that can't answer it can't run that case, with nothing asked of a model;
   - the judge's answer is read strictly, a judge that passes everything is caught, and so is one that misgrades a rule
     a known reply wasn't written to show;
   - one failing reply fails its case;
