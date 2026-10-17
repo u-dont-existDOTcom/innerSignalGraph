@@ -427,6 +427,13 @@ function goalView(goal) {
 
 const byRank = (left, right) => left.rank - right.rank;
 
+// What each kind of track is, as a reader of the plan needs it said: beside the aim, never an exercise within it.
+const TRACK_NOTES = Object.freeze({
+  independent_track: "Help from outside (people, groups or services): separately available; not an exercise, and reparenting does not replace it.",
+  safety_track: "Independent safety services or an urgent safety need: separately available; not an exercise. Everyday protective acts the person takes for themselves belong within the aim when that frame is welcome.",
+  medical_track: "Medical or specialist care: separately available; not an exercise, and reparenting does not replace it."
+});
+
 function safetyOverride(state) {
   const reasons = [];
   if (state.roadmap?.safety_override) reasons.push(state.roadmap.safety_override.reason);
@@ -485,7 +492,7 @@ function recordedPlan(state) {
       episode_link: episodeLink
     },
     within,
-    tracks: tracks.map((goal) => ({ ...goalView(goal), note: "Separately available; not an exercise, and reparenting does not replace it." })),
+    tracks: tracks.map((goal) => ({ ...goalView(goal), note: TRACK_NOTES[goal.kind] })),
     waiting: goals.filter((goal) => ["parked", "blocked"].includes(goal.status)).map(goalView),
     held_by_parent: held,
     finished: goals.filter((goal) => ["completed", "superseded"].includes(goal.status)).map((goal) => ({ id: goal.id, title: goal.title, status: goal.status, ...(goal.status_reason ? { why: goal.status_reason } : {}) })),

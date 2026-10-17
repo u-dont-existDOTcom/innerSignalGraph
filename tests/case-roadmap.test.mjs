@@ -168,6 +168,11 @@ test("withdrawn consent parks a goal; it is active again only with the client's 
 });
 
 test("tracks stay beside the aim: medical or crisis help can't be filed as a step within reparenting", () => {
+  const withSafety = applyRoadmapDecision(planA(), decision("plan-a-17", "authorized_plan", 17, [
+    { op: "add", goal: { id: "goal:shelter-contact", kind: "safety_track", title: "A shelter's number and a plan for leaving" } }
+  ]));
+  const safetyNote = projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: withSafety })).tracks.find((goal) => goal.id === "goal:shelter-contact").note;
+  assert.match(safetyNote, /Everyday protective acts the person takes for themselves belong within the aim when that frame is welcome\./u);
   for (const kind of ["medical_track", "safety_track", "independent_track"]) {
     assert.throws(() => applyRoadmapDecision(planA(), decision("plan-a-11", "authorized_plan", 11, [
       { op: "add", goal: { id: "goal:nested-track", kind, parent_id: "goal:felt-safety", title: "Synthetic track" } }
@@ -206,7 +211,7 @@ test("the plan view says what is primary, what is being worked on now, what wait
   assert.equal(plan.now.episode_link, "linked");
   assert.deepEqual(plan.within.map((goal) => [goal.id, goal.depth]), [["goal:everyday-protection", 1], ["goal:weekly-refusal", 2]]);
   assert.deepEqual(plan.tracks.map((goal) => [goal.id, goal.kind, goal.priority_source]), [["goal:back-pain-care", "medical_track", "authorized_plan"]]);
-  assert.match(plan.tracks[0].note, /not an exercise, and reparenting does not replace it/u);
+  assert.match(plan.tracks[0].note, /^Medical or specialist care: separately available; not an exercise, and reparenting does not replace it\.$/u);
   assert.deepEqual(plan.waiting.map((goal) => [goal.id, goal.why]), [["goal:family-visit", "She wants to wait until after the holidays."]]);
   assert.deepEqual(plan.priorities_change_when.map((entry) => entry.goal_id), ["goal:felt-safety", "goal:back-pain-care"]);
   assert.deepEqual(plan.sources, { client: 4, authorized_plan: 1, provisional: 0 });
