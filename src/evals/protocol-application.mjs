@@ -384,7 +384,7 @@ export function judgePrompt(spec, reply) {
     "THE RULES",
     rules.join("\n\n"),
     "",
-    `THE CASE (synthetic: ${spec.client_label}), as far as grading needs it`,
+    `THE CASE (${spec.client_label}), as far as grading needs it`,
     ...facts,
     "",
     "THE SUPERVISOR'S MESSAGE",
@@ -507,7 +507,7 @@ function parseReply(raw) {
 
 async function judgeOnce(judge, spec, reply, metadata) {
   const { system, user } = judgePrompt(spec, reply);
-  const output = await judge.generate({ system, user, outputSchema: judgeSchema(spec), metadata, sealed: true });
+  const output = await judge.generate({ system, user, outputSchema: judgeSchema(spec), metadata });
   return { judgment: parseJudgment(spec, reply, output.text), model: output.model, usage: output.usage ?? null };
 }
 
@@ -550,7 +550,7 @@ export async function runProtocolApplication({ answerer, judge: judgeProvider, c
     const { system, user } = answerPrompt(spec, transcript);
     const caseResult = { id: spec.id, criteria: [...spec.grading.criteria], prompt_bytes: Buffer.byteLength(system) + Buffer.byteLength(user), samples: [] };
     for (let sample = 1; sample <= samples; sample += 1) {
-      const output = await answerer.generate({ system, user, outputSchema: ANSWER_SCHEMA, metadata: { stage: ANSWER_STAGE, fixtureKey: `${ANSWER_STAGE}:${spec.id}`, caseId: spec.id, sample }, sealed: true });
+      const output = await answerer.generate({ system, user, outputSchema: ANSWER_SCHEMA, metadata: { stage: ANSWER_STAGE, fixtureKey: `${ANSWER_STAGE}:${spec.id}`, caseId: spec.id, sample } });
       const reply = parseReply(output.text);
       const record = { sample, answer_model: output.model, answer_usage: output.usage ?? null, tool_items: output.toolItems ?? 0, reply };
       if (!reply) {

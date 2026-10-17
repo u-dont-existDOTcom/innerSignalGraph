@@ -40,7 +40,9 @@ const USAGE = `Usage: npm run eval:protocol-application -- --mode cli|api|mock [
 Exit status: 0 every reply passed; 1 a reply failed a rule; 2 inconclusive (a judgment or reply was unusable, or the
 judge misgraded a known reply); 3 a usage or configuration error.`;
 
+let agentHome = null;
 function fail(message) {
+  if (agentHome) fs.rmSync(agentHome, { recursive: true, force: true });
   process.stderr.write(`${message}\n\n${USAGE}\n`);
   process.exit(3);
 }
@@ -92,7 +94,7 @@ try {
 }
 
 // An empty folder for the command-line agents to start in, so nothing of this checkout is within their reach by default.
-const agentHome = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-agent-"));
+agentHome = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-agent-"));
 
 function provider(family, model) {
   if (values.mode === "mock") return new MockProvider({ id: family, model: `mock-${family}`, fixturePath: path.resolve(values.fixture) });
@@ -106,13 +108,19 @@ function provider(family, model) {
     : new AnthropicProvider({ apiKey: config.anthropicApiKey, model: model ?? config.anthropicModel, timeoutMs: config.requestTimeoutMs, maxOutputTokens: config.maxOutputTokens });
 }
 
-// A Codex agent that can't be kept away from the user's own configuration (its MCP servers, including InnerSignal's) or
-// out of a read-only sandbox isn't used.
+// A command-line agent that can't be kept away from the user's own configuration (its MCP servers, InnerSignal's included),
+// its tools and its saved sessions isn't used: Codex in a read-only, ephemeral sandbox that ignores the user's configuration;
+// Claude with no tools, no MCP servers but an empty set, safe mode and no saved session.
+const ISOLATION_FLAGS = new Map([
+  [CodexCliProvider, ["ignoreUserConfig", "sandbox", "ephemeral", "outputSchema", "outputLastMessage"]],
+  [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence"]]
+]);
 async function requireIsolation(candidate) {
-  if (!(candidate instanceof CodexCliProvider)) return;
+  const required = [...ISOLATION_FLAGS].find(([kind]) => candidate instanceof kind)?.[1];
+  if (!required) return;
   const flags = (await candidate.capabilities())?.flags;
-  const missing = ["ignoreUserConfig", "sandbox", "ephemeral", "outputSchema", "outputLastMessage"].filter((flag) => !flags?.[flag]);
-  if (missing.length) fail(`The installed Codex CLI lacks what this test needs to isolate it: ${missing.join(", ")}.`);
+  const missing = required.filter((flag) => !flags?.[flag]);
+  if (missing.length) fail(`The installed ${candidate instanceof CodexCliProvider ? "Codex" : "Claude"} CLI lacks what this test needs to isolate it: ${missing.join(", ")}.`);
 }
 
 const allCases = loadProtocolApplicationCases();
@@ -124,6 +132,8 @@ const calibration = loadProtocolApplicationCalibration(allCases).filter((entry) 
 
 const answerer = provider(values.answerer, values["answer-model"]);
 const judge = provider(judgeFamily, values["judge-model"]);
+await requireIsolation(answerer);
+await requireIsolation(judge);
 const outDir = values.out ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-protocol-application-"));
 fs.mkdirSync(outDir, { recursive: true, mode: 0o700 });
 const log = (line) => process.stderr.write(`${line}\n`);
@@ -140,8 +150,6 @@ const report = {
 };
 let status = 2;
 try {
-  await requireIsolation(answerer);
-  await requireIsolation(judge);
   if (!values["skip-calibration"]) {
     report.calibration = await runJudgeCalibration({ judge, cases, calibration, log });
   } else {

@@ -288,3 +288,18 @@ test("the command runs end to end in mock mode, keeps its report private and exi
   assert.equal(missing.status, 3, "a live run is never the default");
   assert.match(missing.stderr, /--mode is required/u);
 });
+
+test("the command refuses a command-line agent it can't isolate, before any model is called", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-isolation-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const wrapper = (name, fixture) => {
+    const file = path.join(dir, name);
+    fs.writeFileSync(file, `#!/bin/sh\nexec "${process.execPath}" "${path.join(root, "tests/fixtures", fixture)}" "$@"\n`, { mode: 0o755 });
+    return file;
+  };
+  const env = { ...process.env, INNER_SIGNAL_MODE: "", CODEX_COMMAND: wrapper("codex", "fake-codex-cli.mjs"), CLAUDE_COMMAND: wrapper("claude", "fake-claude-minimal-cli.mjs"), ANTHROPIC_MODEL: "fake-claude", OPENAI_MODEL: "fake-codex" };
+  const result = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "cli", "--calibration-only", "--case", "frame-declined", "--out", path.join(dir, "out")], { cwd: root, encoding: "utf8", env });
+  assert.equal(result.status, 3, result.stderr);
+  assert.match(result.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence/u);
+  assert.equal(fs.existsSync(path.join(dir, "out", "protocol-application-report.json")), false, "nothing ran");
+});

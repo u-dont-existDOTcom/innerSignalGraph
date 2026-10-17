@@ -68,7 +68,8 @@ check exactly those things. This test calls models, so it runs by hand and not i
      MCP servers, InnerSignal's included, are reachable.
    - The test refuses a Codex command that can't be isolated that way.
    - A reply from an agent that took any action (a command, a file, a tool, a search) is not counted.
-   - Claude runs sealed: no tools, no MCP servers, no saved session.
+   - Claude runs with no tools, no MCP servers (an empty strict set), safe mode and no saved session, from the same
+     empty folder. The test refuses a Claude command that lacks any of those switches.
 
 ## Running it
 
