@@ -510,6 +510,15 @@ test("kept tags become a pointer-only extraction: one node per tag and quote, on
   assert.equal(built.quoteMeta.get(passageOf("Promenade"))[0].written, null);
   assert.deepEqual(episode("promenade au parc").authored_time, UNKNOWN_TIME, "an undated quote leaves the time unknown");
   assert.deepEqual(episode("promenade au parc").event_time, UNKNOWN_TIME);
+  // A quote that version 3 of the quote index gave a range between the dates around it: the interval, as relative_supported,
+  // since no date line above the quote gives it.
+  const walkPage = unitsByPage.find((units) => units.some((unit) => unit.text.includes("Promenade")));
+  const [walkMeta] = built.quoteMeta.get(passageOf("Promenade"));
+  const ranged = new Map([...built.quoteMeta, [passageOf("Promenade"), [{ ...walkMeta, written: { from: "2020-03-10", to: "2020-04", precision: "interval",
+    between: true, ambiguous: false, year_inferred: false, line: null, line_after: null } }]]]);
+  const walk = pointerExtraction({ units: walkPage, kept, quoteMeta: ranged, passageIdForUnit }).episodes.find((item) => item.label === "promenade au parc");
+  assert.deepEqual(walk.authored_time, { raw: null, from: "2020-03-10", to: "2020-04", precision: "interval", timezone: null,
+    basis: "relative_supported", evidence_ids: [unitOf("Promenade")] });
 
   // Only the quotes among the units passed get nodes, and an event needs its quote's meta.
   assert.deepEqual(extractions[3].extraction.entities, []);

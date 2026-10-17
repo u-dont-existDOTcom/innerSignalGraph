@@ -30,7 +30,7 @@ const distinct = (text) => text.match(/(?:quolp|vemmet)\d+/u)[0];
 // judges confirm and accept everything except the quotes whose word `refuse` picks, and list as copied the first
 // question of each quote whose word `copied` picks. On the quotes whose word `copyText` picks, the first question is the
 // quote's first sentence, word for word, which the copy check of owner decision 30 catches.
-function handlers({ refuse = () => false, copied = () => false, pairs = () => true, copyText = () => false } = {}) {
+function handlers({ refuse = () => false, copied = () => false, pairs = () => true, copyText = () => false, events = false } = {}) {
   const rainTerm = (text) => `pluie${text.match(/vemmet(\d+)/u)[1]}`;
   return {
     question_writer: (packet) => ({ schema_version: "1.0", questions: packet.quote_units.flatMap((quote) => [
@@ -52,6 +52,8 @@ function handlers({ refuse = () => false, copied = () => false, pairs = () => tr
       const tags = [{ kind: "topic", label: distinct(quote.text), anchors: anchor(distinct(quote.text)) }];
       if (quote.text.includes("Jean")) tags.push({ kind: "person", label: "Jean", anchors: anchor("Jean") });
       if (quote.text.includes("rained")) tags.push({ kind: "topic", label: rainTerm(quote.text), anchors: anchor("rained") });
+      // With `events`, the rain is also an event the quote reports as happening.
+      if (events && quote.text.includes("rained")) tags.push({ kind: "event", label: "rain", anchors: anchor("rained") });
       return tags;
     }) }),
     pair_judge: (packet) => ({ schema_version: "1.0", judgments: packet.pairs.map((pair) => ({ pair_id: pair.pair_id, mentions: pairs(pair), kind_right: true })) })
@@ -182,20 +184,63 @@ test("the pointer run goes from the reference sample to publication, each step w
   // copy-run setting.
   f.config.quote_numeric_date_order = "day_first";
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
+  await assert.rejects(f.run("pointer-rebase"), { code: "POINTER_RUN_SETTING_CHANGED" });
   delete f.config.quote_numeric_date_order;
   f.config.pointer_copy_run_words = 7;
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
   delete f.config.pointer_copy_run_words;
+
+  // The run was built and measured on version 2 of the quote index, and version 3 is the one published (issue #168): its
+  // own generation would take the published quotes back a version, so its tags go out only built again on version 3.
+  assert.match(published.active_generation, /:quotes:quote-index-v3-month-first$/u);
+  await assert.rejects(f.run("pointer-publish"), { code: "POINTER_REBASE_NEEDED" });
+  const stateBefore = await fs.readFile(f.stateFile, "utf8");
+  const rebased = await f.run("pointer-rebase");
+  const { rebased: carried } = rebased.pointer;
+  assert.equal(carried.generation, `${published.active_generation}:pointer-${rebased.pointer.run_id}`);
+  assert.equal(carried.step_id, measure.measured_step_id);
+  // The same questions, the same tags: with tags every question is found, with words only the half that asks in the
+  // quotes' own words, as the measurement found on version 2.
+  assert.deepEqual([carried.measure.recall.estimate, carried.measure.recall_words_only.estimate, carried.measure.gain.estimate],
+    [1, 0.5, 1]);
+  assert.equal(carried.measure.questions, measure.report.recall_units.reduce((total, unit) => total + unit.questions, 0));
+  assert.equal("manifest_object_id" in carried || "manifest_reference" in carried, false, "status shows no private reference");
+  assert.notEqual(await fs.readFile(f.stateFile, "utf8"), stateBefore);
+  // Readers still see no change, and building it again changes nothing.
+  assert.equal((await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora
+    .find((item) => item.corpus_id === published.corpus_id).active_generation, published.active_generation);
+  assert.equal((await f.run("pointer-rebase")).pointer.rebased.built_at, carried.built_at);
+  const shownRebase = JSON.stringify(rebased.pointer);
+  for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained"]) assert.equal(shownRebase.includes(word), false, word);
+
   const deployed = await f.run("pointer-publish");
   assert.equal(deployed.pointer.published.supersedes, published.active_generation);
+  assert.equal(deployed.pointer.published.generation, carried.generation);
   const after = (await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora.find((item) => item.corpus_id === published.corpus_id);
-  assert.equal(after.active_generation, measured.pointer.generation);
-  // A reader now finds the rain on page 17 by its tag, in words its quote doesn't use.
+  assert.equal(after.active_generation, carried.generation);
+  // A reader now finds the rain on page 17 by its tag, in words its quote doesn't use, on version 3's ranking.
   const api = createJournalPrivateApi({ caseAccessService: f.service });
-  const found = await api.findQuotes({ caseId: CASE_ID, corpusId: published.corpus_id, query: "pluie17", purpose: "session_use" }, { bearerToken: READER });
+  const reader = { bearerToken: READER };
+  const found = await api.findQuotes({ caseId: CASE_ID, corpusId: published.corpus_id, query: "pluie17", purpose: "session_use" }, reader);
   assert.deepEqual(found.quotes.map((quote) => [quote.text, quote.matched_by]), [[PAGES[16].trimEnd(), "tag"]]);
-  // Publishing again changes nothing.
+  assert.equal(found.coverage.ranking, "word_forms");
+  assert.equal(found.snapshot.generation, carried.generation);
+  // The graph tools answer from the published generation: a person tag is a node search finds, its subgraph reaches the
+  // quote it is anchored in, and that quote resolves to its exact words. (This tagger tags no event: the timeline is
+  // tested below with one that does.)
+  const graph = await api.search({ caseId: CASE_ID, corpusId: published.corpus_id, query: "Jean", purpose: "session_use" }, reader);
+  const person = graph.items.find((item) => item.kind === "entity");
+  assert.ok(person, "a person tag is a node the graph search finds");
+  const group = await api.getSubgraph({ caseId: CASE_ID, corpusId: published.corpus_id, seedIds: [person.id], purpose: "session_use" }, reader);
+  const passages = group.nodes.filter((node) => node.kind === "passage");
+  assert.ok(passages.length > 0, "the subgraph reaches the quote the tag is anchored in");
+  const resolved = await api.resolveEvidence({ caseId: CASE_ID, corpusId: published.corpus_id, evidenceIds: [passages[0].id], purpose: "session_use" }, reader);
+  assert.equal(JSON.stringify(resolved).includes(passages[0].data.quote.slice(0, 20)), true, "the quote resolves to its exact words");
+  // A reader of another case sees nothing of it.
+  await assert.rejects(api.search({ caseId: "another-case", corpusId: published.corpus_id, query: "Jean", purpose: "session_use" }, reader));
+  // Publishing again changes nothing, and the quote index alone can't be published over the tags.
   assert.equal((await f.run("pointer-publish")).pointer.published.at, deployed.pointer.published.at);
+  await assert.rejects(f.run("publish-quotes"), { code: "QUOTE_PUBLISH_WOULD_DROP_TAGS" });
 });
 
 test("under owner decision 32's rules Codex alone judges, a piece still not covered is marked and measured, nothing in the reference step stops the run, and the floors don't block publication", async (t) => {
@@ -228,11 +273,60 @@ test("under owner decision 32's rules Codex alone judges, a piece still not cove
   // The marked units' questions were searched and measured like the complete ones': with tags, every one is found.
   assert.equal(measure.floors.recall.estimate, 1);
   assert.deepEqual([...new Set(tiers)], ["standard"], "no call went to Claude");
+  // Built on version 2, the run's tags go out on version 3 (issue #168), and carrying them there sends nothing.
+  const sent = tiers.length;
+  await f.run("pointer-rebase");
+  assert.equal(tiers.length, sent, "pointer-rebase sends nothing");
   const deployed = await f.run("pointer-publish");
   assert.ok(deployed.pointer.published);
+  assert.match(deployed.pointer.published.generation, /:quotes:quote-index-v3-month-first:pointer-[0-9a-f]{8}$/u);
   // A run keeps the rules it started with: other rules call for a new run.
   f.config.pointer_rules = 2;
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
+});
+
+test("a published pointer run answers the timeline: each kept event tag is an entry, tied to its quote, in the lane its quote's date puts it", async (t) => {
+  const f = await runtimeEnvironment(t, { rules: 3, attested: false, events: true });
+  await f.run("stage", "publish-quotes");
+  await f.run("pointer-reference", "pointer-pilot", "pointer-pass", "pointer-challenge", "pointer-measure");
+  const before = (await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora.find((item) => item.corpus_id.endsWith(":quotes"));
+  const api = createJournalPrivateApi({ caseAccessService: f.service });
+  const reader = { bearerToken: READER };
+  const ask = { caseId: CASE_ID, corpusId: before.corpus_id, purpose: "session_use" };
+  // Before publication the quote index has quotes and no tags: the timeline is empty, as it was live on 16 Oct 2026, and
+  // the graph search finds quotes only.
+  assert.deepEqual((await api.timeline(ask, reader)).items, []);
+  const quotesOnly = await api.search({ ...ask, query: "rained" }, reader);
+  assert.ok(quotesOnly.items.length > 0 && quotesOnly.items.every((item) => item.kind === "passage"), "the graph search finds the quotes");
+  await f.run("pointer-rebase", "pointer-publish");
+  const timeline = await api.timeline({ ...ask, pageSize: 200 }, reader);
+  const events = timeline.items.filter((item) => item.kind === "episode");
+  assert.equal(events.length, PAGE_COUNT, "every page tells of rain, and every rain tag was kept");
+  // This journal has no date lines, so every event is in the unknown lane, with its quote as its evidence; its event time
+  // is never claimed, only the time its quote was written, here unknown.
+  assert.deepEqual([...new Set(events.map((event) => event.timeline_entry.lane))], ["unknown"]);
+  assert.equal(timeline.unknown_count, PAGE_COUNT);
+  for (const event of events.slice(0, 5)) {
+    assert.deepEqual([event.data.event_time.precision, event.data.authored_time.precision], ["unknown", "unknown"]);
+    const [evidence] = event.data.evidence_ids;
+    const resolved = await api.resolveEvidence({ ...ask, evidenceIds: [evidence] }, reader);
+    assert.match(JSON.stringify(resolved), /rained over the vemmet\d+/u, "the event resolves to the exact words that report it");
+  }
+  // The event label is a node the graph search finds, and its subgraph reaches its quote.
+  const rain = await api.search({ ...ask, query: "rain", filters: { kinds: ["episode"] } }, reader);
+  assert.ok(rain.items.length > 0 && rain.items.every((item) => item.kind === "episode"));
+  const group = await api.getSubgraph({ ...ask, seedIds: [rain.items[0].id] }, reader);
+  assert.ok(group.nodes.some((node) => node.kind === "passage" && /rained/u.test(node.data.quote)));
+
+  // The operator's readback says the same in counts, through the reader the connector opens, and changes nothing.
+  const stateBefore = await fs.readFile(f.stateFile, "utf8");
+  const { published_readback: readback, pointer } = await f.run("published-readback");
+  assert.equal(await fs.readFile(f.stateFile, "utf8"), stateBefore, "nothing is saved");
+  assert.deepEqual(readback, { generation: pointer.published.generation, pointer_generation: true, node_count: readback.node_count, word_list: true,
+    events: { known_lane: 0, unknown_lane: PAGE_COUNT }, events_checked: 20, events_found: 20, tags_checked: 20, tags_found: 20,
+    subgraphs_reaching_quote: 20, quotes_resolved: 20, refused_without_grant: true });
+  assert.ok(readback.node_count > PAGE_COUNT);
+  for (const word of ["Jean", "quolp", "vemmet", "pluie", "rained", "rain"]) assert.equal(JSON.stringify(readback).includes(word), false, word);
 });
 
 test("pointer-search-check reads the measured run back and says, in counts only, where the questions' quotes rank and what each way of matching words would find", async (t) => {

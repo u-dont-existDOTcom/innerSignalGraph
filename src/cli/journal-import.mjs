@@ -37,6 +37,8 @@ export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
   "pointer-examples",
   "pointer-search-check",
   "quote-search-check",
+  "pointer-rebase",
+  "published-readback",
   "visual-only",
   "status",
   "verify",

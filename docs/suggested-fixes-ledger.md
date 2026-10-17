@@ -63,3 +63,7 @@
 ## 2026-10-16: journal quote index version 3
 
 - Live lane read on 2026-10-16 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `0331d252`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above (`2026-09-30-claim-integrity-checks.md`, deferred; `2026-10-09-teaching-points-for-map-changes.md` and `2026-10-11-therapy-r6-coordinated-journal-release.md`, adopted). This branch changes the journal quote index and its search only and adds no new disposition.
+
+## 2026-10-16: the journal graph on quote index version 3 (issue #168, part B)
+
+- Live lane read on 2026-10-16 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `fd93d883`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct. This branch changes the journal pointer run's publication and adds no new disposition.
