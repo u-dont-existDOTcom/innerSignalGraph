@@ -367,6 +367,36 @@ test("the command runs end to end in mock mode, keeps its report private and exi
   assert.match(missing.stderr, /--mode is required/u);
 });
 
+test("the command needs keys and the Fable opt-in only for the models the run uses, and checks them before any model is called", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-config-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  // No real command or key is reachable: every run below stops before a model could be called.
+  const base = { ...process.env, INNER_SIGNAL_MODE: "", OPENAI_API_KEY: "", ANTHROPIC_API_KEY: "", ACKNOWLEDGE_PROVIDER_RETENTION: "true", ANTHROPIC_MODEL: "claude-opus-5", ALLOW_CLAUDE_FABLE_USAGE: "false", CODEX_COMMAND: path.join(dir, "no-such-codex"), CLAUDE_COMMAND: path.join(dir, "no-such-claude") };
+  const run = (args, env = {}) => spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", ...args, "--case", "frame-declined", "--out", path.join(dir, "out")], { cwd: root, encoding: "utf8", env: { ...base, ...env } });
+  // Codex on #175 (P2): a check of the judge alone in API mode needs the judge's key only.
+  const claudeJudge = run(["--mode", "api", "--calibration-only"]);
+  assert.equal(claudeJudge.status, 3, claudeJudge.stderr);
+  assert.match(claudeJudge.stderr, /ANTHROPIC_API_KEY is required in api mode/u);
+  assert.doesNotMatch(claudeJudge.stderr, /OPENAI_API_KEY/u);
+  const codexJudge = run(["--mode", "api", "--calibration-only", "--answerer", "anthropic"]);
+  assert.equal(codexJudge.status, 3, codexJudge.stderr);
+  assert.match(codexJudge.stderr, /OPENAI_API_KEY is required in api mode/u);
+  const full = run(["--mode", "api"], { ANTHROPIC_API_KEY: "test-anthropic" });
+  assert.equal(full.status, 3, full.stderr);
+  assert.match(full.stderr, /OPENAI_API_KEY is required in api mode/u, "a full run uses both");
+  // The Fable opt-in covers a Claude model chosen on the command line, and only a Claude model the run uses.
+  const fableJudge = run(["--mode", "cli", "--calibration-only", "--judge-model", "claude-fable-5"]);
+  assert.equal(fableJudge.status, 3, fableJudge.stderr);
+  assert.match(fableJudge.stderr, /Fable CLI use is opt-in/u);
+  const fableAnswerer = run(["--mode", "cli", "--answerer", "anthropic", "--answer-model", "claude-fable-5"]);
+  assert.match(fableAnswerer.stderr, /Fable CLI use is opt-in/u);
+  const unusedFable = run(["--mode", "cli", "--calibration-only", "--answerer", "anthropic", "--answer-model", "claude-fable-5"]);
+  assert.equal(unusedFable.status, 3, unusedFable.stderr);
+  assert.doesNotMatch(unusedFable.stderr, /Fable/u);
+  assert.match(unusedFable.stderr, /The Codex CLI \(.*no-such-codex\) could not be started or checked/u, "the judge is checked; the unused answerer isn't");
+  assert.equal(fs.existsSync(path.join(dir, "out", "protocol-application-report.json")), false, "nothing ran");
+});
+
 test("the command refuses a command-line agent it can't isolate, before any model is called", (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-isolation-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));

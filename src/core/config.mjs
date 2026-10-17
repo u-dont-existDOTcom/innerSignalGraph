@@ -33,7 +33,9 @@ function nonBlankEnv(name, fallback) {
   return value == null || value.trim() === "" ? fallback : value.trim();
 }
 
-export function loadConfig(overrides = {}) {
+// `providers` names the model providers the caller will use (both by default): API mode needs only their keys, and the
+// Fable gate applies only when Claude is among them, so a run that uses one provider isn't stopped by the other's setup.
+export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"] } = {}) {
   const resolvedMode = overrides.mode ?? process.env.INNER_SIGNAL_MODE ?? "mock";
   const config = {
     mode: resolvedMode,
@@ -142,15 +144,15 @@ export function loadConfig(overrides = {}) {
   if (!["off", "redacted", "full"].includes(config.ledgerMode)) {
     throw new RuntimeError("LEDGER_MODE must be off, redacted, or full.", { code: "BAD_CONFIG" });
   }
-  if (config.mode === "cli" && /fable/i.test(config.anthropicModel) && !config.allowClaudeFableUsage) {
+  if (config.mode === "cli" && providers.includes("anthropic") && /fable/i.test(config.anthropicModel) && !config.allowClaudeFableUsage) {
     throw new RuntimeError(
       "Fable CLI use is opt-in because it may consume paid Claude usage credits depending on the account plan. Verify the plan, then set ALLOW_CLAUDE_FABLE_USAGE=true.",
       { code: "FABLE_USAGE_ACK_REQUIRED" }
     );
   }
   if (config.mode === "api") {
-    if (!config.openaiApiKey) throw new RuntimeError("OPENAI_API_KEY is required in api mode.", { code: "BAD_CONFIG" });
-    if (!config.anthropicApiKey) throw new RuntimeError("ANTHROPIC_API_KEY is required in api mode.", { code: "BAD_CONFIG" });
+    if (providers.includes("openai") && !config.openaiApiKey) throw new RuntimeError("OPENAI_API_KEY is required in api mode.", { code: "BAD_CONFIG" });
+    if (providers.includes("anthropic") && !config.anthropicApiKey) throw new RuntimeError("ANTHROPIC_API_KEY is required in api mode.", { code: "BAD_CONFIG" });
     if (!config.acknowledgeProviderRetention) {
       throw new RuntimeError(
         "API mode requires ACKNOWLEDGE_PROVIDER_RETENTION=true after reviewing both providers’ current retention terms.",

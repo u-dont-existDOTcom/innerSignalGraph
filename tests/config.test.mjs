@@ -48,6 +48,32 @@ test("API mode refuses to run without retention acknowledgment", () => {
   });
 });
 
+test("a caller that uses one provider needs only its API key, and meets the Fable gate only when it uses Claude", () => {
+  withEnv({
+    OPENAI_API_KEY: null,
+    ANTHROPIC_API_KEY: "test-anthropic",
+    ACKNOWLEDGE_PROVIDER_RETENTION: "true"
+  }, () => {
+    assert.throws(() => loadConfig({ mode: "api" }), /OPENAI_API_KEY is required in api mode/u, "both, by default");
+    assert.equal(loadConfig({ mode: "api" }, { providers: ["anthropic"] }).anthropicApiKey, "test-anthropic");
+    assert.throws(() => loadConfig({ mode: "api" }, { providers: ["openai"] }), /OPENAI_API_KEY is required in api mode/u);
+  });
+  withEnv({
+    OPENAI_API_KEY: "test-openai",
+    ANTHROPIC_API_KEY: "test-anthropic",
+    ACKNOWLEDGE_PROVIDER_RETENTION: "false"
+  }, () => {
+    assert.throws(() => loadConfig({ mode: "api" }, { providers: ["openai"] }), (error) => error.code === "RETENTION_ACK_REQUIRED", "the retention acknowledgment stays");
+  });
+  withEnv({
+    ANTHROPIC_MODEL: "fable",
+    ALLOW_CLAUDE_FABLE_USAGE: "false"
+  }, () => {
+    assert.equal(loadConfig({ mode: "cli" }, { providers: ["openai"] }).mode, "cli");
+    assert.throws(() => loadConfig({ mode: "cli" }, { providers: ["anthropic"] }), (error) => error.code === "FABLE_USAGE_ACK_REQUIRED");
+  });
+});
+
 test("CLI mode blocks Fable unless usage-credit risk is acknowledged", () => {
   withEnv({
     ANTHROPIC_MODEL: "fable",

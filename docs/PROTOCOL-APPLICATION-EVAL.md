@@ -93,8 +93,11 @@ npm run eval:protocol-application -- --mode cli --git-ref 87dce2de       # the c
 npm run eval:protocol-application -- --mode cli --calibration-only       # check the judge alone (Claude)
 ```
 
-- `--calibration-only` asks nothing of the answering agent, so it isn't set up or checked; `--answerer` still picks
-  the judge's family, the other one (`--answerer anthropic --calibration-only` checks a Codex judge).
+- `--calibration-only` asks nothing of the answering agent, so it isn't set up or checked, and in API mode only the
+  judge's key is needed; `--answerer` still picks the judge's family, the other one (`--answerer anthropic
+  --calibration-only` checks a Codex judge).
+- As everywhere in the app, a Fable model on the command line needs `ALLOW_CLAUDE_FABLE_USAGE=true`, because it may
+  use paid Claude credits; that covers a model chosen with `--answer-model` or `--judge-model`, when the run uses it.
 
 - `--mode` is required: a live run uses the owner's model usage, so it is never the default.
 - In API mode the providers enforce no output schema, so both prompts state the JSON they expect, and the judge's prompt

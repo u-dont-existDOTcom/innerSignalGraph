@@ -90,11 +90,19 @@ if (!Number.isSafeInteger(samples) || samples < 1 || samples > 20) fail("--sampl
 if (values["calibration-only"] && values["skip-calibration"]) fail("--calibration-only and --skip-calibration contradict each other.");
 if (values.mode === "mock" && !values.fixture) fail("--fixture is required in mock mode.");
 
+// The model families this run uses: a check of the judge alone uses only the judge's, so API mode needs only its key
+// (Codex on #175).
+const usedFamilies = values["calibration-only"] ? [judgeFamily] : [values.answerer, judgeFamily];
 let config;
 try {
-  config = loadConfig({ mode: values.mode });
+  config = loadConfig({ mode: values.mode }, { providers: usedFamilies });
 } catch (error) {
   fail(error.message);
+}
+// The Fable opt-in covers the Claude model this run will use, one chosen with --answer-model or --judge-model included.
+const modelFor = (family) => (family === values.answerer ? values["answer-model"] : values["judge-model"]) ?? (family === "openai" ? config.openaiModel : config.anthropicModel);
+if (values.mode === "cli" && usedFamilies.includes("anthropic") && /fable/iu.test(modelFor("anthropic")) && !config.allowClaudeFableUsage) {
+  fail("Fable CLI use is opt-in because it may consume paid Claude usage credits depending on the account plan. Verify the plan, then set ALLOW_CLAUDE_FABLE_USAGE=true.");
 }
 
 // The cases are read before anything is created, so a bad case file or an unknown case leaves nothing behind.
