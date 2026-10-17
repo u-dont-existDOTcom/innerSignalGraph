@@ -500,7 +500,11 @@ test("the command refuses a command-line agent it can't isolate, before any mode
 
   // Codex on #175 (P2): a check of the judge alone asks nothing of the answering agent, so a missing one doesn't stop it.
   const judgeOut = path.join(dir, "judge-only");
-  const judgeOnly = run({ CODEX_COMMAND: path.join(dir, "no-such-codex"), CLAUDE_COMMAND: wrapper("claude-full", "fake-claude-cli.mjs") }, ["--calibration-only"], judgeOut);
+  const claudeArgs = path.join(dir, "claude-args.json");
+  const judgeOnly = run({ CODEX_COMMAND: path.join(dir, "no-such-codex"), CLAUDE_COMMAND: wrapper("claude-full", "fake-claude-cli.mjs"), FAKE_CLAUDE_ARGS_FILE: claudeArgs }, ["--calibration-only"], judgeOut);
+  // Codex on #175 (P2): the test's Claude calls aren't capped at one turn, which could cut off the structured answer.
+  const passed = JSON.parse(fs.readFileSync(claudeArgs, "utf8"));
+  assert.ok(!passed.includes("--max-turns") && passed.includes("--no-chrome") && passed.includes("--permission-mode"), passed.join(" "));
   assert.equal(judgeOnly.status, 2, judgeOnly.stderr);
   assert.doesNotMatch(judgeOnly.stderr, /Codex/u);
   assert.match(judgeOnly.stdout, new RegExp(`Judge check: 0 of ${calibration.length} known replies graded as expected`, "u"), "the fake judge's answers aren't judgments");

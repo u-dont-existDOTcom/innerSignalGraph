@@ -127,7 +127,7 @@ function provider(family, model) {
   if (values.mode === "cli") {
     return family === "openai"
       ? new CodexCliProvider({ command: config.codexCommand, model: model ?? config.openaiModel, reasoningEffort: config.codexReasoningEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true, configOverrides: CODEX_ISOLATION_CONFIG })
-      : new ClaudeCliProvider({ command: config.claudeCommand, model: model ?? config.anthropicModel, effort: config.claudeEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true });
+      : new ClaudeCliProvider({ command: config.claudeCommand, model: model ?? config.anthropicModel, effort: config.claudeEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true, maxTurns: null });
   }
   return family === "openai"
     ? new OpenAIProvider({ apiKey: config.openaiApiKey, model: model ?? config.openaiModel, timeoutMs: config.requestTimeoutMs, maxOutputTokens: config.maxOutputTokens })
@@ -142,9 +142,9 @@ function provider(family, model) {
 // command can't be started or checked isn't used either.
 const ISOLATION_FLAGS = new Map([
   [CodexCliProvider, ["ignoreUserConfig", "ignoreRules", "json", "sandbox", "ephemeral", "outputSchema", "outputLastMessage", "model", "config"]],
-  // Claude also with Claude in Chrome off and permission mode dontAsk (Codex on #175). Not --max-turns: the owner's installed
-  // CLI (2.1.286) has no such switch, a structured answer itself takes two turns, and with no tools, no MCP servers and
-  // Chrome off there is no action a further turn could take; the provider passes it when the CLI has it.
+  // Claude also with Claude in Chrome off and permission mode dontAsk (Codex on #175). No --max-turns, required or passed: the
+  // owner's installed CLI (2.1.286) has no such switch, a structured answer itself takes two turns (a cap of one could cut it
+  // off where the switch exists), and with no tools, no MCP servers and Chrome off no further turn has an action to take.
   [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence", "permissionMode", "noChrome", "model", "effort"]]
 ]);
 async function requireIsolation(candidate) {

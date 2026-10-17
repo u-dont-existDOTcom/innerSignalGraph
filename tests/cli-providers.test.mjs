@@ -89,6 +89,29 @@ test("Codex CLI provider gives no action count when its event stream isn't whole
   assert.equal((await broken.generate(prompt)).toolItems, null);
 });
 
+test("Claude CLI provider caps turns at one by default and can leave the cap out", async (t) => {
+  // Codex on #175 (P2): a structured answer takes a turn of its own, so a caller whose agent has no tools can leave the cap
+  // out; sealed inference always keeps it.
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-claude-args-"));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const argsFile = path.join(dir, "args.json");
+  process.env.FAKE_CLAUDE_ARGS_FILE = argsFile;
+  t.after(() => { delete process.env.FAKE_CLAUDE_ARGS_FILE; });
+  const turnsFor = async (options) => {
+    const provider = new ClaudeCliProvider({ command: process.execPath, baseArgs: [path.join(here, "fixtures/fake-claude-cli.mjs")], model: "fake-claude", timeoutMs: 10000, ...options });
+    await provider.generate(prompt);
+    const args = JSON.parse(await fsp.readFile(argsFile, "utf8"));
+    const at = args.indexOf("--max-turns");
+    return at < 0 ? null : args[at + 1];
+  };
+  assert.equal(await turnsFor({}), "1");
+  assert.equal(await turnsFor({ maxTurns: null }), null);
+  assert.equal(await turnsFor({ maxTurns: 3 }), "3");
+  // Sealed inference always caps: the fake refuses a sealed call without --max-turns (its environment carries no args file).
+  const sealed = new ClaudeCliProvider({ command: process.execPath, baseArgs: [path.join(here, "fixtures/fake-claude-cli.mjs"), "--fake-require-sealed"], model: "fake-claude", timeoutMs: 10000, maxTurns: null });
+  await assert.doesNotReject(sealed.generate({ ...prompt, sealed: true }));
+});
+
 test("Claude CLI provider extracts structured_output from its JSON envelope", async () => {
   const provider = new ClaudeCliProvider({
     command: process.execPath,
