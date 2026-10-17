@@ -546,6 +546,33 @@ test("known versus new: a repeated theme matches the record closely; a new lever
   assert.throws(() => rankKnownVersusNew(state, ["x".repeat(601)]), { code: "KNOWN_VS_NEW_INPUT_INVALID" });
 });
 
+test("known versus new says where the record holds a point, and keeps the close match in a short list", () => {
+  // Codex on #174 (P2): each match carries where it came from, so a caller can tell the client's words from a model's
+  // extraction and find the evidence.
+  const extracted = item("evidence:extracted", "She avoids her brother on weekends.", { source: { kind: "current_turn_model_extraction", ref: "T2-assistant", turn_id: "T2-user", recorded_at: AT(1), assertion_scope: "model_interpretation_only" } });
+  const state = applyCaseStatePatch(caseState(), {
+    items: [item("evidence:freeze", "She freezes before saying no to her older brother."), extracted],
+    answered_questions: [{ id: "answer:friends", question: "Does she freeze before saying no to friends too?", answer: "No, only to her brother.", source_item_ids: ["evidence:freeze"], still_current: true }],
+    intervention_history: [{ ...item("route:refusal", "Weekly practice of saying no to her brother."), domain: "intervention_route" }]
+  });
+  const [point] = rankKnownVersusNew(state, ["She freezes before saying no to her brother."], { limit: 8 });
+  const byId = Object.fromEntries(point.matches.map((match) => [match.id, match]));
+  assert.deepEqual(byId["evidence:freeze"].source, { kind: "synthetic_turn", ref: "T1-user", turn_id: "T1-user" });
+  assert.deepEqual(byId["evidence:extracted"].source, { kind: "current_turn_model_extraction", ref: "T2-assistant", turn_id: "T2-user", assertion_scope: "model_interpretation_only" });
+  assert.deepEqual(byId["route:refusal"].source, { kind: "synthetic_turn", ref: "T1-user", turn_id: "T1-user" });
+  assert.deepEqual(byId["answer:friends"].source_item_ids, ["evidence:freeze"]);
+  // Codex on #174 (P2): when entries no longer current outscore the current close match and fill a short list, the close
+  // match still comes back, last, so the caller sees where the record holds the point.
+  const stale = (index) => item(`evidence:stale-${index}`, "She freezes before saying no to her older brother, her brother, her brother.", { still_current: false });
+  const crowded = applyCaseStatePatch(caseState(), { items: [stale(1), stale(2), item("evidence:current", "She freezes before saying no to her brother.")] });
+  const [short] = rankKnownVersusNew(crowded, ["She freezes before saying no to her older brother."], { limit: 2 });
+  assert.equal(short.record_holds_close_match, true);
+  assert.equal(short.matches.length, 2);
+  assert.deepEqual([short.matches[0].current, short.matches[1].id, short.matches[1].current], [false, "evidence:current", true]);
+  const [one] = rankKnownVersusNew(crowded, ["She freezes before saying no to her older brother."], { limit: 1 });
+  assert.deepEqual(one.matches.map((match) => match.id), ["evidence:current"]);
+});
+
 // The second independent review of change B (issue #172): whose a goal is, the order no other source slips past, the goals
 // above a client's goal, her notes and her last decisions, dates, declined titles, prompts and the check tool.
 test("a goal stays whose it is when the client moves, parks or declines it; only her agreement or an adoption changes that", () => {
@@ -769,8 +796,43 @@ test("a goal the client declined isn't offered again under a title that reads th
   ]) {
     assert.throws(() => applyRoadmapDecision(roadmap, decision("plan-t-4", source, 4, [change])), { code: "ROADMAP_CHANGE_NOT_ALLOWED", message: /declined a goal with this title/u }, JSON.stringify(change));
   }
-  // She can bring it back herself.
-  assert.ok(applyRoadmapDecision(roadmap, decision("plan-t-5", "client", 4, [{ op: "add", goal: { id: "goal:again", kind: "actionable_step", parent_id: "goal:aim", title: "A daily inner-child dialogue" } }])));
+  // She can bring it back herself, by agreeing to it again. A second goal with its title is refused even from her: she changes
+  // the one that exists (Codex on #174: a decline must reach the only goal with its title).
+  const back = applyRoadmapDecision(roadmap, decision("plan-t-5", "client", 4, [{ op: "update", goal_id: "goal:dialogue", set: { client_agreement: "agreed", status: "active" } }]));
+  assert.deepEqual(["status", "client_agreement", "priority_source"].map((field) => back.goals.find((goal) => goal.id === "goal:dialogue")[field]), ["active", "agreed", "client"]);
+  assert.throws(() => applyRoadmapDecision(roadmap, decision("plan-t-6", "client", 4, [{ op: "add", goal: { id: "goal:again", kind: "actionable_step", parent_id: "goal:aim", title: "A daily inner-child dialogue" } }])),
+    { code: "ROADMAP_DUPLICATE_TITLE", message: /goal:dialogue already has this title/u });
+});
+
+test("two goals that aren't finished never share a title, so a decline reaches the only goal with that title", () => {
+  // Codex on #174 (P1): two equivalent goals existed before either was declined, and declining one left the other active
+  // under another id. Equivalent titles are now refused while the first goal isn't finished, from every source.
+  const roadmap = planOf(
+    decision("plan-w-1", "client", 1, [{ op: "add", goal: { id: "goal:aim", kind: "primary_aim", title: "Synthetic aim" } }]),
+    decision("plan-w-2", "provisional", 2, [
+      { op: "add", goal: { id: "goal:walk", kind: "actionable_step", parent_id: "goal:aim", title: "Weekly walk with a friend" } },
+      { op: "add", goal: { id: "goal:other", kind: "actionable_step", parent_id: "goal:aim", title: "Something else" } }
+    ])
+  );
+  const step = (id, title) => ({ op: "add", goal: { id, kind: "actionable_step", parent_id: "goal:aim", title } });
+  for (const [source, change] of [
+    ["provisional", step("goal:walk-2", "Weekly walk with a friend")],
+    ["authorized_plan", step("goal:walk-2", "The weekly walk, with a friend.")],
+    ["client", step("goal:walk-2", "A weekly walk with a friend")],
+    ["provisional", { op: "update", goal_id: "goal:other", set: { title: "weekly walk with a friend" } }]
+  ]) {
+    assert.throws(() => applyRoadmapDecision(roadmap, decision("plan-w-3", source, 3, [change])), { code: "ROADMAP_DUPLICATE_TITLE" }, `${source} ${JSON.stringify(change)}`);
+  }
+  // Within one decision too: the second add sees the first.
+  assert.throws(() => applyRoadmapDecision(roadmap, decision("plan-w-3", "authorized_plan", 3, [step("goal:x", "A new step"), step("goal:y", "A new step")])), { code: "ROADMAP_DUPLICATE_TITLE" });
+  // Declining the goal parks the only goal with its title, so nothing equivalent stays active.
+  const declined = applyRoadmapDecision(roadmap, decision("plan-w-4", "client", 3, [{ op: "update", goal_id: "goal:walk", set: { client_agreement: "declined" } }]));
+  assert.deepEqual(declined.goals.filter((goal) => goal.status === "active" && /walk/u.test(goal.title)).map((goal) => goal.id), []);
+  // A finished goal's title can be used again, and the finished goal can't then come back beside it.
+  const finished = applyRoadmapDecision(roadmap, decision("plan-w-5", "provisional", 3, [{ op: "update", goal_id: "goal:walk", set: { status: "completed" } }]));
+  const again = applyRoadmapDecision(finished, decision("plan-w-6", "provisional", 4, [step("goal:walk-2", "Weekly walk with a friend")]));
+  assert.ok(again.goals.some((goal) => goal.id === "goal:walk-2" && goal.status === "active"));
+  assert.throws(() => applyRoadmapDecision(again, decision("plan-w-7", "provisional", 5, [{ op: "update", goal_id: "goal:walk", set: { status: "active" } }])), { code: "ROADMAP_DUPLICATE_TITLE", message: /goal:walk-2/u });
 });
 
 test("a plan reads as proposals only while some goal is active and none of the active goals is the client's or an authorized plan's", () => {

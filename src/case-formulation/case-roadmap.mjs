@@ -373,6 +373,18 @@ function endorse(goal, decision, to) {
   goal.priority_source = to;
 }
 
+// Goals that aren't finished: active, parked or blocked.
+const UNFINISHED_STATUSES = new Set(["active", "parked", "blocked"]);
+
+// Two goals that aren't finished never share a title, compared as the declined-goal check compares titles. So a decline
+// reaches the one goal with its title, and no equivalent goal stays active under another id. Whoever wants such a goal
+// changes the one that exists; a finished goal's title can be used again.
+function refuseDuplicateTitle(roadmap, title, except = null) {
+  const wanted = normalizedTitle(title);
+  const other = roadmap.goals.find((goal) => goal !== except && UNFINISHED_STATUSES.has(goal.status) && normalizedTitle(goal.title) === wanted);
+  if (other) fail(`Goal ${other.id} already has this title; change that goal instead.`, "ROADMAP_DUPLICATE_TITLE");
+}
+
 // A goal the client declined isn't offered again by anyone but the client: not under another id, and not as another goal's
 // new title.
 function refuseDeclinedTitle(roadmap, title, except = null) {
@@ -393,6 +405,7 @@ function addGoal(roadmap, change, decision) {
   const agreement = input.client_agreement ?? (decision.source === "client" ? "agreed" : "not_asked");
   if (decision.source !== "client" && ["agreed", "declined"].includes(agreement)) refused("Only the client can agree to or decline a goal.");
   if (decision.source !== "client") refuseDeclinedTitle(roadmap, input.title);
+  if (UNFINISHED_STATUSES.has(input.status ?? "active")) refuseDuplicateTitle(roadmap, input.title);
   const goal = {
     id: input.id,
     title: input.title,
@@ -482,6 +495,8 @@ function updateGoal(roadmap, change, decision, touched) {
     goal.rank = null;
     if (goal.status === "completed" && !Object.hasOwn(set, "status_reason") && before.status !== "completed") goal.status_reason = null;
   }
+  // A new title, or a finished goal brought back, must not repeat the title of another goal that isn't finished.
+  if (UNFINISHED_STATUSES.has(goal.status) && (goal.title !== before.title || !UNFINISHED_STATUSES.has(before.status))) refuseDuplicateTitle(roadmap, goal.title, goal);
   const changed = UPDATABLE_FIELDS.filter((field) => !sameValue(before[field], goal[field]));
   if (!changed.length && before.rank === goal.rank && !adopt) return;
   // Every change goes in the history under the deciding source; a reason changed with its status goes with the status entry.

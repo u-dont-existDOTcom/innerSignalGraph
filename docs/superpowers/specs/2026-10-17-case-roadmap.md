@@ -98,6 +98,11 @@ the safety override. Every change is checked before any is kept; a decision appl
   only with her agreement. No other source offers it again: not under another id, and not as another goal's new title,
   with titles compared with accents, case, punctuation, spacing and a leading article (a, an, the, le, la, les, l', un,
   une, des) ignored.
+- **Two goals that aren't finished** (active, parked or blocked) **never share a title**, compared the same way, whoever
+  adds the second or retitles a goal to it, the client included (`ROADMAP_DUPLICATE_TITLE`, naming the goal that has it):
+  the one that exists is changed instead, and a client who wants a declined goal back agrees to it again. So a decline
+  reaches the only goal with its title, and no equivalent goal stays active under another id. A finished goal's title can be
+  used again, and a finished goal can't come back beside an unfinished one with its title.
 - Kind and parent never change (replace a goal by superseding it and adding another). Tracks never sit under an aim, so
   medical navigation or crisis help can't be recorded as an exercise within reparenting; everyday protective care is a
   goal within the aim when that frame is welcome.
@@ -168,7 +173,10 @@ rules (a handoff's from its `canonical_state`; a field of that name in the case'
 points, ranks the record's facts and hypotheses, settled answers, intervention history and roadmap goals by shared terms
 (the journal search's reading of word forms, accents folded, English and French stems; BM25 weights), and returns the
 best matches with their ids, kinds, sources and statements, and whether any match is close: a current entry sharing at
-least two of the point's content words and 60% of them. An entry is not current when the record marks it no longer
+least two of the point's content words and 60% of them. Each fact, hypothesis or intervention match says where it came
+from: its source's kind, reference and turn, and whether a model only interpreted it; a settled answer gives the items it
+rests on. When the record holds a point closely, the matches returned include where: if better-scored entries that are no
+longer current fill the list, the best close match takes its last place. An entry is not current when the record marks it no longer
 current, when another item supersedes it, when it is a superseded goal or when the client declined it. A one-word point
 is never close. The plan's goals are read as this version reads the plan; when the stored plan can't be read, its goals
 are left out and `plan_problem` gives the content-free reason, and the tool still answers. The model still decides what a
