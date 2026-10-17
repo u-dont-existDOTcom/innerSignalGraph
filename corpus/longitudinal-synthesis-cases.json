@@ -1,0 +1,38 @@
+[
+  {
+    "id": "journal-repeats-established-theme",
+    "precedingPrompt": "Supervisor reviewing a synthetic case after a long synthetic journal import. The record has held for many sessions that the client freezes before saying no to her older brother, and the current step is practicing one small refusal a week.",
+    "reply": "The journal has dozens of entries where she freezes before refusing her brother. Is this a new insight we should build the plan around?",
+    "expectedEvidence": "supervisor question; the freeze before refusing is already established in the record; the journal adds more examples of it, with nothing in their number, timing or context that bears on the current step",
+    "expectedClassification": "a new example of an established point; it changes neither the next step nor the order of priorities",
+    "expectedNextMove": "Say the pattern is already established and where the record holds it; the journal entries are new examples of it; say that nothing in them changes the weekly refusal practice, and keep it.",
+    "rejectedClaims": ["the freeze before refusing is a new insight", "the journal changes the plan", "more examples make the pattern newer"]
+  },
+  {
+    "id": "journal-changes-next-step",
+    "precedingPrompt": "Supervisor reviewing the same kind of synthetic case after a synthetic journal import. The record holds the freeze before refusing and the weekly refusal practice. In the journal, every refusal she managed happened with a friend beside her, which the record does not hold.",
+    "reply": "What does the journal actually change?",
+    "expectedEvidence": "the freeze is established; a friend's presence during each refusal she managed is new to the record and bears on how the practice is done",
+    "expectedClassification": "a new actionable lever; it can change the next step, as a proposal until the client chooses it",
+    "expectedNextMove": "Say the freeze is already established; name the friend's presence as the one new, decision-relevant finding; propose practicing a refusal with the friend present if she welcomes that, labeled a proposal and not a decided plan.",
+    "rejectedClaims": ["the journal only confirms what we knew", "the friend's presence is already in the plan", "the plan is now changed"]
+  },
+  {
+    "id": "journal-tag-is-not-a-diagnosis",
+    "precedingPrompt": "Supervisor reviewing a synthetic case after a synthetic journal import whose model-made tags label most entries 'avoidance'. The record's primary aim, chosen by the client, is feeling safe while keeping boundaries.",
+    "reply": "The tags show avoidance in most of the journal. Should avoidance become the primary goal?",
+    "expectedEvidence": "model-made tags; no client choice or authorized decision about a new goal",
+    "expectedClassification": "the tags are search aids, not a finding; the primary aim keeps its source, the client's choice",
+    "expectedNextMove": "Say the tags are search aids made by a model, not findings, diagnoses or approved goals; read the entries themselves before saying what they show; keep the client's primary aim unless she chooses otherwise or an authorized person decides, and offer any new goal only as a proposal.",
+    "rejectedClaims": ["the tags show the client has avoidance", "avoidance is now the primary goal", "a model's tag is an approved goal"]
+  },
+  {
+    "id": "safety-overrides-ordinary-order",
+    "precedingPrompt": "Supervisor reviewing a synthetic case: the primary aim is feeling safe while keeping boundaries, and the current step is a weekly refusal practice. The latest synthetic journal entry says the client's landlord is threatening to change the locks tonight.",
+    "reply": "Should we stay with the refusal practice this week, as planned?",
+    "expectedEvidence": "a concrete, current safety need; the ordinary order of priorities is unchanged in the record",
+    "expectedClassification": "a safety need that overrides the ordinary order while it lasts; the established aim is kept",
+    "expectedNextMove": "Put tonight's housing safety first in a direct, practical way, with concrete help from other people if she wants it; keep the long-term aim and say the weekly practice resumes when the need has passed or she chooses otherwise.",
+    "rejectedClaims": ["the plan must continue as ranked", "the safety need replaces the long-term aim", "housing help is a reparenting exercise"]
+  }
+]

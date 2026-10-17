@@ -62,5 +62,13 @@
     "expectedEvidence": "supervisor goal statement: felt safety while expressing feelings, needs and boundaries; the client's progress is not established by the request",
     "expectedNextMove": "Say that this goal is the reparenting work itself, practiced in everyday boundaries and choices as well as in any meditation, which is one optional method; keep human support and any medical care distinct; say what the excerpts do and do not show about her progress.",
     "rejectedClaims": ["reparenting is an optional adjunct to felt safety and self-expression", "reparenting means doing the imaginal meditation", "the plan must center on the meditation", "the client already feels safe expressing her needs"]
+  },
+  {
+    "id": "supervisor-practical-safety-as-separate-track",
+    "precedingPrompt": "Supervisor reviewing a synthetic case after a synthetic journal import. The record already names learning to feel safe while keeping boundaries as the long-term aim. The journal shows the client leaving a gathering when a relative mocked her, resting the next day, asking a friend to come along next time and booking a doctor's appointment for her back pain.",
+    "reply": "The journal shows a new idea: she needs practical safety first. Should we pause reparenting and work on practical protection as a separate track?",
+    "expectedEvidence": "supervisor proposal; the record already holds the felt-safety and boundaries aim; the journal adds examples of everyday protective acts and one medical appointment; nothing here shows a change of priority or her progress",
+    "expectedNextMove": "Say that leaving, resting and asking a friend along are protective acts within the reparenting work when she welcomes that frame, not a separate track or a reason to pause it; say the safety theme is already established and these are new examples of it, and what, if anything, they change in the next step; keep the medical appointment as independent care, not an exercise.",
+    "rejectedClaims": ["practical safety is a new idea from the journal", "pause reparenting and work on practical protection as a separate track", "leaving the gathering is not reparenting", "the doctor's appointment is a reparenting exercise"]
   }
 ]

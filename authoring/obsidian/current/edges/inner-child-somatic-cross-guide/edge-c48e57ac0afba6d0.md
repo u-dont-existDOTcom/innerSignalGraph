@@ -10,7 +10,7 @@ from_node_id: ROUTE.ALTERED_STATE_TRANSFER
 to_node_id: IC.CREDIBILITY_REPAIR
 relation: may-build-sober-credibility
 base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: b959dd6ac9e1eeff5a202969dd4013c2b147927b5d4ef0595a40dd5489bd3025
+projection_input_sha256: bfbdb939c3f6d3a064da8fa7ae8e72f39da04c59070a3c703e63f917a9eb63c9
 ---
 
 # ROUTE.ALTERED_STATE_TRANSFER may-build-sober-credibility IC.CREDIBILITY_REPAIR
