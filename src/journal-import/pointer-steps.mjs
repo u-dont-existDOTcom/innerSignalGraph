@@ -906,7 +906,7 @@ export async function runPointerSearchCheck({ quoteGeneration, reference, search
   const estimate = (found) => measurePointerRecall({ reference, excludeUnmeasured: true, foundWithTags: found, foundWordsOnly: found,
     eventTaggedUnitIds: new Set() });
   // The check's copy of the live search: the variant the generation ranks by (findQuotes in retrieval.mjs).
-  const replicaVariant = quoteGeneration.version === 3 ? "forms_bm25_coordination" : "current";
+  const replicaVariant = quoteGeneration.version >= 3 ? "forms_bm25_coordination" : "current";
   const replica = check.variants[replicaVariant].found[POINTER_RECALL_TOP];
   const both = [...replica].filter((questionId) => measured.has(questionId)).length;
   const byCutoff = (found, pick) => Object.fromEntries(Object.entries(found).map(([cutoff, set]) => [cutoff, pick(estimate(set))]));

@@ -532,6 +532,38 @@ test("kept tags become a pointer-only extraction: one node per tag and quote, on
   }
 });
 
+test("on version 4 of the quote index, an event's authored time is its quote's date or range, given once every quote is dated", () => {
+  const { kept, unitOf } = pointerJournal();
+  const build = (version, generation) => buildQuoteGeneration({ caseId: CASE, corpusId: CORPUS, generation, originalObjectId: "original:pointer",
+    mediaType: "application/pdf", representations: PAGES, unitOptions: UNIT_OPTIONS, version,
+    extractionFor: ({ units, quoteMeta, passageIdForUnit }) => pointerExtraction({ units, kept, quoteMeta, passageIdForUnit }) });
+  const built = build(4, "pointer-generation:quotes:quote-index-v4-month-first");
+  validateJournalGraph(built.graph, sources());
+  const episode = (graph, label) => graph.nodes.find((node) => node.kind === "episode" && node.data.label === label).data;
+  const passage = (graph, unitId) => graph.nodes.find((node) => node.kind === "passage" && node.data.unit_id === unitId).id;
+  // The walk is under a weekday line, after the last date: version 4 gives it the range open after that date, and its event that time.
+  assert.deepEqual(episode(built.graph, "promenade au parc").authored_time, { raw: null, from: "2020-03-10", to: null, precision: "interval", timezone: null,
+    basis: "relative_supported", evidence_ids: [passage(built.graph, unitOf("Promenade"))] });
+  assert.deepEqual(episode(built.graph, "promenade au parc").event_time, UNKNOWN_TIME, "when it happened stays unknown");
+  assert.equal(episode(built.graph, "anniversaire de Jean").authored_time.from, "2020-03-03", "a dated quote's event keeps its date");
+  // A quote between two dates, past the first one's carry: version 3 gives the quote its range, but made its events before
+  // the ranges, so the event had no time; version 4 gives the event the range.
+  const pages = ["3 mars 2020\n\nUn.", "Deux.", "Trois.", "Promenade au parc avec Jean.", "10 mai 2020\n\nFin."]
+    .map((text, index) => ({ representation_id: `ranged:page:${index + 1}`, text, page_number: index + 1, parse_status: "readable" }));
+  const units = pages.flatMap((item) => splitQuoteUnits({ representationId: item.representation_id, text: item.text, ...UNIT_OPTIONS }));
+  const walk = units.find((unit) => unit.text.startsWith("Promenade")).unit_id;
+  const { kept: walked } = checkPointerTags({ units, answer: answer(tag("event", "promenade au parc", anchor(walk, "Promenade au parc"))) });
+  const ranged = (version, generation) => buildQuoteGeneration({ caseId: CASE, corpusId: CORPUS, generation, originalObjectId: "original:pointer",
+    mediaType: "application/pdf", representations: pages, unitOptions: UNIT_OPTIONS, version,
+    extractionFor: ({ units: pageUnits, quoteMeta, passageIdForUnit }) => pointerExtraction({ units: pageUnits, kept: walked, quoteMeta, passageIdForUnit }) });
+  const [v3, v4] = [ranged(3, "ranged:quotes:quote-index-v3-month-first"), ranged(4, "ranged:quotes:quote-index-v4-month-first")];
+  const walkMeta = (built) => built.quoteMeta.get(passage(built.graph, walk))[0].written;
+  assert.deepEqual([walkMeta(v3).from, walkMeta(v3).to, walkMeta(v4).from, walkMeta(v4).to], ["2020-03-03", "2020-05-10", "2020-03-03", "2020-05-10"]);
+  assert.deepEqual(episode(v3.graph, "promenade au parc").authored_time, UNKNOWN_TIME);
+  assert.deepEqual(episode(v4.graph, "promenade au parc").authored_time, { raw: null, from: "2020-03-03", to: "2020-05-10", precision: "interval",
+    timezone: null, basis: "relative_supported", evidence_ids: [passage(v4.graph, walk)] });
+});
+
 test("the tag indexes give each quote its tags and each topic or event word its quotes, and list the untagged pages", async (t) => {
   const journal = pointerJournal();
   const { built, units, kept, passageIdForUnit, quotes, unitOf, passageOf } = journal;

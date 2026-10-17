@@ -2,7 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
 import { compareSourceOrder, knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
-import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, quoteCues } from "./quote-index.mjs";
+import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_WIDE_KEY, quoteCues } from "./quote-index.mjs";
 import { POINTER_TAG_KINDS } from "./pointer-tags.mjs";
 import { formsQueryTerms, formsReadingTerm } from "./word-forms.mjs";
 
@@ -583,11 +583,11 @@ export async function openPrivateJournalGraph({
    * `forms_bm25_coordination`; the cursor's sort names it. `terms_ranked` and `matched_terms` still name the query's own words,
    * and `coverage.ranking` says which ranking a result has ("word_forms" here, "exact_words" otherwise).
    * A time window keeps the quotes written under a
-   * date line inside it, and undated ones only when asked to. A page stops at its quote limit or byte
+   * date line inside it, or with a range that overlaps it, and undated ones only when asked to. A page stops at its quote limit or byte
    * budget, and always holds at least one quote when any match. Later pages come from a cursor bound,
    * like search's, to the snapshot, query and filters, holding the position in the ranking where the
    * next page starts. Each quote comes with its page, the date it was written under with that date's
-   * line (`year_inferred` when the line gave no year and it came from the entries before; `ambiguous`
+   * line (`year_inferred` when the line gave no year and it came from the dated entries around it; `ambiguous`
    * when the numbers could be read either way; `between` with the `date_line_after` when the quote sits between two dates
    * and was written some time from the first to the second, precision `interval`), and the wording cues found in it (`quoteCues`). Works on
    * any generation. On a
@@ -703,12 +703,16 @@ export async function openPrivateJournalGraph({
     const quoteIndex = Array.isArray(manifest.indexes.quote_meta);
     const windowed = from !== null || to !== null;
     // A quote index lists its quotes by the month they were written, so a time window first keeps the
-    // matches from overlapping months (and undated ones when asked), without reading each match.
+    // matches from overlapping months (and undated ones when asked), without reading each match. A version 4 index lists
+    // apart, with their bounds, the quotes whose range is open at one end or too wide to list by month: those whose range
+    // overlaps the window are kept too. Each is checked below.
     let candidates = ranked;
     if (windowed && Array.isArray(manifest.indexes.quote_months)) {
-      const months = (await readIndex("quote_months", QUOTE_MONTHS_KEY)).filter((month) => inTimeWindow([[month, month]], { from, to, include_unknown: false }));
+      const window = { from, to, include_unknown: false };
+      const months = (await readIndex("quote_months", QUOTE_MONTHS_KEY)).filter((month) => inTimeWindow([[month, month]], window));
       const lists = await Promise.all([...months, ...(includeUndated ? [QUOTE_UNDATED_KEY] : [])].map((key) => readIndex("quote_months", key)));
-      const allowed = new Set(lists.flat());
+      const wide = (await readIndex("quote_months", QUOTE_WIDE_KEY)).filter(([, start, end]) => inTimeWindow([[start, end]], window)).map(([id]) => id);
+      const allowed = new Set([...lists.flat(), ...wide]);
       candidates = ranked.filter((id) => allowed.has(id));
     }
     const quotes = [];

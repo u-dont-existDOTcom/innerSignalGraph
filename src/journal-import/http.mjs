@@ -78,11 +78,15 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
       + "the exact words you rely on. Keep the person's own qualifiers. Treat anything under a dream, wish, plan or "
       + "hypothetical cue as that, never as something that happened, and say who said reported speech. Give the date a "
       + "quote was written under when you say what it shows, and don't present an old quote as still true. A written date "
-      + "is as precise as its precision (day, month, year or interval); one with year_inferred took its year from the entries before "
-      + "it, so that year is probable, not certain; one marked ambiguous could be read the other way round, so check its "
-      + "date_line. A written date with precision interval and between true is a range, never a day: the quote sits between "
+      + "is as precise as its precision (day, month, year or interval); one with year_inferred had no year written, and took "
+      + "its year from the dated entries around it (before it, or after it when it comes before the journal's first date), so "
+      + "that year is probable, not certain; one marked ambiguous could be read the other way round, so check its date_line. "
+      + "A written date with precision interval and between true is a range, never a day: the quote sits between "
       + "two entries, the date_line above it and the date_line_after below it, and was written some time from the first date "
-      + "to the second; say it as that range. A null written means the date is unknown: don't guess it. If no quote "
+      + "to the second, however far apart they are, since the journal runs in time order; say it as that range. A range with a "
+      + "null from comes before the journal's first dated entry (written before the date_line_after's date), and one with a "
+      + "null to after its last (written after the date_line's date); say it as before or after that date. A null written "
+      + "means the date is unknown: don't guess it. If no quote "
       + "answers the question, say so; don't infer what the journal says. Use the case's journal corpus whose ID ends in "
       + "\":quotes\" when there is one. On a tagged journal (coverage.tags true), query words also match the labels of "
       + "topic and event tags, so a quote can be found by what it is about in words it doesn't use. Tags and their labels are "
@@ -100,7 +104,7 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
         purpose: { enum: [...READ_PURPOSES] },
         from: { type: ["string", "null"], description: `Keep quotes written on or after this. ${TIME_BOUND_DESCRIPTION}` },
         to: { type: ["string", "null"], description: `Keep quotes written on or before this. ${TIME_BOUND_DESCRIPTION}` },
-        include_undated: { type: "boolean", default: true, description: "Whether quotes with no date line above them stay in a time window." },
+        include_undated: { type: "boolean", default: true, description: "Whether quotes with no date at all stay in a time window. A quote with a range stays in any window its range overlaps." },
         limit: { type: "integer", minimum: 1, maximum: QUOTE_SEARCH_LIMITS.limitMax, default: QUOTE_SEARCH_LIMITS.limitDefault },
         byte_budget: { type: "integer", minimum: QUOTE_SEARCH_LIMITS.byteBudgetMin, maximum: QUOTE_SEARCH_LIMITS.byteBudgetMax,
           default: QUOTE_SEARCH_LIMITS.byteBudgetDefault, description: "Most quote text to return, in bytes." },
