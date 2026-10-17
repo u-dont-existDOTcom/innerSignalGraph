@@ -702,7 +702,8 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   const timeOrder = { yearless_dated: 0, yearless_undated: 0, misread_lines: 0, anchors: 0, dated_quotes: 0, ranged_quotes: 0,
     open_start_quotes: 0, open_end_quotes: 0, undated_quotes: 0 };
   if (ordered) {
-    // (1) The dated lines that agree with the journal's order, so no year is taken from one read wrong.
+    // (1) The dated lines that agree with the journal's order, so no year is taken from one read wrong (for the years only:
+    // every dated line is weighed again with them in (3)).
     const markLines = marks.map((mark, index) => ({ at: mark.at, mark: index, written: mark.written, day: mark.day }));
     const agreeing = timeOrderAnchors(markLines);
     // (2) The yearless lines, from the end of the journal back: each takes its year from the next line after it with a day.
@@ -720,9 +721,10 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
       timeOrder.yearless_dated += 1;
       following = value;
     }
-    // (3) The anchors: those lines and the yearless ones now dated, kept when they agree with the journal's order.
-    const lines = byPlace.filter((place) => place.mark !== undefined || yearsRead.has(place.pending))
-      .map((place) => (place.mark !== undefined ? place : { ...place, written: yearsRead.get(place.pending), day: yearsRead.get(place.pending).from }));
+    // (3) The anchors: every dated line, those set aside in (1) too, and the yearless ones now dated, kept when they agree with
+    // the journal's order. A dated yearless line can change which run weighs most, so every line is weighed again.
+    const lines = [...markLines, ...[...yearsRead].map(([index, written]) => ({ at: pending[index].at, pending: index, written, day: written.from }))]
+      .sort((left, right) => left.at - right.at);
     const kept = timeOrderAnchors(lines);
     const anchors = lines.filter((_, index) => kept.has(index));
     timeOrder.anchors = anchors.length;

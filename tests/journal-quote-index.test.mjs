@@ -1156,6 +1156,17 @@ test("version 4 gives a date with no year read before it the year of the dated l
   assert.deepEqual([metaByText(none).get("Deux.").written.from, metaByText(none).get("Deux.").written.to], ["2020-03-03", null]);
   // A 29 February takes the latest leap year not after the next date.
   assert.equal(metaByText(build4([page("29 février\n\nUn.", 1), page("1 mars 2023\n\nFin.", 2)])).get("Un.").written.from, "2020-02-29");
+  // Once dated, a yearless line is weighed with every date line, those that lost a tie among the full dates too: 31 December
+  // 2020 and 30 December 2020 tie before the yearless 30 December after the unread page is dated, and with it the run of
+  // 30 December, 30 December 2020 and 2 January 2021 weighs most, so 31 December 2020 is the one taken as misread.
+  const tie = build4([page("31 décembre 2020\n\nUn.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"), page("30 décembre\n\nDeux.", 3),
+    page("30 décembre 2020\n\nTrois.", 4), page("2 janvier 2021\n\nFin.", 5)]);
+  const tied = metaByText(tie);
+  assert.deepEqual([tie.stats.time_order.anchors, tie.stats.time_order.misread_lines, tie.stats.time_order.yearless_dated], [3, 1, 1]);
+  assert.deepEqual([tied.get("Deux.").written.from, tied.get("Deux.").written.year_inferred], ["2020-12-30", true]);
+  assert.equal(tied.get("Trois.").written.from, "2020-12-30");
+  assert.deepEqual([tied.get("Un.").written.from, tied.get("Un.").written.to, tied.get("Un.").written.between], [null, "2020-12-30", true],
+    "the entry under the line taken as misread comes before the first anchor");
 });
 
 test("version 4 gives the quotes before the first date and after the last a range open at that end, listed apart, and leaves only a journal without dates undated", () => {
