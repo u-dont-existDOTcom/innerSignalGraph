@@ -1,5 +1,6 @@
 import { roleBeliefIntegrityRules } from "./role-belief-integrity.mjs";
 import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
+import { projectCasePlan } from "../case-formulation/case-roadmap.mjs";
 import { renderInnerSignalConstitution } from "../therapy/constitution.mjs";
 import { protocolProvenanceRules } from "./protocol-provenance.mjs";
 import { knownAnswerRule, knownVersusNewAuditRules, knownVersusNewRules, repeatedAdviceRule, salienceRule, targetPreservationRule } from "./longitudinal-synthesis.mjs";
@@ -20,8 +21,16 @@ ${transcript}
 CURRENT MESSAGE TIME: ${now}`;
 }
 
+// A case's stored plan is shown as its plan view (what is primary, current, waiting and why, and whose priority each goal is),
+// not as the stored record with every goal's history and the decisions applied to it. A case without a plan shows as before.
+function promptCaseState(state) {
+  if (state?.roadmap == null) return state;
+  const { roadmap: _stored, ...rest } = state;
+  return { ...rest, case_plan: projectCasePlan(state) };
+}
+
 export function durableCaseContextBlock(context) {
-  const state = projectEvidenceAuthority(context?.durableCaseState ?? null);
+  const state = promptCaseState(projectEvidenceAuthority(context?.durableCaseState ?? null));
   const episode = context?.currentTherapeuticEpisode ?? null;
   const tracker = context?.trackerWindow ?? null;
   const retrieval = context?.targetedRetrievalRequests ?? [];

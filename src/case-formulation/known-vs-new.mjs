@@ -4,6 +4,7 @@ import { FRENCH_STOPWORDS, formsReadingStopwords, formsReadingTerm, formsReading
 // Where the case record already holds a point (issue #172): for each proposed point of a review, the record's entries that
 // share the most word forms with it, ranked with BM25 over the journal search's reading of words (accents folded, English and
 // French stems). Mechanical: it counts shared word forms and judges no meaning. The reviewer still says what each point is.
+// It covers the case record; journal material has its own search tools.
 
 export const KNOWN_VS_NEW_LIMITS = Object.freeze({ points: 12, point_text: 600, matches_default: 5, matches_max: 8, statement: 400 });
 // A match sharing at least this share of a point's content words is reported as close; the share is shown either way.
@@ -26,26 +27,29 @@ const clip = (value) => (value.length > KNOWN_VS_NEW_LIMITS.statement ? `${value
 // Every entry of the record a point can match, with the text it is read by and what a reader needs to place it.
 function recordEntries(state) {
   const entries = [];
+  // `current` is false for what the record no longer holds as current: an item or answer marked not current, a superseded
+  // goal or one the client declined. Such a match is shown, never counted as the record holding the point.
   for (const item of state.items ?? []) {
-    entries.push({ kind: "fact_or_hypothesis", id: item.id, text: item.statement,
+    entries.push({ kind: "fact_or_hypothesis", id: item.id, text: item.statement, current: item.still_current !== false,
       detail: { status: item.status, confidence: item.confidence, still_current: item.still_current, decision_relevance: item.decision_relevance, recorded_at: item.source?.recorded_at ?? null } });
   }
   for (const item of state.answered_questions ?? []) {
-    entries.push({ kind: "settled_answer", id: item.id, text: `${item.question} ${item.answer}`, detail: { still_current: item.still_current } });
+    entries.push({ kind: "settled_answer", id: item.id, text: `${item.question} ${item.answer}`, current: item.still_current !== false, detail: { still_current: item.still_current } });
   }
   for (const item of state.intervention_history ?? []) {
-    entries.push({ kind: "intervention", id: item.id, text: item.statement, detail: { recorded_at: item.source?.recorded_at ?? null } });
+    entries.push({ kind: "intervention", id: item.id, text: item.statement, current: item.still_current !== false, detail: { recorded_at: item.source?.recorded_at ?? null } });
   }
   for (const goal of state.roadmap?.goals ?? []) {
     entries.push({ kind: "roadmap_goal", id: goal.id, text: [goal.title, goal.review_condition, goal.expected_progress, goal.next_step_tests].filter(Boolean).join(" "),
-      detail: { goal_kind: goal.kind, status: goal.status, priority_source: goal.priority_source } });
+      current: goal.status !== "superseded" && goal.client_agreement !== "declined",
+      detail: { goal_kind: goal.kind, status: goal.status, priority_source: goal.priority_source, client_agreement: goal.client_agreement } });
   }
   if (state.current_episode) {
-    entries.push({ kind: "current_episode", id: state.current_episode.id, text: `${state.current_episode.target} ${state.current_episode.route}`, detail: { started_turn_id: state.current_episode.started_turn_id } });
+    entries.push({ kind: "current_episode", id: state.current_episode.id, text: `${state.current_episode.target} ${state.current_episode.route}`, current: true, detail: { started_turn_id: state.current_episode.started_turn_id } });
   }
   for (const thread of state.focus_discipline?.threads ?? []) {
     if (thread.status !== "parked") continue;
-    entries.push({ kind: "parked_question", id: thread.id, text: `${thread.question} ${thread.why_it_matters}`, detail: { importance: thread.importance } });
+    entries.push({ kind: "parked_question", id: thread.id, text: `${thread.question} ${thread.why_it_matters}`, current: true, detail: { importance: thread.importance } });
   }
   return entries;
 }
@@ -90,24 +94,28 @@ export function rankKnownVersusNew(state, points, { limit = KNOWN_VS_NEW_LIMITS.
           const idf = Math.log(1 + (entries.length - df + 0.5) / (df + 0.5));
           score += idf * (frequency * (BM25_K1 + 1)) / (frequency + BM25_K1 * (1 - BM25_B + BM25_B * entry.length / meanLength));
         }
-        if (shared) scored.push({ entry, score, overlap: shared / terms.length });
+        if (shared) scored.push({ entry, score, shared, overlap: shared / terms.length });
       }
     }
     scored.sort((left, right) => right.score - left.score || right.overlap - left.overlap || (left.entry.id < right.entry.id ? -1 : 1));
     const matches = scored.slice(0, limit).map(({ entry, score, overlap }) => ({
       kind: entry.kind,
       id: entry.id,
+      current: entry.current,
       overlap: Math.round(overlap * 100) / 100,
       score: Math.round(score * 1000) / 1000,
       text: clip(entry.text),
       ...entry.detail
     }));
-    const closest = Math.round(scored.reduce((best, match) => Math.max(best, match.overlap), 0) * 100) / 100;
+    // Close: a current entry sharing at least two of the point's content words and the set share of them. A point of one
+    // content word is never reported close: one shared word says too little.
+    const current = scored.filter((match) => match.entry.current);
+    const closest = Math.round(current.reduce((best, match) => Math.max(best, match.overlap), 0) * 100) / 100;
     return Object.freeze({
       point,
       content_terms: terms.length,
       closest_overlap: closest,
-      record_holds_close_match: terms.length > 0 && closest >= KNOWN_VS_NEW_CLOSE_OVERLAP,
+      record_holds_close_match: terms.length >= 2 && current.some((match) => match.shared >= 2 && match.overlap >= KNOWN_VS_NEW_CLOSE_OVERLAP),
       matches
     });
   }));

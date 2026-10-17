@@ -12,7 +12,7 @@ import {
   validateProtectiveCompatibilityState
 } from "../case-formulation/protective-compatibility.mjs";
 import { validateFocusState } from "../case-formulation/focus-discipline.mjs";
-import { validateCaseRoadmap } from "../case-formulation/case-roadmap.mjs";
+import { validateCaseRoadmapShape } from "../case-formulation/case-roadmap.mjs";
 import { SUPPORT_MODE_PREFERENCES } from "../case-formulation/support-mode.mjs";
 
 export const CASE_STATE_VERSION = 1;
@@ -206,8 +206,9 @@ export function validateCaseState(value) {
   if (Object.hasOwn(value, "support_mode_preference") && !SUPPORT_MODE_PREFERENCES.includes(value.support_mode_preference)) throw new ValidationError("caseState.support_mode_preference is invalid.");
   if (Object.hasOwn(value, "focus_discipline")) validateFocusState(value.focus_discipline);
   if (Object.hasOwn(value, "fresh_grief") && value.fresh_grief !== null) validateFreshGriefState(value.fresh_grief);
-  // The case's plan (issue #172) is optional: a record without one stays valid and unchanged.
-  if (Object.hasOwn(value, "roadmap") && value.roadmap !== null) validateCaseRoadmap(value.roadmap);
+  // The case's plan (issue #172) is optional: a record without one stays valid and unchanged. Only its shape is checked here,
+  // so a plan this version can't read never makes the rest of the case unreadable; it is read in full where it is used.
+  if (Object.hasOwn(value, "roadmap") && value.roadmap !== null) validateCaseRoadmapShape(value.roadmap);
   return value;
 }
 
