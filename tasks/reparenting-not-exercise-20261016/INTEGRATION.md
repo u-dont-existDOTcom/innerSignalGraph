@@ -17,7 +17,7 @@ possible adjunct to the primary goal of felt safety and self-expression and focu
 exercise; it accepted the owner's correction. The issue calls this a consumer comprehension failure. The conversation is
 not in the repository, so it can't be told from here whether that session loaded the therapy protocol; the cause below is
 a contributing cause in the instructions, not a proven sole cause. A model's general prior that reparenting is a
-technique also plays a part, and nothing the connector served corrected it.
+technique may also play a part, and nothing the connector served would have corrected it.
 
 ## Activated sources (main `48b3421f`)
 
@@ -92,6 +92,10 @@ rules. These show delivery, not model adherence; no live model was called.
 Node 24.18.0 (see the state file for the final counts): authoring check, validate and maps-check; graph regressions
 110/110; 57 affected test files 621/621 after the rules change; every test file that runs the MCP server 248/248;
 provenance gate against `48b3421f` PASS; therapy-lesson verifier; repository audit; the complete package gate (`npm run verify`) PASS at `bacf5e73`, full suite 2474/2474.
+After the review fixes (17 Oct): authoring check, validate and maps-check; graph regressions 110/110; therapy-lesson
+verifier; repository audit; provenance gate PASS; the reparenting, protocol-provenance and protocol MCP tests 30/30;
+the complete package gate on `main` with this branch and the journal graph branch merged is in both pull requests'
+merge statements.
 
 ## Served route
 
