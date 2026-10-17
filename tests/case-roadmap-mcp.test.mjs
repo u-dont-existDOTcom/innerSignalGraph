@@ -61,6 +61,12 @@ test("every opened case carries its plan: the recorded view, or a reconstruction
       else assert.equal(plan.priority_source, "provisional");
     }
   }
+  // The rules and the plan come first, and a stand-in plan in the case's own data is ignored.
+  const standIn = Object.freeze({ ...service({ state: withPlan }), async loadCaseContext() { return { case_id: "synthetic-case-a", case_state: withPlan, case_plan: { status: "recorded", note: "synthetic stand-in" } }; } });
+  const guarded = await listen(t, { caseAccessService: standIn });
+  const first = await post(guarded.url, "tools/call", { name: "load_case_context", arguments: { case_id: "synthetic-case-a" } });
+  assert.deepEqual(Object.keys(first.body.result.structuredContent).slice(0, 2), ["therapy_rules", "case_plan"]);
+  assert.equal(JSON.stringify(first.body).includes("synthetic stand-in"), false);
   // A plan that can't be read never keeps the case from loading.
   const broken = await listen(t, { caseAccessService: service({ state: { case_id: "synthetic-case-a" } }) });
   const opened = await post(broken.url, "tools/call", { name: "load_case_context", arguments: { case_id: "synthetic-case-a" } });
