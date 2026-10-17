@@ -7,14 +7,14 @@ source_id: AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
 guide_id: owner-amendments
 heading: AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
 source_role: owner-approved-extension
-source_hash: cc64603df78569c96aa1b900b5230c872f7a63fc67e759561134257cffc338a5
+source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
 section_hash: 47061d5fa8b3f0c181f80fc47ddf53ba2b9902534f0a41cb2a63641f323b501e
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DEEP_LOVE_TO_CHILD
   - IC.GUARD_BEFORE_CHILD_LOVE
   - ROUTE.GRATITUDE_PRACTICE
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014

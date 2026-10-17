@@ -122,10 +122,22 @@ const CASES = [
     rejects: ["pause reparenting and work on practical protection as a separate track", "leaving the gathering is not reparenting", "the doctor's appointment is a reparenting exercise"],
     rules: [
       "or against everyday protection and practical safety, as if one were the goal and the other an optional adjunct or a separate track",
-      "A protective act the person takes for the vulnerable self in daily life, such as keeping a boundary, leaving or avoiding a harmful situation, resting or arranging practical safety, is reparenting when the person uses or welcomes that frame, not a separate therapy.",
+      "A protective act the person takes for the vulnerable self in daily life, such as keeping a boundary, leaving or avoiding a harmful situation, changing a route, resting, asking someone to come along, staying with a friend or arranging practical safety, is reparenting when the person uses or welcomes that frame, not a separate therapy.",
       "they are not reparenting exercises, reparenting does not replace them, and arranging them can belong to the same care without being called an exercise",
       "or everyday protective action and practical safety are set against it as a separate track",
       "Neither is putting an urgent safety need first, or pausing a particular exercise or practice for safety or tolerance."
+    ]
+  },
+  {
+    // The owner's answer 43a (17 Oct 2026): the behavior test for #172 showed answers filing the person's own protective
+    // steps under a services heading as a separate track; what stays separate is the service or the other person's help.
+    id: "supervisor-own-steps-under-services",
+    rejects: ["her route change and the walk to the car belong under a separate safety and legal service", "renewing the protection order is a reparenting exercise"],
+    rules: [
+      "changing a route, resting, asking someone to come along, staying with a friend or arranging practical safety, is reparenting",
+      "What stays separate is the service, or the other person's help, itself, never the person's own step",
+      "not under a services heading or in a separate track",
+      "including by filing the person's own protective steps under a services heading or track"
     ]
   }
 ];
@@ -189,7 +201,7 @@ test("the served MCP route delivers the correction and keeps the safeguards", as
   const instructions = block("instructions");
   assert.match(instructions, /Reparenting is not an exercise\. It is the ongoing relationship in which the present-day adult cares for, validates, protects and guides the vulnerable younger self/);
   assert.match(instructions, /not a goal that reparenting optionally supports, including when you advise a supervisor/);
-  assert.match(instructions, /Everyday protection and practical safety the person takes for that younger self belong to the same work when the person welcomes that frame; outside medical, crisis, safety and practical services stay separately available\./);
+  assert.match(instructions, /Everyday protection and practical safety the person takes for that younger self belong to the same work when the person welcomes that frame, asking someone to come along included; what stays separately available is the outside service or the other person's help itself \(medical, crisis, safety and practical services\), never the person's own step\./);
   assert.ok(block("references/PROTOCOL-STATE-PROVENANCE.md").includes(protocolProvenanceRules));
   const map = block("references/INNER-CHILD-THERAPY-MAP.md");
   assert.match(map, /OVERLAY\.IC\.PROTOCOL_STATE_PROVENANCE<br\/>OWNER-APPROVED \/ NOT COMPILED<br\/>Hypothetical care is not an enacted exercise/);

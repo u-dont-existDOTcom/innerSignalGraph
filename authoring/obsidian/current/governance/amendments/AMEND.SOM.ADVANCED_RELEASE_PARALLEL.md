@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.ADVANCED_RELEASE_PARALLEL
 status: owner-approved
 domain: somatic
-base_record_sha256: 8548fbb1017adfc8a8ac2120e3695bdc743bf0d0d7596cb90423090ba30d3ee8
-source_file_sha256: cc64603df78569c96aa1b900b5230c872f7a63fc67e759561134257cffc338a5
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+base_record_sha256: 6bdf101fe3b81f213df3ecf9396f842b4bb1ee9927041a4fc693286b89a9c4bb
+source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # AMEND.SOM.ADVANCED_RELEASE_PARALLEL
@@ -24,6 +24,6 @@ projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411
     "status": "owner-approved",
     "text": "Sky Hypnosis and Vagal Blitz are optional advanced-release practices that may be considered by stable people even before other therapies. They do not prove readiness for deep trauma processing and are not prerequisites."
   },
-  "version": "owner-amendments-2026-10-17-r13"
+  "version": "owner-amendments-2026-10-17-r14"
 }
 ```

@@ -7,13 +7,13 @@ source_id: AMEND.IC.SPIRITUAL_STRUGGLE
 guide_id: owner-amendments
 heading: AMEND.IC.SPIRITUAL_STRUGGLE
 source_role: owner-approved-extension
-source_hash: cc64603df78569c96aa1b900b5230c872f7a63fc67e759561134257cffc338a5
+source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
 section_hash: f575f89c7addaa9c379909a33de87875bece1690370de130a93fd87d9fd7daf8
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.SPIRITUAL_STRUGGLE
   - ROUTE.INFLUENCE_LOVE_CAPACITY
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # AMEND.IC.SPIRITUAL_STRUGGLE

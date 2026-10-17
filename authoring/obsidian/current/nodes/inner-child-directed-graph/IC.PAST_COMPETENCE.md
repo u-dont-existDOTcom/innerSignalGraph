@@ -21,7 +21,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: ee2911addbed31f169a7c35c62a894265c324ca678c7c4d533b5d02574e9c9f7
 base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # Retrieve a real occasion of responding well
