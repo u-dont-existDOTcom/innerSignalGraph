@@ -1165,6 +1165,19 @@ test("version 4 gives a date with no year read before it the year of the dated l
   assert.equal(read.get("Quatre.").written.from, "2020-03-10", "the date after it stays an anchor");
   assert.deepEqual([read.get("Deux.").written.from, read.get("Deux.").written.to], ["2020-03-01", "2020-03-05"], "the misread line's entry is ranged");
   assert.deepEqual([misread.stats.time_order.anchors, misread.stats.time_order.misread_lines], [3, 1]);
+  // When reading the years again never settles which date lines agree (Codex: here the two months are kept and dropped in
+  // turn), the date lines kept in every round are the anchors, and only the yearless lines a day between them fits are
+  // dated: the years always come from the anchors, whichever round it stops in.
+  const cycle = build4(["1 janvier", "1 septembre", "Juin 2020", "31 décembre", "15 janvier", "31 décembre", "31 décembre", "Septembre 2020", "1 décembre"]
+    .map((line, index) => page(`${line}\n\nCitation ${index + 1}.`, index + 1)));
+  const cycled = metaByText(cycle);
+  assert.deepEqual([cycle.stats.time_order.anchors, cycle.stats.time_order.misread_lines, cycle.stats.time_order.yearless_dated,
+    cycle.stats.time_order.yearless_undated], [4, 1, 3, 4]);
+  assert.deepEqual(["Citation 1.", "Citation 2.", "Citation 8.", "Citation 9."].map((text) => cycled.get(text).written.from),
+    ["2020-01-01", "2020-09-01", "2020-09", "2020-12-01"], "the anchors, in order");
+  for (const text of ["Citation 3.", "Citation 4.", "Citation 5.", "Citation 6.", "Citation 7."]) {
+    assert.deepEqual([cycled.get(text).written.from, cycled.get(text).written.to], ["2020-09-01", "2020-09"], text);
+  }
   // A 29 February takes the latest leap year not after the next date.
   assert.equal(metaByText(build4([page("29 février\n\nUn.", 1), page("1 mars 2023\n\nFin.", 2)])).get("Un.").written.from, "2020-02-29");
   // Once dated, a yearless line is weighed with every date line, those that lost a tie among the full dates too: 31 December

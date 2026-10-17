@@ -339,9 +339,16 @@ Version 4 takes the order the owner states as a fact of the journal:
   days never go back, with the most weight: a full date counts 3, a month with its year 2, a year alone or a day whose
   year was inferred 1, so a year mentioned at a line's start gives way before a full date does. A line outside the run
   breaks the order and is taken as misread: it dates nothing, and its quotes are dated as if it weren't there.
-- **A date with no year read before it takes the year of the next dated line**, the latest year in which that day is
-  not after it, marked `year_inferred`, mirroring how a date takes its year from the entries before it. This covers the
-  lines before any year and after a page not fully read.
+- **Every date without a year takes its year from the lines around it that agree with that order**, never from a line
+  before it that may be misread: the earliest such day not before the last agreeing line (or yearless line already
+  dated) before it, if it isn't after the next agreeing line, else the latest not after that line. It is marked
+  `year_inferred` and weighs as an inferred year; the anchors are weighed again with these lines, and the years read
+  again, until the date lines kept are the ones the years were read from. Should that never settle (a cycle, or eight
+  rounds), the date lines kept in every round so far are the anchors, with only the yearless lines a day between them
+  fits, so the years always come from the anchors. (Codex's review found the three orderings the first versions of this
+  got wrong: a date line that lost a tie couldn't come back once a yearless line was dated; a yearless line took its
+  year from a line before it later taken as misread; and a cycle of rounds stopped on one whose years came from other
+  anchors.)
 - **Every quote gets its time.** A quote under an anchor keeps its date, carried two pages as before; any other gets the
   range from the nearest anchor before it to the nearest after it, however wide and across pages not fully read, since
   the order holds through them. Before the first anchor the range is open at the start (`from` null), after the last

@@ -267,9 +267,9 @@ const monthNumber = (day) => Number(day.slice(0, 4)) * 12 + Number(day.slice(5, 
 // Version 4: the date a line with a day and a month only stands for, from the days of the lines around it that agree with the
 // journal's order (YYYY-MM-DD, null when there is none): the earliest such day not before `previous` (the line before it, as a
 // date takes its year from the entries before it), if it is not after `next`; else the latest not after `next`, which the
-// weighing of the order then settles against `previous`. Years are tried up to eight from the line's (a 29 February needs a
-// leap year); null when none fits.
-function yearBetween({ month, day }, previous, next) {
+// weighing of the order then settles against `previous` (with `strict`, none: only a day between both). Years are tried up
+// to eight from the line's (a 29 February needs a leap year); null when none fits.
+function yearBetween({ month, day }, previous, next, strict = false) {
   const dateIn = (year) => (realDay(year, month, day) ? `${String(year).padStart(4, "0")}-${pad(month)}-${pad(day)}` : null);
   let forward = null, backward = null;
   if (previous !== null) {
@@ -287,6 +287,8 @@ function yearBetween({ month, day }, previous, next) {
     }
   }
   if (forward !== null && (next === null || forward <= next)) return forward;
+  // Strict (`strict`): only a day between both lines, never one before `previous`.
+  if (strict && previous !== null) return null;
   return backward;
 }
 
@@ -721,7 +723,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
     let agreeing = timeOrderAnchors(markLines);
     // (2) The yearless lines, in journal order: each between the last agreeing line or yearless line dated before it and the
     // next agreeing line after it (`yearBetween`).
-    const readYears = (agree) => {
+    const readYears = (agree, strict = false) => {
       const read = new Map();
       const explicit = markLines.filter((line) => agree.has(line.mark));
       let previous = null, after = 0;
@@ -731,7 +733,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         if (place.pending === undefined) { previous = place.day; continue; }
         while (after < explicit.length && explicit[after].at < place.at) after += 1;
         const item = pending[place.pending];
-        const value = yearBetween(item, previous, explicit[after]?.day ?? null);
+        const value = yearBetween(item, previous, explicit[after]?.day ?? null, strict);
         if (value === null) continue;
         read.set(place.pending, { from: value, to: value, precision: "day", ambiguous: item.ambiguous, year_inferred: true, line: item.line });
         previous = value;
@@ -739,16 +741,29 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
       return read;
     };
     // (3) The anchors: every date line and every yearless line now dated, weighed together. A dated yearless line can change
-    // which date lines agree, and so the years of the others: they are read again until the date lines kept stay the same.
-    let yearsRead, lines, kept;
-    for (let round = 0; round < 4; round += 1) {
-      yearsRead = readYears(agreeing);
-      lines = [...markLines, ...[...yearsRead].map(([index, written]) => ({ at: pending[index].at, pending: index, written, day: written.from }))]
-        .sort((left, right) => left.at - right.at);
-      kept = timeOrderAnchors(lines);
-      const keptLines = new Set(lines.filter((line, index) => kept.has(index) && line.mark !== undefined).map((line) => line.mark));
-      if (keptLines.size === agreeing.size && [...keptLines].every((mark) => agreeing.has(mark))) break;
+    // which date lines agree, and so the years of the others: they are read again until the date lines kept are the ones the
+    // years were read from. Should that never settle (a cycle, or eight rounds), the date lines kept in every round so far
+    // are the anchors, with only the yearless lines a day between them fits, so the years always come from the anchors.
+    const lineOf = (index, written) => ({ at: pending[index].at, pending: index, written, day: written.from });
+    const sameSet = (left, right) => left.size === right.size && [...left].every((mark) => right.has(mark));
+    let yearsRead = null, lines = null, kept = null;
+    const seen = [];
+    for (let round = 0; round < 8 && !seen.some((state) => sameSet(state, agreeing)); round += 1) {
+      seen.push(agreeing);
+      const read = readYears(agreeing);
+      const weighed = [...markLines, ...[...read].map(([index, written]) => lineOf(index, written))].sort((left, right) => left.at - right.at);
+      const run = timeOrderAnchors(weighed);
+      const keptLines = new Set(weighed.filter((line, index) => run.has(index) && line.mark !== undefined).map((line) => line.mark));
+      if (sameSet(keptLines, agreeing)) { yearsRead = read; lines = weighed; kept = run; break; }
       agreeing = keptLines;
+    }
+    if (kept === null) {
+      const core = new Set([...seen[0]].filter((mark) => seen.every((state) => state.has(mark))));
+      yearsRead = readYears(core, true);
+      lines = [...markLines.filter((line) => core.has(line.mark)), ...[...yearsRead].map(([index, written]) => lineOf(index, written))]
+        .sort((left, right) => left.at - right.at);
+      kept = new Set(lines.map((_, index) => index));
+      invariant(lines.every((line, index) => index === 0 || lines[index - 1].day <= line.day), "QUOTE_TIME_ORDER_INVALID");
     }
     timeOrder.yearless_dated = yearsRead.size;
     timeOrder.yearless_undated = pending.length - yearsRead.size;
