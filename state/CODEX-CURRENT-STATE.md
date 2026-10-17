@@ -3,13 +3,20 @@
 Updated: 2026-10-17
 
 
-## The post-deploy audit's last-mile gaps (2026-10-17, issue #172; branch `task/post-deploy-audit-20261017`, change E, onto `main`, not merged)
+## Refreshing a connector's tools, not a new chat (2026-10-17, issue #172, a follow-up to change E; branch `task/tool-refresh-advice-20261017`, onto `main`, not merged)
+
+- **Owner finding (17 Oct, 23:15 UTC):** "it wasn't an old chat prob, i had to refresh tools in plugin": ChatGPT kept the connector's old tool list in a new chat, and refreshing the InnerSignal plugin's tools brought in the 19th.
+- **Change:** `connector_tools`' note (`src/server/private-case-mcp.mjs`) and the private continuity skill now tell a chat that can't call a listed tool to have the user refresh the connector's tools in the app's settings (in ChatGPT, the plugin's tools; a new chat keeps the old list), where they said a new chat would have it. E's integration notes and the consumer map are corrected to match. Served protocol unchanged: `1da3ddf0…`.
+- **Validation:** `tests/case-roadmap-mcp.test.mjs` pins the note; the full verify in CI.
+- **Next:** Codex and CI on the pull request; the owner's merge and `deploy` (the connector only).
+
+## The post-deploy audit's last-mile gaps (2026-10-17, issue #172, change E; PR #178, merged 17 Oct 23:11 UTC as `12b3a093`, live since 23:16 UTC)
 
 - **Owner request (17 Oct, 22:08 UTC, "check the bug report"):** ChatGPT's read-only audit of the live connector, posted on #172 at 21:57 UTC with synthetic examples only, confirmed protocol `1da3ddf0…`, the rules and the plan in opened cases, and raised three gaps: its already-open chat offered 18 tools, not 19; the known-versus-new check's `record_holds_close_match: false` for a reworded point could read as "not in the record"; a reconstructed plan showed `routes_tried: []` where a case's interventions came from older records.
-- **Found (content-free):** the connector keeps no sessions and gives every `tools/list` the same 19 tools, with `tools.listChanged: false`; a fresh client through the public address got all 19, `check_case_known_vs_new` included (17 Oct 22:11 UTC, `/mcp` and `/`), so the open chat holds the list it fetched before the deploy. The check and the reconstruction work as designed; their outputs invited misreading.
+- **Found (content-free):** the connector keeps no sessions and gives every `tools/list` the same 19 tools, with `tools.listChanged: false`; a fresh client through the public address got all 19, `check_case_known_vs_new` included (17 Oct 22:11 UTC, `/mcp` and `/`). The owner found (23:15 UTC) that ChatGPT kept the old list in a new chat too, and that refreshing the InnerSignal plugin's tools brought in the new one: the app holds the list per connector. The check and the reconstruction work as designed; their outputs invited misreading.
 - **Change E:** `tasks/post-deploy-audit-20261017/INTEGRATION.md`: `connector_tools` in every opened case (the tools the connector offers now); the flag renamed `close_word_match`, and the tool's description, its answer's note and the private continuity skill say that no close match never makes a point new; the reconstruction's `other_intervention_entries`, `other_intervention_ids` and `routes_note`; the protocol application test's optional `known_vs_new_points` (a fourth call, answered by the store of the code under test), the case `journal-review-paraphrased-known`, two known replies (17 in all), the rubric's clause on reworded points and word checks, and the judge check's "word check shown" context; every connector call before any model call. The served protocol is unchanged: `1da3ddf0…`.
 - **Validation:** `tests/case-roadmap.test.mjs`, `tests/case-roadmap-mcp.test.mjs`, `tests/protocol-application-eval.test.mjs`; `therapy-lessons:verify` and the repository audit; the full verify in CI. Delivery only: whether a model calls a reworded known point new beside the check's answer is a live run of the new case, which uses the owner's model usage.
-- **Next:** Codex and CI on the pull request; the owner's merge and `deploy` (the connector only: the protocol is unchanged). A live run of the paraphrase case if the owner agrees.
+- **Live:** the owner merged it at 23:11 UTC (`12b3a093`, whose tree is the reviewed head `03a9632d`'s) and said `deploy`; since 23:16 UTC the connector serves the check's new description with protocol `1da3ddf0…` and 19 tools, and the import server is on the same commit, its worker still stopped. His answer 44b runs the paraphrase case live (below, when done).
 
 ## The person's own protective steps stay with reparenting (2026-10-17, issue #172, the owner's answer 43a, change D; PR #177, merged 17 Oct 19:27 UTC as `3609ddc1`, live since 19:28 UTC)
 

@@ -390,12 +390,13 @@ const sizeClass = (bytes) => 2 ** Math.ceil(Math.log2(Math.max(1, bytes)));
 const traceCode = (code) => code === null ? null : typeof code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : "OTHER";
 
 // What this connector offers now (ChatGPT's post-deploy audit on #172, 17 Oct 2026): a host keeps the tool list it fetched
-// when its chat began, and this server can't tell it of a change (it keeps no sessions, so tools.listChanged is false). With
-// the names in an opened case, a chat whose list predates a deploy can see the gap and say so. Names only, no case data.
+// for the connector, and this server can't tell it of a change (it keeps no sessions, so tools.listChanged is false). In
+// ChatGPT a new chat kept the old list; refreshing the plugin's tools brought in the new one (the owner, 17 Oct, 23:15 UTC).
+// With the names in an opened case, a chat whose app holds an older list can see the gap and say so. Names only, no case data.
 export function connectorTools(names) {
   return {
     names: [...names],
-    note: "The tools this InnerSignal connector offers now. If one of them isn't among the tools you can call in this chat, this chat's tool list is older than the connector: tell the user that a new chat will have it, rather than doing without it silently."
+    note: "The tools this InnerSignal connector offers now. If one of them isn't among the tools you can call, the app is holding an older tool list for this connector: tell the user to refresh the connector's tools in the app's settings (in ChatGPT, refresh the tools of the InnerSignal plugin; a new chat keeps the old list), rather than doing without it silently."
   };
 }
 
