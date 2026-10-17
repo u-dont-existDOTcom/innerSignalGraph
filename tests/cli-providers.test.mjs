@@ -78,6 +78,15 @@ test("Codex CLI provider gives no action count when its event stream isn't whole
   const result = await provider.generate(prompt);
   assert.deepEqual(JSON.parse(result.text), { ok: true }, "the answer itself still arrives");
   assert.equal(result.toolItems, null);
+  // Codex on #175 (P2): nor when an event among whole ones is truncated: it could have been an action.
+  const broken = new CodexCliProvider({
+    command: process.execPath,
+    baseArgs: [path.join(here, "fixtures/fake-codex-cli.mjs"), "--fake-broken-event"],
+    model: "fake-codex",
+    timeoutMs: 10000,
+    isolateConfig: false
+  });
+  assert.equal((await broken.generate(prompt)).toolItems, null);
 });
 
 test("Claude CLI provider extracts structured_output from its JSON envelope", async () => {

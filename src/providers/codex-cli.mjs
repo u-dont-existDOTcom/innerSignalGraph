@@ -6,17 +6,20 @@ import { ProviderError } from "../core/errors.mjs";
 import { runSubprocess } from "../core/subprocess.mjs";
 import { detectCodexCapabilities } from "../core/cli-capabilities.mjs";
 
+// The events, and how many lines that start like a JSON event don't parse (a truncated or broken event).
 function parseJsonLines(text) {
   const events = [];
+  let malformed = 0;
   for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
     try {
       events.push(JSON.parse(line));
     } catch {
-      // Progress and compatibility notices may appear as non-JSON output.
+      // Progress and compatibility notices may appear as non-JSON output; a line that starts like an event is a broken one.
+      if (line.trimStart().startsWith("{")) malformed += 1;
     }
   }
-  return events;
+  return { events, malformed };
 }
 
 export class CodexCliProvider {
@@ -120,7 +123,7 @@ export class CodexCliProvider {
       }
       if (!text) throw new ProviderError("Codex CLI returned an empty final message.");
 
-      const events = parseJsonLines(run.stdout);
+      const { events, malformed } = parseJsonLines(run.stdout);
       const thread = events.find((event) => event.type === "thread.started");
       const completed = [...events].reverse().find((event) => event.type === "turn.completed");
       const failed = [...events].reverse().find((event) => event.type === "turn.failed" || event.type === "error");
@@ -131,10 +134,10 @@ export class CodexCliProvider {
         .filter((event) => ["item.started", "item.updated", "item.completed"].includes(event.type) && event.item
           && !["agent_message", "reasoning", "todo_list", "error"].includes(event.item.type))
         .map((event, index) => event.item.id ?? `item-${index}`)).size;
-      // The count is a receipt only when the event stream is whole: the turn completed and the agent's message is in it.
-      // Otherwise (a changed event format, lines that don't parse) there is no count (null), so no caller mistakes a missing
-      // receipt for an agent that took no action.
-      const receipt = Boolean(completed) && events.some((event) => event.type === "item.completed" && event.item?.type === "agent_message");
+      // The count is a receipt only when the event stream is whole: every event-looking line parses, the turn completed and
+      // the agent's message is in it. Otherwise (a changed event format, a truncated or broken event) there is no count (null),
+      // so no caller mistakes a missing receipt for an agent that took no action.
+      const receipt = malformed === 0 && Boolean(completed) && events.some((event) => event.type === "item.completed" && event.item?.type === "agent_message");
 
       return {
         provider: this.id,

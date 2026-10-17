@@ -1,10 +1,13 @@
 import fs from "node:fs/promises";
 
 // Test switches, not Codex flags: --fake-tool-item makes the agent run a command before answering; --fake-no-receipt
-// writes the answer but prints no completed turn or agent message, as a changed event format would.
+// writes the answer but prints no completed turn or agent message, as a changed event format would; --fake-broken-event
+// prints a truncated action event among otherwise whole ones.
 const fakeToolItem = process.argv.includes("--fake-tool-item");
 const fakeNoReceipt = process.argv.includes("--fake-no-receipt");
-const args = process.argv.slice(2).filter((arg) => arg !== "--fake-tool-item" && arg !== "--fake-no-receipt");
+const fakeBrokenEvent = process.argv.includes("--fake-broken-event");
+const switches = new Set(["--fake-tool-item", "--fake-no-receipt", "--fake-broken-event"]);
+const args = process.argv.slice(2).filter((arg) => !switches.has(arg));
 if (args.includes("--version")) {
   console.log("fake-codex 1.0.0");
   process.exit(0);
@@ -50,6 +53,7 @@ if (fakeToolItem) {
   console.log(JSON.stringify({ type: "item.started", item: { id: "item_1", type: "command_execution", command: "ls", status: "in_progress" } }));
   console.log(JSON.stringify({ type: "item.completed", item: { id: "item_1", type: "command_execution", command: "ls", status: "completed" } }));
 }
+if (fakeBrokenEvent) console.log('{"type":"item.completed","item":{"id":"item_1","type":"command_execution","comm');
 if (!fakeNoReceipt) {
   console.log(JSON.stringify({ type: "item.completed", item: { id: "item_2", type: "agent_message", text: "{\"ok\":true}" } }));
   console.log(JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } }));
