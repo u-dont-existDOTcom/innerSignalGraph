@@ -339,16 +339,20 @@ Version 4 takes the order the owner states as a fact of the journal:
   days never go back, with the most weight: a full date counts 3, a month with its year 2, a year alone or a day whose
   year was inferred 1, so a year mentioned at a line's start gives way before a full date does. A line outside the run
   breaks the order and is taken as misread: it dates nothing, and its quotes are dated as if it weren't there.
-- **Every date without a year takes its year from the lines around it that agree with that order**, never from a line
-  before it that may be misread: the earliest such day not before the last agreeing line (or yearless line already
-  dated) before it, if it isn't after the next agreeing line, else the latest not after that line. It is marked
-  `year_inferred` and weighs as an inferred year; the anchors are weighed again with these lines, and the years read
-  again, until the date lines kept are the ones the years were read from. Should that never settle (a cycle, or eight
-  rounds), the date lines kept in every round so far are the anchors, with only the yearless lines a day between them
-  fits, so the years always come from the anchors. (Codex's review found the three orderings the first versions of this
-  got wrong: a date line that lost a tie couldn't come back once a yearless line was dated; a yearless line took its
-  year from a line before it later taken as misread; and a cycle of rounds stopped on one whose years came from other
-  anchors.)
+- **Every date without a year takes its year from the date lines around it that agree with that order**, never from a
+  line that may be misread, a stretch of yearless lines at a time. After an agreeing date line, each takes the earliest
+  such day not before the line before it, as long as it stays before the next agreeing line; before the first agreeing
+  line, and between two from the first that would pass the next, each takes the latest such day not after the line
+  after it, so a chain of them before the first date runs back from it. It is marked `year_inferred` and weighs as an
+  inferred year; the anchors are weighed again with these lines, and the years read again, until the date lines kept
+  are the ones the years were read from (`rounds`). Should that never settle (a cycle, or eight rounds; `settled`
+  false), each set of date lines tried, and the date lines kept in all of them, is read again strictly, a yearless line
+  dated only if a day fits between its date lines, and the one that weighs most is kept, so the years always come from
+  the anchors. (Codex's review found the four orderings the first versions of this got wrong: a date line that lost a
+  tie couldn't come back once a yearless line was dated; a yearless line took its year from a line before it later taken
+  as misread; a cycle of rounds stopped on one whose years came from other anchors; and a chain of yearless lines before
+  the first date took its years forward from one another and lost its last line. A search of random journals found a
+  cycle the stretch reading still makes; it is a test.)
 - **Every quote gets its time.** A quote under an anchor keeps its date, carried two pages as before; any other gets the
   range from the nearest anchor before it to the nearest after it, however wide and across pages not fully read, since
   the order holds through them. Before the first anchor the range is open at the start (`from` null), after the last
@@ -357,9 +361,9 @@ Version 4 takes the order the owner states as a fact of the journal:
 - **Events get their quote's time.** The pointer extraction runs once every quote is dated, so an event's authored time
   is its quote's date or range, closed or open, as an interval with basis `relative_supported`; its event time stays
   unknown, as before.
-- **Counts.** `stats.time_order`: the yearless lines dated and not, the lines taken as misread, the anchors, and the
-  quotes with a date, a closed range, a range open at the start or at the end, and none; `range_widths` gains
-  `over_12_months`.
+- **Counts.** `stats.time_order`: the yearless lines that date their entry (anchors) and the rest, the date lines taken
+  as misread, the anchors, the rounds and whether they settled, and the quotes with a date, a closed range, a range open
+  at the start or at the end, and none; `range_widths` gains `over_12_months`.
 
 A wide range is still worth having: it puts an event in order on the timeline, and keeps a quote out of the time
 windows it can't belong to, where an undated quote is in every one by default (`include_undated`). The quotes, their
