@@ -41,7 +41,9 @@ if (outputIndex < 0 || !args[outputIndex + 1]) {
 if (process.env.FAKE_CODEX_ARGS_FILE) await fs.writeFile(process.env.FAKE_CODEX_ARGS_FILE, JSON.stringify(args));
 let input = "";
 for await (const chunk of process.stdin) input += chunk;
-if (!input.includes("SYSTEM INSTRUCTIONS") || !input.includes("USER MESSAGE AND CONTEXT")) {
+const developer = args.find((arg, index) => args[index - 1] === "-c" && arg.startsWith("developer_instructions="));
+if (process.env.FAKE_CODEX_PROMPT_FILE) await fs.writeFile(process.env.FAKE_CODEX_PROMPT_FILE, JSON.stringify({ stdin: input, developer: developer ?? null }));
+if (developer ? !input.trim() : (!input.includes("SYSTEM INSTRUCTIONS") || !input.includes("USER MESSAGE AND CONTEXT"))) {
   console.error("combined prompt was not passed through stdin");
   process.exit(4);
 }

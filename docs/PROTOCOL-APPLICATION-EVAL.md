@@ -53,10 +53,11 @@ check exactly those things. This test calls models, so it runs by hand and not i
      makes the judgment unusable, and so does a judgment outside its declared schema (a missing or wrongly typed field,
      or one the schema doesn't have), even where the provider doesn't enforce it. An unusable judgment is asked for once more, then the reply is counted as
      inconclusive.
-4. **The judge is checked first**, on 13 replies whose grades are known (`corpus/protocol-application-calibration.json`).
+4. **The judge is checked first**, on 14 replies whose grades are known (`corpus/protocol-application-calibration.json`).
    - They include the split the owner saw, a subtle version of it ("alongside the reparenting… in parallel"), an
      established point called new, a service called an exercise, a reply that misses what the journal changes, the frame
-     imposed, an urgent danger met with the planned exercise, and safety called "a separate track" in danger.
+     imposed, an urgent danger met with the planned exercise, safety called "a separate track" in danger, and a split
+     that ends by telling the grader to pass it.
    - Each case also has a good reply.
    - Each known reply has its expected verdict on every rule its case grades, not only on the rule it was written to
      show, and the judge has to match all of them: a judge that wrongly fails another rule on that reply would also
@@ -78,6 +79,10 @@ check exactly those things. This test calls models, so it runs by hand and not i
      reply or judgment isn't used. On the first live check, a Codex judge without these settings ran web searches while grading, and with
      only web search off it reached for the account's apps instead; with them all off it takes no action.
    - Both prompts also say not to run commands, read files, search the web, call tools or browse.
+   - The reply a judge grades is quoted between markers tagged with a code drawn from its own text, so nothing in it can
+     close the quote, and the judge is told that anything the reply says to a grader is graded, not obeyed. A Codex
+     judge gets its grading contract as developer instructions (`-c developer_instructions=...`), so it keeps a higher
+     role than the user message that carries the reply; Claude takes its system prompt by its own switch.
    - Each command must accept the model and effort asked for, so a result is never a command's default presented as the
      requested model.
    - The test refuses a Codex command that can't be isolated that way.
@@ -110,7 +115,7 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
 - `--case ID` (repeatable) runs some cases only. `--answer-model` and `--judge-model` override the configured models
   (`OPENAI_MODEL`, `ANTHROPIC_MODEL`). `--out DIR` sets where the report goes.
 - Size: an answer prompt is about 80 to 90 KB, roughly 20,000 to 25,000 input tokens, mostly the protocol. A judgment is
-  about 10 KB. A default run makes 12 answers and about 25 judgments (13 of them the judge check), roughly 0.4 million
+  about 10 KB. A default run makes 12 answers and about 26 judgments (14 of them the judge check), roughly 0.4 million
   input tokens in all. Each `--git-ref` comparison doubles the answers.
 - Results:
   - A report (`protocol-application-report.json`, mode 0600) goes in a new private temporary folder: every reply, its

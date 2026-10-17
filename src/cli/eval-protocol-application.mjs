@@ -122,11 +122,13 @@ const cases = wanted.length ? allCases.filter((spec) => wanted.includes(spec.id)
 // A problem with the set-up (an agent that can't be checked or isolated) is a configuration error, reported after cleanup.
 class SetupError extends Error {}
 
-function provider(family, model) {
+// A Codex judge gets its grading contract as developer instructions, so the reply it grades, which arrives in the user
+// message, can't outrank it (Codex on #175); Claude takes its system prompt by its own switch.
+function provider(family, model, role) {
   if (values.mode === "mock") return new MockProvider({ id: family, model: `mock-${family}`, fixturePath: path.resolve(values.fixture) });
   if (values.mode === "cli") {
     return family === "openai"
-      ? new CodexCliProvider({ command: config.codexCommand, model: model ?? config.openaiModel, reasoningEffort: config.codexReasoningEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true, configOverrides: CODEX_ISOLATION_CONFIG })
+      ? new CodexCliProvider({ command: config.codexCommand, model: model ?? config.openaiModel, reasoningEffort: config.codexReasoningEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true, configOverrides: CODEX_ISOLATION_CONFIG, systemAs: role === "judge" ? "developer" : "prompt" })
       : new ClaudeCliProvider({ command: config.claudeCommand, model: model ?? config.anthropicModel, effort: config.claudeEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true, maxTurns: null });
   }
   return family === "openai"
@@ -168,8 +170,8 @@ const log = (line) => process.stderr.write(`${line}\n`);
 let status = 2;
 try {
   // A check of the judge alone asks nothing of the answering agent, so it isn't set up or checked (Codex on #175).
-  const answerer = values["calibration-only"] ? null : provider(values.answerer, values["answer-model"]);
-  const judge = provider(judgeFamily, values["judge-model"]);
+  const answerer = values["calibration-only"] ? null : provider(values.answerer, values["answer-model"], "answer");
+  const judge = provider(judgeFamily, values["judge-model"], "judge");
   if (answerer) await requireIsolation(answerer);
   await requireIsolation(judge);
   // The connector under test is loaded before any model is called, so a wrong --git-ref costs nothing.

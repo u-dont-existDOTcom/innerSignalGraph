@@ -53,6 +53,25 @@ test("Codex CLI provider passes a caller's extra config settings, each as its ow
   assert.ok(args.includes("--ignore-user-config") && args.includes("--ignore-rules"));
 });
 
+test("Codex CLI provider can send the system text as developer instructions, apart from the user message", async (t) => {
+  // Codex on #175 (P2): a caller whose user message carries untrusted text keeps its instructions in a higher role.
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-codex-developer-"));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const promptFile = path.join(dir, "prompt.json");
+  process.env.FAKE_CODEX_PROMPT_FILE = promptFile;
+  t.after(() => { delete process.env.FAKE_CODEX_PROMPT_FILE; });
+  const make = (systemAs) => new CodexCliProvider({ command: process.execPath, baseArgs: [path.join(here, "fixtures/fake-codex-cli.mjs")], model: "fake-codex", timeoutMs: 10000, isolateConfig: false, systemAs });
+  await make("developer").generate({ ...prompt, system: 'Grade "strictly".\nLine two.' });
+  const sent = JSON.parse(await fsp.readFile(promptFile, "utf8"));
+  assert.equal(sent.developer, 'developer_instructions="Grade \\"strictly\\".\\nLine two."', "a TOML string");
+  assert.ok(!sent.stdin.includes("SYSTEM INSTRUCTIONS") && !sent.stdin.includes("Grade"));
+  await make("prompt").generate(prompt);
+  const combined = JSON.parse(await fsp.readFile(promptFile, "utf8"));
+  assert.equal(combined.developer, null);
+  assert.ok(combined.stdin.startsWith("SYSTEM INSTRUCTIONS\n"), "the default is unchanged");
+  assert.throws(() => make("system"), /systemAs must be prompt or developer/u);
+});
+
 test("Codex CLI provider counts the actions its agent took beyond reasoning and its message", async () => {
   const provider = new CodexCliProvider({
     command: process.execPath,

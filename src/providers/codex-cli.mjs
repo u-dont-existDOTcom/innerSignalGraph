@@ -32,7 +32,8 @@ export class CodexCliProvider {
     cwd = process.cwd(),
     isolateConfig = true,
     detectCapabilities = true,
-    configOverrides = []
+    configOverrides = [],
+    systemAs = "prompt"
   } = {}) {
     this.id = "openai";
     this.command = command;
@@ -44,6 +45,11 @@ export class CodexCliProvider {
     this.isolateConfig = isolateConfig;
     // Extra `-c key=value` settings for this caller, such as features it wants turned off.
     this.configOverrides = [...configOverrides];
+    // "prompt" (the default) puts the system text at the head of the one stdin prompt; "developer" sends it as Codex's
+    // developer instructions (`-c developer_instructions=...`), so it keeps a higher role than the user message, for a
+    // caller whose user message carries untrusted text.
+    if (!["prompt", "developer"].includes(systemAs)) throw new ProviderError("systemAs must be prompt or developer.");
+    this.systemAs = systemAs;
     this.detectCapabilities = detectCapabilities;
     this.capabilitiesPromise = null;
     this.privateInferenceIsolation = Object.freeze({ packetOnly: false, freshContextPerGenerate: true, tools: true, filesystem: true, sessionPersistence: false, transport: "codex-cli-agent" });
@@ -86,12 +92,17 @@ export class CodexCliProvider {
       if (this.configOverrides.length && (!flags || flags.config)) {
         for (const override of this.configOverrides) args.push("-c", override);
       }
+      if (this.systemAs === "developer") {
+        if (flags && !flags.config) throw new ProviderError("Installed Codex CLI can't take developer instructions (-c).", { code: "CLI_INCOMPATIBLE" });
+        // A TOML basic string: JSON's escapes are valid TOML escapes.
+        args.push("-c", `developer_instructions=${JSON.stringify(system)}`);
+      }
       args.push("--output-schema", schemaPath, "--output-last-message", outputPath);
       if (this.isolateConfig && (!flags || flags.ignoreUserConfig)) args.push("--ignore-user-config");
       if (this.isolateConfig && (!flags || flags.ignoreRules)) args.push("--ignore-rules");
       args.push("-");
 
-      const prompt = `SYSTEM INSTRUCTIONS\n${system}\n\nUSER MESSAGE AND CONTEXT\n${user}\n`;
+      const prompt = this.systemAs === "developer" ? `${user}\n` : `SYSTEM INSTRUCTIONS\n${system}\n\nUSER MESSAGE AND CONTEXT\n${user}\n`;
       const run = await runSubprocess({
         command: this.command,
         args,
