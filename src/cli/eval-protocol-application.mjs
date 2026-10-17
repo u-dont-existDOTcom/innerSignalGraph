@@ -33,7 +33,8 @@ const USAGE = `Usage: npm run eval:protocol-application -- --mode cli|api|mock [
   --samples N              replies per case (default 3)
   --case ID                only this case (repeatable)
   --git-ref REF            test the connector and protocol of this commit instead of this checkout
-  --calibration-only       only check the judge on the replies whose grades are known
+  --calibration-only       only check the judge on the replies whose grades are known (the answering agent isn't
+                           used or checked; --answerer still picks the judge's family, the other one)
   --skip-calibration       don't check the judge first (the run is then marked unchecked)
   --fixture FILE           mock mode: the fixture of replies and judgments
   --out DIR                where the report goes (default: a new private temporary folder)
@@ -155,9 +156,10 @@ agentHome = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-agent-"));
 const log = (line) => process.stderr.write(`${line}\n`);
 let status = 2;
 try {
-  const answerer = provider(values.answerer, values["answer-model"]);
+  // A check of the judge alone asks nothing of the answering agent, so it isn't set up or checked (Codex on #175).
+  const answerer = values["calibration-only"] ? null : provider(values.answerer, values["answer-model"]);
   const judge = provider(judgeFamily, values["judge-model"]);
-  await requireIsolation(answerer);
+  if (answerer) await requireIsolation(answerer);
   await requireIsolation(judge);
   // The connector under test is loaded before any model is called, so a wrong --git-ref costs nothing.
   let source = null;
@@ -174,7 +176,7 @@ try {
     version: PROTOCOL_APPLICATION_VERSION,
     started_at: new Date().toISOString(),
     mode: values.mode,
-    answerer: { family: values.answerer, model: answerer.model || "default" },
+    answerer: answerer ? { family: values.answerer, model: answerer.model || "default" } : null,
     judge: { family: judgeFamily, model: judge.model || "default" },
     samples,
     cases: cases.map((spec) => spec.id),

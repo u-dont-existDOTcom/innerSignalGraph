@@ -90,8 +90,11 @@ check exactly those things. This test calls models, so it runs by hand and not i
 npm run eval:protocol-application -- --mode cli                          # Codex answers, Claude grades
 npm run eval:protocol-application -- --mode cli --answerer anthropic     # Claude answers, Codex grades
 npm run eval:protocol-application -- --mode cli --git-ref 87dce2de       # the connector and protocol live before #173
-npm run eval:protocol-application -- --mode cli --calibration-only       # check the judge alone
+npm run eval:protocol-application -- --mode cli --calibration-only       # check the judge alone (Claude)
 ```
+
+- `--calibration-only` asks nothing of the answering agent, so it isn't set up or checked; `--answerer` still picks
+  the judge's family, the other one (`--answerer anthropic --calibration-only` checks a Codex judge).
 
 - `--mode` is required: a live run uses the owner's model usage, so it is never the default.
 - In API mode the providers enforce no output schema, so both prompts state the JSON they expect, and the judge's prompt
@@ -119,7 +122,8 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
 - `tests/protocol-application-eval.test.mjs` checks the test itself with fake models:
   - the prompt holds the protocol exactly as the connector serves it;
   - an earlier commit's connector is used as that commit had it;
-  - the judge's answer is read strictly, and a judge that passes everything is caught;
+  - the judge's answer is read strictly, a judge that passes everything is caught, and so is one that misgrades a rule
+    a known reply wasn't written to show;
   - one failing reply fails its case;
   - an agent that reached outside the conversation, or an unusable judgment, makes the run inconclusive;
   - the command's mock run writes a private report and exits by its outcome.

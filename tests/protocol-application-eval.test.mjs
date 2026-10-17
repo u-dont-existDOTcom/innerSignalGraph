@@ -378,19 +378,33 @@ test("the command refuses a command-line agent it can't isolate, before any mode
   const temp = path.join(dir, "tmp");
   fs.mkdirSync(temp);
   const env = { ...process.env, TMPDIR: temp, INNER_SIGNAL_MODE: "", CODEX_COMMAND: wrapper("codex", "fake-codex-cli.mjs"), CLAUDE_COMMAND: wrapper("claude", "fake-claude-minimal-cli.mjs"), ANTHROPIC_MODEL: "fake-claude", OPENAI_MODEL: "fake-codex" };
-  const run = (overrides) => spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "cli", "--calibration-only", "--case", "frame-declined", "--out", path.join(dir, "out")], { cwd: root, encoding: "utf8", env: { ...env, ...overrides } });
+  const out = path.join(dir, "out");
+  const run = (overrides, args = ["--calibration-only"], outDir = out) => spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "cli", "--case", "frame-declined", "--out", outDir, ...args], { cwd: root, encoding: "utf8", env: { ...env, ...overrides } });
   const lacking = run({});
   assert.equal(lacking.status, 3, lacking.stderr);
   assert.match(lacking.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence.*model.*effort/u);
   // Codex on #175 (P2): a Codex without JSON events (its actions couldn't be counted) or without --ignore-rules (AGENTS.md
-  // around it could steer it) isn't used either.
-  const bareCodex = run({ CODEX_COMMAND: wrapper("codex-minimal", "fake-codex-minimal-cli.mjs") });
+  // around it could steer it) isn't used either. Here Codex grades (Claude would answer).
+  const codexJudging = ["--calibration-only", "--answerer", "anthropic"];
+  const bareCodex = run({ CODEX_COMMAND: wrapper("codex-minimal", "fake-codex-minimal-cli.mjs") }, codexJudging);
   assert.equal(bareCodex.status, 3, bareCodex.stderr);
   assert.match(bareCodex.stderr, /The installed Codex CLI lacks what this test needs to isolate it: ignoreUserConfig, ignoreRules, json, sandbox, ephemeral, model, config/u);
-  // A command that can't be started at all is a configuration error too, reported the same way.
-  const absent = run({ CODEX_COMMAND: path.join(dir, "no-such-codex") });
-  assert.equal(absent.status, 3, absent.stderr);
-  assert.match(absent.stderr, /The Codex CLI \(.*no-such-codex\) could not be started or checked/u);
-  assert.equal(fs.existsSync(path.join(dir, "out", "protocol-application-report.json")), false, "nothing ran");
+  // A command that can't be started at all is a configuration error too, reported the same way: as the judge, or as the
+  // answering agent of a full run.
+  for (const args of [codexJudging, []]) {
+    const absent = run({ CODEX_COMMAND: path.join(dir, "no-such-codex") }, args);
+    assert.equal(absent.status, 3, absent.stderr);
+    assert.match(absent.stderr, /The Codex CLI \(.*no-such-codex\) could not be started or checked/u);
+  }
+  assert.equal(fs.existsSync(path.join(out, "protocol-application-report.json")), false, "nothing ran");
+
+  // Codex on #175 (P2): a check of the judge alone asks nothing of the answering agent, so a missing one doesn't stop it.
+  const judgeOut = path.join(dir, "judge-only");
+  const judgeOnly = run({ CODEX_COMMAND: path.join(dir, "no-such-codex"), CLAUDE_COMMAND: wrapper("claude-full", "fake-claude-cli.mjs") }, ["--calibration-only"], judgeOut);
+  assert.equal(judgeOnly.status, 2, judgeOnly.stderr);
+  assert.doesNotMatch(judgeOnly.stderr, /Codex/u);
+  assert.match(judgeOnly.stdout, new RegExp(`Judge check: 0 of ${calibration.length} known replies graded as expected`, "u"), "the fake judge's answers aren't judgments");
+  const judgeReport = JSON.parse(fs.readFileSync(path.join(judgeOut, "protocol-application-report.json"), "utf8"));
+  assert.deepEqual([judgeReport.outcome, judgeReport.answerer, judgeReport.judge.family, judgeReport.error], ["judge_not_trusted", null, "anthropic", undefined]);
   assert.deepEqual(fs.readdirSync(temp).filter((name) => name.startsWith("inner-signal-eval-agent-")), [], "the agents' empty folder is removed either way");
 });
