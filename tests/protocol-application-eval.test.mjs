@@ -299,10 +299,12 @@ test("a reply or a judgment from an agent that reached outside the conversation,
   assert.equal(unusable.cases[0].samples[0].problem, "JUDGMENT_INVALID");
 });
 
-test("a blank reply is no reply, and its JSON wrapper is never graded", async () => {
+test("a blank reply, or JSON without one, is no reply, and its JSON is never graded", async () => {
   // Codex on #175 (P1): {"reply": ""} fell back to the wrapper's own text, which a judge could pass on a case whose rules
   // only forbid mistakes.
   for (const raw of ['{"reply":""}', '{"reply":"   "}', '{"reply":null}', '{"reply":7}', "", "   "]) assert.equal(parseReply(raw), null, raw);
+  // Codex on #175 (P1): nor is JSON without a reply, such as another field, an empty object or a list.
+  for (const raw of ['{"answer":"A reply."}', "{}", "[]", '["A reply."]', "```json\n{\"text\": \"A reply.\"}\n```", "42"]) assert.equal(parseReply(raw), null, raw);
   assert.equal(parseReply('{"reply":"A reply."}'), "A reply.");
   assert.equal(parseReply("A reply with {braces} in it."), "A reply with {braces} in it.", "prose from a provider that ignored the schema is its own reply");
   const source = await connectorSource();

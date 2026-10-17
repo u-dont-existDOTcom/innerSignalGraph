@@ -132,5 +132,5 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
     a known reply wasn't written to show;
   - one failing reply fails its case;
   - an agent that reached outside the conversation, or an unusable judgment, makes the run inconclusive, and so does a
-    blank reply, whose JSON wrapper is never graded in its place;
+    blank reply or JSON without a reply, which is never graded in place of an answer;
   - the command's mock run writes a private report and exits by its outcome.

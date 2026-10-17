@@ -531,19 +531,18 @@ export function patternSignals(spec, reply) {
   return found;
 }
 
-// The answer's `reply`; a blank or non-text one is no reply (Codex on #175: its JSON wrapper must not be graded instead).
-// Text that holds no such object is a provider that ignored the schema: the text itself is the reply.
+// The answer's `reply`. Text with no JSON in it is a provider that ignored the schema, and the text itself is the reply.
+// JSON must be the answer's object with a reply in it: another shape, or a blank or non-text reply, is no reply, so a
+// JSON wrapper is never graded in place of an answer (Codex on #175).
 export function parseReply(raw) {
-  let value = null;
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  let value;
   try {
     value = jsonIn(raw);
   } catch {
-    // No JSON in the text.
+    return raw;
   }
-  if (value && typeof value === "object" && Object.hasOwn(value, "reply")) {
-    return typeof value.reply === "string" && value.reply.trim() ? value.reply : null;
-  }
-  return typeof raw === "string" && raw.trim() ? raw : null;
+  return value && typeof value === "object" && !Array.isArray(value) && typeof value.reply === "string" && value.reply.trim() ? value.reply : null;
 }
 
 // A judge grades from the rubric, the case's facts and the reply alone: a judgment from an agent that took any action (a
