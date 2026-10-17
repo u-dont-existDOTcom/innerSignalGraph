@@ -253,7 +253,8 @@ export function compilePrivateHandoffArtifact({ handoffId, record, recentVerbati
   const sentCandidate = pendingArtifacts.length === 0 && candidateLifecycle.candidate_status === "sent"
     ? record.candidate_responses.find((candidate) => candidate.id === candidateLifecycle.current_candidate_id)
     : null;
-  const stateDiff = record.state_diff_history.at(-1) ?? null;
+  // The last turn's diff; a plan decision's diff (`roadmap:<decision id>`) never stands in for it.
+  const stateDiff = [...record.state_diff_history].reverse().find((entry) => !entry.id.startsWith("roadmap:")) ?? null;
   const rawTranscript = clone(record.raw_transcript);
   const transcriptAmendments = clone(record.transcript_amendments ?? []);
   const effectiveTranscript = clone(applyTranscriptAmendments(rawTranscript, transcriptAmendments, { sourceArtifacts: record.source_artifacts }));

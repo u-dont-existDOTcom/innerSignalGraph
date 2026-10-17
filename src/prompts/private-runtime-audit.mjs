@@ -1,5 +1,5 @@
 import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
-import { sharedClinicalRules } from "./common.mjs";
+import { promptCaseState, sharedClinicalRules } from "./common.mjs";
 
 export function privateRuntimeAuditPrompt(packet) {
   const system = `You are an independent final-response auditor for Inner Signal.${sharedClinicalRules}
@@ -22,6 +22,6 @@ Return exactly one JSON object with only these fields:
 
 Use substantive/high only for a defect or uncertainty that must block this exact response. An empty findings array is PASS. Do not return replacement text, a revised candidate, commentary, rationale outside findings, or any additional field. When repair_induced_error_checks is nonempty, copy that exact ordered list into repair_induced_checks after checking every item.`;
 
-  const user = `AUTHORIZED AUDIT PACKET\n${JSON.stringify({ ...packet, ...(packet.case_state == null ? {} : { case_state: projectEvidenceAuthority(packet.case_state) }) }, null, 2)}`;
+  const user = `AUTHORIZED AUDIT PACKET\n${JSON.stringify({ ...packet, ...(packet.case_state == null ? {} : { case_state: promptCaseState(projectEvidenceAuthority(packet.case_state)) }) }, null, 2)}`;
   return Object.freeze({ system, user });
 }

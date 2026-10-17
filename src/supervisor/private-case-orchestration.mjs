@@ -19,7 +19,8 @@ const OPERATIONS = new Set([
   "create_journal_corpus",
   "commit_journal_generation",
   "rollback_journal_generation",
-  "increment_journal_visibility"
+  "increment_journal_visibility",
+  "record_roadmap_decision"
 ]);
 
 function requiredText(value, name, maximum = 100_000) {
@@ -185,6 +186,22 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           case_id: caseId,
           corpus_id: request.corpus_id,
           visibility_epoch: visibilityEpoch
+        });
+      }
+
+      if (request.operation === "record_roadmap_decision") {
+        // The case's plan (issue #172): one decision by the client (recorded with references to where they said it), an
+        // authorized plan, or a model's proposal, applied whole or refused. The receipt holds no plan content.
+        requiredObject(request.decision, "decision");
+        if (typeof caseAccessService.recordRoadmapDecision !== "function") throw new ValidationError("caseAccessService must support the case plan.");
+        const result = await caseAccessService.recordRoadmapDecision(caseId, request.decision, authContext);
+        return Object.freeze({
+          schema_version: 1,
+          operation_succeeded: true,
+          case_id: caseId,
+          decision_id: result.decision_id,
+          applied: result.applied === true,
+          case_revision: result.case_revision
         });
       }
 
