@@ -581,15 +581,29 @@ async function judge(judgeProvider, spec, reply, metadata) {
 
 /**
  * The rules the check of the judge can't vouch for: for each rule the cases under test grade, a known reply must pass it and
- * another must fail it, or a judge that always passes (or always fails) that rule would look trustworthy. Returns
- * `rule:verdict` for each missing example.
+ * another must fail it (in the rule's context, where it reads differently), or a judge that always passes (or always fails)
+ * that rule would look trustworthy. `cases` are the cases the known replies belong to. Returns `rule:verdict` for each
+ * missing example.
  */
-export function calibrationGaps(graded, calibration) {
+export function calibrationGaps(graded, calibration, cases) {
+  const byId = new Map(cases.map((spec) => [spec.id, spec]));
   const gaps = [];
-  for (const id of new Set(graded.flatMap((spec) => spec.grading.criteria))) {
-    for (const verdict of ["pass", "fail"]) if (!calibration.some((entry) => entry.expect[id] === verdict)) gaps.push(`${id}:${verdict}`);
+  for (const key of new Set(graded.flatMap((spec) => spec.grading.criteria.map((id) => ruleContext(spec, id))))) {
+    for (const verdict of ["pass", "fail"]) {
+      const covered = calibration.some((entry) => {
+        const spec = byId.get(entry.case_id);
+        return Boolean(spec) && Object.entries(entry.expect).some(([id, expected]) => expected === verdict && ruleContext(spec, id) === key);
+      });
+      if (!covered) gaps.push(`${key}:${verdict}`);
+    }
   }
   return gaps;
+}
+
+// Where a rule reads differently by context, its known replies must cover that context too: protective acts have their own
+// clause when the person declined the frame (Codex on #175).
+function ruleContext(spec, id) {
+  return id === "protective_acts_are_reparenting" && spec.frame === "declined" ? `${id} (declined frame)` : id;
 }
 
 /**
@@ -598,7 +612,7 @@ export function calibrationGaps(graded, calibration) {
  * needs a known passing and a known failing reply, or the judge is not trusted and nothing is asked of it.
  */
 export async function runJudgeCalibration({ judge: judgeProvider, cases, calibration, graded = cases, log = () => {} }) {
-  const gaps = calibrationGaps(graded, calibration);
+  const gaps = calibrationGaps(graded, calibration, cases);
   if (gaps.length) {
     log(`calibration: no known reply covers ${gaps.join(", ")}`);
     return { agreed: 0, total: calibration.length, gaps, trusted: false, results: [] };

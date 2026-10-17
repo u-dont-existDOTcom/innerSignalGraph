@@ -116,7 +116,7 @@ check that the tool was called, or that the right words are in the prompt, would
     `find_journal_quotes`) from a real connector process, this checkout's or an earlier commit's (`--git-ref`), after the
     supervisor's message;
   - a judge of the other model family grades each reply against a fixed rubric written from the owner's definition, with
-    a quote for every fail; it is first checked on 14 replies whose grades are known, on every rule
+    a quote for every fail; it is first checked on 15 replies whose grades are known, on every rule
     (`corpus/protocol-application-calibration.json`), including the split the owner saw;
   - several replies per case, advisory pattern signals, isolated command-line agents.
 - `CodexCliProvider` reports how many actions its agent took (`toolItems`), so a reply that reached outside the prompt

@@ -53,17 +53,18 @@ check exactly those things. This test calls models, so it runs by hand and not i
      makes the judgment unusable, and so does a judgment outside its declared schema (a missing or wrongly typed field,
      or one the schema doesn't have), even where the provider doesn't enforce it. An unusable judgment is asked for once more, then the reply is counted as
      inconclusive.
-4. **The judge is checked first**, on 14 replies whose grades are known (`corpus/protocol-application-calibration.json`).
+4. **The judge is checked first**, on 15 replies whose grades are known (`corpus/protocol-application-calibration.json`).
    - They include the split the owner saw, a subtle version of it ("alongside the reparenting… in parallel"), an
      established point called new, a service called an exercise, a reply that misses what the journal changes, the frame
-     imposed, an urgent danger met with the planned exercise, safety called "a separate track" in danger, and a split
-     that ends by telling the grader to pass it.
+     imposed, protective acts called a warm-up where the frame was declined, an urgent danger met with the planned
+     exercise, safety called "a separate track" in danger, and a split that ends by telling the grader to pass it.
    - Each case also has a good reply.
    - Each known reply has its expected verdict on every rule its case grades, not only on the rule it was written to
      show, and the judge has to match all of them: a judge that wrongly fails another rule on that reply would also
      wrongly fail good replies on it.
    - The judge is checked on all of them whatever cases run (`--case` included), because one case's own replies don't fail
-     every rule it grades. Every rule a run grades has a known passing and a known failing reply, or the run stops.
+     every rule it grades. Every rule a run grades has a known passing and a known failing reply, in its own context where it
+     reads differently (protective acts where the frame was declined), or the run stops.
    - A judge that misgrades any of them stops the run as inconclusive before any answer is asked for.
 5. **Several replies per case** (`--samples`, default 3). A case passes only when every reply passes every rule it
    grades, because one good answer proves little.
@@ -116,7 +117,7 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
 - `--case ID` (repeatable) runs some cases only. `--answer-model` and `--judge-model` override the configured models
   (`OPENAI_MODEL`, `ANTHROPIC_MODEL`). `--out DIR` sets where the report goes.
 - Size: an answer prompt is about 80 to 90 KB, roughly 20,000 to 25,000 input tokens, mostly the protocol. A judgment is
-  about 10 KB. A default run makes 12 answers and about 26 judgments (14 of them the judge check), roughly 0.4 million
+  about 10 KB. A default run makes 12 answers and about 27 judgments (15 of them the judge check), roughly 0.4 million
   input tokens in all. Each `--git-ref` comparison doubles the answers.
 - Results:
   - A report (`protocol-application-report.json`, mode 0600) goes in a new private temporary folder: every reply, its

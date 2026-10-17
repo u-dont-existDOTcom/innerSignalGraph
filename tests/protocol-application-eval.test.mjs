@@ -217,11 +217,18 @@ test("the judge's answer is read strictly: every rule once, and a fail must quot
 test("every rule a run grades has a known passing and a known failing reply, or the judge isn't trusted", async () => {
   // Codex on #175 (P1): a case's own known replies don't fail every rule it grades, so checking the judge only on them could
   // trust a judge that always passes services_stay_separate.
-  assert.deepEqual(calibrationGaps(cases, calibration), []);
+  assert.deepEqual(calibrationGaps(cases, calibration, cases), []);
   const split = caseById.get("supervisor-invites-the-split");
   const ownOnly = calibration.filter((entry) => entry.case_id === split.id);
-  assert.deepEqual(calibrationGaps([split], ownOnly), ["services_stay_separate:fail"]);
-  assert.deepEqual(calibrationGaps([split], calibration), []);
+  assert.deepEqual(calibrationGaps([split], ownOnly, cases), ["services_stay_separate:fail"]);
+  assert.deepEqual(calibrationGaps([split], calibration, cases), []);
+  // Codex on #175 (P1): protective acts have their own clause where the frame was declined, so that case needs a known reply
+  // that fails them there; failures from welcomed-frame cases don't vouch for it.
+  const declined = caseById.get("frame-declined");
+  const withoutWarmUp = calibration.filter((entry) => entry.id !== "ruth-warm-up");
+  assert.deepEqual(calibrationGaps([declined], withoutWarmUp, cases), ["protective_acts_are_reparenting (declined frame):fail"]);
+  assert.deepEqual(calibrationGaps([declined], calibration, cases), []);
+  assert.deepEqual(calibrationGaps([split], withoutWarmUp, cases), [], "a welcomed-frame case doesn't need it");
   const calls = [];
   const gapped = await runJudgeCalibration({ judge: oracleJudge({ calls }), cases, calibration: ownOnly, graded: [split] });
   assert.deepEqual([gapped.trusted, gapped.gaps, calls.length], [false, ["services_stay_separate:fail"], 0], "nothing is asked of a judge the check can't vouch for");
