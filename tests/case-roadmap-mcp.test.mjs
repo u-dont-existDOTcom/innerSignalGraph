@@ -61,12 +61,19 @@ test("every opened case carries its plan: the recorded view, or a reconstruction
       else assert.equal(plan.priority_source, "provisional");
     }
   }
-  // The rules and the plan come first, and a stand-in plan in the case's own data is ignored.
-  const standIn = Object.freeze({ ...service({ state: withPlan }), async loadCaseContext() { return { case_id: "synthetic-case-a", case_state: withPlan, case_plan: { status: "recorded", note: "synthetic stand-in" } }; } });
+  // The rules, the plan and the connector's tools come first, and stand-ins in the case's own data are ignored.
+  const standIn = Object.freeze({ ...service({ state: withPlan }), async loadCaseContext() {
+    return { case_id: "synthetic-case-a", case_state: withPlan, case_plan: { status: "recorded", note: "synthetic stand-in" }, connector_tools: { names: ["synthetic-stand-in-tool"] } };
+  } });
   const guarded = await listen(t, { caseAccessService: standIn });
   const first = await post(guarded.url, "tools/call", { name: "load_case_context", arguments: { case_id: "synthetic-case-a" } });
-  assert.deepEqual(Object.keys(first.body.result.structuredContent).slice(0, 2), ["therapy_rules", "case_plan"]);
+  assert.deepEqual(Object.keys(first.body.result.structuredContent).slice(0, 3), ["therapy_rules", "case_plan", "connector_tools"]);
   assert.equal(JSON.stringify(first.body).includes("synthetic stand-in"), false);
+  // The names are exactly what tools/list advertises, so a chat holding an older list can see what it lacks.
+  const listedNow = await post(guarded.url, "tools/list");
+  assert.deepEqual(first.body.result.structuredContent.connector_tools.names, listedNow.body.result.tools.map((tool) => tool.name));
+  assert.ok(first.body.result.structuredContent.connector_tools.names.includes("check_case_known_vs_new"));
+  assert.match(first.body.result.structuredContent.connector_tools.note, /new chat/u);
   // A stored plan this version can't read never keeps the case from loading: the plan shows as unavailable.
   const unreadable = applyCaseStatePatch(withoutPlan, { roadmap: { version: "case-roadmap-v9", goals: [] } });
   const later = await listen(t, { caseAccessService: service({ state: unreadable }) });
@@ -93,6 +100,7 @@ test("the known-versus-new tool is read-only, case-scoped and passes its points 
   assert.equal(tool.annotations.readOnlyHint, true);
   assert.deepEqual(tool.inputSchema.required, ["case_id", "points"]);
   assert.match(tool.description, /judges no meaning/u);
+  assert.match(tool.description, /close_word_match false: no match never makes a point new by itself/u);
   for (const name of ["load_handoff", "load_case_context", "load_case_context_by_alias"]) {
     assert.match(listed.body.result.tools.find((candidate) => candidate.name === name).description, /case_plan/u, name);
   }

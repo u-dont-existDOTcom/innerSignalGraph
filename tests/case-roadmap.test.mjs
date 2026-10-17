@@ -473,6 +473,28 @@ test("without a recorded plan, a session gets a reconstruction labeled a proposa
   assert.equal(plan.now.current_episode.id, "episode:boundaries");
   assert.deepEqual(plan.routes_tried.map((route) => [route.statement, route.times]), [["Selected IC.PROTECTOR_ACTION: Protector action.", 2]]);
   assert.deepEqual(plan.high_relevance_items.map((entry) => entry.id), ["evidence:freeze"]);
+  assert.deepEqual([plan.other_intervention_entries, plan.other_intervention_ids], [0, []]);
+  assert.match(plan.routes_note, /an empty list means none is recorded that way, not that nothing was tried\.$/u);
+});
+
+test("the reconstruction says what routes_tried leaves out: interventions recorded another way are counted, never shown as routes", () => {
+  // ChatGPT's post-deploy audit on #172: a case whose interventions came from older or imported records, none of them an
+  // app-selected route, showed routes_tried [] and read as "nothing tried".
+  const older = Array.from({ length: 12 }, (_, index) => ({ ...item(`intervention:older-${index + 1}`, `Synthetic earlier intervention ${index + 1}.`), domain: "earlier_record" }));
+  const plan = projectCasePlan(applyCaseStatePatch(caseState(), { intervention_history: older }));
+  assert.deepEqual(plan.routes_tried, []);
+  assert.equal(plan.other_intervention_entries, 12);
+  assert.deepEqual(plan.other_intervention_ids, Array.from({ length: 10 }, (_, index) => `intervention:older-${12 - index}`), "the ten most recent, newest first");
+  assert.match(plan.routes_note, /not that nothing was tried\. The record's intervention_history also holds 12 other entries, not read as routes here/u);
+  assert.match(plan.routes_note, /may record a source's account or a model's reading rather than a completed intervention/u);
+  assert.equal(JSON.stringify(plan).includes("Synthetic earlier intervention"), false, "their statements aren't repeated as routes");
+  // Beside app-selected routes, the others are still counted; one is "entry".
+  const mixed = projectCasePlan(applyCaseStatePatch(caseState(), { intervention_history: [
+    older[0],
+    { ...item("intervention:route", "Selected IC.PROTECTOR_ACTION: Protector action."), domain: "intervention_route", status: "observed_pattern" }
+  ] }));
+  assert.deepEqual([mixed.routes_tried.length, mixed.other_intervention_entries, mixed.other_intervention_ids], [1, 1, ["intervention:older-1"]]);
+  assert.match(mixed.routes_note, /holds 1 other entry, not read/u);
 });
 
 test("the app's prompts show a stored plan as its view, not its histories; a case without one shows as before", () => {
@@ -517,8 +539,8 @@ test("known versus new: a repeated theme matches the record closely; a new lever
     "A small refusal each week"
   ], { limit: 3 });
   assert.equal(repeated.matches[0].id, "evidence:freeze");
-  assert.equal(repeated.record_holds_close_match, true);
-  assert.equal(lever.record_holds_close_match, false);
+  assert.equal(repeated.close_word_match, true);
+  assert.equal(lever.close_word_match, false);
   assert.ok(lever.closest_overlap < repeated.closest_overlap);
   assert.equal(french.matches[0].id, "evidence:fr-freeze", "accents and French forms are read");
   assert.equal(goal.matches[0].kind, "roadmap_goal");
@@ -529,14 +551,14 @@ test("known versus new: a repeated theme matches the record closely; a new lever
   const [stale] = rankKnownVersusNew(retracted, ["She freezes before refusing her older brother."]);
   assert.equal(stale.matches[0].id, "evidence:freeze");
   assert.equal(stale.matches[0].current, false);
-  assert.equal(stale.record_holds_close_match, false);
+  assert.equal(stale.close_word_match, false);
   const [oneWord] = rankKnownVersusNew(state, ["brother"]);
   assert.equal(oneWord.matches[0].id, "evidence:freeze");
-  assert.equal(oneWord.record_holds_close_match, false);
+  assert.equal(oneWord.close_word_match, false);
   // M3: nor is an item another item supersedes.
   const superseding = applyCaseStatePatch(state, { items: [item("evidence:visits", "She now sees her brother without freezing.", { supersedes: ["evidence:freeze"] })] });
   const [replaced] = rankKnownVersusNew(superseding, ["She freezes before refusing her older brother."]);
-  assert.deepEqual([replaced.matches[0].id, replaced.matches[0].current, replaced.record_holds_close_match], ["evidence:freeze", false, false]);
+  assert.deepEqual([replaced.matches[0].id, replaced.matches[0].current, replaced.close_word_match], ["evidence:freeze", false, false]);
   // R6: a stored plan this version can't read adds no goals, and the check still answers.
   for (const roadmap of [{ version: "case-roadmap-v1", goals: [null] }, { version: "case-roadmap-v9", goals: { "goal:a": {} } }]) {
     const [answered] = rankKnownVersusNew(applyCaseStatePatch(state, { roadmap }), ["A small refusal each week"]);
@@ -544,6 +566,18 @@ test("known versus new: a repeated theme matches the record closely; a new lever
   }
   assert.throws(() => rankKnownVersusNew(state, []), { code: "KNOWN_VS_NEW_INPUT_INVALID" });
   assert.throws(() => rankKnownVersusNew(state, ["x".repeat(601)]), { code: "KNOWN_VS_NEW_INPUT_INVALID" });
+});
+
+test("known versus new: a paraphrase of an established point shares few words, so it gets no close word match", () => {
+  // ChatGPT's post-deploy audit on #172: the check counts words, so a point the record holds in other words comes back
+  // without a close match. That's what the check measures, not a finding that the point is new, and its name says so.
+  const state = applyCaseStatePatch(caseState(), {
+    items: [item("evidence:self-criticism", "Long-standing harsh self-criticism, and trouble asking for what she needs.")]
+  });
+  const [same, paraphrase] = rankKnownVersusNew(state, ["Harsh self-criticism, long-standing", "She can hardly be gentle with herself"]);
+  assert.deepEqual([same.close_word_match, same.matches[0].id], [true, "evidence:self-criticism"]);
+  assert.equal(paraphrase.close_word_match, false);
+  assert.equal(Object.hasOwn(paraphrase, "record_holds_close_match"), false, "the old name, easy to misread, is gone");
 });
 
 test("known versus new says where the record holds a point, and keeps the close match in a short list", () => {
@@ -566,7 +600,7 @@ test("known versus new says where the record holds a point, and keeps the close 
   const stale = (index) => item(`evidence:stale-${index}`, "She freezes before saying no to her older brother, her brother, her brother.", { still_current: false });
   const crowded = applyCaseStatePatch(caseState(), { items: [stale(1), stale(2), item("evidence:current", "She freezes before saying no to her brother.")] });
   const [short] = rankKnownVersusNew(crowded, ["She freezes before saying no to her older brother."], { limit: 2 });
-  assert.equal(short.record_holds_close_match, true);
+  assert.equal(short.close_word_match, true);
   assert.equal(short.matches.length, 2);
   assert.deepEqual([short.matches[0].current, short.matches[1].id, short.matches[1].current], [false, "evidence:current", true]);
   const [one] = rankKnownVersusNew(crowded, ["She freezes before saying no to her older brother."], { limit: 1 });
@@ -931,6 +965,7 @@ test("the plan lives in the encrypted record: decisions, replay, refusal across 
   assert.deepEqual(projectCasePlan(state).tracks.map((goal) => goal.id), ["goal:back-pain-care"]);
   const checked = await restarted.checkCaseKnownVersusNew("synthetic-case-a", { points: ["one small refusal each week"], limit: 2 }, authA);
   assert.equal(checked.points[0].matches[0].id, "goal:weekly-refusal");
+  assert.match(checked.note, /close_word_match false means no entry shares most of a point's words, not that the record lacks the point/u);
 });
 
 test("the plan has one writer: a whole-state write from an earlier read or another scope keeps the stored plan", async (t) => {

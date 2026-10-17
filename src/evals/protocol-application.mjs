@@ -1,16 +1,18 @@
 // Does a model apply the served therapy protocol when it reviews a complex case? (issue #172, change C)
 //
 // The answering model gets what a chat host gets from the connector: the server's instructions, its tool list, and the
-// results of load_therapy_protocol, load_case_context and find_journal_quotes for a synthetic case, produced by a real
-// connector process (this checkout's, or the code of an earlier commit), then the supervisor's question. A judge model
+// results of load_therapy_protocol, load_case_context and find_journal_quotes for a synthetic case (and, for a case that
+// names points to check, check_case_known_vs_new, answered by that code's own store), produced by a real connector process
+// (this checkout's, or the code of an earlier commit), then the supervisor's question. A judge model
 // from the other provider family grades each reply against a fixed rubric written from the owner's definition, not from
 // the protocol under test, so an earlier protocol is measured by the same standard. The judge is first checked on
 // replies whose grades are known; a judge that misgrades them makes the run inconclusive. Pattern signals are advisory.
 // Synthetic material only: no case or journal content is read.
 
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createEmptyCaseState, validateCaseState } from "../case-state/longitudinal-state.mjs";
@@ -57,7 +59,7 @@ export const PROTOCOL_APPLICATION_CRITERIA = Object.freeze({
   known_not_called_new: Object.freeze({
     title: "An established point is not presented as new",
     rule: Object.freeze([
-      "FAIL when the reply presents a point the record already established (listed under the case) as a new finding, insight or discovery from the journal, or builds the plan around it as if it were new.",
+      "FAIL when the reply presents a point the record already established (listed under the case) as a new finding, insight or discovery from the journal, or builds the plan around it as if it were new. That holds when the journal says the point in other words, and when a record check that matches words (such as check_case_known_vs_new) found no close match for it.",
       "NOT a failure: saying the journal adds new examples of a known point, or naming a known point as known."
     ])
   }),
@@ -121,6 +123,13 @@ function validateCaseSpec(spec, index) {
   for (const marker of spec.known_markers) {
     text(marker.id, `${name}.known_markers.id`, 80);
     new RegExp(text(marker.pattern, `${name}.known_markers.pattern`, 200), "iu");
+  }
+  // The points the assistant checked against the record with check_case_known_vs_new, as a reviewer would phrase them
+  // (ChatGPT's post-deploy audit on #172): within the tool's own limits.
+  if (Object.hasOwn(spec, "known_vs_new_points")) {
+    const points = list(spec.known_vs_new_points, `${name}.known_vs_new_points`);
+    if (points.length < 1 || points.length > 12) throw new ValidationError(`${name}.known_vs_new_points must hold 1 to 12 points.`);
+    points.forEach((point, index) => text(point, `${name}.known_vs_new_points[${index}]`, 600));
   }
   return spec;
 }
@@ -255,7 +264,25 @@ export async function connectorSource({ ref = null, repoRoot = ROOT } = {}) {
   }
   const server = await import(pathToFileURL(path.join(root, "src/server/private-case-mcp.mjs")).href);
   const protocolModule = await import(pathToFileURL(path.join(root, "src/protocol/therapy-protocol.mjs")).href);
-  return Object.freeze({ root, label, listen: server.listenPrivateCaseMcp, loadTherapyProtocol: protocolModule.loadTherapyProtocol });
+  // That code's own encrypted store, for a case whose transcript includes check_case_known_vs_new: its answer is the store's
+  // exactly, note and all. Loaded only when such a case asks, in a throwaway folder with random keys used once.
+  const openStore = async (rootDir) => {
+    let storeModule;
+    try {
+      storeModule = await import(pathToFileURL(path.join(root, "src/storage/private-case-store.mjs")).href);
+    } catch {
+      storeModule = null;
+    }
+    const store = storeModule?.createEncryptedPrivateCaseStore?.({
+      rootDir, routineKek: randomBytes(32), recoverySecretBytes: randomBytes(32), developmentExternalCredentialAuthorized: true
+    });
+    if (typeof store?.checkCaseKnownVersusNew !== "function") {
+      store?.close?.();
+      throw new Error(`the case store at ${label} has no known-versus-new check`);
+    }
+    return store;
+  };
+  return Object.freeze({ root, label, listen: server.listenPrivateCaseMcp, loadTherapyProtocol: protocolModule.loadTherapyProtocol, openStore });
 }
 
 async function rpc(url, method, params = {}) {
@@ -271,17 +298,35 @@ async function rpc(url, method, params = {}) {
 
 /**
  * Runs the connector (from `source`) on the synthetic case and returns what a chat host would show the model: the
- * server's instructions, its tools, and three calls with their text results, exactly as the connector returned them.
+ * server's instructions, its tools, and three calls with their text results, exactly as the connector returned them; a
+ * fourth, check_case_known_vs_new on the case's `known_vs_new_points`, when it names them. A connector that doesn't offer
+ * that check can't run such a case, and says so before anything else is called.
  */
 export async function connectorTranscript(spec, source) {
   const protocol = source.loadTherapyProtocol();
   const context = syntheticCaseContext(spec);
   const quotes = syntheticJournalQuotes(spec);
+  const checks = spec.known_vs_new_points ?? null;
+  let storeRoot = null;
+  let store = null;
+  if (checks) {
+    if (typeof source.openStore !== "function") throw new Error(`The case ${spec.id} needs check_case_known_vs_new, which this connector source can't answer.`);
+    storeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-store-"));
+    try {
+      store = await source.openStore(path.join(storeRoot, "vaults"));
+      await store.saveCaseState(spec.case_id, context.case_state);
+    } catch (error) {
+      store?.close?.();
+      fs.rmSync(storeRoot, { recursive: true, force: true });
+      throw new Error(`The case ${spec.id} needs check_case_known_vs_new: ${error.message}.`);
+    }
+  }
   const caseAccessService = {
     async loadHandoff() { throw denied(); },
     async loadCaseContext(caseId) { if (caseId !== spec.case_id) throw denied(); return structuredClone(context); },
     async loadCaseContextByAlias() { throw denied(); },
-    async retrieveCaseEvidence() { throw denied(); }
+    async retrieveCaseEvidence() { throw denied(); },
+    async checkCaseKnownVersusNew(caseId, criteria) { if (!store || caseId !== spec.case_id) throw denied(); return store.checkCaseKnownVersusNew(caseId, criteria); }
   };
   const journalApi = {
     async search() { throw denied(); },
@@ -290,15 +335,20 @@ export async function connectorTranscript(spec, source) {
     async resolveEvidence() { throw denied(); },
     async timeline() { throw denied(); }
   };
-  const listener = await source.listen({ caseAccessService, journalApi, therapyProtocol: protocol });
+  let listener = null;
   try {
+    listener = await source.listen({ caseAccessService, journalApi, therapyProtocol: protocol });
     const init = await rpc(listener.url, "initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "protocol-application-eval", version: "1" } });
     const { tools } = await rpc(listener.url, "tools/list");
+    if (checks && !tools.some((tool) => tool.name === "check_case_known_vs_new")) {
+      throw new Error(`The case ${spec.id} needs check_case_known_vs_new, which the connector at ${source.label} doesn't offer.`);
+    }
     const calls = [];
     for (const [name, args] of [
       ["load_therapy_protocol", {}],
       ["load_case_context", { case_id: spec.case_id }],
-      ["find_journal_quotes", { case_id: spec.case_id, corpus_id: spec.corpus_id, query: spec.journal_query, purpose: "session_use" }]
+      ["find_journal_quotes", { case_id: spec.case_id, corpus_id: spec.corpus_id, query: spec.journal_query, purpose: "session_use" }],
+      ...(checks ? [["check_case_known_vs_new", { case_id: spec.case_id, points: [...checks] }]] : [])
     ]) {
       const result = await rpc(listener.url, "tools/call", { name, arguments: args });
       if (result.isError) throw new Error(`The connector's ${name} failed on the synthetic case.`);
@@ -312,8 +362,20 @@ export async function connectorTranscript(spec, source) {
       calls
     });
   } finally {
-    await listener.close();
+    await listener?.close();
+    store?.close?.();
+    if (storeRoot) fs.rmSync(storeRoot, { recursive: true, force: true });
   }
+}
+
+/**
+ * Every case's transcript, built before any model is called: a case the connector under test can't serve stops the run
+ * while it has cost nothing.
+ */
+export async function connectorTranscripts(cases, source) {
+  const transcripts = [];
+  for (const spec of cases) transcripts.push(await connectorTranscript(spec, source));
+  return Object.freeze(transcripts);
 }
 
 export const ANSWER_SCHEMA = Object.freeze({
@@ -603,7 +665,11 @@ export function calibrationGaps(graded, calibration, cases) {
 // Where a rule reads differently by context, its known replies must cover that context too: protective acts have their own
 // clause when the person declined the frame (Codex on #175).
 function ruleContext(spec, id) {
-  return id === "protective_acts_are_reparenting" && spec.frame === "declined" ? `${id} (declined frame)` : id;
+  if (id === "protective_acts_are_reparenting" && spec.frame === "declined") return `${id} (declined frame)`;
+  // Beside a word check that found no close match for a paraphrase, a judge can excuse calling a known point new; that
+  // context needs known replies of its own (ChatGPT's post-deploy audit on #172).
+  if (id === "known_not_called_new" && spec.known_vs_new_points) return `${id} (word check shown)`;
+  return id;
 }
 
 /**
@@ -636,12 +702,15 @@ export async function runJudgeCalibration({ judge: judgeProvider, cases, calibra
  * Asks the answering model each case `samples` times, with the connector's results for the synthetic case, and grades
  * every reply. A reply passes a case when it passes every graded rule; the case passes when every reply does.
  */
-export async function runProtocolApplication({ answerer, judge: judgeProvider, cases, samples = 3, source, log = () => {} }) {
+export async function runProtocolApplication({ answerer, judge: judgeProvider, cases, samples = 3, source, transcripts = null, log = () => {} }) {
   if (!Number.isSafeInteger(samples) || samples < 1 || samples > 20) throw new ValidationError("samples must be 1 to 20.");
+  if (transcripts !== null && (!Array.isArray(transcripts) || transcripts.length !== cases.length)) throw new ValidationError("transcripts must hold one per case.");
+  // Every connector call happens before the first model call.
+  const prepared = transcripts ?? await connectorTranscripts(cases, source);
   const results = [];
   let protocol = null;
-  for (const spec of cases) {
-    const transcript = await connectorTranscript(spec, source);
+  for (const [index, spec] of cases.entries()) {
+    const transcript = prepared[index];
     protocol ??= transcript.protocol;
     const { system, user } = answerPrompt(spec, transcript);
     const caseResult = { id: spec.id, criteria: [...spec.grading.criteria], prompt_bytes: Buffer.byteLength(system) + Buffer.byteLength(user), samples: [] };

@@ -232,7 +232,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "check_case_known_vs_new",
     title: "Check what the private case record already holds",
-    description: "Before presenting a pattern, insight or recommendation as new in a review of an authorized case across sessions, records or journal material, check it here: for each point, the record's facts and hypotheses, settled answers, interventions, plan goals, current episode and parked questions that share the most word forms with it, best first, with the share of the point's words each holds and where each came from (its source's kind, reference and turn). It counts shared words and judges no meaning: read the matches and say whether the point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When the case's stored plan can't be read, its goals are left out and plan_problem says so.",
+    description: "Before presenting a pattern, insight or recommendation as new in a review of an authorized case across sessions, records or journal material, check it here: for each point, the record's facts and hypotheses, settled answers, interventions, plan goals, current episode and parked questions that share the most word forms with it, best first, with the share of the point's words each holds and where each came from (its source's kind, reference and turn). It counts shared words and judges no meaning, so a point the record holds in other words can come back with close_word_match false: no match never makes a point new by itself. Read the matches, and the record's own items for the same meaning, then say whether the point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When the case's stored plan can't be read, its goals are left out and plan_problem says so.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -389,11 +389,21 @@ const sizeClass = (bytes) => 2 ** Math.ceil(Math.log2(Math.max(1, bytes)));
 // Error codes are fixed identifiers; anything else is traced as OTHER, so no text can reach the trace through a code.
 const traceCode = (code) => code === null ? null : typeof code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : "OTHER";
 
-// The rules and the plan go first in an opened case's result, so a host that shortens a long result keeps them; fields of
-// the same names in the case's own data never stand in for them.
-function withCaseRules(value, protocol) {
-  const { therapy_rules: _rules, case_plan: _plan, ...rest } = value ?? {};
-  return { therapy_rules: caseTherapyRules(protocol), case_plan: casePlanFor(value), ...rest };
+// What this connector offers now (ChatGPT's post-deploy audit on #172, 17 Oct 2026): a host keeps the tool list it fetched
+// when its chat began, and this server can't tell it of a change (it keeps no sessions, so tools.listChanged is false). With
+// the names in an opened case, a chat whose list predates a deploy can see the gap and say so. Names only, no case data.
+export function connectorTools(names) {
+  return {
+    names: [...names],
+    note: "The tools this InnerSignal connector offers now. If one of them isn't among the tools you can call in this chat, this chat's tool list is older than the connector: tell the user that a new chat will have it, rather than doing without it silently."
+  };
+}
+
+// The rules, the plan and the connector's tools go first in an opened case's result, so a host that shortens a long result
+// keeps them; fields of the same names in the case's own data never stand in for them.
+function withCaseRules(value, protocol, toolNames) {
+  const { therapy_rules: _rules, case_plan: _plan, connector_tools: _tools, ...rest } = value ?? {};
+  return { therapy_rules: caseTherapyRules(protocol), case_plan: casePlanFor(value), connector_tools: connectorTools(toolNames), ...rest };
 }
 
 function loadProtocolOrNull() {
@@ -713,7 +723,7 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
           : reply(200, success(request.id, toolResult(outcome.value)));
       }
       const value = await callTool(caseAccessService, name, args, { bearerToken: token }, journalApi);
-      return reply(200, success(request.id, toolResult(CASE_OPENING_TOOLS.has(name) ? withCaseRules(value, protocol) : value)));
+      return reply(200, success(request.id, toolResult(CASE_OPENING_TOOLS.has(name) ? withCaseRules(value, protocol, toolNames) : value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
         if (await deniedForSignedInAccount(caseAccessService, token, name, journalWork)) {

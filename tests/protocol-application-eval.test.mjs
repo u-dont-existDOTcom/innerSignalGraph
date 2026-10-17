@@ -19,6 +19,7 @@ import {
   judgeSchema,
   connectorSource,
   connectorTranscript,
+  connectorTranscripts,
   judgePrompt,
   loadProtocolApplicationCalibration,
   loadProtocolApplicationCases,
@@ -71,7 +72,7 @@ function fakeAnswerer(replyFor, { toolItems = 0 } = {}) {
 }
 
 test("the cases and the known replies are synthetic and well formed, and each case record passes the case state's own check", () => {
-  assert.equal(cases.length, 4);
+  assert.equal(cases.length, 5);
   for (const spec of cases) {
     assert.equal(spec.synthetic, true, spec.id);
     assert.match(spec.case_id, /^synthetic-eval-/u);
@@ -148,6 +149,52 @@ test("an earlier commit's connector and protocol are run as that commit had them
   assert.equal(source.listen(), "synthetic listener v1");
   assert.ok(source.root.startsWith(path.join(repo, "node_modules/.cache/inner-signal-eval")), "kept where git ignores it");
   assert.equal((await connectorSource({ ref: first, repoRoot: repo })).root, source.root, "materialized once per commit");
+});
+
+test("a case that names points to check gets check_case_known_vs_new's own answer, from the store of the code under test", async () => {
+  // ChatGPT's post-deploy audit on #172: the check matches words, so the journal's rewording of an established point gets no
+  // close match. The test shows the model that answer exactly as the connector gives it, and grades what the model makes of it.
+  const spec = caseById.get("journal-review-paraphrased-known");
+  const transcript = await connectorTranscript(spec, await connectorSource());
+  assert.deepEqual(transcript.calls.map((call) => call.name), ["load_therapy_protocol", "load_case_context", "find_journal_quotes", "check_case_known_vs_new"]);
+  assert.deepEqual(transcript.calls[3].arguments, { case_id: spec.case_id, points: spec.known_vs_new_points });
+  const checked = JSON.parse(transcript.calls[3].text);
+  assert.equal(checked.case_id, spec.case_id);
+  assert.match(checked.note, /close_word_match false means no entry shares most of a point's words, not that the record lacks the point/u);
+  // Three established points in other words, one repeated in the record's words, one genuinely new.
+  assert.deepEqual(checked.points.map((point) => point.close_word_match), [false, false, false, true, false]);
+  assert.equal(checked.points[3].matches[0].id, "item:running");
+  const { system, user } = answerPrompt(spec, transcript);
+  assert.ok(system.includes("- check_case_known_vs_new: "), "the tool is in the list the model sees");
+  assert.ok(user.includes(`TOOL CALL check_case_known_vs_new ${JSON.stringify(transcript.calls[3].arguments)}`));
+  // The grader is told the check's answer doesn't make a point new, by the rubric and by the case.
+  const judged = judgePrompt(spec, "A reply.").user;
+  assert.match(judged, /a record check that matches words \(such as check_case_known_vs_new\) found no close match for it/u);
+  assert.match(judged, /Calling any of them a new finding, pattern or insight fails known_not_called_new, whatever the check returned/u);
+  // A case without points makes the three calls it always made.
+  assert.equal((await connectorTranscript(caseById.get("supervisor-invites-the-split"), await connectorSource())).calls.length, 3);
+});
+
+test("a connector that can't answer the check can't run such a case, and nothing is asked of a model", async () => {
+  const spec = caseById.get("journal-review-paraphrased-known");
+  const current = await connectorSource();
+  const withoutStore = { ...current, openStore: undefined };
+  await assert.rejects(() => connectorTranscript(spec, withoutStore), /The case journal-review-paraphrased-known needs check_case_known_vs_new/u);
+  // Every case's connector calls run before the first model call, so a later case the connector can't serve costs nothing.
+  const answerer = fakeAnswerer((caseId) => goodReply(caseId));
+  const calls = [];
+  await assert.rejects(() => runProtocolApplication({ answerer, judge: oracleJudge({ calls }), cases: [caseById.get("supervisor-invites-the-split"), spec], samples: 1, source: withoutStore }), /needs check_case_known_vs_new/u);
+  assert.deepEqual([answerer.prompts.length, calls.length], [0, 0]);
+  // A store without the check, as before change B, is refused with its reason, and its throwaway folder is removed.
+  const refusing = { ...current, async openStore() { throw new Error("the case store at commit 0000000 has no known-versus-new check"); } };
+  const before = new Set(fs.readdirSync(os.tmpdir()).filter((name) => name.startsWith("inner-signal-eval-store-")));
+  await assert.rejects(() => connectorTranscript(spec, refusing), /needs check_case_known_vs_new: the case store at commit 0000000 has no known-versus-new check/u);
+  assert.deepEqual(fs.readdirSync(os.tmpdir()).filter((name) => name.startsWith("inner-signal-eval-store-") && !before.has(name)), []);
+  // Transcripts built ahead are used as given.
+  const prepared = await connectorTranscripts([spec], current);
+  const ahead = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: oracleJudge(), cases: [spec], samples: 1, source: withoutStore, transcripts: prepared });
+  assert.equal(ahead.outcome, "pass");
+  await assert.rejects(() => runProtocolApplication({ answerer, judge: oracleJudge(), cases: [spec], samples: 1, source: current, transcripts: [] }), /transcripts must hold one per case/u);
 });
 
 test("the judge's answer is read strictly: every rule once, and a fail must quote the reply", () => {
@@ -229,6 +276,13 @@ test("every rule a run grades has a known passing and a known failing reply, or 
   assert.deepEqual(calibrationGaps([declined], withoutWarmUp, cases), ["protective_acts_are_reparenting (declined frame):fail"]);
   assert.deepEqual(calibrationGaps([declined], calibration, cases), []);
   assert.deepEqual(calibrationGaps([split], withoutWarmUp, cases), [], "a welcomed-frame case doesn't need it");
+  // So does calling a known point new beside a word check that found no close match (ChatGPT's post-deploy audit on #172):
+  // known replies from cases without the check don't vouch for a judge there.
+  const paraphrased = caseById.get("journal-review-paraphrased-known");
+  const withoutTomas = calibration.filter((entry) => entry.case_id !== paraphrased.id);
+  assert.deepEqual(calibrationGaps([paraphrased], withoutTomas, cases), ["known_not_called_new (word check shown):pass", "known_not_called_new (word check shown):fail"]);
+  assert.deepEqual(calibrationGaps([paraphrased], withoutTomas.concat(calibration.filter((entry) => entry.id === "tomas-good")), cases), ["known_not_called_new (word check shown):fail"]);
+  assert.deepEqual(calibrationGaps([paraphrased], calibration, cases), []);
   const calls = [];
   const gapped = await runJudgeCalibration({ judge: oracleJudge({ calls }), cases, calibration: ownOnly, graded: [split] });
   assert.deepEqual([gapped.trusted, gapped.gaps, calls.length], [false, ["services_stay_separate:fail"], 0], "nothing is asked of a judge the check can't vouch for");
