@@ -142,7 +142,10 @@ function provider(family, model) {
 // command can't be started or checked isn't used either.
 const ISOLATION_FLAGS = new Map([
   [CodexCliProvider, ["ignoreUserConfig", "ignoreRules", "json", "sandbox", "ephemeral", "outputSchema", "outputLastMessage", "model", "config"]],
-  [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence", "model", "effort"]]
+  // Claude also with Claude in Chrome off and permission mode dontAsk (Codex on #175). Not --max-turns: the owner's installed
+  // CLI (2.1.286) has no such switch, a structured answer itself takes two turns, and with no tools, no MCP servers and
+  // Chrome off there is no action a further turn could take; the provider passes it when the CLI has it.
+  [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence", "permissionMode", "noChrome", "model", "effort"]]
 ]);
 async function requireIsolation(candidate) {
   const required = [...ISOLATION_FLAGS].find(([kind]) => candidate instanceof kind)?.[1];

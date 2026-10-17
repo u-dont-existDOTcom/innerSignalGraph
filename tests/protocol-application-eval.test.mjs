@@ -447,7 +447,14 @@ test("the command refuses a command-line agent it can't isolate, before any mode
   const run = (overrides, args = ["--calibration-only"], outDir = out) => spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "cli", "--case", "frame-declined", "--out", outDir, ...args], { cwd: root, encoding: "utf8", env: { ...env, ...overrides } });
   const lacking = run({});
   assert.equal(lacking.status, 3, lacking.stderr);
-  assert.match(lacking.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence.*model.*effort/u);
+  assert.match(lacking.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence.*permissionMode.*noChrome.*model.*effort/u);
+  // Codex on #175 (P2): a Claude without Claude in Chrome off (its browser tools aren't covered by --tools) isn't used either.
+  const chromeClaude = path.join(dir, "claude-chrome");
+  const fullClaude = path.join(root, "tests/fixtures/fake-claude-cli.mjs");
+  fs.writeFileSync(chromeClaude, `#!/bin/sh\nif [ "$1" = "--help" ]; then "${process.execPath}" "${fullClaude}" --help | grep -v -- --no-chrome; exit 0; fi\nexec "${process.execPath}" "${fullClaude}" "$@"\n`, { mode: 0o755 });
+  const noChromeSwitch = run({ CLAUDE_COMMAND: chromeClaude });
+  assert.equal(noChromeSwitch.status, 3, noChromeSwitch.stderr);
+  assert.match(noChromeSwitch.stderr, /The installed Claude CLI lacks what this test needs to isolate it: noChrome\./u);
   // Codex on #175 (P2): a Codex without JSON events (its actions couldn't be counted) or without --ignore-rules (AGENTS.md
   // around it could steer it) isn't used either. Here Codex grades (Claude would answer).
   const codexJudging = ["--calibration-only", "--answerer", "anthropic"];
