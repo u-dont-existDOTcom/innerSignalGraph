@@ -55,7 +55,7 @@ function producerAndReviewerPrompts(fixture) {
 test("the shared rules say reparenting is the ongoing relationship, not an exercise", () => {
   const definition = protocolProvenanceRules.split("\n").find((line) => line.startsWith("- Reparenting is not an exercise."));
   assert.ok(definition, "the rules open with the definition");
-  assert.match(definition, /ongoing relationship and practice in which the present-day adult cares for the vulnerable younger self/);
+  assert.match(definition, /ongoing internal relationship and practice between the present-day adult and the vulnerable younger self, enacted through/);
   for (const part of ["care", "emotional validation", "protection", "truthful boundaries", "repair", "self-guidance", "ordinary-life choices"]) {
     assert.ok(definition.includes(part), part);
   }
@@ -204,7 +204,7 @@ test("the connector asks for the protocol before supervisor advice and a review 
 
 test("a child-contact hold still stops child contact but not the adult's own protective behavior", () => {
   assert.ok(protocolProvenanceRules.includes("A protective-compatibility HOLD or BLOCKED gate restricts child-directed contact, not the present adult's permitted protective behavior: safety, boundaries, self-care and asking for help stay available, in ordinary adult language without child-directed framing."));
-  assert.ok(protocolProvenanceRules.includes("An unwanted intrusive thought, a dream or an inability to visualize is not evidence of harmful intent or of failed reparenting"));
+  assert.ok(protocolProvenanceRules.includes("An unwanted intrusive thought, a dream or an inability to visualize is not proof of harmful intent and does not show that reparenting has failed"));
   // The response gate that enforces a hold is unchanged: adult protective language passes, child-directed contact is caught.
   assert.deepEqual(childContactViolations("You told your mother you won't discuss your body, left early, and made yourself a proper meal. Keeping that boundary protected you."), []);
   assert.deepEqual(childContactViolations("Next time, ask for help before the dinner and plan how you will leave."), []);

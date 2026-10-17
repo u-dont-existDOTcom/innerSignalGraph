@@ -95,7 +95,7 @@ provenance gate against `48b3421f` PASS; therapy-lesson verifier; repository aud
 ## Served route
 
 This branch serves protocol 0.2.1 with `protocol_sha256`
-`890d08bd01e1435d253488c264918536925be5936cd1cf096e379ff01a730caf`: the instructions, the map and the provenance reference
+`ec329fca117eeeb71907aeec5551ef67b892e16a4cc101b1eccb57fd09debb4d`: the instructions, the map and the provenance reference
 change, and the other five files are byte-identical to the live ones. After a merge and the owner's `deploy`,
 `get_therapy_protocol_manifest` should report that hash (or a later one if `main` changes the plugin first). Behavior
 evidence the tests can't give: a fresh connector session on the three synthetic cases.
