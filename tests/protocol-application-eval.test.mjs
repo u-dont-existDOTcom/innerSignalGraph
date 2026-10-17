@@ -279,6 +279,7 @@ test("a reply or a judgment from an agent that reached outside the conversation,
   const unreceiptedJudge = { model: "unreceipted-judge", async generate(args) { return { ...(await oracleJudge().generate(args)), toolItems: null }; } };
   const unchecked = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: unreceiptedJudge, cases: spec, samples: 1, source });
   assert.deepEqual([unchecked.outcome, unchecked.cases[0].samples[0].judgment.problems], ["inconclusive", ["JUDGE_NO_ACTION_RECEIPT"]]);
+  assert.equal(unchecked.cases[0].samples[0].judge_tool_items, null, "the report keeps each judgment's receipt");
   assert.equal((await runJudgeCalibration({ judge: unreceiptedJudge, cases, calibration })).trusted, false);
 
   let calls = 0;
@@ -293,6 +294,7 @@ test("a reply or a judgment from an agent that reached outside the conversation,
   const retried = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: flaky, cases: spec, samples: 1, source });
   assert.equal(retried.outcome, "pass", "a judgment that breaks the format is asked for once more");
   assert.equal(retried.cases[0].samples[0].judge_attempts, 2);
+  assert.equal(retried.cases[0].samples[0].judge_tool_items, 0, "a judge whose provider keeps no count (Claude, a fake) is recorded as 0, as before");
   // Codex on #175 (P2): a judge that acted (a Codex judge with its tools) decides nothing, in the run or in the check.
   const acting = { model: "acting-judge", async generate(args) { return { ...(await oracleJudge().generate(args)), toolItems: 1 }; } };
   const acted = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: acting, cases: spec, samples: 1, source });

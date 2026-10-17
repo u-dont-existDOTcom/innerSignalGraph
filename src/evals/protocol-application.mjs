@@ -599,7 +599,7 @@ export async function runJudgeCalibration({ judge: judgeProvider, cases, calibra
     const mismatches = graded.judgment.valid
       ? Object.entries(entry.expect).filter(([id, verdict]) => graded.judgment.verdicts[id]?.verdict !== verdict).map(([id]) => id)
       : Object.keys(entry.expect);
-    results.push({ id: entry.id, case_id: spec.id, expected: entry.expect, valid: graded.judgment.valid, problems: graded.judgment.problems, verdicts: graded.judgment.verdicts, mismatches, attempts: graded.attempts });
+    results.push({ id: entry.id, case_id: spec.id, expected: entry.expect, valid: graded.judgment.valid, problems: graded.judgment.problems, verdicts: graded.judgment.verdicts, mismatches, attempts: graded.attempts, judge_tool_items: graded.tool_items });
     log(`calibration ${entry.id}: ${mismatches.length ? `MISGRADED ${mismatches.join(", ")}` : "as expected"}`);
   }
   const agreed = results.filter((result) => result.valid && !result.mismatches.length).length;
@@ -638,6 +638,8 @@ export async function runProtocolApplication({ answerer, judge: judgeProvider, c
         const graded = await judge(judgeProvider, spec, reply, { stage: JUDGE_STAGE, fixtureKey: `${JUDGE_STAGE}:${spec.id}`, caseId: spec.id, sample });
         record.judge_model = graded.model;
         record.judge_attempts = graded.attempts;
+        // The judge's own count of actions (null when its agent gave none), so the report shows each judgment's receipt.
+        record.judge_tool_items = graded.tool_items;
         record.judgment = graded.judgment;
         record.signals = patternSignals(spec, reply);
         if (!graded.judgment.valid) {
