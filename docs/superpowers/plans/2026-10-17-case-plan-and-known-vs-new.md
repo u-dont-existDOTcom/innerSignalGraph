@@ -1,6 +1,6 @@
 # A lasting plan for each case, and new versus known (issue #172) — plan, 17 Oct 2026
 
-Status: plan for review with the first of two changes. No real case content is read, quoted or committed; every finding
+Status: plan for review with its three changes. No real case content is read, quoted or committed; every finding
 below comes from the code, the served rules and Git history.
 
 ## What the owner saw
@@ -14,9 +14,11 @@ reviewed implementation candidate. It is not an authorization to change any clie
 
 ## Cause (content-free)
 
-The conversation is not in the repository, and the connector keeps no record of which tools a chat called, so whether
-that chat loaded the therapy protocol at all cannot be seen from here (owner question 40). Four contributing causes are
-visible without it:
+The conversation is not in the repository, and the connector kept no record of which tools a chat called, so whether
+that chat loaded the therapy protocol could not be seen from here (owner question 40). The owner checked the chat (17 Oct,
+14:06 UTC): it called `load_therapy_protocol` and received protocol 0.2.1 (`23ee74b8…`), the correction that reparenting
+is not an exercise included, and still made the split. The rules reached it and weren't applied, which puts cause 2
+first and makes a test of application necessary (change C). Four contributing causes are visible in the code:
 
 1. **The served rules lack the longitudinal rules the app's own runtime follows.** `src/prompts/common.mjs`
    (`longitudinalClinicalRules`) tells every app role to keep salience and centrality apart, preserve the established
@@ -101,8 +103,29 @@ written only by authorized operator decisions (the runtime's extraction proposal
   episode; protective care within reparenting without calling medical navigation an exercise; a safety interruption;
   readback after a restart; old records without a roadmap; refusal across cases.
 
+## Change C — a test of whether the rules are applied (third pull request)
+
+The owner's answer to question 40 and his request (17 Oct, 14:06 UTC): a regression test that checks whether an assistant
+actually applies the reparenting definition when it synthesizes a complex case after loading the correct protocol; a
+check that the tool was called, or that the right words are in the prompt, would not catch this failure.
+
+- `src/evals/protocol-application.mjs` and `npm run eval:protocol-application` (`docs/PROTOCOL-APPLICATION-EVAL.md`):
+  - four synthetic complex cases (`corpus/protocol-application-cases.json`): a journal review full of everyday protective
+    acts and services; a supervisor inviting the split; a declined frame; an urgent danger;
+  - the model gets the connector's instructions, tools and results (`load_therapy_protocol`, `load_case_context`,
+    `find_journal_quotes`) from a real connector process, this checkout's or an earlier commit's (`--git-ref`), after the
+    supervisor's message;
+  - a judge of the other model family grades each reply against a fixed rubric written from the owner's definition, with
+    a quote for every fail; it is first checked on 15 replies whose grades are known, on every rule
+    (`corpus/protocol-application-calibration.json`), including the split the owner saw;
+  - several replies per case, advisory pattern signals, isolated command-line agents.
+- `CodexCliProvider` reports how many actions its agent took (`toolItems`), so a reply that reached outside the prompt
+  isn't counted.
+- `tests/protocol-application-eval.test.mjs` checks the test with fake models. The live run uses the owner's model
+  usage, so it is run by hand, with his agreement.
+
 ## Owner gates
 
 No clinical priority hierarchy is changed by either change; a model can only propose. The served-rule changes carry the
-owner's own words from #172 as owner amendments. Question 40 asks the owner whether that chat loaded the rules; the
-answer sets which cause mattered most, not whether these changes are needed.
+owner's own words from #172 as owner amendments. The owner's answer to question 40 (the chat loaded the rules) sets
+which cause mattered most, not whether these changes are needed; change C measures whether a model applies them.

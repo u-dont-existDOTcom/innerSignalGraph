@@ -6,17 +6,20 @@ import { ProviderError } from "../core/errors.mjs";
 import { runSubprocess } from "../core/subprocess.mjs";
 import { detectCodexCapabilities } from "../core/cli-capabilities.mjs";
 
+// The events, and how many lines that start like a JSON event don't parse (a truncated or broken event).
 function parseJsonLines(text) {
   const events = [];
+  let malformed = 0;
   for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
     try {
       events.push(JSON.parse(line));
     } catch {
-      // Progress and compatibility notices may appear as non-JSON output.
+      // Progress and compatibility notices may appear as non-JSON output; a line that starts like an event is a broken one.
+      if (line.trimStart().startsWith("{")) malformed += 1;
     }
   }
-  return events;
+  return { events, malformed };
 }
 
 export class CodexCliProvider {
@@ -28,7 +31,9 @@ export class CodexCliProvider {
     timeoutMs = 900000,
     cwd = process.cwd(),
     isolateConfig = true,
-    detectCapabilities = true
+    detectCapabilities = true,
+    configOverrides = [],
+    systemAs = "prompt"
   } = {}) {
     this.id = "openai";
     this.command = command;
@@ -38,6 +43,13 @@ export class CodexCliProvider {
     this.timeoutMs = timeoutMs;
     this.cwd = cwd;
     this.isolateConfig = isolateConfig;
+    // Extra `-c key=value` settings for this caller, such as features it wants turned off.
+    this.configOverrides = [...configOverrides];
+    // "prompt" (the default) puts the system text at the head of the one stdin prompt; "developer" sends it as Codex's
+    // developer instructions (`-c developer_instructions=...`), so it keeps a higher role than the user message, for a
+    // caller whose user message carries untrusted text.
+    if (!["prompt", "developer"].includes(systemAs)) throw new ProviderError("systemAs must be prompt or developer.");
+    this.systemAs = systemAs;
     this.detectCapabilities = detectCapabilities;
     this.capabilitiesPromise = null;
     this.privateInferenceIsolation = Object.freeze({ packetOnly: false, freshContextPerGenerate: true, tools: true, filesystem: true, sessionPersistence: false, transport: "codex-cli-agent" });
@@ -77,12 +89,20 @@ export class CodexCliProvider {
       if (this.reasoningEffort && (!flags || flags.config)) {
         args.push("-c", `model_reasoning_effort=\"${this.reasoningEffort}\"`);
       }
+      if (this.configOverrides.length && (!flags || flags.config)) {
+        for (const override of this.configOverrides) args.push("-c", override);
+      }
+      if (this.systemAs === "developer") {
+        if (flags && !flags.config) throw new ProviderError("Installed Codex CLI can't take developer instructions (-c).", { code: "CLI_INCOMPATIBLE" });
+        // A TOML basic string: JSON's escapes are valid TOML escapes.
+        args.push("-c", `developer_instructions=${JSON.stringify(system)}`);
+      }
       args.push("--output-schema", schemaPath, "--output-last-message", outputPath);
       if (this.isolateConfig && (!flags || flags.ignoreUserConfig)) args.push("--ignore-user-config");
       if (this.isolateConfig && (!flags || flags.ignoreRules)) args.push("--ignore-rules");
       args.push("-");
 
-      const prompt = `SYSTEM INSTRUCTIONS\n${system}\n\nUSER MESSAGE AND CONTEXT\n${user}\n`;
+      const prompt = this.systemAs === "developer" ? `${user}\n` : `SYSTEM INSTRUCTIONS\n${system}\n\nUSER MESSAGE AND CONTEXT\n${user}\n`;
       const run = await runSubprocess({
         command: this.command,
         args,
@@ -114,11 +134,21 @@ export class CodexCliProvider {
       }
       if (!text) throw new ProviderError("Codex CLI returned an empty final message.");
 
-      const events = parseJsonLines(run.stdout);
+      const { events, malformed } = parseJsonLines(run.stdout);
       const thread = events.find((event) => event.type === "thread.started");
       const completed = [...events].reverse().find((event) => event.type === "turn.completed");
       const failed = [...events].reverse().find((event) => event.type === "turn.failed" || event.type === "error");
       if (failed) throw new ProviderError("Codex CLI reported a failed turn.", { details: failed });
+      // How many actions (commands, file changes, tool calls, searches) the agent took beyond reasoning and its message:
+      // a caller that wants an answer from the prompt alone can tell when the agent reached outside it.
+      const toolItems = new Set(events
+        .filter((event) => ["item.started", "item.updated", "item.completed"].includes(event.type) && event.item
+          && !["agent_message", "reasoning", "todo_list", "error"].includes(event.item.type))
+        .map((event, index) => event.item.id ?? `item-${index}`)).size;
+      // The count is a receipt only when the event stream is whole: every event-looking line parses, the turn completed and
+      // the agent's message is in it. Otherwise (a changed event format, a truncated or broken event) there is no count (null),
+      // so no caller mistakes a missing receipt for an agent that took no action.
+      const receipt = malformed === 0 && Boolean(completed) && events.some((event) => event.type === "item.completed" && event.item?.type === "agent_message");
 
       return {
         provider: this.id,
@@ -127,6 +157,7 @@ export class CodexCliProvider {
         requestId: thread?.thread_id ?? `codex-cli-${randomUUID()}`,
         responseId: thread?.thread_id,
         usage: completed?.usage,
+        toolItems: receipt ? toolItems : null,
         transport: "cli",
         stderr: run.stderr.trim()
       };

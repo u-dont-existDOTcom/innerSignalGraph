@@ -34,6 +34,10 @@ if (args.includes("--fake-require-sealed")) {
     }
   }
 }
+if (process.env.FAKE_CLAUDE_ARGS_FILE) {
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(process.env.FAKE_CLAUDE_ARGS_FILE, JSON.stringify(args));
+}
 let input = "";
 for await (const chunk of process.stdin) input += chunk;
 if (!input.trim()) {

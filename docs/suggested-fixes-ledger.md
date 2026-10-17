@@ -107,3 +107,7 @@
 - P2, a current close match could fall outside a short list while the close flag stayed true: fixed (the best close match takes the list's last place); the same test.
 - P2 (second round, `b139dece`), a replay of a stored plan that this version reads within its limits looked like a change and was refused as already applied: fixed (the store compares with the plan as read); test "in the store, a replay of a stored plan this version reads within its limits is still a replay".
 - P2 (second round), a client change to working notes alone lost her references: fixed (her references stay on every entry her decision makes); test "a client decision's references stay with every change it makes".
+
+## 2026-10-17: a test of whether the served rules are applied (issue #172, change C)
+
+- Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `6629d489`): `suggested-fixes/innerSignalGraph/` holds the same three items, unchanged. This branch adds a hand-run test that calls models on synthetic cases and a count of a Codex agent's actions; it changes no served protocol, prompt or guide. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C). `2026-10-09-teaching-points-for-map-changes.md` doesn't apply: nothing reader-facing changes. No new disposition.
