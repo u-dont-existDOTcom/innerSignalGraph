@@ -154,6 +154,15 @@ try {
   const judge = provider(judgeFamily, values["judge-model"]);
   await requireIsolation(answerer);
   await requireIsolation(judge);
+  // The connector under test is loaded before any model is called, so a wrong --git-ref costs nothing.
+  let source = null;
+  if (!values["calibration-only"]) {
+    try {
+      source = await connectorSource({ ref: values["git-ref"] ?? null });
+    } catch (error) {
+      throw new SetupError(`The connector to test can't be loaded${values["git-ref"] ? ` from ${values["git-ref"]}` : ""}: ${error.message.split("\n")[0]}`);
+    }
+  }
   const outDir = values.out ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-protocol-application-"));
   fs.mkdirSync(outDir, { recursive: true, mode: 0o700 });
   const report = {
@@ -180,7 +189,6 @@ try {
       report.outcome = "inconclusive";
       status = 2;
     } else {
-      const source = await connectorSource({ ref: values["git-ref"] ?? null });
       report.application = await runProtocolApplication({ answerer, judge, cases, samples, source, log });
       report.outcome = report.application.outcome;
       status = report.outcome === "pass" ? (report.calibration_skipped ? 2 : 0) : report.outcome === "fail" ? 1 : 2;

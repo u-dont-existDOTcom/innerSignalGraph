@@ -301,6 +301,12 @@ test("the command runs end to end in mock mode, keeps its report private and exi
   assert.equal(failed.result.status, 1, failed.result.stderr);
   assert.equal(failed.report.outcome, "fail");
 
+  // A connector that can't be loaded is a configuration error found before any model is called.
+  const wrongRef = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "mock", "--fixture", path.join(dir, "pass.json"), "--git-ref", "no-such-ref-for-this-test", "--out", path.join(dir, "wrong-ref")], { cwd: root, encoding: "utf8", env: { ...process.env, INNER_SIGNAL_MODE: "" } });
+  assert.equal(wrongRef.status, 3, wrongRef.stderr);
+  assert.match(wrongRef.stderr, /The connector to test can't be loaded from no-such-ref-for-this-test/u);
+  assert.equal(fs.existsSync(path.join(dir, "wrong-ref", "protocol-application-report.json")), false);
+
   const missing = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs"], { cwd: root, encoding: "utf8" });
   assert.equal(missing.status, 3, "a live run is never the default");
   assert.match(missing.stderr, /--mode is required/u);
