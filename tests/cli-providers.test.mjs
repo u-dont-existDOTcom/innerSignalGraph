@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fsp from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexCliProvider } from "../src/providers/codex-cli.mjs";
@@ -28,6 +30,27 @@ test("Codex CLI provider captures schema output from a subprocess", async () => 
   assert.equal(result.responseId, "fake-codex-thread");
   assert.equal(result.transport, "cli");
   assert.equal(result.toolItems, 0, "reasoning and the agent's message are not actions");
+});
+
+test("Codex CLI provider passes a caller's extra config settings, each as its own -c", async (t) => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-codex-args-"));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const argsFile = path.join(dir, "args.json");
+  process.env.FAKE_CODEX_ARGS_FILE = argsFile;
+  t.after(() => { delete process.env.FAKE_CODEX_ARGS_FILE; });
+  const provider = new CodexCliProvider({
+    command: process.execPath,
+    baseArgs: [path.join(here, "fixtures/fake-codex-cli.mjs")],
+    model: "fake-codex",
+    timeoutMs: 10000,
+    isolateConfig: true,
+    configOverrides: ['web_search="disabled"', "features.apps=false"]
+  });
+  await provider.generate(prompt);
+  const args = JSON.parse(await fsp.readFile(argsFile, "utf8"));
+  const settings = args.flatMap((arg, index) => (arg === "-c" ? [args[index + 1]] : []));
+  assert.ok(settings.includes('web_search="disabled"') && settings.includes("features.apps=false"), settings.join(" "));
+  assert.ok(args.includes("--ignore-user-config") && args.includes("--ignore-rules"));
 });
 
 test("Codex CLI provider counts the actions its agent took beyond reasoning and its message", async () => {

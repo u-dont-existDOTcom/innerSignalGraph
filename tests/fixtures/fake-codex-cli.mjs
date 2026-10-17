@@ -33,6 +33,7 @@ if (outputIndex < 0 || !args[outputIndex + 1]) {
   console.error("missing output path");
   process.exit(2);
 }
+if (process.env.FAKE_CODEX_ARGS_FILE) await fs.writeFile(process.env.FAKE_CODEX_ARGS_FILE, JSON.stringify(args));
 let input = "";
 for await (const chunk of process.stdin) input += chunk;
 if (!input.includes("SYSTEM INSTRUCTIONS") || !input.includes("USER MESSAGE AND CONTEXT")) {

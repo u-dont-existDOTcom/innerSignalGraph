@@ -28,7 +28,8 @@ export class CodexCliProvider {
     timeoutMs = 900000,
     cwd = process.cwd(),
     isolateConfig = true,
-    detectCapabilities = true
+    detectCapabilities = true,
+    configOverrides = []
   } = {}) {
     this.id = "openai";
     this.command = command;
@@ -38,6 +39,8 @@ export class CodexCliProvider {
     this.timeoutMs = timeoutMs;
     this.cwd = cwd;
     this.isolateConfig = isolateConfig;
+    // Extra `-c key=value` settings for this caller, such as features it wants turned off.
+    this.configOverrides = [...configOverrides];
     this.detectCapabilities = detectCapabilities;
     this.capabilitiesPromise = null;
     this.privateInferenceIsolation = Object.freeze({ packetOnly: false, freshContextPerGenerate: true, tools: true, filesystem: true, sessionPersistence: false, transport: "codex-cli-agent" });
@@ -76,6 +79,9 @@ export class CodexCliProvider {
       if (this.model && (!flags || flags.model)) args.push("--model", this.model);
       if (this.reasoningEffort && (!flags || flags.config)) {
         args.push("-c", `model_reasoning_effort=\"${this.reasoningEffort}\"`);
+      }
+      if (this.configOverrides.length && (!flags || flags.config)) {
+        for (const override of this.configOverrides) args.push("-c", override);
       }
       args.push("--output-schema", schemaPath, "--output-last-message", outputPath);
       if (this.isolateConfig && (!flags || flags.ignoreUserConfig)) args.push("--ignore-user-config");

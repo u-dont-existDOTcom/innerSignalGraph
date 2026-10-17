@@ -67,8 +67,14 @@ check exactly those things. This test calls models, so it runs by hand and not i
    the reply for a person to read.
 7. **Isolation.**
    - Codex starts in an empty folder, read-only, ephemeral, ignoring the user's own configuration and any AGENTS.md rules,
-     so none of its MCP servers, InnerSignal's included, are reachable; it reports its events as JSON, which is how its
-     actions are counted.
+     so none of its MCP servers, InnerSignal's included, are reachable. Its web search, the account's apps and plugins,
+     browser and computer use, image generation, sub-agents, the shell, tool suggestions, skill search and fast mode are
+     turned off (`CODEX_ISOLATION_CONFIG`). It reports its events as JSON, which is how any action it still takes is
+     counted. On the first live check, a Codex judge without these settings ran web searches while grading, and with
+     only web search off it reached for the account's apps instead; with them all off it takes no action.
+   - Both prompts also say not to run commands, read files, search the web, call tools or browse.
+   - Each command must accept the model and effort asked for, so a result is never a command's default presented as the
+     requested model.
    - The test refuses a Codex command that can't be isolated that way.
    - A reply or a judgment from an agent that took any action (a command, a file, a tool, a search) is not counted: a
      judgment is asked for once more, then the reply counts as inconclusive.

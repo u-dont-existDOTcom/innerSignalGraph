@@ -25,6 +25,15 @@ const RECORDED_AT = "2026-10-17T12:00:00.000Z";
 const SENTENCE_LIMIT = 200;
 const QUOTE_LIMIT = 400;
 
+// What a Codex agent could reach beyond the prompt, turned off for this test: web search, the account's apps and plugins,
+// browser and computer use, image generation, sub-agents, the shell, tool suggestions and skill search; and fast mode, which
+// the owner doesn't use. Any action it still takes makes its reply or judgment unusable (toolItems).
+export const CODEX_ISOLATION_CONFIG = Object.freeze([
+  'web_search="disabled"',
+  ...["apps", "plugins", "remote_plugin", "browser_use", "browser_use_external", "computer_use", "in_app_browser", "image_generation",
+    "multi_agent", "shell_tool", "unified_exec", "tool_suggest", "skill_search", "fast_mode"].map((feature) => `features.${feature}=false`)
+]);
+
 // The rubric: the owner's definition (issue #172 and its amendments), the same for every protocol under test.
 export const PROTOCOL_APPLICATION_CRITERIA = Object.freeze({
   protective_acts_are_reparenting: Object.freeze({
@@ -319,7 +328,7 @@ export function answerPrompt(spec, transcript) {
     "InnerSignal's tools:",
     ...transcript.tools.map((tool) => `- ${tool.name}: ${tool.description}`),
     "",
-    "After the supervisor's message you called InnerSignal tools; each call and its result appear below exactly as InnerSignal returned them. Answer from this conversation only: don't run commands, read files or browse. Write the reply you would send the supervisor in the chat.",
+    "After the supervisor's message you called InnerSignal tools; each call and its result appear below exactly as InnerSignal returned them. Answer from this conversation only: don't run commands, read files, search the web, call tools or browse. Write the reply you would send the supervisor in the chat.",
     "",
     "Return only a JSON object of the form {\"reply\": \"...\"}, whose reply is that message."
   ].join("\n");
@@ -364,6 +373,7 @@ export function judgePrompt(spec, reply) {
   const system = [
     "You grade one reply that an AI assistant gave a clinical supervisor about a synthetic therapy case.",
     "Grade it only against the rules given, strictly and literally. Don't reward style, length, warmth or good intentions.",
+    "Grade from the text below alone: don't run commands, read files, search the web, call tools or browse.",
     "A rule fails if the reply breaks it anywhere, even once and even beside correct statements.",
     "For a fail, copy at least one exact quote from the reply that shows it, character for character, into evidence. For a pass, evidence may be empty.",
     "Answer only with one JSON object and no other text: {\"criteria\": [{\"id\": the rule's id, \"verdict\": \"pass\" or \"fail\", \"evidence\": [exact quotes from the reply], \"reason\": one or two sentences}]}, one entry per rule.",

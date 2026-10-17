@@ -13,6 +13,7 @@ import { CodexCliProvider } from "../providers/codex-cli.mjs";
 import { MockProvider } from "../providers/mock.mjs";
 import { OpenAIProvider } from "../providers/openai.mjs";
 import {
+  CODEX_ISOLATION_CONFIG,
   PROTOCOL_APPLICATION_VERSION,
   connectorSource,
   loadProtocolApplicationCalibration,
@@ -116,7 +117,7 @@ function provider(family, model) {
   if (values.mode === "mock") return new MockProvider({ id: family, model: `mock-${family}`, fixturePath: path.resolve(values.fixture) });
   if (values.mode === "cli") {
     return family === "openai"
-      ? new CodexCliProvider({ command: config.codexCommand, model: model ?? config.openaiModel, reasoningEffort: config.codexReasoningEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true })
+      ? new CodexCliProvider({ command: config.codexCommand, model: model ?? config.openaiModel, reasoningEffort: config.codexReasoningEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true, configOverrides: CODEX_ISOLATION_CONFIG })
       : new ClaudeCliProvider({ command: config.claudeCommand, model: model ?? config.anthropicModel, effort: config.claudeEffort, timeoutMs: config.requestTimeoutMs, cwd: agentHome, isolateConfig: true });
   }
   return family === "openai"
@@ -126,12 +127,13 @@ function provider(family, model) {
 
 // A command-line agent that can't be kept away from the user's own configuration (its MCP servers, InnerSignal's included),
 // its tools and its saved sessions isn't used: Codex in a read-only, ephemeral sandbox that ignores the user's configuration
-// and any AGENTS.md rules around it, reporting its events as JSON (which is how its actions are counted);
-// Claude with no tools, no MCP servers but an empty set, safe mode and no saved session. An agent whose command can't be
-// started or checked isn't used either.
+// and any AGENTS.md rules around it, takes the settings above and reports its events as JSON (which is how its actions are
+// counted); Claude with no tools, no MCP servers but an empty set, safe mode and no saved session. Each must also take the
+// model and effort asked for, so a result is never a command's default presented as the requested model. An agent whose
+// command can't be started or checked isn't used either.
 const ISOLATION_FLAGS = new Map([
-  [CodexCliProvider, ["ignoreUserConfig", "ignoreRules", "json", "sandbox", "ephemeral", "outputSchema", "outputLastMessage"]],
-  [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence"]]
+  [CodexCliProvider, ["ignoreUserConfig", "ignoreRules", "json", "sandbox", "ephemeral", "outputSchema", "outputLastMessage", "model", "config"]],
+  [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence", "model", "effort"]]
 ]);
 async function requireIsolation(candidate) {
   const required = [...ISOLATION_FLAGS].find(([kind]) => candidate instanceof kind)?.[1];
@@ -209,9 +211,13 @@ try {
   }
   report.finished_at = new Date().toISOString();
   const reportPath = path.join(outDir, "protocol-application-report.json");
+  // Written private, and made private again when an earlier run's readable file is overwritten.
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
+  fs.chmodSync(reportPath, 0o600);
   const summary = summarizeProtocolApplication(report);
-  fs.writeFileSync(path.join(outDir, "summary.txt"), `${summary.join("\n")}\n`, { mode: 0o600 });
+  const summaryPath = path.join(outDir, "summary.txt");
+  fs.writeFileSync(summaryPath, `${summary.join("\n")}\n`, { mode: 0o600 });
+  fs.chmodSync(summaryPath, 0o600);
   process.stdout.write(`${summary.join("\n")}\nReport: ${reportPath}\n`);
 } catch (error) {
   if (error instanceof SetupError) {

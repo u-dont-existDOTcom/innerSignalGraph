@@ -10,6 +10,7 @@ import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import {
   ANSWER_STAGE,
+  CODEX_ISOLATION_CONFIG,
   JUDGE_STAGE,
   PROTOCOL_APPLICATION_CRITERIA,
   PROTOCOL_APPLICATION_CRITERION_IDS,
@@ -106,6 +107,12 @@ test("the model is asked with the connector's own results: the protocol exactly 
   const { system, user } = answerPrompt(spec, transcript);
   assert.ok(user.includes(served), "the prompt holds the served protocol unchanged");
   assert.match(system, /Return only a JSON object of the form \{"reply": "\.\.\."\}/u, "the answer's JSON contract is in the prompt too");
+  assert.match(system, /don't run commands, read files, search the web, call tools or browse/u);
+  assert.match(judgePrompt(spec, "A reply.").system, /Grade from the text below alone: don't run commands, read files, search the web, call tools or browse/u);
+  // What a Codex agent could reach beyond the prompt is turned off, and so is fast mode.
+  for (const setting of ['web_search="disabled"', "features.apps=false", "features.shell_tool=false", "features.multi_agent=false", "features.fast_mode=false"]) {
+    assert.ok(CODEX_ISOLATION_CONFIG.includes(setting), setting);
+  }
   assert.ok(user.startsWith(`SUPERVISOR\n${spec.question}\n`), "the supervisor's question comes first, as in a chat");
   assert.ok(system.includes(transcript.instructions) && /call load_therapy_protocol/u.test(transcript.instructions), "the server's own instructions");
   for (const name of ["load_therapy_protocol", "load_case_context", "find_journal_quotes"]) assert.ok(system.includes(`- ${name}: `), name);
@@ -303,11 +310,15 @@ test("the command runs end to end in mock mode, keeps its report private and exi
     return { result, report: JSON.parse(fs.readFileSync(path.join(out, "protocol-application-report.json"), "utf8")), mode: fs.statSync(path.join(out, "protocol-application-report.json")).mode & 0o777 };
   };
   const good = goodReply(spec.id);
+  // Codex on #175 (P2): an earlier, readable report in the same folder is made private when it is overwritten.
+  fs.mkdirSync(path.join(dir, "pass"));
+  fs.writeFileSync(path.join(dir, "pass", "protocol-application-report.json"), "{}", { mode: 0o644 });
+  fs.chmodSync(path.join(dir, "pass", "protocol-application-report.json"), 0o644);
   const passed = run("pass", fixture(good, { protective_acts_are_reparenting: "pass", services_stay_separate: "pass" }));
   assert.equal(passed.result.status, 0, passed.result.stderr);
   assert.equal(passed.report.outcome, "pass");
   assert.equal(passed.report.calibration.trusted, true);
-  assert.equal(passed.mode, 0o600);
+  assert.equal(passed.mode, 0o600, "private, though the folder held a readable report");
   assert.match(passed.result.stdout, new RegExp(`Judge check: ${calibration.length} of ${calibration.length} known replies graded as expected`, "u"));
   assert.equal(passed.report.calibration.results.length, calibration.length, "every known reply, not only this case's");
   assert.match(passed.result.stdout, /supervisor-invites-the-split: pass, 2 of 2 replies passed/u);
@@ -351,12 +362,12 @@ test("the command refuses a command-line agent it can't isolate, before any mode
   const run = (overrides) => spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "cli", "--calibration-only", "--case", "frame-declined", "--out", path.join(dir, "out")], { cwd: root, encoding: "utf8", env: { ...env, ...overrides } });
   const lacking = run({});
   assert.equal(lacking.status, 3, lacking.stderr);
-  assert.match(lacking.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence/u);
+  assert.match(lacking.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence.*model.*effort/u);
   // Codex on #175 (P2): a Codex without JSON events (its actions couldn't be counted) or without --ignore-rules (AGENTS.md
   // around it could steer it) isn't used either.
   const bareCodex = run({ CODEX_COMMAND: wrapper("codex-minimal", "fake-codex-minimal-cli.mjs") });
   assert.equal(bareCodex.status, 3, bareCodex.stderr);
-  assert.match(bareCodex.stderr, /The installed Codex CLI lacks what this test needs to isolate it: ignoreUserConfig, ignoreRules, json, sandbox, ephemeral/u);
+  assert.match(bareCodex.stderr, /The installed Codex CLI lacks what this test needs to isolate it: ignoreUserConfig, ignoreRules, json, sandbox, ephemeral, model, config/u);
   // A command that can't be started at all is a configuration error too, reported the same way.
   const absent = run({ CODEX_COMMAND: path.join(dir, "no-such-codex") });
   assert.equal(absent.status, 3, absent.stderr);
