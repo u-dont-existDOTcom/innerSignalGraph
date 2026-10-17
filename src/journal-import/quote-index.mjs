@@ -285,82 +285,153 @@ function yearlessDay({ month, day }, near, after) {
 // year (a year mentioned at a line's start reads as one) gives way before a full date does.
 const lineWeight = ({ written }) => (written.year_inferred === true || written.precision === "year" ? 1 : written.precision === "month" ? 2 : 3);
 
+// Version 4: the years a yearless line's day may take, the years a date line can name (`dateLineValue`, `YEAR_LINE`).
+const TIME_ORDER_YEARS = Object.freeze({ first: 1900, last: 2100 });
+
 /**
  * Version 4: which lines, in journal order, agree with the journal's order, and the day each yearless one among them stands
  * for. `lines` are in journal order: a date line with its first `day` (YYYY-MM-DD) and its `written` date, or a yearless line
  * with `yearless` ({ month, day }: an entry's day and month without a year). Of every run of these lines whose days never go
- * back, a yearless line taking its day and month in whatever year keeps the order, the one with the most weight
- * (`lineWeight`; a yearless line weighs 1) is kept. A run begins at a date line, and every yearless line before that line is
- * in it: a chain of them can always run back from it, each the latest day not after the line after it. After it, a yearless
- * line takes the earliest day not before the line before it, which leaves the most room for the lines after it. Of runs with
- * the same weight, each line follows the line before it with the latest day, the closest in time (a date line goes on from a
- * line before it rather than begin a run), and the run ending latest in the journal is kept. The result is the set of the
- * indexes in the run (`kept`) and the days of the yearless ones (`days`); with no date line, nothing.
+ * back, with at least one date line, a yearless line taking its day and month in whatever year from 1900 to 2100 keeps the
+ * order, the one with the most weight (`lineWeight`; a yearless line weighs 1) is kept. In it, the yearless lines before its
+ * first date line run back from it, each the latest day not after the line after it; the others take the earliest day not
+ * before the line before them, which leaves the most room for the lines after. Of runs with the same weight, each line
+ * follows the line before it with the latest day, the closest in time (a date line goes on from a run with a date line
+ * before it rather than begin one), and the run ending latest in the journal is kept. The result is the set of the indexes in
+ * the run (`kept`) and the days of the yearless ones (`days`); with no date line, nothing.
+ *
+ * The search keeps two kinds of runs, those still before their first date line and those after it. For each line it adds the
+ * runs ending there: a date line one, at its day; a yearless line one of each kind at its day in each year where that run
+ * weighs more than at its day a year before (a run is never worse for ending earlier). The run weighing most up to a day is
+ * read from a tree over the days, so the search takes about (date lines + yearless lines × 2 × 201 years) × log(days) steps
+ * and keeps at most as many runs, in typed arrays (Codex: expanding every earlier run for each yearless line grew without
+ * bound).
  */
 export function timeOrderRun(lines) {
-  // Each run's last line, at the day it takes there: `best` is the run's weight, `previous` its line before (a state's index;
-  // -1 where the run begins). A yearless line keeps a state at a later day only when it carries more weight.
-  const states = [];
-  const bestUpTo = (day, count) => {
-    let found = -1;
-    for (let index = 0; index < count; index += 1) {
-      const state = states[index];
-      if (state.day > day) continue;
-      if (found === -1 || state.best > states[found].best || (state.best === states[found].best && state.day > states[found].day)) found = index;
+  const kept = new Set(), days = new Map();
+  if (!lines.some((entry) => entry.yearless === undefined)) return { kept, days };
+  const { first: firstYear, last: lastYear } = TIME_ORDER_YEARS;
+  // A day as a place in order: 372 places a year and 31 a month (some unused), so places compare as their days do.
+  const placeOf = (year, month, day) => (year - firstYear) * 372 + (month - 1) * 31 + day - 1;
+  const place = (day) => {
+    const year = Number(day.slice(0, 4));
+    invariant(year >= firstYear && year <= lastYear, "QUOTE_TIME_ORDER_INVALID");
+    return placeOf(year, Number(day.slice(5, 7)), Number(day.slice(8, 10)));
+  };
+  const places = (lastYear - firstYear + 1) * 372;
+  // The runs found, in typed arrays that grow as needed: each ends at a line at a place (`at`), weighs `best` and goes on
+  // from the run `previous` (-1 where it begins); `line` is the line's index, or -1 - index for a yearless line in a run
+  // still before its first date line.
+  let capacity = 1024, count = 0;
+  let line = new Int32Array(capacity), at = new Int32Array(capacity), best = new Int32Array(capacity), previous = new Int32Array(capacity);
+  const found = (lineCode, position, weight, before) => {
+    if (count === capacity) {
+      capacity *= 2;
+      const grown = (old) => { const next = new Int32Array(capacity); next.set(old); return next; };
+      line = grown(line); at = grown(at); best = grown(best); previous = grown(previous);
     }
+    line[count] = lineCode; at[count] = position; best[count] = weight; previous[count] = before;
+    return count++;
+  };
+  const better = (run, than) => than === -1 || best[run] > best[than] || (best[run] === best[than] && at[run] > at[than]);
+  // A tree over the places (Fenwick's) for each kind of run, those still before their first date line (`OPENING`) and those
+  // after it (`GOING`): each node holds the run that weighs most in its stretch, the later among equals, else the one found
+  // first, and `upTo` gives the run weighing most whose place isn't after a place, the same way. Per kind, the earliest place
+  // of a run and the run weighing most: before the one there is no run, and from the place of the other on every place reads
+  // that same run.
+  const OPENING = 0, GOING = 1;
+  const trees = [new Int32Array(places + 1).fill(-1), new Int32Array(places + 1).fill(-1)];
+  const earliest = [Infinity, Infinity], heaviest = [-1, -1];
+  const upTo = (kind, position) => {
+    const tree = trees[kind];
+    let found = -1;
+    for (let node = position + 1; node > 0; node -= node & -node) if (tree[node] !== -1 && better(tree[node], found)) found = tree[node];
     return found;
   };
-  let yearlessBefore = 0;
-  lines.forEach((line, index) => {
-    const count = states.length;
-    if (line.yearless === undefined) {
-      const weight = lineWeight(line), previous = bestUpTo(line.day, count);
-      const begins = yearlessBefore + weight;
-      if (previous !== -1 && states[previous].best + weight >= begins) states.push({ line: index, day: line.day, best: states[previous].best + weight, previous });
-      else states.push({ line: index, day: line.day, best: begins, previous: -1 });
+  const add = (kind, run) => {
+    const tree = trees[kind];
+    for (let node = at[run] + 1; node <= places; node += node & -node) if (better(run, tree[node])) tree[node] = run;
+    earliest[kind] = Math.min(earliest[kind], at[run]);
+    if (better(run, heaviest[kind])) heaviest[kind] = run;
+  };
+  // The years from 1900 to 2100 a day and month exists in (29 February only in leap years), read once.
+  const holding = new Map();
+  const yearsHolding = (month, day) => {
+    const key = month * 32 + day;
+    if (!holding.has(key)) holding.set(key, Array.from({ length: lastYear - firstYear + 1 }, (_, step) => firstYear + step).filter((year) => realDay(year, month, day)));
+    return holding.get(key);
+  };
+  const lastDated = lines.findLastIndex((entry) => entry.yearless === undefined);
+  const pendingRuns = new Int32Array(4 * 2 * (lastYear - firstYear + 1));
+  let end = -1;
+  lines.forEach((entry, index) => {
+    if (entry.yearless === undefined) {
+      const weight = lineWeight(entry), position = place(entry.day);
+      const open = upTo(OPENING, position), go = upTo(GOING, position);
+      const begins = (open === -1 ? 0 : best[open]) + weight;
+      const run = go !== -1 && best[go] + weight >= begins ? found(index, position, best[go] + weight, go) : found(index, position, begins, open);
+      add(GOING, run);
+      if (end === -1 || best[run] >= best[end]) end = run;
       return;
     }
-    yearlessBefore += 1;
-    const days = [...new Set(states.slice(0, count).map((state) => yearlessDay(line.yearless, state.day, true)).filter((day) => day !== null))].sort();
-    let top = -1;
-    for (const day of days) {
-      const previous = bestUpTo(day, count);
-      const best = states[previous].best + 1;
-      if (best <= top) continue;
-      top = best;
-      states.push({ line: index, day, best, previous });
+    const { month, day } = entry.yearless;
+    const years = yearsHolding(month, day);
+    let pending = 0;
+    // A yearless line before the journal's last date line can begin a run, or carry one on, before a date line; any yearless
+    // line can carry on a run with a date line. Before a kind's earliest run there is none to carry on, so only the first year
+    // can begin one there; once a day reads the kind's heaviest run, no later day weighs more.
+    for (const kind of index < lastDated ? [OPENING, GOING] : [GOING]) {
+      if (earliest[kind] === Infinity && kind === GOING) continue;
+      const from = earliest[kind] === Infinity ? years.length : years.findIndex((year) => placeOf(year, month, day) >= earliest[kind]);
+      const steps = kind === OPENING && years.length ? [0] : [];
+      for (let step = from === -1 ? years.length : from; step < years.length; step += 1) if (step !== 0 || kind !== OPENING) steps.push(step);
+      let top = -1;
+      for (const step of steps) {
+        const position = placeOf(years[step], month, day), before = upTo(kind, position);
+        if (kind === GOING && before === -1) continue;
+        const weight = (before === -1 ? 0 : best[before]) + 1;
+        if (weight > top) {
+          top = weight;
+          pendingRuns.set([kind, position, weight, before], 4 * pending++);
+        }
+        if (before !== -1 && before === heaviest[kind]) break;
+      }
+    }
+    for (let item = 0; item < pending; item += 1) {
+      const [kind, position, weight, before] = pendingRuns.subarray(4 * item, 4 * item + 4);
+      const run = found(kind === GOING ? index : -1 - index, position, weight, before);
+      add(kind, run);
+      if (kind === GOING && best[run] >= best[end]) end = run;
     }
   });
-  const kept = new Set(), days = new Map();
-  let end = -1;
-  states.forEach((state, index) => { if (end === -1 || state.best >= states[end].best) end = index; });
-  if (end === -1) return { kept, days };
   const path = [];
-  for (let state = end; state !== -1; state = states[state].previous) path.unshift(states[state]);
-  // The yearless lines before the run's first line (a date line), back from it.
-  let next = lines[path[0].line].day;
-  for (let index = path[0].line - 1; index >= 0; index -= 1) {
-    if (lines[index].yearless === undefined) continue;
-    const value = yearlessDay(lines[index].yearless, next, false);
-    if (value === null) continue;
-    kept.add(index);
-    days.set(index, value);
+  for (let run = end; run !== -1; run = previous[run]) path.unshift(run);
+  const lineOf = (run) => (line[run] >= 0 ? line[run] : -1 - line[run]);
+  // The yearless lines before the run's first date line, back from it.
+  const opener = path.findIndex((run) => line[run] >= 0);
+  let next = lines[lineOf(path[opener])].day;
+  for (let step = opener - 1; step >= 0; step -= 1) {
+    const value = yearlessDay(lines[lineOf(path[step])].yearless, next, false);
+    invariant(value !== null && place(value) >= at[path[step]], "QUOTE_TIME_ORDER_INVALID");
+    kept.add(lineOf(path[step]));
+    days.set(lineOf(path[step]), value);
     next = value;
   }
-  // The run, each yearless line at the earliest day not before the line before it: never later than the day its state took,
+  // The rest, each yearless line at the earliest day not before the line before it: never later than the place its run took,
   // so the order holds with the lines after it.
-  let previous = null;
-  for (const state of path) {
-    kept.add(state.line);
-    const line = lines[state.line];
-    if (line.yearless === undefined) { previous = line.day; continue; }
-    const value = yearlessDay(line.yearless, previous, true);
-    invariant(value !== null && value <= state.day, "QUOTE_TIME_ORDER_INVALID");
-    days.set(state.line, value);
-    previous = value;
+  let before = null;
+  for (const run of path.slice(opener)) {
+    const entry = lines[lineOf(run)];
+    kept.add(lineOf(run));
+    if (entry.yearless === undefined) { before = entry.day; continue; }
+    const value = yearlessDay(entry.yearless, before, true);
+    invariant(value !== null && place(value) <= at[run], "QUOTE_TIME_ORDER_INVALID");
+    days.set(lineOf(run), value);
+    before = value;
   }
   return { kept, days };
 }
+
 const monthKey = (number) => `${String(Math.floor(number / 12)).padStart(4, "0")}-${pad((number % 12) + 1)}`;
 
 // Content-free counts of line openings that look like a date but weren't read as one, so a journal's
@@ -563,7 +634,7 @@ const EMPTY_EXTRACTION = (units) => ({
  * lines as version 3 does. (1) The anchors are the heaviest run, in journal order, of the date lines and the entry lines
  * with a day and a month but no year, whose days (a date line's first day, `firstDayOf`) never go back (`timeOrderRun`): a
  * full date outweighs a month, and both a year alone or a yearless line; each yearless line in it takes its day and month in
- * the year that keeps the order, never from a line that may be misread: those before the run's first date line run back
+ * the year that keeps the order (from 1900 to 2100, the years a date line can name), never from a line that may be misread: those before the run's first date line run back
  * from it, each the latest day not after the line after it, and the others take the earliest day not before the line
  * before them (`yearlessDay`). Such a line says so with `year_inferred`. A date line outside the run breaks the order, is
  * taken as misread and dates nothing, and a yearless line outside it dates nothing either: their quotes are dated as if

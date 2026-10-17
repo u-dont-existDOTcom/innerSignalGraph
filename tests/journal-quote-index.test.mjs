@@ -1275,6 +1275,31 @@ test("version 4's run of lines in time order is the heaviest there is, checked a
   }
 });
 
+test("version 4's run search stays quick on a date-heavy journal, and a yearless day stays within the years a date line can name", { timeout: 120_000 }, () => {
+  const dayLine = (day) => ({ day, written: { from: day, to: day, precision: "day" } });
+  const inOrder = (lines, { kept, days }) => [...kept].sort((left, right) => left - right).map((index) => (lines[index].yearless ? days.get(index) : lines[index].day))
+    .every((day, position, all) => position === 0 || all[position - 1] <= day);
+  // One date line, then 400 alternating 1 January and 31 December headings (Codex, P1: this took over ten seconds): they run
+  // forward a year every two, and stop at 2100, the last year a date line can name; beyond it, only 31 December still fits.
+  const alternating = [dayLine("2020-06-01"), ...Array.from({ length: 400 }, (_, index) => ({ yearless: index % 2 === 0 ? { month: 1, day: 1 } : { month: 12, day: 31 } }))];
+  const run = timeOrderRun(alternating);
+  assert.ok(inOrder(alternating, run));
+  assert.deepEqual([1, 2, 3, 4].map((index) => run.days.get(index)), ["2021-01-01", "2021-12-31", "2022-01-01", "2022-12-31"]);
+  assert.equal(Math.max(...[...run.days.values()].map((day) => Number(day.slice(0, 4)))), 2100);
+  // 20,000 lines over fifty years, half of them yearless, some date lines misread.
+  let seed = 5;
+  const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const many = Array.from({ length: 20_000 }, (_, index) => {
+    const year = 2000 + Math.floor(index / 400), month = 1 + Math.floor(index / 34) % 12, day = 1 + Math.floor(random() * 28);
+    if (random() < 0.5) return { yearless: { month, day } };
+    return dayLine(`${random() < 0.05 ? 1950 + Math.floor(random() * 100) : year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+  });
+  const started = Date.now();
+  const manyRun = timeOrderRun(many);
+  assert.ok(Date.now() - started < 60_000, "well within a minute");
+  assert.ok(inOrder(many, manyRun) && manyRun.kept.size > 5_000);
+});
+
 test("version 4 never dates a quote earlier than the quotes above it, and counts every line and quote once, on a fixed run of random journals", () => {
   // Date lines of every kind, yearless dates (29 February among them) and pages not fully read, in journals of 4 to 17 pages.
   const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];

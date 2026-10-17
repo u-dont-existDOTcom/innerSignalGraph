@@ -337,18 +337,21 @@ Version 4 takes the order the owner states as a fact of the journal:
 
 - **The anchors are the lines that agree with that order.** In journal order, the heaviest run of the date lines and of
   the entry lines with a day and a month but no year, whose days never go back, each yearless line taking its day and
-  month in whichever year keeps the order: a full date counts 3, a month with its year 2, a year alone or a yearless date
+  month in whichever year from 1900 to 2100 (the years a date line can name) keeps the order: a full date counts 3, a month with its year 2, a year alone or a yearless date
   1, so a year mentioned at a line's start gives way before a full date does. A date line outside the run breaks the
   order and is taken as misread: it dates nothing, and its quotes are dated as if it weren't there; a yearless line
   outside it dates nothing either.
 - **A yearless date's year comes from the run, never from a line that may be misread.** The yearless lines before the
-  run's first date line all belong to it, since they can always run back from it, each the latest such day not after
-  the line after it (a chain of them runs back year by year); after it, each takes the earliest such day not before the
-  line before it, which leaves the most room for the lines after. It is marked `year_inferred`. Weighing every line and
+  run's first date line run back from it, each the latest such day not after the line after it (a chain of them runs
+  back year by year); after it, each takes the earliest such day not before the line before it, which leaves the most
+  room for the lines after. It is marked `year_inferred`. Weighing every line and
   every year together is what Codex's reviews came to: in turn they found a date line that lost a tie and couldn't come
   back once a yearless line was dated, a yearless line that took its year from a line later taken as misread, rounds of
   reading the years again that cycled or settled on a lighter run, and a chain of yearless lines before the first date
-  that lost its last line. A test checks the run against every subset of 300 random lists of up to ten lines.
+  that lost its last line. A test checks the run against every subset of 300 random lists of up to ten lines. The
+  search reads the heaviest run up to a day from a tree over the days and keeps, for a yearless line, a run only at the
+  days where it weighs more than a year before, so 20,000 lines take seconds (Codex: expanding every earlier run for
+  each yearless line made 400 alternating headings take over ten seconds).
 - **Every quote gets its time.** A quote under an anchor keeps its date, carried two pages as before; any other gets the
   range from the nearest anchor before it to the nearest after it, however wide and across pages not fully read, since
   the order holds through them. Before the first anchor the range is open at the start (`from` null), after the last
