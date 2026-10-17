@@ -183,6 +183,21 @@ test("the judge's answer is read strictly: every rule once, and a fail must quot
   for (const wrapped of [`\`\`\`json\n${JSON.stringify(verdicts)}\n\`\`\``, `Here is the grade:\n${JSON.stringify(verdicts, null, 2)}\nDone.`]) {
     assert.equal(parseJudgment(spec, reply, wrapped).valid, true, wrapped.slice(0, 20));
   }
+  // Codex on #175 (P2): the declared schema holds even where a provider doesn't enforce it, so a judgment missing an item's
+  // evidence or reason, with a field of the wrong type, or with fields the schema doesn't have, is unusable.
+  for (const broken of [
+    { id: "services_stay_separate", verdict: "pass" },
+    { id: "services_stay_separate", verdict: "pass", evidence: "none", reason: "" },
+    { id: "services_stay_separate", verdict: "pass", evidence: [3], reason: "" },
+    { id: "services_stay_separate", verdict: "pass", evidence: [], reason: null },
+    { id: "services_stay_separate", verdict: "pass", evidence: [], reason: "", confidence: 0.9 }
+  ]) {
+    const judged = parseJudgment(spec, reply, { criteria: [verdicts.criteria[0], broken] });
+    assert.equal(judged.valid, false, JSON.stringify(broken));
+    assert.ok(judged.problems.includes("BAD_FIELDS:services_stay_separate"), JSON.stringify(broken));
+  }
+  assert.deepEqual(parseJudgment(spec, reply, { ...verdicts, summary: "all fine" }).problems, ["EXTRA_FIELDS"]);
+  assert.deepEqual(parseJudgment(spec, reply, [verdicts]).problems, ["NO_CRITERIA"]);
   // The judge sees the rules and the case's grading facts, never the protocol under test.
   const { system, user } = judgePrompt(spec, reply);
   assert.match(system, /breaks it anywhere, even once/u);

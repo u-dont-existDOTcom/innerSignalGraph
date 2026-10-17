@@ -50,7 +50,8 @@ check exactly those things. This test calls models, so it runs by hand and not i
      - `urgent_safety_first`
      - `says_what_changes`
    - A rule fails if the reply breaks it anywhere, and every fail must quote the reply. A quote that isn't in the reply
-     makes the judgment unusable. An unusable judgment is asked for once more, then the reply is counted as
+     makes the judgment unusable, and so does a judgment outside its declared schema (a missing or wrongly typed field,
+     or one the schema doesn't have), even where the provider doesn't enforce it. An unusable judgment is asked for once more, then the reply is counted as
      inconclusive.
 4. **The judge is checked first**, on 13 replies whose grades are known (`corpus/protocol-application-calibration.json`).
    - They include the split the owner saw, a subtle version of it ("alongside the reparenting… in parallel"), an

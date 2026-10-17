@@ -466,6 +466,8 @@ function quoteFound(quote, reply) {
  * Reads a judge's JSON against the case's rules and the reply. Each graded rule must appear once with pass or fail; a
  * fail must quote the reply. Returns { valid, verdicts: { id: { verdict, evidence, reason, quotes_found } }, problems }.
  */
+const JUDGMENT_FIELDS = Object.freeze(["id", "verdict", "evidence", "reason"]);
+
 export function parseJudgment(spec, reply, raw) {
   const problems = [];
   let value;
@@ -474,18 +476,23 @@ export function parseJudgment(spec, reply, raw) {
   } catch {
     return { valid: false, verdicts: {}, problems: ["NOT_JSON"] };
   }
-  const entries = Array.isArray(value?.criteria) ? value.criteria : null;
+  const entries = value && typeof value === "object" && !Array.isArray(value) && Array.isArray(value.criteria) ? value.criteria : null;
   if (!entries) return { valid: false, verdicts: {}, problems: ["NO_CRITERIA"] };
+  // The declared schema holds where a provider doesn't enforce it (an API one): only `criteria` at the top, and each item
+  // exactly its four fields, evidence a list of text and the reason text (Codex on #175).
+  if (Object.keys(value).some((key) => key !== "criteria")) problems.push("EXTRA_FIELDS");
   const verdicts = {};
   for (const entry of entries) {
     const id = entry?.id;
     if (!spec.grading.criteria.includes(id)) { problems.push(`UNKNOWN_RULE:${String(id).slice(0, 60)}`); continue; }
     if (verdicts[id]) { problems.push(`DUPLICATE_RULE:${id}`); continue; }
     if (!["pass", "fail"].includes(entry.verdict)) { problems.push(`BAD_VERDICT:${id}`); continue; }
-    const evidence = Array.isArray(entry.evidence) ? entry.evidence.filter((item) => typeof item === "string").map((item) => item.slice(0, QUOTE_LIMIT)) : [];
+    if (Object.keys(entry).some((key) => !JUDGMENT_FIELDS.includes(key)) || !Array.isArray(entry.evidence)
+      || entry.evidence.some((item) => typeof item !== "string") || typeof entry.reason !== "string") { problems.push(`BAD_FIELDS:${id}`); continue; }
+    const evidence = entry.evidence.map((item) => item.slice(0, QUOTE_LIMIT));
     const found = evidence.filter((quote) => quoteFound(quote, reply));
     if (entry.verdict === "fail" && !found.length) problems.push(`FAIL_WITHOUT_QUOTE:${id}`);
-    verdicts[id] = { verdict: entry.verdict, evidence, quotes_found: found.length, reason: typeof entry.reason === "string" ? entry.reason.slice(0, 1200) : "" };
+    verdicts[id] = { verdict: entry.verdict, evidence, quotes_found: found.length, reason: entry.reason.slice(0, 1200) };
   }
   for (const id of spec.grading.criteria) if (!verdicts[id]) problems.push(`MISSING_RULE:${id}`);
   return { valid: problems.length === 0, verdicts, problems };
