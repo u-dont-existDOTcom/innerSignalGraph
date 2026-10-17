@@ -27,6 +27,20 @@ test("Codex CLI provider captures schema output from a subprocess", async () => 
   assert.deepEqual(JSON.parse(result.text), { ok: true });
   assert.equal(result.responseId, "fake-codex-thread");
   assert.equal(result.transport, "cli");
+  assert.equal(result.toolItems, 0, "reasoning and the agent's message are not actions");
+});
+
+test("Codex CLI provider counts the actions its agent took beyond reasoning and its message", async () => {
+  const provider = new CodexCliProvider({
+    command: process.execPath,
+    baseArgs: [path.join(here, "fixtures/fake-codex-cli.mjs"), "--fake-tool-item"],
+    model: "fake-codex",
+    timeoutMs: 10000,
+    isolateConfig: false
+  });
+  const result = await provider.generate(prompt);
+  assert.deepEqual(JSON.parse(result.text), { ok: true });
+  assert.equal(result.toolItems, 1, "a command started and completed is one action");
 });
 
 test("Claude CLI provider extracts structured_output from its JSON envelope", async () => {

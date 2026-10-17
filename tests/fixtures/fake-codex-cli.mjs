@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 
-const args = process.argv.slice(2);
+// --fake-tool-item (a test switch, not a Codex flag) makes the agent run a command before answering.
+const fakeToolItem = process.argv.includes("--fake-tool-item");
+const args = process.argv.slice(2).filter((arg) => arg !== "--fake-tool-item");
 if (args.includes("--version")) {
   console.log("fake-codex 1.0.0");
   process.exit(0);
@@ -39,4 +41,11 @@ if (!input.includes("SYSTEM INSTRUCTIONS") || !input.includes("USER MESSAGE AND 
 }
 await fs.writeFile(args[outputIndex + 1], '{"ok":true}\n');
 console.log(JSON.stringify({ type: "thread.started", thread_id: "fake-codex-thread" }));
+console.log(JSON.stringify({ type: "item.completed", item: { id: "item_0", type: "reasoning", text: "synthetic" } }));
+if (fakeToolItem) {
+  // An agent that ran a command before answering: started and completed, one action.
+  console.log(JSON.stringify({ type: "item.started", item: { id: "item_1", type: "command_execution", command: "ls", status: "in_progress" } }));
+  console.log(JSON.stringify({ type: "item.completed", item: { id: "item_1", type: "command_execution", command: "ls", status: "completed" } }));
+}
+console.log(JSON.stringify({ type: "item.completed", item: { id: "item_2", type: "agent_message", text: "{\"ok\":true}" } }));
 console.log(JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } }));

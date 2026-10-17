@@ -119,6 +119,12 @@ export class CodexCliProvider {
       const completed = [...events].reverse().find((event) => event.type === "turn.completed");
       const failed = [...events].reverse().find((event) => event.type === "turn.failed" || event.type === "error");
       if (failed) throw new ProviderError("Codex CLI reported a failed turn.", { details: failed });
+      // How many actions (commands, file changes, tool calls, searches) the agent took beyond reasoning and its message:
+      // a caller that wants an answer from the prompt alone can tell when the agent reached outside it.
+      const toolItems = new Set(events
+        .filter((event) => ["item.started", "item.updated", "item.completed"].includes(event.type) && event.item
+          && !["agent_message", "reasoning", "todo_list", "error"].includes(event.item.type))
+        .map((event, index) => event.item.id ?? `item-${index}`)).size;
 
       return {
         provider: this.id,
@@ -127,6 +133,7 @@ export class CodexCliProvider {
         requestId: thread?.thread_id ?? `codex-cli-${randomUUID()}`,
         responseId: thread?.thread_id,
         usage: completed?.usage,
+        toolItems,
         transport: "cli",
         stderr: run.stderr.trim()
       };

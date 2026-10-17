@@ -75,3 +75,7 @@
 ## 2026-10-17: known versus new, and the rules with every opened case (issue #172, change A)
 
 - Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `6629d489`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct. This branch changes the served protocol and the shared prompt rules. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C); nothing here adopts it. `2026-10-09-teaching-points-for-map-changes.md` is followed: the reader-facing part of the change is queued as PGQ-038 with its cause, reader need, prior coverage and placement, and the known-versus-new rule is recorded as not reader-facing. No new disposition.
+
+## 2026-10-17: a test of whether the served rules are applied (issue #172, change C)
+
+- Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `6629d489`): `suggested-fixes/innerSignalGraph/` holds the same three items, unchanged. This branch adds a hand-run test that calls models on synthetic cases and a count of a Codex agent's actions; it changes no served protocol, prompt or guide. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C). `2026-10-09-teaching-points-for-map-changes.md` doesn't apply: nothing reader-facing changes. No new disposition.
