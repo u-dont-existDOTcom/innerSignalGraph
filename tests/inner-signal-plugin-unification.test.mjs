@@ -18,7 +18,8 @@ const expectedReadOnlyTools = [
   "get_tracker_window",
   "get_journal_entries",
   "get_candidate_response",
-  "get_source_artifact"
+  "get_source_artifact",
+  "check_case_known_vs_new"
 ];
 
 test("InnerSignal package presents one user-facing plugin identity", async () => {

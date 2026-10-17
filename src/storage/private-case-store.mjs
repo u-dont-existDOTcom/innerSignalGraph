@@ -2,7 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
-import { createEmptyCaseState, validateCaseState } from "../case-state/longitudinal-state.mjs";
+import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
+import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
+import { applyRoadmapDecision, projectCasePlan } from "../case-formulation/case-roadmap.mjs";
+import { rankKnownVersusNew } from "../case-formulation/known-vs-new.mjs";
 import { createJournalContinuityProjection } from "../case-state/journal-continuity.mjs";
 import { appendTrackerEntry, summarizeTrackerWindow, validateTrackerEntry } from "../case-state/tracker.mjs";
 import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
@@ -1050,6 +1053,36 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async getCaseState(caseId) { return structuredClone((await readRequired(caseId)).case_state); },
+    // Applies one authorized decision to the case's plan, with its state diff; a replayed decision changes nothing.
+    async recordRoadmapDecision(caseId, decision) {
+      await readRequired(caseId);
+      let applied = false;
+      const record = await mutate(caseId, (candidate) => {
+        const state = validateCaseState(structuredClone(candidate.case_state));
+        const roadmap = applyRoadmapDecision(state.roadmap ?? null, decision);
+        if (sameJson(roadmap, state.roadmap ?? null)) return null;
+        const next = applyCaseStatePatch(state, { roadmap });
+        appendDiff(candidate, diffCaseStates(state, next), { turnId: decision.turn_id ?? decision.decision_id, diffId: `roadmap:${decision.decision_id}` });
+        candidate.case_state = next;
+        applied = true;
+        return candidate;
+      });
+      return Object.freeze({
+        case_id: caseId,
+        case_revision: record.revision,
+        decision_id: decision.decision_id,
+        applied,
+        case_plan: projectCasePlan(validateCaseState(structuredClone(record.case_state)))
+      });
+    },
+    async checkCaseKnownVersusNew(caseId, { points, limit } = {}) {
+      const record = await readRequired(caseId);
+      return Object.freeze({
+        case_id: caseId,
+        note: "Shared word forms, best first; not a judgment of meaning. Read the matches and say whether each point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first.",
+        points: rankKnownVersusNew(projectEvidenceAuthority(record.case_state), points, { limit })
+      });
+    },
     async saveCaseDiff(caseId, stateDiff, options = {}) {
       return mutate(caseId, (record) => {
         appendDiff(record, stateDiff, options);

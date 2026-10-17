@@ -297,7 +297,7 @@ test("opening a case carries the reparenting and known-versus-new rules, byte fo
   assert.deepEqual(evidence.body.result.structuredContent, { case_id: SYNTHETIC_CASE_ID, results: [] });
   const listed = await post(listener.url, "tools/list");
   for (const name of ["load_handoff", "load_case_context", "load_case_context_by_alias"]) {
-    assert.match(listed.body.result.tools.find((tool) => tool.name === name).description, /The result also carries therapy_rules/u, name);
+    assert.match(listed.body.result.tools.find((tool) => tool.name === name).description, /The result also carries case_plan, .* and therapy_rules: the protocol's rules for reparenting/u, name);
   }
 });
 
