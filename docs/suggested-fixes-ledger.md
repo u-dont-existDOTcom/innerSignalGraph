@@ -108,6 +108,10 @@
 - P2 (second round, `b139dece`), a replay of a stored plan that this version reads within its limits looked like a change and was refused as already applied: fixed (the store compares with the plan as read); test "in the store, a replay of a stored plan this version reads within its limits is still a replay".
 - P2 (second round), a client change to working notes alone lost her references: fixed (her references stay on every entry her decision makes); test "a client decision's references stay with every change it makes".
 
+## 2026-10-17: a test of whether the served rules are applied (issue #172, change C)
+
+- Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `6629d489`): `suggested-fixes/innerSignalGraph/` holds the same three items, unchanged. This branch adds a hand-run test that calls models on synthetic cases and a count of a Codex agent's actions; it changes no served protocol, prompt or guide. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C). `2026-10-09-teaching-points-for-map-changes.md` doesn't apply: nothing reader-facing changes. No new disposition.
+
 ## 2026-10-17: the person's own protective steps next to a service (issue #172, the owner's answer 43a, change D)
 
 - Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `8e4bf31`): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct. This branch changes the served reparenting rule, an owner amendment (r14) and the projection. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C); nothing here adopts it. `2026-10-09-teaching-points-for-map-changes.md` is followed: the reader-facing part is added to the pending PGQ-038 (queue r11) with its cause. No new disposition.

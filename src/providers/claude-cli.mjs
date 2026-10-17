@@ -15,7 +15,8 @@ export class ClaudeCliProvider {
     timeoutMs = 900000,
     cwd = process.cwd(),
     isolateConfig = true,
-    detectCapabilities = true
+    detectCapabilities = true,
+    maxTurns = 1
   } = {}) {
     this.id = "anthropic";
     this.command = command;
@@ -26,6 +27,9 @@ export class ClaudeCliProvider {
     this.cwd = cwd;
     this.isolateConfig = isolateConfig;
     this.detectCapabilities = detectCapabilities;
+    // The turn cap passed when the CLI has --max-turns; null leaves it out (a caller whose agent has no tools and wants the
+    // CLI's own structured-output step, which takes a turn of its own, never cut short). Sealed inference always caps.
+    this.maxTurns = maxTurns;
     this.capabilitiesPromise = null;
     this.privateInferenceIsolation = Object.freeze({ packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false, environment: "allowlisted", requiresSealedFlag: true, transport: "claude-cli-print" });
   }
@@ -68,7 +72,8 @@ export class ClaudeCliProvider {
       if (this.effort && (!flags || flags.effort)) args.push("--effort", this.effort);
       args.push("--output-format", "json", "--json-schema", JSON.stringify(outputSchema));
       if (!flags || flags.tools) args.push("--tools", "");
-      if (!flags || flags.maxTurns) args.push("--max-turns", "1");
+      const maxTurns = sealed ? (this.maxTurns ?? 1) : this.maxTurns;
+      if (maxTurns != null && (!flags || flags.maxTurns)) args.push("--max-turns", String(maxTurns));
       if (!flags || flags.noSessionPersistence) args.push("--no-session-persistence");
       if (!flags || flags.permissionMode) args.push("--permission-mode", "dontAsk");
       if (!flags || flags.noChrome) args.push("--no-chrome");
