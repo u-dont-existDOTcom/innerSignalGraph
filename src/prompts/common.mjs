@@ -21,9 +21,10 @@ ${transcript}
 CURRENT MESSAGE TIME: ${now}`;
 }
 
-// A case's stored plan is shown as its plan view (what is primary, current, waiting and why, and whose priority each goal is),
-// not as the stored record with every goal's history and the decisions applied to it. A case without a plan shows as before.
-function promptCaseState(state) {
+// A case's stored plan is shown as its plan view (what is primary, current, waiting and why, and whose each goal is), not as the
+// stored record with every goal's history and the decisions applied to it. A case without a plan shows as before. Every prompt
+// that shows a case state uses this: the producing roles here, and the private audit and repair roles.
+export function promptCaseState(state) {
   if (state?.roadmap == null) return state;
   const { roadmap: _stored, ...rest } = state;
   return { ...rest, case_plan: projectCasePlan(state) };

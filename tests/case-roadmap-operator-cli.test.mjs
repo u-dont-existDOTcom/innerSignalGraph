@@ -22,7 +22,8 @@ const AUDIENCE = "https://private-mcp.synthetic.example";
 const DECISION = {
   decision_id: "plan-operator-1",
   source: "authorized_plan",
-  at: "2026-10-18T10:00:00.000Z",
+  // Dated now: the store refuses a decision dated more than five minutes after its clock.
+  at: new Date().toISOString(),
   evidence_refs: [],
   changes: [{ op: "add", goal: { id: "goal:synthetic-aim", kind: "primary_aim", title: "A synthetic aim that must not reach the receipt" } }]
 };

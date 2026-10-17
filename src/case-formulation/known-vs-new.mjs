@@ -1,5 +1,6 @@
 import { ValidationError } from "../core/errors.mjs";
 import { FRENCH_STOPWORDS, formsReadingStopwords, formsReadingTerm, formsReadingTokens } from "../journal-import/word-forms.mjs";
+import { readCaseRoadmap } from "./case-roadmap.mjs";
 
 // Where the case record already holds a point (issue #172): for each proposed point of a review, the record's entries that
 // share the most word forms with it, ranked with BM25 over the journal search's reading of words (accents folded, English and
@@ -27,19 +28,22 @@ const clip = (value) => (value.length > KNOWN_VS_NEW_LIMITS.statement ? `${value
 // Every entry of the record a point can match, with the text it is read by and what a reader needs to place it.
 function recordEntries(state) {
   const entries = [];
-  // `current` is false for what the record no longer holds as current: an item or answer marked not current, a superseded
-  // goal or one the client declined. Such a match is shown, never counted as the record holding the point.
+  // `current` is false for what the record no longer holds as current: an item or answer marked not current, an item another
+  // item supersedes, a superseded goal or one the client declined. Such a match is shown, never counted as the record holding
+  // the point.
+  const superseded = new Set([...(state.items ?? []), ...(state.intervention_history ?? [])].flatMap((item) => item.supersedes ?? []));
   for (const item of state.items ?? []) {
-    entries.push({ kind: "fact_or_hypothesis", id: item.id, text: item.statement, current: item.still_current !== false,
+    entries.push({ kind: "fact_or_hypothesis", id: item.id, text: item.statement, current: item.still_current !== false && !superseded.has(item.id),
       detail: { status: item.status, confidence: item.confidence, still_current: item.still_current, decision_relevance: item.decision_relevance, recorded_at: item.source?.recorded_at ?? null } });
   }
   for (const item of state.answered_questions ?? []) {
     entries.push({ kind: "settled_answer", id: item.id, text: `${item.question} ${item.answer}`, current: item.still_current !== false, detail: { still_current: item.still_current } });
   }
   for (const item of state.intervention_history ?? []) {
-    entries.push({ kind: "intervention", id: item.id, text: item.statement, current: item.still_current !== false, detail: { recorded_at: item.source?.recorded_at ?? null } });
+    entries.push({ kind: "intervention", id: item.id, text: item.statement, current: item.still_current !== false && !superseded.has(item.id), detail: { recorded_at: item.source?.recorded_at ?? null } });
   }
-  for (const goal of state.roadmap?.goals ?? []) {
+  // The plan as this version reads it; a stored plan it can't read adds no goals (the store's answer says so).
+  for (const goal of readCaseRoadmap(state.roadmap ?? null).roadmap?.goals ?? []) {
     entries.push({ kind: "roadmap_goal", id: goal.id, text: [goal.title, goal.review_condition, goal.expected_progress, goal.next_step_tests].filter(Boolean).join(" "),
       current: goal.status !== "superseded" && goal.client_agreement !== "declined",
       detail: { goal_kind: goal.kind, status: goal.status, priority_source: goal.priority_source, client_agreement: goal.client_agreement } });
