@@ -32,7 +32,7 @@ regression_refs:
   - G055
 base_record_sha256: f316befa93de3b7a0079ae76cfcc3796ad6f2ff76ccf718664730a807b52cfc7
 base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
+projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
 ---
 
 # Leave certainty-checking loops unanswered and re-enter ordinary life

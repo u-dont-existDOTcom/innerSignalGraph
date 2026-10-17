@@ -34,7 +34,7 @@ regression_refs:
   - G136
 base_record_sha256: 01303504033e6e236b7ebdef4b3775fc44393fa1c1e242b845d4f313fb7c57f8
 base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
+projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
 ---
 
 # After a fresh death or harm, let grief and support come first

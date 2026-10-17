@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
 status: owner-approved
 domain: cross-guide
-base_record_sha256: ea8e8ecfdc03ea31e920dbb976070d213c50117e8856da259968b1725456563c
-source_file_sha256: 6c2b1edebd9539a4054166cb200b03524e73320903c3bff66e45564292545af8
-projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8ff280acee
+base_record_sha256: 6e871f978fa282e03d812744b25ed43db63ebe391091c7c3f1b03827d9103bae
+source_file_sha256: a042a455d8eba3f0bffafc00a4bca2a4fc4d0732016269419d31782eba8580b9
+projection_input_sha256: 9de22010a10603aa8ce7fdb13b383fd00cd5b3cdc2f88dab87a34b27aef56ad4
 ---
 
 # AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
@@ -25,6 +25,6 @@ projection_input_sha256: 2d26e58dddc293d11d5e7d7a27fde38f570e87343aed474af21abe8
     "status": "owner-approved",
     "text": "When prior psychiatric or medical care was experienced as coercive or traumatic, weigh the real potential for iatrogenic harm and preserve choice of a trusted voluntary advocate, rather than treating psychiatric referral or indiscriminate disclosure as an automatic route to physical pain relief. Distinguish brief pain-triggered thoughts of escape from present suicidal intent or inability to remain safe. Never recommend suicidal disclosure as a tactic for analgesia, but do not coach falsely denying current suicidal intent, a suicide plan, inability to stay safe or imminent danger or claim disclosure or nondisclosure is universally safe. Maintain proportionate real-world protection when acute danger actually appears."
   },
-  "version": "owner-amendments-2026-10-15-r11"
+  "version": "owner-amendments-2026-10-16-r12"
 }
 ```
