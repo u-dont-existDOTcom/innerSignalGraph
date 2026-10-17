@@ -972,6 +972,38 @@ async function storeRoadmapAsIs(privateRoot, caseId, routineSeed, roadmap) {
   await fs.writeFile(file, `${JSON.stringify(serializeVaultEnvelope(next))}\n`, { mode: 0o600 });
 }
 
+test("a client decision's references stay with every change it makes, working notes included", () => {
+  // Codex on #174 (P2): a client change to working notes alone was logged under "notes" without her references, and nothing
+  // else keeps them.
+  const noted = applyRoadmapDecision(planA(), decision("plan-n-1", "client", 3, [{ op: "update", goal_id: "goal:weekly-refusal", set: { uncertainty: "In her words: not sure yet." } }]));
+  assert.deepEqual(noted.goals.find((goal) => goal.id === "goal:weekly-refusal").history.at(-1),
+    { at: AT(3), decision_id: "plan-n-1", source: "client", field: "notes", from: null, to: "uncertainty", refs: CLIENT_TURN });
+  const byPlan = applyRoadmapDecision(planA(), decision("plan-n-2", "authorized_plan", 3, [{ op: "update", goal_id: "goal:back-pain-care", set: { uncertainty: "Synthetic." } }]));
+  assert.equal(Object.hasOwn(byPlan.goals.find((goal) => goal.id === "goal:back-pain-care").history.at(-1), "refs"), false, "only the client's decisions cite her words");
+});
+
+test("in the store, a replay of a stored plan this version reads within its limits is still a replay", async (t) => {
+  // Codex on #174 (P2): a stored plan read within the current limits (here a gap in its ranks) differed from the stored bytes,
+  // so a replay looked like a change and was refused as already applied.
+  const { privateRoot, open } = await environment(t);
+  const authA = { bearerToken: TOKEN_A };
+  const service = await open();
+  await service.saveCaseState("synthetic-case-a", caseState("synthetic-case-a"), authA);
+  await service.appendTranscriptTurn("synthetic-case-a", { id: CLIENT_TURN[0], exchange_id: "turn", role: "user", text: "Synthetic client words.", at: AT(0), episode_id: null }, authA);
+  assert.equal((await service.recordRoadmapDecision("synthetic-case-a", CASE_A_PLAN, authA)).applied, true);
+  const stored = structuredClone((await service.getCaseState("synthetic-case-a", authA)).roadmap);
+  stored.goals.find((goal) => goal.id === "goal:felt-safety").rank = 3;
+  await storeRoadmapAsIs(privateRoot, "synthetic-case-a", 31, stored);
+  const before = await service.getCaseState("synthetic-case-a", authA);
+  assert.equal(before.roadmap.goals.find((goal) => goal.id === "goal:felt-safety").rank, 3, "stored with a gap");
+  const replay = await service.recordRoadmapDecision("synthetic-case-a", CASE_A_PLAN, authA);
+  assert.equal(replay.applied, false);
+  assert.deepEqual((await service.getCaseState("synthetic-case-a", authA)).roadmap, before.roadmap, "a replay writes nothing");
+  // A new decision on the same plan still applies, and the plan is stored as this version reads it.
+  assert.equal((await service.recordRoadmapDecision("synthetic-case-a", CASE_A_TRACK, authA)).applied, true);
+  assert.equal((await service.getCaseState("synthetic-case-a", authA)).roadmap.goals.find((goal) => goal.id === "goal:felt-safety").rank, 1);
+});
+
 test("in the store: client references name her words in a session, plan diffs keep their own ids, and a plan another version wrote stays as it was", async (t) => {
   const { privateRoot, open } = await environment(t);
   const authA = { bearerToken: TOKEN_A };

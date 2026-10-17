@@ -1076,7 +1076,9 @@ export function createEncryptedPrivateCaseStore({
       const record = await mutate(caseId, (candidate) => {
         const state = validateCaseState(structuredClone(candidate.case_state));
         const roadmap = applyRoadmapDecision(state.roadmap ?? null, decision, { now: now() });
-        if (sameJson(roadmap, state.roadmap ?? null)) return null;
+        // A replay returns the plan as this version reads it, which can differ from the stored bytes (a longer replay list or
+        // history, gaps in the ranks); compare with that reading, so a replay of a stored plan is still a replay.
+        if (sameJson(roadmap, readCaseRoadmap(state.roadmap ?? null).roadmap)) return null;
         // A decision already applied but no longer in the plan's replay list is told by its recorded diff.
         if (candidate.state_diff_history.some((entry) => entry.id === `roadmap:${decision.decision_id}`)) {
           throw new ValidationError(`Decision ${decision.decision_id} was already applied.`, { code: "ROADMAP_DECISION_ALREADY_APPLIED" });

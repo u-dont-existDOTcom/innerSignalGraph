@@ -39,8 +39,8 @@ goal: {
   serves_episode_id,                  // the operational current_episode a step serves, if any
   created_at, updated_at,
   history: [{ at, decision_id, source, field, from, to, refs? }]      // creation first, then every change, under the
-                                      // deciding source; bounded (see below); a client decision's entries keep its first
-                                      // five references
+                                      // deciding source; bounded (see below); a client decision's entries, working notes
+                                      // included, keep its first five references
 }
 ```
 
@@ -115,7 +115,8 @@ the safety override. Every change is checked before any is kept; a decision appl
   little, so that one mistaken date (local time written as UTC, say) can't hold up every decision after it.
 - A replayed decision with the same id and content changes nothing; the same id with other content is refused. The latest
   100 decisions are kept for this check; an older one is refused by its date, and the store also refuses a decision whose
-  diff (`roadmap:<decision id>`) it already holds.
+  diff (`roadmap:<decision id>`) it already holds. The store compares a replay's result with the stored plan as this version
+  reads it, so a stored plan brought within the current limits on reading is still replayed without a write.
 - Histories hold at most 40 entries. Working notes go first, then the oldest entries, but never the creation entry or the
   latest entry of a field, which says who decided it last.
 
