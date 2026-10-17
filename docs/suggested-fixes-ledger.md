@@ -99,3 +99,9 @@
 - P3, her review condition and episode link on a proposal could be undone, and were logged as notes: fixed; test "what the client decided last about a goal stays as she decided it".
 - P3, impossible dates such as 30 February passed: fixed (a time must round-trip); the time-order test.
 - The full verify of `c769d642` failed two liveness tests: the case store reached `ajv` through the known-versus-new check. Fixed with `src/journal-import/lexical.mjs`; `tests/private-case-store-imports.test.mjs` and `tests/runtime-service-liveness.test.mjs`.
+
+## 2026-10-17: Codex's review of change B (issue #172, `a5eb53d4`)
+
+- P1, two equivalent goals made before either was declined left one active after the client declined the other: fixed; two goals that aren't finished never share a title, from any source (`ROADMAP_DUPLICATE_TITLE`); test "two goals that aren't finished never share a title".
+- P2, known-versus-new matches didn't say where the record holds a point: fixed (source kind, reference, turn and a model-only assertion; a settled answer's source items); test "known versus new says where the record holds a point".
+- P2, a current close match could fall outside a short list while the close flag stayed true: fixed (the best close match takes the list's last place); the same test.

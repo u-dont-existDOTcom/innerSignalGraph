@@ -232,7 +232,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "check_case_known_vs_new",
     title: "Check what the private case record already holds",
-    description: "Before presenting a pattern, insight or recommendation as new in a review of an authorized case across sessions, records or journal material, check it here: for each point, the record's facts and hypotheses, settled answers, interventions, plan goals, current episode and parked questions that share the most word forms with it, best first, with the share of the point's words each holds. It counts shared words and judges no meaning: read the matches and say whether the point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When the case's stored plan can't be read, its goals are left out and plan_problem says so.",
+    description: "Before presenting a pattern, insight or recommendation as new in a review of an authorized case across sessions, records or journal material, check it here: for each point, the record's facts and hypotheses, settled answers, interventions, plan goals, current episode and parked questions that share the most word forms with it, best first, with the share of the point's words each holds and where each came from (its source's kind, reference and turn). It counts shared words and judges no meaning: read the matches and say whether the point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When the case's stored plan can't be read, its goals are left out and plan_problem says so.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
