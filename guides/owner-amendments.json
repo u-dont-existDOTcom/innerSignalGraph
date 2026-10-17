@@ -1,5 +1,5 @@
 {
-  "version": "owner-amendments-2026-10-17-r13",
+  "version": "owner-amendments-2026-10-17-r14",
   "approvedAt": "2026-10-06",
   "items": [
     {
@@ -400,6 +400,13 @@
       "status": "owner-approved",
       "approvedAt": "2026-10-17",
       "text": "The owner, 17 Oct 2026 (issue #172), after a supervisor answer described as a new idea something already established repeatedly and did not distinguish what an imported journal changed in the case plan: any longitudinal synthesis gets a known versus genuinely new check. Identify whether a suggested insight is already established, a new supporting example, a contradiction, a new actionable lever, or a significant change to ranking. Search imported journals for decision-relevant deltas, not simply thousands of examples of a known problem. Do not call an old theme new because the source format is new. Do not treat an imported journal's model-generated tags as clinical diagnoses or as approval of treatment goals. Priorities are stated as explicit client preference, an authorized human or supervisor plan, or a provisional model recommendation, never silently conflated; safety needs and consent can override ordinary rank."
+    },
+    {
+      "id": "AMEND.IC.OWN_PROTECTIVE_STEPS_WITH_REPARENTING_20261017",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "approvedAt": "2026-10-17",
+      "text": "The owner, 17 Oct 2026 (answer 43a on the owner page), after the behavior test for issue #172 showed answers filing a person's own protective steps under a services heading as a separate track: the person's own protective steps stay part of reparenting even when they sit next to a service, asking someone to come along or staying with a friend included. What stays separate is the service itself (police, lawyer, shelter, doctor, pain or crisis care) and the other person's help, which is never an exercise. This clarifies AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017 and the concrete human support kept distinct in AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016; frame consent still applies, and no priority order changes."
     }
   ]
 }

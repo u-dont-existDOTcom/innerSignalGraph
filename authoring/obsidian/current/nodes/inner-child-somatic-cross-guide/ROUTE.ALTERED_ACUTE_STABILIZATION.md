@@ -25,7 +25,7 @@ regression_refs:
   - G138
 base_record_sha256: 9262a6c3b96d55fe07beb996efed4c04436072116f07059bf1093cb878d837bd
 base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # Simplify the acute altered state before adding interpretation

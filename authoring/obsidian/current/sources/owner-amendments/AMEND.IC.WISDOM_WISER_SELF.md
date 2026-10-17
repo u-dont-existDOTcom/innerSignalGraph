@@ -7,12 +7,12 @@ source_id: AMEND.IC.WISDOM_WISER_SELF
 guide_id: owner-amendments
 heading: AMEND.IC.WISDOM_WISER_SELF
 source_role: owner-approved-extension
-source_hash: cc64603df78569c96aa1b900b5230c872f7a63fc67e759561134257cffc338a5
+source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
 section_hash: 7804d0a901b70546b98051c1a4d0c635e9986a7fe9fb9ac052996f3e76a8e126
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.WISER_SELF_PERSPECTIVE
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # AMEND.IC.WISDOM_WISER_SELF

@@ -7,7 +7,7 @@ source_id: AMEND.IC.WISDOM_SOURCES
 guide_id: owner-amendments
 heading: AMEND.IC.WISDOM_SOURCES
 source_role: owner-approved-extension
-source_hash: cc64603df78569c96aa1b900b5230c872f7a63fc67e759561134257cffc338a5
+source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
 section_hash: 9e38e82357e202d63b574ea1e907dfba9554297acd09130a63831a0693747d25
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -20,7 +20,7 @@ cited_by_node_ids:
   - IC.GOODWILL_BRIDGE
   - IC.PAST_COMPETENCE
   - IC.WISER_SELF_PERSPECTIVE
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # AMEND.IC.WISDOM_SOURCES

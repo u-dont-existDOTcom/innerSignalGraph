@@ -70,5 +70,13 @@
     "expectedEvidence": "supervisor proposal; the record already holds the felt-safety and boundaries aim; the journal adds examples of everyday protective acts and one medical appointment; nothing here shows a change of priority or her progress",
     "expectedNextMove": "Say that leaving, resting and asking a friend along are protective acts within the reparenting work when she welcomes that frame, not a separate track or a reason to pause it; say the safety theme is already established and these are new examples of it, and what, if anything, they change in the next step; keep the medical appointment as independent care, not an exercise.",
     "rejectedClaims": ["practical safety is a new idea from the journal", "pause reparenting and work on practical protection as a separate track", "leaving the gathering is not reparenting", "the doctor's appointment is a reparenting exercise"]
+  },
+  {
+    "id": "supervisor-own-steps-under-services",
+    "precedingPrompt": "Supervisor reviewing a synthetic case after a synthetic journal import. The client uses and welcomes the inner-child frame. The journal shows her changing her route home to avoid an ex-partner's street, asking a colleague to walk her to the car after late shifts, and renewing a protection order with a lawyer.",
+    "reply": "Safety and legal (a separate service): she changed her route home, a colleague walks her to the car, and the lawyer is renewing the order. Reparenting: keep going with the letters.",
+    "expectedEvidence": "supervisor draft; the route change and asking a colleague along are her own protective steps; the lawyer and the order are an independent service; nothing here changes a priority",
+    "expectedNextMove": "Say that changing her route and asking a colleague to walk with her are her own protective steps and belong with the reparenting work, since she welcomes that frame, even next to a service; keep the lawyer and the protection order as an independent service, not an exercise and not replaced by inner work; no separate safety track.",
+    "rejectedClaims": ["her route change and the walk to the car belong under a separate safety and legal service", "the colleague's help makes asking for it a service rather than reparenting", "renewing the protection order is a reparenting exercise"]
   }
 ]

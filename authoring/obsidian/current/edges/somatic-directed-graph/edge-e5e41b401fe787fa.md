@@ -10,7 +10,7 @@ from_node_id: SOM.ADVANCED_RELEASE_OPTIONAL
 to_node_id: SOM.BYPASS_AUDIT
 relation: requires-audit
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
+projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
 ---
 
 # SOM.ADVANCED_RELEASE_OPTIONAL requires-audit SOM.BYPASS_AUDIT
