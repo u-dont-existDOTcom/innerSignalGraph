@@ -327,6 +327,11 @@ test("the command runs end to end in mock mode, keeps its report private and exi
   assert.match(wrongRef.stderr, /The connector to test can't be loaded from no-such-ref-for-this-test/u);
   assert.equal(fs.existsSync(path.join(dir, "wrong-ref", "protocol-application-report.json")), false);
 
+  // Codex on #175 (P2): the grade comes from the other model family, never the answerer's own.
+  const sameFamily = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs", "--mode", "mock", "--fixture", path.join(dir, "pass.json"), "--answerer", "openai", "--judge", "openai"], { cwd: root, encoding: "utf8", env: { ...process.env, INNER_SIGNAL_MODE: "" } });
+  assert.equal(sameFamily.status, 3, sameFamily.stderr);
+  assert.match(sameFamily.stderr, /--judge must be the other family from --answerer/u);
+
   const missing = spawnSync(process.execPath, ["src/cli/eval-protocol-application.mjs"], { cwd: root, encoding: "utf8" });
   assert.equal(missing.status, 3, "a live run is never the default");
   assert.match(missing.stderr, /--mode is required/u);

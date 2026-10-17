@@ -26,7 +26,7 @@ const USAGE = `Usage: npm run eval:protocol-application -- --mode cli|api|mock [
 
   --mode cli|api|mock      required: cli uses the codex and claude commands, api the provider APIs, mock a fixture
   --answerer openai|anthropic   the model family that answers (default openai, as in ChatGPT)
-  --judge openai|anthropic      the family that grades (default: the other one)
+  --judge openai|anthropic      the family that grades: always the other one (the default)
   --answer-model NAME      override the answering model (default: OPENAI_MODEL or ANTHROPIC_MODEL)
   --judge-model NAME       override the grading model
   --samples N              replies per case (default 3)
@@ -81,6 +81,8 @@ const families = ["openai", "anthropic"];
 if (!families.includes(values.answerer)) fail("--answerer must be openai or anthropic.");
 const judgeFamily = values.judge ?? families.find((family) => family !== values.answerer);
 if (!families.includes(judgeFamily)) fail("--judge must be openai or anthropic.");
+// A judge of the same family as the answering model shares its blind spots: the grade must come from the other family.
+if (judgeFamily === values.answerer) fail("--judge must be the other family from --answerer: a model doesn't grade its own family's replies here.");
 const samples = Number(values.samples);
 if (!Number.isSafeInteger(samples) || samples < 1 || samples > 20) fail("--samples must be a whole number from 1 to 20.");
 if (values["calibration-only"] && values["skip-calibration"]) fail("--calibration-only and --skip-calibration contradict each other.");
