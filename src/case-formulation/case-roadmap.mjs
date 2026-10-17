@@ -341,8 +341,9 @@ function historyEntry(decision, field, from, to) {
     field,
     from: shortValue(from),
     to: shortValue(to),
-    // A client decision says where the client said it; the first references are kept with the change.
-    ...(decision.source === "client" && field !== "notes" ? { refs: (decision.evidence_refs ?? []).slice(0, ROADMAP_LIMITS.history_refs) } : {})
+    // A client decision says where the client said it; the first references are kept with each change it makes, working notes
+    // included, since nothing else keeps them.
+    ...(decision.source === "client" ? { refs: (decision.evidence_refs ?? []).slice(0, ROADMAP_LIMITS.history_refs) } : {})
   };
 }
 
