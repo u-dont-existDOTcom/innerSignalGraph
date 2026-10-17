@@ -379,7 +379,7 @@ export function applyRoadmapDecision(previous, decision) {
   // Only the latest decisions are kept for replay checks. Once the list is full, a decision dated before the oldest kept one
   // can't be told from an old one replayed, so it is refused rather than applied a second time.
   const kept = previous?.applied_decisions ?? [];
-  if (kept.length >= ROADMAP_LIMITS.applied_decisions && Date.parse(decision.at) < Date.parse(kept[0].at)) {
+  if (kept.length >= ROADMAP_LIMITS.applied_decisions && Date.parse(decision.at) < Math.min(...kept.map((entry) => Date.parse(entry.at)))) {
     fail(`Decision ${decision.decision_id} is older than the decisions kept for replay checks.`, "ROADMAP_DECISION_TOO_OLD");
   }
   const roadmap = previous ? structuredClone(previous) : emptyRoadmap(decision.at, decision.decision_id);
