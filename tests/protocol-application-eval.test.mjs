@@ -273,6 +273,13 @@ test("a reply or a judgment from an agent that reached outside the conversation,
   const reached = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId), { toolItems: 2 }), judge: oracleJudge(), cases: spec, samples: 1, source });
   assert.equal(reached.outcome, "inconclusive");
   assert.equal(reached.cases[0].samples[0].problem, "ANSWERER_USED_TOOLS");
+  // Codex on #175 (P2): an agent that counts its actions but gave no count (its events weren't whole) shows nothing either way.
+  const unreceipted = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId), { toolItems: null }), judge: oracleJudge(), cases: spec, samples: 1, source });
+  assert.deepEqual([unreceipted.outcome, unreceipted.cases[0].samples[0].problem], ["inconclusive", "NO_ACTION_RECEIPT"]);
+  const unreceiptedJudge = { model: "unreceipted-judge", async generate(args) { return { ...(await oracleJudge().generate(args)), toolItems: null }; } };
+  const unchecked = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: unreceiptedJudge, cases: spec, samples: 1, source });
+  assert.deepEqual([unchecked.outcome, unchecked.cases[0].samples[0].judgment.problems], ["inconclusive", ["JUDGE_NO_ACTION_RECEIPT"]]);
+  assert.equal((await runJudgeCalibration({ judge: unreceiptedJudge, cases, calibration })).trusted, false);
 
   let calls = 0;
   const flaky = {
@@ -305,6 +312,8 @@ test("a blank reply, or JSON without one, is no reply, and its JSON is never gra
   for (const raw of ['{"reply":""}', '{"reply":"   "}', '{"reply":null}', '{"reply":7}', "", "   "]) assert.equal(parseReply(raw), null, raw);
   // Codex on #175 (P1): nor is JSON without a reply, such as another field, an empty object or a list.
   for (const raw of ['{"answer":"A reply."}', "{}", "[]", '["A reply."]', "```json\n{\"text\": \"A reply.\"}\n```", "42"]) assert.equal(parseReply(raw), null, raw);
+  // Codex on #175 (P2): nor is text that starts like JSON but doesn't parse, such as a truncated answer.
+  for (const raw of ['{"reply":', '{"reply": "A reply."', "```json\n{\"reply\": \"A reply.\"\n```", '  [{"reply": "A reply."']) assert.equal(parseReply(raw), null, raw);
   assert.equal(parseReply('{"reply":"A reply."}'), "A reply.");
   assert.equal(parseReply("A reply with {braces} in it."), "A reply with {braces} in it.", "prose from a provider that ignored the schema is its own reply");
   const source = await connectorSource();

@@ -540,18 +540,21 @@ export function parseReply(raw) {
   try {
     value = jsonIn(raw);
   } catch {
-    return raw;
+    // Text that starts like JSON but doesn't parse (a truncated answer, say) is no reply either.
+    return /^\s*(?:[{[]|```)/u.test(raw) ? null : raw;
   }
   return value && typeof value === "object" && !Array.isArray(value) && typeof value.reply === "string" && value.reply.trim() ? value.reply : null;
 }
 
 // A judge grades from the rubric, the case's facts and the reply alone: a judgment from an agent that took any action (a
-// command, a file, a tool, a search) is unusable, like one that breaks the format.
+// command, a file, a tool, a search) is unusable, like one that breaks the format, and so is one from an agent that counts
+// its actions (Codex) but gave no count, since nothing then shows it took none.
 async function judgeOnce(judge, spec, reply, metadata) {
   const { system, user } = judgePrompt(spec, reply);
   const output = await judge.generate({ system, user, outputSchema: judgeSchema(spec), metadata });
-  const toolItems = output.toolItems ?? 0;
-  const judgment = toolItems > 0 ? { valid: false, verdicts: {}, problems: ["JUDGE_USED_TOOLS"] } : parseJudgment(spec, reply, output.text);
+  const toolItems = output.toolItems === null ? null : output.toolItems ?? 0;
+  const judgment = toolItems === null ? { valid: false, verdicts: {}, problems: ["JUDGE_NO_ACTION_RECEIPT"] }
+    : toolItems > 0 ? { valid: false, verdicts: {}, problems: ["JUDGE_USED_TOOLS"] } : parseJudgment(spec, reply, output.text);
   return { judgment, model: output.model, usage: output.usage ?? null, tool_items: toolItems };
 }
 
@@ -619,10 +622,14 @@ export async function runProtocolApplication({ answerer, judge: judgeProvider, c
     for (let sample = 1; sample <= samples; sample += 1) {
       const output = await answerer.generate({ system, user, outputSchema: ANSWER_SCHEMA, metadata: { stage: ANSWER_STAGE, fixtureKey: `${ANSWER_STAGE}:${spec.id}`, caseId: spec.id, sample } });
       const reply = parseReply(output.text);
-      const record = { sample, answer_model: output.model, answer_usage: output.usage ?? null, tool_items: output.toolItems ?? 0, reply };
+      const record = { sample, answer_model: output.model, answer_usage: output.usage ?? null, tool_items: output.toolItems === null ? null : output.toolItems ?? 0, reply };
       if (!reply) {
         record.outcome = "invalid";
         record.problem = "EMPTY_REPLY";
+      } else if (record.tool_items === null) {
+        // The answering agent counts its actions but gave no count: nothing shows the reply came from the conversation alone.
+        record.outcome = "invalid";
+        record.problem = "NO_ACTION_RECEIPT";
       } else if (record.tool_items > 0) {
         // The answering model reached outside the conversation: its reply isn't a test of the conversation alone.
         record.outcome = "invalid";

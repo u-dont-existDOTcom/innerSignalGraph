@@ -66,6 +66,20 @@ test("Codex CLI provider counts the actions its agent took beyond reasoning and 
   assert.equal(result.toolItems, 1, "a command started and completed is one action");
 });
 
+test("Codex CLI provider gives no action count when its event stream isn't whole", async () => {
+  // Codex on #175 (P2): with no completed turn or agent message in the events, zero actions is no receipt.
+  const provider = new CodexCliProvider({
+    command: process.execPath,
+    baseArgs: [path.join(here, "fixtures/fake-codex-cli.mjs"), "--fake-no-receipt"],
+    model: "fake-codex",
+    timeoutMs: 10000,
+    isolateConfig: false
+  });
+  const result = await provider.generate(prompt);
+  assert.deepEqual(JSON.parse(result.text), { ok: true }, "the answer itself still arrives");
+  assert.equal(result.toolItems, null);
+});
+
 test("Claude CLI provider extracts structured_output from its JSON envelope", async () => {
   const provider = new ClaudeCliProvider({
     command: process.execPath,

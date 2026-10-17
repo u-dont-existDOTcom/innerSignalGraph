@@ -73,7 +73,8 @@ check exactly those things. This test calls models, so it runs by hand and not i
      so none of its MCP servers, InnerSignal's included, are reachable. Its web search, the account's apps and plugins,
      browser and computer use, image generation, sub-agents, the shell, tool suggestions, skill search and fast mode are
      turned off (`CODEX_ISOLATION_CONFIG`). It reports its events as JSON, which is how any action it still takes is
-     counted. On the first live check, a Codex judge without these settings ran web searches while grading, and with
+     counted; a run whose events don't show the turn completing with the agent's message gives no count, and its
+     reply or judgment isn't used. On the first live check, a Codex judge without these settings ran web searches while grading, and with
      only web search off it reached for the account's apps instead; with them all off it takes no action.
    - Both prompts also say not to run commands, read files, search the web, call tools or browse.
    - Each command must accept the model and effort asked for, so a result is never a command's default presented as the
@@ -131,6 +132,7 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
   - the judge's answer is read strictly, a judge that passes everything is caught, and so is one that misgrades a rule
     a known reply wasn't written to show;
   - one failing reply fails its case;
-  - an agent that reached outside the conversation, or an unusable judgment, makes the run inconclusive, and so does a
-    blank reply or JSON without a reply, which is never graded in place of an answer;
+  - an agent that reached outside the conversation or gave no count of its actions, or an unusable judgment, makes the
+    run inconclusive, and so does a blank reply, JSON without a reply or text that starts like JSON and doesn't parse,
+    which is never graded in place of an answer;
   - the command's mock run writes a private report and exits by its outcome.

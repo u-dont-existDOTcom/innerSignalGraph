@@ -131,6 +131,10 @@ export class CodexCliProvider {
         .filter((event) => ["item.started", "item.updated", "item.completed"].includes(event.type) && event.item
           && !["agent_message", "reasoning", "todo_list", "error"].includes(event.item.type))
         .map((event, index) => event.item.id ?? `item-${index}`)).size;
+      // The count is a receipt only when the event stream is whole: the turn completed and the agent's message is in it.
+      // Otherwise (a changed event format, lines that don't parse) there is no count (null), so no caller mistakes a missing
+      // receipt for an agent that took no action.
+      const receipt = Boolean(completed) && events.some((event) => event.type === "item.completed" && event.item?.type === "agent_message");
 
       return {
         provider: this.id,
@@ -139,7 +143,7 @@ export class CodexCliProvider {
         requestId: thread?.thread_id ?? `codex-cli-${randomUUID()}`,
         responseId: thread?.thread_id,
         usage: completed?.usage,
-        toolItems,
+        toolItems: receipt ? toolItems : null,
         transport: "cli",
         stderr: run.stderr.trim()
       };
