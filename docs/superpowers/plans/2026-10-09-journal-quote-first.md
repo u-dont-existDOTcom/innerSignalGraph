@@ -352,8 +352,11 @@ Version 4 takes the order the owner states as a fact of the journal:
 - **Every quote gets its time.** A quote under an anchor keeps its date, carried two pages as before; any other gets the
   range from the nearest anchor before it to the nearest after it, however wide and across pages not fully read, since
   the order holds through them. Before the first anchor the range is open at the start (`from` null), after the last
-  open at the end (`to` null); `quote_months` lists those quotes under `QUOTE_OPEN_KEY`, and a time window reads them
-  and keeps the ones whose range overlaps it. Only a journal with no anchor leaves quotes undated.
+  open at the end (`to` null). `quote_months` lists a range of at most `rangeMonthsMax` (12) months under every month
+  it covers, as in version 3, and a wider or open one apart, under `QUOTE_WIDE_KEY` with its bounds, so a journal
+  whose dates are far apart can't list every quote under every month (Codex: 20,000 pages between 1900 and 2100 would
+  make about 48 million entries); a time window reads those and keeps the ones whose range overlaps it. Only a journal
+  with no anchor leaves quotes undated.
 - **Events get their quote's time.** The pointer extraction runs once every quote is dated, so an event's authored time
   is its quote's date or range, closed or open, as an interval with basis `relative_supported`; its event time stays
   unknown, as before.

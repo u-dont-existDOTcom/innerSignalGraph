@@ -49,9 +49,10 @@ export function quoteIndexVersionOf(generation) {
 // no date.
 export const QUOTE_MONTHS_KEY = "months";
 export const QUOTE_UNDATED_KEY = "undated";
-// Version 4: the quotes whose range is open at one end (before the first anchor or after the last). A time window reads them
-// all and keeps those whose range overlaps it.
-export const QUOTE_OPEN_KEY = "open";
+// Version 4: the quotes whose range is too wide to list month by month: open at one end (before the first anchor or after the
+// last), or over `rangeMonthsMax` months. They are listed apart, each as [quote id, from, to] (a bound null where the range is
+// open), and a time window keeps those whose range overlaps it.
+export const QUOTE_WIDE_KEY = "wide";
 // The key of the `quote_terms` index that holds its totals instead of a term. No term can be it: terms are runs of letters and digits.
 export const QUOTE_TERMS_STATS_KEY = "#stats";
 export const QUOTE_UNIT_DEFAULTS = Object.freeze({ maximumBytes: 1600, minimumBytes: 160, headingMaximumBytes: 80 });
@@ -61,7 +62,8 @@ export const QUOTE_UNIT_DEFAULTS = Object.freeze({ maximumBytes: 1600, minimumBy
 // went unread must not lend its date to the entries after it, and a wrong date is worse than none.
 // Version 3 also gives a quote left undated between two dates that run forward a range from the first to the second, unless
 // the range spans more than `rangeMonthsMax` calendar months. Version 4 has no such limit: the journal's order holds however
-// far apart its dates are.
+// far apart its dates are. There `rangeMonthsMax` is the widest range listed month by month in `quote_months`; a wider one is
+// listed apart (`QUOTE_WIDE_KEY`), so a wide journal can't list every quote under every month.
 export const QUOTE_DATE_DEFAULTS = Object.freeze({ numericOrder: "month_first", carryPages: 2, carryQuotes: 24, rangeMonthsMax: 12 });
 export const QUOTE_NUMERIC_DATE_ORDERS = Object.freeze(["month_first", "day_first"]);
 
@@ -569,8 +571,9 @@ const EMPTY_EXTRACTION = (units) => ({
  * from the nearest anchor before it to the nearest anchor after it, however far apart they are and whatever pages between
  * them were read, written as in version 3 (`between`, `line`, `line_after`). A quote before the first anchor gets { from:
  * null, to: the first anchor's to, line: null, line_after: its line }, and one after the last { from: the last anchor's
- * from, to: null, line: its line, line_after: null }: a range open at that end, listed in `quote_months` under
- * `QUOTE_OPEN_KEY`. Only a journal with no anchor leaves quotes undated. In version 4 `date_lines` and `date_order` count
+ * from, to: null, line: its line, line_after: null }: a range open at that end. `quote_months` lists a range over at most
+ * `rangeMonthsMax` months under every month it covers, as in version 3, and a wider one, or one open at an end, apart,
+ * under `QUOTE_WIDE_KEY` with its bounds. Only a journal with no anchor leaves quotes undated. In version 4 `date_lines` and `date_order` count
  * the date lines only, not the yearless ones; `stats.time_order` counts the yearless lines dated (anchors) and not, the date
  * lines taken as misread, the anchors, and the quotes with a date, a closed range, a range open at the start or at the
  * end, and none.
@@ -754,8 +757,8 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   const rangeMonths = new Map();
   const widths = { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 0, ...(ordered || rangeMonthsMax > 12 ? { over_12_months: 0 } : {}) };
   let ranged = 0;
-  // Version 4: the quotes whose range is open at one end, and the counts of the time order.
-  const openQuotes = new Set();
+  // Version 4: the quotes whose range is too wide to list month by month, with its bounds, and the counts of the time order.
+  const wideQuotes = new Map();
   const timeOrder = { yearless_dated: 0, yearless_undated: 0, misread_lines: 0, anchors: 0, dated_quotes: 0, ranged_quotes: 0,
     open_start_quotes: 0, open_end_quotes: 0, undated_quotes: 0 };
   if (ordered) {
@@ -802,11 +805,13 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         line: earlier ? structuredClone(earlier.written.line) : null,
         line_after: later ? structuredClone(later.written.line) : null
       };
-      if (!earlier) { timeOrder.open_start_quotes += 1; openQuotes.add(passageId); return; }
-      if (!later) { timeOrder.open_end_quotes += 1; openQuotes.add(passageId); return; }
-      // From the earlier anchor's first month to the month the later one ends in, as in version 3.
+      if (!earlier) { timeOrder.open_start_quotes += 1; wideQuotes.set(passageId, [null, meta.written.to]); return; }
+      if (!later) { timeOrder.open_end_quotes += 1; wideQuotes.set(passageId, [meta.written.from, null]); return; }
+      // From the earlier anchor's first month to the month the later one ends in, as in version 3, when that is at most
+      // `rangeMonthsMax` months; a wider range is listed apart.
       const first = monthNumber(earlier.day), last = monthNumber(lastMonthOf(later.written));
-      rangeMonths.set(passageId, Array.from({ length: last - first + 1 }, (_, index) => monthKey(first + index)));
+      if (last - first > rangeMonthsMax) wideQuotes.set(passageId, [meta.written.from, meta.written.to]);
+      else rangeMonths.set(passageId, Array.from({ length: last - first + 1 }, (_, index) => monthKey(first + index)));
       ranged += 1;
       timeOrder.ranged_quotes += 1;
       const width = last - first;
@@ -855,17 +860,18 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   const byKey = ([left], [right]) => left.localeCompare(right);
   const sorted = new Map([...quoteMeta.entries()].sort(byKey));
   // Quotes by the period of the date they were written under, for time windows: its month, or its year
-  // for a year on its own; a ranged quote is under every month its range covers, and one whose range is open at one end
-  // (version 4) under `QUOTE_OPEN_KEY`.
+  // for a year on its own; a ranged quote is under every month its range covers, and one whose range is open at one end or
+  // over `rangeMonthsMax` months (version 4) under `QUOTE_WIDE_KEY`, with its bounds.
   const periods = new Map();
+  const list = (key, value) => {
+    if (!periods.has(key)) periods.set(key, []);
+    periods.get(key).push(value);
+  };
   for (const [passageId, [meta]] of sorted) {
-    const keys = openQuotes.has(passageId) ? [QUOTE_OPEN_KEY] : rangeMonths.get(passageId) ?? [meta.written ? meta.written.from.slice(0, 7) : QUOTE_UNDATED_KEY];
-    for (const key of keys) {
-      if (!periods.has(key)) periods.set(key, []);
-      periods.get(key).push(passageId);
-    }
+    if (wideQuotes.has(passageId)) { list(QUOTE_WIDE_KEY, [passageId, ...wideQuotes.get(passageId)]); continue; }
+    for (const key of rangeMonths.get(passageId) ?? [meta.written ? meta.written.from.slice(0, 7) : QUOTE_UNDATED_KEY]) list(key, passageId);
   }
-  const periodKeys = [...periods.keys()].filter((key) => key !== QUOTE_UNDATED_KEY && key !== QUOTE_OPEN_KEY).sort();
+  const periodKeys = [...periods.keys()].filter((key) => key !== QUOTE_UNDATED_KEY && key !== QUOTE_WIDE_KEY).sort();
   const quoteMonths = new Map([...periods.entries(), [QUOTE_MONTHS_KEY, periodKeys]].sort(byKey));
   const shapes = [...unread.shapes].sort(([left, a], [right, b]) => b - a || left.localeCompare(right))
     .slice(0, UNREAD_SHAPES_SHOWN).map(([shape, count]) => Object.freeze({ shape, count }));

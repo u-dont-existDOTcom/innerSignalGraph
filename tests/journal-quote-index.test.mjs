@@ -7,7 +7,7 @@ import path from "node:path";
 import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
-import { QUOTE_INDEX_VERSION, QUOTE_MONTHS_KEY, QUOTE_OPEN_KEY, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_UNIT_NAMESPACE, buildQuoteGeneration, dateLineValue,
+import { QUOTE_INDEX_VERSION, QUOTE_MONTHS_KEY, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_UNIT_NAMESPACE, QUOTE_WIDE_KEY, buildQuoteGeneration, dateLineValue,
   entryDateLine, quoteCues, quoteDateOptions, quoteIndexVersionOf, splitQuoteUnits, timeOrderRun } from "../src/journal-import/quote-index.mjs";
 import { buildQuoteTerms, buildQuoteTermsFromGraph } from "../src/journal-import/quote-terms.mjs";
 import { formsReadingTerm } from "../src/journal-import/word-forms.mjs";
@@ -1095,9 +1095,16 @@ test("version 4 gives a quote between two dates their range however wide, and ac
   for (const text of ["Loin.", "Mots autour d'un dessin.", "Après le dessin."]) {
     assert.deepEqual(meta.get(text).written, { from: "2019-03-03", to: "2021-03-03", precision: "interval", between: true, ambiguous: false,
       year_inferred: false, line: lineOf(first), line_after: lineOf(last) }, text);
-    assert.equal(built.quoteMonths.get("2020-06").includes(quoteId(built, text)), true, `${text}: listed under every month it covers`);
   }
-  assert.equal(built.quoteMonths.get(QUOTE_MONTHS_KEY).length, 25, "March 2019 to March 2021");
+  // Wider than twelve months (`rangeMonthsMax`), the range is listed apart with its bounds, not under each of its 25 months.
+  assert.deepEqual(built.quoteMonths.get(QUOTE_WIDE_KEY), ["Loin.", "Mots autour d'un dessin.", "Après le dessin."]
+    .map((text) => [quoteId(built, text), "2019-03-03", "2021-03-03"]).sort(([left], [right]) => left.localeCompare(right)));
+  assert.deepEqual(built.quoteMonths.get(QUOTE_MONTHS_KEY), ["2019-03", "2021-03"], "the dated quotes' months only");
+  assert.equal(built.quoteMonths.has("2020-06"), false);
+  // Within twelve months it is listed under every month it covers, as in version 3.
+  const near = build4([page("3 mars 2020\n\nUn.", 1), page("Deux.", 2), page("Trois.", 3), page("Proche.", 4), page("3 juin 2020\n\nFin.", 5)]);
+  assert.deepEqual(["2020-03", "2020-04", "2020-05", "2020-06"].map((month) => near.quoteMonths.get(month).includes(quoteId(near, "Proche."))), [true, true, true, true]);
+  assert.equal(near.quoteMonths.has(QUOTE_WIDE_KEY), false);
   assert.deepEqual(built.stats.range_widths, { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 0, over_12_months: 3 });
   assert.deepEqual(built.stats.time_order, { yearless_dated: 0, yearless_undated: 0, misread_lines: 0, anchors: 2, dated_quotes: 6, ranged_quotes: 3,
     open_start_quotes: 0, open_end_quotes: 0, undated_quotes: 0 }, "the two date lines are quotes too");
@@ -1305,6 +1312,19 @@ test("version 4 never dates a quote earlier than the quotes above it, and counts
   }
 });
 
+test("version 4 lists a journal whose dates are two centuries apart in about one entry per quote, not one per quote and month (Codex, P1)", () => {
+  // Every quote between 1 January 1900 and 31 December 2100 has a range of 2,412 months: listed by month, 300 quotes would make
+  // 723,600 entries; apart, they make one each.
+  const pages = [page("1 janvier 1900\n\nDébut.", 1), ...Array.from({ length: 300 }, (_, index) => page(`Texte ${index + 1}.`, index + 2)),
+    page("31 décembre 2100\n\nFin.", 302)];
+  const built = build4(pages);
+  const entries = [...built.quoteMonths].reduce((total, [key, values]) => total + (key === QUOTE_MONTHS_KEY ? 0 : values.length), 0);
+  assert.equal(entries, built.stats.quotes, "one entry per quote");
+  assert.deepEqual(built.quoteMonths.get(QUOTE_MONTHS_KEY), ["1900-01", "2100-12"]);
+  assert.equal(built.quoteMonths.get(QUOTE_WIDE_KEY).length, built.stats.time_order.ranged_quotes);
+  assert.deepEqual(built.quoteMonths.get(QUOTE_WIDE_KEY)[0].slice(1), ["1900-01-01", "2100-12-31"]);
+});
+
 test("version 4 gives the quotes before the first date and after the last a range open at that end, listed apart, and leaves only a journal without dates undated", () => {
   const pages = [page("Avant toute date.", 1), page("3 mars 2020\n\nUn.", 2), page("Deux.", 3), page("Trois.", 4), page("Quatre après la dernière.", 5)];
   const built = build4(pages);
@@ -1314,14 +1334,36 @@ test("version 4 gives the quotes before the first date and after the last a rang
     year_inferred: false, line: null, line_after: lineOf(first) });
   assert.deepEqual(meta.get("Quatre après la dernière.").written, { from: "2020-03-03", to: null, precision: "interval", between: true, ambiguous: false,
     year_inferred: false, line: lineOf(first), line_after: null });
-  assert.deepEqual(built.quoteMonths.get(QUOTE_OPEN_KEY), [quoteId(built, "Avant toute date."), quoteId(built, "Quatre après la dernière.")]
-    .sort((left, right) => left.localeCompare(right)));
-  assert.deepEqual(built.quoteMonths.get(QUOTE_MONTHS_KEY), ["2020-03"], "the open key isn't a month");
+  assert.deepEqual(built.quoteMonths.get(QUOTE_WIDE_KEY), [[quoteId(built, "Avant toute date."), null, "2020-03-03"],
+    [quoteId(built, "Quatre après la dernière."), "2020-03-03", null]].sort(([left], [right]) => left.localeCompare(right)));
+  assert.deepEqual(built.quoteMonths.get(QUOTE_MONTHS_KEY), ["2020-03"], "the key of the ranges listed apart isn't a month");
   assert.equal(built.quoteMonths.has(QUOTE_UNDATED_KEY), false);
   assert.deepEqual([built.stats.time_order.open_start_quotes, built.stats.time_order.open_end_quotes, built.stats.time_order.undated_quotes], [1, 1, 0]);
   const plain = build4([page("Rien de daté.", 1), page("Toujours rien.", 2)]);
   assert.deepEqual([plain.stats.time_order.undated_quotes, plain.stats.time_order.anchors], [2, 0]);
   assert.equal(plain.quoteMonths.get(QUOTE_UNDATED_KEY).length, 2);
+});
+
+test("a time window keeps a quote whose range is too wide to list by month when the window overlaps it, and no other", async (t) => {
+  const pages = [page("3 mars 2019\n\nUn.", 1), page("Deux.", 2), page("Trois.", 3), page("Le lac loin des dates.", 4), page("3 mars 2021\n\nFin.", 5)];
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "quote-wide-ranges-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const caseId = "quote-case", corpusId = "quote-corpus:quotes";
+  const store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: randomBytes(32) });
+  const built = build4(pages);
+  assert.equal(built.quoteMonths.get(QUOTE_WIDE_KEY).length, 1, "listed apart");
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph: built.graph, sourceRepresentations: Object.fromEntries(pages.map((item) => [item.representation_id, item.text])),
+    permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096,
+    extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_terms: buildQuoteTermsFromGraph(built.graph) }, indexRepresentations: true });
+  const reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId, corpusId,
+    generation: V4_GENERATION, visibilityEpoch: 0, purpose: "session_use", cursorSecret: randomBytes(32) });
+  try {
+    const found = async (from, to) => (await reader.findQuotes({ query: "lac", from, to, includeUndated: false })).quotes.length === 1;
+    assert.deepEqual(await Promise.all([["2020", "2020"], ["2019-06", "2019-06"], ["2021-03-03", null], [null, "2019-03-03"]].map(([from, to]) => found(from, to))),
+      [true, true, true, true], "windows inside or reaching its range");
+    assert.deepEqual(await Promise.all([["2018", "2018"], ["2022", "2022"], ["2021-03-04", null], [null, "2019-03-02"]].map(([from, to]) => found(from, to))),
+      [false, false, false, false], "windows outside it");
+  } finally { reader.close(); }
 });
 
 test("a time window keeps a quote whose range is open at one end when the window reaches that side of its date", async (t) => {

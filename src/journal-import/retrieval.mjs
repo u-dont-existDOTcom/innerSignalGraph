@@ -2,7 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
 import { compareSourceOrder, knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
-import { QUOTE_MONTHS_KEY, QUOTE_OPEN_KEY, QUOTE_STOPWORDS, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, quoteCues } from "./quote-index.mjs";
+import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_WIDE_KEY, quoteCues } from "./quote-index.mjs";
 import { POINTER_TAG_KINDS } from "./pointer-tags.mjs";
 import { formsQueryTerms, formsReadingTerm } from "./word-forms.mjs";
 
@@ -703,13 +703,16 @@ export async function openPrivateJournalGraph({
     const quoteIndex = Array.isArray(manifest.indexes.quote_meta);
     const windowed = from !== null || to !== null;
     // A quote index lists its quotes by the month they were written, so a time window first keeps the
-    // matches from overlapping months (and undated ones when asked), without reading each match. A version 4 index also
-    // lists the quotes whose range is open at one end, which any window may overlap: they are kept here and checked below.
+    // matches from overlapping months (and undated ones when asked), without reading each match. A version 4 index lists
+    // apart, with their bounds, the quotes whose range is open at one end or too wide to list by month: those whose range
+    // overlaps the window are kept too. Each is checked below.
     let candidates = ranked;
     if (windowed && Array.isArray(manifest.indexes.quote_months)) {
-      const months = (await readIndex("quote_months", QUOTE_MONTHS_KEY)).filter((month) => inTimeWindow([[month, month]], { from, to, include_unknown: false }));
-      const lists = await Promise.all([...months, QUOTE_OPEN_KEY, ...(includeUndated ? [QUOTE_UNDATED_KEY] : [])].map((key) => readIndex("quote_months", key)));
-      const allowed = new Set(lists.flat());
+      const window = { from, to, include_unknown: false };
+      const months = (await readIndex("quote_months", QUOTE_MONTHS_KEY)).filter((month) => inTimeWindow([[month, month]], window));
+      const lists = await Promise.all([...months, ...(includeUndated ? [QUOTE_UNDATED_KEY] : [])].map((key) => readIndex("quote_months", key)));
+      const wide = (await readIndex("quote_months", QUOTE_WIDE_KEY)).filter(([, start, end]) => inTimeWindow([[start, end]], window)).map(([id]) => id);
+      const allowed = new Set([...lists.flat(), ...wide]);
       candidates = ranked.filter((id) => allowed.has(id));
     }
     const quotes = [];
