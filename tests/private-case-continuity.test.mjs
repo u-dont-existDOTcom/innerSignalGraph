@@ -801,6 +801,7 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   // Issue #172: the therapy rules travel with an opened case, and the process traces each tool call on stderr with its
   // name and outcome only, never its arguments, a case reference or content.
   for (const opened of [handoffResult, aliasResult]) {
+    assert.equal(opened.result.structuredContent.case_plan.status, "proposed_reconstruction", "a real handoff and case context both carry the plan");
     assert.equal(opened.result.structuredContent.therapy_rules.available, true);
     assert.deepEqual(opened.result.structuredContent.therapy_rules.files.map((file) => file.path), ["references/PROTOCOL-STATE-PROVENANCE.md", "references/LONGITUDINAL-SYNTHESIS.md"]);
   }

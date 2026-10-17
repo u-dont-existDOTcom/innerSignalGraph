@@ -356,11 +356,13 @@ function protocolText(value) {
 const CASE_RULE_FILES = Object.freeze(["references/PROTOCOL-STATE-PROVENANCE.md", "references/LONGITUDINAL-SYNTHESIS.md"]);
 const CASE_OPENING_TOOLS = new Set(["load_handoff", "load_case_context", "load_case_context_by_alias"]);
 // The case's plan as a session reads it first (issue #172): the recorded roadmap's view, or a reconstruction labeled a
-// proposal. Computed from the opened case's own state; a failure here never keeps the case from loading.
+// proposal. Computed from the opened case's own state (a case context's `case_state`, a handoff's `canonical_state`); a
+// failure here never keeps the case from loading.
 export function casePlanFor(value) {
-  if (!value?.case_state) return null;
+  const state = value?.case_state ?? value?.canonical_state ?? null;
+  if (!state) return null;
   try {
-    return projectCasePlan(value.case_state);
+    return projectCasePlan(state);
   } catch {
     return { status: "unavailable", note: "The case's plan could not be read; read the case state directly and do not present a plan as recorded." };
   }
