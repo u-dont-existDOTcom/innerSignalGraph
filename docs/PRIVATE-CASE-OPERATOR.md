@@ -59,6 +59,28 @@ Start journal work with a non-mutating authorization probe:
 
 The remaining journal operations are `create_journal_corpus`, `commit_journal_generation`, `rollback_journal_generation`, and `increment_journal_visibility`. Commit reopens and authenticates the staged manifest, applies the expected case revision/generation/visibility checks, and verifies that therapy state, transcript, and candidate records remain unchanged. `increment_journal_visibility` also retires the active generation, since no reader accepts its old epoch. The generation moves to the previous generations, where rollback refuses it, and handoffs stop presenting the corpus as attached until a generation is committed under the new epoch.
 
+A case's plan (issue #172; `docs/superpowers/specs/2026-10-17-case-roadmap.md`) changes only through `record_roadmap_decision`, under the audit scope: the import's `case:write` grant above is refused, so recording a plan needs a supervisor identity whose token and operator ACL entry carry `case:audit` for that case. A decision applies whole or not at all, and the receipt holds no plan content. Its `source` says who decides: `client`, `authorized_plan` (the owner or a supervisor), or `provisional` (a proposal); a goal it adds is that source's goal. A client decision's `evidence_refs`, and the references it gives goals, must name user turns of the case or the source artifacts that complete them: where the client said it in a session. An assistant turn, a completion of one, another source artifact or a journal entry is refused; a journal entry is the client's material, not a decision she stated in a session, so record what she says about it in a session and cite that turn. Date each decision with the exact UTC time it records, written as `2026-10-18T10:00:00.000Z`: decisions are recorded in time order, so one dated before the plan's last change is refused, and so is one dated more than five minutes ahead of the operator's clock (so a local time written as UTC that lands ahead of the clock is refused, instead of holding up the decisions after it). Goal ids appear in error messages, so keep them neutral (`goal:aim-1`). A synthetic example:
+
+```json
+{
+  "schema_version": 1,
+  "operation": "record_roadmap_decision",
+  "case_id": "<exact-existing-case-id>",
+  "decision": {
+    "decision_id": "plan-2026-10-18-1",
+    "source": "client",
+    "at": "2026-10-18T10:00:00.000Z",
+    "evidence_refs": ["<turn id where the client said it>"],
+    "changes": [
+      { "op": "add", "goal": { "id": "goal:felt-safety", "kind": "primary_aim", "title": "<the aim in the client's words>" } },
+      { "op": "add", "goal": { "id": "goal:weekly-step", "kind": "actionable_step", "parent_id": "goal:felt-safety", "title": "<the step>", "review_condition": "<when to revisit it>" } }
+    ]
+  }
+}
+```
+
+Other changes are `{"op": "update", "goal_id", "set": {...}}`, `{"op": "order", "parent_id", "goal_ids": [...]}` (add `"tracks": true` to order the independent, safety and medical tracks) and `{"op": "safety_override", "reason": "..." | null}`. A goal changes whose it is only when the client agrees to it (it becomes hers) or when an authorized decision adopts a model's proposal she hasn't answered with `"set": {"adopt": true}` (it becomes the authorized plan's, and moves nowhere); ordering, parking, declining or retitling a goal doesn't change whose it is. Another source can't change the title, status, agreement, rank, review condition or linked episode of a goal the client chose, agreed to or declined; on such a goal it can add evidence references, blockers and counterevidence but not remove any, and write expected progress, what the next step tests and uncertainty only while they are empty. On any goal it can't change a field the client decided last, can't park, supersede or move a goal with an active goal of hers beneath it, and can't order a group so that a goal it may not move gets a different set of goals ahead of it. No source, the client included, adds a goal or retitles one to the title of another goal that isn't finished (`ROADMAP_DUPLICATE_TITLE` names it): change that goal instead. A refused decision is refused whole and nothing changes. Replaying the same decision changes nothing; reusing its id with other content is refused. A case state written by any other operation keeps the stored plan and ignores a plan it carries. If a decision is refused because another version of InnerSignal wrote the case's plan, record it with that version.
+
 Only one writer changes a vault at a time. An InnerSignal server with a private runtime holds the vault's writer lock for as long as it runs, so stop it before an operator write or a journal publication: either one refuses to start with `PRIVATE_ROOT_WRITER_ACTIVE` while the server runs, and the server refuses to start while either is writing. The read-only MCP takes no lock and keeps running.
 
 Deletion is intentionally absent from this operator surface. It requires a separate authority and lifecycle.

@@ -73,6 +73,10 @@ first and makes a test of application necessary (change C). Four contributing ca
 
 ## Change B — the plan in the record (second pull request)
 
+Implemented as designed in `docs/superpowers/specs/2026-10-17-case-roadmap.md`, with two narrowings: the roadmap is
+written only by authorized operator decisions (the runtime's extraction proposals are a later change), and
+`case_plan` is computed by the connector from the opened case's own state rather than stored.
+
 - **`case_state.roadmap`**, optional, so every existing record stays valid: goals with stable IDs and a rank; kind
   (primary aim, a goal within it, an independent support, safety or medical track); the source of each priority
   (`client`, `authorized_plan`, `provisional`), never upgraded silently; status (active, parked, blocked, completed,

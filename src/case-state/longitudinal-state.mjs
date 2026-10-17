@@ -12,6 +12,7 @@ import {
   validateProtectiveCompatibilityState
 } from "../case-formulation/protective-compatibility.mjs";
 import { validateFocusState } from "../case-formulation/focus-discipline.mjs";
+import { validateCaseRoadmapShape } from "../case-formulation/case-roadmap.mjs";
 import { SUPPORT_MODE_PREFERENCES } from "../case-formulation/support-mode.mjs";
 
 export const CASE_STATE_VERSION = 1;
@@ -205,6 +206,9 @@ export function validateCaseState(value) {
   if (Object.hasOwn(value, "support_mode_preference") && !SUPPORT_MODE_PREFERENCES.includes(value.support_mode_preference)) throw new ValidationError("caseState.support_mode_preference is invalid.");
   if (Object.hasOwn(value, "focus_discipline")) validateFocusState(value.focus_discipline);
   if (Object.hasOwn(value, "fresh_grief") && value.fresh_grief !== null) validateFreshGriefState(value.fresh_grief);
+  // The case's plan (issue #172) is optional: a record without one stays valid and unchanged. Only its shape is checked here,
+  // so a plan this version can't read never makes the rest of the case unreadable; it is read in full where it is used.
+  if (Object.hasOwn(value, "roadmap") && value.roadmap !== null) validateCaseRoadmapShape(value.roadmap);
   return value;
 }
 
@@ -241,6 +245,7 @@ export function applyCaseStatePatch(previous, patch = {}) {
   // Parked side questions are optional runtime memory; historical states without them stay valid.
   if (Object.hasOwn(patch, "focus_discipline")) next.focus_discipline = clone(patch.focus_discipline);
   if (Object.hasOwn(patch, "fresh_grief")) next.fresh_grief = clone(patch.fresh_grief);
+  if (Object.hasOwn(patch, "roadmap")) next.roadmap = clone(patch.roadmap);
   return validateCaseState(next);
 }
 
@@ -300,6 +305,7 @@ export function diffCaseStates(previous, next) {
     support_mode_preference_changed: (before.support_mode_preference ?? "unknown") !== (after.support_mode_preference ?? "unknown"),
     focus_discipline_changed: JSON.stringify(before.focus_discipline ?? null) !== JSON.stringify(after.focus_discipline ?? null),
     fresh_grief_changed: JSON.stringify(before.fresh_grief ?? null) !== JSON.stringify(after.fresh_grief ?? null),
+    roadmap_changed: JSON.stringify(before.roadmap ?? null) !== JSON.stringify(after.roadmap ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
 }
@@ -314,6 +320,7 @@ export function projectCaseStateForInspection(state) {
     protectiveCompatibility: value.protective_compatibility ?? null,
     supportModePreference: value.support_mode_preference ?? "unknown",
     freshGrief: value.fresh_grief ?? null,
+    roadmap: value.roadmap ?? null,
     factsAndHypotheses: value.items,
     contradictions: value.contradiction_clusters,
     settledAnswers: value.answered_questions,

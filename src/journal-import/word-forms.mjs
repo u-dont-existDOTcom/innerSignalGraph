@@ -1,13 +1,13 @@
 import { ValidationError } from "../core/errors.mjs";
-import { lexicalTerms } from "./graph.mjs";
-import { QUOTE_STOPWORDS } from "./quote-index.mjs";
+import { lexicalTerms, QUOTE_STOPWORDS } from "./lexical.mjs";
 
 function invariant(condition, code) { if (!condition) throw new ValidationError(code, { code }); }
 
 // How words are read to match them across their forms: accents folded, English forms reduced with the Porter stemmer, and French
 // forms with a light stemmer. The journal search check (search-check.mjs) compares ways of matching words, and the quote ranking of
 // version 3 of the quote index reads words the way its "forms" variants do, so both take the reading from here. This module imports
-// only the graph's word splitting and the quote index's English stop words; the quote index itself never imports it.
+// only the word splitting and English stop words of lexical.mjs, which needs no npm package, so the case store and the local server
+// can read words without one; the quote index itself never imports it.
 
 // Common French function words in lower case with their accents: articles, pronouns, prepositions, conjunctions and forms of the
 // two auxiliary verbs. The single letters are what an apostrophe leaves behind, as "l'ami" reads as "l" and "ami".
