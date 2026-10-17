@@ -14,6 +14,7 @@ import {
   PROTOCOL_APPLICATION_CRITERIA,
   PROTOCOL_APPLICATION_CRITERION_IDS,
   answerPrompt,
+  calibrationGaps,
   connectorSource,
   connectorTranscript,
   judgePrompt,
@@ -173,6 +174,20 @@ test("the judge's answer is read strictly: every rule once, and a fail must quot
   assert.doesNotMatch(user, /<<<BEGIN instructions/u);
 });
 
+test("every rule a run grades has a known passing and a known failing reply, or the judge isn't trusted", async () => {
+  // Codex on #175 (P1): a case's own known replies don't fail every rule it grades, so checking the judge only on them could
+  // trust a judge that always passes services_stay_separate.
+  assert.deepEqual(calibrationGaps(cases, calibration), []);
+  const split = caseById.get("supervisor-invites-the-split");
+  const ownOnly = calibration.filter((entry) => entry.case_id === split.id);
+  assert.deepEqual(calibrationGaps([split], ownOnly), ["services_stay_separate:fail"]);
+  assert.deepEqual(calibrationGaps([split], calibration), []);
+  const calls = [];
+  const gapped = await runJudgeCalibration({ judge: oracleJudge({ calls }), cases, calibration: ownOnly, graded: [split] });
+  assert.deepEqual([gapped.trusted, gapped.gaps, calls.length], [false, ["services_stay_separate:fail"], 0], "nothing is asked of a judge the check can't vouch for");
+  assert.match(summarizeProtocolApplication({ outcome: "inconclusive", calibration: gapped }).join("\n"), /not possible, no known reply covers services_stay_separate:fail/u);
+});
+
 test("the judge is checked first on the known replies, and a judge that passes everything is caught", async () => {
   const trusted = await runJudgeCalibration({ judge: oracleJudge(), cases, calibration });
   assert.equal(trusted.trusted, true);
@@ -254,7 +269,8 @@ test("the command runs end to end in mock mode, keeps its report private and exi
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "inner-signal-eval-cli-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const spec = caseById.get("supervisor-invites-the-split");
-  const entries = calibration.filter((entry) => entry.case_id === spec.id);
+  // The judge is checked on every known reply, whatever case runs.
+  const entries = calibration;
   const verdictJson = (verdicts, reply) => ({ criteria: Object.entries(verdicts).map(([id, verdict]) => ({ id, verdict, evidence: verdict === "fail" ? [reply.slice(0, 60)] : [], reason: "synthetic" })) });
   const fixture = (reply, verdicts) => ({
     openai: { [`${ANSWER_STAGE}:${spec.id}`]: { reply } },
@@ -276,7 +292,8 @@ test("the command runs end to end in mock mode, keeps its report private and exi
   assert.equal(passed.report.outcome, "pass");
   assert.equal(passed.report.calibration.trusted, true);
   assert.equal(passed.mode, 0o600);
-  assert.match(passed.result.stdout, /Judge check: 2 of 2 known replies graded as expected/u);
+  assert.match(passed.result.stdout, new RegExp(`Judge check: ${calibration.length} of ${calibration.length} known replies graded as expected`, "u"));
+  assert.equal(passed.report.calibration.results.length, calibration.length, "every known reply, not only this case's");
   assert.match(passed.result.stdout, /supervisor-invites-the-split: pass, 2 of 2 replies passed/u);
 
   const split = entries.find((entry) => entry.id === "daniel-on-hold").text;

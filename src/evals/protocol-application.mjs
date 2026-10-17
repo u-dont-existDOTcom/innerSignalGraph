@@ -519,8 +519,30 @@ async function judge(judgeProvider, spec, reply, metadata) {
   return { ...second, attempts: 2, first_problems: first.judgment.problems };
 }
 
-/** Grades the replies whose grades are known. A judge that misgrades any of them can't be trusted with this run. */
-export async function runJudgeCalibration({ judge: judgeProvider, cases, calibration, log = () => {} }) {
+/**
+ * The rules the check of the judge can't vouch for: for each rule the cases under test grade, a known reply must pass it and
+ * another must fail it, or a judge that always passes (or always fails) that rule would look trustworthy. Returns
+ * `rule:verdict` for each missing example.
+ */
+export function calibrationGaps(graded, calibration) {
+  const gaps = [];
+  for (const id of new Set(graded.flatMap((spec) => spec.grading.criteria))) {
+    for (const verdict of ["pass", "fail"]) if (!calibration.some((entry) => entry.expect[id] === verdict)) gaps.push(`${id}:${verdict}`);
+  }
+  return gaps;
+}
+
+/**
+ * Grades the replies whose grades are known. A judge that misgrades any of them can't be trusted with this run. `cases` are
+ * the cases the known replies belong to, `graded` the cases the run will grade (by default the same): every rule those grade
+ * needs a known passing and a known failing reply, or the judge is not trusted and nothing is asked of it.
+ */
+export async function runJudgeCalibration({ judge: judgeProvider, cases, calibration, graded = cases, log = () => {} }) {
+  const gaps = calibrationGaps(graded, calibration);
+  if (gaps.length) {
+    log(`calibration: no known reply covers ${gaps.join(", ")}`);
+    return { agreed: 0, total: calibration.length, gaps, trusted: false, results: [] };
+  }
   const byId = new Map(cases.map((spec) => [spec.id, spec]));
   const results = [];
   for (const entry of calibration) {
@@ -533,7 +555,7 @@ export async function runJudgeCalibration({ judge: judgeProvider, cases, calibra
     log(`calibration ${entry.id}: ${mismatches.length ? `MISGRADED ${mismatches.join(", ")}` : "as expected"}`);
   }
   const agreed = results.filter((result) => result.valid && !result.mismatches.length).length;
-  return { agreed, total: results.length, trusted: agreed === results.length, results };
+  return { agreed, total: results.length, gaps, trusted: agreed === results.length, results };
 }
 
 /**
@@ -628,7 +650,8 @@ function reviewList(spec, samples) {
 export function summarizeProtocolApplication(report) {
   const lines = [];
   lines.push(`Protocol application test ${PROTOCOL_APPLICATION_VERSION}: ${report.outcome.toUpperCase()}`);
-  if (report.calibration) lines.push(`Judge check: ${report.calibration.agreed} of ${report.calibration.total} known replies graded as expected${report.calibration.trusted ? "" : " (judge not trusted: run stopped)"}`);
+  if (report.calibration?.gaps?.length) lines.push(`Judge check: not possible, no known reply covers ${report.calibration.gaps.join(", ")} (run stopped)`);
+  else if (report.calibration) lines.push(`Judge check: ${report.calibration.agreed} of ${report.calibration.total} known replies graded as expected${report.calibration.trusted ? "" : " (judge not trusted: run stopped)"}`);
   if (report.application) {
     const app = report.application;
     lines.push(`Connector: ${app.source}; protocol ${app.protocol?.version ?? "?"} (${app.protocol?.sha256?.slice(0, 12) ?? "?"})`);

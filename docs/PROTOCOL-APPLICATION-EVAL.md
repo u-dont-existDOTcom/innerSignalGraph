@@ -57,6 +57,8 @@ check exactly those things. This test calls models, so it runs by hand and not i
      established point called new, a service called an exercise, a reply that misses what the journal changes, the frame
      imposed, an urgent danger met with the planned exercise, and safety called "a separate track" in danger.
    - Each case also has a good reply.
+   - The judge is checked on all of them whatever cases run (`--case` included), because one case's own replies don't fail
+     every rule it grades. Every rule a run grades has a known passing and a known failing reply, or the run stops.
    - A judge that misgrades any of them stops the run as inconclusive before any answer is asked for.
 5. **Several replies per case** (`--samples`, default 3). A case passes only when every reply passes every rule it
    grades, because one good answer proves little.

@@ -106,7 +106,6 @@ const wanted = values.case ?? [];
 const unknown = wanted.filter((id) => !allCases.some((spec) => spec.id === id));
 if (unknown.length) fail(`Unknown case: ${unknown.join(", ")}.`);
 const cases = wanted.length ? allCases.filter((spec) => wanted.includes(spec.id)) : allCases;
-const calibration = calibrationEntries.filter((entry) => cases.some((spec) => spec.id === entry.case_id));
 
 // A problem with the set-up (an agent that can't be checked or isolated) is a configuration error, reported after cleanup.
 class SetupError extends Error {}
@@ -169,7 +168,8 @@ try {
   };
   try {
     if (!values["skip-calibration"]) {
-      report.calibration = await runJudgeCalibration({ judge, cases, calibration, log });
+      // The judge is checked on every known reply, whatever cases run: a case's own replies don't fail every rule it grades.
+      report.calibration = await runJudgeCalibration({ judge, cases: allCases, calibration: calibrationEntries, graded: cases, log });
     } else {
       report.calibration_skipped = true;
     }
