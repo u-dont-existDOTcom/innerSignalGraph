@@ -147,7 +147,9 @@ const ISOLATION_FLAGS = new Map([
   // Claude also with Claude in Chrome off and permission mode dontAsk (Codex on #175). No --max-turns, required or passed: the
   // owner's installed CLI (2.1.286) has no such switch, a structured answer itself takes two turns (a cap of one could cut it
   // off where the switch exists), and with no tools, no MCP servers and Chrome off no further turn has an action to take.
-  [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence", "permissionMode", "noChrome", "model", "effort"]]
+  // A list inside the list is one of its switches: Claude must take its system prompt by a switch of its own, so the
+  // grading contract keeps a higher role than the reply it grades (Codex on #175).
+  [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence", "permissionMode", "noChrome", ["systemPromptFile", "systemPrompt"], "model", "effort"]]
 ]);
 async function requireIsolation(candidate) {
   const required = [...ISOLATION_FLAGS].find(([kind]) => candidate instanceof kind)?.[1];
@@ -159,7 +161,8 @@ async function requireIsolation(candidate) {
   } catch (error) {
     throw new SetupError(`The ${name} CLI (${candidate.command}) could not be started or checked: ${error.message}`);
   }
-  const missing = required.filter((flag) => !flags?.[flag]);
+  const missing = required.filter((flag) => (Array.isArray(flag) ? !flag.some((one) => flags?.[one]) : !flags?.[flag]))
+    .map((flag) => (Array.isArray(flag) ? flag.join(" or ") : flag));
   if (missing.length) throw new SetupError(`The installed ${name} CLI lacks what this test needs to isolate it: ${missing.join(", ")}.`);
 }
 

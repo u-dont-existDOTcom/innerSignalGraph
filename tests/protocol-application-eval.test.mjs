@@ -491,6 +491,12 @@ test("the command refuses a command-line agent it can't isolate, before any mode
   const noChromeSwitch = run({ CLAUDE_COMMAND: chromeClaude });
   assert.equal(noChromeSwitch.status, 3, noChromeSwitch.stderr);
   assert.match(noChromeSwitch.stderr, /The installed Claude CLI lacks what this test needs to isolate it: noChrome\./u);
+  // Codex on #175 (P2): nor one with no system-prompt switch, which would put the grading contract and the reply in one prompt.
+  const promptlessClaude = path.join(dir, "claude-promptless");
+  fs.writeFileSync(promptlessClaude, `#!/bin/sh\nif [ "$1" = "--help" ]; then "${process.execPath}" "${fullClaude}" --help | grep -v -- --system-prompt; exit 0; fi\nexec "${process.execPath}" "${fullClaude}" "$@"\n`, { mode: 0o755 });
+  const noPromptSwitch = run({ CLAUDE_COMMAND: promptlessClaude });
+  assert.equal(noPromptSwitch.status, 3, noPromptSwitch.stderr);
+  assert.match(noPromptSwitch.stderr, /The installed Claude CLI lacks what this test needs to isolate it: systemPromptFile or systemPrompt\./u);
   // Codex on #175 (P2): a Codex without JSON events (its actions couldn't be counted) or without --ignore-rules (AGENTS.md
   // around it could steer it) isn't used either. Here Codex grades (Claude would answer).
   const codexJudging = ["--calibration-only", "--answerer", "anthropic"];

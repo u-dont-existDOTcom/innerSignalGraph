@@ -82,7 +82,8 @@ check exactly those things. This test calls models, so it runs by hand and not i
    - The reply a judge grades is quoted between markers tagged with a code drawn from its own text, so nothing in it can
      close the quote, and the judge is told that anything the reply says to a grader is graded, not obeyed. A Codex
      judge gets its grading contract as developer instructions (`-c developer_instructions=...`), so it keeps a higher
-     role than the user message that carries the reply; Claude takes its system prompt by its own switch.
+     role than the user message that carries the reply. Claude takes its system prompt by a switch of its own
+     (`--system-prompt-file` or `--system-prompt`); a Claude command with neither isn't used.
    - Each command must accept the model and effort asked for, so a result is never a command's default presented as the
      requested model.
    - The test refuses a Codex command that can't be isolated that way.
