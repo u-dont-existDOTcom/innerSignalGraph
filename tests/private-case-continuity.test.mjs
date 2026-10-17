@@ -739,7 +739,7 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   }).then((response) => response.json());
   assert.deepEqual(
     listed.result.tools.map((tool) => tool.name),
-    ["get_therapy_protocol_manifest", "load_therapy_protocol", "load_handoff", "load_case_context", "load_case_context_by_alias", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact"]
+    ["get_therapy_protocol_manifest", "load_therapy_protocol", "load_handoff", "load_case_context", "load_case_context_by_alias", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact", "check_case_known_vs_new"]
   );
   const { stdout } = await runSession("mcp-load", environment, { fourthArg: ready.mcpUrl });
   const result = JSON.parse(stdout);
@@ -801,6 +801,7 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   // Issue #172: the therapy rules travel with an opened case, and the process traces each tool call on stderr with its
   // name and outcome only, never its arguments, a case reference or content.
   for (const opened of [handoffResult, aliasResult]) {
+    assert.equal(opened.result.structuredContent.case_plan.status, "proposed_reconstruction", "a real handoff and case context both carry the plan");
     assert.equal(opened.result.structuredContent.therapy_rules.available, true);
     assert.deepEqual(opened.result.structuredContent.therapy_rules.files.map((file) => file.path), ["references/PROTOCOL-STATE-PROVENANCE.md", "references/LONGITUDINAL-SYNTHESIS.md"]);
   }

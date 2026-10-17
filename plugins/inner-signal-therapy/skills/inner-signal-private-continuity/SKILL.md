@@ -23,7 +23,8 @@ When the user supplies an opaque authorized private case ID, use `load_case_cont
 - `get_pending_candidate` or `get_candidate_response` for exact candidate text;
 - `get_tracker_window` for descriptive longitudinal tracker data;
 - `get_journal_entries` for exact journal/dream entries without promoting them into settled facts;
-- `get_source_artifact` for an authorized exact source artifact.
+- `get_source_artifact` for an authorized exact source artifact;
+- `check_case_known_vs_new` before presenting a pattern, insight or recommendation as new: it shows where the record already holds it.
 
 Do not call tools merely to collect everything. Prefer `load_handoff` as the normal one-call bootstrap, then retrieve only missing evidence that materially changes the current response.
 
@@ -35,6 +36,6 @@ If the current host does not expose the required tool, authentication fails, acc
 
 ## Therapy continuation
 
-After exact context is available, apply the `inner-signal-therapy` skill to the live user request. Preserve the distinction between exact transcript evidence, structured state, hypotheses, and current interpretation. Private continuity supplies context; it does not make every prior inference true.
+After exact context is available, apply the `inner-signal-therapy` skill to the live user request. Read the case's `case_plan` first: what is primary, what is being worked on now, what waits and why, when priorities would change, and whose priority each goal is. A `proposed_reconstruction` is rebuilt from the record and is not the plan; offer its parts as proposals. Preserve the distinction between exact transcript evidence, structured state, hypotheses, and current interpretation. Private continuity supplies context; it does not make every prior inference true.
 
 Do not expose hidden chain-of-thought. Do not publish private case content or identifiers outside the user's authorized conversation merely because the tools can retrieve them.

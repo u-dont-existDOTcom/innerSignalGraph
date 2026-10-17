@@ -2,7 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
-import { createEmptyCaseState, validateCaseState } from "../case-state/longitudinal-state.mjs";
+import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
+import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
+import { applyRoadmapDecision, projectCasePlan, readCaseRoadmap } from "../case-formulation/case-roadmap.mjs";
+import { rankKnownVersusNew } from "../case-formulation/known-vs-new.mjs";
 import { createJournalContinuityProjection } from "../case-state/journal-continuity.mjs";
 import { appendTrackerEntry, summarizeTrackerWindow, validateTrackerEntry } from "../case-state/tracker.mjs";
 import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
@@ -627,7 +630,9 @@ export function createEncryptedPrivateCaseStore({
     if (!record) throw new ValidationError(`Private case ${caseId} was not found.`, { code: "PRIVATE_CASE_NOT_FOUND" });
     return record;
   };
-  const appendDiff = (record, diff, { turnId = "unknown-turn", diffId = null, recordedAt = now() } = {}) => {
+  // A plan decision's diff is `roadmap:<decision id>`; that prefix is kept for recordRoadmapDecision (`plan: true`).
+  const isPlanDiff = (entry) => entry.id.startsWith("roadmap:");
+  const appendDiff = (record, diff, { turnId = "unknown-turn", diffId = null, recordedAt = now(), last = true, plan = false } = {}) => {
     if (!diff || typeof diff !== "object" || Array.isArray(diff)) throw new ValidationError("stateDiff must be an object.");
     const entry = {
       id: diffId ?? `diff-${record.state_diff_history.length + 1}`,
@@ -636,9 +641,23 @@ export function createEncryptedPrivateCaseStore({
       diff: structuredClone(diff)
     };
     validateStateDiffEntry(entry, record.state_diff_history.length);
+    if (isPlanDiff(entry) !== plan) throw new ValidationError("A state diff id starts with roadmap: only for a plan decision.");
     if (record.state_diff_history.some((candidate) => candidate.id === entry.id)) throw new ValidationError(`Duplicate state diff ${entry.id}.`);
     record.state_diff_history.push(entry);
-    record.last_state_diff = structuredClone(diff);
+    if (last) record.last_state_diff = structuredClone(diff);
+  };
+  // The case's last turn diff: a plan decision's diff is kept in the history and found by its id, but never stands in for the
+  // last turn's change that continuity checks, handoffs and audits read.
+  const lastTurnDiff = (record) => [...record.state_diff_history].reverse().find((entry) => !isPlanDiff(entry)) ?? null;
+  // The case's plan has one writer, recordRoadmapDecision: every other write of the whole case state keeps the plan the
+  // record holds and ignores any plan it carries, so a state computed from an earlier read can't drop a decision and no other
+  // scope can rewrite the plan. A value that isn't a case state goes on to the case state check, which refuses it.
+  const keepStoredRoadmap = (incoming, current) => {
+    if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) return incoming;
+    const next = structuredClone(incoming);
+    if (current?.roadmap != null) next.roadmap = structuredClone(current.roadmap);
+    else delete next.roadmap;
+    return next;
   };
   const effectiveTranscript = (record) => applyTranscriptAmendments(record.raw_transcript, record.transcript_amendments, {
     sourceArtifacts: record.source_artifacts
@@ -812,7 +831,7 @@ export function createEncryptedPrivateCaseStore({
         if (parentCandidateId == null) {
           if (runtimeTurn.state !== "RECEIVED" || runtimeTurn.repair_cycle !== 0) throw new ValidationError("Original runtime candidate requires RECEIVED state.");
           if (typeof producerContextId !== "string" || !producerContextId.trim()) throw new ValidationError("A runtime candidate producer context is required.");
-          const state = validateCaseState(structuredClone(caseState));
+          const state = validateCaseState(keepStoredRoadmap(caseState, record.case_state));
           if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
           if (record.raw_transcript.some((entry) => entry.id === runtimeTurn.user_turn_id)) throw new ValidationError("Runtime inbound transcript turn already exists outside its candidate commit.");
           record.raw_transcript.push({
@@ -1033,7 +1052,7 @@ export function createEncryptedPrivateCaseStore({
         const existingIds = new Set(record.raw_transcript.map((turn) => turn.id));
         if (additions.some((turn) => existingIds.has(turn.id))) throw new ValidationError("Transcript turn IDs must be append-only and unique.");
         record.raw_transcript.push(...structuredClone(additions));
-        record.case_state = validateCaseState(structuredClone(case_state));
+        record.case_state = validateCaseState(keepStoredRoadmap(case_state, record.case_state));
         if (state_diff != null) appendDiff(record, state_diff, {
           turnId: diff_turn_id ?? additions.find((turn) => turn.role === "user")?.id ?? additions.at(-1)?.id ?? "unknown-turn",
           diffId: diff_id
@@ -1043,13 +1062,65 @@ export function createEncryptedPrivateCaseStore({
     },
     async saveCaseState(caseId, caseState) {
       return mutate(caseId, (record) => {
-        const state = validateCaseState(structuredClone(caseState));
+        const state = validateCaseState(keepStoredRoadmap(caseState, record.case_state));
         if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
         record.case_state = state;
         return record;
       });
     },
     async getCaseState(caseId) { return structuredClone((await readRequired(caseId)).case_state); },
+    // Applies one authorized decision to the case's plan, with its state diff; a replayed decision changes nothing.
+    async recordRoadmapDecision(caseId, decision) {
+      await readRequired(caseId);
+      let applied = false;
+      const record = await mutate(caseId, (candidate) => {
+        const state = validateCaseState(structuredClone(candidate.case_state));
+        const roadmap = applyRoadmapDecision(state.roadmap ?? null, decision, { now: now() });
+        // A replay returns the plan as this version reads it, which can differ from the stored bytes (a longer replay list or
+        // history, gaps in the ranks); compare with that reading, so a replay of a stored plan is still a replay.
+        if (sameJson(roadmap, readCaseRoadmap(state.roadmap ?? null).roadmap)) return null;
+        // A decision already applied but no longer in the plan's replay list is told by its recorded diff.
+        if (candidate.state_diff_history.some((entry) => entry.id === `roadmap:${decision.decision_id}`)) {
+          throw new ValidationError(`Decision ${decision.decision_id} was already applied.`, { code: "ROADMAP_DECISION_ALREADY_APPLIED" });
+        }
+        // A client decision must point to where the client said it in a session: a user turn of this case, or the source artifact
+        // that completes one. Its own references and those it adds to goals are checked alike. A journal entry is the client's
+        // material, not a decision the client stated, so it doesn't count.
+        if (decision.source === "client") {
+          const userTurns = new Set(effectiveTranscript(candidate).filter((turn) => turn.role === "user").map((turn) => turn.id));
+          const known = new Set([
+            ...userTurns,
+            ...candidate.transcript_amendments.filter((amendment) => userTurns.has(amendment.target_turn_id)).map((amendment) => amendment.provenance.source_artifact_id)
+          ]);
+          const earlierRefs = new Map((state.roadmap?.goals ?? []).map((goal) => [goal.id, new Set(goal.evidence_refs)]));
+          const added = roadmap.goals.flatMap((goal) => goal.evidence_refs.filter((ref) => !earlierRefs.get(goal.id)?.has(ref)));
+          if ([...decision.evidence_refs, ...added].some((ref) => !known.has(ref))) {
+            throw new ValidationError("A client decision's evidence references must name user turns of this case, or source artifacts that complete them.", { code: "ROADMAP_CLIENT_EVIDENCE_UNRESOLVED" });
+          }
+        }
+        const next = applyCaseStatePatch(state, { roadmap });
+        appendDiff(candidate, diffCaseStates(state, next), { turnId: decision.turn_id ?? decision.decision_id, diffId: `roadmap:${decision.decision_id}`, last: false, plan: true });
+        candidate.case_state = next;
+        applied = true;
+        return candidate;
+      });
+      return Object.freeze({
+        case_id: caseId,
+        case_revision: record.revision,
+        decision_id: decision.decision_id,
+        applied,
+        case_plan: projectCasePlan(validateCaseState(structuredClone(record.case_state)))
+      });
+    },
+    async checkCaseKnownVersusNew(caseId, { points, limit } = {}) {
+      const record = await readRequired(caseId);
+      return Object.freeze({
+        case_id: caseId,
+        note: "Shared word forms, best first; not a judgment of meaning. Read the matches and say whether each point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When plan_problem is set, the case's stored plan couldn't be read and its goals are left out.",
+        points: rankKnownVersusNew(projectEvidenceAuthority(record.case_state), points, { limit }),
+        plan_problem: readCaseRoadmap(record.case_state.roadmap ?? null).problem
+      });
+    },
     async saveCaseDiff(caseId, stateDiff, options = {}) {
       return mutate(caseId, (record) => {
         appendDiff(record, stateDiff, options);
@@ -1058,8 +1129,9 @@ export function createEncryptedPrivateCaseStore({
     },
     async getCaseDiff(caseId, { turnId = null, diffId = null } = {}) {
       const record = await readRequired(caseId);
-      if (!turnId && !diffId) return record.state_diff_history.length ? structuredClone(record.state_diff_history.at(-1)) : null;
-      const found = [...record.state_diff_history].reverse().find((entry) => (diffId ? entry.id === diffId : entry.turn_id === turnId));
+      if (!turnId && !diffId) return structuredClone(lastTurnDiff(record));
+      // By id, any diff; by turn, only a turn's own diff, never a plan decision recorded with that turn.
+      const found = [...record.state_diff_history].reverse().find((entry) => (diffId ? entry.id === diffId : entry.turn_id === turnId && !isPlanDiff(entry)));
       return found ? structuredClone(found) : null;
     },
     async appendTranscriptTurn(caseId, turn) {
@@ -1519,7 +1591,7 @@ export function createEncryptedPrivateCaseStore({
         case_id: caseId,
         constitution_ref: structuredClone(context.constitution_ref),
         case_state: structuredClone(record.case_state),
-        last_state_diff: record.state_diff_history.length ? structuredClone(record.state_diff_history.at(-1)) : null,
+        last_state_diff: structuredClone(lastTurnDiff(record)),
         recent_verbatim: structuredClone(recent),
         transcript_amendments: structuredClone(record.transcript_amendments),
         candidate_response: candidate ? structuredClone(candidate) : null,
@@ -1563,7 +1635,7 @@ export function createEncryptedPrivateCaseStore({
       const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
       const context = {
         case_state: record.case_state,
-        last_state_diff: record.state_diff_history.at(-1) ?? null,
+        last_state_diff: lastTurnDiff(record),
         current_episode: record.case_state.current_episode,
         constitution_ref: durableContext.constitution_ref,
         candidate_response: candidate,

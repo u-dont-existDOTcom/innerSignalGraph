@@ -1004,10 +1004,5 @@ export function quoteCues(text) {
     .map(({ kind, words }) => Object.freeze({ kind, words })));
 }
 
-// Words too common to rank by. A query made only of them still searches by them.
-export const QUOTE_STOPWORDS = Object.freeze(new Set(("a about above after again against all am an and any are as at be because been before being "
-  + "below between both but by can could d did do does doing down during each few for from further had has have having he her here hers "
-  + "herself him himself his how i if in into is it its itself just ll m me more most my myself now o of off on once only or other our ours "
-  + "ourselves out over own re s same she should so some such t than that the their theirs them themselves then there these they this those "
-  + "through to too under until up ve very was we were what when where which while who whom why will with would you your yours yourself "
-  + "yourselves").split(" ")));
+// Words too common to rank by (lexical.mjs, which needs no npm package). A query made only of them still searches by them.
+export { QUOTE_STOPWORDS } from "./lexical.mjs";

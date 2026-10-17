@@ -251,6 +251,14 @@ export function createPrivateCaseAccessService({
       return write(caseId, authContext, (store) => store.appendTranscriptCompletionAmendment(caseId, amendment));
     },
     async getTranscriptAmendments(caseId, authContext) { return read(caseId, authContext, (store) => store.getTranscriptAmendments(caseId)); },
+    // The case's plan (issue #172): an authorized decision changes it under the audit scope; reading what the record holds
+    // against proposed points needs only the read scope, like retrieving evidence.
+    async recordRoadmapDecision(caseId, decision, authContext) {
+      return auditWrite(caseId, authContext, (store) => store.recordRoadmapDecision(caseId, decision));
+    },
+    async checkCaseKnownVersusNew(caseId, criteria, authContext) {
+      return read(caseId, authContext, (store) => store.checkCaseKnownVersusNew(caseId, criteria));
+    },
     async getRecentVerbatim(caseId, episodePolicy, authContext) { return read(caseId, authContext, (store) => store.getRecentVerbatim(caseId, episodePolicy)); },
     async saveCandidateResponse(caseId, candidateId, exactText, metadata, authContext) {
       return write(caseId, authContext, (store) => store.saveCandidateResponse(caseId, candidateId, exactText, metadata));

@@ -3,6 +3,8 @@ import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
 import { TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolManifest, therapyProtocolPayload } from "../protocol/therapy-protocol.mjs";
 import { JOURNAL_READ_ONLY_MCP_TOOLS } from "../journal-import/http.mjs";
+import { projectCasePlan } from "../case-formulation/case-roadmap.mjs";
+import { KNOWN_VS_NEW_LIMITS } from "../case-formulation/known-vs-new.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
@@ -61,7 +63,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_handoff",
     title: "Load private InnerSignal handoff",
-    description: "Primary fresh-session bootstrap. Resolve and verify an authorized immutable encrypted handoff using only its stable handoff identifier. The result also carries therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
+    description: "Primary fresh-session bootstrap. Resolve and verify an authorized immutable encrypted handoff using only its stable handoff identifier. The result also carries case_plan, the case's recorded plan (what is primary, what is being worked on now, what waits and why, when priorities would change, whose priority each one is) or, when none is recorded, a reconstruction that is only a proposal; and therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -73,7 +75,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_case_context",
     title: "Load private InnerSignal case context",
-    description: "Load a continuation-safe private case bundle for an authorized fresh supervisor session, including exact recent verbatim turns and the exact pending candidate response. The result also carries therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
+    description: "Load a continuation-safe private case bundle for an authorized fresh supervisor session, including exact recent verbatim turns and the exact pending candidate response. The result also carries case_plan, the case's recorded plan (what is primary, what is being worked on now, what waits and why, when priorities would change, whose priority each one is) or, when none is recorded, a reconstruction that is only a proposal; and therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -88,7 +90,7 @@ const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_case_context_by_alias",
     title: "Load private InnerSignal case context by alias",
-    description: "Resolve a non-enumerable private case alias and load that authorized continuation-safe case context. Use this when the user names a known case but does not provide an opaque case or handoff ID. The result also carries therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
+    description: "Resolve a non-enumerable private case alias and load that authorized continuation-safe case context. Use this when the user names a known case but does not provide an opaque case or handoff ID. The result also carries case_plan, the case's recorded plan (what is primary, what is being worked on now, what waits and why, when priorities would change, whose priority each one is) or, when none is recorded, a reconstruction that is only a proposal; and therapy_rules: the protocol's rules for reparenting and exercises and for telling an established point from a new one; call load_therapy_protocol for the complete rules before advising.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -226,6 +228,22 @@ const TOOL_DEFINITIONS = Object.freeze([
       }
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "check_case_known_vs_new",
+    title: "Check what the private case record already holds",
+    description: "Before presenting a pattern, insight or recommendation as new in a review of an authorized case across sessions, records or journal material, check it here: for each point, the record's facts and hypotheses, settled answers, interventions, plan goals, current episode and parked questions that share the most word forms with it, best first, with the share of the point's words each holds and where each came from (its source's kind, reference and turn). It counts shared words and judges no meaning: read the matches and say whether the point is already established (and where), a new example of it, a contradiction, a new actionable lever, or a change to what comes first. When the case's stored plan can't be read, its goals are left out and plan_problem says so.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["case_id", "points"],
+      properties: {
+        case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" },
+        points: { type: "array", minItems: 1, maxItems: KNOWN_VS_NEW_LIMITS.points, items: { type: "string", minLength: 1, maxLength: KNOWN_VS_NEW_LIMITS.point_text } },
+        limit: { type: "integer", minimum: 1, maximum: KNOWN_VS_NEW_LIMITS.matches_max, default: KNOWN_VS_NEW_LIMITS.matches_default }
+      }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }
 ]);
 
@@ -337,6 +355,19 @@ function protocolText(value) {
 // identity; the complete protocol stays one call away.
 const CASE_RULE_FILES = Object.freeze(["references/PROTOCOL-STATE-PROVENANCE.md", "references/LONGITUDINAL-SYNTHESIS.md"]);
 const CASE_OPENING_TOOLS = new Set(["load_handoff", "load_case_context", "load_case_context_by_alias"]);
+// The case's plan as a session reads it first (issue #172): the recorded roadmap's view, or a reconstruction labeled a
+// proposal. Computed from the opened case's own state (a case context's `case_state`, a handoff's `canonical_state`); a
+// failure here never keeps the case from loading.
+export function casePlanFor(value) {
+  const state = value?.case_state ?? value?.canonical_state ?? null;
+  if (!state) return null;
+  try {
+    return projectCasePlan(state);
+  } catch {
+    return { status: "unavailable", note: "The case's plan could not be read; read the case state directly and do not present a plan as recorded." };
+  }
+}
+
 export function caseTherapyRules(protocol) {
   if (!protocol) {
     return { available: false, note: "The InnerSignal therapy protocol is unavailable on this server; do not improvise it." };
@@ -358,11 +389,11 @@ const sizeClass = (bytes) => 2 ** Math.ceil(Math.log2(Math.max(1, bytes)));
 // Error codes are fixed identifiers; anything else is traced as OTHER, so no text can reach the trace through a code.
 const traceCode = (code) => code === null ? null : typeof code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : "OTHER";
 
-// The rules go first in an opened case's result, so a host that shortens a long result keeps them; a field of the same
-// name in the case's own data never stands in for them.
+// The rules and the plan go first in an opened case's result, so a host that shortens a long result keeps them; fields of
+// the same names in the case's own data never stand in for them.
 function withCaseRules(value, protocol) {
-  const { therapy_rules: _ignored, ...rest } = value ?? {};
-  return { therapy_rules: caseTherapyRules(protocol), ...rest };
+  const { therapy_rules: _rules, case_plan: _plan, ...rest } = value ?? {};
+  return { therapy_rules: caseTherapyRules(protocol), case_plan: casePlanFor(value), ...rest };
 }
 
 function loadProtocolOrNull() {
@@ -523,6 +554,9 @@ async function callTool(service, name, args, authContext, journalApi = null) {
     const candidate = await service.getCandidateResponse(args.case_id, args.candidate_id ?? "current_pending", authContext);
     if (!candidate) throw Object.assign(new Error("Candidate response was not found."), { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
     return candidate;
+  }
+  if (name === "check_case_known_vs_new") {
+    return service.checkCaseKnownVersusNew(args.case_id, { points: args.points, limit: args.limit ?? KNOWN_VS_NEW_LIMITS.matches_default }, authContext);
   }
   if (name === "get_source_artifact") {
     const artifact = await service.getSourceArtifact(args.case_id, args.source_artifact_id, authContext);

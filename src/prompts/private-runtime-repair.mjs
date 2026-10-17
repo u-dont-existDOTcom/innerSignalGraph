@@ -1,5 +1,5 @@
 import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
-import { sharedClinicalRules } from "./common.mjs";
+import { promptCaseState, sharedClinicalRules } from "./common.mjs";
 
 export function privateRuntimeRepairPrompt(packet) {
   const system = `You are the bounded repair producer for an Inner Signal response.${sharedClinicalRules}
@@ -11,6 +11,6 @@ Return exactly one JSON object and no other text:
 
 The exact_text must differ from the failed candidate. Do not include analysis, hidden reasoning, provider traces, audit metadata, or extra fields.`;
 
-  const user = `AUTHORIZED REPAIR PACKET\n${JSON.stringify({ ...packet, ...(packet.case_state == null ? {} : { case_state: projectEvidenceAuthority(packet.case_state) }) }, null, 2)}`;
+  const user = `AUTHORIZED REPAIR PACKET\n${JSON.stringify({ ...packet, ...(packet.case_state == null ? {} : { case_state: promptCaseState(projectEvidenceAuthority(packet.case_state)) }) }, null, 2)}`;
   return Object.freeze({ system, user });
 }
