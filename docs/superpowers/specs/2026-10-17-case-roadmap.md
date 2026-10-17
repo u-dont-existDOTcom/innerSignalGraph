@@ -20,7 +20,7 @@ roadmap: {
   version: "case-roadmap-v1",
   goals: [goal, ...],                 // at most 60
   safety_override: null | { reason, since_at, decision_id },
-  applied_decisions: [{ decision_id, at, source, digest }],   // at most 200, for replay and audit
+  applied_decisions: [{ decision_id, at, source, digest }],   // the latest 100, for replay checks
   updated_at, updated_by_decision
 }
 goal: {
@@ -66,16 +66,19 @@ any is applied; a decision applies whole or not at all.
   withdrawn consent is the client declining a goal. The view also suspends the order when the record's threat pathway
   shows imminent operational danger.
 - A replayed decision with the same id and content changes nothing; the same id with different content is refused.
+  Once 100 decisions are kept, one dated before the oldest kept is refused, since it can't be told from a replay.
 
 ## What a session reads
 
 `load_case_context` and `load_case_context_by_alias` results (and the app's own durable context, which already carries
 the whole case state) include `case_plan`:
 
-- With a recorded roadmap: what is primary, what is being worked on now (the first active step under the first aim, and
-  the operational episode with whether a goal is linked to it), the other active goals, the independent tracks (labeled
-  separately available, not exercises), what is parked or blocked and why, when priorities would change (each review
-  condition), each goal's source, and whether the ordinary order is suspended for safety.
+- With a recorded roadmap: what is primary, what is being worked on now (the goal linked to the operational episode, else
+  the first active step under the first aim; a model's proposal only when nothing confirmed is there), how the episode
+  relates to the plan (linked, stale, held by a waiting parent, unlinked), the other active goals, the independent tracks
+  (labeled separately available, not exercises), what is parked or blocked and why, active goals held by a waiting parent,
+  when priorities would change (each review condition), each goal's source, and whether the ordinary order is suspended
+  for safety.
 - Without one: `case_plan.status` is `proposed_reconstruction`, rebuilt on every read from the record (the operational
   episode, the routes tried in the intervention history, parked focus questions, high-relevance items), every part
   labeled provisional, never stored and never presented as a decision. It names no primary aim: that is the client's or an

@@ -59,6 +59,28 @@ Start journal work with a non-mutating authorization probe:
 
 The remaining journal operations are `create_journal_corpus`, `commit_journal_generation`, `rollback_journal_generation`, and `increment_journal_visibility`. Commit reopens and authenticates the staged manifest, applies the expected case revision/generation/visibility checks, and verifies that therapy state, transcript, and candidate records remain unchanged. `increment_journal_visibility` also retires the active generation, since no reader accepts its old epoch. The generation moves to the previous generations, where rollback refuses it, and handoffs stop presenting the corpus as attached until a generation is committed under the new epoch.
 
+A case's plan (issue #172; `docs/superpowers/specs/2026-10-17-case-roadmap.md`) changes only through `record_roadmap_decision`, under the audit scope. A decision applies whole or not at all, and the receipt holds no plan content. Its `source` says whose priority it records: `client` (it needs `evidence_refs` to where the client said it), `authorized_plan` (the owner or a supervisor), or `provisional` (a proposal). A synthetic example:
+
+```json
+{
+  "schema_version": 1,
+  "operation": "record_roadmap_decision",
+  "case_id": "<exact-existing-case-id>",
+  "decision": {
+    "decision_id": "plan-2026-10-18-1",
+    "source": "client",
+    "at": "2026-10-18T10:00:00.000Z",
+    "evidence_refs": ["<turn id where the client said it>"],
+    "changes": [
+      { "op": "add", "goal": { "id": "goal:felt-safety", "kind": "primary_aim", "title": "<the aim in the client's words>" } },
+      { "op": "add", "goal": { "id": "goal:weekly-step", "kind": "actionable_step", "parent_id": "goal:felt-safety", "title": "<the step>", "review_condition": "<when to revisit it>" } }
+    ]
+  }
+}
+```
+
+Other changes are `{"op": "update", "goal_id", "set": {...}}`, `{"op": "order", "parent_id", "goal_ids": [...]}` (add `"tracks": true` to order the independent, safety and medical tracks) and `{"op": "safety_override", "reason": "..." | null}`. An authorized plan can't change the rank, status, agreement or title of a goal the client chose; the decision is refused whole and nothing changes. Replaying the same decision changes nothing; reusing its id with other content is refused.
+
 Only one writer changes a vault at a time. An InnerSignal server with a private runtime holds the vault's writer lock for as long as it runs, so stop it before an operator write or a journal publication: either one refuses to start with `PRIVATE_ROOT_WRITER_ACTIVE` while the server runs, and the server refuses to start while either is writing. The read-only MCP takes no lock and keeps running.
 
 Deletion is intentionally absent from this operator surface. It requires a separate authority and lifecycle.

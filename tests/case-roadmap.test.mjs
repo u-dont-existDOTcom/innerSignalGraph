@@ -213,6 +213,37 @@ test("the plan view says what is primary, what is being worked on now, what wait
   assert.deepEqual(plan.safety, { ordinary_order_suspended: false, reasons: [] });
 });
 
+test("the current step is what the client or an authorized plan set; goals under a waiting goal are held, not current", () => {
+  const proposalFirst = [
+    decision("plan-c-1", "client", 1, [{ op: "add", goal: { id: "goal:aim", kind: "primary_aim", title: "Synthetic aim" } }]),
+    decision("plan-c-2", "provisional", 2, [{ op: "add", goal: { id: "goal:proposed-step", kind: "actionable_step", parent_id: "goal:aim", title: "A proposed step" } }]),
+    decision("plan-c-3", "client", 3, [{ op: "add", goal: { id: "goal:chosen-step", kind: "actionable_step", parent_id: "goal:aim", title: "The step she chose" } }])
+  ].reduce((roadmap, next) => applyRoadmapDecision(roadmap, next), null);
+  assert.equal(proposalFirst.goals.find((goal) => goal.id === "goal:proposed-step").rank, 1);
+  assert.equal(projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: proposalFirst })).now.step.id, "goal:chosen-step");
+  const parkedParent = applyRoadmapDecision(planA(), decision("plan-a-16", "client", 16, [
+    { op: "update", goal_id: "goal:everyday-protection", set: { status: "parked", status_reason: "She wants a pause from this for a few weeks." } }
+  ]));
+  const plan = projectCasePlan(applyCaseStatePatch(caseState(), { roadmap: parkedParent }));
+  assert.equal(plan.now.step, null);
+  assert.equal(plan.now.episode_link, "held_by_parent", "the episode serves a step its waiting parent holds");
+  assert.deepEqual(plan.held_by_parent.map((goal) => [goal.id, goal.parent_id]), [["goal:weekly-refusal", "goal:everyday-protection"]]);
+  assert.deepEqual(plan.waiting.map((goal) => goal.id), ["goal:everyday-protection"]);
+});
+
+test("once the replay list is full, a decision dated before the oldest kept one is refused, not applied twice", () => {
+  let roadmap = planA();
+  for (let index = 0; index < 100; index += 1) {
+    roadmap = applyRoadmapDecision(roadmap, { decision_id: `safety-${index}`, source: "authorized_plan", at: new Date(Date.UTC(2026, 9, 18, 0, index)).toISOString(), evidence_refs: [],
+      changes: [{ op: "safety_override", reason: index % 2 ? null : "Synthetic safety reason." }] });
+  }
+  assert.equal(roadmap.applied_decisions.length, 100);
+  assert.equal(roadmap.applied_decisions[0].decision_id, "safety-0");
+  assert.throws(() => applyRoadmapDecision(roadmap, decision("plan-a-old", "authorized_plan", 30, [{ op: "safety_override", reason: null }])), { code: "ROADMAP_DECISION_TOO_OLD" });
+  const kept = roadmap.applied_decisions.at(-1);
+  assert.deepEqual(applyRoadmapDecision(roadmap, { decision_id: kept.decision_id, source: "authorized_plan", at: kept.at, evidence_refs: [], changes: [{ op: "safety_override", reason: null }] }), roadmap);
+});
+
 test("an acute event takes the operational episode without replacing the long-term aim", () => {
   const state = applyCaseStatePatch(caseState(), { roadmap: planA() });
   const next = mergeRuntimeSnapshotIntoCaseState(state, {
