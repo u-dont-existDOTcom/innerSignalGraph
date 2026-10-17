@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-15-r8`
+Queue version: `2026-10-17-r9`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -247,6 +247,15 @@ Teaching point: Hypnosis in general isn't incompatible with grief, nor with alte
 Reader need: Grieving readers, and readers who work with altered states, need to know hypnosis isn't off-limits for them, and what to weigh.
 Already covered: The guide's passage “Gentle meditation or self-hypnosis can still help. My warning is about intensive versions.” says gentle self-hypnosis can calm the nervous system; it doesn't say whether hypnosis fits during fresh grief or an altered state.
 Where: Next to that passage on gentle meditation and self-hypnosis. The owner will write this himself.
+
+## Pending bundle I — reparenting is the relationship, not the exercise
+
+### PGQ-037 — Reparenting is not an exercise
+Caused by: the owner's correction of 16 Oct 2026 (issue #168: “Reparenting is not an exercise”), `AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016`, the retitled map overlay `OVERLAY.IC.PROTOCOL_STATE_PROVENANCE` and the served rule section “Reparenting and exercises”. A supervisor-facing assistant had described reparenting as an optional add-on to feeling safe and expressing oneself, and had treated an imagery meditation as the reparenting.
+Teaching point: Reparenting isn't an exercise you do or finish; it's the ongoing relationship in which the adult you are now cares for, validates, protects and guides the younger, vulnerable part of you, through truthful boundaries, repair and everyday choices as much as through any meditation. Learning to feel safe inside while you say what you really feel, need and won't accept is that work, not a separate goal it might help with. Meditations, imagery, inner dialogue and affirmations are ways of practicing it, not its definition, its entry ticket or its scorecard: a session with no tears or relief doesn't mean nothing is happening, and the right words in a session don't by themselves mean it's done. Other help, such as people who support you or specialist care for physical pain, stays its own thing.
+Reader need: Readers who can't visualize, feel little in meditation, or change mostly through everyday boundaries may conclude they aren't really reparenting or are failing at it; others may take one moving meditation as proof the work is done, or wait for imagery before counting the boundaries they already keep.
+Already covered: “The Three Adult Functions” says reparenting begins when the present-day person occupies an adult position and cares for the child, and that the Protector works through boundaries and ordinary action; “Make the Protector Visible” lists everyday protective acts and says completing one without immediate relief isn't automatically failure; “When More Processing Becomes the Hook” says the exercises shouldn't become a ritual you must complete before you're allowed to live; PGQ-012 and PGQ-013 cover leaving the exercise and carrying it into ordinary life. None of them says outright that reparenting isn't an exercise, or that feeling safe while expressing feelings, needs and boundaries is the reparenting itself.
+Where: “The Three Adult Functions”, right after “Reparenting begins when the present-day person occupies an adult position and cares for the child from there.” One or two sentences in the owner's voice; if PGQ-012 is still pending, share its point about leaving the exercise rather than repeating it. Keep the guide's permission not to call it reparenting when inner-child language doesn't fit (“Also Look Outward”).
 
 ## EMPTY sentinel
 
