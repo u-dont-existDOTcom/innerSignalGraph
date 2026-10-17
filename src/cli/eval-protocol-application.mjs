@@ -27,14 +27,14 @@ const USAGE = `Usage: npm run eval:protocol-application -- --mode cli|api|mock [
 
   --mode cli|api|mock      required: cli uses the codex and claude commands, api the provider APIs, mock a fixture
   --answerer openai|anthropic   the model family that answers (default openai, as in ChatGPT)
-  --judge openai|anthropic      the family that grades: always the other one (the default)
+  --judge openai|anthropic      the family that grades: in a run, always the other one (the default)
   --answer-model NAME      override the answering model (default: OPENAI_MODEL or ANTHROPIC_MODEL)
   --judge-model NAME       override the grading model
   --samples N              replies per case (default 3)
   --case ID                only this case (repeatable)
   --git-ref REF            test the connector and protocol of this commit instead of this checkout
   --calibration-only       only check the judge on the replies whose grades are known (the answering agent isn't
-                           used or checked; --answerer still picks the judge's family, the other one)
+                           used or checked; --judge names the judge's family, or --answerer the other one)
   --skip-calibration       don't check the judge first (the run is then marked unchecked)
   --fixture FILE           mock mode: the fixture of replies and judgments
   --out DIR                where the report goes (default: a new private temporary folder)
@@ -83,26 +83,26 @@ const families = ["openai", "anthropic"];
 if (!families.includes(values.answerer)) fail("--answerer must be openai or anthropic.");
 const judgeFamily = values.judge ?? families.find((family) => family !== values.answerer);
 if (!families.includes(judgeFamily)) fail("--judge must be openai or anthropic.");
-// A judge of the same family as the answering model shares its blind spots: the grade must come from the other family.
-if (judgeFamily === values.answerer) fail("--judge must be the other family from --answerer: a model doesn't grade its own family's replies here.");
+// A judge of the same family as the answering model shares its blind spots: the grade must come from the other family. A
+// check of the judge alone grades no answering model's replies, so any judge can be checked.
+if (!values["calibration-only"] && judgeFamily === values.answerer) fail("--judge must be the other family from --answerer: a model doesn't grade its own family's replies here.");
 const samples = Number(values.samples);
 if (!Number.isSafeInteger(samples) || samples < 1 || samples > 20) fail("--samples must be a whole number from 1 to 20.");
 if (values["calibration-only"] && values["skip-calibration"]) fail("--calibration-only and --skip-calibration contradict each other.");
 if (values.mode === "mock" && !values.fixture) fail("--fixture is required in mock mode.");
 
-// The model families this run uses: a check of the judge alone uses only the judge's, so API mode needs only its key
+// The models this run uses, by role: a check of the judge alone uses only the judge, so API mode needs only its key
 // (Codex on #175).
-const usedFamilies = values["calibration-only"] ? [judgeFamily] : [values.answerer, judgeFamily];
+const roles = values["calibration-only"] ? [["judge", judgeFamily]] : [["answer", values.answerer], ["judge", judgeFamily]];
+// The configuration is checked with the Claude model this run will actually use (at most one role is Claude's), so the
+// Fable opt-in covers one chosen with --answer-model or --judge-model and not an environment default it replaces.
+const claudeRole = roles.find(([, family]) => family === "anthropic")?.[0];
+const claudeModel = claudeRole ? values[`${claudeRole}-model`] : undefined;
 let config;
 try {
-  config = loadConfig({ mode: values.mode }, { providers: usedFamilies });
+  config = loadConfig({ mode: values.mode, ...(claudeModel ? { anthropicModel: claudeModel } : {}) }, { providers: [...new Set(roles.map(([, family]) => family))] });
 } catch (error) {
   fail(error.message);
-}
-// The Fable opt-in covers the Claude model this run will use, one chosen with --answer-model or --judge-model included.
-const modelFor = (family) => (family === values.answerer ? values["answer-model"] : values["judge-model"]) ?? (family === "openai" ? config.openaiModel : config.anthropicModel);
-if (values.mode === "cli" && usedFamilies.includes("anthropic") && /fable/iu.test(modelFor("anthropic")) && !config.allowClaudeFableUsage) {
-  fail("Fable CLI use is opt-in because it may consume paid Claude usage credits depending on the account plan. Verify the plan, then set ALLOW_CLAUDE_FABLE_USAGE=true.");
 }
 
 // The cases are read before anything is created, so a bad case file or an unknown case leaves nothing behind.

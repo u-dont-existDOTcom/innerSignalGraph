@@ -90,12 +90,12 @@ check exactly those things. This test calls models, so it runs by hand and not i
 npm run eval:protocol-application -- --mode cli                          # Codex answers, Claude grades
 npm run eval:protocol-application -- --mode cli --answerer anthropic     # Claude answers, Codex grades
 npm run eval:protocol-application -- --mode cli --git-ref 87dce2de       # the connector and protocol live before #173
-npm run eval:protocol-application -- --mode cli --calibration-only       # check the judge alone (Claude)
+npm run eval:protocol-application -- --mode cli --calibration-only       # check a Claude judge alone
 ```
 
 - `--calibration-only` asks nothing of the answering agent, so it isn't set up or checked, and in API mode only the
-  judge's key is needed; `--answerer` still picks the judge's family, the other one (`--answerer anthropic
-  --calibration-only` checks a Codex judge).
+  judge's key is needed. `--judge` names the judge's family, or `--answerer` the other one: `--calibration-only
+  --judge openai` checks a Codex judge. A run, by contrast, always has the judge of the other family.
 - As everywhere in the app, a Fable model on the command line needs `ALLOW_CLAUDE_FABLE_USAGE=true`, because it may
   use paid Claude credits; that covers a model chosen with `--answer-model` or `--judge-model`, when the run uses it.
 

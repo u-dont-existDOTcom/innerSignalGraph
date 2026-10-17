@@ -394,6 +394,25 @@ test("the command needs keys and the Fable opt-in only for the models the run us
   assert.equal(unusedFable.status, 3, unusedFable.stderr);
   assert.doesNotMatch(unusedFable.stderr, /Fable/u);
   assert.match(unusedFable.stderr, /The Codex CLI \(.*no-such-codex\) could not be started or checked/u, "the judge is checked; the unused answerer isn't");
+  // A check of the judge alone grades no answering model's replies, so a judge of the answerer's family can be checked,
+  // with its own model; a run still needs the other family.
+  const sameFamily = run(["--mode", "api", "--calibration-only", "--judge", "openai"]);
+  assert.equal(sameFamily.status, 3, sameFamily.stderr);
+  assert.match(sameFamily.stderr, /OPENAI_API_KEY is required in api mode/u);
+  assert.doesNotMatch(sameFamily.stderr, /ANTHROPIC_API_KEY|other family/u);
+  const claudeOnly = ["--mode", "cli", "--calibration-only", "--answerer", "anthropic", "--judge", "anthropic"];
+  const opusJudge = run([...claudeOnly, "--judge-model", "claude-opus-5", "--answer-model", "claude-fable-5"]);
+  assert.doesNotMatch(opusJudge.stderr, /Fable/u);
+  assert.match(opusJudge.stderr, /The Claude CLI \(.*no-such-claude\) could not be started or checked/u);
+  assert.match(run([...claudeOnly, "--judge-model", "claude-fable-5"]).stderr, /Fable CLI use is opt-in/u);
+  // Codex on #175 (P2): a Fable default in the environment that the run replaces with another model needs no opt-in.
+  const replacedDefault = run(["--mode", "cli", "--calibration-only", "--judge-model", "claude-opus-5"], { ANTHROPIC_MODEL: "claude-fable-5" });
+  assert.doesNotMatch(replacedDefault.stderr, /Fable/u);
+  assert.match(replacedDefault.stderr, /The Claude CLI \(.*no-such-claude\) could not be started or checked/u);
+  assert.match(run(["--mode", "cli", "--calibration-only"], { ANTHROPIC_MODEL: "claude-fable-5" }).stderr, /Fable CLI use is opt-in/u, "a Fable default the run uses");
+  const sameFamilyRun = run(["--mode", "cli", "--judge", "openai"]);
+  assert.equal(sameFamilyRun.status, 3, sameFamilyRun.stderr);
+  assert.match(sameFamilyRun.stderr, /--judge must be the other family from --answerer/u);
   assert.equal(fs.existsSync(path.join(dir, "out", "protocol-application-report.json")), false, "nothing ran");
 });
 
