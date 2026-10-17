@@ -321,6 +321,49 @@ quote resolves to its exact words; and that a caller without a grant is refused.
 something happened, which is the one check of the ChatGPT path no server command can make. Nothing is tagged again, and
 the slow semantic import stays stopped.
 
+## Version 4: the dates by the journal's order (plan, 17 Oct 2026)
+
+After the graph went live (17 Oct, 01:47 UTC), the timeline placed 330 of its 4,867 events, and the owner asked why most
+had no date or range when the journal "was written in time order". Two reasons, both ours. The index reads few date lines:
+in 1,122 pages, 52 lines read as an entry's date, and 37 of them give a usable one (14 have a day and a month before any
+year was read, one is a weekday alone). And version 3's rules for ranges were cautious about lines read wrong (one step
+of the dates goes back about 100 years): a date covers two pages after its line, and a range was given only between two
+dates that run forward, at most 12 months apart, with no page between them not fully read, and never before the first
+date or after the last. That left 1,271 of the 1,888 quotes without either. A third reason showed in the code: version
+3 made a page's events before it made the ranges, so an event in a ranged quote got no time at all; the 330 are the
+events of quotes with a date of their own.
+
+Version 4 takes the order the owner states as a fact of the journal:
+
+- **The anchors are the date lines that agree with that order.** In journal order, the run of date lines whose first
+  days never go back, with the most weight: a full date counts 3, a month with its year 2, a year alone or a day whose
+  year was inferred 1, so a year mentioned at a line's start gives way before a full date does. A line outside the run
+  breaks the order and is taken as misread: it dates nothing, and its quotes are dated as if it weren't there.
+- **A date with no year read before it takes the year of the next dated line**, the latest year in which that day is
+  not after it, marked `year_inferred`, mirroring how a date takes its year from the entries before it. This covers the
+  lines before any year and after a page not fully read.
+- **Every quote gets its time.** A quote under an anchor keeps its date, carried two pages as before; any other gets the
+  range from the nearest anchor before it to the nearest after it, however wide and across pages not fully read, since
+  the order holds through them. Before the first anchor the range is open at the start (`from` null), after the last
+  open at the end (`to` null); `quote_months` lists those quotes under `QUOTE_OPEN_KEY`, and a time window reads them
+  and keeps the ones whose range overlaps it. Only a journal with no anchor leaves quotes undated.
+- **Events get their quote's time.** The pointer extraction runs once every quote is dated, so an event's authored time
+  is its quote's date or range, closed or open, as an interval with basis `relative_supported`; its event time stays
+  unknown, as before.
+- **Counts.** `stats.time_order`: the yearless lines dated and not, the lines taken as misread, the anchors, and the
+  quotes with a date, a closed range, a range open at the start or at the end, and none; `range_widths` gains
+  `over_12_months`.
+
+A wide range is still worth having: it puts an event in order on the timeline, and keeps a quote out of the time
+windows it can't belong to, where an undated quote is in every one by default (`include_undated`). The quotes, their
+split and their unit ids are version 3's, so the pointer run's tags carry over by unit id with `pointer-rebase`, sending
+nothing and tagging nothing again, and `pointer-publish` publishes them on version 4. Reading more date forms is the next
+step if the counts show long stretches between anchors.
+
+**Putting it live.** On the owner's merge and `deploy`: connector, then import; `pointer-rebase` builds
+`<case>:quotes:quote-index-v4-<order>:pointer-<run>` and measures it, and its counts include `time_order`;
+`pointer-publish`; `published-readback`, whose `events` by lane show the change.
+
 ## Operating it (after the owner's `deploy`)
 
 The order matters. A case with a published journal corpus isn't continuation-safe for a connector that can't read

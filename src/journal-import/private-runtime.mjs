@@ -459,7 +459,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           built_at: persisted.built_at } : null,
         // The run's tags built again on the current quote index version (pointer-rebase), without its private references.
         ...(rebased ? { rebased: { step_id: rebased.step_id, generation: rebased.generation, graph_sha256: rebased.graph_sha256,
-          built_at: rebased.built_at, measure: structuredClone(rebased.measure ?? null) } } : {}),
+          built_at: rebased.built_at, dates: structuredClone(rebased.dates ?? null), measure: structuredClone(rebased.measure ?? null) } } : {}),
         published: published ? structuredClone(published) : null };
     };
     const calibrationStopStatus = (reason) => {
@@ -2757,7 +2757,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
             // Version 3 adds the word list the search ranks by.
             extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths,
-              ...(input.version === 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) }, indexRepresentations: true });
+              ...(input.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) }, indexRepresentations: true });
           // The manifest stays in the store, not in the run state, which is rewritten on every save.
           state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
             manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null,
@@ -3137,7 +3137,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         checkManifest: (manifest) => {
           invariant(manifest.generation === index.generation, "QUOTE_INDEX_GENERATION_MISMATCH");
           // A version 3 generation ranks by its word list, and only it has one.
-          invariant(Array.isArray(manifest.indexes?.quote_terms) === (version === 3), "QUOTE_INDEX_VERSION_MISMATCH");
+          invariant(Array.isArray(manifest.indexes?.quote_terms) === (version >= 3), "QUOTE_INDEX_VERSION_MISMATCH");
         } });
       return { ...summary(), quote_search_check: { run_id: run.run_id, generation_version: version, ...check } };
     }
@@ -3205,11 +3205,17 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             sourceRepresentations: Object.fromEntries(quoteGeneration.representations.map((item) => [item.representation_id, item.text])),
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
             extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_tags: indexes.quote_tags, tag_terms: indexes.tag_terms,
-              ...(quoteGeneration.version === 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) },
+              ...(quoteGeneration.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) },
             indexRepresentations: true });
+          // The dates the carried generation gives its quotes, in counts (version 4's `time_order` among them).
+          const { dated_quotes: datedQuotes, date_lines: dateLines, ranged_quotes: rangedQuotes = null, range_widths: rangeWidths = null,
+            date_order: dateOrder = null, time_order: timeOrder = null } = built.stats;
           run.rebased = { step_id: measured.step_id, generation, corpus_id: quoteGeneration.corpusId,
             manifest_object_id: persisted.manifest_object_id, manifest_reference: persisted.manifest_reference,
-            graph_sha256: persisted.manifest.graph_sha256, built_at: now().toISOString(), measure: null };
+            graph_sha256: persisted.manifest.graph_sha256, built_at: now().toISOString(),
+            dates: structuredClone({ quotes: built.stats.quotes, dated_quotes: datedQuotes, date_lines: dateLines, ranged_quotes: rangedQuotes,
+              range_widths: rangeWidths, date_order: dateOrder, time_order: timeOrder }),
+            measure: null };
           await save();
         }
         if (!run.rebased.measure) {

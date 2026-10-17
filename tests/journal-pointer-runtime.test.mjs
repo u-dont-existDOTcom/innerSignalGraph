@@ -190,14 +190,19 @@ test("the pointer run goes from the reference sample to publication, each step w
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
   delete f.config.pointer_copy_run_words;
 
-  // The run was built and measured on version 2 of the quote index, and version 3 is the one published (issue #168): its
-  // own generation would take the published quotes back a version, so its tags go out only built again on version 3.
-  assert.match(published.active_generation, /:quotes:quote-index-v3-month-first$/u);
+  // The run was built and measured on version 2 of the quote index, and the current version is the one published (issue #168):
+  // its own generation would take the published quotes back a version, so its tags go out only built again on the current one.
+  assert.match(published.active_generation, /:quotes:quote-index-v4-month-first$/u);
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_REBASE_NEEDED" });
   const stateBefore = await fs.readFile(f.stateFile, "utf8");
   const rebased = await f.run("pointer-rebase");
   const { rebased: carried } = rebased.pointer;
   assert.equal(carried.generation, `${published.active_generation}:pointer-${rebased.pointer.run_id}`);
+  // The carried generation's dates, in counts: every quote has a date, a range, a range open at one end, or none.
+  const { dates } = carried;
+  const order = dates.time_order;
+  assert.equal(order.dated_quotes + order.ranged_quotes + order.open_start_quotes + order.open_end_quotes + order.undated_quotes, dates.quotes);
+  assert.equal(order.dated_quotes, dates.dated_quotes);
   assert.equal(carried.step_id, measure.measured_step_id);
   // The same questions, the same tags: with tags every question is found, with words only the half that asks in the
   // quotes' own words, as the measurement found on version 2.
@@ -279,7 +284,7 @@ test("under owner decision 32's rules Codex alone judges, a piece still not cove
   assert.equal(tiers.length, sent, "pointer-rebase sends nothing");
   const deployed = await f.run("pointer-publish");
   assert.ok(deployed.pointer.published);
-  assert.match(deployed.pointer.published.generation, /:quotes:quote-index-v3-month-first:pointer-[0-9a-f]{8}$/u);
+  assert.match(deployed.pointer.published.generation, /:quotes:quote-index-v4-month-first:pointer-[0-9a-f]{8}$/u);
   // A run keeps the rules it started with: other rules call for a new run.
   f.config.pointer_rules = 2;
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_RUN_SETTING_CHANGED" });
@@ -374,11 +379,11 @@ test("pointer-search-check reads the measured run back and says, in counts only,
   // exactly what its replica, the check's forms_bm25_coordination, finds on the same quotes.
   const quoteResult = await f.run("quote-search-check");
   const quoteCheck = quoteResult.quote_search_check;
-  assert.match(quoteResult.quote_index.generation, /:quotes:quote-index-v3-/u);
+  assert.match(quoteResult.quote_index.generation, /:quotes:quote-index-v4-/u);
   assert.equal(sends, sent, "nothing is sent");
   assert.equal(await fs.readFile(f.stateFile, "utf8"), before, "nothing is saved");
   assert.equal(quoteCheck.run_id, result.pointer.run_id);
-  assert.equal(quoteCheck.generation_version, 3);
+  assert.equal(quoteCheck.generation_version, 4);
   assert.equal(quoteCheck.questions, check.questions, "the same questions: they go by unit id, which both versions keep");
   assert.equal(quoteCheck.replica.variant, "forms_bm25_coordination");
   assert.deepEqual([quoteCheck.replica.found, quoteCheck.replica.measured_only, quoteCheck.replica.replica_only], [quoteCheck.measured.found, 0, 0]);
@@ -389,7 +394,7 @@ test("pointer-search-check reads the measured run back and says, in counts only,
   // A quote index built by an earlier version is not the one this version would publish: build it first.
   const state = JSON.parse(before);
   await fs.writeFile(f.stateFile, JSON.stringify({ ...state, quote_index: { ...state.quote_index,
-    generation: state.quote_index.generation.replace("quote-index-v3", "quote-index-v2") } }), { mode: 0o600 });
+    generation: state.quote_index.generation.replace("quote-index-v4", "quote-index-v2") } }), { mode: 0o600 });
   await assert.rejects(f.run("quote-search-check"), { code: "QUOTE_INDEX_NOT_BUILT" });
   await fs.writeFile(f.stateFile, before, { mode: 0o600 });
 });

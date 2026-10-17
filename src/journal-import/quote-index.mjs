@@ -20,7 +20,16 @@ import { adaptExtractionToGraph } from "./graph.mjs";
 // predecessor's: a quote id from a v2 search doesn't resolve in v3, and the same quote has a new id there. Everything v3
 // adds is built only for a generation whose name holds the version (`quoteIndexVersionOf`); a v2 generation rebuilds
 // exactly as it was.
-export const QUOTE_INDEX_VERSION = "quote-index-v3";
+//
+// v4 (17 Oct 2026, the owner: the journal "was written in time order"): every quote gets the time the journal's order gives
+// it. The date lines that agree with that order are the anchors; one that breaks it is taken as misread and dates nothing. A
+// date without a year read before any year takes one from the date after it. A quote with no date of its own gets the range
+// from the nearest anchor before it to the nearest after it, however wide and across pages not fully read, since the order
+// holds through them; one before the first anchor or after the last gets a range open at that end. The quotes, their split
+// and their unit ids are v3's; a v3 generation rebuilds exactly as it was.
+export const QUOTE_INDEX_VERSION = "quote-index-v4";
+// The versions after 2, by the name a generation of each holds.
+const QUOTE_INDEX_VERSION_NAMES = Object.freeze([[4, "quote-index-v4"], [3, "quote-index-v3"]]);
 // The namespace unit ids, and the local ids passage ids are made from, are made under. It is the version the split into
 // quotes was made in, and it stays while the split does, so a later index version has the same units, and whatever goes by
 // unit id (a pointer run's reference, the search check) maps onto the same quotes.
@@ -29,15 +38,20 @@ export const QUOTE_UNIT_NAMESPACE = "quote-index-v2";
 // is not published, so it keeps v2's name and reads dates as v2 does.
 export const QUOTE_POINTER_VERSION = "quote-index-v2";
 
-/** The index version (2 or 3) a generation is built as, from its name: 3 when the name holds `QUOTE_INDEX_VERSION`, else 2. */
+/** The index version (2, 3 or 4) a generation is built as, from its name: the version whose name it holds, else 2. */
 export function quoteIndexVersionOf(generation) {
-  return typeof generation === "string" && generation.includes(QUOTE_INDEX_VERSION) ? 3 : 2;
+  if (typeof generation !== "string") return 2;
+  for (const [version, name] of QUOTE_INDEX_VERSION_NAMES) if (generation.includes(name)) return version;
+  return 2;
 }
 // Keys of the `quote_months` index besides the periods themselves (a month, "2019-03", or a year, "2019",
 // for quotes under a year written on a line of its own): the list of those periods, and the quotes with
 // no date.
 export const QUOTE_MONTHS_KEY = "months";
 export const QUOTE_UNDATED_KEY = "undated";
+// Version 4: the quotes whose range is open at one end (before the first anchor or after the last). A time window reads them
+// all and keeps those whose range overlaps it.
+export const QUOTE_OPEN_KEY = "open";
 // The key of the `quote_terms` index that holds its totals instead of a term. No term can be it: terms are runs of letters and digits.
 export const QUOTE_TERMS_STATS_KEY = "#stats";
 export const QUOTE_UNIT_DEFAULTS = Object.freeze({ maximumBytes: 1600, minimumBytes: 160, headingMaximumBytes: 80 });
@@ -46,7 +60,8 @@ export const QUOTE_UNIT_DEFAULTS = Object.freeze({ maximumBytes: 1600, minimumBy
 // pages, or, in a source without pages, the next `carryQuotes` quotes: an entry whose next date line
 // went unread must not lend its date to the entries after it, and a wrong date is worse than none.
 // Version 3 also gives a quote left undated between two dates that run forward a range from the first to the second, unless
-// the range spans more than `rangeMonthsMax` calendar months.
+// the range spans more than `rangeMonthsMax` calendar months. Version 4 has no such limit: the journal's order holds however
+// far apart its dates are.
 export const QUOTE_DATE_DEFAULTS = Object.freeze({ numericOrder: "month_first", carryPages: 2, carryQuotes: 24, rangeMonthsMax: 12 });
 export const QUOTE_NUMERIC_DATE_ORDERS = Object.freeze(["month_first", "day_first"]);
 
@@ -248,6 +263,47 @@ function lastMonthOf(date) {
 const dayNumber = (day) => Math.round(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
 // The calendar month of a day (YYYY-MM-DD) or a month (YYYY-MM), counted from year 0: months between two are the difference of these.
 const monthNumber = (day) => Number(day.slice(0, 4)) * 12 + Number(day.slice(5, 7)) - 1;
+
+// Version 4: the year of a date written with a day and a month only, from the first day of the next dated line after it
+// (`following`, YYYY-MM-DD): the latest year in which that day exists and is not after `following`, at most eight years
+// back (a 29 February needs a leap year); null when there is none.
+function yearBefore({ month, day }, following) {
+  const year = Number(following.slice(0, 4));
+  for (let candidate = year; candidate >= year - 8; candidate -= 1) {
+    if (!realDay(candidate, month, day)) continue;
+    const value = `${String(candidate).padStart(4, "0")}-${pad(month)}-${pad(day)}`;
+    if (value <= following) return value;
+  }
+  return null;
+}
+
+// Version 4: which dated lines, in journal order, agree with the journal's order: the run of lines whose first days never go
+// back with the most weight. A line counts by how much it says: a day with its year written 3, a month with its year 2, and a
+// year alone, or a day whose year was inferred, 1, so a line that only names a year (a year mentioned at a line's start reads as
+// one) gives way before a full date does. Of runs with the same weight, each line follows the line before it with the latest
+// first day, the closest in time, and the run ending latest in the journal is kept. `lines` are in journal order, each with its
+// `day` (YYYY-MM-DD) and `written`; the result is the set of their indexes in the run.
+function timeOrderAnchors(lines) {
+  const weight = ({ written }) => (written.year_inferred === true || written.precision === "year" ? 1 : written.precision === "month" ? 2 : 3);
+  const best = [], previous = [];
+  lines.forEach((line, index) => {
+    best[index] = weight(line);
+    previous[index] = -1;
+    for (let earlier = 0; earlier < index; earlier += 1) {
+      if (lines[earlier].day > line.day) continue;
+      const total = best[earlier] + weight(line);
+      if (total > best[index] || (total === best[index] && previous[index] !== -1 && lines[earlier].day > lines[previous[index]].day)) {
+        best[index] = total;
+        previous[index] = earlier;
+      }
+    }
+  });
+  let end = -1;
+  best.forEach((value, index) => { if (end === -1 || value >= best[end]) end = index; });
+  const kept = new Set();
+  for (let index = end; index !== -1; index = previous[index]) kept.add(index);
+  return kept;
+}
 const monthKey = (number) => `${String(Math.floor(number / 12)).padStart(4, "0")}-${pad((number % 12) + 1)}`;
 
 // Content-free counts of line openings that look like a date but weren't read as one, so a journal's
@@ -446,6 +502,22 @@ const EMPTY_EXTRACTION = (units) => ({
  * date). A quote before the first date or after the last stays undated. `quote_months` lists a ranged quote under every month
  * from the earlier date's first to the later date's last, and `stats` counts the ranged quotes and their widths in months.
  *
+ * Version 4 reads the dates by the journal's order (the owner: it "was written in time order"), after the first pass reads the
+ * lines as version 3 does. (1) An entry line with a day and a month but no year that comes before any year was read, or after
+ * a page not fully read (`no_year_known`), takes its year from the next line after it with a day that agrees with the journal's
+ * order (a date line, or a yearless line already given its year): the latest year in which that day is not after that line's
+ * first day (`yearBefore`). It says so with `year_inferred`, and one with no such line after it stays without a date. (2) The anchors
+ * are the run of date lines, in journal order, whose first days (`firstDayOf`) never go back, with the most weight
+ * (`timeOrderAnchors`: a full date outweighs a month, and both a year alone or an inferred year); a date line outside it breaks
+ * the order, is taken as misread and dates nothing, and its quotes are dated as if it weren't there. (3) A quote dated
+ * by an anchor keeps that date, carried as in version 3; any other quote gets a range from the nearest anchor before it to the
+ * nearest anchor after it, however far apart they are and whatever pages between them were read, written as in version 3
+ * (`between`, `line`, `line_after`). A quote before the first anchor gets { from: null, to: the first anchor's to, line: null,
+ * line_after: its line }, and one after the last { from: the last anchor's from, to: null, line: its line, line_after: null }:
+ * a range open at that end, listed in `quote_months` under `QUOTE_OPEN_KEY`. Only a journal with no anchor leaves quotes
+ * undated. `stats.time_order` counts the yearless lines dated and not, the date lines taken as misread, the anchors, and the
+ * quotes with a date, a closed range, a range open at the start or at the end, and none.
+ *
  * `stats` counts all of it without content: the entry lines of each kind, the quotes left undated by
  * the carry limit, and the line openings that look like a date but weren't read as one.
  *
@@ -463,7 +535,7 @@ const EMPTY_EXTRACTION = (units) => ({
 export function buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId, mediaType, representations, unitOptions = {}, dateOptions = {},
   extractionFor = null, version = 2 }) {
   invariant(typeof caseId === "string" && typeof corpusId === "string" && typeof generation === "string", "QUOTE_GENERATION_IDENTITY_INVALID");
-  invariant(version === 2 || version === 3, "QUOTE_GENERATION_VERSION_INVALID");
+  invariant(version === 2 || version === 3 || version === 4, "QUOTE_GENERATION_VERSION_INVALID");
   invariant(typeof originalObjectId === "string" && originalObjectId.length > 0 && typeof mediaType === "string", "QUOTE_GENERATION_SOURCE_INVALID");
   invariant(Array.isArray(representations), "QUOTE_GENERATION_REPRESENTATIONS_INVALID");
   invariant(extractionFor === null || typeof extractionFor === "function", "QUOTE_GENERATION_EXTRACTION_INVALID");
@@ -473,11 +545,28 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   const { numericOrder, carryPages, carryQuotes, rangeMonthsMax } = quoteDateOptions(dateOptions);
   // Version 3 only: every quote in journal order with its page's place, the entry lines that gave a date, which pages were fully
   // read, and the order of the dates.
-  const timed = version === 3;
+  const timed = version >= 3;
+  // Version 4: dates by the journal's order (above).
+  const ordered = version >= 4;
   const journal = [], marks = [], readable = [];
+  // Version 4: the entry lines with a day and a month whose year couldn't be read (`no_year_known`), and what dates each quote:
+  // the date line or yearless line it is under, while the date is carried (`{ mark }` or `{ pending }`), else null.
+  const pending = [];
+  const carriers = new Map();
   const dateOrder = { steps: 0, backward: 0, largest_backward_days: 0 };
   let previousDay = null;
   const nodes = [], edges = [];
+  // Version 4: each page's quote graph, kept until the dates are known.
+  const pagesRead = [];
+  // A page's extraction in place of its empty one: the page's passages stay exactly its quotes.
+  const extractPage = ({ representation, units, adapt, graph, passageByUnit }) => {
+    const passages = (pageGraph) => pageGraph.nodes.filter((node) => node.kind === "passage").map((node) => node.id).sort();
+    const quotePassages = passages(graph);
+    const extractedGraph = adapt(extractionFor({ representation, units, quoteMeta, passageIdForUnit: (unitId) => passageByUnit.get(unitId) ?? null }));
+    const extracted = passages(extractedGraph);
+    invariant(extracted.length === quotePassages.length && extracted.every((id, index) => id === quotePassages[index]), "QUOTE_GENERATION_EXTRACTION_ADDS_PASSAGE");
+    return extractedGraph;
+  };
   const quoteMeta = new Map();
   // The date being carried: what it is, where its line is, where it began and how far it has gone.
   let current = null;
@@ -534,8 +623,16 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         else kinds.no_year_known += 1;
         // Every entry line ends the date before it; one that gives no date leaves its entry undated.
         current = null;
+        const lineEnd = unit.heading ? unit.end_byte : unit.start_byte + lineLength(unit.text);
+        const line = () => ({ representation_id: representationId, start_byte: unit.start_byte, end_byte: lineEnd,
+          sha256: sha256(textBytes.subarray(unit.start_byte, lineEnd)) });
+        if (ordered && !resolved.date && kind === "yearless") {
+          // Version 4: its year comes from the dated line after it, once every line is read (below).
+          pending.push({ at: journal.length - 1, month: unit.entry_line.month, day: unit.entry_line.day,
+            ambiguous: unit.entry_line.ambiguous === true, line: line() });
+          current = { pending: pending.length - 1, written: null, page, carried: 0, capped: false };
+        }
         if (resolved.date) {
-          const lineEnd = unit.heading ? unit.end_byte : unit.start_byte + lineLength(unit.text);
           current = {
             written: {
               from: resolved.date.from,
@@ -543,8 +640,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
               precision: resolved.date.precision,
               ambiguous: resolved.date.ambiguous === true,
               year_inferred: resolved.date.year_inferred === true,
-              line: { representation_id: representationId, start_byte: unit.start_byte, end_byte: lineEnd,
-                sha256: sha256(textBytes.subarray(unit.start_byte, lineEnd)) }
+              line: line()
             },
             page,
             carried: 0,
@@ -555,6 +651,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
           if (timed) {
             const day = firstDayOf(current.written);
             marks.push({ at: journal.length - 1, rep: readable.length - 1, day, written: current.written });
+            if (ordered) current.mark = marks.length - 1;
             if (previousDay !== null) {
               dateOrder.steps += 1;
               const back = dayNumber(previousDay) - dayNumber(day);
@@ -575,6 +672,7 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
       const written = current && !current.capped ? structuredClone(current.written) : null;
       if (current?.capped) carryCapped += 1;
       if (written) dated += 1;
+      if (ordered) carriers.set(passageId, current && !current.capped ? (current.pending !== undefined ? { pending: current.pending } : { mark: current.mark }) : null);
       quoteMeta.set(passageId, [{
         representation_id: representationId,
         start_byte: unit.start_byte,
@@ -584,23 +682,87 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         written
       }]);
     }
-    if (extractionFor) {
-      const passages = (pageGraph) => pageGraph.nodes.filter((node) => node.kind === "passage").map((node) => node.id).sort();
-      const quotePassages = passages(graph);
-      graph = adapt(extractionFor({ representation, units, quoteMeta, passageIdForUnit: (unitId) => passageByUnit.get(unitId) ?? null }));
-      const extracted = passages(graph);
-      invariant(extracted.length === quotePassages.length && extracted.every((id, index) => id === quotePassages[index]), "QUOTE_GENERATION_EXTRACTION_ADDS_PASSAGE");
+    // Version 4 dates a quote only once every page is read (below), so the extraction, which gives an episode its quote's
+    // date, runs then; earlier versions run it page by page, as they always have.
+    if (ordered) pagesRead.push({ representation, units, adapt, graph, passageByUnit });
+    else {
+      if (extractionFor) graph = extractPage({ representation, units, adapt, graph, passageByUnit });
+      nodes.push(...graph.nodes);
+      edges.push(...graph.edges);
     }
-    nodes.push(...graph.nodes);
-    edges.push(...graph.edges);
     if (!complete) { current = null; context = null; }
   }
   // Version 3: a range for each quote left undated between two dates that run forward (see above). The months a range covers are
   // listed for the quote below, and the widths are counted in calendar months, each range in the narrowest class it fits.
   const rangeMonths = new Map();
-  const widths = { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 0, ...(rangeMonthsMax > 12 ? { over_12_months: 0 } : {}) };
+  const widths = { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 0, ...(ordered || rangeMonthsMax > 12 ? { over_12_months: 0 } : {}) };
   let ranged = 0;
-  if (timed) {
+  // Version 4: the quotes whose range is open at one end, and the counts of the time order.
+  const openQuotes = new Set();
+  const timeOrder = { yearless_dated: 0, yearless_undated: 0, misread_lines: 0, anchors: 0, dated_quotes: 0, ranged_quotes: 0,
+    open_start_quotes: 0, open_end_quotes: 0, undated_quotes: 0 };
+  if (ordered) {
+    // (1) The dated lines that agree with the journal's order, so no year is taken from one read wrong.
+    const markLines = marks.map((mark, index) => ({ at: mark.at, mark: index, written: mark.written, day: mark.day }));
+    const agreeing = timeOrderAnchors(markLines);
+    // (2) The yearless lines, from the end of the journal back: each takes its year from the next line after it with a day.
+    const byPlace = [...markLines.filter((_, index) => agreeing.has(index)), ...pending.map((item, index) => ({ at: item.at, pending: index }))]
+      .sort((left, right) => left.at - right.at);
+    const yearsRead = new Map();
+    let following = null;
+    for (let index = byPlace.length - 1; index >= 0; index -= 1) {
+      const place = byPlace[index];
+      if (place.mark !== undefined) { following = place.day; continue; }
+      const item = pending[place.pending];
+      const value = following === null ? null : yearBefore(item, following);
+      if (value === null) { timeOrder.yearless_undated += 1; continue; }
+      yearsRead.set(place.pending, { from: value, to: value, precision: "day", ambiguous: item.ambiguous, year_inferred: true, line: item.line });
+      timeOrder.yearless_dated += 1;
+      following = value;
+    }
+    // (3) The anchors: those lines and the yearless ones now dated, kept when they agree with the journal's order.
+    const lines = byPlace.filter((place) => place.mark !== undefined || yearsRead.has(place.pending))
+      .map((place) => (place.mark !== undefined ? place : { ...place, written: yearsRead.get(place.pending), day: yearsRead.get(place.pending).from }));
+    const kept = timeOrderAnchors(lines);
+    const anchors = lines.filter((_, index) => kept.has(index));
+    timeOrder.anchors = anchors.length;
+    timeOrder.misread_lines = marks.length + yearsRead.size - anchors.length;
+    const keptMarks = new Set(anchors.filter((line) => line.mark !== undefined).map((line) => line.mark));
+    const keptPending = new Map(anchors.filter((line) => line.pending !== undefined).map((line) => [line.pending, line.written]));
+    // (4) Each quote's date: an anchor's while it is carried; else the range between the anchors around it.
+    let next = 0;
+    journal.forEach((passageId, at) => {
+      const [meta] = quoteMeta.get(passageId);
+      const carrier = carriers.get(passageId);
+      if (carrier?.mark !== undefined && !keptMarks.has(carrier.mark)) meta.written = null;
+      if (carrier?.pending !== undefined) meta.written = keptPending.has(carrier.pending) ? structuredClone(keptPending.get(carrier.pending)) : null;
+      while (next < anchors.length && anchors[next].at <= at) next += 1;
+      if (meta.written !== null) { timeOrder.dated_quotes += 1; return; }
+      const earlier = anchors[next - 1] ?? null, later = anchors[next] ?? null;
+      if (!earlier && !later) { timeOrder.undated_quotes += 1; return; }
+      const flag = (name) => (earlier?.written[name] === true || later?.written[name] === true);
+      meta.written = {
+        from: earlier ? earlier.written.from : null,
+        to: later ? later.written.to : null,
+        precision: "interval",
+        between: true,
+        ambiguous: flag("ambiguous"),
+        year_inferred: flag("year_inferred"),
+        line: earlier ? structuredClone(earlier.written.line) : null,
+        line_after: later ? structuredClone(later.written.line) : null
+      };
+      if (!earlier) { timeOrder.open_start_quotes += 1; openQuotes.add(passageId); return; }
+      if (!later) { timeOrder.open_end_quotes += 1; openQuotes.add(passageId); return; }
+      // From the earlier anchor's first month to the month the later one ends in, as in version 3.
+      const first = monthNumber(earlier.day), last = monthNumber(lastMonthOf(later.written));
+      rangeMonths.set(passageId, Array.from({ length: last - first + 1 }, (_, index) => monthKey(first + index)));
+      ranged += 1;
+      timeOrder.ranged_quotes += 1;
+      const width = last - first;
+      widths[width <= 1 ? "up_to_1_month" : width <= 3 ? "up_to_3_months" : width <= 12 ? "up_to_12_months" : "over_12_months"] += 1;
+    });
+    dated = timeOrder.dated_quotes;
+  } else if (timed) {
     // How many pages were not fully read among the first n pages.
     const unreadUpTo = [0];
     readable.forEach((ok, index) => unreadUpTo.push(unreadUpTo[index] + (ok ? 0 : 1)));
@@ -633,18 +795,26 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
       widths[width <= 1 ? "up_to_1_month" : width <= 3 ? "up_to_3_months" : width <= 12 ? "up_to_12_months" : "over_12_months"] += 1;
     });
   }
+  // Version 4: the pages' graphs, extracted now that every quote has its date.
+  for (const page of pagesRead) {
+    const graph = extractionFor ? extractPage(page) : page.graph;
+    nodes.push(...graph.nodes);
+    edges.push(...graph.edges);
+  }
   const byKey = ([left], [right]) => left.localeCompare(right);
   const sorted = new Map([...quoteMeta.entries()].sort(byKey));
   // Quotes by the period of the date they were written under, for time windows: its month, or its year
-  // for a year on its own; a ranged quote is under every month its range covers.
+  // for a year on its own; a ranged quote is under every month its range covers, and one whose range is open at one end
+  // (version 4) under `QUOTE_OPEN_KEY`.
   const periods = new Map();
   for (const [passageId, [meta]] of sorted) {
-    for (const key of rangeMonths.get(passageId) ?? [meta.written ? meta.written.from.slice(0, 7) : QUOTE_UNDATED_KEY]) {
+    const keys = openQuotes.has(passageId) ? [QUOTE_OPEN_KEY] : rangeMonths.get(passageId) ?? [meta.written ? meta.written.from.slice(0, 7) : QUOTE_UNDATED_KEY];
+    for (const key of keys) {
       if (!periods.has(key)) periods.set(key, []);
       periods.get(key).push(passageId);
     }
   }
-  const periodKeys = [...periods.keys()].filter((key) => key !== QUOTE_UNDATED_KEY).sort();
+  const periodKeys = [...periods.keys()].filter((key) => key !== QUOTE_UNDATED_KEY && key !== QUOTE_OPEN_KEY).sort();
   const quoteMonths = new Map([...periods.entries(), [QUOTE_MONTHS_KEY, periodKeys]].sort(byKey));
   const shapes = [...unread.shapes].sort(([left, a], [right, b]) => b - a || left.localeCompare(right))
     .slice(0, UNREAD_SHAPES_SHOWN).map(([shape, count]) => Object.freeze({ shape, count }));
@@ -663,7 +833,8 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
       carry_capped_quotes: carryCapped,
       unread_date_like: Object.freeze({ month_led: unread.month_led, weekday_led: unread.weekday_led, shapes: Object.freeze(shapes) }),
       numeric_date_order: numericOrder,
-      ...(timed ? { date_order: Object.freeze({ ...dateOrder }), ranged_quotes: ranged, range_widths: Object.freeze({ ...widths }) } : {})
+      ...(timed ? { date_order: Object.freeze({ ...dateOrder }), ranged_quotes: ranged, range_widths: Object.freeze({ ...widths }) } : {}),
+      ...(ordered ? { time_order: Object.freeze({ ...timeOrder }) } : {})
     })
   });
 }

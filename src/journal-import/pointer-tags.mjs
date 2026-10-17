@@ -355,14 +355,18 @@ const KNOWN_PRECISIONS = Object.freeze(["instant", "day", "month", "year", "inte
 // The date a quote was written under (`quote_meta`), as an episode's authored time, or the unknown time when it has
 // none. A known time must name its evidence for the graph to accept it: the quote it dates. A date whose year was taken
 // from the entries before it is `relative_supported`, not `explicit`, and so is a range a quote was given from the dates
-// around it (version 3 of the quote index, `between`): no date line above it gives it, so it is an interval between two.
+// around it (versions 3 and 4 of the quote index, `between`): no date line above it gives it, so it is an interval between
+// two. In version 4 such a range may be open at one end (a null `from` before the journal's first anchor, a null `to` after
+// its last), which the timeline reads as the unbounded past or future.
 function writtenTime(unitId, quoteMeta, passageIdForUnit) {
   const entries = quoteMeta.get(passageIdForUnit(unitId));
   const meta = Array.isArray(entries) ? entries[0] : undefined;
   invariant(isObject(meta) && (meta.written === null || isObject(meta.written)), "POINTER_QUOTE_META_MISSING");
   const { written } = meta;
   if (written === null) return unknownTime();
-  invariant(isText(written.from) && isText(written.to), "POINTER_QUOTE_META_INVALID");
+  const bound = (value) => value === null || isText(value);
+  invariant(bound(written.from) && bound(written.to) && (written.from !== null || written.to !== null)
+    && ((written.from !== null && written.to !== null) || written.between === true), "POINTER_QUOTE_META_INVALID");
   return {
     raw: null,
     from: written.from,
