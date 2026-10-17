@@ -1150,10 +1150,21 @@ test("version 4 gives a date with no year read before it the year of the dated l
   const gap = metaByText(build4([page("3 mars 2020\n\nUn.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"), page("20 mars\n\nDeux.", 3),
     page("1 avril 2020\n\nFin.", 4)]));
   assert.equal(gap.get("Deux.").written.from, "2020-03-20");
-  // With no dated line after it, it stays without a year, and its quotes take the range after the last date.
+  // With no dated line after it, it takes the earliest day not before the date before it.
   const none = build4([page("3 mars 2020\n\nUn.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"), page("20 mars\n\nDeux.", 3)]);
-  assert.equal(none.stats.time_order.yearless_undated, 1);
-  assert.deepEqual([metaByText(none).get("Deux.").written.from, metaByText(none).get("Deux.").written.to], ["2020-03-03", null]);
+  assert.deepEqual([none.stats.time_order.yearless_dated, none.stats.time_order.yearless_undated], [1, 0]);
+  assert.deepEqual([metaByText(none).get("Deux.").written.from, metaByText(none).get("Deux.").written.year_inferred], ["2020-03-20", true]);
+  // With no date line at all, it can't take a year, and nothing is dated.
+  const alone = build4([page("20 mars\n\nDeux.", 1), page("Encore.", 2)]);
+  assert.deepEqual([alone.stats.time_order.yearless_undated, alone.stats.time_order.undated_quotes], [1, 3]);
+  // A date without a year never takes its year from a line before it that breaks the order (Codex, P1): 1 January 2025
+  // between 1 and 10 March 2020 is taken as misread, and 5 March lies between the two March dates.
+  const misread = build4([page("1 mars 2020\n\nUn.", 1), page("1 janvier 2025\n\nDeux.", 2), page("5 mars\n\nTrois.", 3), page("10 mars 2020\n\nQuatre.", 4)]);
+  const read = metaByText(misread);
+  assert.equal(read.get("Trois.").written.from, "2020-03-05");
+  assert.equal(read.get("Quatre.").written.from, "2020-03-10", "the date after it stays an anchor");
+  assert.deepEqual([read.get("Deux.").written.from, read.get("Deux.").written.to], ["2020-03-01", "2020-03-05"], "the misread line's entry is ranged");
+  assert.deepEqual([misread.stats.time_order.anchors, misread.stats.time_order.misread_lines], [3, 1]);
   // A 29 February takes the latest leap year not after the next date.
   assert.equal(metaByText(build4([page("29 février\n\nUn.", 1), page("1 mars 2023\n\nFin.", 2)])).get("Un.").written.from, "2020-02-29");
   // Once dated, a yearless line is weighed with every date line, those that lost a tie among the full dates too: 31 December

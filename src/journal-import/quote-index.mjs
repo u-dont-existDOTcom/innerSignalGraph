@@ -264,17 +264,30 @@ const dayNumber = (day) => Math.round(Date.parse(`${day}T00:00:00Z`) / 86_400_00
 // The calendar month of a day (YYYY-MM-DD) or a month (YYYY-MM), counted from year 0: months between two are the difference of these.
 const monthNumber = (day) => Number(day.slice(0, 4)) * 12 + Number(day.slice(5, 7)) - 1;
 
-// Version 4: the year of a date written with a day and a month only, from the first day of the next dated line after it
-// (`following`, YYYY-MM-DD): the latest year in which that day exists and is not after `following`, at most eight years
-// back (a 29 February needs a leap year); null when there is none.
-function yearBefore({ month, day }, following) {
-  const year = Number(following.slice(0, 4));
-  for (let candidate = year; candidate >= year - 8; candidate -= 1) {
-    if (!realDay(candidate, month, day)) continue;
-    const value = `${String(candidate).padStart(4, "0")}-${pad(month)}-${pad(day)}`;
-    if (value <= following) return value;
+// Version 4: the date a line with a day and a month only stands for, from the days of the lines around it that agree with the
+// journal's order (YYYY-MM-DD, null when there is none): the earliest such day not before `previous` (the line before it, as a
+// date takes its year from the entries before it), if it is not after `next`; else the latest not after `next`, which the
+// weighing of the order then settles against `previous`. Years are tried up to eight from the line's (a 29 February needs a
+// leap year); null when none fits.
+function yearBetween({ month, day }, previous, next) {
+  const dateIn = (year) => (realDay(year, month, day) ? `${String(year).padStart(4, "0")}-${pad(month)}-${pad(day)}` : null);
+  let forward = null, backward = null;
+  if (previous !== null) {
+    const year = Number(previous.slice(0, 4));
+    for (let candidate = year; candidate <= year + 8 && forward === null; candidate += 1) {
+      const value = dateIn(candidate);
+      if (value !== null && value >= previous) forward = value;
+    }
   }
-  return null;
+  if (next !== null) {
+    const year = Number(next.slice(0, 4));
+    for (let candidate = year; candidate >= year - 8 && backward === null; candidate -= 1) {
+      const value = dateIn(candidate);
+      if (value !== null && value <= next) backward = value;
+    }
+  }
+  if (forward !== null && (next === null || forward <= next)) return forward;
+  return backward;
 }
 
 // Version 4: which dated lines, in journal order, agree with the journal's order: the run of lines whose first days never go
@@ -503,20 +516,21 @@ const EMPTY_EXTRACTION = (units) => ({
  * from the earlier date's first to the later date's last, and `stats` counts the ranged quotes and their widths in months.
  *
  * Version 4 reads the dates by the journal's order (the owner: it "was written in time order"), after the first pass reads the
- * lines as version 3 does. (1) An entry line with a day and a month but no year that comes before any year was read, or after
- * a page not fully read (`no_year_known`), takes its year from the next line after it with a day that agrees with the journal's
- * order (a date line, or a yearless line already given its year): the latest year in which that day is not after that line's
- * first day (`yearBefore`). It says so with `year_inferred`, and one with no such line after it stays without a date. (2) The anchors
- * are the run of date lines, in journal order, whose first days (`firstDayOf`) never go back, with the most weight
- * (`timeOrderAnchors`: a full date outweighs a month, and both a year alone or an inferred year); a date line outside it breaks
- * the order, is taken as misread and dates nothing, and its quotes are dated as if it weren't there. (3) A quote dated
- * by an anchor keeps that date, carried as in version 3; any other quote gets a range from the nearest anchor before it to the
- * nearest anchor after it, however far apart they are and whatever pages between them were read, written as in version 3
- * (`between`, `line`, `line_after`). A quote before the first anchor gets { from: null, to: the first anchor's to, line: null,
- * line_after: its line }, and one after the last { from: the last anchor's from, to: null, line: its line, line_after: null }:
- * a range open at that end, listed in `quote_months` under `QUOTE_OPEN_KEY`. Only a journal with no anchor leaves quotes
- * undated. `stats.time_order` counts the yearless lines dated and not, the date lines taken as misread, the anchors, and the
- * quotes with a date, a closed range, a range open at the start or at the end, and none.
+ * lines as version 3 does. (1) The anchors are the run of date lines, in journal order, whose first days (`firstDayOf`) never
+ * go back, with the most weight (`timeOrderAnchors`: a full date outweighs a month, and both a year alone or an inferred
+ * year); a date line outside it breaks the order, is taken as misread and dates nothing, and its quotes are dated as if it
+ * weren't there. (2) Every entry line with a day and a month but no year takes its year from the lines around it that agree
+ * with that order, never from a line before it that may be misread (`yearBetween`): the earliest day not before the last
+ * such line (or yearless line already dated) before it, if not after the next one, else the latest not after the next. It
+ * says so with `year_inferred`, weighs as an inferred year, and the anchors are weighed again with it, until the date lines
+ * kept stay the same. (3) A quote dated by an anchor keeps that date, carried as in version 3; any other quote gets a range
+ * from the nearest anchor before it to the nearest anchor after it, however far apart they are and whatever pages between
+ * them were read, written as in version 3 (`between`, `line`, `line_after`). A quote before the first anchor gets { from:
+ * null, to: the first anchor's to, line: null, line_after: its line }, and one after the last { from: the last anchor's
+ * from, to: null, line: its line, line_after: null }: a range open at that end, listed in `quote_months` under
+ * `QUOTE_OPEN_KEY`. Only a journal with no anchor leaves quotes undated. In version 4 `date_lines` and `date_order` count
+ * the date lines only, not the yearless ones; `stats.time_order` counts the yearless lines dated and not, the lines taken as
+ * misread, the anchors, and the quotes with a date, a closed range, a range open at the start or at the end, and none.
  *
  * `stats` counts all of it without content: the entry lines of each kind, the quotes left undated by
  * the carry limit, and the line openings that look like a date but weren't read as one.
@@ -626,13 +640,13 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
         const lineEnd = unit.heading ? unit.end_byte : unit.start_byte + lineLength(unit.text);
         const line = () => ({ representation_id: representationId, start_byte: unit.start_byte, end_byte: lineEnd,
           sha256: sha256(textBytes.subarray(unit.start_byte, lineEnd)) });
-        if (ordered && !resolved.date && kind === "yearless") {
-          // Version 4: its year comes from the dated line after it, once every line is read (below).
+        if (ordered && kind === "yearless") {
+          // Version 4: every date without a year gets its year once every line is read, from the lines around it that agree
+          // with the journal's order (below), never from a line before it that may be misread.
           pending.push({ at: journal.length - 1, month: unit.entry_line.month, day: unit.entry_line.day,
             ambiguous: unit.entry_line.ambiguous === true, line: line() });
           current = { pending: pending.length - 1, written: null, page, carried: 0, capped: false };
-        }
-        if (resolved.date) {
+        } else if (resolved.date) {
           current = {
             written: {
               from: resolved.date.from,
@@ -702,30 +716,42 @@ export function buildQuoteGeneration({ caseId, corpusId, generation, originalObj
   const timeOrder = { yearless_dated: 0, yearless_undated: 0, misread_lines: 0, anchors: 0, dated_quotes: 0, ranged_quotes: 0,
     open_start_quotes: 0, open_end_quotes: 0, undated_quotes: 0 };
   if (ordered) {
-    // (1) The dated lines that agree with the journal's order, so no year is taken from one read wrong (for the years only:
-    // every dated line is weighed again with them in (3)).
+    // (1) The date lines (not the yearless ones) that agree with the journal's order.
     const markLines = marks.map((mark, index) => ({ at: mark.at, mark: index, written: mark.written, day: mark.day }));
-    const agreeing = timeOrderAnchors(markLines);
-    // (2) The yearless lines, from the end of the journal back: each takes its year from the next line after it with a day.
-    const byPlace = [...markLines.filter((_, index) => agreeing.has(index)), ...pending.map((item, index) => ({ at: item.at, pending: index }))]
-      .sort((left, right) => left.at - right.at);
-    const yearsRead = new Map();
-    let following = null;
-    for (let index = byPlace.length - 1; index >= 0; index -= 1) {
-      const place = byPlace[index];
-      if (place.mark !== undefined) { following = place.day; continue; }
-      const item = pending[place.pending];
-      const value = following === null ? null : yearBefore(item, following);
-      if (value === null) { timeOrder.yearless_undated += 1; continue; }
-      yearsRead.set(place.pending, { from: value, to: value, precision: "day", ambiguous: item.ambiguous, year_inferred: true, line: item.line });
-      timeOrder.yearless_dated += 1;
-      following = value;
+    let agreeing = timeOrderAnchors(markLines);
+    // (2) The yearless lines, in journal order: each between the last agreeing line or yearless line dated before it and the
+    // next agreeing line after it (`yearBetween`).
+    const readYears = (agree) => {
+      const read = new Map();
+      const explicit = markLines.filter((line) => agree.has(line.mark));
+      let previous = null, after = 0;
+      const places = [...explicit.map((line) => ({ at: line.at, day: line.day })), ...pending.map((item, index) => ({ at: item.at, pending: index }))]
+        .sort((left, right) => left.at - right.at);
+      for (const place of places) {
+        if (place.pending === undefined) { previous = place.day; continue; }
+        while (after < explicit.length && explicit[after].at < place.at) after += 1;
+        const item = pending[place.pending];
+        const value = yearBetween(item, previous, explicit[after]?.day ?? null);
+        if (value === null) continue;
+        read.set(place.pending, { from: value, to: value, precision: "day", ambiguous: item.ambiguous, year_inferred: true, line: item.line });
+        previous = value;
+      }
+      return read;
+    };
+    // (3) The anchors: every date line and every yearless line now dated, weighed together. A dated yearless line can change
+    // which date lines agree, and so the years of the others: they are read again until the date lines kept stay the same.
+    let yearsRead, lines, kept;
+    for (let round = 0; round < 4; round += 1) {
+      yearsRead = readYears(agreeing);
+      lines = [...markLines, ...[...yearsRead].map(([index, written]) => ({ at: pending[index].at, pending: index, written, day: written.from }))]
+        .sort((left, right) => left.at - right.at);
+      kept = timeOrderAnchors(lines);
+      const keptLines = new Set(lines.filter((line, index) => kept.has(index) && line.mark !== undefined).map((line) => line.mark));
+      if (keptLines.size === agreeing.size && [...keptLines].every((mark) => agreeing.has(mark))) break;
+      agreeing = keptLines;
     }
-    // (3) The anchors: every dated line, those set aside in (1) too, and the yearless ones now dated, kept when they agree with
-    // the journal's order. A dated yearless line can change which run weighs most, so every line is weighed again.
-    const lines = [...markLines, ...[...yearsRead].map(([index, written]) => ({ at: pending[index].at, pending: index, written, day: written.from }))]
-      .sort((left, right) => left.at - right.at);
-    const kept = timeOrderAnchors(lines);
+    timeOrder.yearless_dated = yearsRead.size;
+    timeOrder.yearless_undated = pending.length - yearsRead.size;
     const anchors = lines.filter((_, index) => kept.has(index));
     timeOrder.anchors = anchors.length;
     timeOrder.misread_lines = marks.length + yearsRead.size - anchors.length;
