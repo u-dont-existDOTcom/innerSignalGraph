@@ -146,6 +146,10 @@ export function loadProtocolApplicationCalibration(cases, file = PROTOCOL_APPLIC
     for (const [id, verdict] of expected) {
       if (!spec.grading.criteria.includes(id) || !["pass", "fail"].includes(verdict)) throw new ValidationError(`${name}.expect.${id} is invalid.`);
     }
+    // Every rule the case grades has its expected verdict: a judge that misgrades a rule the reply wasn't written to test
+    // is as wrong as one that misgrades the rule it was (Codex on #175).
+    const unlabelled = spec.grading.criteria.filter((id) => !Object.hasOwn(entry.expect, id));
+    if (unlabelled.length) throw new ValidationError(`${name}.expect has no verdict for ${unlabelled.join(", ")}.`);
   });
   if (new Set(entries.map((entry) => entry.id)).size !== entries.length) throw new ValidationError("Calibration ids must be unique.");
   return Object.freeze(entries.map((entry) => Object.freeze(entry)));
@@ -570,7 +574,7 @@ export function calibrationGaps(graded, calibration) {
 }
 
 /**
- * Grades the replies whose grades are known. A judge that misgrades any of them can't be trusted with this run. `cases` are
+ * Grades the replies whose grades are known, on every rule. A judge that misgrades any of them can't be trusted with this run. `cases` are
  * the cases the known replies belong to, `graded` the cases the run will grade (by default the same): every rule those grade
  * needs a known passing and a known failing reply, or the judge is not trusted and nothing is asked of it.
  */

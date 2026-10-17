@@ -34,7 +34,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const cases = loadProtocolApplicationCases();
 const calibration = loadProtocolApplicationCalibration(cases);
 const caseById = new Map(cases.map((spec) => [spec.id, spec]));
-const expectedFor = (entry) => Object.fromEntries(caseById.get(entry.case_id).grading.criteria.map((id) => [id, entry.expect[id] ?? "pass"]));
+const expectedFor = (entry) => ({ ...entry.expect });
 const goodReply = (caseId) => calibration.find((entry) => entry.case_id === caseId && Object.values(entry.expect).every((verdict) => verdict === "pass")).text;
 const replyIn = (user) => user.slice(user.indexOf("<<<REPLY\n") + 9, user.indexOf("\nREPLY>>>"));
 
@@ -215,6 +215,25 @@ test("the judge is checked first on the known replies, and a judge that passes e
   assert.ok(lenient.results.find((result) => result.id === "ines-alongside").mismatches.includes("protective_acts_are_reparenting"), "the subtle 'alongside' split is a known failing reply");
 });
 
+test("the judge is checked on every rule of every known reply, not only the rule the reply was written to test", async (t) => {
+  // Codex on #175 (P2): daniel-on-hold was labelled only for the split it shows, so a judge that also failed
+  // services_stay_separate there, wrongly, still counted as agreeing, and could then fail good replies on that rule.
+  for (const entry of calibration) assert.deepEqual(Object.keys(entry.expect).sort(), [...caseById.get(entry.case_id).grading.criteria].sort(), entry.id);
+  const onHold = calibration.find((entry) => entry.id === "daniel-on-hold");
+  const overStrict = oracleJudge({ verdictsFor: (reply) => (reply === onHold.text ? { protective_acts_are_reparenting: "fail", services_stay_separate: "fail" } : null) });
+  const checked = await runJudgeCalibration({ judge: overStrict, cases, calibration });
+  assert.deepEqual([checked.trusted, checked.agreed], [false, calibration.length - 1]);
+  assert.deepEqual(checked.results.find((result) => result.id === onHold.id).mismatches, ["services_stay_separate"]);
+
+  // A known reply without a verdict for every rule its case grades is refused before any model is asked.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "protocol-application-labels-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const partial = path.join(dir, "calibration.json");
+  fs.writeFileSync(partial, JSON.stringify(calibration.map((entry) => (entry.id === onHold.id ? { ...entry, expect: { protective_acts_are_reparenting: "fail" } } : entry))));
+  const index = calibration.indexOf(onHold);
+  assert.throws(() => loadProtocolApplicationCalibration(cases, partial), new RegExp(`protocolApplicationCalibration\\[${index}\\]\\.expect has no verdict for services_stay_separate\\.`, "u"));
+});
+
 test("a run passes only when every reply passes every rule, and one failing reply fails its case", async () => {
   const source = await connectorSource();
   const answerer = fakeAnswerer((caseId) => goodReply(caseId));
@@ -237,7 +256,7 @@ test("a run passes only when every reply passes every rule, and one failing repl
   const ines = mixed.cases.find((result) => result.id === "journal-review-protective-acts");
   assert.equal(ines.outcome, "fail");
   assert.deepEqual(ines.samples.map((record) => record.outcome), ["pass", "fail", "pass"]);
-  assert.deepEqual(ines.samples[1].failed, ["protective_acts_are_reparenting", "tags_are_not_findings"]);
+  assert.deepEqual(ines.samples[1].failed, ["protective_acts_are_reparenting", "tags_are_not_findings", "says_what_changes"]);
   assert.deepEqual(ines.by_rule.protective_acts_are_reparenting, { passed: 2, graded: 3 });
   assert.ok(ines.samples[1].signals.some((signal) => signal.id === "separate_track"));
   assert.ok(mixed.cases.filter((result) => result.id !== ines.id).every((result) => result.outcome === "pass"));
