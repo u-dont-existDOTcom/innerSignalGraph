@@ -111,7 +111,7 @@ const CASES = [
     rules: [
       "not a separate goal that reparenting might optionally support",
       "here they are aspects of the same work",
-      "concrete help from other people, specialist care for physical pain",
+      "concrete help from other people, safety services such as police, shelters or legal protection, specialist care for physical pain, and medical or crisis care",
       "- REPARENTING_FALSE_CHOICE: ",
       "say what remains unknown"
     ]
@@ -124,7 +124,8 @@ const CASES = [
       "or against everyday protection and practical safety, as if one were the goal and the other an optional adjunct or a separate track",
       "A protective act the person takes for the vulnerable self in daily life, such as keeping a boundary, leaving or avoiding a harmful situation, resting or arranging practical safety, is reparenting when the person uses or welcomes that frame, not a separate therapy.",
       "they are not reparenting exercises, reparenting does not replace them, and arranging them can belong to the same care without being called an exercise",
-      "or everyday protective action and practical safety are set against it as a separate track"
+      "or everyday protective action and practical safety are set against it as a separate track",
+      "Neither is putting an urgent safety need first, or pausing a particular exercise or practice for safety or tolerance."
     ]
   }
 ];
@@ -188,7 +189,7 @@ test("the served MCP route delivers the correction and keeps the safeguards", as
   const instructions = block("instructions");
   assert.match(instructions, /Reparenting is not an exercise\. It is the ongoing relationship in which the present-day adult cares for, validates, protects and guides the vulnerable younger self/);
   assert.match(instructions, /not a goal that reparenting optionally supports, including when you advise a supervisor/);
-  assert.match(instructions, /Everyday protection and practical safety the person takes for that younger self belong to the same work when the person welcomes that frame; outside medical, crisis and practical services stay separately available\./);
+  assert.match(instructions, /Everyday protection and practical safety the person takes for that younger self belong to the same work when the person welcomes that frame; outside medical, crisis, safety and practical services stay separately available\./);
   assert.ok(block("references/PROTOCOL-STATE-PROVENANCE.md").includes(protocolProvenanceRules));
   const map = block("references/INNER-CHILD-THERAPY-MAP.md");
   assert.match(map, /OVERLAY\.IC\.PROTOCOL_STATE_PROVENANCE<br\/>OWNER-APPROVED \/ NOT COMPILED<br\/>Hypothetical care is not an enacted exercise/);

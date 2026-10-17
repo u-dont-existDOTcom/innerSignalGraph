@@ -19,7 +19,7 @@ The packaged skill (`plugins/inner-signal-therapy/skills/inner-signal-therapy/`)
 2. Merge, then redeploy the hosted MCP image through the normal release path, keeping the prior image for rollback.
 3. Confirm the change is live: `GET /health` reports `therapyProtocol.version` and `therapyProtocol.protocolSha256`, and `get_therapy_protocol_manifest` returns the same hash.
 
-The connector process writes one JSON line per tool call to stderr (`docker logs` on the hosted image): the tool's name (an advertised one, or `unknown`), whether it answered or its error code, the time it took and the response size. It never records arguments, case references or content, so it can show whether a conversation loaded the protocol without showing what it read.
+The connector process writes one JSON line per tool call to stderr (`docker logs` on the hosted image): the tool's name (an advertised one, or `unknown`), whether the call carried a bearer token, whether it answered or its error code, the time it took and the response's size class (the next power of two). It never records arguments, case references or content. It doesn't say which conversation made a call; every host shares the connector, and the protocol tools need no sign-in, so a conversation's calls are found by their times. A broken stderr loses trace lines, never the connector.
 
 The version comes from the plugin manifest; the hash changes with any content change, so it is the identity to record. `load_therapy_protocol` asks the host to record `version` and `protocol_sha256` with any continuity handoff.
 

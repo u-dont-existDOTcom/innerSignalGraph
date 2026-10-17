@@ -352,8 +352,18 @@ export function caseTherapyRules(protocol) {
   };
 }
 
+// The smallest power of two at least `bytes`: enough to see a result's scale or a truncation, not to tell cases apart.
+const sizeClass = (bytes) => 2 ** Math.ceil(Math.log2(Math.max(1, bytes)));
+
 // Error codes are fixed identifiers; anything else is traced as OTHER, so no text can reach the trace through a code.
 const traceCode = (code) => code === null ? null : typeof code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : "OTHER";
+
+// The rules go first in an opened case's result, so a host that shortens a long result keeps them; a field of the same
+// name in the case's own data never stands in for them.
+function withCaseRules(value, protocol) {
+  const { therapy_rules: _ignored, ...rest } = value ?? {};
+  return { therapy_rules: caseTherapyRules(protocol), ...rest };
+}
 
 function loadProtocolOrNull() {
   try { return loadTherapyProtocol(); }
@@ -579,8 +589,10 @@ async function callTool(service, name, args, authContext, journalApi = null) {
 }
 
 // `callLog`, when given, receives one content-free record per tool call: the tool's name (an advertised one, else "unknown"),
-// whether it answered, its safe error code, the time it took and the response's size. Never its arguments, a case reference
-// or any content, so the trace shows which tools a session used without showing what it read.
+// whether the call carried a bearer token, whether it answered, its safe error code, the time it took and the response's size
+// class (the next power of two, so a case's exact size can't be followed across lines). Never its arguments, a case
+// reference or any content: the trace shows which tools were called and when, not what was read. A sink that throws or
+// rejects never affects a call.
 export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, callLog = null } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function" || typeof caseAccessService.loadCaseContextByAlias !== "function") throw new TypeError("caseAccessService with exact-ID and alias continuity is required.");
   if (journalWork !== null && (typeof journalWork?.call !== "function" || !(journalWork.names instanceof Set))) {
@@ -639,8 +651,10 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
     const bytes = send(res, answer.status, answer.payload, answer.headers);
     if (callLog) {
       try {
-        callLog({ event: "tool_call", at: new Date().toISOString(), tool: toolNames.has(name) ? name : "unknown", ok: answer.code === null,
-          code: traceCode(answer.code), ms: Math.round(performance.now() - started), bytes });
+        const traced = callLog({ event: "tool_call", at: new Date().toISOString(), tool: toolNames.has(name) ? name : "unknown",
+          bearer: bearerToken(req) !== null, ok: answer.code === null, code: traceCode(answer.code), ms: Math.round(performance.now() - started),
+          bytes_at_most: sizeClass(bytes) });
+        if (typeof traced?.then === "function") traced.then(undefined, () => {});
       } catch { /* the trace never breaks a call */ }
     }
   });
@@ -665,7 +679,7 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
           : reply(200, success(request.id, toolResult(outcome.value)));
       }
       const value = await callTool(caseAccessService, name, args, { bearerToken: token }, journalApi);
-      return reply(200, success(request.id, toolResult(CASE_OPENING_TOOLS.has(name) ? { ...value, therapy_rules: caseTherapyRules(protocol) } : value)));
+      return reply(200, success(request.id, toolResult(CASE_OPENING_TOOLS.has(name) ? withCaseRules(value, protocol) : value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
         if (await deniedForSignedInAccount(caseAccessService, token, name, journalWork)) {

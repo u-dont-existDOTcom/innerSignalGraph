@@ -21,7 +21,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: ace8b0fb16db52bfa349fe3b33ff2ad72ae8d6ef9ff45838e7900f921378a5b9
 base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: bfbdb939c3f6d3a064da8fa7ae8e72f39da04c59070a3c703e63f917a9eb63c9
+projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
 ---
 
 # Give a difficult memory compassionate story punctuation

@@ -13,12 +13,12 @@ export const repeatedAdviceRule = "- Before repeating advice, a therapeutic fram
 
 export const knownVersusNewRules = [
   "- Before presenting a pattern, insight or recommendation as new in a review across sessions, case records or journal material, check it against the established record: the case's facts and hypotheses, settled answers, intervention history, current episode and any plan the record holds. Say which it is: already established (and where), a new example of an established point, a contradiction of one, a new actionable lever, or a change to what should come first. An established theme is not new because it appears in a new source or format, such as an imported journal.",
-  "- Report what changes the next step or the order of priorities. More examples of a known problem do not make it newer; mention them only when their number, timing or context changes a decision, and say so when nothing changes.",
+  "- In such a review, report what changes the next step or the order of priorities. More examples of a known problem do not make it newer; mention them only when their number, timing or context changes a decision, and say so when nothing changes. This is for reviews: in an ordinary turn, a person who wants to be heard about a familiar difficulty gets listening first, not a verdict that nothing has changed.",
   "- An imported journal's tags, summaries and other model-made labels are search aids, not diagnoses, findings or approved goals. A priority keeps its source: what the client chose, what an authorized person decided, or what a model only proposed. Never present a model's proposal as the client's choice or a decided plan. A safety need or a withdrawn consent can override the ordinary order at any time."
 ].join("\n");
 
 export const knownVersusNewAuditRules = `LONGITUDINAL SYNTHESIS AUDIT FAILURES
-- KNOWN_PRESENTED_AS_NEW: an established point, or a new example of one, is presented as a new idea, finding or direction; or a review of new material across sessions or a journal does not say whether it changes the next step or the order of priorities.`;
+- KNOWN_PRESENTED_AS_NEW: in a review across sessions, case records or journal material, an established point, or a new example of one, is presented as a new idea, finding or direction; or the review does not say whether its new material changes the next step or the order of priorities. Listening to a familiar difficulty in an ordinary turn is not this failure.`;
 
 export const longitudinalSynthesisRules = `
 LONGITUDINAL SYNTHESIS

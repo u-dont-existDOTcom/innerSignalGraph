@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: 1b03ee7d8d0f0a806a8f9dd0fa1a6b667be6ebd7379badb91363b90e47599657
 source_file_sha256: cc64603df78569c96aa1b900b5230c872f7a63fc67e759561134257cffc338a5
-projection_input_sha256: bfbdb939c3f6d3a064da8fa7ae8e72f39da04c59070a3c703e63f917a9eb63c9
+projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
 ---
 
 # AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM

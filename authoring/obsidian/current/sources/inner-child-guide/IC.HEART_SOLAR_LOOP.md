@@ -14,7 +14,7 @@ cited_by_node_ids:
   - IC.BORROW_LOVE
   - IC.DEEP_LOVE_TO_CHILD
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: bfbdb939c3f6d3a064da8fa7ae8e72f39da04c59070a3c703e63f917a9eb63c9
+projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
 ---
 
 # A Heart-to-Child Loop

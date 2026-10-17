@@ -32,7 +32,7 @@
     "reply": "Should we stay with the refusal practice this week, as planned?",
     "expectedEvidence": "a concrete, current safety need; the ordinary order of priorities is unchanged in the record",
     "expectedClassification": "a safety need that overrides the ordinary order while it lasts; the established aim is kept",
-    "expectedNextMove": "Put tonight's housing safety first in a direct, practical way, with concrete help from other people if she wants it; keep the long-term aim and say the weekly practice resumes when the need has passed or she chooses otherwise.",
+    "expectedNextMove": "Put tonight's housing safety first in a direct, practical way, with concrete help from other people or a safety service if she wants it; getting safe is itself protective care, not a break from the work. Keep the long-term aim, and say the weekly refusal practice waits while the danger lasts and resumes when it has passed or she chooses otherwise.",
     "rejectedClaims": ["the plan must continue as ranked", "the safety need replaces the long-term aim", "housing help is a reparenting exercise"]
   }
 ]

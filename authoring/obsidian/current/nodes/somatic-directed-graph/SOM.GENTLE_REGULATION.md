@@ -103,7 +103,7 @@ regression_refs:
   - G140
 base_record_sha256: 3d196d52c0dce8edef13b2006d5ce50103396b946f775778eed6e8eb8e233d77
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: bfbdb939c3f6d3a064da8fa7ae8e72f39da04c59070a3c703e63f917a9eb63c9
+projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
 ---
 
 # Gentle regulation and embodiment

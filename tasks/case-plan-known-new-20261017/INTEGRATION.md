@@ -43,19 +43,24 @@ loaded the therapy protocol cannot be seen either: the connector kept no record 
 2. **Reparenting wording.** The rule in "Reparenting and exercises" (`src/prompts/protocol-provenance.mjs` and its served
    mirror): a protective act the person takes for the vulnerable self in daily life, such as keeping a boundary, leaving
    or avoiding a harmful situation, resting or arranging practical safety, is reparenting when the person uses or
-   welcomes that frame, not a separate therapy; independent services (concrete help from other people, specialist pain
-   care, medical or crisis care) stay separately available and distinct, are not reparenting exercises, and are not
-   replaced by it. `REPARENTING_FALSE_CHOICE` also names setting everyday protective action and practical safety
-   against reparenting as a separate track. The served `SKILL.md` adds one sentence; the map overlay's description
+   welcomes that frame, not a separate therapy; independent services (concrete help from other people, safety services
+   such as police, shelters or legal protection, specialist pain care, medical or crisis care) stay separately available
+   and distinct, are not reparenting exercises, and are not replaced by it. `REPARENTING_FALSE_CHOICE` also names setting
+   everyday protective action and practical safety against reparenting as a separate track, and says that putting an
+   urgent safety need first, or pausing a particular exercise or practice for safety or tolerance, is not that failure. The served `SKILL.md` adds one sentence; the map overlay's description
    (authoring projection only; the served map's diagram is unchanged) names the clarification and its amendment.
 3. **The rules travel with the case.** `load_handoff`, `load_case_context` and `load_case_context_by_alias` results carry
    `therapy_rules`: the protocol's identity (id, version, hash), the two served references above byte for byte with
    their hashes, and a note to call `load_therapy_protocol` for the complete rules before advising. Without a protocol
-   the field says the rules are unavailable and not to improvise them; the case still loads. Other tools are unchanged.
+   the field says the rules are unavailable and not to improvise them; the case still loads. The rules come first in the
+   result, so a host that shortens a long result keeps them, and a field of that name in the case's own data never
+   stands in for them. Other tools are unchanged.
 4. **A content-free trace.** `createPrivateCaseMcpServer` takes an optional `callLog`; the connector process passes one
    that writes a JSON line per tool call to stderr (stdout keeps only the ready line): `event`, `at`, `tool` (an
-   advertised name, else `unknown`), `ok`, `code` (a fixed identifier, else `OTHER`), `ms`, `bytes`. Never arguments,
-   case references or content. A failing trace never breaks a call.
+   advertised name, else `unknown`), `bearer` (whether the call carried a token), `ok`, `code` (a fixed identifier, else
+   `OTHER`), `ms`, `bytes_at_most` (the next power of two, so a case's exact size can't be followed across lines). Never
+   arguments, case references or content. A sink that throws or rejects, or a broken stderr, never breaks a call. The
+   trace doesn't name the conversation: a conversation's calls are found by their times.
 5. **Owner amendments r13:** `AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017` and
    `AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017`, the owner's words from #172. Graph bundle, source maps, authoring
    projection and map regenerated (65 amendments).
@@ -81,8 +86,10 @@ loaded the therapy protocol cannot be seen either: the connector kept no record 
   separate track; `tests/reparenting-framing.test.mjs` checks its rules in eight prompts and the served instructions.
 - `tests/therapy-protocol-mcp.test.mjs`: the three opening tools carry the two references byte for byte with the
   protocol's identity, in the structured result and the text; no protocol, no rules, the case still loads; the trace's
-  fields, outcomes and codes (`unknown` for an unadvertised name, `OTHER` for a code that isn't an identifier), its byte
-  count, and the absence of every argument, case reference and content; a failing trace and a non-function trace.
+  fields, outcomes and codes (`unknown` for an unadvertised name, `OTHER` for a code that isn't an identifier, a missing
+  protocol), bearer presence, the size class, the absence of every argument, case reference, content and exact size; a
+  refused opening without rules; the rules first and a stand-in field ignored; a thrown and a rejected trace, each
+  followed by a second call; a non-function trace.
 - `tests/private-case-continuity.test.mjs`: the real connector process (CLI) returns the rules with a handoff and an
   alias, and its stderr trace lists the session's calls with no case ID, handoff ID, token, alias or content.
 - Pinned counts and version updated in `tests/guide-graph.test.mjs`, `tests/authoring-projection.test.mjs` and
@@ -93,8 +100,8 @@ These check delivery, not model adherence; no live model was called.
 ## Served route
 
 This branch serves protocol 0.2.1 with `protocol_sha256`
-`7f26685baad7ea2273a3a59a858b36cc31e3d9f54da0ba3fd30932539f976b6d` (live: `23ee74b8…`): the instructions, the provenance
-reference, the new longitudinal reference and the map's projection line change; the protocol grows from 52,135 to 56,451
+`ae335dfd1ac78138fbd7151efed1d0b0158aa821252d016b4c9e69c3ff770ef5` (live: `23ee74b8…`): the instructions, the provenance
+reference, the new longitudinal reference and the map's projection line change; the protocol grows from 52,135 to 56,941
 bytes in 8 files. After a merge and the owner's `deploy`, the rebuilt connector should report that hash (or a later one if
 `main` changes the plugin first) and its `docker logs` should show one trace line per tool call.
 
@@ -102,7 +109,7 @@ bytes in 8 files. After a merge and the owner's `deploy`, the rebuilt connector 
 
 - Each case opening carries about 12 KB more (the two references), sent twice like every tool result (as text and as
   structured content). Recommended: keep it; it is what makes the rules reach a chat that never loads the protocol.
-- The trace records which tools a conversation called and when, without content. It answers question 40 for the next
-  conversation that goes wrong; it can't answer it for the one in #172.
+- The trace records which tools were called and when, without content. The next time a conversation goes wrong, its
+  calls can be found by their times, which shows whether it loaded the rules; it can't answer question 40 for #172.
 - Change B (the plan in the record) is a second pull request; it changes no client's priorities either: a model can
   only propose, and its proposals stay labeled as proposals.

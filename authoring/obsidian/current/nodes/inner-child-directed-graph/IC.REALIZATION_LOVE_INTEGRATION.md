@@ -31,7 +31,7 @@ regression_refs:
   - G122
 base_record_sha256: 4a6ebab1d11bea936955c2401b1f603663c66ffd308c67df9e5180e48b7c0e51
 base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: bfbdb939c3f6d3a064da8fa7ae8e72f39da04c59070a3c703e63f917a9eb63c9
+projection_input_sha256: 626b6dda7cb0ae3a342ab4697cfcbf923b52f9beea266126c5b0411e6c9953a1
 ---
 
 # Keep realization, doctrine, and community answerable to lived love

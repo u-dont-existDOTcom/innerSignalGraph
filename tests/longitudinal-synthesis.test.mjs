@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import {
   knownAnswerRule,
@@ -62,6 +63,10 @@ test("the app roles' longitudinal rules are defined once and served unchanged, w
   assert.ok(longitudinalClinicalRules.includes(`${repeatedAdviceRule}\n${knownVersusNewRules}\n`), "the known-versus-new rules follow the repeated-advice rule");
   assert.ok(longitudinalClinicalRules.endsWith(`\n${knownVersusNewAuditRules}\n`), "the audit failure closes the shared rules");
   assert.equal(count(longitudinalClinicalRules, "KNOWN_PRESENTED_AS_NEW"), 1);
+  // The four moved lines are the app roles' text from before the move, unchanged (sha256 of the four lines as they stood on
+  // main 87dce2de, joined with newlines).
+  assert.equal(createHash("sha256").update([salienceRule, targetPreservationRule, knownAnswerRule, repeatedAdviceRule].join("\n"), "utf8").digest("hex"),
+    "74bdadad848232f097aba3974efccb4f1e9acc8f62aef93d87d1898bf1a9c190");
   assert.ok(longitudinalSynthesisRules.includes(`KNOWN VERSUS NEW\n${knownVersusNewRules}\n\n${knownVersusNewAuditRules}\n`));
 });
 
@@ -70,21 +75,23 @@ test("the known-versus-new rules say what to check, what to report, and what a j
     "check it against the established record: the case's facts and hypotheses, settled answers, intervention history, current episode and any plan the record holds",
     "already established (and where), a new example of an established point, a contradiction of one, a new actionable lever, or a change to what should come first",
     "An established theme is not new because it appears in a new source or format, such as an imported journal.",
-    "Report what changes the next step or the order of priorities.",
+    "In such a review, report what changes the next step or the order of priorities.",
     "More examples of a known problem do not make it newer",
     "say so when nothing changes",
+    "This is for reviews: in an ordinary turn, a person who wants to be heard about a familiar difficulty gets listening first, not a verdict that nothing has changed.",
     "tags, summaries and other model-made labels are search aids, not diagnoses, findings or approved goals",
     "A priority keeps its source: what the client chose, what an authorized person decided, or what a model only proposed.",
     "Never present a model's proposal as the client's choice or a decided plan.",
     "A safety need or a withdrawn consent can override the ordinary order at any time."
   ]) assert.ok(knownVersusNewRules.includes(part), part);
-  assert.match(knownVersusNewAuditRules, /^LONGITUDINAL SYNTHESIS AUDIT FAILURES\n- KNOWN_PRESENTED_AS_NEW: /u);
+  assert.match(knownVersusNewAuditRules, /^LONGITUDINAL SYNTHESIS AUDIT FAILURES\n- KNOWN_PRESENTED_AS_NEW: in a review across sessions, case records or journal material, /u);
+  assert.match(knownVersusNewAuditRules, /Listening to a familiar difficulty in an ordinary turn is not this failure\.$/u);
 });
 
 // Each synthetic case and the rules its expected answer depends on.
 const CASES = [
   ["journal-repeats-established-theme", ["a new example of an established point", "More examples of a known problem do not make it newer", "say so when nothing changes"]],
-  ["journal-changes-next-step", ["a new actionable lever", "Report what changes the next step or the order of priorities.", "Never present a model's proposal as the client's choice or a decided plan."]],
+  ["journal-changes-next-step", ["a new actionable lever", "In such a review, report what changes the next step or the order of priorities.", "Never present a model's proposal as the client's choice or a decided plan."]],
   ["journal-tag-is-not-a-diagnosis", ["search aids, not diagnoses, findings or approved goals", "A priority keeps its source"]],
   ["safety-overrides-ordinary-order", ["A safety need or a withdrawn consent can override the ordinary order at any time."]]
 ];
@@ -93,7 +100,10 @@ for (const [id, rules] of CASES) {
   test(`synthetic case ${id}: its rules and the case reach every response, review and repair prompt`, () => {
     const fixture = byId.get(id);
     assert.ok(fixture, `${id} is in the longitudinal synthesis corpus`);
-    assert.ok(fixture.rejectedClaims.length >= 3 && fixture.expectedClassification && fixture.expectedNextMove);
+    assert.ok(fixture.rejectedClaims.length >= 3 && fixture.expectedNextMove);
+    // Each case's expected reading uses the rules' own terms.
+    assert.match(fixture.expectedClassification, /an established point|a new actionable lever|search aids|a safety need/u);
+    for (const claim of fixture.rejectedClaims) assert.equal(fixture.expectedNextMove.includes(claim), false, claim);
     for (const rule of rules) assert.ok(knownVersusNewRules.includes(rule), rule);
     for (const [role, prompt] of rolePrompts(fixture)) {
       assert.equal(count(prompt.system, knownVersusNewRules), 1, `${role} carries the known-versus-new rules once`);

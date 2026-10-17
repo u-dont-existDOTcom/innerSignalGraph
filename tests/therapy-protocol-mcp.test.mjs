@@ -324,31 +324,53 @@ test("the call trace names each tool and its outcome, without arguments, case re
   assert.equal(failed.body.error.data.code, "free text that is not a code", "the response itself is unchanged");
 
   const denied = await listen(t, { callLog: (event) => events.push(event) });
-  await post(denied.url, "tools/call", { name: "load_case_context", arguments: { case_id: marker } });
+  const refused = await post(denied.url, "tools/call", { name: "load_case_context", arguments: { case_id: marker } }, `token-${marker}`);
+  assert.equal(JSON.stringify(refused.body).includes("therapy_rules"), false, "a refused opening carries no rules");
+  const noProtocol = await listen(t, { therapyProtocol: null, callLog: (event) => events.push(event) });
+  await post(noProtocol.url, "tools/call", { name: "load_therapy_protocol", arguments: {} });
 
-  assert.deepEqual(events.map(({ tool, ok, code }) => [tool, ok, code]), [
-    ["load_therapy_protocol", true, null],
-    ["load_case_context", true, null],
-    ["unknown", false, "MCP_TOOL_NOT_FOUND"],
-    ["retrieve_case_evidence", false, "OTHER"],
-    ["load_case_context", false, "AUTHENTICATION_REQUIRED"]
+  assert.deepEqual(events.map(({ tool, bearer, ok, code }) => [tool, bearer, ok, code]), [
+    ["load_therapy_protocol", false, true, null],
+    ["load_case_context", false, true, null],
+    ["unknown", false, false, "MCP_TOOL_NOT_FOUND"],
+    ["retrieve_case_evidence", false, false, "OTHER"],
+    ["load_case_context", true, false, "AUTHENTICATION_REQUIRED"],
+    ["load_therapy_protocol", false, false, "THERAPY_PROTOCOL_UNAVAILABLE"]
   ]);
   for (const event of events) {
-    assert.deepEqual(Object.keys(event).sort(), ["at", "bytes", "code", "event", "ms", "ok", "tool"]);
+    assert.deepEqual(Object.keys(event).sort(), ["at", "bearer", "bytes_at_most", "code", "event", "ms", "ok", "tool"]);
     assert.equal(event.event, "tool_call");
     assert.ok(Number.isInteger(event.ms) && event.ms >= 0);
-    assert.ok(Number.isInteger(event.bytes) && event.bytes > 0);
+    assert.ok(Number.isInteger(Math.log2(event.bytes_at_most)), "the size is a power of two");
     assert.equal(new Date(event.at).toISOString(), event.at);
   }
-  assert.equal(events[1].bytes, Buffer.byteLength(`${JSON.stringify(opened.body)}\n`), "bytes is the response size");
+  const size = Buffer.byteLength(`${JSON.stringify(opened.body)}\n`);
+  assert.ok(events[1].bytes_at_most >= size && events[1].bytes_at_most < 2 * size, "the size class is the next power of two");
   const trace = JSON.stringify(events);
-  for (const secret of [marker, SYNTHETIC_CASE_ID, "synthetic turn", "synthetic-case-failing", "free text"]) assert.equal(trace.includes(secret), false, secret);
+  for (const secret of [marker, SYNTHETIC_CASE_ID, "synthetic turn", "synthetic-case-failing", "free text", String(size)]) assert.equal(trace.includes(secret), false, secret);
 });
 
-test("a failing trace never breaks a call, and a trace must be a function", async (t) => {
-  const listener = await listen(t, { caseAccessService: openingService, callLog: () => { throw new Error("synthetic trace failure"); } });
-  const answered = await post(listener.url, "tools/call", { name: "load_case_context", arguments: { case_id: SYNTHETIC_CASE_ID } });
-  assert.equal(answered.response.status, 200);
-  assert.equal(answered.body.result.structuredContent.case_state.case_id, SYNTHETIC_CASE_ID);
+test("a failing trace, thrown or rejected, never breaks a call, and a trace must be a function", async (t) => {
+  for (const failing of [() => { throw new Error("synthetic trace failure"); }, async () => { throw new Error("synthetic async trace failure"); }]) {
+    let calls = 0;
+    const listener = await listen(t, { caseAccessService: openingService, callLog: (event) => { calls += 1; return failing(event); } });
+    for (let round = 0; round < 2; round += 1) {
+      const answered = await post(listener.url, "tools/call", { name: "load_case_context", arguments: { case_id: SYNTHETIC_CASE_ID } });
+      assert.equal(answered.response.status, 200);
+      assert.equal(answered.body.result.structuredContent.case_state.case_id, SYNTHETIC_CASE_ID);
+    }
+    assert.equal(calls, 2, "the trace was called for each call and the server kept answering");
+  }
   assert.throws(() => createPrivateCaseMcpServer({ caseAccessService: openingService, callLog: "stderr" }), { name: "TypeError", message: /callLog must be a function/u });
+});
+
+test("an opened case's rules come first, and a field of the same name in the case's data never stands in for them", async (t) => {
+  const protocol = loadTherapyProtocol();
+  const spoofing = Object.freeze({ ...openingService, async loadCaseContext() { return { ...openedCase, therapy_rules: { available: true, note: "synthetic stand-in" } }; } });
+  const listener = await listen(t, { caseAccessService: spoofing, therapyProtocol: protocol });
+  const { body } = await post(listener.url, "tools/call", { name: "load_case_context", arguments: { case_id: SYNTHETIC_CASE_ID } });
+  assert.equal(Object.keys(body.result.structuredContent)[0], "therapy_rules");
+  assert.ok(body.result.content[0].text.startsWith('{"therapy_rules":{"available":true,'), "a host that shortens the text keeps the rules");
+  assert.equal(body.result.structuredContent.therapy_rules.protocol_sha256, protocol.protocolSha256);
+  assert.equal(JSON.stringify(body).includes("synthetic stand-in"), false);
 });

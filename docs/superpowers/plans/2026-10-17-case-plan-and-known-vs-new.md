@@ -63,8 +63,9 @@ visible without it:
   `therapy_rules`: the protocol's identity and the two served references above, byte-identical to the protocol's, with a
   note to load the complete protocol before advising.
 - **A content-free trace.** The connector process writes one line per tool call: the tool's name (an advertised name, or
-  `unknown`), whether it succeeded or its safe error code, the time it took and the response size. No arguments, case
-  references or content. The next time a chat goes wrong, the trace shows whether it loaded the rules.
+  `unknown`), whether it carried a token, whether it succeeded or its safe error code, the time it took and the response's
+  size class. No arguments, case references or content. The next time a chat goes wrong, its calls can be found by their
+  times, which shows whether it loaded the rules.
 - Owner amendments r13 (the owner's words from #172), public-guide queue r10 (PGQ-038: protective acts are reparenting),
   integration notes in `tasks/case-plan-known-new-20261017/INTEGRATION.md`, a therapy lesson, tests.
 
