@@ -15,7 +15,7 @@ export const ROADMAP_CLIENT_AGREEMENT = Object.freeze(["agreed", "declined", "no
 export const ROADMAP_LIMITS = Object.freeze({
   goals: 60,
   history: 40,
-  applied_decisions: 200,
+  applied_decisions: 100,
   list: 20,
   changes: 40,
   title: 300,
@@ -376,6 +376,12 @@ export function applyRoadmapDecision(previous, decision) {
     if (earlier.digest !== digest) fail(`Decision ${decision.decision_id} was already applied with other content.`, "ROADMAP_DECISION_CONFLICT");
     return structuredClone(previous);
   }
+  // Only the latest decisions are kept for replay checks. Once the list is full, a decision dated before the oldest kept one
+  // can't be told from an old one replayed, so it is refused rather than applied a second time.
+  const kept = previous?.applied_decisions ?? [];
+  if (kept.length >= ROADMAP_LIMITS.applied_decisions && Date.parse(decision.at) < Date.parse(kept[0].at)) {
+    fail(`Decision ${decision.decision_id} is older than the decisions kept for replay checks.`, "ROADMAP_DECISION_TOO_OLD");
+  }
   const roadmap = previous ? structuredClone(previous) : emptyRoadmap(decision.at, decision.decision_id);
   for (const [index, change] of decision.changes.entries()) {
     object(change, `decision.changes[${index}]`);
@@ -437,19 +443,7 @@ function recordedPlan(state) {
   const active = goals.filter((goal) => goal.status === "active");
   const children = (parentId) => active.filter((goal) => goal.parent_id === parentId && !ROADMAP_TRACK_KINDS.includes(goal.kind)).sort(byRank);
   const primary = active.filter((goal) => goal.kind === "primary_aim").sort(byRank);
-  // The step being worked on: the one linked to the operational episode, else the first active step under the first aim.
-  const episode = state.current_episode ?? null;
-  const linked = episode ? active.find((goal) => goal.serves_episode_id === episode.id) ?? null : null;
-  let first = null;
-  const walk = (parentId) => {
-    for (const goal of children(parentId)) {
-      if (first) return;
-      if (goal.kind === "actionable_step") first = goal;
-      else walk(goal.id);
-    }
-  };
-  if (primary.length) walk(primary[0].id);
-  const stale = !linked && episode && active.some((goal) => goal.serves_episode_id && goal.serves_episode_id !== episode.id);
+  const tracks = active.filter((goal) => ROADMAP_TRACK_KINDS.includes(goal.kind)).sort(byRank);
   const within = [];
   const collect = (parentId, depth) => {
     for (const goal of children(parentId)) {
@@ -458,6 +452,29 @@ function recordedPlan(state) {
     }
   };
   for (const aim of primary) collect(aim.id, 1);
+  // Active goals under a goal that waits are held by it; they are listed apart, never as current work.
+  const reached = new Set([...primary, ...tracks].map((goal) => goal.id).concat(within.map((goal) => goal.id)));
+  const held = active.filter((goal) => !reached.has(goal.id))
+    .map((goal) => ({ ...goalView(goal), parent_id: goal.parent_id, why_held: "Its parent goal is not active." }));
+  // The step being worked on: the goal linked to the operational episode, else the first active step under the first aim. A
+  // model's proposal is shown as the current step only when nothing the client or an authorized plan set is there.
+  const episode = state.current_episode ?? null;
+  const preferConfirmed = (candidates) => candidates.find((goal) => goal.priority_source !== "provisional") ?? candidates[0] ?? null;
+  const serving = episode ? active.filter((goal) => goal.serves_episode_id === episode.id) : [];
+  const linked = preferConfirmed(serving.filter((goal) => reached.has(goal.id)));
+  const steps = [];
+  const walk = (parentId) => {
+    for (const goal of children(parentId)) {
+      if (goal.kind === "actionable_step") steps.push(goal);
+      else walk(goal.id);
+    }
+  };
+  if (primary.length) walk(primary[0].id);
+  const first = preferConfirmed(steps);
+  const episodeLink = !episode ? "no_episode"
+    : linked ? "linked"
+      : serving.length ? "held_by_parent"
+        : active.some((goal) => goal.serves_episode_id && goal.serves_episode_id !== episode.id) ? "stale" : "unlinked";
   return {
     status: "recorded",
     note: "The plan recorded in this case. Each goal says whose priority it is; a model's proposal is not a decision. A safety need or withdrawn consent comes before this order while it lasts, recorded or not.",
@@ -465,12 +482,12 @@ function recordedPlan(state) {
     now: {
       step: linked ? goalView(linked) : first ? goalView(first) : null,
       current_episode: episodeView(episode),
-      episode_link: !episode ? "no_episode" : linked ? "linked" : stale ? "stale" : "unlinked"
+      episode_link: episodeLink
     },
     within,
-    tracks: active.filter((goal) => ROADMAP_TRACK_KINDS.includes(goal.kind)).sort(byRank)
-      .map((goal) => ({ ...goalView(goal), note: "Separately available; not an exercise, and reparenting does not replace it." })),
+    tracks: tracks.map((goal) => ({ ...goalView(goal), note: "Separately available; not an exercise, and reparenting does not replace it." })),
     waiting: goals.filter((goal) => ["parked", "blocked"].includes(goal.status)).map(goalView),
+    held_by_parent: held,
     finished: goals.filter((goal) => ["completed", "superseded"].includes(goal.status)).map((goal) => ({ id: goal.id, title: goal.title, status: goal.status, ...(goal.status_reason ? { why: goal.status_reason } : {}) })),
     priorities_change_when: active.filter((goal) => goal.review_condition).map((goal) => ({ goal_id: goal.id, review_condition: goal.review_condition })),
     sources: Object.fromEntries(ROADMAP_PRIORITY_SOURCES.map((source) => [source, goals.filter((goal) => goal.priority_source === source).length])),
