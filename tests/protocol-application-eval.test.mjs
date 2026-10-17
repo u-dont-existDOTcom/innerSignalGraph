@@ -352,6 +352,11 @@ test("the command refuses a command-line agent it can't isolate, before any mode
   const lacking = run({});
   assert.equal(lacking.status, 3, lacking.stderr);
   assert.match(lacking.stderr, /The installed Claude CLI lacks what this test needs to isolate it: .*tools.*strictMcpConfig.*safeMode.*noSessionPersistence/u);
+  // Codex on #175 (P2): a Codex without JSON events (its actions couldn't be counted) or without --ignore-rules (AGENTS.md
+  // around it could steer it) isn't used either.
+  const bareCodex = run({ CODEX_COMMAND: wrapper("codex-minimal", "fake-codex-minimal-cli.mjs") });
+  assert.equal(bareCodex.status, 3, bareCodex.stderr);
+  assert.match(bareCodex.stderr, /The installed Codex CLI lacks what this test needs to isolate it: ignoreUserConfig, ignoreRules, json, sandbox, ephemeral/u);
   // A command that can't be started at all is a configuration error too, reported the same way.
   const absent = run({ CODEX_COMMAND: path.join(dir, "no-such-codex") });
   assert.equal(absent.status, 3, absent.stderr);

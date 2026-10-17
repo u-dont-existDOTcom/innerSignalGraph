@@ -125,11 +125,12 @@ function provider(family, model) {
 }
 
 // A command-line agent that can't be kept away from the user's own configuration (its MCP servers, InnerSignal's included),
-// its tools and its saved sessions isn't used: Codex in a read-only, ephemeral sandbox that ignores the user's configuration;
+// its tools and its saved sessions isn't used: Codex in a read-only, ephemeral sandbox that ignores the user's configuration
+// and any AGENTS.md rules around it, reporting its events as JSON (which is how its actions are counted);
 // Claude with no tools, no MCP servers but an empty set, safe mode and no saved session. An agent whose command can't be
 // started or checked isn't used either.
 const ISOLATION_FLAGS = new Map([
-  [CodexCliProvider, ["ignoreUserConfig", "sandbox", "ephemeral", "outputSchema", "outputLastMessage"]],
+  [CodexCliProvider, ["ignoreUserConfig", "ignoreRules", "json", "sandbox", "ephemeral", "outputSchema", "outputLastMessage"]],
   [ClaudeCliProvider, ["print", "outputFormat", "jsonSchema", "tools", "strictMcpConfig", "safeMode", "noSessionPersistence"]]
 ]);
 async function requireIsolation(candidate) {

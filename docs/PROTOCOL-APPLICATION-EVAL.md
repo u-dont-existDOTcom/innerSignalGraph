@@ -66,8 +66,9 @@ check exactly those things. This test calls models, so it runs by hand and not i
    reparenting, or a service called an exercise. They are advisory. Where they and the judge disagree, the report lists
    the reply for a person to read.
 7. **Isolation.**
-   - Codex starts in an empty folder, read-only, ephemeral, and ignoring the user's own configuration, so none of its
-     MCP servers, InnerSignal's included, are reachable.
+   - Codex starts in an empty folder, read-only, ephemeral, ignoring the user's own configuration and any AGENTS.md rules,
+     so none of its MCP servers, InnerSignal's included, are reachable; it reports its events as JSON, which is how its
+     actions are counted.
    - The test refuses a Codex command that can't be isolated that way.
    - A reply or a judgment from an agent that took any action (a command, a file, a tool, a search) is not counted: a
      judgment is asked for once more, then the reply counts as inconclusive.
