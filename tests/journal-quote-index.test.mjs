@@ -8,7 +8,7 @@ import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, journalLocalNodeId, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
 import { QUOTE_INDEX_VERSION, QUOTE_MONTHS_KEY, QUOTE_OPEN_KEY, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_UNIT_NAMESPACE, buildQuoteGeneration, dateLineValue,
-  entryDateLine, quoteCues, quoteDateOptions, quoteIndexVersionOf, splitQuoteUnits } from "../src/journal-import/quote-index.mjs";
+  entryDateLine, quoteCues, quoteDateOptions, quoteIndexVersionOf, splitQuoteUnits, timeOrderRun } from "../src/journal-import/quote-index.mjs";
 import { buildQuoteTerms, buildQuoteTermsFromGraph } from "../src/journal-import/quote-terms.mjs";
 import { formsReadingTerm } from "../src/journal-import/word-forms.mjs";
 import { journalQuoteNumericDateOrder } from "../src/journal-import/run-config.mjs";
@@ -1099,7 +1099,7 @@ test("version 4 gives a quote between two dates their range however wide, and ac
   }
   assert.equal(built.quoteMonths.get(QUOTE_MONTHS_KEY).length, 25, "March 2019 to March 2021");
   assert.deepEqual(built.stats.range_widths, { up_to_1_month: 0, up_to_3_months: 0, up_to_12_months: 0, over_12_months: 3 });
-  assert.deepEqual(built.stats.time_order, { yearless_dated: 0, yearless_undated: 0, misread_lines: 0, anchors: 2, rounds: 1, settled: true, dated_quotes: 6, ranged_quotes: 3,
+  assert.deepEqual(built.stats.time_order, { yearless_dated: 0, yearless_undated: 0, misread_lines: 0, anchors: 2, dated_quotes: 6, ranged_quotes: 3,
     open_start_quotes: 0, open_end_quotes: 0, undated_quotes: 0 }, "the two date lines are quotes too");
   assert.equal(built.stats.dated_quotes, 6);
   assert.equal(built.stats.ranged_quotes, 3);
@@ -1134,7 +1134,7 @@ test("version 4 takes a date line that breaks the journal's order as misread: it
   assert.deepEqual([metaByText(dates).get("Trois.").written.from, metaByText(dates).get("Trois.").written.to], ["2020-03-04", "2020-03-05"]);
 });
 
-test("version 4 gives a date without a year its year from the date lines around it, a stretch at a time, and says so", () => {
+test("version 4 gives a date without a year the year that keeps the journal's order, and says so", () => {
   // Before any year: 15 March can't come after 2 February 2020 in a journal that runs forward, so it is 15 March 2019.
   const start = build4([page("15 mars\n\nUn.", 1), page("Deux.", 2), page("2 février 2020\n\nFin.", 3)]);
   const meta = metaByText(start);
@@ -1171,45 +1171,101 @@ test("version 4 gives a date without a year its year from the date lines around 
   const led = metaByText(leading);
   assert.deepEqual([1, 2, 3, 4].map((number) => led.get(`Citation ${number}.`).written.from), ["2018-07-15", "2019-01-15", "2019-07-15", "2020-06-01"]);
   assert.deepEqual([leading.stats.time_order.anchors, leading.stats.time_order.misread_lines, leading.stats.time_order.yearless_dated], [4, 0, 3]);
-  // Between two dated lines they run forward from the first as far as they stay before the second, and the rest run back
-  // from the second, so they never take a year from past it (Codex's example of reading the years again without end: it now
-  // settles at once). Both months agree; the four yearless lines between them can't, in order, and date nothing; the two
-  // before June 2020 run back from it, and 1 December runs forward from September 2020.
+  // The date lines and the yearless lines are weighed together, every year a yearless line could take with them (Codex, P2:
+  // an early tie between the two date lines kept the January lines and settled on less weight). 1 July between 1 January
+  // 2020 and 1 July 2021 is July 2020, the last 1 July is July 2021, and the second 1 January 2020 is taken as misread.
+  const tied = build4(["1 janvier 2020", "1 juillet", "1 juillet 2021", "1 janvier 2020", "1 juillet"].map((line, index) => page(`${line}\n\nCitation ${index + 1}.`, index + 1)));
+  const tiedMeta = metaByText(tied);
+  assert.deepEqual([1, 2, 3, 5].map((number) => tiedMeta.get(`Citation ${number}.`).written.from), ["2020-01-01", "2020-07-01", "2021-07-01", "2021-07-01"]);
+  assert.deepEqual(["anchors", "misread_lines", "yearless_dated", "yearless_undated"].map((name) => tied.stats.time_order[name]), [4, 1, 2, 0]);
+  // Codex's example of reading the years again without end, in an earlier version: June 2020 has four yearless lines after
+  // it that can't come before September 2020 with it, so it is taken as misread, and the six yearless lines before September
+  // 2020 run back from it, each the latest day not after the next: January and September 2018, 31 December 2018, 15 January
+  // 2019, 31 December 2019 twice; 1 December comes after September 2020.
   const between = build4(["1 janvier", "1 septembre", "Juin 2020", "31 décembre", "15 janvier", "31 décembre", "31 décembre", "Septembre 2020", "1 décembre"]
     .map((line, index) => page(`${line}\n\nCitation ${index + 1}.`, index + 1)));
   const inBetween = metaByText(between);
-  assert.deepEqual(["anchors", "misread_lines", "yearless_dated", "yearless_undated", "rounds", "settled"].map((name) => between.stats.time_order[name]),
-    [5, 0, 3, 4, 1, true]);
-  assert.deepEqual([1, 2, 3, 8, 9].map((number) => inBetween.get(`Citation ${number}.`).written.from), ["2019-01-01", "2019-09-01", "2020-06", "2020-09", "2020-12-01"]);
-  for (const number of [4, 5, 6, 7]) {
-    assert.deepEqual([inBetween.get(`Citation ${number}.`).written.from, inBetween.get(`Citation ${number}.`).written.to], ["2020-06", "2020-09"], `Citation ${number}.`);
-  }
-  // When reading the years again still never settles which date lines agree (here May 2021 and January 2021 are kept in turn,
-  // each with the yearless lines it lets in), each set of date lines tried, and the date lines kept in both, is read again
-  // strictly, a yearless line dated only if a day fits between its date lines, and the one that weighs most is kept: 2021,
-  // May 2021, 28 July and December 2021 (January 2021 taken as misread; 1 April and 1 January date nothing).
-  const cycle = build4(["2021", "Mai 2021", "1 avril", "Janvier 2021", "28 juillet", "1 janvier", "Décembre 2021"]
+  assert.deepEqual(["anchors", "misread_lines", "yearless_dated", "yearless_undated"].map((name) => between.stats.time_order[name]), [8, 1, 7, 0]);
+  assert.deepEqual([1, 2, 4, 5, 6, 7, 8, 9].map((number) => inBetween.get(`Citation ${number}.`).written.from),
+    ["2018-01-01", "2018-09-01", "2018-12-31", "2019-01-15", "2019-12-31", "2019-12-31", "2020-09", "2020-12-01"]);
+  assert.deepEqual([inBetween.get("Citation 3.").written.from, inBetween.get("Citation 3.").written.to], ["2018-09-01", "2018-12-31"], "June 2020's entry is ranged");
+  // Two date lines that each let in a different yearless line, as rounds of reading the years did in turn: the heaviest
+  // run is 2021, May 2021, 28 July and December 2021; January 2021 is taken as misread, and 1 April and 1 January date nothing.
+  const turns = build4(["2021", "Mai 2021", "1 avril", "Janvier 2021", "28 juillet", "1 janvier", "Décembre 2021"]
     .map((line, index) => page(`${line}\n\nCitation ${index + 1}.`, index + 1)));
-  const cycled = metaByText(cycle);
-  assert.deepEqual(["anchors", "misread_lines", "yearless_dated", "yearless_undated", "rounds", "settled"].map((name) => cycle.stats.time_order[name]),
-    [4, 1, 1, 2, 2, false]);
-  assert.deepEqual([1, 2, 5, 7].map((number) => cycled.get(`Citation ${number}.`).written.from), ["2021", "2021-05", "2021-07-28", "2021-12"], "the anchors, in order");
+  const turned = metaByText(turns);
+  assert.deepEqual(["anchors", "misread_lines", "yearless_dated", "yearless_undated"].map((name) => turns.stats.time_order[name]), [4, 1, 1, 2]);
+  assert.deepEqual([1, 2, 5, 7].map((number) => turned.get(`Citation ${number}.`).written.from), ["2021", "2021-05", "2021-07-28", "2021-12"], "the anchors, in order");
   for (const [number, range] of [[3, ["2021-05", "2021-07-28"]], [4, ["2021-05", "2021-07-28"]], [6, ["2021-07-28", "2021-12"]]]) {
-    assert.deepEqual([cycled.get(`Citation ${number}.`).written.from, cycled.get(`Citation ${number}.`).written.to], range, `Citation ${number}.`);
+    assert.deepEqual([turned.get(`Citation ${number}.`).written.from, turned.get(`Citation ${number}.`).written.to], range, `Citation ${number}.`);
   }
   // A 29 February takes the latest leap year not after the next date.
   assert.equal(metaByText(build4([page("29 février\n\nUn.", 1), page("1 mars 2023\n\nFin.", 2)])).get("Un.").written.from, "2020-02-29");
-  // Once dated, a yearless line is weighed with every date line, those that lost a tie among the full dates too: 31 December
-  // 2020 and 30 December 2020 tie before the yearless 30 December after the unread page is dated, and with it the run of
-  // 30 December, 30 December 2020 and 2 January 2021 weighs most, so 31 December 2020 is the one taken as misread.
+  // Weighed with the date lines, a yearless line settles a tie between them (Codex, P2): 31 December 2020 and 30 December
+  // 2020 tie on their own; with the yearless 30 December after the unread page, running back from 30 December 2020 to the
+  // same day, the run of 30 December, 30 December 2020 and 2 January 2021 weighs most, so 31 December 2020 is taken as misread.
   const tie = build4([page("31 décembre 2020\n\nUn.", 1), page("Mots autour d'un dessin.", 2, "visual_pending"), page("30 décembre\n\nDeux.", 3),
     page("30 décembre 2020\n\nTrois.", 4), page("2 janvier 2021\n\nFin.", 5)]);
-  const tied = metaByText(tie);
+  const tieMeta = metaByText(tie);
   assert.deepEqual([tie.stats.time_order.anchors, tie.stats.time_order.misread_lines, tie.stats.time_order.yearless_dated], [3, 1, 1]);
-  assert.deepEqual([tied.get("Deux.").written.from, tied.get("Deux.").written.year_inferred], ["2020-12-30", true]);
-  assert.equal(tied.get("Trois.").written.from, "2020-12-30");
-  assert.deepEqual([tied.get("Un.").written.from, tied.get("Un.").written.to, tied.get("Un.").written.between], [null, "2020-12-30", true],
+  assert.deepEqual([tieMeta.get("Deux.").written.from, tieMeta.get("Deux.").written.year_inferred], ["2020-12-30", true]);
+  assert.equal(tieMeta.get("Trois.").written.from, "2020-12-30");
+  assert.deepEqual([tieMeta.get("Un.").written.from, tieMeta.get("Un.").written.to, tieMeta.get("Un.").written.between], [null, "2020-12-30", true],
     "the entry under the line taken as misread comes before the first anchor");
+});
+
+test("version 4's run of lines in time order is the heaviest there is, checked against every subset on a fixed run of random line lists", () => {
+  // A subset is a run when, from its first date line on, each date line's day is not before the day of the line before it,
+  // each yearless line taking the earliest day not before that day (which leaves the most room: any day a yearless line could
+  // take there is no earlier); the yearless lines before its first date line can always run back from it.
+  let seed = 11;
+  const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const pick = (list) => list[Math.floor(random() * list.length)];
+  const pad2 = (value) => String(value).padStart(2, "0");
+  const realDay = (year, month, day) => new Date(Date.UTC(year, month - 1, day)).getUTCDate() === day;
+  const earliest = ({ month, day }, near) => {
+    for (let year = Number(near.slice(0, 4)); ; year += 1) {
+      const value = `${year}-${pad2(month)}-${pad2(day)}`;
+      if (realDay(year, month, day) && value >= near) return value;
+    }
+  };
+  const weightOf = (line) => (line.yearless ? 1 : line.written.precision === "year" ? 1 : line.written.precision === "month" ? 2 : 3);
+  const dateLine = () => {
+    const year = pick([2019, 2020, 2021]), month = 1 + Math.floor(random() * 12), kind = random();
+    if (kind < 0.2) return { day: `${year}-01-01`, written: { from: String(year), to: String(year), precision: "year" } };
+    if (kind < 0.5) return { day: `${year}-${pad2(month)}-01`, written: { from: `${year}-${pad2(month)}`, to: `${year}-${pad2(month)}`, precision: "month" } };
+    const day = `${year}-${pad2(month)}-${pad2(pick([1, 15, 28]))}`;
+    return { day, written: { from: day, to: day, precision: "day" } };
+  };
+  for (let list = 0; list < 300; list += 1) {
+    const lines = Array.from({ length: 1 + Math.floor(random() * 10) }, () =>
+      (random() < 0.45 ? { yearless: { month: 1 + Math.floor(random() * 12), day: pick([1, 15, 29, 31]) } } : dateLine()))
+      .filter((line) => !line.yearless || realDay(2000, line.yearless.month, line.yearless.day));
+    const { kept, days } = timeOrderRun(lines);
+    let previous = null, weight = 0;
+    lines.forEach((line, index) => {
+      if (!kept.has(index)) return;
+      const day = line.yearless ? days.get(index) : line.day;
+      if (line.yearless) assert.equal(day.slice(5), `${pad2(line.yearless.month)}-${pad2(line.yearless.day)}`, `list ${list}: the yearless line's own day`);
+      if (previous !== null) assert.ok(day >= previous, `list ${list}: ${day} after ${previous}`);
+      previous = day;
+      weight += weightOf(line);
+    });
+    let heaviest = 0;
+    for (let mask = 1; mask < 1 << lines.length; mask += 1) {
+      const chosen = lines.filter((_, index) => (mask & (1 << index)) !== 0);
+      const first = chosen.findIndex((line) => !line.yearless);
+      if (first === -1) continue;
+      let day = chosen[first].day, inOrder = true;
+      for (const line of chosen.slice(first + 1)) {
+        if (line.yearless) day = earliest(line.yearless, day);
+        else if (line.day < day) { inOrder = false; break; }
+        else day = line.day;
+      }
+      if (inOrder) heaviest = Math.max(heaviest, chosen.reduce((total, line) => total + weightOf(line), 0));
+    }
+    assert.equal(weight, heaviest, `list ${list}: the run weighs the most a run can`);
+  }
 });
 
 test("version 4 never dates a quote earlier than the quotes above it, and counts every line and quote once, on a fixed run of random journals", () => {

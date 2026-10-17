@@ -335,24 +335,20 @@ events of quotes with a date of their own.
 
 Version 4 takes the order the owner states as a fact of the journal:
 
-- **The anchors are the date lines that agree with that order.** In journal order, the run of date lines whose first
-  days never go back, with the most weight: a full date counts 3, a month with its year 2, a year alone or a day whose
-  year was inferred 1, so a year mentioned at a line's start gives way before a full date does. A line outside the run
-  breaks the order and is taken as misread: it dates nothing, and its quotes are dated as if it weren't there.
-- **Every date without a year takes its year from the date lines around it that agree with that order**, never from a
-  line that may be misread, a stretch of yearless lines at a time. After an agreeing date line, each takes the earliest
-  such day not before the line before it, as long as it stays before the next agreeing line; before the first agreeing
-  line, and between two from the first that would pass the next, each takes the latest such day not after the line
-  after it, so a chain of them before the first date runs back from it. It is marked `year_inferred` and weighs as an
-  inferred year; the anchors are weighed again with these lines, and the years read again, until the date lines kept
-  are the ones the years were read from (`rounds`). Should that never settle (a cycle, or eight rounds; `settled`
-  false), each set of date lines tried, and the date lines kept in all of them, is read again strictly, a yearless line
-  dated only if a day fits between its date lines, and the one that weighs most is kept, so the years always come from
-  the anchors. (Codex's review found the four orderings the first versions of this got wrong: a date line that lost a
-  tie couldn't come back once a yearless line was dated; a yearless line took its year from a line before it later taken
-  as misread; a cycle of rounds stopped on one whose years came from other anchors; and a chain of yearless lines before
-  the first date took its years forward from one another and lost its last line. A search of random journals found a
-  cycle the stretch reading still makes; it is a test.)
+- **The anchors are the lines that agree with that order.** In journal order, the heaviest run of the date lines and of
+  the entry lines with a day and a month but no year, whose days never go back, each yearless line taking its day and
+  month in whichever year keeps the order: a full date counts 3, a month with its year 2, a year alone or a yearless date
+  1, so a year mentioned at a line's start gives way before a full date does. A date line outside the run breaks the
+  order and is taken as misread: it dates nothing, and its quotes are dated as if it weren't there; a yearless line
+  outside it dates nothing either.
+- **A yearless date's year comes from the run, never from a line that may be misread.** The yearless lines before the
+  run's first date line all belong to it, since they can always run back from it, each the latest such day not after
+  the line after it (a chain of them runs back year by year); after it, each takes the earliest such day not before the
+  line before it, which leaves the most room for the lines after. It is marked `year_inferred`. Weighing every line and
+  every year together is what Codex's reviews came to: in turn they found a date line that lost a tie and couldn't come
+  back once a yearless line was dated, a yearless line that took its year from a line later taken as misread, rounds of
+  reading the years again that cycled or settled on a lighter run, and a chain of yearless lines before the first date
+  that lost its last line. A test checks the run against every subset of 300 random lists of up to ten lines.
 - **Every quote gets its time.** A quote under an anchor keeps its date, carried two pages as before; any other gets the
   range from the nearest anchor before it to the nearest after it, however wide and across pages not fully read, since
   the order holds through them. Before the first anchor the range is open at the start (`from` null), after the last
@@ -361,9 +357,9 @@ Version 4 takes the order the owner states as a fact of the journal:
 - **Events get their quote's time.** The pointer extraction runs once every quote is dated, so an event's authored time
   is its quote's date or range, closed or open, as an interval with basis `relative_supported`; its event time stays
   unknown, as before.
-- **Counts.** `stats.time_order`: the yearless lines that date their entry (anchors) and the rest, the date lines taken
-  as misread, the anchors, the rounds and whether they settled, and the quotes with a date, a closed range, a range open
-  at the start or at the end, and none; `range_widths` gains `over_12_months`.
+- **Counts.** `stats.time_order`: the anchors, the date lines taken as misread, the yearless lines that date their entry
+  and the rest, and the quotes with a date, a closed range, a range open at the start or at the end, and none;
+  `range_widths` gains `over_12_months`.
 
 A wide range is still worth having: it puts an event in order on the timeline, and keeps a quote out of the time
 windows it can't belong to, where an undated quote is in every one by default (`include_undated`). The quotes, their
