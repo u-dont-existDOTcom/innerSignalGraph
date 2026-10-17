@@ -531,12 +531,17 @@ export function patternSignals(spec, reply) {
   return found;
 }
 
-function parseReply(raw) {
+// The answer's `reply`; a blank or non-text one is no reply (Codex on #175: its JSON wrapper must not be graded instead).
+// Text that holds no such object is a provider that ignored the schema: the text itself is the reply.
+export function parseReply(raw) {
+  let value = null;
   try {
-    const value = jsonIn(raw);
-    if (typeof value?.reply === "string" && value.reply.trim()) return value.reply;
+    value = jsonIn(raw);
   } catch {
-    // A provider that ignored the schema: the text itself is the reply.
+    // No JSON in the text.
+  }
+  if (value && typeof value === "object" && Object.hasOwn(value, "reply")) {
+    return typeof value.reply === "string" && value.reply.trim() ? value.reply : null;
   }
   return typeof raw === "string" && raw.trim() ? raw : null;
 }

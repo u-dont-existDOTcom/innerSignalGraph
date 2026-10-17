@@ -23,6 +23,7 @@ import {
   loadProtocolApplicationCalibration,
   loadProtocolApplicationCases,
   parseJudgment,
+  parseReply,
   patternSignals,
   runJudgeCalibration,
   runProtocolApplication,
@@ -296,6 +297,21 @@ test("a reply or a judgment from an agent that reached outside the conversation,
   const unusable = await runProtocolApplication({ answerer: fakeAnswerer((caseId) => goodReply(caseId)), judge: broken, cases: spec, samples: 1, source });
   assert.equal(unusable.outcome, "inconclusive");
   assert.equal(unusable.cases[0].samples[0].problem, "JUDGMENT_INVALID");
+});
+
+test("a blank reply is no reply, and its JSON wrapper is never graded", async () => {
+  // Codex on #175 (P1): {"reply": ""} fell back to the wrapper's own text, which a judge could pass on a case whose rules
+  // only forbid mistakes.
+  for (const raw of ['{"reply":""}', '{"reply":"   "}', '{"reply":null}', '{"reply":7}', "", "   "]) assert.equal(parseReply(raw), null, raw);
+  assert.equal(parseReply('{"reply":"A reply."}'), "A reply.");
+  assert.equal(parseReply("A reply with {braces} in it."), "A reply with {braces} in it.", "prose from a provider that ignored the schema is its own reply");
+  const source = await connectorSource();
+  const calls = [];
+  const blank = { id: "openai", model: "blank-answerer", async generate() { return { model: "blank-answerer", text: JSON.stringify({ reply: " " }) }; } };
+  const result = await runProtocolApplication({ answerer: blank, judge: oracleJudge({ calls }), cases: [caseById.get("supervisor-invites-the-split")], samples: 2, source });
+  assert.equal(result.outcome, "inconclusive");
+  assert.deepEqual(result.cases[0].samples.map((record) => record.problem), ["EMPTY_REPLY", "EMPTY_REPLY"]);
+  assert.equal(calls.length, 0, "nothing is graded");
 });
 
 test("pattern signals fire on every known failing reply and on none of the known good ones", () => {
