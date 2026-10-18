@@ -10,10 +10,12 @@ import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSyn
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
+import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 
 const hash = (text) => createHash("sha256").update(text).digest("hex");
 const CASE_ID = "synthetic-reading-first-integration";
 const WRITER = "invented-reading-first-operator-key";
+const READER = "invented-reading-first-viewer-key";
 const PAGE_TEXT = [
   "January 1 2025. A person chose to keep their promise to a neighbor.",
   "February 1 2025. That person revised an earlier opinion after new evidence.",
@@ -32,7 +34,9 @@ async function fixture(t, importOrder = "reading_first", handlers = {}, override
   await fs.writeFile(cred, JSON.stringify({
     schema_version: 1, root_dir: path.join(root, "vaults"),
     grants: [{ token_sha256: hash(WRITER), principal_id: "synthetic-operator", case_ids: [CASE_ID],
-      scopes: ["case:write"], purposes: ["archive", "organize_search", "session_use"] }],
+      scopes: ["case:write"], purposes: ["archive", "organize_search", "session_use"] },
+      {token_sha256:hash(READER),principal_id:"synthetic-reader",case_ids:[CASE_ID],
+        scopes:["case:read"],purposes:["organize_search","session_use"]}],
     case_keys: { [CASE_ID]: { routine_kek_base64: Buffer.alloc(32, 7).toString("base64"),
       recovery_secret_base64: Buffer.alloc(32, 9).toString("base64") } }
   }), { mode: 0o600 });
@@ -72,7 +76,7 @@ async function fixture(t, importOrder = "reading_first", handlers = {}, override
     inferencePort: createMockJournalInferencePort({ handlers }),
     sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER }
   });
-  return { open, config, stateFile: path.join(config.execution_root, "state.json") };
+  return { open, service, config, stateFile: path.join(config.execution_root, "state.json") };
 }
 
 function attestedJournal({ pending = false, alteredPage = false } = {}) {
@@ -234,6 +238,21 @@ test("real importer read-source precedes index and leaves original legacy case d
     assert.equal(record.quote_index,undefined,"no index created before reading");
     const indexed=await runtime.execute("build-quotes");
     assert.ok(indexed.quote_index.quotes>0);
+    assert.ok(indexed.quote_index.reading_facets.facets>0,
+      "the index contains derived source-anchored facets from detailed reading");
+    await runtime.execute("publish-quotes");
+    const stateContext=await f.service.loadPrivateRuntimeCase(CASE_ID,{bearerToken:READER});
+    const corpusId=stateContext.journal_corpora.find(x=>x.corpus_id.endsWith(":quotes")).corpus_id;
+    const api=createJournalPrivateApi({caseAccessService:f.service});
+    const concept=await api.findQuotes({
+      caseId:CASE_ID,corpusId,query:"commitment",purpose:"session_use"
+    },{bearerToken:READER});
+    assert.ok(concept.quotes.length>0,"reading-derived search finds a source passage");
+    assert.equal(concept.coverage.reading_facets,true);
+    assert.ok(concept.quotes.some(q=>q.matched_by==="reading"),
+      "provisional interpretation matches are labeled separately");
+    assert.ok(concept.quotes.every(q=>!q.text.includes("commitment")),
+      "the source quote remains unchanged rather than copying model prose");
     const again=await runtime.execute("read-source");
     assert.equal(again.reading_first.read,3);
     assert.equal(calls.read,3,"replay resumes already attested generation without sending again");
