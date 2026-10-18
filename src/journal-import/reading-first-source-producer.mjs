@@ -124,9 +124,13 @@ export async function produceReadingFirstJournal({
   });
   const statuses = [], evidenceRefs = [];
   for (const page of pages) {
-    if (page.required_modalities !== "text") {
+    // Empty extraction isn't source comprehension. It may be a blank page,
+    // image-only material, or an unrecognized non-text PDF element. Preserve
+    // the page as pending until an authorized modality-aware reviewer checks it.
+    if (page.required_modalities !== "text" || page.text.trim().length === 0) {
       statuses.push({ page: page.page, source_page_sha256: page.source_page_sha256,
-        status: "REVIEW_PENDING", reason: "visual_pending" });
+        status: "REVIEW_PENDING",
+        reason: page.required_modalities !== "text" ? "visual_pending" : "source_unavailable" });
       continue;
     }
     let output;
