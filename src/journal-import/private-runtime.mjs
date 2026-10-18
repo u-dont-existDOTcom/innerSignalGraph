@@ -16,6 +16,7 @@ import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs"
 import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSynthesis } from "./reading-first-runtime-gate.mjs";
 import { produceReadingFirstJournal } from "./reading-first-source-producer.mjs";
 import { createReadingFirstPortAdapter } from "./reading-first-port-adapter.mjs";
+import { buildReadingFirstFacetIndexes } from "./reading-first-facets.mjs";
 import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { createJournalLookahead } from "./lookahead.mjs";
@@ -449,6 +450,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       residuals: structuredClone(state.residuals ?? {}),
       ...(state.quote_index ? { quote_index: { ...structuredClone(state.quote_index.stats), corpus_id: state.quote_index.corpus_id,
         generation: state.quote_index.generation, built_at: state.quote_index.built_at, published_at: state.quote_index.published?.at ?? null,
+        ...(state.quote_index.reading_facets ? {reading_facets:structuredClone(state.quote_index.reading_facets)} : {}),
         supersedes: state.quote_index.supersedes ?? null } } : {}),
       ...(state.pointer ? { pointer: pointerSummary() } : {}),
       ...(state.pointer_history?.length ? { pointer_runs_before: state.pointer_history.length } : {}),
@@ -2869,6 +2871,26 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const { representations } = await quoteSource();
           const input = await quoteGenerationInput(generation);
           const built = buildQuoteGeneration(input);
+          let readingFacets=null;
+          if(importOrder==="reading_first"){
+            const sourcePlan=await readLarge(state.parsed_ref);
+            const texts=new Map(sourcePlan.parsed.representations
+              .map(p=>[p.representation_id,p.text]));
+            const sourcePages=sourcePlan.parsed.pages.map(p=>({
+              page:p.page_number,text:texts.get(p.representation_id)??""
+            }));
+            const observations=[];
+            for(const page of sourcePages){
+              const id="reading-first:page:"+page.page;
+              const stored=await readIfPresent(id);
+              invariant(stored?.observation && stored?.page===page.page,
+                "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
+              observations.push({...stored,private_reference:id});
+            }
+            readingFacets=buildReadingFirstFacetIndexes({
+              built,observations,sourcePages
+            });
+          }
           // The quote corpus carries the archived original its locators name, so it is complete on its own.
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
@@ -2878,9 +2900,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
             // Version 3 adds the word list the search ranks by.
             extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths,
-              ...(input.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) }, indexRepresentations: true });
+              ...(input.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}),
+              ...(readingFacets ? {
+                reading_terms:readingFacets.readingTerms,
+                reading_meta:readingFacets.readingMeta
+              } : {}) }, indexRepresentations: true });
           // The manifest stays in the store, not in the run state, which is rewritten on every save.
           state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
+            ...(readingFacets ? {reading_facets:readingFacets.stats} : {}),
             manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null,
             supersedes };
           await save();
