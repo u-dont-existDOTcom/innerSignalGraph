@@ -43,12 +43,29 @@ function verifyTextEvidence(page, observation) {
     "JOURNAL_READING_FIRST_SOURCE_READ_RECEIPT_REQUIRED");
   if (page.text.trim().length > 0)
     invariant(observation.exact_source_anchors.length > 0, "JOURNAL_READING_FIRST_SOURCE_ANCHOR_REQUIRED");
-  for (const e of observation.exact_source_anchors) {
-    invariant(Number.isSafeInteger(e.start) && Number.isSafeInteger(e.end) &&
-      e.start >= 0 && e.end > e.start && e.end <= page.text.length &&
-      page.text.slice(e.start,e.end) === e.exact_text,
+  // The model need only reproduce exact quotations, never invent offsets.
+  // The trusted source reader locates the correct occurrence deterministically.
+  const anchors = observation.exact_source_anchors.map((e) => {
+    invariant(typeof e.exact_text === "string" && e.exact_text.length > 0,
       "JOURNAL_READING_FIRST_SOURCE_ANCHOR_INVALID");
-  }
+    if (Number.isSafeInteger(e.start) && Number.isSafeInteger(e.end)) {
+      invariant(e.start >= 0 && e.end > e.start && e.end <= page.text.length &&
+        page.text.slice(e.start,e.end) === e.exact_text,
+        "JOURNAL_READING_FIRST_SOURCE_ANCHOR_INVALID");
+      return { start:e.start,end:e.end,exact_text:e.exact_text };
+    }
+    invariant(e.start === undefined && e.end === undefined &&
+      (e.occurrence === null || Number.isSafeInteger(e.occurrence) && e.occurrence >= 0),
+      "JOURNAL_READING_FIRST_SOURCE_ANCHOR_INVALID");
+    const matches = [];
+    for (let i = 0, at; (at = page.text.indexOf(e.exact_text, i)) >= 0; i = at + 1) matches.push(at);
+    invariant(matches.length > 0 &&
+      (e.occurrence !== null || matches.length === 1) &&
+      (e.occurrence === null || e.occurrence < matches.length),
+      "JOURNAL_READING_FIRST_SOURCE_ANCHOR_INVALID");
+    const start = matches[e.occurrence ?? 0];
+    return { start, end:start+e.exact_text.length,exact_text:e.exact_text };
+  });
   invariant(Array.isArray(observation.source_findings) &&
     observation.source_findings.length > 0,
     "JOURNAL_READING_FIRST_SOURCE_FINDINGS_REQUIRED");
@@ -71,7 +88,7 @@ function verifyTextEvidence(page, observation) {
     page: page.page,
     source_page_sha256: page.source_page_sha256,
     source_specific_understanding: observation.source_specific_understanding,
-    exact_source_anchors: observation.exact_source_anchors,
+    exact_source_anchors: anchors,
     source_findings: findings,
     reviewed_modalities: observation.reviewed_modalities,
     provenance: "source_bound_model_proposal"
