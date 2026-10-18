@@ -430,11 +430,15 @@ const answeredAt = (outcomes) => Object.freeze(outcomes.filter((outcome) => outc
 // each answer checked by code, and then the event check for every kept event tag and quote it is anchored in, 50 pairs
 // to a call, with one retry for an answer that doesn't judge each of its pairs once. With `pages`, only the tags
 // anchored on those pages are kept before the event check. `pass` names the pass in the ledger.
-async function tagBatches({ input, batches, pages = null, pass, stepId, deadline, port, grant, now, oneAtATime }) {
+async function tagBatches({ input, batches, pages = null, pass, stepId, deadline, port, grant, now, oneAtATime, readingContextByPage = null }) {
   const call = (role, key, assigned, fields) => ({ key, role, tier: "standard", grant, outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
     packet: rolePacket(role, { generation: input.generation, grantPurpose: grant.purpose, assigned, tag: `pointer:${role}:${stepId}`, fields }) });
   const taggerCalls = batches.map((batch) => call("pointer_tagger", `${stepId}:tagger:${batch.batch_id}`, [...batch.unit_ids],
-    { quote_units: pointerTaggerPacket({ batch, unitsById: input.unitsById }).quote_units }));
+    (() => {
+      const packet=pointerTaggerPacket({ batch, unitsById: input.unitsById, readingContextByPage });
+      return {quote_units:packet.quote_units,
+        ...(packet.reading_context ? {reading_context:packet.reading_context} : {})};
+    })()));
   const taggerOutcomes = await runDeadlineCalls({ calls: taggerCalls, port, deadline, now, retries: 1, oneAtATime });
   const outcomes = new Map(batches.map((batch, index) => {
     const outcome = taggerOutcomes[index];
@@ -472,7 +476,7 @@ async function tagBatches({ input, batches, pages = null, pass, stepId, deadline
  * is the batch size, left at the plan's except in tests.
  */
 export async function runPointerPass({ quoteGeneration, stepId, deadline, port, grant, now = () => new Date(), pages = null, first = null,
-  maxBytes, oneAtATime = [] } = {}) {
+  maxBytes, oneAtATime = [], readingContextByPage = null } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string", "POINTER_STEP_INPUT_INVALID");
   invariant((pages === null) === (first === null), "POINTER_STEP_INPUT_INVALID");
@@ -480,7 +484,7 @@ export async function runPointerPass({ quoteGeneration, stepId, deadline, port, 
     && Array.isArray(first.event_pairs) && Array.isArray(first.dropped_event_pairs)), "POINTER_STEP_INPUT_INVALID");
   const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration), ...(maxBytes === undefined ? {} : { maxBytes }) });
   const batches = pages ? pointerRepassBatches({ batches: input.batches, unitsById: input.unitsById, pages }) : input.batches;
-  const own = await tagBatches({ input, batches, pages, pass: pages ? "coverage" : "first", stepId, deadline, port, grant, now, oneAtATime });
+  const own = await tagBatches({ input, batches, pages, pass: pages ? "coverage" : "first", stepId, deadline, port, grant, now, oneAtATime, readingContextByPage });
 
   let { checked, ledger, dropped } = own;
   if (pages) {
