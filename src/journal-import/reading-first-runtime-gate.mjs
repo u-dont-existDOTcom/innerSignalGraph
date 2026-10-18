@@ -11,8 +11,13 @@ function invariant(ok, code) {
 
 export const JOURNAL_IMPORT_ORDERS = Object.freeze(["legacy_quote_first", "reading_first"]);
 
-export function journalImportOrder(config = {}) {
-  const order = config.import_order ?? "legacy_quote_first";
+export function journalImportOrder(config = {}, { existingState = null } = {}) {
+  // The owner's new default applies to genuinely NEW imports. An earlier
+  // generation with no recorded import_order was always quote-first, so it
+  // retains that behavior when the operator resumes without an override.
+  const persistedOrder = existingState
+    ? (existingState.import_order ?? "legacy_quote_first") : null;
+  const order = config.import_order ?? persistedOrder ?? "reading_first";
   invariant(JOURNAL_IMPORT_ORDERS.includes(order), "JOURNAL_IMPORT_ORDER_INVALID");
   return order;
 }
