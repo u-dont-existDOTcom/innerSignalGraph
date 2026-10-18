@@ -22,6 +22,7 @@ export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
   "doctor",
   "inventory",
   "stage",
+  "read-source",
   "run",
   "recalibrate",
   "resume-calibration",
