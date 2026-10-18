@@ -7,6 +7,7 @@ import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
+import { journalImportOrder } from "../journal-import/reading-first-runtime-gate.mjs";
 import { prepareJournalOperatorEnvironment } from "../journal-import/operator-auth.mjs";
 import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalOperatorReviewDir, journalPointerCopyRunWords, journalPointerDeadlines,
   journalPointerRules,
@@ -214,6 +215,8 @@ function runConfigBlockers(config) {
   catch (error) { blockers.push(error.code ?? "JOURNAL_CALIBRATION_CRITICAL_MISS_LIMIT_INVALID"); }
   try { journalQuoteNumericDateOrder(config); }
   catch (error) { blockers.push(error.code ?? "JOURNAL_QUOTE_NUMERIC_DATE_ORDER_INVALID"); }
+  try { journalImportOrder(config); }
+  catch (error) { blockers.push(error.code ?? "JOURNAL_IMPORT_ORDER_INVALID"); }
   try { journalPointerDeadlines(config); }
   catch (error) { blockers.push(error.code ?? "JOURNAL_POINTER_DEADLINE_INVALID"); }
   try { journalPointerCopyRunWords(config); }
