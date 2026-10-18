@@ -22,7 +22,7 @@ const PAGE_TEXT = [
 const SOURCE = PAGE_TEXT.join("\n");
 const DIGEST = hash(SOURCE);
 
-async function fixture(t, importOrder = "reading_first") {
+async function fixture(t, importOrder = "reading_first", handlers = {}, overrides = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "synthetic-reading-first-"));
   await fs.chmod(root, 0o700);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -59,7 +59,8 @@ async function fixture(t, importOrder = "reading_first") {
     parser: { version: "synthetic-source-parser-v1" },
     pages: PAGE_TEXT.map((text, n) => ({
       page_number: n + 1, representation_id: "synthetic:page:" + (n + 1),
-      disposition: "readable", warnings: [], image_inventory: []
+      disposition: overrides.visualPage === n + 1 ? "review_required" : "readable",
+      warnings: [], image_inventory: overrides.visualPage === n + 1 ? ["synthetic:image"] : []
     })),
     representations: PAGE_TEXT.map((text, n) => ({
       representation_id: "synthetic:page:" + (n + 1),
@@ -68,7 +69,7 @@ async function fixture(t, importOrder = "reading_first") {
   });
   const open = (newConfig = config) => openJournalExecutionRuntime({
     config: newConfig, configPath, service,
-    inferencePort: createMockJournalInferencePort({ handlers: {} }),
+    inferencePort: createMockJournalInferencePort({ handlers }),
     sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER }
   });
   return { open, config, stateFile: path.join(config.execution_root, "state.json") };
@@ -181,4 +182,80 @@ test("forged, misbound, incomplete and pending receipts cannot certify a new gen
     { code: "JOURNAL_READING_FIRST_PAGE_BINDING_INVALID" });
   assert.throws(() => journalImportOrder({ import_order: "unknown" }),
     { code: "JOURNAL_IMPORT_ORDER_INVALID" });
+});
+
+const mockSourceReader = packet => ({
+  schema_version:"1.0",page:packet.page,
+  source_page_sha256:packet.source_page_sha256,source_read_complete:true,
+  reviewed_modalities:"text",
+  source_specific_understanding:"One dated source passage reviewed with context.",
+  exact_source_anchors:[{exact_text:packet.text.slice(0,37),occurrence:null}],
+  source_findings:[{
+    statement:"Provisional source-grounded account of a changed commitment.",
+    required_qualifiers:["Reported by the synthetic author"],
+    anchor_indices:[0]
+  }]
+});
+const mockSynthesis = packet => {
+  const refs=packet.observations.length
+    ? packet.observations.map(x=>x.evidence_ref)
+    : packet.prior_summaries.flatMap(x=>x.source_evidence_refs);
+  return {
+    schema_version:"1.0",
+    provisional_longitudinal_summary:"Early promise, later revision, and a supportive boundary are distinct episodes.",
+    source_evidence_refs:[...new Set(refs)],
+    known_vs_new_reconciled:true,longitudinal_counterexamples_checked:true,
+    meaningful_changes:refs.length ? [{
+      statement:"The response evolves across separately dated entries.",
+      evidence_refs:[refs[0]],
+      source_kind:"reported_event",uncertainty:"Synthetic illustrative account"
+    }] : []
+  };
+};
+
+test("real importer read-source precedes index and leaves original legacy case data unchanged", async t => {
+  const calls={read:0,synth:0};
+  const f=await fixture(t,"reading_first",{
+    source_reader:packet=>{calls.read++;return mockSourceReader(packet);},
+    source_synthesizer:packet=>{calls.synth++;return mockSynthesis(packet);}
+  });
+  const runtime=await f.open();
+  try {
+    await runtime.execute("stage");
+    await assert.rejects(runtime.execute("build-quotes"),{
+      code:"JOURNAL_READING_FIRST_STAGE_INCOMPLETE"
+    });
+    const read=await runtime.execute("read-source");
+    assert.equal(read.reading_first.read,3);
+    assert.equal(read.reading_first.pending,0);
+    assert.ok(calls.read===3 && calls.synth>=1);
+    const record=JSON.parse(await fs.readFile(f.stateFile,"utf8"));
+    assert.ok(record.reading_first_receipts_ref,"protected reading/synthesis receipts persisted");
+    assert.equal(record.quote_index,undefined,"no index created before reading");
+    const indexed=await runtime.execute("build-quotes");
+    assert.ok(indexed.quote_index.quotes>0);
+    const again=await runtime.execute("read-source");
+    assert.equal(again.reading_first.read,3);
+    assert.equal(calls.read,3,"replay resumes already attested generation without sending again");
+  } finally { await runtime.close(); }
+});
+
+test("real importer marks mixed-visual pages pending and forbids a complete new index", async t => {
+  const called=[];
+  const f=await fixture(t,"reading_first",{
+    source_reader:packet=>{called.push(packet.page);return mockSourceReader(packet);},
+    source_synthesizer:mockSynthesis
+  },{visualPage:2});
+  const runtime=await f.open();
+  try {
+    const report=await runtime.execute("read-source");
+    assert.equal(report.reading_first.pending,1);
+    assert.deepEqual(called,[1,3],"mixed-media page was not exposed to a text-only reader");
+    await assert.rejects(runtime.execute("build-quotes"),{
+      code:"JOURNAL_READING_FIRST_REVIEW_PENDING"
+    });
+    const state=JSON.parse(await fs.readFile(f.stateFile,"utf8"));
+    assert.equal(state.quote_index,undefined);
+    assert.ok(state.reading_first_receipts_ref);
+  } finally {await runtime.close();}
 });
