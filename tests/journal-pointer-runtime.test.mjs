@@ -85,7 +85,7 @@ async function runtimeEnvironment(t, options = {}) {
   const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider,
     keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
   await service.appendJournal(CASE_ID, { id: "legacy-pointer", observed_at: "2026-01-01T00:00:00.000Z", kind: "journal", text: "Invented legacy entry" }, { bearerToken: WRITER });
-  const config = { schema_version: 1, max_external_spend_usd: 0, execution_root: path.join(root, "execution"), private_runtime_root: root,
+  const config = { schema_version: 1, import_order: "legacy_quote_first", max_external_spend_usd: 0, execution_root: path.join(root, "execution"), private_runtime_root: root,
     source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(text), sha256: sha256(text) },
     target_profile: { case_id: CASE_ID }, existing_grant_ref: "synthetic:grant",
     // These tests were written for owner decision 30's rules; owner decision 32's (the default for a new run) pass
