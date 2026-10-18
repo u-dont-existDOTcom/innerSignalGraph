@@ -32,7 +32,7 @@ Do not call tools merely to collect everything. Prefer `load_handoff` as the nor
 
 If authentication is required, let the host surface its ordinary connection/authorization flow. Do not ask the user to paste bearer tokens, credentials, keys, private locator databases, or secret material into chat.
 
-If the current host does not expose the required tool, authentication fails, access is denied, or the handoff is not continuation-safe, state that exact boundary. An opened case's `connector_tools` names what the connector offers now: a tool named there that this chat can't call means the chat's tool list is older than the connector, and a new chat will have it. Do not silently substitute a summary, public fixture, stale memory, regenerated candidate, or another person's context.
+If the current host does not expose the required tool, authentication fails, access is denied, or the handoff is not continuation-safe, state that exact boundary. An opened case's `connector_tools` names what the connector offers now: a tool named there that you can't call means the app holds an older tool list for the connector, and refreshing the connector's tools in the app's settings brings in the new one (in ChatGPT, the InnerSignal plugin's tools; a new chat keeps the old list). Do not silently substitute a summary, public fixture, stale memory, regenerated candidate, or another person's context.
 
 ## Therapy continuation
 

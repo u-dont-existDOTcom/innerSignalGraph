@@ -73,7 +73,8 @@ test("every opened case carries its plan: the recorded view, or a reconstruction
   const listedNow = await post(guarded.url, "tools/list");
   assert.deepEqual(first.body.result.structuredContent.connector_tools.names, listedNow.body.result.tools.map((tool) => tool.name));
   assert.ok(first.body.result.structuredContent.connector_tools.names.includes("check_case_known_vs_new"));
-  assert.match(first.body.result.structuredContent.connector_tools.note, /new chat/u);
+  // The owner (17 Oct, 23:15 UTC): ChatGPT kept the old list in a new chat; refreshing the plugin's tools brought the new one.
+  assert.match(first.body.result.structuredContent.connector_tools.note, /refresh the connector's tools in the app's settings \(in ChatGPT, refresh the tools of the InnerSignal plugin; a new chat keeps the old list\)/u);
   // A stored plan this version can't read never keeps the case from loading: the plan shows as unavailable.
   const unreadable = applyCaseStatePatch(withoutPlan, { roadmap: { version: "case-roadmap-v9", goals: [] } });
   const later = await listen(t, { caseAccessService: service({ state: unreadable }) });

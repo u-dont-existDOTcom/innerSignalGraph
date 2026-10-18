@@ -119,3 +119,7 @@
 ## 2026-10-17: the post-deploy audit's last-mile gaps (issue #172, change E)
 
 - Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `8264d0a`; root `AGENTS.md` unchanged): `suggested-fixes/innerSignalGraph/` holds the same three items recorded above, unchanged since 12 Oct (last change `5815e96`). This branch changes connector results, the known-versus-new check's wording, the plan reconstruction and the protocol application test; no served rule, map or amendment. `2026-09-30-claim-integrity-checks.md` stays deferred by the owner's decision (question 9: C). `2026-10-09-teaching-points-for-map-changes.md` isn't triggered: no map or reader-facing rule changes. `2026-10-11-therapy-r6-coordinated-journal-release.md` stays adopted and live. No new disposition.
+
+## 2026-10-17: refreshing a connector's tools, not a new chat (issue #172, a follow-up to change E)
+
+- Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `8264d0a`; root `AGENTS.md` unchanged): `suggested-fixes/innerSignalGraph/` holds the same three items, unchanged since 12 Oct. This branch corrects one note in connector results, the private continuity skill and records; no served rule, map or amendment. No item is triggered, and there is no new disposition.

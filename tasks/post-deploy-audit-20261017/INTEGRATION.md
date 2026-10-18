@@ -19,8 +19,9 @@ the plan in every opened case, and raised three points:
 1. **Not a server fault.** The connector keeps no sessions: it builds its tool list once per process and answers every
    `tools/list` with it, signed in or not, and declares `tools.listChanged: false`. Through its public address, a fresh
    client got all 19 tools, `check_case_known_vs_new` included (checked 17 Oct, 22:11 UTC, on `/mcp` and `/`). A chat
-   that fetched the list before the deploy keeps it: this session's own connection still listed 18 after a refresh. A
-   new chat gets the new list.
+   that fetched the list before the deploy keeps it: this session's own connection still listed 18 after a refresh.
+   Correction (the owner, 17 Oct, 23:15 UTC): in ChatGPT a new chat kept the old list too; refreshing the InnerSignal
+   plugin's tools brought in the new one. The host holds the list per connector, not per chat.
 2. **The check works as designed** (shared word forms, BM25); its flag's name invited the misreading.
 3. **The reconstruction** read only app-selected routes, by design, without saying so.
 
@@ -29,7 +30,9 @@ the plan in every opened case, and raised three points:
 1. **`connector_tools` in every opened case** (`src/server/private-case-mcp.mjs`): `load_handoff`, `load_case_context`
    and `load_case_context_by_alias` results carry, after the rules and the plan, the names of the tools the connector
    offers now (exactly what `tools/list` returns) and a note: a tool named there that the chat can't call means the
-   chat's list is older than the connector, and a new chat will have it. A field of that name in the case's own data
+   app holds an older tool list for the connector, and refreshing the connector's tools in the app's settings brings in
+   the new one (in ChatGPT, the plugin's tools; a new chat keeps the old list; corrected after the owner's finding in a
+   follow-up, `task/tool-refresh-advice-20261017`). A field of that name in the case's own data
    never stands in for it. Names only, no case data.
 2. **The check's answer can't be misread** (`src/case-formulation/known-vs-new.mjs`, `src/storage/private-case-store.mjs`,
    `src/server/private-case-mcp.mjs`): the flag is renamed `close_word_match`, and the tool's description and its
@@ -83,4 +86,5 @@ agreement.
 ## Served route
 
 After a merge and the owner's `deploy`, the rebuilt connector should still report protocol `1da3ddf0…`, 19 tools, and
-`connector_tools` in an opened case. Chats opened before that deploy keep their earlier tool list.
+`connector_tools` in an opened case. An app keeps its earlier tool list for the connector until its tools are refreshed
+(in ChatGPT, in the InnerSignal plugin's settings).
