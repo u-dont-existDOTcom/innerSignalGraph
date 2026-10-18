@@ -89,6 +89,17 @@ test("an image-only source remains pending without sending the picture to a text
   }), { code: "JOURNAL_READING_FIRST_REVIEW_PENDING" });
 });
 
+test("a text-empty page is pending rather than an invented quotation", async () => {
+  const blank = { page: 2, source_page_sha256: sha("  \n"),
+    text: "  \n", required_modalities: "text" };
+  const f = argumentsFor({ pages: [pages[0], blank] });
+  const result = await produceReadingFirstJournal(f.params);
+  assert.deepEqual(f.visited, [1], "No empty-content model call");
+  assert.deepEqual(result.counts, { source_pages: 2, read: 1, pending: 1 });
+  assert.equal(result.receipt_journal.transitions[1].receipt.page_dispositions[1].reason,
+    "source_unavailable");
+});
+
 test("a model/tool refusal marks the original page unread without retrying it", async () => {
   const f = argumentsFor({
     reader: async req => {
