@@ -298,6 +298,39 @@ test("real importer read-source precedes index and leaves original legacy case d
   } finally { await runtime.close(); }
 });
 
+test("interrupted private reading preserves partial evidence without resending unknown work", async t => {
+  const invoked=[];
+  let interruption=true;
+  const f=await fixture(t,"reading_first",{
+    source_reader:packet=>{
+      invoked.push(packet.page);
+      if(packet.page===2 && interruption){
+        interruption=false;
+        throw new Error("SYNTHETIC_UNCERTAIN_PROVIDER_COMPLETION");
+      }
+      return mockSourceReader(packet);
+    },
+    source_synthesizer:mockSynthesis
+  });
+  const first=await f.open();
+  try {
+    await assert.rejects(first.execute("read-source"),/SYNTHETIC_UNCERTAIN_PROVIDER_COMPLETION/);
+    const state=JSON.parse(await fs.readFile(f.stateFile,"utf8"));
+    assert.equal(state.reading_first_receipts_ref,undefined);
+    assert.equal(state.quote_index,undefined);
+  } finally {await first.close();}
+  const resumed=await f.open();
+  try {
+    await assert.rejects(resumed.execute("read-source"),{code:"COMPLETION_UNKNOWN"});
+    const state=JSON.parse(await fs.readFile(f.stateFile,"utf8"));
+    assert.equal(state.reading_first_receipts_ref,undefined,
+      "an uncertain provider call cannot certify full reading");
+    assert.equal(state.quote_index,undefined);
+  } finally {await resumed.close();}
+  assert.deepEqual(invoked,[1,2],
+    "the earlier completed page was replayed from durable evidence, not sent again");
+});
+
 test("real importer marks mixed-visual pages pending and forbids a complete new index", async t => {
   const called=[];
   const f=await fixture(t,"reading_first",{
