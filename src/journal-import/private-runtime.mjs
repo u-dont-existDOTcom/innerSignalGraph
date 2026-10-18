@@ -13,6 +13,7 @@ import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../stor
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
+import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSynthesis } from "./reading-first-runtime-gate.mjs";
 import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { createJournalLookahead } from "./lookahead.mjs";
@@ -177,6 +178,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   const calibrationFailureLimit = journalCalibrationFailureLimit(config);
   const calibrationCriticalMissLimit = journalCalibrationCriticalMissLimit(config);
   const quoteNumericDateOrder = journalQuoteNumericDateOrder(config);
+  const importOrder = journalImportOrder(config);
   const pointerDeadlines = journalPointerDeadlines(config);
   const pointerCopyRunWords = journalPointerCopyRunWords(config);
   const pointerRules = journalPointerRules(config);
@@ -241,10 +243,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const stateFile = path.join(root, "state.json");
     let state = await existingJson(stateFile);
     if (!state) {
-      state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
+      state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, import_order: importOrder, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
       await privateJson(stateFile, state);
     }
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
+    // Older runs had no import_order field and always used quote-first. Never
+    // silently switch an in-progress generation into a different pipeline.
+    invariant((state.import_order ?? "legacy_quote_first") === importOrder,
+      "JOURNAL_IMPORT_ORDER_CHANGED");
     store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: state.corpus_id, corpusKey: key, resumeMatchingObjects: true });
     const hardestLane = normalizeJournalHardestLaneConfig(config);
     invariant(Number.isSafeInteger(hardestLane.daily_limit) && hardestLane.daily_limit >= 1, "HARDEST_LANE_CONFIG_INVALID");
@@ -2727,8 +2733,34 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // the quotes the way the run started.
     const pointerBaseGeneration = () => `${state.generation}:quotes:${QUOTE_POINTER_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
 
+    const requireReadingFirstSynthesis = async () => {
+      if (importOrder !== "reading_first") return;
+      invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
+      invariant(state.reading_first_receipts_ref, "JOURNAL_READING_FIRST_STAGE_INCOMPLETE");
+      const sourcePlan = await readLarge(state.parsed_ref);
+      const pageCount = sourcePlan.parsed.pages?.length ?? 0;
+      invariant(pageCount > 0, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
+      const receiptJournal = await readLarge(state.reading_first_receipts_ref);
+      const attestationKey = readingFirstAttestationKey(key);
+      try {
+        return verifiedReadingFirstSynthesis({
+          sourceSha256: state.source_sha256,
+          generation: state.generation,
+          pageCount,
+          receiptJournal,
+          attestationKey
+        });
+      } finally {
+        attestationKey.fill(0);
+      }
+    };
+
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
+      // A new reading-first generation cannot materialize its source index from
+      // staged text alone. It needs an authenticated original-source reading
+      // and longitudinal-synthesis checkpoint from the private worker.
+      await requireReadingFirstSynthesis();
       const corpusId = `${state.corpus_id}:quotes`;
       const generation = quoteIndexGeneration();
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
@@ -2809,6 +2841,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       && (!Object.hasOwn(run, "pointer_rules") || run.pointer_rules === pointerRules);
     const pointerRun = async () => {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
+      if (importOrder === "reading_first") {
+        await requireReadingFirstSynthesis();
+        invariant(state.quote_index?.generation === quoteIndexGeneration(),
+          "JOURNAL_READING_FIRST_INDEX_PRECONDITION_FAILED");
+      }
       if (!state.pointer) {
         const runId = randomBytes(4).toString("hex");
         state.pointer = { run_id: runId, generation: `${pointerBaseGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
