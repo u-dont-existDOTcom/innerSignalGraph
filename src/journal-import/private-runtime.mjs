@@ -2781,6 +2781,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           // These are protected encrypted store references, never public URLs.
           readEvidence:ref=>readIfPresent(ref),
           knownState:{ source_scope:"journal_only",
+            known_vs_new_scope:"imported_journal_only",
             case_history_comparison:"pending_separate_authorized_step" }
         });
         const reader=async request=>{
