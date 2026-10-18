@@ -201,6 +201,11 @@ const mockSourceReader = packet => ({
   }]
 });
 const mockSynthesis = packet => {
+  assert.equal(packet.known_state?.source_scope, "journal_only");
+  assert.equal(packet.known_state?.known_vs_new_scope, "imported_journal_only");
+  assert.equal(packet.known_state?.case_history_comparison,
+    "pending_separate_authorized_step",
+    "importing original source does not certify comparison with previous case history");
   const refs=packet.observations.length
     ? packet.observations.map(x=>x.evidence_ref)
     : packet.prior_summaries.flatMap(x=>x.source_evidence_refs);
