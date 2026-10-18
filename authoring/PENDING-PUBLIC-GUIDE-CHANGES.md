@@ -264,14 +264,6 @@ Reader need: Readers who mostly protect themselves in practical ways may think t
 Already covered: “Make the Protector Visible” lists protective acts in daily life (“Set one boundary. Say no to something costly. … Leave a relationship that keeps eroding safety.”) and says care may first appear “as a locked door, a meal, a cancelled obligation, or a phone put down at midnight”; PGQ-037 says other help stays its own thing. Neither says that practical safety is not a separate track from reparenting, or that outside help isn't an exercise.
 Where: “Make the Protector Visible”, right after “Warmth can come later.” One or two sentences in the owner's voice; write it together with PGQ-037 if both are still pending, and keep the guide's permission not to call it reparenting when inner-child language doesn't fit (“Also Look Outward”).
 
-## EMPTY sentinel
-
-When every pending entry above has been consumed and the public-guide sync bookkeeping is updated, replace all pending bundles with exactly:
-
-`Status: **EMPTY**`
-
-`No pending reader-facing semantic changes. Add the next approved reader-relevant map/source/rule change here in the same reviewed change that creates it.`
-
 ## Pending bundle J — truthful privacy boundaries and help-seeking without needless exposure
 
 ### PGQ-039 — Before sharing something legally or personally sensitive
@@ -284,3 +276,11 @@ Reader need: Avoid BOTH false assurances of secrecy and an excessively frighteni
 Already covered: PGQ-003 says graded truth and privacy aren't fakery; PGQ-030 covers care after coercive psychiatric experiences. Neither explains online records, mandated-reporting exceptions, legal professionals, or prevention-sensitive voluntary reporting. Merge with those passages rather than duplicating them. Specific service data flows and internal safety routing remain issue #180 engineering/legal work, not public guide text.
 
 Where: “Also Look Outward” immediately after the graded-disclosure/earned-trust paragraph. Humanize in the owner's voice, preserving all distinctions. Before actual public placement, obtain appropriate legal review of explicit jurisdictional statements. Guide Packet and public-guide sync gates remain; a pending queue entry is not publication authority.
+
+## EMPTY sentinel
+
+When every pending entry above has been consumed and the public-guide sync bookkeeping is updated, replace all pending bundles with exactly:
+
+`Status: **EMPTY**`
+
+`No pending reader-facing semantic changes. Add the next approved reader-relevant map/source/rule change here in the same reviewed change that creates it.`
