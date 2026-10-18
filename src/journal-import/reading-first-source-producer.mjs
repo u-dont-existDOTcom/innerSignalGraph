@@ -49,11 +49,30 @@ function verifyTextEvidence(page, observation) {
       page.text.slice(e.start,e.end) === e.exact_text,
       "JOURNAL_READING_FIRST_SOURCE_ANCHOR_INVALID");
   }
+  invariant(Array.isArray(observation.source_findings) &&
+    observation.source_findings.length > 0,
+    "JOURNAL_READING_FIRST_SOURCE_FINDINGS_REQUIRED");
+  const findings = observation.source_findings.map((item) => {
+    invariant(typeof item?.statement === "string" &&
+      item.statement.trim().length > 0 && item.statement.length <= 4000 &&
+      Array.isArray(item.required_qualifiers) &&
+      item.required_qualifiers.every(x => typeof x === "string" && x.length <= 1000) &&
+      Array.isArray(item.anchor_indices) && item.anchor_indices.length > 0 &&
+      item.anchor_indices.every(n => Number.isSafeInteger(n) &&
+        n >= 0 && n < observation.exact_source_anchors.length),
+      "JOURNAL_READING_FIRST_SOURCE_FINDINGS_INVALID");
+    return {
+      statement: item.statement,
+      required_qualifiers: [...item.required_qualifiers],
+      anchor_indices: [...item.anchor_indices]
+    };
+  });
   return {
     page: page.page,
     source_page_sha256: page.source_page_sha256,
     source_specific_understanding: observation.source_specific_understanding,
     exact_source_anchors: observation.exact_source_anchors,
+    source_findings: findings,
     reviewed_modalities: observation.reviewed_modalities,
     provenance: "source_bound_model_proposal"
   };
