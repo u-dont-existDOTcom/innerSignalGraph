@@ -150,10 +150,15 @@ test("new imports default to reading first without changing a legacy saved gener
   const original = await old.open();
   try { await original.execute("stage"); }
   finally { await original.close(); }
+  // Simulate the real historical checkpoint: it predates the import_order
+  // field, while its private config also has no explicit order.
+  const historical = JSON.parse(await fs.readFile(old.stateFile, "utf8"));
+  delete historical.import_order;
+  await fs.writeFile(old.stateFile, JSON.stringify(historical), { mode: 0o600 });
   const resumed = await old.open({ ...old.config, import_order: undefined });
   try {
     const state = JSON.parse(await fs.readFile(old.stateFile, "utf8"));
-    assert.equal(state.import_order, "legacy_quote_first");
+    assert.equal(state.import_order, undefined, "old checkpoint was not silently rewritten");
     const report = await resumed.execute("build-quotes");
     assert.ok(report.quote_index.quotes > 0);
   } finally { await resumed.close(); }
