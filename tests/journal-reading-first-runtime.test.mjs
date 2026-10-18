@@ -53,7 +53,7 @@ async function fixture(t, importOrder = "reading_first", handlers = {}, override
   const config = {
     schema_version: 1, max_external_spend_usd: 0,
     execution_root: path.join(root, "execution"), private_runtime_root: root,
-    import_order: importOrder,
+    ...(importOrder === null ? {} : { import_order: importOrder }),
     source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(SOURCE), sha256: DIGEST },
     target_profile: { case_id: CASE_ID }, existing_grant_ref: "synthetic:consent"
   };
@@ -133,6 +133,35 @@ test("the new runtime refuses actual build-quotes and pointer entrypoints withou
     assert.equal(state.quote_index, undefined, "No generated index produced");
     assert.equal(state.pointer, undefined, "No pointer run started");
   } finally { await run.close(); }
+});
+
+test("new imports default to reading first without changing a legacy saved generation", async (t) => {
+  const fresh = await fixture(t, null);
+  const run = await fresh.open();
+  try {
+    await run.execute("stage");
+    const state = JSON.parse(await fs.readFile(fresh.stateFile, "utf8"));
+    assert.equal(state.import_order, "reading_first");
+    await assert.rejects(run.execute("build-quotes"),
+      { code: "JOURNAL_READING_FIRST_STAGE_INCOMPLETE" });
+  } finally { await run.close(); }
+
+  const old = await fixture(t, "legacy_quote_first");
+  const original = await old.open();
+  try { await original.execute("stage"); }
+  finally { await original.close(); }
+  const resumed = await old.open({ ...old.config, import_order: undefined });
+  try {
+    const state = JSON.parse(await fs.readFile(old.stateFile, "utf8"));
+    assert.equal(state.import_order, "legacy_quote_first");
+    const report = await resumed.execute("build-quotes");
+    assert.ok(report.quote_index.quotes > 0);
+  } finally { await resumed.close(); }
+
+  assert.equal(journalImportOrder({}), "reading_first");
+  assert.equal(journalImportOrder({}, { existingState: {} }), "legacy_quote_first");
+  assert.equal(journalImportOrder({}, { existingState: { import_order: "reading_first" } }),
+    "reading_first");
 });
 
 test("a legacy staged source still builds its existing exact quote index", async (t) => {
