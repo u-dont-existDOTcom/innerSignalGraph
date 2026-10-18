@@ -29,7 +29,7 @@ export const JOURNAL_ROLE_DEFINITIONS = Object.freeze({
   // The pointer pass (plan 2026-10-09-journal-quote-first.md, Part 3). The tagger sees only a batch of journal quotes
   // and the search writer only questions, both on the standard tier. The pair judge sees only tag-quote pairs and
   // also runs on the hardest tier, since precision is scored by a Codex judge and a Claude judge.
-  pointer_tagger: Object.freeze({ outputSchema: "pointer-result", fields: ["quote_units"], tiers: Object.freeze(["standard"]) }),
+  pointer_tagger: Object.freeze({ outputSchema: "pointer-result", fields: ["quote_units", "reading_context"], tiers: Object.freeze(["standard"]) }),
   search_writer: Object.freeze({ outputSchema: "search-plan-result", fields: ["questions"], tiers: Object.freeze(["standard"]) }),
   pair_judge: Object.freeze({ outputSchema: "pair-judgment-result", fields: ["pairs"] }),
   // The measurement's reference: the question writer (standard tier) writes questions covering every quote of a
