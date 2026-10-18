@@ -30,7 +30,8 @@ function argumentsFor(overrides = {}) {
           page: req.page, source_page_sha256: req.source_page_sha256,
           source_read_complete: true, reviewed_modalities: "text",
           source_specific_understanding: "One time-bounded account with uncertainty retained.",
-          exact_source_anchors: [{ start: 0, end: req.text.length, exact_text: req.text }]
+          exact_source_anchors: [{ start: 0, end: req.text.length, exact_text: req.text }],
+          source_findings: [{ statement:"A source-grounded dated observation",required_qualifiers:["synthetic reported event"],anchor_indices:[0] }]
         },
         provider_receipt: { completed: true, input_sha256: sha(req.text) }
       };
@@ -99,7 +100,8 @@ test("a model/tool refusal marks the original page unread without retrying it", 
           page:req.page,source_page_sha256:req.source_page_sha256,
           source_read_complete:true,reviewed_modalities:"text",
           source_specific_understanding:"Bounded source observation",
-          exact_source_anchors:[{start:0,end:req.text.length,exact_text:req.text}]
+          exact_source_anchors:[{start:0,end:req.text.length,exact_text:req.text}],
+          source_findings:[{statement:"A bounded original observation",required_qualifiers:[],anchor_indices:[0]}]
         }, provider_receipt:{completed:true,input_sha256:sha(req.text)}
       };
     }
@@ -118,7 +120,8 @@ test("hallucinated source quotation and forged page identity reject the read", a
         page:req.page,source_page_sha256:req.source_page_sha256,
         source_read_complete:true,reviewed_modalities:"text",
         source_specific_understanding:"Unsupported fabricated quotation",
-        exact_source_anchors:[{start:0,end:4,exact_text:"INVENTED"}]
+        exact_source_anchors:[{start:0,end:4,exact_text:"INVENTED"}],
+        source_findings:[{statement:"False quote",required_qualifiers:[],anchor_indices:[0]}]
       },provider_receipt:{completed:true,input_sha256:sha(req.text)}
     })
   });
