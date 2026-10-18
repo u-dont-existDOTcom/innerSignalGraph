@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-17-r11`
+Queue version: `2026-10-18-r12`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -263,6 +263,19 @@ Teaching point: Keeping yourself safe in everyday ways, such as leaving a place 
 Reader need: Readers who mostly protect themselves in practical ways may think that isn't the real work, or that reparenting has to wait until they're safe; others may feel they must turn a doctor's appointment or getting help into an inner-child exercise, or put off outside help because they're "doing the inner work".
 Already covered: “Make the Protector Visible” lists protective acts in daily life (“Set one boundary. Say no to something costly. … Leave a relationship that keeps eroding safety.”) and says care may first appear “as a locked door, a meal, a cancelled obligation, or a phone put down at midnight”; PGQ-037 says other help stays its own thing. Neither says that practical safety is not a separate track from reparenting, or that outside help isn't an exercise.
 Where: “Make the Protector Visible”, right after “Warmth can come later.” One or two sentences in the owner's voice; write it together with PGQ-037 if both are still pending, and keep the guide's permission not to call it reparenting when inner-child language doesn't fit (“Also Look Outward”).
+
+## Pending bundle J — truthful privacy boundaries and help-seeking without needless exposure
+
+### PGQ-039 — Before sharing something legally or personally sensitive
+Caused by: owner instruction, 18 Oct 2026, broadening the reader warning proposed under generic privacy/safeguarding design issue #180. This is **owner-requested reader-facing editorial direction**, not evidence that any new mandatory-reporting, supervisor-sharing, legal-privilege, or runtime decision has been adopted. Complete drafted reader passage and nuance: https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/180#issuecomment-6250178409. Legal-source anchors are in that thread; verify applicability at publication time.
+
+Teaching point: Before disclosing highly sensitive thoughts, urges, historical actions, possible crimes or harm risks, understand differences between public/social posts, online forums, DMs, group chats, AI chats/apps and regulated professional services. Digital conversation content can be retained, copied, screenshotted or legally demanded; pseudonyms and deleting messages do not ensure anonymity. Doctors, psychologists, therapists, social workers, school personnel, childcare staff and some clergy can have statutory reporting duties in some jurisdictions, while certain laws apply to all people; being a **mandated reporter** does not mean every crime is automatically reportable. US and French/other legal regimes differ, and legal privilege differs from professional confidentiality. Police aren't confidential therapists. Readers can ask a therapist/clinician or helpline what it must report, what gets documented and who can access records, *before* describing unnecessary identifying details. AI discussion can begin with the general type of help sought without posting identities, illegal imagery/links or forensic narrative. Do not imply that half-truths or omitting safety-critical facts from clinicians prevents danger; seek qualified legal advice for legal exposure, and tell appropriate professionals enough about **current risk** for useful protective intervention. Sometimes disclosure or reporting of past harmful actions or contemplated harm can protect victims and interrupt recurrence, even when legal consequences follow; immediate danger requires prompt protection, not delays for legal/privacy optimization.
+
+Reader need: Avoid BOTH false assurances of secrecy and an excessively frightening “never disclose anything” warning that discourages early help, responsibility and prevention. Explain a practical opening question about confidentiality, then preserve informed, truthful risk disclosure where needed. Do not turn the public guide into a catalog of prohibited behaviors or legal-evasion tactics, and do not imply that *thoughts*, *dreams*, *fantasies*, *urges*, *allegations*, *reported acts*, and *present danger* are equivalent.
+
+Already covered: PGQ-003 says graded truth and privacy aren't fakery; PGQ-030 covers care after coercive psychiatric experiences. Neither explains online records, mandated-reporting exceptions, legal professionals, or prevention-sensitive voluntary reporting. Merge with those passages rather than duplicating them. Specific service data flows and internal safety routing remain issue #180 engineering/legal work, not public guide text.
+
+Where: “Also Look Outward” immediately after the graded-disclosure/earned-trust paragraph. Humanize in the owner's voice, preserving all distinctions. Before actual public placement, obtain appropriate legal review of explicit jurisdictional statements. Guide Packet and public-guide sync gates remain; a pending queue entry is not publication authority.
 
 ## EMPTY sentinel
 
