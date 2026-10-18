@@ -181,7 +181,6 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   const calibrationFailureLimit = journalCalibrationFailureLimit(config);
   const calibrationCriticalMissLimit = journalCalibrationCriticalMissLimit(config);
   const quoteNumericDateOrder = journalQuoteNumericDateOrder(config);
-  const importOrder = journalImportOrder(config);
   const pointerDeadlines = journalPointerDeadlines(config);
   const pointerCopyRunWords = journalPointerCopyRunWords(config);
   const pointerRules = journalPointerRules(config);
@@ -245,6 +244,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     secretBuffers.push(key);
     const stateFile = path.join(root, "state.json");
     let state = await existingJson(stateFile);
+    const importOrder = journalImportOrder(config, { existingState: state });
     if (!state) {
       state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, import_order: importOrder, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
       await privateJson(stateFile, state);
