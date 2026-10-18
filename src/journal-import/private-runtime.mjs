@@ -14,6 +14,8 @@ import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storag
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
 import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSynthesis } from "./reading-first-runtime-gate.mjs";
+import { produceReadingFirstJournal } from "./reading-first-source-producer.mjs";
+import { createReadingFirstPortAdapter } from "./reading-first-port-adapter.mjs";
 import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { createJournalLookahead } from "./lookahead.mjs";
@@ -425,6 +427,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         unused: sent.size - used, errors: lookaheadErrors + (lookahead?.summary().errors ?? 0) };
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
+      import_order: state.import_order ?? "legacy_quote_first",
+      ...(state.reading_first_counts ? {reading_first:{
+        ...structuredClone(state.reading_first_counts),
+        status:state.reading_first_counts.pending>0 ? "REVIEW_PENDING" : "SOURCE_SYNTHESIZED"
+      }} : {}),
       calibration_epoch: calibrationEpoch(), calibration_history_length: state.calibration_history?.length ?? 0,
       ...(state.calibration_resumes?.length ? { calibration_resume_count: state.calibration_resumes.length } : {}),
       ...(state.calibration_history?.length ? { previous_failure:
@@ -2733,6 +2740,88 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // the quotes the way the run started.
     const pointerBaseGeneration = () => `${state.generation}:quotes:${QUOTE_POINTER_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
 
+    // The private reading stage is explicitly opt-in on NEW generations.
+    // It does not re-run historical refusals or change live legacy imports.
+    async function readSource() {
+      invariant(importOrder === "reading_first", "JOURNAL_READING_FIRST_ORDER_REQUIRED");
+      await stage();
+      invariant(state.parsed_ref && state.original, "JOURNAL_SOURCE_NOT_STAGED");
+      if (state.reading_first_receipts_ref) return summary();
+
+      const sourcePlan = await readLarge(state.parsed_ref);
+      const byRepresentation = new Map(
+        sourcePlan.parsed.representations.map(p => [p.representation_id,p.text]));
+      const pages = [...sourcePlan.parsed.pages]
+        .sort((a,b) => a.page_number-b.page_number)
+        .map((p,i) => {
+          invariant(p.page_number === i+1, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
+          const text=byRepresentation.get(p.representation_id) ?? "";
+          const needsVisual = p.disposition !== "readable"
+            || (Array.isArray(p.image_inventory) && p.image_inventory.length > 0);
+          const required_modalities = needsVisual
+            ? (text.trim().length > 0 ? "text+image" : "image") : "text";
+          // For readable text this digest binds the exact source representation
+          // extracted from the authenticated immutable source archive. Images
+          // are pending, and their placeholder digest never claims review.
+          const source_page_sha256 = required_modalities === "text"
+            ? hash(text)
+            : hash(JSON.stringify({ original_source_sha256:state.source_sha256,
+              source_page_number:p.page_number, representation_id:p.representation_id }));
+          return { page:p.page_number, text,source_page_sha256,required_modalities };
+        });
+      invariant(pages.length>0, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
+
+      const attestationKey=readingFirstAttestationKey(key);
+      try {
+        const adapter=createReadingFirstPortAdapter({
+          port,grant,generation:state.generation,
+          sourceSha256:state.source_sha256,
+          // These are protected encrypted store references, never public URLs.
+          readEvidence:ref=>readIfPresent(ref),
+          knownState:{ source_scope:"journal_only",
+            case_history_comparison:"pending_separate_authorized_step" }
+        });
+        const reader=async request=>{
+          const denialId="reading-first:denial:"+request.page;
+          const previous=await readIfPresent(denialId);
+          if(previous?.status==="source_tool_refused")
+            throw new ValidationError("JOURNAL_SOURCE_TOOL_REFUSED",{code:"JOURNAL_SOURCE_TOOL_REFUSED"});
+          try{return await adapter.reader(request);}
+          catch(error){
+            if(error?.code==="JOURNAL_SOURCE_TOOL_REFUSED")
+              await writeOnce(denialId,{status:"source_tool_refused",page:request.page});
+            throw error;
+          }
+        };
+        const persistEvidence=async value=>{
+          const objectId=value.phase==="LONGITUDINAL_SYNTHESIZED"
+            ? "reading-first:longitudinal-synthesis"
+            : "reading-first:page:"+value.page;
+          await writeOnce(objectId,value);
+          const stored=await readIfPresent(objectId);
+          invariant(stored && hash(JSON.stringify(stored))===hash(JSON.stringify(value)),
+            "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
+          return {private_reference:objectId};
+        };
+        const result=await produceReadingFirstJournal({
+          sourceSha256:state.source_sha256,
+          generation:state.generation,
+          archiveReceiptRef:state.original.object_id,
+          pages,attestationKey,
+          reader,verifyCompletion:adapter.verifyCompletion,
+          persistEvidence,synthesize:adapter.synthesize,
+          verifySynthesis:adapter.verifySynthesis
+        });
+        // The final journal is source-bound and held only in the encrypted
+        // private corpus store. A new index is still blocked on any gaps.
+        const ref=await writeLarge("reading-first:attested-receipts",result.receipt_journal);
+        state.reading_first_receipts_ref=ref;
+        state.reading_first_counts=result.counts;
+        await save();
+        return summary();
+      } finally {attestationKey.fill(0);}
+    }
+
     const requireReadingFirstSynthesis = async () => {
       if (importOrder !== "reading_first") return;
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
@@ -3380,6 +3469,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     return Object.freeze({
       async execute(command) {
         if (["inventory", "stage"].includes(command)) return stage();
+        if (command === "read-source") return readSource();
         if (command === "recalibrate") return recalibrate();
         if (command === "resume-calibration") return resumeCalibration();
         if (command === "build-quotes") { (await buildQuotes()).close(); return summary(); }
