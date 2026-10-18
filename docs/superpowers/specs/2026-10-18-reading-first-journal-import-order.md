@@ -68,7 +68,7 @@ The new `reading-first-order.mjs` validator (draft PR #184) requires each stage 
 
 ## 3. Migration of the already-running journal
 
-**Current implementation switch:** The new source-reading command/guards are intentionally opt-in with `import_order: "reading_first"` in the private run configuration. Existing configurations with no order preserve `legacy_quote_first` until their active generations are safely completed and a reviewed/approved onboarding migration can select reading-first by default for genuinely new imports. The default has **not** been globally flipped or deployed at this checkpoint; a user should not be told every import is reading-first yet. This is a staged compatibility boundary, not the desired final product behavior.
+**New-generation default with legacy resume protection:** In this development candidate, an import with **no saved checkpoint and no explicit setting** now starts in `reading_first` mode. A persisted generation keeps its saved order; a historical state lacking the `import_order` field is treated as `legacy_quote_first`, and a conflicting explicit order is refused rather than rewriting a running generation. Operators can explicitly choose `legacy_quote_first` for existing tests/compatibility. This change is **not yet merged, installed, deployed or a published index**; the installed runtime still uses its existing behavior until owner-authorized release.
 
 
 1. The existing fast quote-index generation and staged pointer-tag pass stay intact and queryable during migration. Do not interrupt the running worker, reset the encrypted corpus, lose the existing 20k tag investment, republish an older quote generation or start the abandoned slow semantic calibration.
