@@ -151,6 +151,7 @@ export async function produceReadingFirstJournal({
       source_page_sha256: page.source_page_sha256, observation });
     invariant(nonempty(saved?.private_reference), "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
     evidenceRefs.push({ page: page.page, private_reference: saved.private_reference,
+      source_page_sha256: page.source_page_sha256,
       observation_sha256: resultSha });
     statuses.push({ page: page.page, source_page_sha256: page.source_page_sha256,
       status: "REVIEWED_ALL_SOURCE_MODALITIES", reviewed_modalities: "text",
