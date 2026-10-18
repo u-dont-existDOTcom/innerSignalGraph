@@ -16,6 +16,8 @@ const requiredCommon = Object.freeze([
 
 export const JOURNAL_ROLE_DEFINITIONS = Object.freeze({
   visual_reader: Object.freeze({ outputSchema: "visual-result", fields: ["page_image_ref", "page_geometry", "native_text_rendering", "neighbor_pages"] }),
+  source_reader: Object.freeze({ outputSchema: "source-reading-result", fields: ["page", "source_page_sha256", "text", "required_modalities"], tiers: Object.freeze(["standard"]) }),
+  source_synthesizer: Object.freeze({ outputSchema: "source-synthesis-result", fields: ["observations", "prior_summaries", "known_state", "review_scope"], tiers: Object.freeze(["standard"]) }),
   extractor: Object.freeze({ outputSchema: "extraction-result", fields: ["core_units", "adjacent_context", "visual_transcriptions", "repair_request"] }),
   omission_checker: Object.freeze({ outputSchema: "review-result", fields: ["core_units", "adjacent_context", "visual_transcriptions", "candidate_extraction", "target_generation"] }),
   reference_reader: Object.freeze({ outputSchema: "reference-result", fields: ["source_windows", "adjacent_context", "visual_context", "neutral_reading_instructions"] }),
@@ -49,6 +51,8 @@ export function journalRoleRunsOnTier(role, tier) {
 
 const installedInstructions = Object.freeze(Object.fromEntries([
   "visual_reader",
+  "source_reader",
+  "source_synthesizer",
   "extractor",
   "omission_checker",
   "reconciler",
