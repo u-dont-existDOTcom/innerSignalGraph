@@ -67,16 +67,29 @@ export function pointerPassInput({ built, maxBytes } = {}) {
 }
 
 /** The tagger's packet for a batch: its quotes in journal order, each with its unit, page and exact text. */
-export function pointerTaggerPacket({ batch, unitsById } = {}) {
-  invariant(isObject(batch) && Array.isArray(batch.unit_ids) && unitsById instanceof Map, "POINTER_PACKET_INPUT_INVALID");
+export function pointerTaggerPacket({ batch, unitsById, readingContextByPage = null } = {}) {
+  invariant(isObject(batch) && Array.isArray(batch.unit_ids) && unitsById instanceof Map,
+    "POINTER_PACKET_INPUT_INVALID");
+  invariant(readingContextByPage === null || readingContextByPage instanceof Map,
+    "POINTER_PACKET_INPUT_INVALID");
+  const quote_units = batch.unit_ids.map(unitId => {
+    const unit=unitsById.get(unitId);
+    invariant(unit,"POINTER_PACKET_UNIT_MISSING");
+    return {unit_id:unit.unit_id,page:unit.page??null,text:unit.text};
+  });
+  // Small, source-linked reading hints for a NEW reading-first generation.
+  // The tagger still has to anchor every label in the actual original quote.
+  const pages=[...new Set(quote_units.map(unit=>unit.page).filter(Number.isSafeInteger))];
+  const reading_context=readingContextByPage
+    ? pages.flatMap(page=>(readingContextByPage.get(page)??[])
+      .slice(0,3).map(item=>({
+        page,statement:String(item.statement).slice(0,260),
+        provenance:"provisional_source_reading"
+      }))).slice(0,8)
+    : null;
   return deepFreeze({
-    schema_version: "1.0",
-    batch_id: batch.batch_id,
-    quote_units: batch.unit_ids.map((unitId) => {
-      const unit = unitsById.get(unitId);
-      invariant(unit, "POINTER_PACKET_UNIT_MISSING");
-      return { unit_id: unit.unit_id, page: unit.page ?? null, text: unit.text };
-    })
+    schema_version:"1.0",batch_id:batch.batch_id,quote_units,
+    ...(reading_context===null?{}:{reading_context})
   });
 }
 
