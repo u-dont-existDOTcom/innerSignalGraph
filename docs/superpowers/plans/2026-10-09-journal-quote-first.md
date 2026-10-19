@@ -1,5 +1,8 @@
 # Journal quote-first: answer from the person's own words
 
+
+> **Latest owner instruction — 18 October 2026; new-generation order supersession.** The owner now requires detailed chronological source reading and source-grounded longitudinal synthesis **before constructing the new generation's search index and semantic graph**. See `docs/superpowers/specs/2026-10-18-reading-first-journal-import-order.md`, owner task #183, and graph task #168. This October 9 quote-first plan records the historical fast-search design and existing valid published/staged artifacts; do not reinterpret it as permission to build a **new complete** quote index/graph before detailed source comprehension. Preserve the already-working legacy index and staged source-grounded tags during migration. Use a mechanical, private source locator only to enable reading—not as a final index—and mark missing/denied/media material as unresolved. Do not interrupt the live worker, reset generations, or run old slow semantic calibration solely because the order changed. The new reading-first gate is not deployed until its detailed-reader source receipts and actual CLI are implemented and verified.
+
 Status: owner-requested on 9 Oct 2026, 22:32 UTC: "i'd rather have it now so we can actually test it now ... make sure
 first this is actually scalable because you said it would take more time to search. if it takes like a few minutes to
 do each reply that's not good". Part 1 is built here. Parts 2 and 3 follow once part 1 has been tried. Deploying the

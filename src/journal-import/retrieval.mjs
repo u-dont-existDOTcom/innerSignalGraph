@@ -616,6 +616,9 @@ export async function openPrivateJournalGraph({
     invariant(kinds === null || tagIndexes, "QUOTE_TAGS_NOT_AVAILABLE");
     // Whether query words also match tag labels in this search.
     const tagged = matchTags && tagIndexes;
+    // New reading-first generations may contain provisional, source-anchored
+    // interpretation facets. They are NEVER substituted for the original quote.
+    const readingAvailable = matchTags && Array.isArray(manifest.indexes.reading_terms);
     // Version 3 of the quote index lists the quotes holding each term as the forms reading takes it (`quote_terms`).
     const wordList = Array.isArray(manifest.indexes.quote_terms);
     const allTerms = lexicalTerms(query);
@@ -625,7 +628,7 @@ export async function openPrivateJournalGraph({
       filters_sha256: sha256(Buffer.from(JSON.stringify({ from, to, includeUndated, ...(kinds === null ? {} : { kinds: [...kinds].sort() }),
         ...(matchTags ? {} : { match_tags: false }) }), "utf8")),
       // A generation with a word list ranks another way, so its cursors say so.
-      sort: wordList ? QUOTE_RANKING_V3 : "quotes"
+      sort: readingAvailable ? QUOTE_RANKING_V3+":reading" : (wordList ? QUOTE_RANKING_V3 : "quotes")
     };
     const start = cursor ? parseCursor(cursor, expected).offset : 0;
     const content = allTerms.filter((term) => !QUOTE_STOPWORDS.has(term));
@@ -698,8 +701,30 @@ export async function openPrivateJournalGraph({
       });
     }
     const tagOnly = [...tagScores.keys()].filter((id) => !scores.has(id)).sort(byScore(tagScores, tagMatched));
-    const ranked = [...wordRanked, ...tagOnly];
-    const matchedBy = (id) => (scores.has(id) ? (tagScores.has(id) ? "both" : "words") : "tag");
+    const readingScores = new Map();
+    const readingMatched = new Map();
+    if (readingAvailable) {
+      const readingPostings = await Promise.all(terms.map((term) => readIndex("reading_terms", term)));
+      terms.forEach((term,index) => {
+        const ids=[...new Set(readingPostings[index])]
+          .filter(id=>typeof id==="string" && id.startsWith("passage:"));
+        if(!ids.length)return;
+        const weight=Math.log(1+population/ids.length);
+        for(const id of ids){
+          readingScores.set(id,(readingScores.get(id)??0)+weight);
+          if(!readingMatched.has(id))readingMatched.set(id,[]);
+          readingMatched.get(id).push(term);
+        }
+      });
+    }
+    const readingOnly=[...readingScores.keys()]
+      .filter(id=>!scores.has(id) && !tagScores.has(id))
+      .sort(byScore(readingScores,readingMatched));
+    // Original wording matches ALWAYS rank ahead of generated facets.
+    const ranked=[...wordRanked,...tagOnly,...readingOnly];
+    const matchedBy = id => scores.has(id)
+      ? (tagScores.has(id) ? "both" : "words")
+      : (tagScores.has(id) ? "tag" : "reading");
     const quoteIndex = Array.isArray(manifest.indexes.quote_meta);
     const windowed = from !== null || to !== null;
     // A quote index lists its quotes by the month they were written, so a time window first keeps the
@@ -765,12 +790,17 @@ export async function openPrivateJournalGraph({
         }) : null,
         cues: quoteCues(text),
         matched_by: matchedBy(id),
-        matched_terms: Object.freeze([...(matched.get(id) ?? [])]),
+        matched_terms: Object.freeze([...(matched.get(id) ?? []),
+          ...(readingMatched.get(id) ?? [])]),
         ...(tagScores.has(id) ? { matched_tags: Object.freeze(quoteTags
           .filter((tag) => ["topic", "event"].includes(tag.kind)
             && lexicalTerms(tag.label).some((term) => tagMatched.get(id).includes(term)))
           .map((tag) => Object.freeze({ kind: tag.kind, label: tag.label }))) } : {}),
-        score: Math.round((scores.get(id) ?? tagScores.get(id)) * 1000) / 1000
+        ...(readingScores.has(id) ? {
+          reading_interpretation_provisional: true,
+          matched_reading_terms: Object.freeze([...(readingMatched.get(id) ?? [])])
+        } : {}),
+        score: Math.round((scores.get(id) ?? tagScores.get(id) ?? readingScores.get(id) ?? 0) * 1000) / 1000
       }));
     }
     const more = position < candidates.length;
@@ -799,6 +829,9 @@ export async function openPrivateJournalGraph({
         // so with either the counts are unknown (null) rather than the unfiltered ones.
         matching_quotes: windowed || kinds !== null ? null : ranked.length,
         tags: tagged,
+        reading_facets: readingAvailable,
+        ...(readingAvailable ? { matching_only_by_reading: windowed || kinds !== null
+          ? null : readingOnly.length } : {}),
         ...(tagged ? { matching_only_by_tag: windowed || kinds !== null ? null : tagOnly.length } : {}),
         quotes_examined: visited,
         scan_capped: scanCapped,

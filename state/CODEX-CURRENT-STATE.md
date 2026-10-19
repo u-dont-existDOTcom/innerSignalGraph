@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-17
+Updated: 2026-10-18
+
+## Reading-first journal import — current implementation checkpoint (2026-10-18, owner task #183, draft PR #184)
+
+- **Owner outcome OPEN:** In future source generations, actually read the original journal in chronological detail and reconcile its evidence **before** building the user-facing index and graph/timeline; use the reading to enrich both. Separately, arrange an authorized review of remaining original-source modalities/gaps. Older quote-first lookup and staged pointer work remain intact until a proved replacement; no old calibration reset.
+- **Proposed code, not installed:** The candidate now starts **new imports without a prior state** as `reading_first` by default, with a private `read-source` CLI/runtime stage, permitted source_reader/synthesizer roles, authenticated source/page/modality-bound receipts, saved observations and source-only synthesis, enriched source-derived search facets, pointer context, and a fail-closed index/pointer gate. Existing saved generations retain their original order; an old state with no order field resumes quote-first. Historical test fixtures now explicitly select legacy. All tests use invented documents.
+- **Checks so far:** 65/65 focused tests passed prior to changing the default; a new synthetic test covers no-setting fresh reading-first imports and historical no-order state resume, while the affected historical importer suites are being rerun. Full CI previously found two stale role/packet assertions, corrected. The latest full GitHub Verify and final-head independent review are still required before any merge. An earlier forged-completion finding was addressed through bound HMAC stage attestations. Do not report the default migration as tested green until the updated suites return.
+- **Outstanding:** Validate the full package, independently review final head, ensure real private inference/source-reading resumability is appropriate for long journals, and prove actual chronological source understanding improves search/graph performance against index-only on bounded held-out cases. No live sensitive material processed by this branch, and no claim that model-derived text is client-approved history. The 306-page earlier restricted-source/visual-review gap remains a distinct qualified-handling track and is not solved by this importer implementation.
+- **Gates:** Keep this PR draft/unmerged and `stable` untouched until project review/checks/owner release authority. A valid stage contract or synthetic success does **not** equal a fully read imported real journal, a published graph, or a deployed runtime.
 
 
 ## Refreshing a connector's tools, not a new chat (2026-10-17, issue #172, a follow-up to change E; branch `task/tool-refresh-advice-20261017`, onto `main`, not merged)

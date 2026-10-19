@@ -118,9 +118,18 @@ const call = (role, tier, operationKey = `job:synthetic-${role}-${tier}`) => ({
 test("each pointer role is defined with its output schema and packet field, and its schema is registered", () => {
   for (const [role, { schema, field }] of Object.entries(ROLES)) {
     assert.equal(JOURNAL_ROLE_DEFINITIONS[role].outputSchema, schema);
-    assert.deepEqual(JOURNAL_ROLE_DEFINITIONS[role].fields, [field]);
+    // Reading-first tagging optionally receives source-linked interpretation;
+    // legacy pointer packets remain valid with the original quote-only field.
+    assert.deepEqual(JOURNAL_ROLE_DEFINITIONS[role].fields,
+      role === "pointer_tagger" ? [field, "reading_context"] : [field]);
     assert.ok(JOURNAL_SCHEMA_NAMES.includes(schema), `${schema} is registered`);
   }
+  const oldTaggerPacket = buildJournalRolePacket("pointer_tagger", packetInput("pointer_tagger"));
+  assert.equal(oldTaggerPacket.reading_context, undefined);
+  const interpretation = [{ unit_id: "unit:one", qualifiers: ["only a dream"], source_refs: ["source:one"] }];
+  const newTaggerPacket = buildJournalRolePacket("pointer_tagger",
+    packetInput("pointer_tagger", { reading_context: interpretation }));
+  assert.deepEqual(newTaggerPacket.reading_context, interpretation);
   assert.deepEqual(validateJournalSchema("pointer-result", pointerAnswer()), pointerAnswer());
   assert.deepEqual(validateJournalSchema("search-plan-result", searchAnswer()), searchAnswer());
   assert.deepEqual(validateJournalSchema("pair-judgment-result", judgmentAnswer()), judgmentAnswer());

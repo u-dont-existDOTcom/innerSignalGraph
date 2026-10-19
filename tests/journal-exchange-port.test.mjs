@@ -649,7 +649,11 @@ test("every supported hardest role refuses an indivisible oversized complete pac
   // question writer.
   const roles = Object.keys(JOURNAL_ROLE_DEFINITIONS).filter(role => port.capabilities().hardest_roles[role].available);
   assert.deepEqual(roles, Object.keys(JOURNAL_ROLE_DEFINITIONS)
-    .filter(role => !["visual_reader", "pointer_tagger", "search_writer", "question_writer"].includes(role)));
+    .filter(role => !["visual_reader", "source_reader", "source_synthesizer", "pointer_tagger", "search_writer", "question_writer"].includes(role)));
+  // New reading-first roles are standard tier only; an oversized packet
+  // must not be routed to the hardest provider as a size-limit workaround.
+  assert.equal(port.capabilities().hardest_roles.source_reader.available, false);
+  assert.equal(port.capabilities().hardest_roles.source_synthesizer.available, false);
   for (const role of roles) {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     const request = referenceCall();

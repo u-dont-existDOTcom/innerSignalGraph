@@ -19,7 +19,7 @@ async function fixture(t){
  await fs.mkdir(path.join(root,'private'),{mode:0o700});
  const text='Synthetic entry, uncertain date. A blue cup is on the table.\n';
  await fs.writeFile(path.join(root,'private','source.txt'),text,{mode:0o600});
- const config={schema_version:1,max_external_spend_usd:0,execution_root:path.join(root,'execution'),private_runtime_root:root,source:{relative_path:'private/source.txt',bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')},target_profile:{case_id:'synthetic-case'},existing_grant_ref:'synthetic:grant'};
+ const config={schema_version: 1, import_order: "legacy_quote_first",max_external_spend_usd:0,execution_root:path.join(root,'execution'),private_runtime_root:root,source:{relative_path:'private/source.txt',bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')},target_profile:{case_id:'synthetic-case'},existing_grant_ref:'synthetic:grant'};
  const configPath=path.join(root,'private','config.json');
  await fs.writeFile(configPath,JSON.stringify(config),{mode:0o600});
  return {root,config,configPath,service:{verifyCaseAccess:async()=>({})},inferencePort:createDisabledJournalInferencePort()};

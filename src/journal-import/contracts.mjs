@@ -20,6 +20,8 @@ export const JOURNAL_SCHEMA_NAMES = Object.freeze([
   "restricted-anchor",
   "review-result",
   "search-plan-result",
+  "source-reading-result",
+  "source-synthesis-result",
   "visual-result"
 ]);
 

@@ -13,6 +13,10 @@ import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../stor
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
+import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSynthesis } from "./reading-first-runtime-gate.mjs";
+import { produceReadingFirstJournal } from "./reading-first-source-producer.mjs";
+import { createReadingFirstPortAdapter } from "./reading-first-port-adapter.mjs";
+import { buildReadingFirstFacetIndexes } from "./reading-first-facets.mjs";
 import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { createJournalLookahead } from "./lookahead.mjs";
@@ -240,11 +244,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     secretBuffers.push(key);
     const stateFile = path.join(root, "state.json");
     let state = await existingJson(stateFile);
+    const importOrder = journalImportOrder(config, { existingState: state });
     if (!state) {
-      state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
+      state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, import_order: importOrder, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
       await privateJson(stateFile, state);
     }
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
+    // Older runs had no import_order field and always used quote-first. Never
+    // silently switch an in-progress generation into a different pipeline.
+    invariant((state.import_order ?? "legacy_quote_first") === importOrder,
+      "JOURNAL_IMPORT_ORDER_CHANGED");
     store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: state.corpus_id, corpusKey: key, resumeMatchingObjects: true });
     const hardestLane = normalizeJournalHardestLaneConfig(config);
     invariant(Number.isSafeInteger(hardestLane.daily_limit) && hardestLane.daily_limit >= 1, "HARDEST_LANE_CONFIG_INVALID");
@@ -419,6 +428,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         unused: sent.size - used, errors: lookaheadErrors + (lookahead?.summary().errors ?? 0) };
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
+      import_order: state.import_order ?? "legacy_quote_first",
+      ...(state.reading_first_counts ? {reading_first:{
+        ...structuredClone(state.reading_first_counts),
+        status:state.reading_first_counts.pending>0 ? "REVIEW_PENDING" : "SOURCE_SYNTHESIZED"
+      }} : {}),
       calibration_epoch: calibrationEpoch(), calibration_history_length: state.calibration_history?.length ?? 0,
       ...(state.calibration_resumes?.length ? { calibration_resume_count: state.calibration_resumes.length } : {}),
       ...(state.calibration_history?.length ? { previous_failure:
@@ -436,6 +450,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       residuals: structuredClone(state.residuals ?? {}),
       ...(state.quote_index ? { quote_index: { ...structuredClone(state.quote_index.stats), corpus_id: state.quote_index.corpus_id,
         generation: state.quote_index.generation, built_at: state.quote_index.built_at, published_at: state.quote_index.published?.at ?? null,
+        ...(state.quote_index.reading_facets ? {reading_facets:structuredClone(state.quote_index.reading_facets)} : {}),
         supersedes: state.quote_index.supersedes ?? null } } : {}),
       ...(state.pointer ? { pointer: pointerSummary() } : {}),
       ...(state.pointer_history?.length ? { pointer_runs_before: state.pointer_history.length } : {}),
@@ -2727,8 +2742,117 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // the quotes the way the run started.
     const pointerBaseGeneration = () => `${state.generation}:quotes:${QUOTE_POINTER_VERSION}-${quoteNumericDateOrder.replace("_", "-")}`;
 
+    // The private reading stage is explicitly opt-in on NEW generations.
+    // It does not re-run historical refusals or change live legacy imports.
+    async function readSource() {
+      invariant(importOrder === "reading_first", "JOURNAL_READING_FIRST_ORDER_REQUIRED");
+      await stage();
+      invariant(state.parsed_ref && state.original, "JOURNAL_SOURCE_NOT_STAGED");
+      if (state.reading_first_receipts_ref) return summary();
+
+      const sourcePlan = await readLarge(state.parsed_ref);
+      const byRepresentation = new Map(
+        sourcePlan.parsed.representations.map(p => [p.representation_id,p.text]));
+      const pages = [...sourcePlan.parsed.pages]
+        .sort((a,b) => a.page_number-b.page_number)
+        .map((p,i) => {
+          invariant(p.page_number === i+1, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
+          const text=byRepresentation.get(p.representation_id) ?? "";
+          const needsVisual = p.disposition !== "readable"
+            || (Array.isArray(p.image_inventory) && p.image_inventory.length > 0);
+          const required_modalities = needsVisual
+            ? (text.trim().length > 0 ? "text+image" : "image") : "text";
+          // For readable text this digest binds the exact source representation
+          // extracted from the authenticated immutable source archive. Images
+          // are pending, and their placeholder digest never claims review.
+          const source_page_sha256 = required_modalities === "text"
+            ? hash(text)
+            : hash(JSON.stringify({ original_source_sha256:state.source_sha256,
+              source_page_number:p.page_number, representation_id:p.representation_id }));
+          return { page:p.page_number, text,source_page_sha256,required_modalities };
+        });
+      invariant(pages.length>0, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
+
+      const attestationKey=readingFirstAttestationKey(key);
+      try {
+        const adapter=createReadingFirstPortAdapter({
+          port,grant,generation:state.generation,
+          sourceSha256:state.source_sha256,
+          // These are protected encrypted store references, never public URLs.
+          readEvidence:ref=>readIfPresent(ref),
+          knownState:{ source_scope:"journal_only",
+            known_vs_new_scope:"imported_journal_only",
+            case_history_comparison:"pending_separate_authorized_step" }
+        });
+        const reader=async request=>{
+          const denialId="reading-first:denial:"+request.page;
+          const previous=await readIfPresent(denialId);
+          if(previous?.status==="source_tool_refused")
+            throw new ValidationError("JOURNAL_SOURCE_TOOL_REFUSED",{code:"JOURNAL_SOURCE_TOOL_REFUSED"});
+          try{return await adapter.reader(request);}
+          catch(error){
+            if(error?.code==="JOURNAL_SOURCE_TOOL_REFUSED")
+              await writeOnce(denialId,{status:"source_tool_refused",page:request.page});
+            throw error;
+          }
+        };
+        const persistEvidence=async value=>{
+          const objectId=value.phase==="LONGITUDINAL_SYNTHESIZED"
+            ? "reading-first:longitudinal-synthesis"
+            : "reading-first:page:"+value.page;
+          await writeOnce(objectId,value);
+          const stored=await readIfPresent(objectId);
+          invariant(stored && hash(JSON.stringify(stored))===hash(JSON.stringify(value)),
+            "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
+          return {private_reference:objectId};
+        };
+        const result=await produceReadingFirstJournal({
+          sourceSha256:state.source_sha256,
+          generation:state.generation,
+          archiveReceiptRef:state.original.object_id,
+          pages,attestationKey,
+          reader,verifyCompletion:adapter.verifyCompletion,
+          persistEvidence,synthesize:adapter.synthesize,
+          verifySynthesis:adapter.verifySynthesis
+        });
+        // The final journal is source-bound and held only in the encrypted
+        // private corpus store. A new index is still blocked on any gaps.
+        const ref=await writeLarge("reading-first:attested-receipts",result.receipt_journal);
+        state.reading_first_receipts_ref=ref;
+        state.reading_first_counts=result.counts;
+        await save();
+        return summary();
+      } finally {attestationKey.fill(0);}
+    }
+
+    const requireReadingFirstSynthesis = async () => {
+      if (importOrder !== "reading_first") return;
+      invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
+      invariant(state.reading_first_receipts_ref, "JOURNAL_READING_FIRST_STAGE_INCOMPLETE");
+      const sourcePlan = await readLarge(state.parsed_ref);
+      const pageCount = sourcePlan.parsed.pages?.length ?? 0;
+      invariant(pageCount > 0, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
+      const receiptJournal = await readLarge(state.reading_first_receipts_ref);
+      const attestationKey = readingFirstAttestationKey(key);
+      try {
+        return verifiedReadingFirstSynthesis({
+          sourceSha256: state.source_sha256,
+          generation: state.generation,
+          pageCount,
+          receiptJournal,
+          attestationKey
+        });
+      } finally {
+        attestationKey.fill(0);
+      }
+    };
+
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
+      // A new reading-first generation cannot materialize its source index from
+      // staged text alone. It needs an authenticated original-source reading
+      // and longitudinal-synthesis checkpoint from the private worker.
+      await requireReadingFirstSynthesis();
       const corpusId = `${state.corpus_id}:quotes`;
       const generation = quoteIndexGeneration();
       const quoteStore = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId, corpusKey: key, resumeMatchingObjects: true });
@@ -2748,6 +2872,26 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const { representations } = await quoteSource();
           const input = await quoteGenerationInput(generation);
           const built = buildQuoteGeneration(input);
+          let readingFacets=null;
+          if(importOrder==="reading_first"){
+            const sourcePlan=await readLarge(state.parsed_ref);
+            const texts=new Map(sourcePlan.parsed.representations
+              .map(p=>[p.representation_id,p.text]));
+            const sourcePages=sourcePlan.parsed.pages.map(p=>({
+              page:p.page_number,text:texts.get(p.representation_id)??""
+            }));
+            const observations=[];
+            for(const page of sourcePages){
+              const id="reading-first:page:"+page.page;
+              const stored=await readIfPresent(id);
+              invariant(stored?.observation && stored?.page===page.page,
+                "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
+              observations.push({...stored,private_reference:id});
+            }
+            readingFacets=buildReadingFirstFacetIndexes({
+              built,observations,sourcePages
+            });
+          }
           // The quote corpus carries the archived original its locators name, so it is complete on its own.
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
@@ -2757,9 +2901,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
             // Version 3 adds the word list the search ranks by.
             extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths,
-              ...(input.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) }, indexRepresentations: true });
+              ...(input.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}),
+              ...(readingFacets ? {
+                reading_terms:readingFacets.readingTerms,
+                reading_meta:readingFacets.readingMeta
+              } : {}) }, indexRepresentations: true });
           // The manifest stays in the store, not in the run state, which is rewritten on every save.
           state.quote_index = { corpus_id: corpusId, generation, manifest_object_id: persisted.manifest_object_id,
+            ...(readingFacets ? {reading_facets:readingFacets.stats} : {}),
             manifest_reference: persisted.manifest_reference, stats: structuredClone(built.stats), built_at: now().toISOString(), published: null,
             supersedes };
           await save();
@@ -2809,6 +2958,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       && (!Object.hasOwn(run, "pointer_rules") || run.pointer_rules === pointerRules);
     const pointerRun = async () => {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass" && state.original, "JOURNAL_SOURCE_NOT_STAGED");
+      if (importOrder === "reading_first") {
+        await requireReadingFirstSynthesis();
+        invariant(state.quote_index?.generation === quoteIndexGeneration(),
+          "JOURNAL_READING_FIRST_INDEX_PRECONDITION_FAILED");
+      }
       if (!state.pointer) {
         const runId = randomBytes(4).toString("hex");
         state.pointer = { run_id: runId, generation: `${pointerBaseGeneration()}:pointer-${runId}`, numeric_date_order: quoteNumericDateOrder,
@@ -3343,6 +3497,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     return Object.freeze({
       async execute(command) {
         if (["inventory", "stage"].includes(command)) return stage();
+        if (command === "read-source") return readSource();
         if (command === "recalibrate") return recalibrate();
         if (command === "resume-calibration") return resumeCalibration();
         if (command === "build-quotes") { (await buildQuotes()).close(); return summary(); }
@@ -3360,6 +3515,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "quote-search-check") return quoteSearchCheck();
         if (command === "pointer-rebase") return pointerRebase();
         if (command === "published-readback") return publishedReadback();
+        // New reading-first generations must never slip into the historical
+        // semantic graph/commit path using merely parsed/indexed source.
+        // Existing persisted legacy generations are unaffected.
+        if (importOrder === "reading_first" &&
+          ["run", "audit", "patterns", "commit"].includes(command)) {
+          await requireReadingFirstSynthesis();
+          // This legacy semantic path does not consume the trusted read-derived
+          // synthesis. Do not publish an alternate graph under the new order.
+          invariant(false, "JOURNAL_READING_FIRST_LEGACY_SEMANTIC_PATH_DISABLED");
+        }
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();
