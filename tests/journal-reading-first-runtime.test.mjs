@@ -350,3 +350,29 @@ test("real importer marks mixed-visual pages pending and forbids a complete new 
     assert.ok(state.reading_first_receipts_ref);
   } finally {await runtime.close();}
 });
+
+
+test("new reading-first imports cannot bypass into the historical semantic graph workflow", async t => {
+  const f=await fixture(t,"reading_first",{
+    source_reader:mockSourceReader,
+    source_synthesizer:mockSynthesis
+  });
+  const runtime=await f.open();
+  try {
+    await runtime.execute("stage");
+    for(const command of ["run","audit","patterns","commit"]){
+      await assert.rejects(runtime.execute(command),{
+        code:"JOURNAL_READING_FIRST_STAGE_INCOMPLETE"
+      }, "Missing reading evidence blocks legacy "+command);
+    }
+    await runtime.execute("read-source");
+    for(const command of ["run","audit","patterns","commit"]){
+      await assert.rejects(runtime.execute(command),{
+        code:"JOURNAL_READING_FIRST_LEGACY_SEMANTIC_PATH_DISABLED"
+      }, "After successful reading, old semantic "+command+" still cannot overwrite the new index");
+    }
+    const state=JSON.parse(await fs.readFile(f.stateFile,"utf8"));
+    assert.equal(state.graph_ref,undefined);
+    assert.equal(state.quote_index,undefined);
+  } finally { await runtime.close(); }
+});
