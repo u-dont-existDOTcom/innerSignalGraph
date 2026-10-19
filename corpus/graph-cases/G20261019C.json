@@ -1,0 +1,58 @@
+{
+  "id": "G20261019C",
+  "description": "Abdominal tension or pain is not evidence of suppressed emotion; optional calming may accompany appropriate medical care.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "parent_imagery": "not_used",
+    "love_access": "accessible",
+    "self_directed_love": "unsafe",
+    "solar_plexus_tension": "present",
+    "protective_response": "absent",
+    "urge_to_escape": "absent",
+    "credibility_conflict": "absent",
+    "age_agency_ambiguity": "absent",
+    "resentment_toward_younger_self": "absent",
+    "coherent_child_state": "present",
+    "identity_blur": "absent",
+    "belonging_pressure": "absent",
+    "self_criticism": "absent",
+    "current_intent": "conversation",
+    "memory_source_risk": "absent",
+    "forgiveness_interest": "absent",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "target_type": "developmental",
+    "trigger_loop": "absent",
+    "freeze_pattern": "absent",
+    "discharge_used": "no",
+    "emdr_interest": "absent",
+    "advanced_release_interest": "absent",
+    "advanced_release_physical_risk": "unknown",
+    "panic_instability": "absent",
+    "bypass_risk": "absent",
+    "guide_readiness": "absent",
+    "deep_work_readiness": "unknown",
+    "basic_reparenting_capacity": "unknown",
+    "stable_for_advanced_release": "unknown",
+    "witness_capacity": "absent",
+    "credibility_evidence_state": "adverse",
+    "internal_speaker_relation": "unresolved"
+  },
+  "unknowns": [],
+  "expected": {
+    "matchedIncludes": [
+      "IC.SOLAR_PLEXUS_RELAXATION"
+    ],
+    "requiredNuancePatterns": [
+      "the symptom is real",
+      "its origin is not established"
+    ]
+  }
+}
