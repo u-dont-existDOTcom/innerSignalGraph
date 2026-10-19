@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "status": "active",
+  "exclusive_writer": true,
+  "owned_branch": "chat/schema-source-clarifications-20261019",
+  "integration_branch": "main",
+  "parent_integrator": "InnerSignal repository owner / normal Guide Packet integrator",
+  "scope": "Owner approved two minimal semantics: ordinary urges are not necessarily protective/trauma-based; physical illness is not proof of suppressed emotion. Update canonical InnerSignal AI guide and existing graph nodes on isolated branch, plus provenance, regressions and public-guide queue, without editing humanized guide, releasing stable, or bypassing Guide Packet owner gates.",
+  "source_proposal": "docs/research/capacchione-minimal-map-guide-proposal-20261019.md on research branch chat/schema-reparenting-book-audit-20261018",
+  "owner_approval": "User 2026-10-19: 'good i'm putting those into the humanized guide now, you can add to ai guide and map'",
+  "affected_ids": [
+    "IC.GUIDE_LATER",
+    "IC.MEET_GUARD",
+    "IC.SOLAR_PLEXUS_RELAXATION"
+  ],
+  "no_new_nodes": true
+}
