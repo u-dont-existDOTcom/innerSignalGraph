@@ -202,7 +202,8 @@
       "sourceRefs": [
         "IC.REGULATION_BEFORE_DIALOGUE",
         "IC.HEART_SOLAR_LOOP",
-        "AMEND.SOM.PREP_MODALITIES"
+        "AMEND.SOM.PREP_MODALITIES",
+        "AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -210,7 +211,8 @@
         "Treat softening as an opening for love or presence, not an order to enter memories."
       ],
       "avoid": [
-        "Do not force breath, chase intensity, or assume tension proves a hidden memory."
+        "Do not force breath, chase intensity, or assume tension proves a hidden memory.",
+        "Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care."
       ],
       "successSignals": [
         "The body softens without air hunger, flooding, or loss of orientation."
@@ -226,7 +228,8 @@
         ],
         "blockNodes": [],
         "requiredNuance": [
-          "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict."
+          "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict.",
+          "Emotional regulation and medical care may proceed together; the symptom is real, but its origin is not established by its emotional associations alone."
         ],
         "forbiddenOverclaims": [
           "Do not claim that energy has definitively moved or trauma has been released."
@@ -708,7 +711,8 @@
         "IC.BOTTOM_UP_SEQUENCE",
         "IC.ESCAPE_URGE",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
-        "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION"
+        "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
+        "AMEND.IC.ORDINARY_DESIRE_NO_TRAUMA_20261019"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -719,7 +723,8 @@
       ],
       "avoid": [
         "Do not classify the voice more confidently than the transcript supports or push past it.",
-        "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex."
+        "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex.",
+        "Do not assume every strong wish or urge serves a protective function or encodes childhood trauma; check the actual context and allow an ordinary desire or habit as an explanation."
       ],
       "successSignals": [
         "The protective response can be heard without running the session or being exiled."
@@ -737,7 +742,8 @@
         "requiredNuance": [
           "The contempt may be child, protector, adult evaluator, or blend.",
           "Protective intent and predictive accuracy are separate: an alarm can be understandable and still be mistaken, outdated, or overprotective.",
-          "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward."
+          "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward.",
+          "An impulse is an experience, not automatic evidence of a protective part, unmet childhood need, endorsed intent or required action."
         ],
         "forbiddenOverclaims": [
           "Do not definitively label a cynical voice as a guard.",
@@ -1245,21 +1251,24 @@
         "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
         "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
         "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
-        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.IC.ORDINARY_DESIRE_NO_TRAUMA_20261019"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
         "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.",
         "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes.",
-        "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on."
+        "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on.",
+        "Acknowledge an ordinary want, habit, impatient impulse or selfish desire without shaming it or treating it automatically as a hidden wounded child, trauma clue, or protective mode; the adult Guide chooses what to do, including fair limits that respect other people."
       ],
       "avoid": [
         "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
         "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
         "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
         "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks.",
-        "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity."
+        "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity.",
+        "Do not invent a separate Inner Brat person or hidden trauma cause for every selfish wish."
       ],
       "successSignals": [
         "Direction increases life participation without exiling the child, and outside guidance strengthens rather than replaces the person’s capacity to evaluate truth, boundaries, and trust."
@@ -1279,7 +1288,8 @@
           "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound.",
           "An external guide may contribute real wisdom while remaining trustworthy only in a limited domain. The internal Guide keeps authority corrigible by evidence and does not outsource true/false judgment to charisma, intuition, or specialness.",
           "Mental health and mature guidance concern the relationship to mental events and the ability to choose skillful action; involuntary occurrence alone is not endorsement or identity.",
-          "Occurrence-versus-endorsement distinctions do not suspend current-intent, planning, consent or safety routing; reported intention and behavior still matter."
+          "Occurrence-versus-endorsement distinctions do not suspend current-intent, planning, consent or safety routing; reported intention and behavior still matter.",
+          "Desire is not command: harmless wanting, legitimate anger about real mistreatment, and behavior that overrides another person's rights or consent differ. An unwanted impulse alone is not endorsed harmful intent."
         ]
       },
       "defaultQuestion": ""
