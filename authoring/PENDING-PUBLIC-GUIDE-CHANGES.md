@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-18-r12`
+Queue version: `2026-10-19-r13`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -276,6 +276,16 @@ Reader need: Avoid BOTH false assurances of secrecy and an excessively frighteni
 Already covered: PGQ-003 says graded truth and privacy aren't fakery; PGQ-030 covers care after coercive psychiatric experiences. Neither explains online records, mandated-reporting exceptions, legal professionals, or prevention-sensitive voluntary reporting. Merge with those passages rather than duplicating them. Specific service data flows and internal safety routing remain issue #180 engineering/legal work, not public guide text.
 
 Where: “Also Look Outward” immediately after the graded-disclosure/earned-trust paragraph. Humanize in the owner's voice, preserving all distinctions. Before actual public placement, obtain appropriate legal review of explicit jurisdictional statements. Guide Packet and public-guide sync gates remain; a pending queue entry is not publication authority.
+
+### PGQ-040 — Not every strong want is a protector
+
+Cause: Owner-approved 2026-10-19 `AMEND.IC.ORDINARY_DESIRE_NO_TRAUMA_20261019`; existing `IC.GUIDE_LATER` and `IC.MEET_GUARD` and canonical guide source.
+
+Teaching point: A selfish wish or impatient demand may simply be an ordinary desire or habit. Acknowledge it without shame, choose limits and behavior that respect others, and do not invent a hidden protector or childhood explanation. Unwanted impulses alone do not prove harmful intent.
+
+Already covered: the humanized Guide section teaches that nurturing does not mean spoiling. Owner is placing the exact clarification there separately. **Check the current accepted humanized text and consume when already present; do not duplicate.**
+
+Where: “The Inner Guide Comes Later,” beside the existing spoiling example.
 
 ## EMPTY sentinel
 
