@@ -3515,6 +3515,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "quote-search-check") return quoteSearchCheck();
         if (command === "pointer-rebase") return pointerRebase();
         if (command === "published-readback") return publishedReadback();
+        // New reading-first generations must never slip into the historical
+        // semantic graph/commit path using merely parsed/indexed source.
+        // Existing persisted legacy generations are unaffected.
+        if (importOrder === "reading_first" &&
+          ["run", "audit", "patterns", "commit"].includes(command)) {
+          await requireReadingFirstSynthesis();
+          // This legacy semantic path does not consume the trusted read-derived
+          // synthesis. Do not publish an alternate graph under the new order.
+          invariant(false, "JOURNAL_READING_FIRST_LEGACY_SEMANTIC_PATH_DISABLED");
+        }
         if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
         if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();
