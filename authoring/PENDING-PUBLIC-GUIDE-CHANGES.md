@@ -287,6 +287,16 @@ Already covered: the humanized Guide section teaches that nurturing does not mea
 
 Where: “The Inner Guide Comes Later,” beside the existing spoiling example.
 
+### PGQ-041 — Physical symptoms do not prove emotional causes
+
+Cause: Owner-approved 2026-10-19 `AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019`; existing `IC.SOLAR_PLEXUS_RELAXATION` and canonical AI guide.
+
+Teaching point: Pain or illness is real but does not establish its cause. Do not infer suppressed feelings, childhood events or inner-child neglect from a symptom. Emotional support can accompany appropriate medical assessment and treatment, without replacing it.
+
+Already covered: the humanized guide explains somatic support and medical precautions, but this causal boundary is now stated more directly upstream. The owner is putting the approved wording into the humanized guide separately. **Check accepted text and consume if already present; do not rewrite owner wording or duplicate it.**
+
+Where: “Your Body Might Need Some Love First,” after its opening regulation paragraph.
+
 ## EMPTY sentinel
 
 When every pending entry above has been consumed and the public-guide sync bookkeeping is updated, replace all pending bundles with exactly:
