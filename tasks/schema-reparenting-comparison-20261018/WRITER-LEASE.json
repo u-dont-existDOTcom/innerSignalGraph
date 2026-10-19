@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "active",
+  "exclusive_writer": true,
+  "owned_branch": "chat/schema-reparenting-book-audit-20261018",
+  "integration_branch": "main",
+  "integration_base_ref": "main",
+  "scope": "Source-only research: compare owner inner-child guide to Creative Methods in Schema Therapy (2020), Breaking Negative Thinking Patterns Step by Step (2026), and historical reparenting. No guide, graph, prompt, runtime or clinic policy edits; no textbook uploads.",
+  "source_guide": "u-dont-existDOTcom/joel-articles/articles/inner-child-therapy/source/inner-child-guide-2026-10-04-r4.txt",
+  "source_guide_blob_sha": "86651be9582b6ea992156d5e82a7458b5fd7f53f",
+  "status_note": "Pass 02 requested on 2026-10-18. User requested preserving every pass in GitHub. Notes are derivative paraphrases only."
+}
