@@ -279,9 +279,11 @@ Where: “Also Look Outward” immediately after the graded-disclosure/earned-tr
 
 ### PGQ-040 — Not every strong want is a protector
 
-Cause: Owner-approved 2026-10-19 `AMEND.IC.ORDINARY_DESIRE_NO_TRAUMA_20261019`; existing `IC.GUIDE_LATER` and `IC.MEET_GUARD` and canonical guide source.
+Caused by: Owner-approved 2026-10-19 `AMEND.IC.ORDINARY_DESIRE_NO_TRAUMA_20261019`; existing `IC.GUIDE_LATER` and `IC.MEET_GUARD` and canonical guide source.
 
 Teaching point: A selfish wish or impatient demand may simply be an ordinary desire or habit. Acknowledge it without shame, choose limits and behavior that respect others, and do not invent a hidden protector or childhood explanation. Unwanted impulses alone do not prove harmful intent.
+
+Reader need: Ordinary wants should not become imaginary diagnoses or new internal characters; people need permission to acknowledge an impulse while deciding responsibly how to act.
 
 Already covered: the humanized Guide section teaches that nurturing does not mean spoiling. Owner is placing the exact clarification there separately. **Check the current accepted humanized text and consume when already present; do not duplicate.**
 
@@ -289,9 +291,11 @@ Where: “The Inner Guide Comes Later,” beside the existing spoiling example.
 
 ### PGQ-041 — Physical symptoms do not prove emotional causes
 
-Cause: Owner-approved 2026-10-19 `AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019`; existing `IC.SOLAR_PLEXUS_RELAXATION` and canonical AI guide.
+Caused by: Owner-approved 2026-10-19 `AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019`; existing `IC.SOLAR_PLEXUS_RELAXATION` and canonical AI guide.
 
 Teaching point: Pain or illness is real but does not establish its cause. Do not infer suppressed feelings, childhood events or inner-child neglect from a symptom. Emotional support can accompany appropriate medical assessment and treatment, without replacing it.
+
+Reader need: A distressed reader could mistake physical illness for personal emotional failure, delay necessary care, or assume reparenting can establish a diagnosis.
 
 Already covered: the humanized guide explains somatic support and medical precautions, but this causal boundary is now stated more directly upstream. The owner is putting the approved wording into the humanized guide separately. **Check accepted text and consume if already present; do not rewrite owner wording or duplicate it.**
 
