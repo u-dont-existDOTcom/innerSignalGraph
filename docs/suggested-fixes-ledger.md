@@ -123,3 +123,16 @@
 ## 2026-10-17: refreshing a connector's tools, not a new chat (issue #172, a follow-up to change E)
 
 - Live lane read on 2026-10-17 (default branch of `u-dont-existDOTcom/universal-dev-architecture`, `8264d0a`; root `AGENTS.md` unchanged): `suggested-fixes/innerSignalGraph/` holds the same three items, unchanged since 12 Oct. This branch corrects one note in connector results, the private continuity skill and records; no served rule, map or amendment. No item is triggered, and there is no new disposition.
+
+## 2026-10-22 — Recovered gratitude request from an unmerged upstream PR
+
+The owner-requested `2026-10-21-gratitude-without-comparing.md` was filed in Universal PR #412 but remained unmerged and invisible to this project's default-branch scan. Disposition: **ADOPT** the owner correction; a new r7 AI guide, amendment `AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022`, and `ROUTE.GRATITUDE_PRACTICE` update are proposed on the isolated task branch. The filer's optional suggestion to proactively correct clients' comparison is not independently approved and is **not** installed as new required behavior. Status: proposed, not merged or released. A read-only inbox checker now includes open `uda-lane` PRs as well as the default-branch lane, with receiving-side receipts and regression tests. Sent is not acted on, merged or installed.
+
+## 2026-10-22 — Open UDA lane proposals recovered and dispositioned
+
+The authenticated read-only inbox scan identified four proposal-only items not yet merged into the Universal main lane. Their explicit receiving-side receipts are in `docs/suggested-fixes-inbox-receipts.json`. On the verified laptop run the inbox found **7** items total and **0** without dispositions, reopening conditions or destinations. That is intake coverage, not proof of policy installation.
+
+- 2026-10-09 strategy fit/efficacy, PR #345: **ADOPT** the currently available universal guidance for appropriate method selection and outcome checks; no separate therapy-policy edit from the pending PR.
+- 2026-10-22 guide queue reconciliation, PR #416: **DEFER** official queue consumption; the 33/1/2/3 audit is not a publication receipt, so retain all 39 original queue obligations until evidence-based humanization sync.
+- 2026-10-22 owner-guide innovation review order, PR #417: **DEFER** adoption of the broader T1/T2/C1-C3/P1-P2/F1-F2/O1/G1 proposal set until Claude review and owner finalization. The changes in the current task branch are proposed source/graph/rules and do not bypass this gate.
+- 2026-10-21 gratitude without comparison, PR #412: **ADOPT as a development candidate** the owner-directed semantic correction in new AI guide r7, amendment and gratitude map route, not production release. The assistant-authored optional correction script in that upstream PR is not independently approved.
