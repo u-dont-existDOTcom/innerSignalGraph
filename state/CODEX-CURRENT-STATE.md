@@ -1,6 +1,17 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-17
+Updated: 2026-10-22
+
+## Latest guide-map and suggestion-intake checkpoint (2026-10-22)
+
+- **Intake reliability completed on development main:** PR #187 merged with commit `cc27504faba90f1210602eba322d080c88bf9722`. The receiver now inspects both the UDA default-branch suggested-fix lane and unmerged `uda-lane` PRs, with exact receiving-side dispositions, reopening conditions and an UNKNOWN status on failed discovery. Final Codex review found no actionable defects; four first-review issues were corrected; the final hosted checks passed. The verified authenticated scan found 7 suggested-fix items, 0 unacknowledged. This does not deploy any therapy updates.
+- **AI guide and therapy semantics remain a draft:** PR #188, branch `task/guide-semantic-review-20261022`, is the sole current candidate for r7 AI-guide prose, graph and served-rule changes aligned to selected owner-edited humanized concepts. Original r6 remains preserved. App policy stays conservative for one serious psychoactive adverse reaction and truthful present-risk disclosure, without forcing the public article to have identical wording.
+- **Public-guide queue:** its original 39 entries have not been consumed or deleted on the basis of the earlier 33/1/2/3 audit. Five new **proposal-only** obligations PGQ-042–046 were appended to the draft branch for provenance. The working public article is not automatically approved runtime authority.
+- **Verification:** 53/53 relevant deterministic guide/graph/projection/source tests passed. The provenance gate initially failed because new source meaning was not queued; it passed after appending proposal-only obligations. Remaining hosted validations and semantic decisions are separate.
+- **Review hold:** a read-only independent Claude review of the 578-line owner proposal and current article was attempted but returned its weekly usage limit and produced no review. The previously owner-requested Claude review followed by owner finalization has not happened. Do not merge PR #188 or install to stable on the strength of this draft or supporting tests.
+- **Recover from:** `tasks/guide-map-intake-reconcile-20261022/INTEGRATION.md` and the review notes on the two PRs. Resume with the missing independent source/meaning review and owner-approved semantic dispositions, then run final source/graph/Guide Packet and release gates only if authorized.
+
+
 
 
 ## Refreshing a connector's tools, not a new chat (2026-10-17, issue #172, a follow-up to change E; branch `task/tool-refresh-advice-20261017`, onto `main`, not merged)
