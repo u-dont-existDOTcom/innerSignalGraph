@@ -35,7 +35,17 @@
         "parallelUnmerged": [
           "PGQ-040",
           "PGQ-041"
-        ]
+        ],
+        "newDraftObligations": [
+          "PGQ-042",
+          "PGQ-043",
+          "PGQ-044",
+          "PGQ-045",
+          "PGQ-046"
+        ],
+        "currentQueueEntryCount": 44,
+        "newDraftDisposition": "PROPOSED_UPSTREAM_NOT_CONSUMED",
+        "pendingReview": "Claude independent semantic review and owner finalization (Claude quota limit blocked an attempted review on October 22); existing 39 items remain open pending formal receipts"
       }
     },
     {

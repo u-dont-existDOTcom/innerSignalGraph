@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-18-r12`
+Queue version: `2026-10-22-r14-review-pending`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -276,6 +276,45 @@ Reader need: Avoid BOTH false assurances of secrecy and an excessively frighteni
 Already covered: PGQ-003 says graded truth and privacy aren't fakery; PGQ-030 covers care after coercive psychiatric experiences. Neither explains online records, mandated-reporting exceptions, legal professionals, or prevention-sensitive voluntary reporting. Merge with those passages rather than duplicating them. Specific service data flows and internal safety routing remain issue #180 engineering/legal work, not public guide text.
 
 Where: “Also Look Outward” immediately after the graded-disclosure/earned-trust paragraph. Humanize in the owner's voice, preserving all distinctions. Before actual public placement, obtain appropriate legal review of explicit jurisdictional statements. Guide Packet and public-guide sync gates remain; a pending queue entry is not publication authority.
+
+## Pending bundle K — draft r7 alignment from owner-revised humanized concepts
+
+**Authority boundary:** these are review obligations from draft PR #188, not evidence of owner-approved publication or an instruction to duplicate what the working humanized article already explains. Before consuming, freeze the exact owner-final version and obtain the existing semantic review/approval receipt. Keep the prior 39 entries pending until formally disposed.
+
+### PGQ-042 — The chosen Adult Protector differs from a learned guard
+Caused by: October 22 owner-edited Inner Adult terminology in the working humanized guide; proposed r7 source and AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022; review status remains open.
+Teaching point: The Inner Adult carries Nurturer, chosen Adult Protector and Guide functions; a guard is a learned response such as an alarm, avoidance or self-criticism. A guard may have a useful aim without being the developed Adult Protector, and ordinary impulses are not automatically separate parts or trauma signals.
+Reader need: Readers should know which response listens to learned defenses and which developing adult capacity chooses protection, without multiplying imaginary inner persons.
+Already covered: The working humanized opening and “Hear the Protective Part First” distinguish an Adult Protector from guards; verify accepted owner text rather than adding another taxonomy.
+Where: Early Inner Adult definition and the existing guard section; no new chapter or mandatory exercise.
+
+### PGQ-043 — Learned coping feedback and the critic's takeover of a good practice
+Caused by: October 22 owner-revised coping/expectation examples, with r7 AI-guide and AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022 proposed for owner/source review.
+Teaching point: A learned expectation may shape what a person does, what others can then do, and how the person treats themselves afterward; investigate the sequence without declaring the external world safe or an inherited critic the cause of every setback. A useful routine may acquire a punitive tone; keep learning and repair while rejecting gratuitous self-attack.
+Reader need: Readers need the causal sequence rather than a parts label alone, and should not be blamed when another person genuinely withholds care.
+Already covered: “Start With Whatever Showed Up,” “The Parent You Inherited,” and the current self-blame example collectively introduce these functions in the humanized assembly.
+Where: Those existing adjacent sections, compressed to avoid repeated instruction.
+
+### PGQ-044 — Warm limits and care becoming more natural
+Caused by: October 22 owner-edited Inner Adult opening and guide/limits material; proposed r7 source and AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022.
+Teaching point: A trustworthy adult can offer comfort and a firm limit without punitive withdrawal of care. With practice, warmth, protection and guidance may become familiar habits that need less constant inward checking; this is one progress signal, not an obligatory stage or proof of completed integration.
+Reader need: Readers may confuse nurture with permissiveness, or mistake ongoing deliberate self-monitoring for the objective of therapy.
+Already covered: “Make a Simple Vow,” “The Inner Guide Comes Later,” the revised nutshell opening, and everyday Protector actions cover much of this.
+Where: Keep it under the existing Inner Adult and Inner Guide sections rather than inventing a new stage.
+
+### PGQ-045 — Gratitude is not a comparison with someone worse off
+Caused by: Owner's October 21–22 correction in the humanized article and UDA submission #412; proposed AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022 and r7 AI-guide revision.
+Teaching point: Spiritual gratitude may appreciate a genuine present good or the possibility of relief without deriving satisfaction from possessing more than someone else. Acknowledging that suffering could be worse differs from ranking one's life against others' deprivation; let gratitude deepen compassion without forcing it or erasing grief, harm and practical care.
+Reader need: The phrase count your blessings can accidentally teach relief at another person's deprivation rather than sincere gratitude.
+Already covered: The owner inserted the comparison warning in “Your Loan is PRE-APPROVED!” in the current humanized guide; retain his exact voice and mark synced only with evidence.
+Where: That existing gratitude passage; no duplicate sermon or additional prompt script.
+
+### PGQ-046 — Compassion does not require remaining miserable
+Caused by: Owner's lived example in the October 22 humanized belonging section and proposed AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022.
+Teaching point: Feeling guilty about being happy while other beings suffer may be a learned belonging bargain; distinguish genuine duties and compassionate action from a supposed requirement to stay unhappy as proof of solidarity. Do not assume this explains every depression or ignore actual social suffering.
+Reader need: Caring people may mistakenly infer that enjoying life betrays those who lack that opportunity.
+Already covered: The current working humanized “Untangling the Belonging Bargains” section includes the owner's personal example; a separate public passage is not required.
+Where: Preserve that section's existing memoir and treatment of belonging; map update is proposed, not automatically authoritative.
 
 ## EMPTY sentinel
 
