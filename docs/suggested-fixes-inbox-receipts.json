@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "upstream": "u-dont-existDOTcom/universal-dev-architecture",
+  "prefix": "suggested-fixes/innerSignalGraph/",
+  "notes": "Discovery includes merged default-branch suggestions and still-open uda-lane pull requests. ACK does not mean implemented or released; implementation evidence lives at destination. New arrivals require human/worker disposition, not automatic policy adoption.",
+  "receipts": [
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-09-30-claim-integrity-checks.md",
+      "disposition": "DEFERRED",
+      "destination": "OWNER-QUESTIONS.md: owner question 9 option C; proposal PR #96",
+      "implementation": "OWNER_DEFERRED",
+      "nextCondition": "Explicit renewed owner decision"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-09-teaching-points-for-map-changes.md",
+      "disposition": "ADOPTED",
+      "destination": "authoring/PENDING-PUBLIC-GUIDE-CHANGES.md, PGQ-018 through PGQ-026; later humanized draft",
+      "implementation": "UPSTREAM_ADOPTED_READER_SYNC_PENDING",
+      "nextCondition": "Public humanization sync audit and release"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-11-therapy-r6-coordinated-journal-release.md",
+      "disposition": "ADOPTED",
+      "destination": "guides/inner-child-guide-2026-10-11-r6.txt and 2026-10-17 installed runtime checkpoint",
+      "implementation": "ADOPTED_AND_RECORDED",
+      "nextCondition": "No action unless source changes"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-21-gratitude-without-comparing.md",
+      "disposition": "ADOPTED",
+      "destination": "task/guide-map-intake-reconcile-20261022: r7 source + AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022 + ROUTE.GRATITUDE_PRACTICE",
+      "implementation": "PROPOSED_ON_TASK_BRANCH",
+      "nextCondition": "Review/merge candidate PR to main; stable requires separate owner-approved release"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-09-strategy-fit-and-efficacy.md",
+      "disposition": "ADOPTED",
+      "destination": "u-dont-existDOTcom/universal-dev-architecture main LESSON-INDEX.md reasoning-selection and strategy-fit rules; innerSignalGraph AGENTS.md reads live UDA rules",
+      "implementation": "APPLICABLE_UNIVERSAL_GUIDANCE_ALREADY_ACTIVE",
+      "nextCondition": "Reassess on strategy failure, not additional therapy semantics"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-22-guide-queue-reconciliation.md",
+      "disposition": "DEFERRED",
+      "destination": "authoring/public-guide-sync.json queueAudit; current 39-entry public guide queue retained for formal humanizer receipts",
+      "implementation": "AUDIT_RECONCILED_NOT_QUEUE_CONSUMED",
+      "nextCondition": "Claude humanizer cross-checks 39 passages; owner finalizes interpretations; formal transaction receipt before queue entries consumed"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-22-owner-guide-innovation-review-order.md",
+      "disposition": "DEFERRED",
+      "destination": "tasks/guide-map-intake-reconcile-20261022/INTEGRATION.md; the new source/graph/rules proposal PR is review-only until Claude+owner sign-off",
+      "implementation": "REVIEW_ORDER_PRESERVED",
+      "nextCondition": "Claude independent review of T1/T2/C1-C3/P1-P2/F1-F2/O1/G1 and six queue cases; owner finalizes semantic choices"
+    }
+  ]
+}
