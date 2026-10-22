@@ -661,6 +661,66 @@
       "excerpt": "The owner, 17 Oct 2026 (answer 43a on the owner page), after the behavior test for issue #172 showed answers filing a person's own protective steps under a services heading as a separate track: the person's own protective steps stay part of reparenting even when they sit next to a service, asking someone to come along or staying with a friend included. What stays separate is the service itself (police, lawyer, shelter, doctor, pain or crisis care) and the other person's help, which is never an exercise. This clarifies AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017 and the concrete human support kept distinct in AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016; frame consent still applies, and no priority order changes.",
       "status": "owner-approved",
       "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022",
+      "heading": "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "e44c963ed5169ba899dc6d1644bef6ae8de6d9c3891d421494bcd1ebac486ca0",
+      "excerpt": "The developing Inner Adult is one adult with Nurturer, Adult Protector and Guide functions. The Adult Protector is a chosen caring/protective function. Existing proactive/reactive guards and inherited critic scripts are learned responses that may be helpful or harmful; avoid using 'Protector' ambiguously for both. Do not assume any strong urge is a part or a trauma-derived protector. These roles are optional descriptions, not separate inner people.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022",
+      "heading": "AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "d4f03d427e3fc7c9ea92dd66a19ad54d1411d1c32007aac378a0cef5b9ce8aa7",
+      "excerpt": "Attend to the full expectation -> habitual response -> consequence -> retrospective self-treatment loop when evidence supports it. Withdrawal or hiding a need may inadvertently preserve the sense that nobody responds, while in other cases the environment really is rejecting or unsafe: check both. A well-intended self-review can be hijacked by an inherited punitive script or shame about having feelings. Keep learning, boundaries, responsibility and chosen actions while removing gratuitous contempt. A hidden protective aim in self-attack remains a hypothesis, not a diagnosis.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022",
+      "heading": "AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "ec08f9d446cd0a4f679c084492ff1a6fa3121d389226beee02770bc0cc7e4e37",
+      "excerpt": "Practice-to-life transfer includes habits of warmth, protection and guidance becoming usable with less deliberate scripting and compulsive self-monitoring. Reduced constant inward monitoring with preserved self-correction and living in the world is a useful possible sign of integration, not a necessary stage, universal timeline or proof of completion. Support remains welcome.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022",
+      "heading": "AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "ba8f82e3626dccc79d85a14e99e79f2a14e7a557f5389e24f8b21e1a49b245a6",
+      "excerpt": "Owner correction: being grateful that one has more than other people who suffer is comparative and not the spiritual gratitude intended. Invite gratitude for concretely present good or the relief one can truthfully recognize, without using another person's deprivation as a basis for feeling fortunate; gratitude may foster compassion toward people who suffer. Preserve the owner's practice of noticing that suffering could be greater without requiring favorable social rank or gratitude on command. Do not blame or shame clients who use comparison as an initial coping thought.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022",
+      "heading": "AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "fc09a35d06d53ec0141d2d5b815fd6d3cfd351385a5fcd4c7d94a12f745b317e",
+      "excerpt": "Suffering with others may become a belonging rule: a person fears that being happy while others suffer would be selfish or disloyal. Distinguish concrete moral responsibility and compassionate action from a rule requiring oneself to stay miserable. Explore as an individual possibility, not a universal cause, and never discount real social suffering or duties.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022",
+      "heading": "AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "c096ec32e6444078a1b1a8eea553c128e03b5ffabf5ac4972b6698686134f2b4",
+      "excerpt": "In an AI therapist, respect privacy and prior coercive medical/psychiatric harm, and explain record retention/confidentiality limits without false guarantees. People may begin with general, nonidentifying information when appropriate. Do not coach disguising a real event as a dream or fiction, omitting safety-critical details from a responsible professional, or falsely denying current intent, plan or immediate risk. Assess current danger on current evidence; do not collapse unwanted thoughts, historic acts, and current intent. Reader-facing guide and app may choose different delivery/precision while preserving this safety boundary.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
     }
   ]
 }

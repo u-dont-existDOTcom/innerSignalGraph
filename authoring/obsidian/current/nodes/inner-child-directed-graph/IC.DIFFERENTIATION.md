@@ -18,10 +18,11 @@ source_refs:
   - IC.DIFFERENTIATION
   - AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
+  - AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022
 regression_refs: []
-base_record_sha256: 2f50d59757fcebac25511712f72f59494f3a7313fd33234f959734b69038ce59
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 3ee0cbe1859069fb0050bb8a5a556a55fbdc317de30240b6de93aab3f56d32f2
+base_graph_sha256: 10c162820eb328465329c7bb5340cc9fc251fa49315f817cd3f15d986e93d3a9
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # Untangle belonging from self-betrayal
@@ -63,7 +64,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
   "recommendations": [
     "Notice where other people’s emotions and group expectations replace personal knowing.",
     "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
-    "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+    "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
+    "Where a person feels disloyal for enjoying life while others suffer, distinguish actual responsibilities and compassion-in-action from a learned requirement to stay miserable as proof of belonging or care."
   ],
   "successSignals": [
     "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
@@ -79,3 +81,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.IC.INTUITION_ANALYTIC_INTEGRATION]]
 
 [[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]
+
+[[current/governance/amendments/AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022]]

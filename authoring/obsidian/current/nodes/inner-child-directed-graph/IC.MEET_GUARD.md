@@ -21,6 +21,7 @@ source_refs:
   - IC.ESCAPE_URGE
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
   - AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION
+  - AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
 regression_refs:
   - G001
   - G002
@@ -36,9 +37,9 @@ regression_refs:
   - G114
   - G115
   - G139
-base_record_sha256: ef132738544df05f1718ef081eff9550d67e68a541346ddf926c5409936b3cc6
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 6c861fc4400646c4cfcd5feccc8b6a7663f77d99541fe5d1a78fea2e699fecdd
+base_graph_sha256: 10c162820eb328465329c7bb5340cc9fc251fa49315f817cd3f15d986e93d3a9
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # Hear the protective response without automatically obeying it
@@ -97,14 +98,16 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "requiredNuance": [
       "The contempt may be child, protector, adult evaluator, or blend.",
       "Protective intent and predictive accuracy are separate: an alarm can be understandable and still be mistaken, outdated, or overprotective.",
-      "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward."
+      "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward.",
+      "Ordinary wishes, habits and critical thoughts are not automatically a guard, a hidden trauma or a separate inner person; test function and context before assigning a role."
     ]
   },
   "recommendations": [
     "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
     "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
     "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
-    "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes."
+    "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
+    "Distinguish a learned defensive guard from the chosen Adult Protector role; a guard may carry a useful warning or an obsolete coping tactic, whereas the Adult Protector is the present adult's capacity to protect and respond."
   ],
   "successSignals": [
     "The protective response can be heard without running the session or being exiled."
@@ -126,3 +129,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
 
 [[current/governance/amendments/AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION]]
+
+[[current/governance/amendments/AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022]]

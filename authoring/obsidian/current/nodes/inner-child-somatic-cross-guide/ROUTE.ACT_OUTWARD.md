@@ -27,6 +27,7 @@ source_refs:
   - AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
   - AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
+  - AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022
 regression_refs:
   - G013
   - G014
@@ -42,9 +43,9 @@ regression_refs:
   - G099
   - G101
   - G105
-base_record_sha256: 2688eac08be228b1e51c1d3604890a60f1134c29f72cf48bef67a5799ab5c34b
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: bd77deaaf729d464a8d633ab3e02590abe84b9f3096a13cbfb4b9668cfd0461f
+base_graph_sha256: bdb81705bea9e2a687011b0a3f5ae9eb33f44ff086ef9bf1d050f1e2665ac84a
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # Act on the concrete problem
@@ -104,7 +105,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
     "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step.",
     "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
-    "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care."
+    "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
+    "Do not present an actual safety-relevant disclosure as fictional or dreamed in order to avoid appropriate assessment. General or de-identified initial questions about confidentiality are compatible with truthful present-risk communication."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -174,3 +176,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
 
 [[current/governance/amendments/AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY]]
+
+[[current/governance/amendments/AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022]]

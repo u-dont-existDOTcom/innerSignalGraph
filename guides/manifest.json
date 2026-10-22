@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-approved-refractory-pain-navigation-and-care-trust-2026-10-11-r6",
-      "file": "inner-child-guide-2026-10-11-r6.txt",
-      "sha256": "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a",
+      "version": "owner-approved-humanized-semantic-reconciliation-2026-10-22-r7",
+      "file": "inner-child-guide-2026-10-22-r7.txt",
+      "sha256": "4ebc648e6ef68f979cfa2af045d87be340b4c92a24cd3e493e93a4ade3b3193e",
       "role": "primary-framework",
       "format": "text"
     },
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "October 11 r6 preserves immutable October 10 r5, adds chronic pain specialist-navigation and clinician-trust distinctions, and retains immediate safety when it is truly needed. Humanized changes remain queued and not automatically published; deployment remains separately gated. October 14 owner-supplied clarification makes gratitude essential as an ongoing cultivation within the chosen divine-love and inner-child integration path, not just a technique for regaining access or a prerequisite to helping someone; the public passage remains protected owner-authored memoir. The owner's answers later on October 14 widen gratitude to everyone, with or without a religion, aimed at unconditional love, and set what comes first when the younger self doesn't want the love, when an obvious contradiction shows, and after a fresh death or harm. On October 15 the owner set how gratitude comes in: sideways and at times rather than pushed, with his example questions, an answer to 'toxic positivity', no modeled thanks from an AI, and a contradiction worked toward from the love side; and he let it into a calm altered state. He also said hypnosis in general isn't incompatible with grief or altered states; it depends on the kind of hypnosis, the level of grief and what is appropriate at the moment. On October 16 the owner corrected how reparenting is framed: reparenting is not an exercise but the ongoing relationship in which the present-day adult cares for, validates, protects and guides the vulnerable younger self, including through truthful boundaries, repair and ordinary-life choices; helping someone feel safe while expressing feelings, needs and boundaries is that work, and meditations, imagery, dialogue and affirmations are methods within it.",
+  "notes": "October 11 r6 preserves immutable October 10 r5, adds chronic pain specialist-navigation and clinician-trust distinctions, and retains immediate safety when it is truly needed. Humanized changes remain queued and not automatically published; deployment remains separately gated. October 14 owner-supplied clarification makes gratitude essential as an ongoing cultivation within the chosen divine-love and inner-child integration path, not just a technique for regaining access or a prerequisite to helping someone; the public passage remains protected owner-authored memoir. The owner's answers later on October 14 widen gratitude to everyone, with or without a religion, aimed at unconditional love, and set what comes first when the younger self doesn't want the love, when an obvious contradiction shows, and after a fresh death or harm. On October 15 the owner set how gratitude comes in: sideways and at times rather than pushed, with his example questions, an answer to 'toxic positivity', no modeled thanks from an AI, and a contradiction worked toward from the love side; and he let it into a calm altered state. He also said hypnosis in general isn't incompatible with grief or altered states; it depends on the kind of hypnosis, the level of grief and what is appropriate at the moment. On October 16 the owner corrected how reparenting is framed: reparenting is not an exercise but the ongoing relationship in which the present-day adult cares for, validates, protects and guides the vulnerable younger self, including through truthful boundaries, repair and ordinary-life choices; helping someone feel safe while expressing feelings, needs and boundaries is that work, and meditations, imagery, dialogue and affirmations are methods within it. October 22 r7 reconciles approved reader-guide concepts: Adult Protector versus learned guards, learned pattern feedback and self-criticism, eventual automatic caring capacity, warm limits, gratitude without social comparison, compassion without obligatory misery, and informed confidentiality with unweakened real-world risk disclosure. This is development source, not a stable release or automatic public publication.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -135,6 +135,14 @@
       "version": "owner-approved-pain-crisis-and-relational-readiness-2026-10-10-r5",
       "file": "inner-child-guide-2026-10-10-r5.txt",
       "sha256": "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31",
+      "role": "primary-framework",
+      "format": "text"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-approved-refractory-pain-navigation-and-care-trust-2026-10-11-r6",
+      "file": "inner-child-guide-2026-10-11-r6.txt",
+      "sha256": "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a",
       "role": "primary-framework",
       "format": "text"
     }

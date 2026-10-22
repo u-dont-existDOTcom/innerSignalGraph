@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
 status: owner-approved
 domain: inner-child
-base_record_sha256: d2a2e5f8b51a623016461ee0a3e907192afe3200f581c98a59fc354e92827a78
-source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 6dc2648ae3010efb321e69dbfef0ccbf4d4d39eb341dfd2190c22c29d5297def
+source_file_sha256: 7abea5e0cbfc116e030ed8b3eb96f1c5291331c20917d6deb651e25de42d00eb
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
@@ -24,6 +24,6 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "status": "owner-approved",
     "text": "Treat in-session reparenting capacity and ordinary-life transfer as distinct evidence. When a Nurturer, Protector, Guide, or other adult function is clearly usable during an inner-child practice but ordinary life still shows little or no matching carryover, record that mismatch as session-only transfer rather than assuming the person needs a deeper, more intense, or simply repeated version of an already-working exercise. Name the function that actually worked and choose one bounded five-percent ordinary-life action that expresses the same function. Keep the action small enough to fit current capacity, and review what it actually contributed without requiring the younger state to trust it yet, without demanding immediate emotional change, and without turning follow-through into punishment or self-surveillance. Do not make every meditation produce homework; use this transfer route only when the transcript supports a real mismatch between in-session capacity and ordinary-life carryover. One aligned action is emerging transfer, not generalized capacity; broader integration requires repeated carryover over time or across relevant contexts. A good meditation is proximal evidence of in-session capacity, not proof of durable ordinary-life change."
   },
-  "version": "owner-amendments-2026-10-17-r14"
+  "version": "owner-amendments-2026-10-22-r15"
 }
 ```

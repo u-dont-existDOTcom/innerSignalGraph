@@ -6,7 +6,37 @@
       "id": "inner-child",
       "publicUrl": "https://innerchild.u-dont-exist.com",
       "status": "PLANNED_SEPARATE_HUMANIZED",
-      "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics."
+      "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics.",
+      "workingDraft": {
+        "repository": "u-dont-existDOTcom/joel-articles",
+        "ref": "26becc55aeebdab40857deb500a417f29df5ce16",
+        "path": "articles/inner-child-therapy/HUMANIZED-ARTICLE-SO-FAR.md",
+        "publicationState": "UNREGISTERED_WORKING_ASSEMBLY"
+      },
+      "queueAudit": {
+        "date": "2026-10-22",
+        "reviewState": "AUDIT_ONLY_NOT_CONSUMED",
+        "totalItems": 39,
+        "auditorAssessment": {
+          "representedInWorkingDraft": 33,
+          "oneNarrowClarification": 1,
+          "twoSourceOrOwnerDifferences": 2,
+          "threeOwnerReserved": 3
+        },
+        "currentOwnerCorrection": "2026-10-22 upstream proposals require Claude review then owner finalization; no canonical queue entries consumed from audit alone. PGQ-035 optional public omission is under review but existing app capacity gate unchanged.",
+        "ownerReviewPending": [
+          "PGQ-006",
+          "PGQ-023",
+          "PGQ-034",
+          "PGQ-035",
+          "PGQ-036",
+          "PGQ-039"
+        ],
+        "parallelUnmerged": [
+          "PGQ-040",
+          "PGQ-041"
+        ]
+      }
     },
     {
       "id": "somatic",

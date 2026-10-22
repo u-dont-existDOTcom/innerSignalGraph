@@ -7,11 +7,11 @@ source_id: AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING
 guide_id: owner-amendments
 heading: AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING
 source_role: owner-approved-extension
-source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
+source_hash: 7abea5e0cbfc116e030ed8b3eb96f1c5291331c20917d6deb651e25de42d00eb
 section_hash: 24ce3110868f726866fcc6d755fc9f8b05ee6d8cfe24f7c3a927fe7591b5c1e2
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING

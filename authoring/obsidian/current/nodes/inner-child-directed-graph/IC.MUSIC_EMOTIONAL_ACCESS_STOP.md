@@ -24,8 +24,8 @@ regression_refs:
   - G130
   - G134
 base_record_sha256: 94a3d6c1dcdbb21619834b3d876fbdc77489b2d4220875d45a2b691f070206c2
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_graph_sha256: 10c162820eb328465329c7bb5340cc9fc251fa49315f817cd3f15d986e93d3a9
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # Stop music when it overwhelms rather than opens

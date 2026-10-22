@@ -25,10 +25,11 @@ source_refs:
   - IC.SPIRITUAL_LOAN
   - AMEND.IC.NONPUNITIVE_REVIEW
   - AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
+  - AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022
 regression_refs: []
-base_record_sha256: d330ec1b4eaa008d5dc984be4c651481c242e40a2e11b1853eac56f5c7787c89
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 45bbda9a44d3c2a7a1fcc5fdb68fcb85e8d46685e5417d3d0d9f39d4118c9364
+base_graph_sha256: 10c162820eb328465329c7bb5340cc9fc251fa49315f817cd3f15d986e93d3a9
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # Move from receiving care to doing five percent
@@ -97,7 +98,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
   "successSignals": [
     "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission.",
     "The person can initiate a small caring/protective act and evaluate whether it helped without handing the helper permanent authority.",
-    "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack."
+    "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack.",
+    "With repeated real-world use, some caring, protective and guiding responses become more automatic and require less compulsive monitoring, without losing the ability to reflect, change course or ask for help."
   ]
 }
 ```
@@ -124,3 +126,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
 
 [[current/governance/amendments/AMEND.IC.PRACTICE_TO_LIFE_TRANSFER]]
+
+[[current/governance/amendments/AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022]]

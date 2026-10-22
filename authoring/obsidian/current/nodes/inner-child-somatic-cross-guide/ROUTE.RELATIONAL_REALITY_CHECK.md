@@ -23,6 +23,7 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
   - AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
+  - AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022
 regression_refs:
   - G013
   - G014
@@ -30,9 +31,9 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: 6402c41bc507769f621c6cfd64e18c9046f9d0f284e8a635f872245a78b22079
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: b51b3af5de697aed894b9a73c1821b2aa90f298fa5906fefc5271639550e99a8
+base_graph_sha256: bdb81705bea9e2a687011b0a3f5ae9eb33f44ff086ef9bf1d050f1e2665ac84a
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -120,7 +121,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
       "Acceptance, attachment relief, attraction, romantic love, compatibility and trust are separable observations that should not be collapsed into one another.",
       "Support and mutual co-regulation are healthy relational functions; the restriction targets using another person as a certainty test, reassurance machine or diagnostic instrument.",
       "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability.",
-      "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy."
+      "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy.",
+      "In sensitive disclosure, privacy and graded trust remain legitimate, but do not encourage disguising real present danger as fiction or dreams to avoid safety attention. Ask about confidentiality, retention and legal reporting limits when relevant, without promising blanket secrecy or withholding protective help."
     ]
   },
   "questionPolicy": {
@@ -165,3 +167,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
 
 [[current/governance/amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS]]
+
+[[current/governance/amendments/AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022]]

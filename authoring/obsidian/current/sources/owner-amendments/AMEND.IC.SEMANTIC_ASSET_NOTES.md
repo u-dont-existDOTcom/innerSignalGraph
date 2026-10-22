@@ -7,11 +7,11 @@ source_id: AMEND.IC.SEMANTIC_ASSET_NOTES
 guide_id: owner-amendments
 heading: AMEND.IC.SEMANTIC_ASSET_NOTES
 source_role: owner-approved-extension
-source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
+source_hash: 7abea5e0cbfc116e030ed8b3eb96f1c5291331c20917d6deb651e25de42d00eb
 section_hash: 6ade0347968283c87b1371bccdfd837c913a0b3c8ffec0375c666e5a5c0a5849
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # AMEND.IC.SEMANTIC_ASSET_NOTES

@@ -23,11 +23,12 @@ source_refs:
   - AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
+  - AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
 regression_refs:
   - G010
-base_record_sha256: 9959e25f6f727eee8cc53b4431a5630ae1d587167ff75d48b3cb9d10101924ae
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: a29d3e09cadf455947ce41d0514cc31ea17dc7a7c3cc456bfa689fa9cc8fc17c
+base_graph_sha256: 10c162820eb328465329c7bb5340cc9fc251fa49315f817cd3f15d986e93d3a9
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # Bring in direction without demanding mental perfection
@@ -98,7 +99,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
     "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.",
     "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes.",
-    "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on."
+    "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on.",
+    "Set kind, predictable limits while preserving comfort and responsiveness: an ordinary want can be heard without being obeyed, pathologized, or treated as an independent protector."
   ],
   "successSignals": [
     "Direction increases life participation without exiling the child, and outside guidance strengthens rather than replaces the person’s capacity to evaluate truth, boundaries, and trust."
@@ -124,3 +126,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]
 
 [[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]
+
+[[current/governance/amendments/AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022]]

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 537357435210759e2595918e7822b70a21c339e47a82792458ca091ad7242ade
-source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 534e397e315fde8e324eeeafad4cd7d376a2bb409ac55715ef54a5ffe073ad35
+source_file_sha256: 7abea5e0cbfc116e030ed8b3eb96f1c5291331c20917d6deb651e25de42d00eb
+projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
 ---
 
 # AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
@@ -24,6 +24,6 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "status": "owner-approved",
     "text": "When several concrete practical problems coexist, route each by its own actionability instead of collapsing the whole turn into one blocked state. Choose one current practical focus from the person's stated goal, functional impact, urgency, leverage, and present feasibility. A blocked sibling lane remains real and keeps its constraint chain and reopening condition, but it must not suppress an independent higher-value priority that has an evidence-supported action. practical_action_state therefore applies to the selected practical focus and must be recomputed when that focus changes. When the person is cognitively overloaded or says they cannot focus, reduce the sorting burden: use one brief organizing statement, one prioritized next step when action is supported, and only a question whose different answers would materially change what happens next. Do not make the person define ordinary language or listen to a long paraphrase when the practical implication is already clear enough to act on."
   },
-  "version": "owner-amendments-2026-10-17-r14"
+  "version": "owner-amendments-2026-10-22-r15"
 }
 ```
