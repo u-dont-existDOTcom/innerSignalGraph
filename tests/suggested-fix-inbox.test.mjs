@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { reconcileSuggestedFixes } from "../scripts/suggested-fix-inbox.mjs";
+import { reconcileSuggestedFixes, isActiveLaneFile, discoverWith, authenticatedCliAvailable } from "../scripts/suggested-fix-inbox.mjs";
 const p = "suggested-fixes/innerSignalGraph/";
 
 test("unmerged upstream submission cannot vanish behind main-only queue", () => {
@@ -43,4 +43,52 @@ test("deferred submissions must retain an explicit reopening condition", () => {
     [{ path: p + "pending.md", disposition: "DEFERRED", destination: "owner review",
        nextCondition: "Claude reviews and owner finalizes" }]);
   assert.equal(complete[0].actionRequired, false);
+});
+
+test("an installed but unauthenticated GitHub CLI falls back, an authenticated CLI can be used", () => {
+  assert.equal(authenticatedCliAvailable(null, () => { throw new Error("no authorization"); }), false);
+  assert.equal(authenticatedCliAvailable(null, () => {}), true);
+  assert.equal(authenticatedCliAvailable("ci-token", () => { throw new Error("must not run"); }), false);
+});
+
+test("ignore done/ archival paths even in an unmerged PR with a renamed file", () => {
+  assert.equal(isActiveLaneFile(p + "done/old.md"), false);
+  assert.equal(isActiveLaneFile(p + "new.md"), true);
+  const items = reconcileSuggestedFixes([p + "old.md"], [{ path: p + "done/old.md", pr: 123 }],
+    [{ path: p + "old.md", disposition: "ADOPTED", destination: "commit" }]);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].actionRequired, false);
+});
+
+test("declining a suggestion requires reason and source disposition location", () => {
+  const path = p + "proposal.md";
+  const empty = reconcileSuggestedFixes([path], [], [{ path, disposition: "DECLINED" }]);
+  assert.equal(empty[0].actionRequired, true);
+  const noReason = reconcileSuggestedFixes([path], [],
+    [{ path, disposition: "DECLINED", destination: "ledger" }]);
+  assert.equal(noReason[0].actionRequired, true);
+  const complete = reconcileSuggestedFixes([path], [],
+    [{ path, disposition: "DECLINED", destination: "ledger", reason: "already covered by active constraints" }]);
+  assert.equal(complete[0].actionRequired, false);
+});
+
+test("directory contents are fetched exactly once even when over 100 entries", async () => {
+  const calls = [];
+  const directory = Array.from({length: 101}, (_, i) => ({type:"file", path:p+"item-"+i+".md"}));
+  const result = await discoverWith(
+    async (url) => { calls.push(["directory", url]); return directory; },
+    async (url) => {
+      calls.push(["pages", url]);
+      if (url.includes("/pulls/")) return [];
+      return [];
+    }
+  );
+  assert.equal(calls.filter(c => c[0] === "directory").length, 1);
+  assert.equal(result.defaultFiles.length, 101);
+  assert.equal(result.proposed.length, 0);
+});
+
+test("reject ambiguous directory truncation rather than claiming a complete scan", async () => {
+  const listing = Array.from({length:1000},(_,i) => ({type:"file",path:p+i+".md"}));
+  await assert.rejects(discoverWith(async () => listing, async () => { throw Error("unexpected call"); }), /directory limit/);
 });

@@ -11,13 +11,21 @@ const PREFIX = "suggested-fixes/innerSignalGraph/";
 const API = "https://api.github.com/repos/" + UPSTREAM;
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+// Lane contract: only .md suggestions at the lane root are new proposals.
+// An acknowledged item relocated to /done is not a second arrival.
+export function isActiveLaneFile(path) {
+  if (typeof path !== "string" || !path.startsWith(PREFIX)) return false;
+  const suffix = path.slice(PREFIX.length);
+  return suffix.endsWith(".md") && !suffix.includes("/");
+}
+
 export function reconcileSuggestedFixes(defaultFiles, proposedFiles, receipts) {
   const registry = new Map();
   for (const path of defaultFiles) {
-    if (path.startsWith(PREFIX)) registry.set(path, { path, onDefault: true, openPrs: [] });
+    if (isActiveLaneFile(path)) registry.set(path, { path, onDefault: true, openPrs: [] });
   }
   for (const { path, pr } of proposedFiles) {
-    if (!path.startsWith(PREFIX)) continue;
+    if (!isActiveLaneFile(path)) continue;
     const item = registry.get(path) ?? { path, onDefault: false, openPrs: [] };
     if (!item.openPrs.includes(pr)) item.openPrs.push(pr);
     registry.set(path, item);
@@ -32,33 +40,39 @@ export function reconcileSuggestedFixes(defaultFiles, proposedFiles, receipts) {
     item.actionRequired = !receipt || !["ADOPTED", "DEFERRED", "DECLINED", "SUPERSEDED"].includes(receipt.disposition)
       || (receipt.disposition === "ADOPTED" && !receipt.destination)
       || (receipt.disposition === "DEFERRED" && !receipt.nextCondition)
-      || (receipt.disposition === "SUPERSEDED" && !receipt.destination);
+      || (receipt.disposition === "SUPERSEDED" && !receipt.destination)
+      || (receipt.disposition === "DECLINED" && (!receipt.reason?.trim()
+        || !(receipt.destination?.trim() || receipt.nextCondition?.trim())));
   }
   return out;
 }
 
-// The user's authenticated GitHub CLI is a legitimate read-only transport. Use
-// it when present rather than exhausting GitHub's anonymous rate limit while
-// scanning multiple still-open PRs. Neither method prints or stores credentials.
+// Prefer the existing authenticated CLI when available. An installed but
+// unauthenticated 'gh' binary is not sufficient. Public fetch remains the
+// read-only fallback; failed discovery is reported as unknown, never empty.
+export function authenticatedCliAvailable(token, probeAuthentication) {
+  if (token) return false;
+  try { probeAuthentication(); return true; }
+  catch { return false; }
+}
 let ghAvailable;
 function useGhApi() {
-  if (process.env.GITHUB_TOKEN) return false; // CI's credential uses ordinary fetch.
+  if (process.env.GITHUB_TOKEN) return false;
   if (ghAvailable === undefined) {
-    try { execFileSync("gh", ["version"], { stdio: "ignore", timeout: 3000 }); ghAvailable = true; }
-    catch { ghAvailable = false; }
+    ghAvailable = authenticatedCliAvailable(null, () =>
+      execFileSync("gh", ["auth", "status", "--hostname", "github.com"],
+        { stdio: "ignore", timeout: 5000 }));
   }
   return ghAvailable;
 }
 
-async function apiPages(url) {
-  const out = [];
-  for (let page = 1; page <= 10; page += 1) {
+// A directory contents endpoint is a single response, not a paginated list.
+// Reuse the same strict transport for both query kinds.
+async function apiOnce(url) {
     const target = new URL(url);
     if (target.hostname !== "api.github.com" || !target.pathname.startsWith("/repos/" + UPSTREAM + "/")) {
       throw new Error("Unrecognized repository API endpoint; inbox state unknown");
     }
-    target.searchParams.set("per_page", "100");
-    target.searchParams.set("page", String(page));
     let data;
     if (useGhApi()) {
       try {
@@ -77,28 +91,45 @@ async function apiPages(url) {
       if (!res.ok) throw new Error("GitHub " + res.status + " on " + target.pathname + "; inbox state unknown");
       data = await res.json();
     }
-    if (!Array.isArray(data)) throw new Error("Unexpected GitHub array response; inbox state unknown");
+    return data;
+}
+
+async function apiPages(url) {
+  const out = [];
+  for (let page = 1; page <= 10; page += 1) {
+    const target = new URL(url);
+    target.searchParams.set("per_page", "100");
+    target.searchParams.set("page", String(page));
+    const data = await apiOnce(target);
+    if (!Array.isArray(data)) throw new Error("Unexpected paginated GitHub response; inbox state unknown");
     out.push(...data);
     if (data.length < 100) return out;
   }
   throw new Error("GitHub pagination exceeded 10 pages; inbox state unknown");
 }
 
-async function discover() {
-  const defaultData = await apiPages(API + "/contents/" + PREFIX.slice(0, -1) + "?ref=main&per_page=100");
+export async function discoverWith(singleRequest, pagedRequest) {
+  const defaultData = await singleRequest(API + "/contents/" + PREFIX.slice(0, -1) + "?ref=main");
+  if (!Array.isArray(defaultData)) throw new Error("Unexpected GitHub directory response; inbox state unknown");
+  // GitHub Contents API caps a single directory at 1,000 entries, and doesn't paginate.
+  if (defaultData.length >= 1000) throw new Error("GitHub directory limit reached; inbox state unknown");
   const defaultFiles = defaultData.filter(x => x.type === "file").map(x => x.path);
-  const prs = await apiPages(API + "/pulls?state=open&per_page=100");
+  const prs = await pagedRequest(API + "/pulls?state=open&per_page=100");
   const candidates = prs.filter(x => (x.labels ?? []).some(y => y.name === "uda-lane"));
   const proposed = [];
   for (const pr of candidates) {
-    const files = await apiPages(API + "/pulls/" + pr.number + "/files?per_page=100");
+    const files = await pagedRequest(API + "/pulls/" + pr.number + "/files?per_page=100");
     for (const f of files) {
-      if (f.filename?.startsWith(PREFIX) && f.status !== "removed") {
+      if (isActiveLaneFile(f.filename) && f.status !== "removed") {
         proposed.push({ path: f.filename, pr: pr.number });
       }
     }
   }
   return { defaultFiles, proposed };
+}
+
+async function discover() {
+  return discoverWith(apiOnce, apiPages);
 }
 
 async function main() {
