@@ -9,9 +9,10 @@
       "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics.",
       "workingDraft": {
         "repository": "u-dont-existDOTcom/joel-articles",
-        "ref": "26becc55aeebdab40857deb500a417f29df5ce16",
+        "ref": "1f99df7bbaf4a051a2e6225caa12891f802bc221",
         "path": "articles/inner-child-therapy/HUMANIZED-ARTICLE-SO-FAR.md",
-        "publicationState": "UNREGISTERED_WORKING_ASSEMBLY"
+        "publicationState": "UNREGISTERED_WORKING_ASSEMBLY",
+        "notes": "Later October 22 working article revision adjusts six paragraphs largely for editorial clarity; freeze this exact reference for review. Working assembly is unregistered and subject to owner decisions."
       },
       "queueAudit": {
         "date": "2026-10-22",
