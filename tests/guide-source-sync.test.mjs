@@ -93,16 +93,25 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-refractory-pain-navigation-and-care-trust-2026-10-11-r6");
-  assert.equal(active.file, "inner-child-guide-2026-10-11-r6.txt");
-  assert.equal(active.sha256, "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a");
+  assert.equal(active.version, "owner-approved-humanized-semantic-reconciliation-2026-10-22-r7");
+  assert.equal(active.file, "inner-child-guide-2026-10-22-r7.txt");
+  assert.equal(active.sha256, "4ebc648e6ef68f979cfa2af045d87be340b4c92a24cd3e493e93a4ade3b3193e");
+  assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide"
+    && item.file === "inner-child-guide-2026-10-11-r6.txt"
+    && item.sha256 === "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a"));
   const r5 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
   assert.equal(hash(r5), "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-10-r5.txt" && item.sha256 === "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31"));
   const successor = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-11-r6.txt", import.meta.url), "utf8");
-  assert.equal(hash(successor), active.sha256);
+  assert.equal(hash(successor), "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a");
+  const currentActive = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-22-r7.txt", import.meta.url), "utf8");
+  assert.equal(hash(currentActive), active.sha256);
+  assert.ok(currentActive.includes("The developing Inner Adult") || currentActive.includes("the chosen protective function"),
+    "r7 should preserve the explicit Adult Protector versus guard distinction");
+  assert.ok(currentActive.includes("Being thankful that you have more than people"),
+    "r7 must carry the owner's correction to comparative spiritual gratitude");
   for (const originalLine of current.split("\n")) {
-    if (originalLine.trim()) assert.ok(successor.includes(originalLine), "r5 preserves r4 wording: "+ originalLine.slice(0,60));
+    if (originalLine.trim()) assert.ok(successor.includes(originalLine), "r6 preserves r4 wording: "+ originalLine.slice(0,60));
   }
   assert.ok(manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide" &&
