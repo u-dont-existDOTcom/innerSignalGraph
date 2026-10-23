@@ -297,7 +297,7 @@ Where: Those existing adjacent sections, compressed to avoid repeated instructio
 
 ### PGQ-044 — Warm limits and care becoming more natural
 Caused by: October 22 owner-edited Inner Adult opening and guide/limits material; proposed r7 source and AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022.
-Teaching point: A trustworthy adult can offer comfort and a firm limit without punitive withdrawal of care. With practice, warmth, protection and guidance may become familiar habits that need less constant inward checking; this is one progress signal, not an obligatory stage or proof of completed integration.
+Teaching point: A trustworthy adult can offer comfort and a firm limit without punitive withdrawal of care. Becoming better able to nurture, protect and guide the vulnerable younger self in everyday life is a central outcome of reparenting. Easier or more automatic care may come with practice, but isn't required for progress: effortful acts and accepting suitable help are valid signs. Do not substitute pleasing words during one exercise for reliable, ongoing care.
 Reader need: Readers may confuse nurture with permissiveness, or mistake ongoing deliberate self-monitoring for the objective of therapy.
 Already covered: “Make a Simple Vow,” “The Inner Guide Comes Later,” the revised nutshell opening, and everyday Protector actions cover much of this.
 Where: Keep it under the existing Inner Adult and Inner Guide sections rather than inventing a new stage.
@@ -311,10 +311,10 @@ Where: That existing gratitude passage; no duplicate sermon or additional prompt
 
 ### PGQ-046 — Compassion does not require remaining miserable
 Caused by: Owner's lived example in the October 22 humanized belonging section and proposed AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022.
-Teaching point: Feeling guilty about being happy while other beings suffer may be a learned belonging bargain; distinguish genuine duties and compassionate action from a supposed requirement to stay unhappy as proof of solidarity. Do not assume this explains every depression or ignore actual social suffering.
-Reader need: Caring people may mistakenly infer that enjoying life betrays those who lack that opportunity.
+Teaching point: Feeling guilty about being happy while others suffer may be a belonging bargain. The author describes finding he could better help others toward happiness after beginning to cultivate his own. Explore the possibility that caring for one's wellbeing can expand what one gives, without claiming unhappy people cannot help. Some companions may genuinely resent another person's growth; a friend may withdraw. Take the social loss seriously, check real behavior and duties rather than presuming envy, and support compassionate limits instead of a requirement to stay unhappy.
+Reader need: Readers need both the positive case for cultivating happiness as a form of care that can benefit others, and permission to recognize that some relationships may genuinely react badly to that growth. Neither an unhappy person's capacity to help nor another person's negative reaction should be prejudged.
 Already covered: The current working humanized “Untangling the Belonging Bargains” section includes the owner's personal example; a separate public passage is not required.
-Where: Preserve that section's existing memoir and treatment of belonging; map update is proposed, not automatically authoritative.
+Where: At the existing ‘Untangling the Belonging Bargains’ paragraph on happiness, after the current belonging-bargain distinction. Preserve owner memoir and rhetorical sequence; humanize the two missing points locally rather than adding a new chapter. This is an owner-directed guide update pending the responsible editor's placement/approval receipt, not proof of publication.
 
 ## EMPTY sentinel
 

@@ -33,8 +33,8 @@ regression_refs:
   - G108
   - G127
 base_record_sha256: d2874e88ae6e03713063249ab9df7fe7af4db21f2a90fa6fc71964d1f5ae2781
-base_graph_sha256: bdb81705bea9e2a687011b0a3f5ae9eb33f44ff086ef9bf1d050f1e2665ac84a
-projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
+base_graph_sha256: 9407f8cfafb0bc6e601838dec7743909025342eb665ac15f768dea3a0fa49e03
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Coordinate a specialist chronic-pain pathway and flare plan

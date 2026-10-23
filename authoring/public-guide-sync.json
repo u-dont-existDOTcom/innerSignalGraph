@@ -45,7 +45,8 @@
           "PGQ-046"
         ],
         "currentQueueEntryCount": 44,
-        "newDraftDisposition": "PROPOSED_UPSTREAM_NOT_CONSUMED",
+        "newDraftDisposition": "OWNER_CORRECTED_R8_UPSTREAM_CANDIDATE_NOT_CONSUMED",
+        "ownerFollowup20261023": "PGQ-044: dependable everyday self-care is a central intended outcome, automaticity is optional. PGQ-046: cultivating happiness can improve ability to support others, while some companions may genuinely resent change. Editor placement and publication are not certified.",
         "pendingReview": "Claude independent semantic review and owner finalization (Claude quota limit blocked an attempted review on October 22); existing 39 items remain open pending formal receipts"
       }
     },

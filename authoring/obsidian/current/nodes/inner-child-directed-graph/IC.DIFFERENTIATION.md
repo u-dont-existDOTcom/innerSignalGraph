@@ -20,9 +20,9 @@ source_refs:
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022
 regression_refs: []
-base_record_sha256: 3ee0cbe1859069fb0050bb8a5a556a55fbdc317de30240b6de93aab3f56d32f2
-base_graph_sha256: 10c162820eb328465329c7bb5340cc9fc251fa49315f817cd3f15d986e93d3a9
-projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f189958143f9d73
+base_record_sha256: 1f00385ef1b35fc38f9dadf61d01665e4eb213f09518e8bfc633f2493a86c736
+base_graph_sha256: 449607c3bf07856fcdbc3775270a57d4736decc29b97503ffbd7b5c23ca6e144
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Untangle belonging from self-betrayal
@@ -50,7 +50,8 @@ projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f18995
   },
   "avoid": [
     "Do not equate differentiation with isolation or automatic permanent cutoff.",
-    "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
+    "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate.",
+    "Do not assume that a distressed or unhappy person is incapable of caring for others, or that anyone who dislikes another person’s choices is jealous; distinguish behavior, motive, legitimate responsibility and social pressure."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -65,7 +66,9 @@ projection_input_sha256: 45ac6bf90ab5334b29e146a84f93b4cf9ee2b46090ca7b454f18995
     "Notice where other people’s emotions and group expectations replace personal knowing.",
     "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
     "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
-    "Where a person feels disloyal for enjoying life while others suffer, distinguish actual responsibilities and compassion-in-action from a learned requirement to stay miserable as proof of belonging or care."
+    "Where a person feels disloyal for enjoying life while others suffer, distinguish actual responsibilities and compassion-in-action from a learned requirement to stay miserable as proof of belonging or care.",
+    "Explore whether cultivating the person’s own happiness or steadiness might enlarge what they can offer others; use the owner’s lived example as an invitation to inquire, not a rule that unhappy people cannot help.",
+    "Do not promise that everyone will welcome their growth. Some people may genuinely resent or withdraw when someone becomes happier; assess what has actually happened, acknowledge a possible real loss and support compassionate boundaries, reciprocal relationships and grief."
   ],
   "successSignals": [
     "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
