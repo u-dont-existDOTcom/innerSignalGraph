@@ -21,6 +21,7 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.NONPUNITIVE_REVIEW
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
+  - AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
 regression_refs:
   - G003
   - G008
@@ -34,9 +35,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: bd3438f6edbe8fb7fd75893132de50fa04b5817d0c1c0564e19ccb696acb29bc
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: f3e3ce94e50aae9e0083e7b5129022921d5dd5938fb9c6d4196018e6b7918a7e
+base_graph_sha256: 449607c3bf07856fcdbc3775270a57d4736decc29b97503ffbd7b5c23ca6e144
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Make the Protector visible in ordinary life
@@ -80,7 +81,9 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "The Adult Protector is a chosen adult function, not a synonym for learned protective guards or the inherited critic; a warm limit may include both comfort and a firm no."
+    ]
   },
   "recommendations": [
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
@@ -109,3 +112,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
 
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
+
+[[current/governance/amendments/AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022]]

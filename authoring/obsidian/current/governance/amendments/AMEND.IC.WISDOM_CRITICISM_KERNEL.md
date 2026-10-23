@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_CRITICISM_KERNEL
 status: owner-approved
 domain: inner-child
-base_record_sha256: 84e0ae1f2eb753dda77bc31e7fa7322c49c9f1ea5117b006c4ab5d3249b8af14
-source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 2123f68be2dc27176285212bb42b72382d1ca5843c4fd33209959e5174d07128
+source_file_sha256: 4c295bb1c362f83d94b9572f0bd2a4640eef3b930933b9799c74fc45a790488a
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # AMEND.IC.WISDOM_CRITICISM_KERNEL
@@ -24,6 +24,6 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "status": "owner-approved",
     "text": "After appropriate present-day assessment, separate a specific supported point in criticism from contempt, exaggeration and coercive demands. A charitable reconstruction is a hypothesis, not an obligation to concede. Accept accurate responsibility while retaining boundaries; no useful kernel needs to be manufactured. Clarification and nonresponse are both possible. This is owner-reported and Rogers-inspired; the exact maxim was not verified as a Fred Rogers quotation. Noticing good qualities is not a replacement for assessment of safety or demonstrated capacity."
   },
-  "version": "owner-amendments-2026-10-17-r14"
+  "version": "owner-amendments-2026-10-23-r16"
 }
 ```

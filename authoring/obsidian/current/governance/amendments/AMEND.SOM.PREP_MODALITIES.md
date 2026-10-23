@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.PREP_MODALITIES
 status: owner-approved
 domain: somatic
-base_record_sha256: 48a10fa21db7016b92a851e4ab3542283924ea342a3f4971b2503f4d802837b3
-source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 6a78ff2c9901c5666e2e69cff6fc8772755cf58246030f798244c483ce2e230d
+source_file_sha256: 4c295bb1c362f83d94b9572f0bd2a4640eef3b930933b9799c74fc45a790488a
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # AMEND.SOM.PREP_MODALITIES
@@ -24,6 +24,6 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "status": "owner-approved",
     "text": "EFT, gentle qigong shaking, longer unforced exhales, gentle Buteyko-style breathing, Somatic Experiencing, trauma-sensitive yoga, and resource-oriented Brainspotting may prepare for or accompany inner-child work."
   },
-  "version": "owner-amendments-2026-10-17-r14"
+  "version": "owner-amendments-2026-10-23-r16"
 }
 ```

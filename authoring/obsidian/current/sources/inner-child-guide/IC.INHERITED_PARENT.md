@@ -7,21 +7,21 @@ source_id: IC.INHERITED_PARENT
 guide_id: inner-child-guide
 heading: The Parent You Inherited
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
-section_hash: 4255c955c5f25244e0491b293237c216b7edc4c6e7eccdc52802ce5e4613d79c
+source_hash: 3e9abfe7cac972debad1eea9921e0aa70e4b8d77d5f80afbf68006dc2270202a
+section_hash: 5b8fafa5b41efe72dafbb525da93da7a8b897197f2d6563fda27b2b7ba265d4e
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.AGE_RESPONSIBILITY_CLARIFICATION
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # The Parent You Inherited
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-10-23-r8.txt`
 
-Locator: Lines 429–436
+Locator: Lines 433–440
 
 ```text
 The Parent You Inherited

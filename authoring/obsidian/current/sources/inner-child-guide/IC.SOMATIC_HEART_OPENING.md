@@ -7,20 +7,20 @@ source_id: IC.SOMATIC_HEART_OPENING
 guide_id: inner-child-guide
 heading: Somatic Heart Opening
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+source_hash: 3e9abfe7cac972debad1eea9921e0aa70e4b8d77d5f80afbf68006dc2270202a
 section_hash: 2ce5c09cda65122145017fdf01fe8ed40813f8964f8b1f3f3008cf3f3c5ee4b6
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Somatic Heart Opening
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-10-23-r8.txt`
 
-Locator: Lines 789–850
+Locator: Lines 795–856
 
 ```text
 Somatic Heart Opening

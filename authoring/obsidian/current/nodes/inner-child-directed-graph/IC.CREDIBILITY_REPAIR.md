@@ -21,13 +21,14 @@ source_refs:
   - IC.BORROW_LOVE
   - IC.BORROW_ONE_FUNCTION
   - AMEND.IC.NONPUNITIVE_REVIEW
+  - AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022
 regression_refs:
   - G001
   - G012
   - G047
-base_record_sha256: d4df4b74f39f7cc1abfbef90666db0614c24aee056c0ee5433fcb0fe79db089f
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: fb0142619713c6dc3ce5e0740646cb2b3d7263425b511607f9c458d498248f08
+base_graph_sha256: 449607c3bf07856fcdbc3775270a57d4736decc29b97503ffbd7b5c23ca6e144
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Repair credibility through non-defensive follow-through
@@ -73,7 +74,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
       "A pre-existing adverse track record is different from having no track record yet.",
       "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
       "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable.",
-      "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse."
+      "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse.",
+      "Useful intentions or daily reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working."
     ]
   },
   "recommendations": [
@@ -84,7 +86,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
     "If positive nurture is the missing function, borrow or build that function rather than asking the younger state to open merely because hostility stopped.",
     "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both.",
-    "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible."
+    "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible.",
+    "When an old expectation, coping response, and later self-attack appear together, check the real sequence and whether the response helped maintain the expectation; preserve evidence that another person actually withheld care or acted unsafely."
   ],
   "successSignals": [
     "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
@@ -106,3 +109,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]
 
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
+
+[[current/governance/amendments/AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022]]

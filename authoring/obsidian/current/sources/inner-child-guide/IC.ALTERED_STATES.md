@@ -7,7 +7,7 @@ source_id: IC.ALTERED_STATES
 guide_id: inner-child-guide
 heading: Altered States Can Deepen the Therapy
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+source_hash: 3e9abfe7cac972debad1eea9921e0aa70e4b8d77d5f80afbf68006dc2270202a
 section_hash: c9e47358967ee5982471b9f1eeadd81056f524d9b15f8cc6aa23626c8fccc689
 locator_kind: text-lines
 cited_by_node_ids:
@@ -17,16 +17,16 @@ cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
   - ROUTE.ALTERED_STABLE_THERAPY
   - ROUTE.ALTERED_STATE_TRANSFER
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Altered States Can Deepen the Therapy
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-10-23-r8.txt`
 
-Locator: Lines 851–898
+Locator: Lines 857–904
 
 ```text
 Altered States Can Deepen the Therapy

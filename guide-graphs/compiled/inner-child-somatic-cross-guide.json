@@ -65,7 +65,8 @@
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
-        "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS"
+        "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS",
+        "AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -75,6 +76,7 @@
         "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
         "Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.",
         "Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.",
+        "When a person’s greater happiness or independence changes a relationship, acknowledge that another person may actually resent or withdraw from the change. Observe specific conduct, limits and willingness to repair before deciding whether to invest, grieve or step back; do not promise approval from everyone.",
         "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.",
         "After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary.",
         "Keep social practice reciprocal rather than performative: notice the other person, allow them their own purposes, and do not turn contact into a verdict about whether the user is normal, attractive, lovable or capable of intimacy.",
@@ -87,6 +89,7 @@
         "Do not diagnose or automatically label another person emotionally immature, manipulative, narcissistic, or unsafe from a disagreement or a single frustrating interaction.",
         "Do not infer motive, moral worth, or global personality from a capacity assessment.",
         "Do not recommend cutoff by default; calibrate trust, access, distance, requests, and investment to the actual evidence and safety needs.",
+        "Do not call every negative reaction jealousy, dismiss real hurt or duties, or suggest that protecting the person’s happiness requires ending relationships indiscriminately.",
         "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.",
         "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
         "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
@@ -123,7 +126,8 @@
           "Acceptance, attachment relief, attraction, romantic love, compatibility and trust are separable observations that should not be collapsed into one another.",
           "Support and mutual co-regulation are healthy relational functions; the restriction targets using another person as a certainty test, reassurance machine or diagnostic instrument.",
           "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability.",
-          "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy."
+          "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy.",
+          "In sensitive disclosure, privacy and graded trust remain legitimate, but do not encourage disguising real present danger as fiction or dreams to avoid safety attention. Ask about confidentiality, retention and legal reporting limits when relevant, without promising blanket secrecy or withholding protective help."
         ]
       },
       "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
@@ -571,7 +575,8 @@
         "AMEND.CROSS.BLOCKED_ACTION_WAIT",
         "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
-        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY"
+        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
+        "AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -598,7 +603,8 @@
         "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
         "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step.",
         "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
-        "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care."
+        "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
+        "Do not present an actual safety-relevant disclosure as fictional or dreamed in order to avoid appropriate assessment. General or de-identified initial questions about confidentiality are compatible with truthful present-risk communication."
       ],
       "successSignals": [
         "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -1958,7 +1964,8 @@
         "AMEND.IC.GRATITUDE_HOW_20261015",
         "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
         "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014",
-        "IC.SPIRITUAL_LOAN"
+        "IC.SPIRITUAL_LOAN",
+        "AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1980,7 +1987,8 @@
         "Do not preach, lecture or insist, and don’t bring it up in every reply. If the person keeps resisting, leave it (“we can come back to this later, now may not be the time”) and come back later from another angle.",
         "Do not demand a feeling, ask anyone to thank an abuser or endorse harm, or put thanks in place of protection, treatment, grief or practical help.",
         "Do not lead with gratitude, or gratitude for suffering, right after a fresh death or harm, and do not pile it on top of an unexamined contradiction.",
-        "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity."
+        "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity.",
+        "Do not use other people's deprivation as the reason this person should feel fortunate, or treat gratitude as a social ranking. Notice concretely present good while retaining compassion for those who suffer."
       ],
       "successSignals": [
         "The person finds something they are genuinely grateful for and notices what it opens, or sees for themselves where their gratitude depends on things going their way."
@@ -2000,7 +2008,8 @@
         "requiredNuance": [
           "Ordinary love (love_access) and unconditional love (deep_love_access) are different: someone can love their pets and still feel no unconditional love or acceptance.",
           "Expressed thanks, felt softness, unconditional love, and a spiritual interpretation are distinct observations.",
-          "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care."
+          "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care.",
+          "The owner's spiritual gratitude does not mean satisfaction with having more than someone else. Recognizing that suffering could be greater is a different reflection from ranking one's fortune against another person's hardship."
         ]
       },
       "defaultQuestion": ""

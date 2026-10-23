@@ -20,6 +20,7 @@ source_refs:
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
   - AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
   - IC.SPIRITUAL_LOAN
+  - AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022
 regression_refs:
   - G047
   - G109
@@ -44,9 +45,9 @@ regression_refs:
   - G138
   - G139
   - G140
-base_record_sha256: f21123eab0dbf0ef6460f18f49de6f7293ebc2eb162f353289760b75ca8492d9
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 4dff9d114761f19485f70ebd4fd23a5b6ae86ac276798357568470ef25ac0aac
+base_graph_sha256: 9407f8cfafb0bc6e601838dec7743909025342eb665ac15f768dea3a0fa49e03
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching
@@ -128,7 +129,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Do not preach, lecture or insist, and don’t bring it up in every reply. If the person keeps resisting, leave it (“we can come back to this later, now may not be the time”) and come back later from another angle.",
     "Do not demand a feeling, ask anyone to thank an abuser or endorse harm, or put thanks in place of protection, treatment, grief or practical help.",
     "Do not lead with gratitude, or gratitude for suffering, right after a fresh death or harm, and do not pile it on top of an unexamined contradiction.",
-    "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity."
+    "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity.",
+    "Do not use other people's deprivation as the reason this person should feel fortunate, or treat gratitude as a social ranking. Notice concretely present good while retaining compassion for those who suffer."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -140,7 +142,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "requiredNuance": [
       "Ordinary love (love_access) and unconditional love (deep_love_access) are different: someone can love their pets and still feel no unconditional love or acceptance.",
       "Expressed thanks, felt softness, unconditional love, and a spiritual interpretation are distinct observations.",
-      "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care."
+      "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care.",
+      "The owner's spiritual gratitude does not mean satisfaction with having more than someone else. Recognizing that suffering could be greater is a different reflection from ranking one's fortune against another person's hardship."
     ]
   },
   "recommendations": [
@@ -174,3 +177,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014]]
 
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022]]

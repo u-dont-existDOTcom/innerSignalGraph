@@ -1,6 +1,17 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-17
+Updated: 2026-10-22
+
+## Latest guide-map and suggestion-intake checkpoint (2026-10-22)
+
+- **Intake reliability completed on development main:** PR #187 merged with commit `cc27504faba90f1210602eba322d080c88bf9722`. The receiver now inspects both the UDA default-branch suggested-fix lane and unmerged `uda-lane` PRs, with exact receiving-side dispositions, reopening conditions and an UNKNOWN status on failed discovery. Final Codex review found no actionable defects; four first-review issues were corrected; the final hosted checks passed. The verified authenticated scan found 7 suggested-fix items, 0 unacknowledged. This does not deploy any therapy updates.
+- **AI guide and therapy semantics remain a draft:** PR #188, branch `task/guide-semantic-review-20261022`, is the sole current candidate for r7 AI-guide prose, graph and served-rule changes aligned to selected owner-edited humanized concepts. Original r6 remains preserved. App policy stays conservative for one serious psychoactive adverse reaction and truthful present-risk disclosure, without forcing the public article to have identical wording.
+- **Public-guide queue:** its original 39 entries have not been consumed or deleted on the basis of the earlier 33/1/2/3 audit. Five new **proposal-only** obligations PGQ-042–046 were appended to the draft branch for provenance. The working public article is not automatically approved runtime authority.
+- **Verification:** 53/53 relevant deterministic guide/graph/projection/source tests passed. The provenance gate initially failed because new source meaning was not queued; it passed after appending proposal-only obligations. Remaining hosted validations and semantic decisions are separate.
+- **Review hold:** a read-only independent Claude review of the 578-line owner proposal and current article was attempted but returned its weekly usage limit and produced no review. The previously owner-requested Claude review followed by owner finalization has not happened. Do not merge PR #188 or install to stable on the strength of this draft or supporting tests.
+- **Recover from:** `tasks/guide-map-intake-reconcile-20261022/INTEGRATION.md` and the review notes on the two PRs. Resume with the missing independent source/meaning review and owner-approved semantic dispositions, then run final source/graph/Guide Packet and release gates only if authorized.
+
+
 
 
 ## Refreshing a connector's tools, not a new chat (2026-10-17, issue #172, a follow-up to change E; branch `task/tool-refresh-advice-20261017`, onto `main`, not merged)
@@ -1271,3 +1282,13 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
 - Owner task: preserve a complete **unsent** candidate when the supervisor asks for a local correction; do not answer only the correction or confuse it with a new recipient turn. Stage generic treatment-horizon and relational-readiness distinctions prompted by a private case, without publishing private facts.
 - Proposed implementation: supervisor skill and common/realizer prompts; exact-anchor pending-reply revision helper and synthetic tests; canonical AI-guide insertion and two owner-amendment/map distinctions; full teaching-point queue with approved T1–T9 backfill; PR CI provenance gate.
 - Status: TASK BRANCH CANDIDATE ONLY. No review, merge, stable promotion, plugin deployment, Guide Packet release, public-guide publication, or private-case mutation is implied by applying this script. Run generated-projection refresh and full validation and obtain owner approval of reader wording before merge.
+
+
+## 2026-10-23 — Owner-directed correction to reparenting outcome and happiness/belonging (draft PR #188)
+- **Current authority:** the owner directly confirmed the learning model and corrected the interpretation of self-care success. Real ongoing nurturing, protection and guidance toward the vulnerable younger self is a core goal; automaticity, perfect happiness, perfect consistency and freedom from all outside assistance are not mandatory thresholds. Avoid app or supervisor answers that reduce real self-care to an optional indicator.
+- **Owner's happiness insight:** developing personal happiness can expand ability to help others, based on the owner's personal experience, without denying that people in distress can give. A companion may genuinely resent the person's positive growth; evaluate observed conduct, duties and relationship limits, and do not treat that rejection as fictitious or automatically prescribe separation.
+- **Candidate implementation:** AI guide immutable 2026-10-23-r8, owner-amendments r16; candidate inner-child and cross-guide nodes updated; prompt and served provenance mirror matched; pending public guide PGQ-044/046 updated; generated source maps and Obsidian projection rebuilt. Explicit scenario tests added. Existing October 22 r7 preserved in history.
+- **Owner authorization:** draft map, rules and AI-guide updates authorized. Humanized article is a separate unregistered working assembly; changes to that text require its existing edit/owner workflow. No publication, stable install or promotion is claimed. Earlier Claude review for unrelated broader proposals remains pending.
+- **Validation:** source/history tests, gratitude tests and new focused scenario tests passed, graph compile and all 110 graph regressions passed, authoring project/check/validate/maps-check and repository audit passed (one known unverified hosted-settings warning). Full package release gate has not been claimed.
+- **Intake:** suggested-fix inbox check again found 7 discovered and 0 unacknowledged items.
+- **Next admission:** preserve this exact candidate on the review branch, finish any source provenance/test repair, inspect the pushed diff, and keep the user informed that humanized/public guide integration is queued but not yet published.

@@ -25,9 +25,9 @@ regression_refs:
   - G089
   - G090
   - G091
-base_record_sha256: cb7f26f11608d00eb62283de8ca3409c7a3e93be7b06b7ce23d4ea17a249c132
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: f13db96aa8893a4cdbbac423f937ac0a28144bd79ae2bad03644191a1fe0ac2e
+base_graph_sha256: 449607c3bf07856fcdbc3775270a57d4736decc29b97503ffbd7b5c23ca6e144
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # Carry a working inner adult into ordinary life
@@ -95,7 +95,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "requiredNuance": [
       "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
       "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
-      "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice."
+      "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice.",
+      "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress."
     ]
   },
   "recommendations": [
@@ -106,7 +107,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
   ],
   "successSignals": [
     "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
-    "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity."
+    "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity.",
+    "Greater reliability of nurturing, protective and guiding actions in daily life is meaningful reparenting outcome evidence, with context and limits noted."
   ]
 }
 ```

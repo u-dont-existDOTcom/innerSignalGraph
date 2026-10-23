@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
 status: owner-approved
 domain: inner-child
-base_record_sha256: 886913f08aeac5c8c379433ceae859f7889e96349e3e4fa67ca197674060d83e
-source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 1ca9d0c57eb7f2e0a55998e27a22d0c07d257df3a8063181b5bfac5425bf30c7
+source_file_sha256: 4c295bb1c362f83d94b9572f0bd2a4640eef3b930933b9799c74fc45a790488a
+projection_input_sha256: c131b552a4f38cdb1c84621461291bb8a5887ff9601f6df2e62be86f65c8ad85
 ---
 
 # AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
@@ -25,6 +25,6 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "status": "owner-approved",
     "text": "Gratitude practice is what the author advises basically everyone, with or without a religion or spiritual path; it is what most people stumble on, and it matters most when someone doesn't feel unconditional love and acceptance, the love the author calls divine. This widens AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014 from the author's own path to everyone. Ordinary love, such as love for a pet, can be present while unconditional love is not; then anger and self-hatred can come from life or oneself not being how it 'should' be, and gratitude stays conditional on life going one's way. Gratitude for what goes our way is conditional, as everyone knows; the part people need to understand is why to be grateful even for suffering, which can be explained calmly, without an ego battle. Help people see for themselves by asking rather than preaching, for example whether they would be happy if they had everything they want. Start wherever there is a grip: for someone who is numb, love for a pet or for someone who once cared is often easier first, and if there is none, gratitude; gratitude comes back either way, and switching angles abandons nothing. When someone objects that their life is hell, hear them out without letting the story run on, take practical steps if needed, then ask what they would want before they could feel love or gratitude, and whether that list ever ends ('if only I had X'). When the younger self doesn't want the love, the guard comes first. An obvious contradiction, such as 'I love everyone, I just hate my dad', is looked at first. After a fresh death or harm, don't ask for gratitude: crying, support from loved ones, prayer, and sending love to the one who died, who in the author's view can still feel it and will be grateful, come first, with gratitude coming in only sideways and never made the priority."
   },
-  "version": "owner-amendments-2026-10-17-r14"
+  "version": "owner-amendments-2026-10-23-r16"
 }
 ```

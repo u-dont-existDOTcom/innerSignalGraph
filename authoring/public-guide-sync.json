@@ -6,7 +6,49 @@
       "id": "inner-child",
       "publicUrl": "https://innerchild.u-dont-exist.com",
       "status": "PLANNED_SEPARATE_HUMANIZED",
-      "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics."
+      "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics.",
+      "workingDraft": {
+        "repository": "u-dont-existDOTcom/joel-articles",
+        "ref": "1f99df7bbaf4a051a2e6225caa12891f802bc221",
+        "path": "articles/inner-child-therapy/HUMANIZED-ARTICLE-SO-FAR.md",
+        "publicationState": "UNREGISTERED_WORKING_ASSEMBLY",
+        "notes": "Later October 22 working article revision adjusts six paragraphs largely for editorial clarity; freeze this exact reference for review. Working assembly is unregistered and subject to owner decisions."
+      },
+      "queueAudit": {
+        "date": "2026-10-22",
+        "reviewState": "AUDIT_ONLY_NOT_CONSUMED",
+        "totalItems": 39,
+        "auditorAssessment": {
+          "representedInWorkingDraft": 33,
+          "oneNarrowClarification": 1,
+          "twoSourceOrOwnerDifferences": 2,
+          "threeOwnerReserved": 3
+        },
+        "currentOwnerCorrection": "2026-10-22 upstream proposals require Claude review then owner finalization; no canonical queue entries consumed from audit alone. PGQ-035 optional public omission is under review but existing app capacity gate unchanged.",
+        "ownerReviewPending": [
+          "PGQ-006",
+          "PGQ-023",
+          "PGQ-034",
+          "PGQ-035",
+          "PGQ-036",
+          "PGQ-039"
+        ],
+        "parallelUnmerged": [
+          "PGQ-040",
+          "PGQ-041"
+        ],
+        "newDraftObligations": [
+          "PGQ-042",
+          "PGQ-043",
+          "PGQ-044",
+          "PGQ-045",
+          "PGQ-046"
+        ],
+        "currentQueueEntryCount": 44,
+        "newDraftDisposition": "OWNER_CORRECTED_R8_UPSTREAM_CANDIDATE_NOT_CONSUMED",
+        "ownerFollowup20261023": "PGQ-044: dependable everyday self-care is a central intended outcome, automaticity is optional. PGQ-046: cultivating happiness can improve ability to support others, while some companions may genuinely resent change. Editor placement and publication are not certified.",
+        "pendingReview": "Claude independent semantic review and owner finalization (Claude quota limit blocked an attempted review on October 22); existing 39 items remain open pending formal receipts"
+      }
     },
     {
       "id": "somatic",

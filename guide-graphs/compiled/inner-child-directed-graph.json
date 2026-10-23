@@ -545,7 +545,8 @@
         "IC.BORROW_ONE_FUNCTION",
         "IC.SPIRITUAL_LOAN",
         "AMEND.IC.NONPUNITIVE_REVIEW",
-        "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER"
+        "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+        "AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -554,6 +555,7 @@
         "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise.",
         "Carry the borrowed function into one ordinary-life act that the person initiates, then review what it actually contributed rather than treating completion alone as success.",
         "Keep outside support available when useful while returning authorship, judgment, disagreement, and revision to the person.",
+        "Treat the growing ability to give the vulnerable self real nurturing, protection and guidance as a central outcome of reparenting. Assess actual caring behavior in life without demanding automaticity, constant happiness, total self-sufficiency or flawless consistency.",
         "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
       ],
       "avoid": [
@@ -563,7 +565,9 @@
       "successSignals": [
         "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission.",
         "The person can initiate a small caring/protective act and evaluate whether it helped without handing the helper permanent authority.",
-        "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack."
+        "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack.",
+        "With repeated real-world use, some caring, protective and guiding responses become more automatic and require less compulsive monitoring, without losing the ability to reflect, change course or ask for help.",
+        "Repeated, credible care for the younger self through ordinary choices is central outcome evidence even when it still requires conscious effort or suitable outside support."
       ],
       "tags": [
         "adult-apprentice",
@@ -649,7 +653,8 @@
       ],
       "successSignals": [
         "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
-        "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity."
+        "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity.",
+        "Greater reliability of nurturing, protective and guiding actions in daily life is meaningful reparenting outcome evidence, with context and limits noted."
       ],
       "tags": [
         "inner-signal-continuity",
@@ -665,7 +670,8 @@
         "requiredNuance": [
           "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
           "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
-          "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice."
+          "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice.",
+          "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress."
         ],
         "forbiddenOverclaims": [
           "Do not claim that a successful meditation proves durable real-life change.",
@@ -708,14 +714,16 @@
         "IC.BOTTOM_UP_SEQUENCE",
         "IC.ESCAPE_URGE",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
-        "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION"
+        "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
+        "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
         "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
         "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
-        "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes."
+        "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
+        "Distinguish a learned defensive guard from the chosen Adult Protector role; a guard may carry a useful warning or an obsolete coping tactic, whereas the Adult Protector is the present adult's capacity to protect and respond."
       ],
       "avoid": [
         "Do not classify the voice more confidently than the transcript supports or push past it.",
@@ -737,7 +745,8 @@
         "requiredNuance": [
           "The contempt may be child, protector, adult evaluator, or blend.",
           "Protective intent and predictive accuracy are separate: an alarm can be understandable and still be mistaken, outdated, or overprotective.",
-          "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward."
+          "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward.",
+          "Ordinary wishes, habits and critical thoughts are not automatically a guard, a hidden trauma or a separate inner person; test function and context before assigning a role."
         ],
         "forbiddenOverclaims": [
           "Do not definitively label a cynical voice as a guard.",
@@ -780,7 +789,8 @@
         "IC.BOTTOM_UP_SEQUENCE",
         "IC.BORROW_LOVE",
         "IC.BORROW_ONE_FUNCTION",
-        "AMEND.IC.NONPUNITIVE_REVIEW"
+        "AMEND.IC.NONPUNITIVE_REVIEW",
+        "AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -791,7 +801,8 @@
         "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
         "If positive nurture is the missing function, borrow or build that function rather than asking the younger state to open merely because hostility stopped.",
         "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both.",
-        "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible."
+        "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible.",
+        "When an old expectation, coping response, and later self-attack appear together, check the real sequence and whether the response helped maintain the expectation; preserve evidence that another person actually withheld care or acted unsafely."
       ],
       "avoid": [
         "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed.",
@@ -820,7 +831,8 @@
           "A pre-existing adverse track record is different from having no track record yet.",
           "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
           "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable.",
-          "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse."
+          "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse.",
+          "Useful intentions or daily reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working."
         ]
       },
       "defaultQuestion": ""
@@ -911,7 +923,8 @@
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.NONPUNITIVE_REVIEW",
-        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
+        "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -938,7 +951,9 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [],
-        "requiredNuance": []
+        "requiredNuance": [
+          "The Adult Protector is a chosen adult function, not a synonym for learned protective guards or the inherited critic; a warm limit may include both comfort and a firm no."
+        ]
       },
       "defaultQuestion": ""
     },
@@ -1167,17 +1182,22 @@
       "sourceRefs": [
         "IC.DIFFERENTIATION",
         "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
-        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Notice where other people’s emotions and group expectations replace personal knowing.",
         "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
-        "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+        "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
+        "Where a person feels disloyal for enjoying life while others suffer, distinguish actual responsibilities and compassion-in-action from a learned requirement to stay miserable as proof of belonging or care.",
+        "Explore whether cultivating the person’s own happiness or steadiness might enlarge what they can offer others; use the owner’s lived example as an invitation to inquire, not a rule that unhappy people cannot help.",
+        "Do not promise that everyone will welcome their growth. Some people may genuinely resent or withdraw when someone becomes happier; assess what has actually happened, acknowledge a possible real loss and support compassionate boundaries, reciprocal relationships and grief."
       ],
       "avoid": [
         "Do not equate differentiation with isolation or automatic permanent cutoff.",
-        "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
+        "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate.",
+        "Do not assume that a distressed or unhappy person is incapable of caring for others, or that anyone who dislikes another person’s choices is jealous; distinguish behavior, motive, legitimate responsibility and social pressure."
       ],
       "successSignals": [
         "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
@@ -1245,14 +1265,16 @@
         "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
         "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
         "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
-        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
         "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.",
         "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes.",
-        "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on."
+        "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on.",
+        "Set kind, predictable limits while preserving comfort and responsiveness: an ordinary want can be heard without being obeyed, pathologized, or treated as an independent protector."
       ],
       "avoid": [
         "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
