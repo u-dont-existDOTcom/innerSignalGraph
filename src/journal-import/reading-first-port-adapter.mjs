@@ -85,7 +85,15 @@ export function createReadingFirstPortAdapter({
 
   let synthesisSequence=0;
   const synthesisReceipts = new Map();
-  async function synthCall({observations,prior_summaries,scope,allowedRefs}) {
+  const finalSynthesisDigests = new Map();
+  // Only the trusted adapter can expand reviewed leaf provenance. Provider
+  // summaries at higher levels cite bounded child IDs, not an ever-growing
+  // array of page references.
+  const sealSynthesis = output => {
+    finalSynthesisDigests.set(output.provider_receipt.operation_key, sha(JSON.stringify(output)));
+    return output;
+  };
+  async function synthCall({observations,prior_summaries,scope,allowedRefs,validChangeRefs=allowedRefs}) {
     const content = { observations,prior_summaries,known_state:knownState??{},
       review_scope:scope };
     invariant(Buffer.byteLength(JSON.stringify(content),"utf8") <= MAX_SYNTHESIS_INPUT,
@@ -99,10 +107,12 @@ export function createReadingFirstPortAdapter({
       output.known_vs_new_reconciled === true &&
       output.longitudinal_counterexamples_checked === true &&
       Array.isArray(output.source_evidence_refs) &&
+      output.source_evidence_refs.length === allowedRefs.size &&
+      new Set(output.source_evidence_refs).size === allowedRefs.size &&
       output.source_evidence_refs.every(ref => allowedRefs.has(ref)) &&
       Array.isArray(output.meaningful_changes) &&
       output.meaningful_changes.every(c =>
-        Array.isArray(c.evidence_refs) && c.evidence_refs.every(ref => allowedRefs.has(ref))),
+        Array.isArray(c.evidence_refs) && c.evidence_refs.every(ref => validChangeRefs.has(ref))),
       "JOURNAL_READING_FIRST_SYNTHESIS_SOURCE_INVALID");
     synthesisReceipts.set(workId,{receipt:item.receipt, output_sha256:sha(JSON.stringify(output))});
     return { ...output, provider_receipt:{...item.receipt,operation_key:workId} };
@@ -150,24 +160,50 @@ export function createReadingFirstPortAdapter({
       outputs.push(await synthCall({observations:group,prior_summaries:[],
         scope:"chronological_batch:"+i,allowedRefs:new Set(group.map(v=>v.evidence_ref))}));
     }
-    if(outputs.length===1) return outputs[0];
+    if(outputs.length===1) return sealSynthesis(outputs[0]);
 
-    // Hierarchical cross-period reconciliation. The original references,
-    // not a generated node, remain authoritative.
+    // Keep complete original-page coverage in controller memory; provider
+    // aggregation packets carry one compact, generation-bound reference for
+    // each *verified child summary*. Neither batching nor the model is
+    // allowed to delete an input child. Expand the lineage only after the
+    // final provider completion has been independently verified.
+    const groundedChanges=outputs.flatMap(o=>o.meaningful_changes);
     let level=0,current=outputs.map((o,i)=>({
       batch:i,summary:o.provisional_longitudinal_summary,
-      source_evidence_refs:o.source_evidence_refs,
-      meaningful_changes:o.meaningful_changes
+      original_refs:o.source_evidence_refs,
+      meaningful_changes:o.meaningful_changes,
+      provider_receipt:o.provider_receipt
     }));
     while(current.length>1){
-      const groups=batches(current);const next=[];
+      const packetItems=current.map((entry,i)=>({
+        batch:i,summary:entry.summary,
+        source_evidence_refs:["reading-first:synthesis:"+
+          sha(generation+"\\0"+sourceSha256+"\\0"+level+"\\0"+i+"\\0"+
+            entry.provider_receipt.receipt_id)],
+        meaningful_changes:entry.meaningful_changes
+      }));
+      const groups=batches(packetItems);
+      invariant(groups.length<current.length,
+        "JOURNAL_READING_FIRST_SYNTHESIS_NONPROGRESS");
+      const next=[];
       for(const [i,group] of groups.entries()){
-        const refs=new Set(group.flatMap(v=>v.source_evidence_refs));
+        const children=group.map(packet=>current[packet.batch]);
+        const childRefs=new Set(group.map(v=>v.source_evidence_refs[0]));
+        const originals=new Set(children.flatMap(v=>v.original_refs));
+        const sourceChangeRefs=new Set(group.flatMap(v=>
+          v.meaningful_changes.flatMap(c=>c.evidence_refs)).filter(ref=>originals.has(ref)));
         const result=await synthCall({observations:[],prior_summaries:group,
-          scope:"chronological_aggregate:"+level+":"+i,allowedRefs:refs});
+          scope:"chronological_aggregate:"+level+":"+i,allowedRefs:childRefs,
+          validChangeRefs:new Set([...childRefs,...sourceChangeRefs])});
+        // Child-summary IDs prove aggregate coverage but are not original
+        // source anchors. Only changes citing supplied original pages can
+        // become source-grounded downstream observations.
+        const grounded=result.meaningful_changes.filter(c=>
+          c.evidence_refs.every(ref=>sourceChangeRefs.has(ref)));
+        groundedChanges.push(...grounded);
         next.push({batch:i,summary:result.provisional_longitudinal_summary,
-          source_evidence_refs:result.source_evidence_refs,
-          meaningful_changes:result.meaningful_changes,
+          original_refs:[...originals],
+          meaningful_changes:grounded,
           provider_receipt:result.provider_receipt
         });
       }
@@ -175,19 +211,25 @@ export function createReadingFirstPortAdapter({
       level++;
       invariant(level<=20,"JOURNAL_READING_FIRST_SYNTHESIS_DEPTH_EXCEEDED");
     }
-    // Retain the verified final provider receipt and all source citations.
-    return {schema_version:"1.0",
+    const originalRefs=items.map(item=>item.evidence_ref);
+    invariant(current[0].original_refs.length===allowedRefs.size &&
+      current[0].original_refs.every(ref=>allowedRefs.has(ref)),
+      "JOURNAL_READING_FIRST_SYNTHESIS_SOURCE_INVALID");
+    // Retain leaf source-linked findings, including ones that a higher-level
+    // model omits. These are provisional observations, not original quotes.
+    return sealSynthesis({schema_version:"1.0",
       provisional_longitudinal_summary:current[0].summary,
-      source_evidence_refs:current[0].source_evidence_refs,
+      source_evidence_refs:originalRefs,
       known_vs_new_reconciled:true,longitudinal_counterexamples_checked:true,
-      meaningful_changes:current[0].meaningful_changes,
-      provider_receipt:current[0].provider_receipt};
+      meaningful_changes:groundedChanges,
+      provider_receipt:current[0].provider_receipt});
   }
   async function verifySynthesis({provider_receipt,output_sha256}){
     if(provider_receipt?.special_status==="all_pending_verified") return true;
     const workId=provider_receipt?.operation_key;
     const record=synthesisReceipts.get(workId);
     return record?.receipt.receipt_id===provider_receipt?.receipt_id &&
+      finalSynthesisDigests.get(workId)===output_sha256 &&
       (await confirm(workId,provider_receipt,record.output_sha256));
   }
   return Object.freeze({reader,verifyCompletion,synthesize,verifySynthesis});

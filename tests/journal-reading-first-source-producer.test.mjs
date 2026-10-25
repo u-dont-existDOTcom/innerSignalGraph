@@ -183,3 +183,45 @@ test("an unsupported tool error is not silently downgraded into a content refusa
   const f = argumentsFor({ reader:async () => {throw Object.assign(new Error("Transport down"),{code:"NETWORK_DOWN"});} });
   await assert.rejects(produceReadingFirstJournal(f.params),{code:"NETWORK_DOWN"});
 });
+
+test("valid schema-length source understanding and longitudinal prose are not limited to reference size",async()=>{
+  const f=argumentsFor({
+    reader:async req=>({
+      observation:{
+        page:req.page,source_page_sha256:req.source_page_sha256,
+        source_read_complete:true,reviewed_modalities:"text",
+        source_specific_understanding:"A".repeat(1400),
+        exact_source_anchors:[{start:0,end:req.text.length,exact_text:req.text}],
+        source_findings:[{
+          statement:"Synthetic source context with qualifications",
+          required_qualifiers:["Invented case"],anchor_indices:[0]
+        }]
+      },
+      provider_receipt:{completed:true,input_sha256:sha(req.text)}
+    }),
+    synthesize:async input=>({
+      provisional_longitudinal_summary:"B".repeat(2100),
+      source_evidence_refs:input.persisted_source_evidence.map(x=>x.private_reference),
+      known_vs_new_reconciled:true,longitudinal_counterexamples_checked:true,
+      provider_receipt:{complete:true}
+    })
+  });
+  const result=await produceReadingFirstJournal(f.params);
+  assert.equal(result.counts.read,3);
+  const stored=[...f.stored.values()];
+  assert.ok(stored.some(x=>x.observation?.source_specific_understanding.length===1400));
+  assert.ok(stored.some(x=>x.provisional_synthesis?.provisional_longitudinal_summary.length===2100));
+});
+
+test("a missing cited page is rejected instead of counted as fully synthesized",async()=>{
+  const f=argumentsFor({
+    synthesize:async input=>({
+      provisional_longitudinal_summary:"Omitted an earlier synthetic event",
+      source_evidence_refs:input.persisted_source_evidence.slice(1).map(x=>x.private_reference),
+      known_vs_new_reconciled:true,longitudinal_counterexamples_checked:true,
+      provider_receipt:{complete:true}
+    })
+  });
+  await assert.rejects(produceReadingFirstJournal(f.params),
+    {code:"JOURNAL_READING_FIRST_SYNTHESIS_SOURCE_INVALID"});
+});

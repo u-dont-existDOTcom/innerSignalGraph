@@ -8,6 +8,7 @@ import { verifiedReadingFirstSynthesis } from "./reading-first-runtime-gate.mjs"
 const hash = x => createHash("sha256").update(x).digest("hex");
 const invariant = (ok, code) => { if (!ok) throw new ValidationError(code, { code }); };
 const nonempty = x => typeof x === "string" && x.trim().length > 0 && x.length <= 320;
+const meaningfulProse = (x, max) => typeof x === "string" && x.trim().length > 0 && x.length <= max;
 const HEX64 = /^[a-f0-9]{64}$/;
 
 function attest(stage, receipt, key) {
@@ -38,7 +39,7 @@ function verifyTextEvidence(page, observation) {
     observation?.source_page_sha256 === page.source_page_sha256 &&
     observation?.source_read_complete === true &&
     observation?.reviewed_modalities === page.required_modalities &&
-    nonempty(observation?.source_specific_understanding) &&
+    meaningfulProse(observation?.source_specific_understanding, 2500) &&
     Array.isArray(observation.exact_source_anchors),
     "JOURNAL_READING_FIRST_SOURCE_READ_RECEIPT_REQUIRED");
   if (page.text.trim().length > 0)
@@ -171,13 +172,15 @@ export async function produceReadingFirstJournal({
     unresolved: statuses.filter(x => x.status === "REVIEW_PENDING").map(x => ({
       page: x.page, reason: x.reason
     })) });
-  invariant(summary && nonempty(summary.provisional_longitudinal_summary) &&
+  invariant(summary && meaningfulProse(summary.provisional_longitudinal_summary, 13000) &&
     Array.isArray(summary.source_evidence_refs) &&
     summary.known_vs_new_reconciled === true &&
     summary.longitudinal_counterexamples_checked === true,
     "JOURNAL_READING_FIRST_SYNTHESIS_INCOMPLETE");
   const refs = new Set(evidenceRefs.map(x => x.private_reference));
-  invariant(summary.source_evidence_refs.every(x => refs.has(x)),
+  invariant(summary.source_evidence_refs.length === refs.size &&
+    new Set(summary.source_evidence_refs).size === refs.size &&
+    summary.source_evidence_refs.every(x => refs.has(x)),
     "JOURNAL_READING_FIRST_SYNTHESIS_SOURCE_INVALID");
   invariant(await verifySynthesis({ ...scope,
     evidence_refs: evidenceRefs.map(x => x.private_reference),
