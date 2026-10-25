@@ -127,7 +127,7 @@ test("the new runtime refuses actual build-quotes and pointer entrypoints withou
     await assert.rejects(run.execute("build-quotes"),
       { code: "JOURNAL_READING_FIRST_STAGE_INCOMPLETE" });
     await assert.rejects(run.execute("publish-quotes"),
-      { code: "JOURNAL_READING_FIRST_STAGE_INCOMPLETE" });
+      { code: "JOURNAL_READING_FIRST_GRAPH_PUBLICATION_REQUIRED" });
     await assert.rejects(run.execute("pointer-reference"),
       { code: "JOURNAL_READING_FIRST_STAGE_INCOMPLETE" });
     const state = JSON.parse(await fs.readFile(f.stateFile, "utf8"));
