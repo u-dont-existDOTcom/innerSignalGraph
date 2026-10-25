@@ -24,3 +24,7 @@ Existing safety and activation routing is unchanged. Urgent physical impairment,
 
 ## Continuation
 Owner goal remains open until source, graph, application prompts and operational guide are integrated on main with CI and review receipts. Owner permission applies to these source changes, not an unreviewed mass stable promotion or automatic private-case rewrite.
+
+## Independent review corrective action
+
+A scoped independent Codex text-only source review found one actionable delivery-state asymmetry: a rule to introduce access barriers as new failed to condition on whether the same suggestion had already been delivered. Both application and served guidance now distinguish draft-only from actually delivered access advice; a sixth synthetic scenario covers the opposite failure. Re-review and hosted CI must run on the corrected head before integration.

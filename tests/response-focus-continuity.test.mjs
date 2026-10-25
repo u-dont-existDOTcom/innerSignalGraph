@@ -10,7 +10,7 @@ const read = (file) => fs.readFileSync(new URL(file, import.meta.url), "utf8");
 const json = (file) => JSON.parse(read(file));
 const name = "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025";
 const flags = [
-  "UNSENT_ADVICE_AS_DELIVERED", "SPLIT_FOCUS_RETURN",
+  "UNSENT_ADVICE_AS_DELIVERED", "DELIVERED_ADVICE_AS_NEW", "SPLIT_FOCUS_RETURN",
   "HISTORY_FREE_CESSATION_ADVICE", "RELIEF_SCOPE_OVERCLAIM",
   "MISSED_VALUED_STATE_FUNCTION", "UNTESTED_ACCESS_FRICTION",
   "TRANSLATION_SCOPE_LOSS"
@@ -71,7 +71,7 @@ test("guide handoff tracks new reader-facing meaning without rewriting owner-aut
 test("synthetic pre/post response failures have focused, explicit criteria for future model replay", () => {
   const fixtures = json("../corpus/response-focus-regression-cases.json");
   assert.equal(fixtures.schema_version,1);
-  assert.equal(fixtures.cases.length,5);
+  assert.equal(fixtures.cases.length,6);
   for (const scenario of fixtures.cases) {
     assert.ok(scenario.purpose.length>15);
     assert.ok(flags.includes(scenario.failure_code));

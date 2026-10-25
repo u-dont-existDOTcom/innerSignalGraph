@@ -41,6 +41,14 @@
       "synthetic_input": "A supervisor refers to retreat support from monastics, meaning both women and men, and wants to know which aspect of a client's intense sense of being alive matters most and which harmless activities already help.",
       "failure_example": "Translate monastics as monks only; give a long speculative list of reasons for feeling alive and fail to ask about past safe alternatives.",
       "pass_criterion": "Preserve monks and nuns or an inclusive equivalent; ask the person directly what matters most about feeling alive and which non-harmful experiences already supply some of it."
+    },
+    {
+      "id": "delivered-barrier-followup",
+      "purpose": "A previously delivered barrier suggestion is followed up rather than presented as new",
+      "failure_code": "DELIVERED_ADVICE_AS_NEW",
+      "synthetic_input": "In the previous confirmed sent message the client was asked about removing access to an unhelpful app. They now reply that they tried it but can still use the same service through a browser. Ask about the real access route.",
+      "failure_example": "I suggest for the first time that you delete this app, ignoring the actual experiment and the reply.",
+      "pass_criterion": "Acknowledge the sent earlier proposal and the client feedback, then address the remaining access route without pretending the suggestion is new."
     }
   ]
 }
