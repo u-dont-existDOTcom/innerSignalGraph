@@ -12,7 +12,7 @@ anchors:
 reconciled_nodes:
   - IC.FORGIVENESS_LATER
 base_record_sha256: bf104c306216620396abe74b1fac6ef6e5bef90b8de4933ddd69b3e96f31225a
-projection_input_sha256: cc5c22452668cbcbeadf8136174fa6f3116219963bba6b7e6db192c7c01ed7c2
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # Forgiveness does not weaken accountability or boundaries

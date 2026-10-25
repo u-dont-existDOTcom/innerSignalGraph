@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: eb1b887de673a6d17047a44e25f168d5f644ecdf297c07bcd684e0c93e100b0d
 source_file_sha256: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
-projection_input_sha256: cc5c22452668cbcbeadf8136174fa6f3116219963bba6b7e6db192c7c01ed7c2
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # AMEND.IC.COMMUNITY_REPARENTING

@@ -16,7 +16,7 @@ cited_by_node_ids:
   - IC.GUIDE_LATER
   - IC.LOVE_HORIZON_EXPLORATION
   - IC.SUICIDAL_SELF_DEATH_INQUIRY
-projection_input_sha256: cc5c22452668cbcbeadf8136174fa6f3116219963bba6b7e6db192c7c01ed7c2
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # AMEND.IC.EXISTENTIAL_LOVE_ROUTING

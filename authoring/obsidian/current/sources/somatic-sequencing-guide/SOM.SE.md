@@ -14,7 +14,7 @@ cited_by_node_ids:
   - ROUTE.EXTERNAL_EMBODIMENT
   - SOM.GENTLE_REGULATION
   - SOM.SAFETY_STABILIZATION
-projection_input_sha256: cc5c22452668cbcbeadf8136174fa6f3116219963bba6b7e6db192c7c01ed7c2
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # Primary Modality: Somatic Experiencing
