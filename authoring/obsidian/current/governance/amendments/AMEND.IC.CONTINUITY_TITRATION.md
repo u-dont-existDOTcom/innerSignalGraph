@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.CONTINUITY_TITRATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: b9a0640905b26b0f79d86d4a8b9de65e7d7ca9b6c53db3230c754f797eb8b059
-source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: aa57efc9ff0f2cb7fd43c40ac7436c4455d47c13764af2857ff4425c86141851
+source_file_sha256: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # AMEND.IC.CONTINUITY_TITRATION
@@ -17,13 +17,13 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 
 ```json
 {
-  "approvedAt": "2026-10-06",
+  "approvedAt": "2026-10-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.CONTINUITY_TITRATION",
     "status": "owner-approved",
     "text": "Inner-child reparenting is a continuing relationship, not a finite module that is silently abandoned when a deeper exercise is a poor fit. Declining the inner-child frame is not a tolerance pause: a person may decline inner-child framing or practice at any time, and that choice is honored immediately without a step-down ladder, repeated re-offers, reactivation conditions, or reparenting labels on unrelated work. Care, protection, and guidance can continue in the person's own language. When the person still wants the framework but depth must decrease, first step down through the gentlest form that fits the capacity that remains. If stopping, return, or orientation is currently compromised, stop the inner exercise and orient outward first rather than trialing another inward technique. When inward attention itself is worsening things, prefer outward-facing care such as an ordinary adult action, real human support, or a brief eyes-open acknowledgment before imagery, witnessing, or symbolic contact. A full tolerance pause is a last-resort scope reduction when even the gentlest currently appropriate contact is worsening safety, orientation, stopping/return capacity, recovery, or ordinary functioning; a safety gate may also require a pause regardless of preference. A tolerance or safety pause records its reason, the last tolerated level, and an observable reactivation condition that includes the person's agreement. While that pause remains active, do not trial witnessing, imagery, symbolic contact, or another child-facing ladder step; re-entry occurs only through the reactivation gate. Re-entry begins at or below that last tolerated level rather than jumping immediately back to prior depth, and a pending recovery check-in or continuing need to titrate down is resolved before reactivation. Immediate safety can temporarily outrank child-facing work without treating the inner relationship as discarded."
   },
-  "version": "owner-amendments-2026-10-17-r14"
+  "version": "owner-amendments-2026-10-25-r15"
 }
 ```

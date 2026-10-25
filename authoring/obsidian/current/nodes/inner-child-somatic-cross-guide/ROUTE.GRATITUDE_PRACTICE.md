@@ -45,8 +45,8 @@ regression_refs:
   - G139
   - G140
 base_record_sha256: f21123eab0dbf0ef6460f18f49de6f7293ebc2eb162f353289760b75ca8492d9
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching

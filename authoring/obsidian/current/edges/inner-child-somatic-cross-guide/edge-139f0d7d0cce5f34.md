@@ -9,8 +9,8 @@ graph_id: inner-child-somatic-cross-guide
 from_node_id: ROUTE.GO_INWARD
 to_node_id: SOM.GENTLE_SHAKING
 relation: may-route-to
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # ROUTE.GO_INWARD may-route-to SOM.GENTLE_SHAKING

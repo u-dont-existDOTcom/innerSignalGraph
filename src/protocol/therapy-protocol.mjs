@@ -24,6 +24,7 @@ export const THERAPY_PROTOCOL_FILES = Object.freeze([
   "references/ROLE-BELIEF-INTEGRITY.md",
   "references/FOCUS-DISCIPLINE.md",
   "references/LONGITUDINAL-SYNTHESIS.md",
+  "references/RESPONSE-FIDELITY.md",
   "references/GUIDE-REFERRALS.md"
 ]);
 

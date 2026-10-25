@@ -20,14 +20,15 @@ source_refs:
   - ALT.EPISTEMICS
   - IC.ALTERED_STATES
   - AMEND.CROSS.STATE_DEPENDENT_TRANSFER
+  - AMEND.CROSS.RESPONSE_FIDELITY_20261025
 regression_refs:
   - G132
   - G133
   - G137
   - G138
-base_record_sha256: e98d1a5107e7ec1f7bcca2fa64260001e89418ba9b7bac10f6e3af13d3d13936
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: ff5601daaa220f43f6ca33e42a2d4975c4860c08c3ca2e560979e4d3cca3adf5
+base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # Continue substantive therapy when altered-state capacity remains coherent and safe
@@ -82,7 +83,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
   },
   "avoid": [
     "Do not automatically substitute generic grounding for the user’s actual therapeutic question when capacity is demonstrably intact.",
-    "Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete."
+    "Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete.",
+    "Do not equate hypnosis or altered attention by itself with harmful dissociation or discard a valued helpful practice without evidence."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -100,7 +102,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.",
     "Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.",
     "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate.",
-    "When something becomes newly emotionally real or credible—such as the younger self, innocence, grief, care, protection, or meaning—stay with the live therapeutic task and preserve the exact change for later sober transfer rather than repeatedly interrupting private processing with factual caveats."
+    "When something becomes newly emotionally real or credible—such as the younger self, innocence, grief, care, protection, or meaning—stay with the live therapeutic task and preserve the exact change for later sober transfer rather than repeatedly interrupting private processing with factual caveats.",
+    "When hypnosis or another practice is described as helpful, learn what shifted, for how long, how ordinary functioning and orientation changed, and whether any drawbacks appeared before introducing a caution, unless an adverse effect or urgent safety issue is already supported."
   ],
   "successSignals": [
     "The person can engage meaningfully, retain choice, stop voluntarily, and return toward ordinary functioning without escalating intensity to keep therapy working."
@@ -118,3 +121,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
 
 [[current/governance/amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER]]
+
+[[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]

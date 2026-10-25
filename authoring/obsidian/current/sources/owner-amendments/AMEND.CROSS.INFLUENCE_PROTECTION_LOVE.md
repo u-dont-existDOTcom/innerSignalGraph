@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
 guide_id: owner-amendments
 heading: AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
 source_role: owner-approved-extension
-source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
+source_hash: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
 section_hash: 16abf254685f89cc5f5517795cdaeffc70a8fcd4f371f993cfafdeeeee66110d
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - ROUTE.INFLUENCE_NONORDINARY_METTA
   - ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN
   - ROUTE.INFLUENCE_SOCIAL_PROTECTION
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
