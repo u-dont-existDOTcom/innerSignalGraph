@@ -35,9 +35,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: 5d1cec212da0c1b4e2497d73f47cc973257019f2e6d591df49db2fcb2c785a97
-base_graph_sha256: 5bdb1c4ec6bd08f6edbfcccc5c2737bfe9a1e79a5b3399bb69f30cad3951393c
-projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
+base_record_sha256: 528cc9db04868b947021b9541bcdad5985275f4e51e10524a5e784d6b71066d0
+base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
+projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
 ---
 
 # Make the Protector visible in ordinary life
@@ -74,8 +74,8 @@ projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f5
   "avoid": [
     "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
     "Do not choose an action so large that failure becomes new evidence of unreliability.",
-    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance.",
-    "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it."
+    "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
+    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -88,8 +88,8 @@ projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f5
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
     "Report the action without requiring the younger state to trust it yet.",
     "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
-    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time.",
-    "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person."
+    "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
+    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
   ],
   "successSignals": [
     "One small promise is kept.",

@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: dbe6c8e857ffd60af938961b42c3d95d7add3913b88e0fc3cfb890e6fa6dc465
 source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
-projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
+projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
 ---
 
 # AMEND.IC.DEEP_LOVE_TO_CHILD

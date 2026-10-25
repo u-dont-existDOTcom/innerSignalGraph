@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: 2c157efa006d9029b750ab45ffadbee0d2908cb9e6dfdb7432734d483c37b7d4
 source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
-projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
+projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
 ---
 
 # AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY
