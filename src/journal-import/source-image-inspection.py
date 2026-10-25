@@ -180,10 +180,15 @@ def evaluate_code(code, env, attached, observed, operations, successful):
                     and "__" not in key and key not in
                     ("Image", "display", "print", "round", "int", "float", "abs", "min", "max"))
             v = eval_node(statement.value)
-            require(v[0] != "none")
+            require(v[0] in ("image", "number", "tuple"))
+            if v[0] == "tuple":
+                nums(v, len(v[1]))
             env[key] = v
         elif isinstance(statement, ast.Expr):
-            eval_node(statement.value)
+            v = eval_node(statement.value)
+            require(v[0] in ("image", "number", "none", "tuple"))
+            if v[0] == "tuple":
+                nums(v, len(v[1]))
         else:
             raise Rejected()
 
@@ -197,6 +202,13 @@ def verify(payload):
             # Syntax still has to be safe, but any partial assignments, opens
             # or provenance cannot be used by a later successful tool result.
             evaluate_code(code, env.copy(), attached, set(), [], False)
+            # Python exceptions are not transactional. A failed call might
+            # have overwritten earlier image variables before raising.
+            # Bindings and prior attestation must therefore be rebuilt by a
+            # subsequent fully successful source-open/display call.
+            env.clear()
+            observed.clear()
+            operations.clear()
         else:
             evaluate_code(code, env, attached, observed, operations, True)
     require(len(observed) > 0 and len(operations) <= 120)

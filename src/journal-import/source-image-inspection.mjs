@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 // Bound the accepted static AST policy to exact reviewed release-source bytes.
 // A stray, replaced or symlinked validator must never enable source-bound tools.
 const validatorPath = fileURLToPath(new URL("./source-image-inspection.py", import.meta.url));
-const VALIDATOR_SHA256 = "14d72490c08855ea4ce919e83d0ec573d693b28d41f1984817e130ac3b0f1032";
+const VALIDATOR_SHA256 = "d8bf88383851252b406f00a53171a8b64c195eaa6cca561b4294a6512102728e";
 const denied = () => ({
   verified: false,
   inspected_attachment_sha256s: [],

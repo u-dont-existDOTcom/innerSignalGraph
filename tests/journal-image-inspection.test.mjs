@@ -79,6 +79,9 @@ test("unbounded code, loops, comprehensions, lambdas and result serializing are 
     "if True:\n    display(im)",
     "print('synthetic transcription')",
     "print({'bbox':[0,1,2,3]})",
+    `'{"transcription":"invented"}'`,
+    `label = '{"transcription":"invented"}'`,
+    `im.size; '{"transcription":"invented"}'`,
     "display(im)" + " ".repeat(401),
     "Image.open('/mnt/data/" + filename + "')\nimport os"
   ];
@@ -92,6 +95,14 @@ test("results require a source-bound successful display, not merely open or erro
   assert.equal((await verify([open, inspect], ["Analyzed", "Unknown"])).verified, false);
   assert.equal((await verify([open, inspect], ["AnalysisErrored", "Analyzed"])).verified, false,
     "a failed image-open cannot create trusted persistent image provenance");
+  const beforeError = open + "\ndisplay(im)";
+  const typeError = "im=1\nprint(1/0)";
+  assert.equal((await verify([beforeError,typeError,"display(im)"],
+    ["Analyzed","AnalysisErrored","Analyzed"])).verified,false,
+    "errored call may overwrite an image before raising; stale bindings must not validate");
+  assert.equal((await verify([beforeError,typeError,beforeError],
+    ["Analyzed","AnalysisErrored","Analyzed"])).verified,true,
+    "a subsequent successful fresh source-open and display can reestablish trusted provenance");
   assert.equal((await verify([open, inspect], ["Analyzed"])).verified, false);
   assert.equal((await verify([])).verified, false);
   assert.equal((await verify([open, inspect, open], ["Analyzed", "AnalysisErrored", "Analyzed"])).verified, false);
