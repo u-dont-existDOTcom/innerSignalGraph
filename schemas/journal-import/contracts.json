@@ -1,0 +1,274 @@
+{
+  "protocol_version": "1.0",
+  "graph_contract_version": "1.0",
+  "status": "IMPLEMENTATION_PROTOCOL_NOT_LIVE_IMPORT",
+  "node_kinds": [
+    "source",
+    "passage",
+    "entity",
+    "episode",
+    "assertion",
+    "theme",
+    "pattern"
+  ],
+  "assertion_kinds": [
+    "direct_report",
+    "belief",
+    "quoted_other",
+    "dream",
+    "imaginal_experience",
+    "intention",
+    "reported_action",
+    "reported_outcome",
+    "hypothesis",
+    "explicit_correction",
+    "uncertain_memory"
+  ],
+  "narrative_modes": [
+    "waking",
+    "dream",
+    "imaginal",
+    "quoted",
+    "uncertain"
+  ],
+  "relations": {
+    "contains": {
+      "from_kinds": [
+        "source"
+      ],
+      "to_kinds": [
+        "passage"
+      ]
+    },
+    "supported_by": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "passage"
+      ]
+    },
+    "mentions": {
+      "from_kinds": [
+        "passage",
+        "assertion"
+      ],
+      "to_kinds": [
+        "entity"
+      ]
+    },
+    "in_episode": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "episode"
+      ]
+    },
+    "about_theme": {
+      "from_kinds": [
+        "assertion",
+        "pattern"
+      ],
+      "to_kinds": [
+        "theme"
+      ]
+    },
+    "supports_pattern": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "pattern"
+      ]
+    },
+    "contradicts": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "assertion"
+      ]
+    },
+    "qualifies": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "assertion"
+      ]
+    },
+    "exception_to": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "assertion",
+        "pattern"
+      ]
+    },
+    "corrects": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "assertion"
+      ]
+    },
+    "retells": {
+      "from_kinds": [
+        "episode"
+      ],
+      "to_kinds": [
+        "episode"
+      ]
+    },
+    "precedes": {
+      "from_kinds": [
+        "episode"
+      ],
+      "to_kinds": [
+        "episode"
+      ]
+    },
+    "possible_same_entity": {
+      "from_kinds": [
+        "entity"
+      ],
+      "to_kinds": [
+        "entity"
+      ]
+    },
+    "reported_effect_of": {
+      "from_kinds": [
+        "assertion"
+      ],
+      "to_kinds": [
+        "assertion"
+      ]
+    }
+  },
+  "mandatory_closure_relations": [
+    "corrects",
+    "qualifies",
+    "contradicts",
+    "exception_to"
+  ],
+  "no_causal_edge_names": [
+    "causes",
+    "cures",
+    "proves",
+    "diagnoses"
+  ],
+  "source_dispositions": [
+    "extracted",
+    "no_assertion",
+    "needs_review",
+    "unreadable",
+    "excluded",
+    "pending"
+  ],
+  "role_names": [
+    "visual_reader",
+    "extractor",
+    "omission_checker",
+    "reference_reader",
+    "fidelity_auditor",
+    "reconciler",
+    "pattern_builder",
+    "pattern_reviewer",
+    "cold_consumer"
+  ],
+  "stages": [
+    "INTAKE",
+    "PARSE",
+    "PARTITION",
+    "VISUAL_READ",
+    "EXTRACT",
+    "OMISSION_CHECK",
+    "RECONCILE",
+    "GRAPH_VALIDATE",
+    "REFERENCE_AUDIT",
+    "PATTERN_BUILD",
+    "PATTERN_REVIEW",
+    "COMMIT",
+    "COLD_TEST",
+    "REPORT"
+  ],
+  "run_states": [
+    "ready",
+    "running",
+    "paused_quota",
+    "retryable_error",
+    "needs_context",
+    "blocked_authority",
+    "completed",
+    "cancelled",
+    "revoked"
+  ],
+  "source_defaults": {
+    "core_target_utf8_bytes": 12000,
+    "core_max_utf8_bytes": 20000,
+    "context_each_side_utf8_bytes": 8000,
+    "binary_chunk_bytes": 4194304,
+    "text_shard_target_bytes": 1048576,
+    "file_max_bytes": 134217728,
+    "file_max_pages": 20000,
+    "max_external_spend_usd": 0
+  },
+  "retrieval_defaults": {
+    "candidates_per_path": 50,
+    "semantic_hops": 2,
+    "rrf_k": 60,
+    "max_journal_tokens": 8000,
+    "view_nodes": 100,
+    "view_edges": 200,
+    "persistent_browser_cache": false
+  },
+  "audit_defaults": {
+    "calibration_windows": 12,
+    "probability_strata": 12,
+    "units_per_stratum": 8,
+    "targeted_is_population_estimate": false,
+    "unassessed_in_denominator": true,
+    "reference_set_recall_target": 0.95,
+    "target_is_provisional": true,
+    "global_semantic_recall_claim_allowed": false
+  },
+  "completion_fields": [
+    "archive_verified",
+    "raw_search_available",
+    "graph_built",
+    "semantically_audited",
+    "patterns_reviewed",
+    "profile_committed",
+    "cold_retrieval_verified",
+    "capacity_tested"
+  ],
+  "worker_model_policy": {
+    "bounded_ticket": "GPT-5.6 Sol Medium",
+    "mechanical_copy_test": "GPT-5.6 Sol Low",
+    "end_to_end_recovery_sensitive_integration": "GPT-5.6 Sol XHigh",
+    "effective_readback": "record_actual_or_null",
+    "fast": "DO_NOT_ENABLE_FAST",
+    "paid_fallback": false
+  },
+  "live_inference": {
+    "route_ref": null,
+    "enabled": false,
+    "identity_source": "trusted_transport_receipt_not_model_output",
+    "independence": "fresh_packet_only_context",
+    "missing_route_blocks": "semantic_calls_only"
+  },
+  "forbidden_public_data": [
+    "source_text",
+    "source_filename",
+    "source_digest",
+    "person_id",
+    "case_id",
+    "private_locator",
+    "embeddings",
+    "case_findings",
+    "credentials"
+  ]
+}

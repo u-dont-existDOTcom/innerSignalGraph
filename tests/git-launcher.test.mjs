@@ -83,7 +83,7 @@ exit 0`);
         INNER_SIGNAL_TEST_NODE_VERSION: "18.20.0"
       }
     }),
-    (error) => /Node\.js 20 or newer is required/.test(error.stderr)
+    (error) => /Node\.js 24 through 26 is required/.test(error.stderr)
   );
 });
 

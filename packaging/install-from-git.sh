@@ -16,8 +16,8 @@ done
 
 NODE_VERSION="$(node -p 'process.versions.node')"
 NODE_MAJOR="${NODE_VERSION%%.*}"
-if [[ ! "$NODE_MAJOR" =~ ^[0-9]+$ ]] || (( NODE_MAJOR < 20 )); then
-  echo "BLOCKED: Node.js 20 or newer is required; found ${NODE_VERSION:-unknown}." >&2
+if [[ ! "$NODE_MAJOR" =~ ^[0-9]+$ ]] || (( NODE_MAJOR < 24 || NODE_MAJOR >= 27 )); then
+  echo "BLOCKED: Node.js 24 through 26 is required for the source-bound journal crypto runtime; found ${NODE_VERSION:-unknown}." >&2
   exit 1
 fi
 

@@ -118,6 +118,49 @@ async function git(run, sourceRoot, args, label, { timeoutMs = 300_000, env } = 
   });
 }
 
+// Dependency-free historical releases keep their established update behavior.
+// A release declaring runtime dependencies must first install their exact lock
+// in the disposable candidate, without provider secrets or package scripts.
+async function installLockedRuntimeDependencies({ candidateRoot, env, run }) {
+  const pkg = await readJson(path.join(candidateRoot, "package.json"));
+  if (!pkg || typeof pkg !== "object") return { ok: false, stage: "dependency-manifest" };
+  const deps = pkg.dependencies ?? {};
+  if (!deps || typeof deps !== "object" || Array.isArray(deps))
+    return { ok: false, stage: "dependency-manifest" };
+  if (Object.keys(deps).length === 0) return { ok: true, required: false };
+  const lock = await readJson(path.join(candidateRoot, "package-lock.json"));
+  const locked = lock?.packages?.[""]?.dependencies;
+  if (!locked || Object.entries(deps).some(([name, version]) => locked[name] !== version))
+    return { ok: false, stage: "dependency-lock" };
+  const dependencyEnv = {
+    PATH: env.PATH ?? process.env.PATH ?? "",
+    HOME: env.HOME,
+    TMPDIR: os.tmpdir(),
+    CI: "true",
+    GIT_TERMINAL_PROMPT: "0",
+    INNER_SIGNAL_VALIDATION_SANDBOX: "1",
+    npm_config_cache: path.join(env.HOME, ".npm-cache"),
+    npm_config_userconfig: "/dev/null",
+    npm_config_globalconfig: "/dev/null",
+    npm_config_audit: "false",
+    npm_config_fund: "false",
+    npm_config_update_notifier: "false"
+  };
+  const installed = await execute(run, {
+    command: "npm",
+    args: ["ci", "--ignore-scripts", "--omit=dev", "--no-audit", "--no-fund"],
+    cwd: candidateRoot, env: dependencyEnv,
+    label: "candidate locked dependencies", timeoutMs: 300_000
+  });
+  if (installed.code !== 0) return { ok: false, stage: "candidate-dependencies" };
+  try {
+    const stats = await fs.lstat(path.join(candidateRoot, "node_modules"));
+    if (!stats.isDirectory() || stats.isSymbolicLink())
+      return { ok: false, stage: "candidate-dependencies" };
+  } catch { return { ok: false, stage: "candidate-dependencies" }; }
+  return { ok: true, required: true };
+}
+
 async function defaultValidateCandidate({ candidateRoot, env, run }) {
   const tests = await execute(run, {
     command: "npm",
@@ -458,6 +501,8 @@ export async function runGitUpdate({
       validationState,
       validationGuides
     });
+    const dependencies = await installLockedRuntimeDependencies({ candidateRoot: stagingRoot, env: validationEnv, run });
+    if (!dependencies.ok) return failedSafe({ checkedAt, stage: dependencies.stage, installedCommit: priorCommit, availableCommit: candidateCommit, candidateCommit });
     let validation;
     try {
       validation = await validateCandidate({ candidateRoot: stagingRoot, env: validationEnv, run });
@@ -480,6 +525,12 @@ export async function runGitUpdate({
     // part of the installed runtime.
     await fs.rm(stagingRoot, { recursive: true, force: true });
     await copyManagedSource(candidateRoot, stagingRoot);
+    // Recreate locked dependencies from the clean source after validation,
+    // rather than installing test-modified node_modules into production.
+    if (dependencies.required) {
+      const restored = await installLockedRuntimeDependencies({ candidateRoot: stagingRoot, env: validationEnv, run });
+      if (!restored.ok) return failedSafe({ checkedAt, stage: restored.stage, installedCommit: priorCommit, availableCommit: candidateCommit, candidateCommit });
+    }
 
     const beforeStateHash = await preservedHash(installedRoot);
     if (beforeStateTransfer) await beforeStateTransfer({ installedRoot, stateDir });
