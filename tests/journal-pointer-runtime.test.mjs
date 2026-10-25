@@ -842,8 +842,13 @@ test("reading-first graph publication preserves read-derived facets and uses rea
     .filter(item => item.corpus_id.endsWith(":quotes")).length, 0,
     "standalone index is staged, not published");
 
-  await f.run("pointer-reference", "pointer-pilot", "pointer-pass", "pointer-challenge", "pointer-measure");
-  assert.ok(taggedWithReading > 0, "taggers received source-grounded reading context");
+  await f.run("pointer-reference");
+  await f.run("pointer-pilot");
+  assert.ok(taggedWithReading > 0, "pilot tagger receives source-grounded reading context");
+  const pilotPackets = taggedWithReading;
+  await f.run("pointer-pass");
+  assert.ok(taggedWithReading > pilotPackets, "full pass receives the same reading-derived context");
+  await f.run("pointer-challenge", "pointer-measure");
   await assert.rejects(f.run("pointer-publish"), { code: "POINTER_REBASE_NEEDED" });
   await f.run("pointer-rebase");
   const deployed = await f.run("pointer-publish");
