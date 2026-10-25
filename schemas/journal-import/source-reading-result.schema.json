@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:source-reading-result:1.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source_page_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "source_read_complete": {
+      "type": "boolean"
+    },
+    "reviewed_modalities": {
+      "const": "text"
+    },
+    "source_specific_understanding": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2500
+    },
+    "exact_source_anchors": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 25,
+      "items": {
+        "type": "object",
+        "properties": {
+          "exact_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1200
+          },
+          "occurrence": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "exact_text",
+          "occurrence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "source_findings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "properties": {
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "required_qualifiers": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "anchor_indices": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "uniqueItems": true,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "required": [
+          "statement",
+          "required_qualifiers",
+          "anchor_indices"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "page",
+    "source_page_sha256",
+    "source_read_complete",
+    "reviewed_modalities",
+    "source_specific_understanding",
+    "exact_source_anchors",
+    "source_findings"
+  ],
+  "additionalProperties": false
+}

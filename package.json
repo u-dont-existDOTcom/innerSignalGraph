@@ -37,6 +37,12 @@
     "guide-packet:build-r01-fixture": "node src/cli/guide-packet.mjs build-fixture",
     "guide-packet:verify": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r02-candidate/inner-signal-guide-packet-r02-candidate.zip",
     "guide-packet:verify:r01": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip",
-    "guide-packet:status": "node --env-file=.env src/cli/guide-packet.mjs status"
+    "guide-packet:status": "node --env-file=.env src/cli/guide-packet.mjs status",
+    "journal:import": "node src/cli/journal-import.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "jose": "6.2.12",
+    "pdfjs-dist": "6.3.289"
   }
 }

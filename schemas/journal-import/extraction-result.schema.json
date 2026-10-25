@@ -1,0 +1,462 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "needs_context",
+        "incomplete"
+      ]
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/proposal"
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "local_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entity_kind": {
+            "enum": [
+              "person",
+              "place",
+              "activity",
+              "object",
+              "organization",
+              "unknown"
+            ]
+          },
+          "anchors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/anchor"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "local_id",
+          "label",
+          "entity_kind",
+          "anchors"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "episodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "local_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authored_time": {
+            "$ref": "#/$defs/time"
+          },
+          "event_time": {
+            "$ref": "#/$defs/time"
+          },
+          "anchors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/anchor"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "local_id",
+          "label",
+          "authored_time",
+          "event_time",
+          "anchors"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "unit_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "disposition": {
+            "enum": [
+              "extracted",
+              "no_assertion",
+              "needs_review",
+              "unreadable",
+              "excluded",
+              "pending"
+            ]
+          },
+          "assertion_local_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "uniqueItems": true
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "unit_id",
+          "disposition",
+          "assertion_local_ids",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "requested_context": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "unit_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "direction": {
+            "enum": [
+              "before",
+              "after",
+              "visual",
+              "whole_entry"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "unit_id",
+          "direction",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "assertions",
+    "entities",
+    "episodes",
+    "coverage",
+    "requested_context"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:extraction:1.0",
+  "$defs": {
+    "time": {
+      "type": "object",
+      "properties": {
+        "raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "precision": {
+          "enum": [
+            "instant",
+            "day",
+            "month",
+            "year",
+            "interval",
+            "unknown"
+          ]
+        },
+        "timezone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "basis": {
+          "enum": [
+            "explicit",
+            "relative_supported",
+            "unresolved"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "raw",
+        "from",
+        "to",
+        "precision",
+        "timezone",
+        "basis",
+        "evidence_ids"
+      ],
+      "additionalProperties": false
+    },
+    "anchor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "unit_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "quote": {
+              "type": "string",
+              "minLength": 1
+            },
+            "occurrence": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "required": [
+            "unit_id",
+            "quote",
+            "occurrence"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "anchor_kind": {
+              "const": "restricted_source_pointer"
+            },
+            "unit_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "region_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "disclosure": {
+              "const": "restricted"
+            },
+            "non_graphic_statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "review_state": {
+              "enum": [
+                "unreviewed",
+                "source_checked",
+                "independent_checked",
+                "disputed"
+              ]
+            }
+          },
+          "required": [
+            "anchor_kind",
+            "unit_id",
+            "region_id",
+            "disclosure",
+            "non_graphic_statement",
+            "review_state"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "proposal": {
+      "type": "object",
+      "properties": {
+        "local_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assertion_kind": {
+          "enum": [
+            "direct_report",
+            "belief",
+            "quoted_other",
+            "dream",
+            "imaginal_experience",
+            "intention",
+            "reported_action",
+            "reported_outcome",
+            "hypothesis",
+            "explicit_correction",
+            "uncertain_memory"
+          ]
+        },
+        "narrative_mode": {
+          "enum": [
+            "waking",
+            "dream",
+            "imaginal",
+            "quoted",
+            "uncertain"
+          ]
+        },
+        "speaker_local_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "subject_local_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "uniqueItems": true
+        },
+        "episode_local_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "polarity": {
+          "enum": [
+            "affirmed",
+            "negated",
+            "uncertain"
+          ]
+        },
+        "qualifiers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "authored_time": {
+          "$ref": "#/$defs/time"
+        },
+        "event_time": {
+          "$ref": "#/$defs/time"
+        },
+        "anchors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/anchor"
+          },
+          "minItems": 1
+        },
+        "importance_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "extraction_confidence": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "required": [
+        "local_id",
+        "statement",
+        "assertion_kind",
+        "narrative_mode",
+        "speaker_local_id",
+        "subject_local_ids",
+        "episode_local_id",
+        "polarity",
+        "qualifiers",
+        "authored_time",
+        "event_time",
+        "anchors",
+        "importance_reasons",
+        "extraction_confidence"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

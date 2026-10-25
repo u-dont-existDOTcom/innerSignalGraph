@@ -1,0 +1,982 @@
+{
+  "schema_version": "1.0",
+  "case_id": "synthetic-case",
+  "corpus_id": "synthetic-corpus",
+  "generation": "generation-1",
+  "nodes": [
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "src",
+      "kind": "source",
+      "data": {
+        "representation_id": "repr",
+        "original_object_id": "original",
+        "media_type": "text/plain",
+        "byte_length": 325,
+        "parse_status": "readable"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "p1",
+      "kind": "passage",
+      "data": {
+        "representation_id": "repr",
+        "unit_id": "u1",
+        "start_byte": 0,
+        "end_byte": 34,
+        "quote": "I often hesitate to ask for help.\n",
+        "quote_sha256": "4c289217cc9253b3c2e8aa217367f42f91d05c4c02be96444cd348b178c6fde4",
+        "locator": {
+          "kind": "native_text",
+          "page": null,
+          "bbox": null,
+          "original_object_id": "original",
+          "interpretation_status": "native"
+        }
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "p2",
+      "kind": "passage",
+      "data": {
+        "representation_id": "repr",
+        "unit_id": "u2",
+        "start_byte": 34,
+        "end_byte": 79,
+        "quote": "Tomorrow I plan to ask a colleague for help.\n",
+        "quote_sha256": "7993aba3e2857954f1a527023ddf3fa3f6715210c6e6e53223cc09fc26db418d",
+        "locator": {
+          "kind": "native_text",
+          "page": null,
+          "bbox": null,
+          "original_object_id": "original",
+          "interpretation_status": "native"
+        }
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "p3",
+      "kind": "passage",
+      "data": {
+        "representation_id": "repr",
+        "unit_id": "u3",
+        "start_byte": 79,
+        "end_byte": 115,
+        "quote": "I asked a colleague for help today.\n",
+        "quote_sha256": "b616a51288dd895a1e09c6324112483f475090bff4a96043e868884eb5038425",
+        "locator": {
+          "kind": "native_text",
+          "page": null,
+          "bbox": null,
+          "original_object_id": "original",
+          "interpretation_status": "native"
+        }
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "p4",
+      "kind": "passage",
+      "data": {
+        "representation_id": "repr",
+        "unit_id": "u4",
+        "start_byte": 115,
+        "end_byte": 180,
+        "quote": "I felt calmer afterward, but the discomfort in my arm continued.\n",
+        "quote_sha256": "fc64c00d8b8f251d729546900cec62342ce58a88fa9c398209664d54da802ed8",
+        "locator": {
+          "kind": "native_text",
+          "page": null,
+          "bbox": null,
+          "original_object_id": "original",
+          "interpretation_status": "native"
+        }
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "p5",
+      "kind": "passage",
+      "data": {
+        "representation_id": "repr",
+        "unit_id": "u5",
+        "start_byte": 180,
+        "end_byte": 232,
+        "quote": "Correction: the conversation was in May, not March.\n",
+        "quote_sha256": "bdf68a79aaa2efa715fa661d12c3f0f9567f4e2daf747c4c0b38ec1624751d78",
+        "locator": {
+          "kind": "native_text",
+          "page": null,
+          "bbox": null,
+          "original_object_id": "original",
+          "interpretation_status": "native"
+        }
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "p6",
+      "kind": "passage",
+      "data": {
+        "representation_id": "repr",
+        "unit_id": "u6",
+        "start_byte": 232,
+        "end_byte": 272,
+        "quote": "I dreamed I had missed the appointment.\n",
+        "quote_sha256": "30f430196b5f03272b165df134bbb7d8d6b5492d814e03ca195f2b9685e02004",
+        "locator": {
+          "kind": "native_text",
+          "page": null,
+          "bbox": null,
+          "original_object_id": "original",
+          "interpretation_status": "native"
+        }
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "p7",
+      "kind": "passage",
+      "data": {
+        "representation_id": "repr",
+        "unit_id": "u7",
+        "start_byte": 272,
+        "end_byte": 325,
+        "quote": "Je me sens mieux — pas complètement. 🌿 Café.\n",
+        "quote_sha256": "314a2a1c8af64edd9f2c202b8427956e4ac8ef4574be4264ef301dd0731e48c7",
+        "locator": {
+          "kind": "native_text",
+          "page": null,
+          "bbox": null,
+          "original_object_id": "original",
+          "interpretation_status": "native"
+        }
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "self",
+      "kind": "entity",
+      "data": {
+        "label": "Synthetic diarist",
+        "entity_kind": "person",
+        "aliases": [],
+        "evidence_ids": [
+          "p1"
+        ]
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "colleague",
+      "kind": "entity",
+      "data": {
+        "label": "A colleague",
+        "entity_kind": "person",
+        "aliases": [],
+        "evidence_ids": [
+          "p3"
+        ]
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "ep1",
+      "kind": "episode",
+      "data": {
+        "label": "Earlier report",
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "source_order": 1,
+        "evidence_ids": [
+          "p1"
+        ],
+        "support_group_id": "g1"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "ep2",
+      "kind": "episode",
+      "data": {
+        "label": "Help request",
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "source_order": 2,
+        "evidence_ids": [
+          "p2",
+          "p3",
+          "p4"
+        ],
+        "support_group_id": "g2"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "theme",
+      "kind": "theme",
+      "data": {
+        "label": "Asking for help",
+        "origin": "neutral_induced",
+        "vocabulary_version": "1",
+        "evidence_ids": [
+          "p1",
+          "p3"
+        ]
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "a1",
+      "kind": "assertion",
+      "data": {
+        "statement": "I often hesitate to ask for help.",
+        "assertion_kind": "direct_report",
+        "narrative_mode": "waking",
+        "speaker_id": "self",
+        "subject_ids": [
+          "self"
+        ],
+        "episode_id": "ep1",
+        "polarity": "affirmed",
+        "qualifiers": [],
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "still_current": null,
+        "evidence_ids": [
+          "p1"
+        ],
+        "review_state": "source_checked",
+        "extraction_confidence": "high",
+        "producer_ref": "synthetic-producer",
+        "support_group_id": "g1"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "a2",
+      "kind": "assertion",
+      "data": {
+        "statement": "Tomorrow I plan to ask a colleague for help.",
+        "assertion_kind": "intention",
+        "narrative_mode": "waking",
+        "speaker_id": "self",
+        "subject_ids": [
+          "self"
+        ],
+        "episode_id": "ep2",
+        "polarity": "affirmed",
+        "qualifiers": [],
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "still_current": null,
+        "evidence_ids": [
+          "p2"
+        ],
+        "review_state": "source_checked",
+        "extraction_confidence": "high",
+        "producer_ref": "synthetic-producer",
+        "support_group_id": "g2"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "a3",
+      "kind": "assertion",
+      "data": {
+        "statement": "I asked a colleague for help today.",
+        "assertion_kind": "reported_action",
+        "narrative_mode": "waking",
+        "speaker_id": "self",
+        "subject_ids": [
+          "self"
+        ],
+        "episode_id": "ep2",
+        "polarity": "affirmed",
+        "qualifiers": [],
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "still_current": null,
+        "evidence_ids": [
+          "p3"
+        ],
+        "review_state": "source_checked",
+        "extraction_confidence": "high",
+        "producer_ref": "synthetic-producer",
+        "support_group_id": "g2"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "a4",
+      "kind": "assertion",
+      "data": {
+        "statement": "I felt calmer afterward, but the discomfort in my arm continued.",
+        "assertion_kind": "reported_outcome",
+        "narrative_mode": "waking",
+        "speaker_id": "self",
+        "subject_ids": [
+          "self"
+        ],
+        "episode_id": "ep2",
+        "polarity": "affirmed",
+        "qualifiers": [
+          "physical discomfort continued"
+        ],
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "still_current": null,
+        "evidence_ids": [
+          "p4"
+        ],
+        "review_state": "source_checked",
+        "extraction_confidence": "high",
+        "producer_ref": "synthetic-producer",
+        "support_group_id": "g2"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "a5",
+      "kind": "assertion",
+      "data": {
+        "statement": "Correction: the conversation was in May, not March.",
+        "assertion_kind": "explicit_correction",
+        "narrative_mode": "waking",
+        "speaker_id": "self",
+        "subject_ids": [
+          "self"
+        ],
+        "episode_id": "ep2",
+        "polarity": "affirmed",
+        "qualifiers": [],
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "still_current": null,
+        "evidence_ids": [
+          "p5"
+        ],
+        "review_state": "source_checked",
+        "extraction_confidence": "high",
+        "producer_ref": "synthetic-producer",
+        "support_group_id": "g2"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "a6",
+      "kind": "assertion",
+      "data": {
+        "statement": "I dreamed I had missed the appointment.",
+        "assertion_kind": "dream",
+        "narrative_mode": "dream",
+        "speaker_id": "self",
+        "subject_ids": [
+          "self"
+        ],
+        "episode_id": "ep2",
+        "polarity": "affirmed",
+        "qualifiers": [],
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "still_current": null,
+        "evidence_ids": [
+          "p6"
+        ],
+        "review_state": "source_checked",
+        "extraction_confidence": "high",
+        "producer_ref": "synthetic-producer",
+        "support_group_id": "g2"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "a7",
+      "kind": "assertion",
+      "data": {
+        "statement": "Je me sens mieux — pas complètement. 🌿 Café.",
+        "assertion_kind": "direct_report",
+        "narrative_mode": "waking",
+        "speaker_id": "self",
+        "subject_ids": [
+          "self"
+        ],
+        "episode_id": "ep2",
+        "polarity": "affirmed",
+        "qualifiers": [],
+        "authored_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "event_time": {
+          "raw": null,
+          "from": null,
+          "to": null,
+          "precision": "unknown",
+          "timezone": null,
+          "basis": "unresolved",
+          "evidence_ids": []
+        },
+        "still_current": null,
+        "evidence_ids": [
+          "p7"
+        ],
+        "review_state": "source_checked",
+        "extraction_confidence": "high",
+        "producer_ref": "synthetic-producer",
+        "support_group_id": "g2"
+      }
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "pat",
+      "kind": "pattern",
+      "data": {
+        "statement": "Hesitation and a successful help request coexist in the invented source.",
+        "pattern_kind": "descriptive",
+        "scope": "These invented passages only",
+        "support_assertion_ids": [
+          "a1",
+          "a3",
+          "a4"
+        ],
+        "counter_assertion_ids": [
+          "a3"
+        ],
+        "alternative_explanations": [
+          "Different circumstances may explain the contrast."
+        ],
+        "observation_gaps": [
+          "No repeated follow-up is supplied."
+        ],
+        "disconfirming_question": "Does the source show other contexts in which asking was easier?",
+        "disconfirmation": {
+          "status": "pending",
+          "search_receipt_ref": null
+        },
+        "review_state": "provisional",
+        "independent_review_ref": null,
+        "producer_ref": "synthetic-producer"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "contains1",
+      "relation": "contains",
+      "from": "src",
+      "to": "p1",
+      "evidence_ids": [
+        "p1"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "support1",
+      "relation": "supported_by",
+      "from": "a1",
+      "to": "p1",
+      "evidence_ids": [
+        "p1"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "contains2",
+      "relation": "contains",
+      "from": "src",
+      "to": "p2",
+      "evidence_ids": [
+        "p2"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "support2",
+      "relation": "supported_by",
+      "from": "a2",
+      "to": "p2",
+      "evidence_ids": [
+        "p2"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "contains3",
+      "relation": "contains",
+      "from": "src",
+      "to": "p3",
+      "evidence_ids": [
+        "p3"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "support3",
+      "relation": "supported_by",
+      "from": "a3",
+      "to": "p3",
+      "evidence_ids": [
+        "p3"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "contains4",
+      "relation": "contains",
+      "from": "src",
+      "to": "p4",
+      "evidence_ids": [
+        "p4"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "support4",
+      "relation": "supported_by",
+      "from": "a4",
+      "to": "p4",
+      "evidence_ids": [
+        "p4"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "contains5",
+      "relation": "contains",
+      "from": "src",
+      "to": "p5",
+      "evidence_ids": [
+        "p5"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "support5",
+      "relation": "supported_by",
+      "from": "a5",
+      "to": "p5",
+      "evidence_ids": [
+        "p5"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "contains6",
+      "relation": "contains",
+      "from": "src",
+      "to": "p6",
+      "evidence_ids": [
+        "p6"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "support6",
+      "relation": "supported_by",
+      "from": "a6",
+      "to": "p6",
+      "evidence_ids": [
+        "p6"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "contains7",
+      "relation": "contains",
+      "from": "src",
+      "to": "p7",
+      "evidence_ids": [
+        "p7"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "support7",
+      "relation": "supported_by",
+      "from": "a7",
+      "to": "p7",
+      "evidence_ids": [
+        "p7"
+      ],
+      "basis": "direct_source",
+      "derivation_ref": null
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "exception",
+      "relation": "exception_to",
+      "from": "a3",
+      "to": "a1",
+      "evidence_ids": [
+        "p1",
+        "p3"
+      ],
+      "basis": "derived_proposal",
+      "derivation_ref": "synthetic-rule"
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "qualifier",
+      "relation": "qualifies",
+      "from": "a4",
+      "to": "a3",
+      "evidence_ids": [
+        "p4"
+      ],
+      "basis": "derived_proposal",
+      "derivation_ref": "synthetic-rule"
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "correction",
+      "relation": "corrects",
+      "from": "a5",
+      "to": "a3",
+      "evidence_ids": [
+        "p3",
+        "p5"
+      ],
+      "basis": "derived_proposal",
+      "derivation_ref": "synthetic-rule"
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "pattern1",
+      "relation": "supports_pattern",
+      "from": "a1",
+      "to": "pat",
+      "evidence_ids": [
+        "p1"
+      ],
+      "basis": "derived_proposal",
+      "derivation_ref": "synthetic-rule"
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "pattern3",
+      "relation": "supports_pattern",
+      "from": "a3",
+      "to": "pat",
+      "evidence_ids": [
+        "p3"
+      ],
+      "basis": "derived_proposal",
+      "derivation_ref": "synthetic-rule"
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "pattern4",
+      "relation": "supports_pattern",
+      "from": "a4",
+      "to": "pat",
+      "evidence_ids": [
+        "p4"
+      ],
+      "basis": "derived_proposal",
+      "derivation_ref": "synthetic-rule"
+    },
+    {
+      "case_id": "synthetic-case",
+      "corpus_id": "synthetic-corpus",
+      "version": 1,
+      "lifecycle": "active",
+      "id": "about",
+      "relation": "about_theme",
+      "from": "pat",
+      "to": "theme",
+      "evidence_ids": [
+        "p1",
+        "p3"
+      ],
+      "basis": "derived_proposal",
+      "derivation_ref": "synthetic-rule"
+    }
+  ]
+}

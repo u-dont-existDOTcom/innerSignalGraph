@@ -1,0 +1,246 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "target_generation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "local_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "pattern_kind": {
+                "enum": [
+                  "single_event",
+                  "descriptive",
+                  "recurrent",
+                  "hypothesis"
+                ]
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1
+              },
+              "support_assertion_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9:_-]+$"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "counter_assertion_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9:_-]+$"
+                },
+                "uniqueItems": true
+              },
+              "alternative_explanations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "observation_gaps": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "disconfirming_question": {
+                "type": "string",
+                "minLength": 1
+              },
+              "disconfirmation": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "pending",
+                      "complete"
+                    ]
+                  },
+                  "search_receipt_ref": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160,
+                        "pattern": "^[A-Za-z0-9:_-]+$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "status",
+                  "search_receipt_ref"
+                ],
+                "additionalProperties": false
+              },
+              "review_state": {
+                "enum": [
+                  "provisional",
+                  "reviewed",
+                  "disputed",
+                  "withdrawn"
+                ]
+              },
+              "independent_review_ref": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160,
+                    "pattern": "^[A-Za-z0-9:_-]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "producer_ref": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              }
+            },
+            "required": [
+              "statement",
+              "pattern_kind",
+              "scope",
+              "support_assertion_ids",
+              "counter_assertion_ids",
+              "alternative_explanations",
+              "observation_gaps",
+              "disconfirming_question",
+              "disconfirmation",
+              "review_state",
+              "independent_review_ref",
+              "producer_ref"
+            ],
+            "additionalProperties": false
+          },
+          "counterevidence_queries": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "local_id",
+          "data"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unclassified_assertion_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      }
+    },
+    "coverage_note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "complete_for_stated_scope",
+        "needs_context"
+      ]
+    },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "local_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "origin": {
+            "enum": [
+              "source_term",
+              "neutral_induced"
+            ]
+          },
+          "assertion_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            }
+          }
+        },
+        "required": [
+          "local_id",
+          "label",
+          "origin",
+          "assertion_ids"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "target_generation",
+    "patterns",
+    "unclassified_assertion_ids",
+    "coverage_note",
+    "status"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:pattern:1.0"
+}
