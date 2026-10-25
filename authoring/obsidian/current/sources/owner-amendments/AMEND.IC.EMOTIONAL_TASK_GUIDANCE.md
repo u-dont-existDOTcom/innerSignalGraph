@@ -7,7 +7,7 @@ source_id: AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 guide_id: owner-amendments
 heading: AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 source_role: owner-approved-extension
-source_hash: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
+source_hash: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
 section_hash: 39f692a4ad517c72227bd0582499e744a3044b0fc28fae904518f2f2766de669
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - IC.BORROW_ONE_FUNCTION
   - IC.DEEP_CHILD_DIALOGUE
   - IC.IDENTITY_FORMATION
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
 ---
 
 # AMEND.IC.EMOTIONAL_TASK_GUIDANCE

@@ -28,6 +28,7 @@ source_refs:
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
   - AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
   - AMEND.CROSS.RESPONSE_FIDELITY_20261025
+  - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
 regression_refs:
   - G013
   - G014
@@ -43,9 +44,9 @@ regression_refs:
   - G099
   - G101
   - G105
-base_record_sha256: e19224e3eaade62160792798d23051cec75834cafc7f6d99c7f50fa11f40de03
-base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_record_sha256: 5ca0a451c24bea175eacadda507b92d27785d35cdd723d19592891204b5da6a6
+base_graph_sha256: d145252bb6e094d5fa9198c422f41f3ea60dfb0e93fc1c92682fba10ed0c81cf
+projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
 ---
 
 # Act on the concrete problem
@@ -105,7 +106,9 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
     "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step.",
     "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
-    "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care."
+    "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
+    "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
+    "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -124,7 +127,8 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
       "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
       "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn.",
       "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus.",
-      "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations."
+      "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations.",
+      "In translation and paraphrase preserve attributed inclusive groups, including monks and nuns when the speaker uses monastics; do not silently narrow source scope."
     ]
   },
   "questionPolicy": {
@@ -144,7 +148,11 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language.",
     "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure.",
     "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed.",
-    "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis."
+    "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis.",
+    "For a repeated harmful coping choice, check recorded previous cessation attempts and why use resumed, including sleep, pain, loneliness, or an intensely valued feeling, before making withdrawal the presumed obstacle.",
+    "Ask what component of an intensely valued inner state matters most and which non-harmful activities or methods have already provided some of it, without proposing a list of hidden meanings as the person's answer.",
+    "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
+    "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -179,3 +187,5 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
 [[current/governance/amendments/AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY]]
 
 [[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]
+
+[[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]

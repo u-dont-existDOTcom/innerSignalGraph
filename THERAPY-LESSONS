@@ -1,5 +1,11 @@
 # Therapy Prompt Lessons
 
+## 2026-10-25 — Preserve actual delivery, assemble the priority focus once, and learn from existing coping
+
+**Development candidate, not live.** Owner-approved general response changes follow a failure to keep the prioritized therapeutic target in one place, a false reference to unsent advice, premature generic cessation guidance despite recorded history, too indirect a question about a valued subjective state, and silent narrowing of an inclusive group in translation. Requirements: know what reached the recipient; keep the current focus and its first-priority question in a contiguous passage; use the journal and interventions before introducing generalized risk/withdrawal assumptions; find the person's most important experienced function and already-tested non-harmful methods; distinguish partial body relaxation from whole-person calm; test relapse-access barriers against real availability and feasibility; translate with unchanged inclusion and attribution. Maintain safety overrides, capacity, and consent. The already-sent client message is not revised or resent.
+
+Generalized source: AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025. Operational surfaces: shared focus and response rules, MCP-served therapy references, existing graph nodes, pending public-guide queue. Technical tests check source/protocol parity and structural fixtures; live model adherence remains unverified. No private case content or client identifiers are stored in Git.
+
 This root log records concrete lessons about how Inner Signal handles therapy prompts better. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` means the lesson was found in the newest uploaded Guide Packet but is not active until its substantive owner decision is approved and installed.
 
 ## 2026-10-25 — A referral must change a decision, and each intervention needs one place in a reply

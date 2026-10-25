@@ -1278,6 +1278,16 @@
           "excerpt": "Owner correction of 25 October 2026, expressed as general response-quality rules without private case data: medical referral after repeatedly ineffective or harmful encounters must have a plausible new clinical benefit, specific evaluation or management target and feasible care pathway, except that new severe acute impairment still warrants proportionate immediate safety action. When a practice is reported helpful, ask what it changed and about observed downside rather than issuing generic dissociation cautions. Preserve that speech in a dream is not verified waking testimony while allowing compassionate work with experienced fear or violation without asserting historical abuse. A new clustered recurrence after sustained abstinence should prompt inquiry into what changed and what the behavior supplied, without repeating a settled intention to stop. Examine one-root-cause theories through known low-symptom intervals and maintaining feedback loops instead of declaring trauma, anxiety, shame or biochemistry the single established cause. Separate a coach's practical support from unverified product or detox claims. In a single reply, consolidate discussion of each practice or topic once while preserving distinct action-changing or urgent information.",
           "status": "owner-approved",
           "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+          "heading": "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "eaaafc773d1a89eb002c056dad1adf1fe36961ff3148611aa3111e05363e0165",
+          "excerpt": "Owner-approved 25 October 2026 method changes (no case material): before composing any supervised reply distinguish actual delivered messages from draft-only suggestions; never treat an unsent proposal as something the recipient has heard. In a multi-topic reply assemble one contiguous block per topic and keep the active client's evidence, method-specific inquiry, and highest-value question adjacent, preferably last when the question is the reply's focus. Safety and explicit agenda changes override this order. Query available prior intervention history and journals before generic withdrawal, stopping or relapse advice; stopping previously without major difficulty and returning later are different problems. Explore the valued immediate function of risky coping and already-found safer ways to meet that need, with realistic constraints on executive functioning, sleep, money, access routes, and acceptance of proposed environmental changes. A physical sign of relaxation is partial observable relief, not proof that subjective anxiety has stopped; attend to variation, exact method, duration, after-effects and ordinary-life carryover, preserving evidence of mixed outcomes. Ask directly what part of a powerful felt experience matters most and what non-harmful prior experiences have delivered some of it. Preserve the original inclusive scope and attribution in translations and paraphrases, including both monks and nuns when monastics is intended. These changes neither alter any graph activation or emergency gates, nor impose a specific retreat, move or treatment.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
         }
       ]
     },
@@ -1985,19 +1995,23 @@
             "IC.ADULT_APPRENTICE",
             "IC.PROTECTOR_VISIBLE",
             "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
-            "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION"
+            "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
+            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
             "Name the adult function that was genuinely usable in the practice—Nurturer, Protector, Guide, or a narrower caring/protective/guiding move—and choose one five-percent ordinary-life action that expresses the same function.",
             "Keep the action small enough to fit present capacity and the actual need. A meal, rest, boundary, request for help, truthful but calibrated disclosure, task handled, self-test stopped, or another concrete act may fit; do not assign generic homework merely because a meditation occurred.",
             "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
-            "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity."
+            "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity.",
+            "When a currently accessible practice has a small observed benefit, compare its personally effective technique, duration, continuation, delayed costs and carryover into ordinary life before changing it or demanding more intensity.",
+            "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment."
           ],
           "avoid": [
             "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
             "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
-            "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack."
+            "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.",
+            "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization."
           ],
           "successSignals": [
             "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
@@ -2263,18 +2277,21 @@
             "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
             "AMEND.IC.WISDOM_CORE",
             "AMEND.IC.NONPUNITIVE_REVIEW",
-            "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
+            "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
+            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
             "Report the action without requiring the younger state to trust it yet.",
             "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
+            "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
             "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
           ],
           "avoid": [
             "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
             "Do not choose an action so large that failure becomes new evidence of unreliability.",
+            "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
             "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
           ],
           "successSignals": [
@@ -7188,7 +7205,8 @@
             "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
             "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
             "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
-            "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
+            "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
+            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -7204,7 +7222,11 @@
             "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language.",
             "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure.",
             "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed.",
-            "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis."
+            "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis.",
+            "For a repeated harmful coping choice, check recorded previous cessation attempts and why use resumed, including sleep, pain, loneliness, or an intensely valued feeling, before making withdrawal the presumed obstacle.",
+            "Ask what component of an intensely valued inner state matters most and which non-harmful activities or methods have already provided some of it, without proposing a list of hidden meanings as the person's answer.",
+            "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
+            "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished."
           ],
           "avoid": [
             "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -7216,7 +7238,9 @@
             "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
             "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step.",
             "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
-            "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care."
+            "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
+            "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
+            "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting."
           ],
           "successSignals": [
             "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -7244,7 +7268,8 @@
               "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
               "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn.",
               "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus.",
-              "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations."
+              "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations.",
+              "In translation and paraphrase preserve attributed inclusive groups, including monks and nuns when the speaker uses monastics; do not silently narrow source scope."
             ]
           },
           "defaultQuestion": "What is the next observable action that could actually change this situation?",
@@ -7577,7 +7602,8 @@
           "sourceRefs": [
             "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
             "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
-            "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
+            "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
+            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -7607,7 +7633,9 @@
               "The relevant distinction is function, not whether the checking happens in thought or behavior.",
               "Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless a repetitive certainty-seeking pattern is actually present.",
               "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation.",
-              "Consolidate each intervention or repeated topic into one useful passage of the response; a second mention needs a distinct decision, safety function or new evidence, not padding or another generic warning."
+              "Consolidate each intervention or repeated topic into one useful passage of the response; a second mention needs a distinct decision, safety function or new evidence, not padding or another generic warning.",
+              "Group a multi-topic therapeutic response into a single passage for each subject. Keep the chosen current focus contiguous with its evidence, method-specific inquiry, and next question; place that complete focus near the end when the client should answer it first, not twice at the beginning and end.",
+              "Differentiate sent responses from unsent proposed advice before phrasing follow-ups: an unsent suggestion has no recipient-facing delivery effect."
             ],
             "forbiddenOverclaims": [
               "Do not claim that one branch is universally superior to the others."
@@ -8930,7 +8958,7 @@
     "graphCount": 3,
     "nodeCount": 86,
     "edgeCount": 121,
-    "sourceSectionCount": 145,
-    "ownerAmendmentCount": 67
+    "sourceSectionCount": 146,
+    "ownerAmendmentCount": 68
   }
 }

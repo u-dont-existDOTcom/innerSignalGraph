@@ -37,8 +37,8 @@ regression_refs:
   - G088
   - G089
 base_record_sha256: 05bc189c5fc4093686eadbd62425b537fa844cc73b3d063ce66fa45af3cb9d26
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
+projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
 ---
 
 # Enter deeper child dialogue only when capacity is adequate

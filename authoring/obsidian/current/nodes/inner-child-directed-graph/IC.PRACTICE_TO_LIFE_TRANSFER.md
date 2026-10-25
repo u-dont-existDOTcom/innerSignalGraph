@@ -21,13 +21,14 @@ source_refs:
   - IC.PROTECTOR_VISIBLE
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
+  - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
 regression_refs:
   - G089
   - G090
   - G091
-base_record_sha256: cb7f26f11608d00eb62283de8ca3409c7a3e93be7b06b7ce23d4ea17a249c132
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_record_sha256: 35e34f43763f6a03fbb42c1725260a03782bcc3c6eac272af80cddbccf8e9a59
+base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
+projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
 ---
 
 # Carry a working inner adult into ordinary life
@@ -80,7 +81,8 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
   "avoid": [
     "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
     "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
-    "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack."
+    "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.",
+    "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -102,7 +104,9 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "Name the adult function that was genuinely usable in the practice—Nurturer, Protector, Guide, or a narrower caring/protective/guiding move—and choose one five-percent ordinary-life action that expresses the same function.",
     "Keep the action small enough to fit present capacity and the actual need. A meal, rest, boundary, request for help, truthful but calibrated disclosure, task handled, self-test stopped, or another concrete act may fit; do not assign generic homework merely because a meditation occurred.",
     "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
-    "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity."
+    "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity.",
+    "When a currently accessible practice has a small observed benefit, compare its personally effective technique, duration, continuation, delayed costs and carryover into ordinary life before changing it or demanding more intensity.",
+    "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment."
   ],
   "successSignals": [
     "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
@@ -123,3 +127,5 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
 
 [[current/governance/amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION]]
+
+[[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]

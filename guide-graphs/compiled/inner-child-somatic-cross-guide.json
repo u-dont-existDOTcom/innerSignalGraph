@@ -572,7 +572,8 @@
         "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
         "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
-        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -588,7 +589,11 @@
         "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language.",
         "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure.",
         "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed.",
-        "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis."
+        "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis.",
+        "For a repeated harmful coping choice, check recorded previous cessation attempts and why use resumed, including sleep, pain, loneliness, or an intensely valued feeling, before making withdrawal the presumed obstacle.",
+        "Ask what component of an intensely valued inner state matters most and which non-harmful activities or methods have already provided some of it, without proposing a list of hidden meanings as the person's answer.",
+        "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
+        "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -600,7 +605,9 @@
         "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation.",
         "Do not collapse one blocked subproblem into a global blocked state when another current priority has an evidence-supported step.",
         "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
-        "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care."
+        "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
+        "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
+        "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting."
       ],
       "successSignals": [
         "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -628,7 +635,8 @@
           "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
           "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn.",
           "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus.",
-          "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations."
+          "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations.",
+          "In translation and paraphrase preserve attributed inclusive groups, including monks and nuns when the speaker uses monastics; do not silently narrow source scope."
         ]
       },
       "defaultQuestion": "What is the next observable action that could actually change this situation?",
@@ -961,7 +969,8 @@
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
-        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -991,7 +1000,9 @@
           "The relevant distinction is function, not whether the checking happens in thought or behavior.",
           "Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless a repetitive certainty-seeking pattern is actually present.",
           "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation.",
-          "Consolidate each intervention or repeated topic into one useful passage of the response; a second mention needs a distinct decision, safety function or new evidence, not padding or another generic warning."
+          "Consolidate each intervention or repeated topic into one useful passage of the response; a second mention needs a distinct decision, safety function or new evidence, not padding or another generic warning.",
+          "Group a multi-topic therapeutic response into a single passage for each subject. Keep the chosen current focus contiguous with its evidence, method-specific inquiry, and next question; place that complete focus near the end when the client should answer it first, not twice at the beginning and end.",
+          "Differentiate sent responses from unsent proposed advice before phrasing follow-ups: an unsent suggestion has no recipient-facing delivery effect."
         ],
         "forbiddenOverclaims": [
           "Do not claim that one branch is universally superior to the others."

@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-18-r12`
+Queue version: `2026-10-25-r13`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -293,3 +293,17 @@ Teaching point: After repeated unsuccessful or harmful care, another non-urgent 
 Reader need: People who have experienced ineffective/coercive care, vivid therapy experiences, relapses or conflicting health advice need a way to judge useful next actions without being dismissed or steered toward unproved treatments.
 Already covered: PGQ-030 covers care after medical harm; PGQ-036 covers hypnosis suitability; PGQ-001 covers experience versus interpretation; PGQ-005 covers outcome horizons. Reconcile these rather than repeating them.
 Where: Only in the existing passages on seeking help, altered-state meaning, and comparing what actually worked; keep prose brief and preserve the urgent-care exception.
+
+### PGQ-041 — Make existing partial regulation usable outside the exercise
+Caused by: Owner-authorized AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025, updating IC.PRACTICE_TO_LIFE_TRANSFER and IC.PROTECTOR_ACTION after a reply overstated what a small bodily change proved and suggested routines before checking real-life feasibility.
+Teaching point: A small observed release of body tension can matter without proving that the whole anxiety state is gone. Start from a personally helpful practice and notice the specific effect, how its continuation changes the effect, how long benefit lasts afterward, and what carries into ordinary life; when overwhelmed, keep already-tested accessible supports in a tiny manageable list instead of assigning a burdensome routine.
+Reader need: People who cannot organize self-care during acute distress need to recognize and access the few things they already know help, rather than discount partial relief or mistake one successful session for durable healing.
+Already covered: “Make the Protector Visible” gives everyday caring action examples, “When to Change the Strategy” examines mismatches, and PGQ-012/013 cover practice-to-life transfer; none fully shows how to distinguish brief bodily relief from actual enduring anxiety change while finding low-effort personal supports.
+Where: In “When to Change the Strategy”, beside the practice-to-life transfer discussion and PGQ-013; cross-reference “Make the Protector Visible” without repeating its ordinary-action examples. Do not add clinical breath instructions or compulsory monitoring.
+
+### PGQ-042 — Protect from relapse by understanding the need, not repeating how to stop
+Caused by: Owner-approved AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025 and revised ROUTE.ACT_OUTWARD, after an answer defaulted to cessation advice despite prior stopping history and overlooked the immediate coping function and realistic access routes.
+Teaching point: Being able to stop a harmful coping habit and being able to avoid resuming it under distress are different challenges. Ask what the behavior reliably supplies at the critical moment, which already-found non-harmful experiences can meet some of that need, and whether a chosen protective step reduces real-world access; avoid promises or coercive relocation.
+Reader need: A person who has repeatedly stopped and then resumed an unwanted coping strategy needs a compassionate, realistic Protector/Guide function in daily life, not a lecture about willpower or a high-effort plan beyond available capacity.
+Already covered: “Make the Protector Visible” describes small protective actions, “Also Look Outward” addresses outside supports, and PGQ-038 links one's own practical safety steps to reparenting; these do not fully distinguish successful stopping from the recurring trigger that brings a harmful coping choice back.
+Where: Next to ordinary protective choices in “Make the Protector Visible” and its PGQ-038 update, adding only the distinct functional question and low-friction protective step; no new drug protocol, relocation requirement, or expanded altered-state claim.
