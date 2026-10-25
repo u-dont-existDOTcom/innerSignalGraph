@@ -32,7 +32,9 @@ async function fixture(t, importOrder = "reading_first", handlers = {}, override
   await fs.chmod(root, 0o700);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, "private"), { mode: 0o700 });
-  await fs.writeFile(path.join(root, "private", "source.txt"), SOURCE, { mode: 0o600 });
+  const fixtureText=overrides.longText??SOURCE;
+  const fixtureDigest=hash(fixtureText);
+  await fs.writeFile(path.join(root, "private", "source.txt"), fixtureText, { mode: 0o600 });
   const cred = path.join(root, "credentials.json");
   await fs.writeFile(cred, JSON.stringify({
     schema_version: 1, root_dir: path.join(root, "vaults"),
@@ -57,7 +59,7 @@ async function fixture(t, importOrder = "reading_first", handlers = {}, override
     schema_version: 1, max_external_spend_usd: 0,
     execution_root: path.join(root, "execution"), private_runtime_root: root,
     ...(importOrder === null ? {} : { import_order: importOrder }),
-    source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(SOURCE), sha256: DIGEST },
+    source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(fixtureText), sha256: fixtureDigest },
     target_profile: { case_id: CASE_ID }, existing_grant_ref: "synthetic:consent"
   };
   const configPath = path.join(root, "private", "config.json");
@@ -409,6 +411,30 @@ test("page-less UTF-8 original completes real parser reading before source-linke
     await runtime.execute("stage");
     const read=await runtime.execute("read-source");
     assert.equal(read.reading_first.read,1,"source is one virtual bounded reading unit");
+    assert.equal(read.reading_first.pending,0);
+    const indexed=await runtime.execute("build-quotes");
+    assert.ok(indexed.quote_index.reading_facets.facets>0);
+    await assert.rejects(runtime.execute("publish-quotes"),{
+      code:"JOURNAL_READING_FIRST_GRAPH_PUBLICATION_REQUIRED"
+    });
+  }finally{await runtime.close();}
+});
+
+test("long UTF-8 journal actually reads and indexes multiple source-bound virtual chunks",async t=>{
+  const longText=Array.from({length:850},(_,i)=>
+    `Invented journal moment ${String(i).padStart(4,"0")}: held a constructive boundary at work.
+
+`).join("");
+  const f=await fixture(t,"reading_first",{
+    source_reader:packet=>({...mockSourceReader(packet),
+      exact_source_anchors:[{exact_text:packet.text.slice(0,37),occurrence:0}]}),
+    source_synthesizer:mockSynthesis
+  },{realParser:true,longText});
+  const runtime=await f.open();
+  try{
+    await runtime.execute("stage");
+    const read=await runtime.execute("read-source");
+    assert.ok(read.reading_first.read>1,"virtual inventory must reach more than one chunk");
     assert.equal(read.reading_first.pending,0);
     const indexed=await runtime.execute("build-quotes");
     assert.ok(indexed.quote_index.reading_facets.facets>0);

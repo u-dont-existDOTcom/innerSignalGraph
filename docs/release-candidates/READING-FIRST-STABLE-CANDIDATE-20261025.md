@@ -18,7 +18,7 @@ The previously failing hosted Verify job was traced to absent dependency bootstr
 
 ## Synthetic evaluation — 25 October 2026
 
-- Reading-first and importer regression suite: passed, including 1,000-page synthesis provenance, pending modality/refusal, stage ordering, legacy lookup, and resume.
+- Reading-first and importer regression suite: passed; additionally the actual runtime completed a long, multiple-virtual-chunk UTF-8 import through source reading and enriched indexing (targeted runtime 12/12), preserving the no-index-only-publication gate., including 1,000-page synthesis provenance, pending modality/refusal, stage ordering, legacy lookup, and resume.
 - Existing and new npm test suite: **299/299 passed**, including expanded Node, dependency, plain-text, and provider preflight tests.
 - Import CLI doctor --mock: passed, no private data, mutation, or external model spend.
 - Graph regression gate: passed.
