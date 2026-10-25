@@ -30,7 +30,7 @@ async function fixture(t) {
   const text = "Synthetic entry, uncertain date. A blue cup is on the table.\n";
   await fs.writeFile(path.join(base, "private", "source.txt"), text, { mode: 0o600 });
   const config = {
-    schema_version: 1,
+    schema_version: 1, import_order: "legacy_quote_first",
     max_external_spend_usd: 0,
     execution_root: path.join(base, "execution"),
     private_runtime_root: base,

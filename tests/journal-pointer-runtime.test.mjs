@@ -85,7 +85,7 @@ async function runtimeEnvironment(t, options = {}) {
   const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider,
     keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
   await service.appendJournal(CASE_ID, { id: "legacy-pointer", observed_at: "2026-01-01T00:00:00.000Z", kind: "journal", text: "Invented legacy entry" }, { bearerToken: WRITER });
-  const config = { schema_version: 1, max_external_spend_usd: 0, execution_root: path.join(root, "execution"), private_runtime_root: root,
+  const config = { schema_version: 1, import_order: options.importOrder ?? "legacy_quote_first", max_external_spend_usd: 0, execution_root: path.join(root, "execution"), private_runtime_root: root,
     source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(text), sha256: sha256(text) },
     target_profile: { case_id: CASE_ID }, existing_grant_ref: "synthetic:grant",
     // These tests were written for owner decision 30's rules; owner decision 32's (the default for a new run) pass
@@ -98,7 +98,39 @@ async function runtimeEnvironment(t, options = {}) {
     pages: PAGES.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
     representations: PAGES.map((page, index) => ({ representation_id: `synthetic:page:${index}`, text: page, utf8_byte_length: Buffer.byteLength(page) }))
   });
-  const mock = createMockJournalInferencePort({ handlers: handlers(options) });
+  const replies = handlers(options);
+  if (options.importOrder === "reading_first") {
+    // Entirely invented responses, source anchored and supplied only to the
+    // synthetic private provider. No access to a real person's journal.
+    replies.source_reader = packet => ({
+      schema_version: "1.0", page: packet.page,
+      source_page_sha256: packet.source_page_sha256,
+      source_read_complete: true, reviewed_modalities: "text",
+      source_specific_understanding: "A fictional narrator encountered changing weather.",
+      exact_source_anchors: [{ exact_text: "rained", occurrence: null }],
+      source_findings: [{
+        statement: "The narrator recalled reassurance during unsettled weather.",
+        required_qualifiers: ["A fictional author's account"], anchor_indices: [0]
+      }]
+    });
+    replies.source_synthesizer = packet => ({
+      schema_version: "1.0",
+      provisional_longitudinal_summary: "A source-bound weather episode and later questions remain distinct.",
+      source_evidence_refs: [...new Set(
+        packet.observations.length
+          ? packet.observations.map(x => x.evidence_ref)
+          : packet.prior_summaries.flatMap(x => x.source_evidence_refs)
+      )],
+      known_vs_new_reconciled: true, longitudinal_counterexamples_checked: true,
+      meaningful_changes: []
+    });
+    const originalTagger = replies.pointer_tagger;
+    replies.pointer_tagger = packet => {
+      options.onReadingTaggerPacket?.(packet);
+      return originalTagger(packet);
+    };
+  }
+  const mock = createMockJournalInferencePort({ handlers: replies });
   // The mock stands in for the work exchange, whose hardest tier attests a fresh context and the model it ran.
   const exchangeLike = options.attested === false ? mock : attestedPort(mock);
   const port = options.wrapPort ? options.wrapPort(exchangeLike) : exchangeLike;
@@ -792,4 +824,47 @@ test("the steps that use Claude's judge need an attested hardest route, and its 
   await exchange.run("stage", "build-quotes");
   await assert.rejects(exchange.run("pointer-reference"), { code: "HARDEST_DAILY_LIMIT" });
   assert.equal(JSON.parse(await fs.readFile(exchange.stateFile, "utf8")).hardest_lane.sent, 1);
+});
+
+test("reading-first graph publication preserves read-derived facets and uses reading context in tagging", async (t) => {
+  let taggedWithReading = 0;
+  const f = await runtimeEnvironment(t, { importOrder: "reading_first", rules: 3,
+    onReadingTaggerPacket: packet => {
+      if (packet.reading_context?.some(x => x.statement.includes("reassurance")))
+        taggedWithReading++;
+    }
+  });
+  await f.run("stage", "read-source", "build-quotes");
+  await assert.rejects(f.run("publish-quotes"), {
+    code: "JOURNAL_READING_FIRST_GRAPH_PUBLICATION_REQUIRED"
+  });
+  assert.equal((await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora
+    .filter(item => item.corpus_id.endsWith(":quotes")).length, 0,
+    "standalone index is staged, not published");
+
+  await f.run("pointer-reference");
+  await f.run("pointer-pilot");
+  assert.ok(taggedWithReading > 0, "pilot tagger receives source-grounded reading context");
+  const pilotPackets = taggedWithReading;
+  await f.run("pointer-pass");
+  assert.ok(taggedWithReading > pilotPackets, "full pass receives the same reading-derived context");
+  await f.run("pointer-challenge", "pointer-measure");
+  await assert.rejects(f.run("pointer-publish"), { code: "POINTER_REBASE_NEEDED" });
+  await f.run("pointer-rebase");
+  const deployed = await f.run("pointer-publish");
+  assert.ok(deployed.pointer.published, "verified pointer generation published");
+  const corps = (await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora;
+  const corpus = corps.find(item => item.corpus_id.endsWith(":quotes"));
+  assert.ok(corpus?.active_generation?.includes(":pointer-"));
+  const api = createJournalPrivateApi({ caseAccessService: f.service });
+  const found = await api.findQuotes({
+    caseId: CASE_ID, corpusId: corpus.corpus_id,
+    query: "reassurance", purpose: "session_use"
+  }, { bearerToken: READER });
+  assert.equal(found.coverage.reading_facets, true,
+    "the published pointer generation retains reading indexes");
+  assert.ok(found.quotes.some(q => q.matched_by === "reading"),
+    "source-grounded interpretation retrieves exact quotes");
+  assert.ok(found.quotes.every(q => !q.text.includes("reassurance")),
+    "reading-derived phrases never replace original source");
 });

@@ -25,7 +25,7 @@ async function fixture(t, { pages = 1, visual = false } = {}) {
   await fs.mkdir(privateDir, { mode: 0o700 });
   const source = "Synthetic journal source for calibration retry.\n";
   await fs.writeFile(path.join(privateDir, "source.txt"), source, { mode: 0o600 });
-  const config = { schema_version: 1, max_external_spend_usd: 0,
+  const config = { schema_version: 1, import_order: "legacy_quote_first", max_external_spend_usd: 0,
     execution_root: path.join(root, "execution"), private_runtime_root: root,
     source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(source), sha256: sha(source) },
     target_profile: { case_id: "synthetic-case" }, existing_grant_ref: "synthetic:grant",

@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:source-synthesis-result:1.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "provisional_longitudinal_summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 13000
+    },
+    "source_evidence_refs": {
+      "type": "array",
+      "maxItems": 1400,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 320
+      }
+    },
+    "known_vs_new_reconciled": {
+      "type": "boolean"
+    },
+    "longitudinal_counterexamples_checked": {
+      "type": "boolean"
+    },
+    "meaningful_changes": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "properties": {
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2300
+          },
+          "evidence_refs": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 25,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 320
+            }
+          },
+          "source_kind": {
+            "enum": [
+              "reported_event",
+              "dream",
+              "unwanted_thought",
+              "hypothetical",
+              "third_party_report",
+              "unknown"
+            ]
+          },
+          "uncertainty": {
+            "type": "string",
+            "maxLength": 800
+          }
+        },
+        "required": [
+          "statement",
+          "evidence_refs",
+          "source_kind",
+          "uncertainty"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "provisional_longitudinal_summary",
+    "source_evidence_refs",
+    "known_vs_new_reconciled",
+    "longitudinal_counterexamples_checked",
+    "meaningful_changes"
+  ],
+  "additionalProperties": false
+}
