@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-18-r12`
+Queue version: `2026-10-25-r13`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -293,3 +293,11 @@ Teaching point: After repeated unsuccessful or harmful care, another non-urgent 
 Reader need: People who have experienced ineffective/coercive care, vivid therapy experiences, relapses or conflicting health advice need a way to judge useful next actions without being dismissed or steered toward unproved treatments.
 Already covered: PGQ-030 covers care after medical harm; PGQ-036 covers hypnosis suitability; PGQ-001 covers experience versus interpretation; PGQ-005 covers outcome horizons. Reconcile these rather than repeating them.
 Where: Only in the existing passages on seeking help, altered-state meaning, and comparing what actually worked; keep prose brief and preserve the urgent-care exception.
+
+### PGQ-041 — Make existing partial regulation usable outside the exercise
+Upstream: `AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025`, `IC.PRACTICE_TO_LIFE_TRANSFER`, `IC.PROTECTOR_ACTION`.
+Reader-facing option: observe what a person's already helpful practice actually does, whether continuing makes relief last longer, what happens on stopping, and which parts carry into ordinary life. Partial bodily relaxation matters but does not prove all anxiety has gone. Under overload a tiny list of already-tested and accessible coping actions may be more usable than an elaborate daily plan. Honor variable results, capacity, refusal and urgent physical safety. Merge without duplication into existing practice-to-life passages (PGQ-012/013); omit operational reply-composition mechanics.
+
+### PGQ-042 — Protect from relapse by understanding the need, not repeating how to stop
+Upstream: `AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025` and `ROUTE.ACT_OUTWARD`.
+Reader-facing option: repeated earlier cessation and repeated subsequent return point to different questions. Examine what need a risky coping choice solves at the moment (sleep, pain, aliveness, connection), which non-harmful experiences already help with the valued function, and whether a proposed barrier really reduces access given real resources and social networks. A chosen protective action can be part of ordinary ongoing reparenting. Include only in a suitable existing discussion; do not invent a program, require relocation or expand psychedelic claims.

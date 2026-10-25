@@ -12,7 +12,7 @@ section_hash: 7a837da77628c4a9c23d68ae65b3d8a31709fa0824b102fe17e47af54291705b
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_ACUTE_STABILIZATION
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
 ---
 
 # Fear and Panic Loop

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.ADVANCED_RELEASE_BYPASS
 status: owner-approved
 domain: somatic
-base_record_sha256: a54723bc978623f40612eb0e4e5c0f094c78c856aa50aaf2491d8afc25c6a580
-source_file_sha256: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_record_sha256: 8879f034a81ef3f7e2922cd117f72a623f65618f6bc2d694e47d94ec20892ea8
+source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
+projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
 ---
 
 # AMEND.SOM.ADVANCED_RELEASE_BYPASS
@@ -24,6 +24,6 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "status": "owner-approved",
     "text": "Advanced release can produce bliss or dramatic state shifts that bypass trauma. Judge it by later functioning, boundaries, willingness to meet pain, and whether it becomes compulsive or replaces relational and practical work."
   },
-  "version": "owner-amendments-2026-10-25-r15"
+  "version": "owner-amendments-2026-10-25-r16"
 }
 ```

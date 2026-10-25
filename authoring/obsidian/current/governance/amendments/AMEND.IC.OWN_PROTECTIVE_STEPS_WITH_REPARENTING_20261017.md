@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.OWN_PROTECTIVE_STEPS_WITH_REPARENTING_20261017
 status: owner-approved
 domain: inner-child
-base_record_sha256: 74da53f4edd5eb11d26b9595f096deaf55e28c13ef3dad53afbc6006781ce10d
-source_file_sha256: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_record_sha256: 8ec742b4bd11ffd00993c4374b5a9a05ce9a9393ca3ab39eddd67ab1f4684b1c
+source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
+projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
 ---
 
 # AMEND.IC.OWN_PROTECTIVE_STEPS_WITH_REPARENTING_20261017
@@ -25,6 +25,6 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "status": "owner-approved",
     "text": "The owner, 17 Oct 2026 (answer 43a on the owner page), after the behavior test for issue #172 showed answers filing a person's own protective steps under a services heading as a separate track: the person's own protective steps stay part of reparenting even when they sit next to a service, asking someone to come along or staying with a friend included. What stays separate is the service itself (police, lawyer, shelter, doctor, pain or crisis care) and the other person's help, which is never an exercise. This clarifies AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017 and the concrete human support kept distinct in AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016; frame consent still applies, and no priority order changes."
   },
-  "version": "owner-amendments-2026-10-25-r15"
+  "version": "owner-amendments-2026-10-25-r16"
 }
 ```

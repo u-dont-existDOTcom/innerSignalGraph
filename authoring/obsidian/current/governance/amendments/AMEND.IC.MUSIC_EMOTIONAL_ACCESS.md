@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.MUSIC_EMOTIONAL_ACCESS
 status: owner-approved
 domain: inner-child
-base_record_sha256: 560c94f05edeb2b84b77ad543a2d314b9b7be6f98940166aaaaa0463a4a82f4c
-source_file_sha256: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_record_sha256: f4e89dd5454460e1f04e890c0bd63d1d0be1f2a86b00c531f5b76e243544d4e6
+source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
+projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
 ---
 
 # AMEND.IC.MUSIC_EMOTIONAL_ACCESS
@@ -24,6 +24,6 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "status": "owner-approved",
     "text": "Personally meaningful, user-chosen music may be used as an optional emotional-access cue when words, imagery, or deliberate effort are not making a relevant feeling or caring function available. Ask about music the person already knows has helped; do not infer taste or prescribe a supposedly therapeutic song. Treat tears, chills, a rush of energy, vivid memory, or emotional intensity as access signals only—not proof of processing, memory accuracy, causal insight, integration, or durable improvement. Once something becomes available, continue through the existing relevant route such as borrowed love/Nurturer access, child contact, memory inquiry, or integration rather than chasing intensity. Preserve intervention identity and session context: same exercise versus different exercise, music present/absent and user-named track if supplied, state beforehand, immediate opening, and later carryover. If music increases overwhelm, derealization/dissociation, panic, disorientation, or loss of stopping capacity, reduce or stop it and return to present orientation/stabilization; existing safety gates retain priority."
   },
-  "version": "owner-amendments-2026-10-25-r15"
+  "version": "owner-amendments-2026-10-25-r16"
 }
 ```

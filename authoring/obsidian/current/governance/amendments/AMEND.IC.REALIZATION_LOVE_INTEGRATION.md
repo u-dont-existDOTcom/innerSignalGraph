@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.REALIZATION_LOVE_INTEGRATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: a813558e61581460fbd7126146f275a805905bcb14df8647968690f0306ddbea
-source_file_sha256: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_record_sha256: ff4354b5c90fc31993bd535ccfa70e6b5ef0964bf1837deba3e564865d7a8f4c
+source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
+projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
 ---
 
 # AMEND.IC.REALIZATION_LOVE_INTEGRATION
@@ -24,6 +24,6 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "status": "owner-approved",
     "text": "Spiritual realization, religious rebirth, meditation, mystical experience, or another opening can reveal a much deeper horizon of wellbeing and thereby deepen compassion, but do not let mystery outrun love indefinitely. Respect genuine realization without treating attainment claims, doctrines about love, or group warmth as proof that love is actually accessible. Test whether the opening deepens and widens love, reaches the inner child, and becomes practical protection, truth, service, relationship, Hearthwork, and community participation. Community can precede, accompany, or follow a breakthrough; do not assume that finding loving people is always what creates access to deep love."
   },
-  "version": "owner-amendments-2026-10-25-r15"
+  "version": "owner-amendments-2026-10-25-r16"
 }
 ```

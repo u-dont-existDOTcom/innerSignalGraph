@@ -2,6 +2,14 @@
 
 Updated: 2026-10-25
 
+## Reply focus and delivery fidelity — 25 October 2026 (owner-approved source candidate)
+
+Owner confirmed that the revised client response was sent; no further client message should be generated or transmitted from this task. On task branch task/therapy-focus-delivery-20261025, amendment AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025 adds generalized corrections for actual delivery versus draft-only proposals, keeping a current therapeutic focus together in one block, reading earlier cessation/coping history before generic withdrawal advice, directly asking what matters most in an intensely valued experience and which non-harmful experiences have already helped, separating partial bodily relief from global anxiety, realistically testing access barriers, and keeping inclusive source terms inclusive in translation.
+
+Source destinations: existing cross-guide and inner-child graph nodes, shared response and focus prompts, served therapy protocol references, regenerated authoring projection and map. Public guide humanization queue PGQ-041/042 is pending; owner-authored prose unchanged. No activation or emergency safety gate changed, no private case details committed. Five synthetic model-replay fixtures and static source-propagation tests are not proof of live model adherence.
+
+Development checks at this checkpoint: 110/110 graph regressions, 62/62 focused node tests, authoring project/validate/check/maps-check, lesson verification, repository audit all passed. Independent model review, complete hosted CI, PR integration, and live connector readback remain separate gates. See tasks/response-focus-20261025/INTEGRATION.md.
+
 ## Reading-first journal import — implementation and validation checkpoint (2026-10-25; owner tasks #183/#168; draft PR #184)
 
 - **Owner outcome OPEN until an approved live generation exists:** New journal imports must perform detailed chronological reading and source-grounded longitudinal understanding before building the enriched search index and semantic pointer graph. Preserve exact original quotes, event/actor/uncertainty qualifiers, persistent source bindings, existing legacy lookup and staged pointer work. The earlier limited real-source review remains incomplete: 272 pages in refused raw batches and 34 with unread images, requiring an authorized qualified review route, never a model/tool refusal bypass.

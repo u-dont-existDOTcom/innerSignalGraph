@@ -21,6 +21,7 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.NONPUNITIVE_REVIEW
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
+  - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
 regression_refs:
   - G003
   - G008
@@ -34,9 +35,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: bd3438f6edbe8fb7fd75893132de50fa04b5817d0c1c0564e19ccb696acb29bc
-base_graph_sha256: 9ea2f37e05e3a754efde7af7df7b9e645cd645802a7f13940c2c738c525dc0fb
-projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
+base_record_sha256: 5d1cec212da0c1b4e2497d73f47cc973257019f2e6d591df49db2fcb2c785a97
+base_graph_sha256: 5bdb1c4ec6bd08f6edbfcccc5c2737bfe9a1e79a5b3399bb69f30cad3951393c
+projection_input_sha256: 9ad70adf3fb81a8234b228cee8c581023cd53771e45a04e551155f54f4f9083c
 ---
 
 # Make the Protector visible in ordinary life
@@ -73,7 +74,8 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
   "avoid": [
     "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
     "Do not choose an action so large that failure becomes new evidence of unreliability.",
-    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
+    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance.",
+    "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -86,7 +88,8 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
     "Report the action without requiring the younger state to trust it yet.",
     "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
-    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
+    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time.",
+    "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person."
   ],
   "successSignals": [
     "One small promise is kept.",
@@ -109,3 +112,5 @@ projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
 
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
+
+[[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]

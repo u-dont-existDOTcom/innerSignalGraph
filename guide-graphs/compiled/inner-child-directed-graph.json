@@ -633,19 +633,23 @@
         "IC.ADULT_APPRENTICE",
         "IC.PROTECTOR_VISIBLE",
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
-        "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION"
+        "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Name the adult function that was genuinely usable in the practice—Nurturer, Protector, Guide, or a narrower caring/protective/guiding move—and choose one five-percent ordinary-life action that expresses the same function.",
         "Keep the action small enough to fit present capacity and the actual need. A meal, rest, boundary, request for help, truthful but calibrated disclosure, task handled, self-test stopped, or another concrete act may fit; do not assign generic homework merely because a meditation occurred.",
         "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
-        "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity."
+        "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity.",
+        "When a currently accessible practice has a small observed benefit, compare its personally effective technique, duration, continuation, delayed costs and carryover into ordinary life before changing it or demanding more intensity.",
+        "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment."
       ],
       "avoid": [
         "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
         "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
-        "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack."
+        "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.",
+        "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization."
       ],
       "successSignals": [
         "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
@@ -911,19 +915,22 @@
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.NONPUNITIVE_REVIEW",
-        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
         "Report the action without requiring the younger state to trust it yet.",
         "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
-        "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
+        "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time.",
+        "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person."
       ],
       "avoid": [
         "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
         "Do not choose an action so large that failure becomes new evidence of unreliability.",
-        "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
+        "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance.",
+        "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it."
       ],
       "successSignals": [
         "One small promise is kept.",
