@@ -11,6 +11,8 @@ import { openJournalExecutionRuntime } from "../src/journal-import/private-runti
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
+import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
+import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 
 const hash = (text) => createHash("sha256").update(text).digest("hex");
 const CASE_ID = "synthetic-reading-first-integration";
@@ -279,19 +281,38 @@ test("real importer read-source precedes index and leaves original legacy case d
     assert.ok(indexed.quote_index.quotes>0);
     assert.ok(indexed.quote_index.reading_facets.facets>0,
       "the index contains derived source-anchored facets from detailed reading");
-    await runtime.execute("publish-quotes");
+    // Index can be staged and privately searched, but reading-first must not
+    // publish before an enriched semantic graph is built and verified.
+    await assert.rejects(runtime.execute("publish-quotes"), {
+      code: "JOURNAL_READING_FIRST_GRAPH_PUBLICATION_REQUIRED"
+    });
     const stateContext=await f.service.loadPrivateRuntimeCase(CASE_ID,{bearerToken:READER});
-    const corpusId=stateContext.journal_corpora.find(x=>x.corpus_id.endsWith(":quotes")).corpus_id;
-    const api=createJournalPrivateApi({caseAccessService:f.service});
-    const concept=await api.findQuotes({
-      caseId:CASE_ID,corpusId,query:"commitment",purpose:"session_use"
-    },{bearerToken:READER});
-    assert.ok(concept.quotes.length>0,"reading-derived search finds a source passage");
-    assert.equal(concept.coverage.reading_facets,true);
-    assert.ok(concept.quotes.some(q=>q.matched_by==="reading"),
-      "provisional interpretation matches are labeled separately");
-    assert.ok(concept.quotes.every(q=>!q.text.includes("commitment")),
-      "the source quote remains unchanged rather than copying model prose");
+    assert.equal((stateContext.journal_corpora??[]).filter(x=>x.corpus_id.endsWith(":quotes")).length,0,
+      "no incomplete index was published");
+    const indexedState=JSON.parse(await fs.readFile(f.stateFile,"utf8"));
+    const stagingKey=await fs.readFile(path.join(f.config.execution_root,"staging.key"));
+    const store=createPrivateJournalCorpusStore({
+      rootDir:f.config.execution_root,caseId:CASE_ID,
+      corpusId:indexedState.quote_index.corpus_id,corpusKey:stagingKey,
+      resumeMatchingObjects:true
+    });
+    try {
+      const reader=await openPrivateJournalGraph({
+        corpusStore:store,manifestObjectId:indexedState.quote_index.manifest_object_id,
+        caseId:CASE_ID,corpusId:indexedState.quote_index.corpus_id,
+        generation:indexedState.quote_index.generation,visibilityEpoch:0,
+        cursorSecret:stagingKey
+      });
+      try {
+        const concept=await reader.findQuotes({query:"commitment",purpose:"session_use"});
+        assert.ok(concept.quotes.length>0,"staged reading-derived search finds a source passage");
+        assert.equal(concept.coverage.reading_facets,true);
+        assert.ok(concept.quotes.some(q=>q.matched_by==="reading"),
+          "provisional reading interpretations remain labeled");
+        assert.ok(concept.quotes.every(q=>!q.text.includes("commitment")),
+          "the source quote remains unchanged rather than copying model prose");
+      } finally {reader.close();}
+    } finally {store.close();stagingKey.fill(0);}
     const again=await runtime.execute("read-source");
     assert.equal(again.reading_first.read,3);
     assert.equal(calls.read,3,"replay resumes already attested generation without sending again");
