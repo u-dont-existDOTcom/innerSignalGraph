@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.NONPUNITIVE_REVIEW
 status: owner-approved
 domain: inner-child
-base_record_sha256: c976dd64b8ac6b65628a564b37e3921cdfcc4b1abb543126730486093bd6401b
-source_file_sha256: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: d8e5d5ee54f25557d4ddb824dfc01c828468120793610089fd79e82f0e957691
+source_file_sha256: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
+projection_input_sha256: cc5c22452668cbcbeadf8136174fa6f3116219963bba6b7e6db192c7c01ed7c2
 ---
 
 # AMEND.IC.NONPUNITIVE_REVIEW
@@ -17,13 +17,13 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 
 ```json
 {
-  "approvedAt": "2026-10-06",
+  "approvedAt": "2026-10-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.NONPUNITIVE_REVIEW",
     "status": "owner-approved",
     "text": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established."
   },
-  "version": "owner-amendments-2026-10-17-r14"
+  "version": "owner-amendments-2026-10-25-r15"
 }
 ```

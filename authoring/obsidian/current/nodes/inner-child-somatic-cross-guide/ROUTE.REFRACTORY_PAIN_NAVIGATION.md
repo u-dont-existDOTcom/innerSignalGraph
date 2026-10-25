@@ -20,6 +20,7 @@ source_refs:
   - AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
   - AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
+  - AMEND.CROSS.RESPONSE_FIDELITY_20261025
 regression_refs:
   - G099
   - G100
@@ -32,9 +33,9 @@ regression_refs:
   - G107
   - G108
   - G127
-base_record_sha256: d2874e88ae6e03713063249ab9df7fe7af4db21f2a90fa6fc71964d1f5ae2781
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: b694de729766bb5d07fe908be970a52b18b99c3eaa2805f964877a10e1cc099a
+base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
+projection_input_sha256: cc5c22452668cbcbeadf8136174fa6f3116219963bba6b7e6db192c7c01ed7c2
 ---
 
 # Coordinate a specialist chronic-pain pathway and flare plan
@@ -110,7 +111,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Do not recommend volunteering transient pain-triggered suicidal thoughts as leverage for physical-pain treatment; prior harmful psychiatric care must inform referral feasibility.",
     "Do not coach a false denial of current suicidal intent, a suicide plan, inability to remain safe, or imminent danger, inability to stay safe or another actual urgent danger; immediate protection still matters in that situation.",
     "Do not overdiagnose central sensitization or claim a PPI, antidepressant or neuromodulation response proves the pain mechanism or repairs drug-related injury.",
-    "Do not confuse treatments offered, declined, actually taken and ineffective, or invent access guarantees."
+    "Do not confuse treatments offered, declined, actually taken and ineffective, or invent access guarantees.",
+    "Do not treat another checkup as inherently therapeutic after an already extensive unsuccessful workup; do not promise specific relief or erase the person's informed understanding of local services."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -129,7 +131,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
       "The primary solution to predictable recurring pain is continuity of specialist care and flare planning, not repeated emergency contact alone.",
       "Trusted voluntary advocacy is valuable when prior coercive encounters limit trust; an unsafe family member is not an automatic support.",
       "Referral urgency and access remain clinically and locally determined.",
-      "Unknown stopping/return capacity or present safety is not, by itself, evidence of impairment; the referral action is reversible, and concern about danger must be based on concrete evidence. For reported pain-triggered suicidal ideation, keep the observing/adult safety-support node selected alongside chronic-pain coordination, and never overrule actual present_safety unsafe, demonstrated lost capacity, suicidal intent or new medical red flags."
+      "Unknown stopping/return capacity or present safety is not, by itself, evidence of impairment; the referral action is reversible, and concern about danger must be based on concrete evidence. For reported pain-triggered suicidal ideation, keep the observing/adult safety-support node selected alongside chronic-pain coordination, and never overrule actual present_safety unsafe, demonstrated lost capacity, suicidal intent or new medical red flags.",
+      "Before proposing another nonurgent consultation after multiple ineffective or coercive encounters, identify a plausible new evaluation, treatment or support function that could change the plan, with actual access burdens; if none is known, ask what the person considers helpful rather than repeating a generic referral."
     ]
   },
   "questionPolicy": {
@@ -159,3 +162,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST]]
 
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
+
+[[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]

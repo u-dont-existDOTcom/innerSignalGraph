@@ -17,13 +17,14 @@ graph_tags:
 source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
   - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
+  - AMEND.CROSS.RESPONSE_FIDELITY_20261025
 regression_refs:
   - G063
   - G092
   - G093
-base_record_sha256: 37c9639936b1af97e42408c458bfb3ff76cc3409694ea8e73e981534af65e30f
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 5b2eabc1dbf41d1ea73e27533f1a8c6e5f73a8b6b59eb247d4bb5914dfbc8e1c
+base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
+projection_input_sha256: cc5c22452668cbcbeadf8136174fa6f3116219963bba6b7e6db192c7c01ed7c2
 ---
 
 # Discriminate processing, action, and non-engagement
@@ -101,7 +102,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
       "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification.",
       "The relevant distinction is function, not whether the checking happens in thought or behavior.",
       "Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless a repetitive certainty-seeking pattern is actually present.",
-      "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation."
+      "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation.",
+      "Consolidate each intervention or repeated topic into one useful passage of the response; a second mention needs a distinct decision, safety function or new evidence, not padding or another generic warning."
     ]
   },
   "questionPolicy": {
@@ -126,3 +128,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING]]
 
 [[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]
+
+[[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]
