@@ -602,3 +602,130 @@ test("git-update CLI exits 10 only after installing a verified stable commit", a
   assert.equal(status.status, "updated");
   assert.equal(status.installedCommit, candidateCommit);
 });
+
+async function addSyntheticLockedDependency(context, {withLock=true}={}) {
+  const prior=await context.advance({version:"1.1.0",marker:"managed-v2"});
+  const manifestPath=path.join(context.authorRoot,"package.json");
+  const manifest=JSON.parse(await fs.readFile(manifestPath,"utf8"));
+  manifest.dependencies={"synthetic-release-dependency":"1.0.0"};
+  await fs.writeFile(manifestPath,JSON.stringify(manifest,null,2)+"\n");
+  const lockPath=path.join(context.authorRoot,"package-lock.json");
+  if(withLock) await fs.writeFile(lockPath,JSON.stringify({
+    name:manifest.name,version:manifest.version,lockfileVersion:3,requires:true,
+    packages:{"":{name:manifest.name,version:manifest.version,
+      dependencies:manifest.dependencies}}
+  },null,2)+"\n");
+  await git(context.authorRoot,"add","-A");
+  await git(context.authorRoot,"commit","-m","synthetic dependency candidate");
+  await git(context.authorRoot,"push","origin","stable");
+  return {candidateSha:await git(context.authorRoot,"rev-parse","HEAD"),prior};
+}
+
+test("locked dependency update installs twice from exact source, scrubs credentials and retains private bytes",async t=>{
+  const context=await createRepository(t);
+  const {candidateSha}=await addSyntheticLockedDependency(context);
+  const before=await sentinelHashes(context.installedRoot,context.sentinels);
+  let installs=0,validated=0;
+  const run=async request=>{
+    if(request.command==="npm" && request.args?.[0]==="ci"){
+      installs++;
+      assert.deepEqual(request.args,["ci","--ignore-scripts","--omit=dev","--no-audit","--no-fund"]);
+      assert.equal(request.env.GH_TOKEN,undefined);
+      assert.equal(request.env.GITHUB_TOKEN,undefined);
+      assert.equal(request.env.OPENAI_API_KEY,undefined);
+      assert.equal(request.env.ANTHROPIC_API_KEY,undefined);
+      assert.equal(request.env.npm_config_userconfig,"/dev/null");
+      assert.equal(request.env.npm_config_globalconfig,"/dev/null");
+      assert.equal(request.env.GIT_TERMINAL_PROMPT,"0");
+      assert.equal(request.env.INNER_SIGNAL_VALIDATION_SANDBOX,"1");
+      const destination=path.join(request.cwd,"node_modules");
+      await fs.mkdir(destination,{recursive:true});
+      await fs.writeFile(path.join(destination,"synthetic-package.marker"),"original-locked-dependency\n");
+      return {code:0,stdout:"",stderr:""};
+    }
+    return runSubprocess(request);
+  };
+  const result=await runGitUpdate({
+    sourceRoot:context.sourceRoot,installedRoot:context.installedRoot,
+    stateDir:context.stateDir,repository,stableBranch:"stable",run,
+    validateCandidate:async({candidateRoot})=>{
+      validated++;
+      assert.equal(await fs.readFile(path.join(candidateRoot,"node_modules/synthetic-package.marker"),"utf8"),
+        "original-locked-dependency\n");
+      await fs.writeFile(path.join(candidateRoot,"node_modules/synthetic-package.marker"),"test-mutated\n");
+      return {ok:true};
+    }
+  });
+  assert.equal(result.status,"UPDATED",JSON.stringify(result));
+  assert.equal(result.installedCommit,candidateSha);
+  assert.equal(installs,2,"second clean dependency install replaces test-mutated contents");
+  assert.equal(validated,1);
+  assert.equal(await fs.readFile(path.join(context.installedRoot,"node_modules/synthetic-package.marker"),"utf8"),
+    "original-locked-dependency\n");
+  assert.deepEqual(await sentinelHashes(context.installedRoot,context.sentinels),before);
+});
+
+test("missing lock refuses dependent update before model validation or private state change",async t=>{
+  const context=await createRepository(t);
+  await addSyntheticLockedDependency(context,{withLock:false});
+  const before=await sentinelHashes(context.installedRoot,context.sentinels);
+  let called=false;
+  const result=await runGitUpdate({
+    sourceRoot:context.sourceRoot,installedRoot:context.installedRoot,
+    stateDir:context.stateDir,repository,stableBranch:"stable",
+    validateCandidate:async()=>{called=true;return {ok:true};}
+  });
+  assert.equal(result.status,"FAILED_SAFE");
+  assert.equal(result.stage,"dependency-lock");
+  assert.equal(result.installedCommit,context.firstCommit);
+  assert.equal(called,false);
+  assert.deepEqual(await sentinelHashes(context.installedRoot,context.sentinels),before);
+});
+
+test("failed locked dependency install retains the prior runtime and encrypted sentinels",async t=>{
+  const context=await createRepository(t);
+  await addSyntheticLockedDependency(context);
+  const before=await sentinelHashes(context.installedRoot,context.sentinels);
+  let validated=false;
+  const run=async request=>{
+    if(request.command==="npm" && request.args?.[0]==="ci")
+      return {code:1,stdout:"",stderr:"synthetic blocked registry"};
+    return runSubprocess(request);
+  };
+  const result=await runGitUpdate({
+    sourceRoot:context.sourceRoot,installedRoot:context.installedRoot,
+    stateDir:context.stateDir,repository,stableBranch:"stable",run,
+    validateCandidate:async()=>{validated=true;return {ok:true};}
+  });
+  assert.equal(result.status,"FAILED_SAFE");
+  assert.equal(result.stage,"candidate-dependencies");
+  assert.equal(validated,false);
+  assert.equal(result.installedCommit,context.firstCommit);
+  assert.deepEqual(await sentinelHashes(context.installedRoot,context.sentinels),before);
+});
+
+test("dependency installation failure after validation cannot swap an installed runtime",async t=>{
+  const context=await createRepository(t);
+  await addSyntheticLockedDependency(context);
+  const before=await sentinelHashes(context.installedRoot,context.sentinels);
+  let n=0;
+  const run=async request=>{
+    if(request.command==="npm" && request.args?.[0]==="ci"){
+      n++;
+      if(n===2)return {code:1,stdout:"",stderr:"synthetic offline on retry"};
+      await fs.mkdir(path.join(request.cwd,"node_modules"),{recursive:true});
+      return {code:0,stdout:"",stderr:""};
+    }
+    return runSubprocess(request);
+  };
+  const result=await runGitUpdate({
+    sourceRoot:context.sourceRoot,installedRoot:context.installedRoot,
+    stateDir:context.stateDir,repository,stableBranch:"stable",run,
+    validateCandidate:async()=>({ok:true})
+  });
+  assert.equal(n,2);
+  assert.equal(result.status,"FAILED_SAFE");
+  assert.equal(result.stage,"candidate-dependencies");
+  assert.equal(result.installedCommit,context.firstCommit);
+  assert.deepEqual(await sentinelHashes(context.installedRoot,context.sentinels),before);
+});

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { verifySourceImageInspection } from "./source-image-inspection.mjs";
+import { verifySourceImageInspection, sourceImageValidatorAvailable } from "./source-image-inspection.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { captureNativeResponseSource, createNativeClipboard } from "./native-response-source.mjs";
 
@@ -634,6 +634,9 @@ export class ChatGptSubscriptionDesktopCdpTransport {
     invariant(typeof prompt === "string" && prompt.length > 0, "Packet prompt is required.");
     invariant(promptSha256 === sha256(Buffer.from(prompt, "utf8")), "Packet prompt digest is invalid.");
     invariant(Array.isArray(attachments), "Attachments must be an array.");
+    invariant(!sourceBoundVisualToolsPermitted || sourceImageValidatorAvailable(),
+      "Trusted source-image inspection validator unavailable; the tool-permitted route is disabled before submission.",
+      "PRIVATE_INFERENCE_IMAGE_INSPECTION_VALIDATOR_UNAVAILABLE");
     const requestId = "chatgpt-subscription:" + randomUUID();
     const surfaceSessionId = "desktop-temp:" + randomUUID();
     let submissionStatus = "not_submitted";

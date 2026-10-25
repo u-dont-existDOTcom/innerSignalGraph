@@ -1,8 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ValidationError } from "../core/errors.mjs";
-import { AnthropicProvider } from "../providers/anthropic.mjs";
-import { OpenAIProvider } from "../providers/openai.mjs";
 import { createChatGptSubscriptionBrowserProvider } from "../providers/chatgpt-subscription-browser.mjs";
 import { createChatGptSubscriptionCdpTransport } from "./chatgpt-subscription-cdp.mjs";
 import { createChatGptSubscriptionDesktopCdpTransport } from "./chatgpt-subscription-desktop-cdp.mjs";
@@ -20,8 +18,6 @@ import {
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 const PROVIDERS = Object.freeze({
-  openai: (options) => new OpenAIProvider(options),
-  anthropic: (options) => new AnthropicProvider(options),
   chatgpt_subscription_browser: (options) => createChatGptSubscriptionBrowserProvider({
     model: options.model,
     effort: options.effort,

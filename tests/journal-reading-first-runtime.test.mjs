@@ -8,6 +8,7 @@ import path from "node:path";
 import { readingFirstAttestationPayload } from "../src/journal-import/reading-first-order.mjs";
 import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSynthesis } from "../src/journal-import/reading-first-runtime-gate.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
+import { parseSourceFile } from "../src/journal-import/parsers/index.mjs";
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
@@ -76,7 +77,7 @@ async function fixture(t, importOrder = "reading_first", handlers = {}, override
   const open = (newConfig = config) => openJournalExecutionRuntime({
     config: newConfig, configPath, service,
     inferencePort: createMockJournalInferencePort({ handlers }),
-    sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER }
+    sourceParser:overrides.realParser?parseSourceFile:sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER }
   });
   return { open, service, config, stateFile: path.join(config.execution_root, "state.json") };
 }
@@ -396,4 +397,23 @@ test("new reading-first imports cannot bypass into the historical semantic graph
     assert.equal(state.graph_ref,undefined);
     assert.equal(state.quote_index,undefined);
   } finally { await runtime.close(); }
+});
+
+
+test("page-less UTF-8 original completes real parser reading before source-linked indexing",async t=>{
+  const f=await fixture(t,"reading_first",{
+    source_reader:mockSourceReader,source_synthesizer:mockSynthesis
+  },{realParser:true});
+  const runtime=await f.open();
+  try{
+    await runtime.execute("stage");
+    const read=await runtime.execute("read-source");
+    assert.equal(read.reading_first.read,1,"source is one virtual bounded reading unit");
+    assert.equal(read.reading_first.pending,0);
+    const indexed=await runtime.execute("build-quotes");
+    assert.ok(indexed.quote_index.reading_facets.facets>0);
+    await assert.rejects(runtime.execute("publish-quotes"),{
+      code:"JOURNAL_READING_FIRST_GRAPH_PUBLICATION_REQUIRED"
+    });
+  }finally{await runtime.close();}
 });

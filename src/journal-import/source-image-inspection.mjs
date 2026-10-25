@@ -1,6 +1,13 @@
 import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+// This separate trusted validator was not supplied with the source release.
+// Do not submit a tool-permitted visual packet unless its audited executable
+// is actually installed; tool-source display is not proof of safe inspection.
+// Deliberate release gate. A file appearing on disk is not proof that the
+// missing validator underwent independent source and safety review.
+export const sourceImageValidatorAvailable=()=>false;
+
 /** Inspect syntax only. Model-authored code is never executed by this process. */
 export async function verifySourceImageInspection({ codes, statuses, attachedFiles }) {
   return new Promise((resolve) => {

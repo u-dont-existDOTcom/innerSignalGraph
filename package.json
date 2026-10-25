@@ -5,7 +5,7 @@
   "description": "Inner Signal runtime with verified stable-branch updates, privacy-safe diagnostics and progress, stage-aware recovery, exact-model role enforcement, and owner-gated Guide Packets.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24 <27"
   },
   "scripts": {
     "test": "node --test",

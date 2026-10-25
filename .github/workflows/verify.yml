@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: 24.18.0
 
+      - name: Bootstrap locked runtime dependencies
+        run: npm ci --ignore-scripts --omit=dev --no-audit --no-fund
+
       - name: Run stable package verifier
         run: npm run verify
 

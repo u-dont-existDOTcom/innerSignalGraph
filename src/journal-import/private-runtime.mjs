@@ -16,6 +16,7 @@ import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs"
 import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSynthesis } from "./reading-first-runtime-gate.mjs";
 import { produceReadingFirstJournal } from "./reading-first-source-producer.mjs";
 import { createReadingFirstPortAdapter } from "./reading-first-port-adapter.mjs";
+import { readingFirstSourceInventory } from "./reading-first-inventory.mjs";
 import { buildReadingFirstFacetIndexes } from "./reading-first-facets.mjs";
 import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
 import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
@@ -2751,28 +2752,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (state.reading_first_receipts_ref) return summary();
 
       const sourcePlan = await readLarge(state.parsed_ref);
-      const byRepresentation = new Map(
-        sourcePlan.parsed.representations.map(p => [p.representation_id,p.text]));
-      const pages = [...sourcePlan.parsed.pages]
-        .sort((a,b) => a.page_number-b.page_number)
-        .map((p,i) => {
-          invariant(p.page_number === i+1, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
-          const text=byRepresentation.get(p.representation_id) ?? "";
-          const needsVisual = p.disposition !== "readable"
-            || (Array.isArray(p.image_inventory) && p.image_inventory.length > 0);
-          const required_modalities = needsVisual
-            ? (text.trim().length > 0 ? "text+image" : "image") : "text";
-          // For readable text this digest binds the exact source representation
-          // extracted from the authenticated immutable source archive. Images
-          // are pending, and their placeholder digest never claims review.
-          const source_page_sha256 = required_modalities === "text"
-            ? hash(text)
-            : hash(JSON.stringify({ original_source_sha256:state.source_sha256,
-              source_page_number:p.page_number, representation_id:p.representation_id }));
-          return { page:p.page_number, text,source_page_sha256,required_modalities };
-        });
-      invariant(pages.length>0, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
-
+      const pages=readingFirstSourceInventory(sourcePlan,{sourceSha256:state.source_sha256});
       const attestationKey=readingFirstAttestationKey(key);
       try {
         const adapter=createReadingFirstPortAdapter({
@@ -2830,7 +2810,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
       invariant(state.reading_first_receipts_ref, "JOURNAL_READING_FIRST_STAGE_INCOMPLETE");
       const sourcePlan = await readLarge(state.parsed_ref);
-      const pageCount = sourcePlan.parsed.pages?.length ?? 0;
+      const pageCount = readingFirstSourceInventory(sourcePlan,{sourceSha256:state.source_sha256}).length;
       invariant(pageCount > 0, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
       const receiptJournal = await readLarge(state.reading_first_receipts_ref);
       const attestationKey = readingFirstAttestationKey(key);
@@ -2854,10 +2834,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (importOrder !== "reading_first") return null;
       await requireReadingFirstSynthesis();
       const plan = await readLarge(state.parsed_ref);
-      const texts = new Map(plan.parsed.representations.map(p => [p.representation_id, p.text]));
-      const pages = plan.parsed.pages.map(p => ({
-        page: p.page_number, text: texts.get(p.representation_id) ?? ""
-      }));
+      const pages = readingFirstSourceInventory(plan,{sourceSha256:state.source_sha256});
       const observations = [];
       for (const page of pages) {
         const id = "reading-first:page:" + page.page;

@@ -18,28 +18,41 @@ const add=(map,key,value)=>{
 export function buildReadingFirstFacetIndexes({built,observations,sourcePages}){
   invariant(built?.graph?.nodes && Array.isArray(observations) &&
     Array.isArray(sourcePages),"JOURNAL_READING_FACET_INPUT_INVALID");
-  const passagesByPage=new Map();
+  const passagesByPage=new Map(),passagesByRepresentation=new Map();
   for(const record of built.graph.nodes){
     if(record.kind!=="passage")continue;
     const page=record.data?.locator?.page;
-    if(!Number.isSafeInteger(page))continue;
-    if(!passagesByPage.has(page))passagesByPage.set(page,[]);
-    passagesByPage.get(page).push(record);
+    if(Number.isSafeInteger(page)){
+      if(!passagesByPage.has(page))passagesByPage.set(page,[]);
+      passagesByPage.get(page).push(record);
+    } else {
+      const rep=record.data?.representation_id;
+      if(typeof rep!=="string")continue;
+      if(!passagesByRepresentation.has(rep))passagesByRepresentation.set(rep,[]);
+      passagesByRepresentation.get(rep).push(record);
+    }
   }
-  const textByPage=new Map(sourcePages.map(item=>[item.page,item.text]));
+  const sourceByPage=new Map(sourcePages.map(item=>[item.page,item]));
   const terms=new Map(),meta=new Map();
   let facetCount=0;
   let unmapped=0;
   for(const record of observations){
     const page=record?.page;
     const observation=record?.observation;
-    const text=textByPage.get(page);
+    const source=sourceByPage.get(page);
+    const text=source?.text;
     invariant(typeof text==="string" && observation?.page===page &&
       Array.isArray(observation.exact_source_anchors) &&
       Array.isArray(observation.source_findings) &&
       record.source_page_sha256===observation.source_page_sha256,
       "JOURNAL_READING_FACET_SOURCE_INVALID");
-    const pagePassages=passagesByPage.get(page)??[];
+    const virtual=source.source_location_type==="virtual_text_chunk";
+    const pagePassages=virtual
+      ? (passagesByRepresentation.get(source.representation_id)??[])
+      : (passagesByPage.get(page)??[]);
+    const sourceOffset=virtual?(source.source_start_byte??0):0;
+    invariant(Number.isSafeInteger(sourceOffset)&&sourceOffset>=0,
+      "JOURNAL_READING_FACET_SOURCE_INVALID");
     for(const finding of observation.source_findings){
       invariant(typeof finding.statement==="string" && finding.statement.length>0 &&
         Array.isArray(finding.anchor_indices) && finding.anchor_indices.length>0,
@@ -51,8 +64,8 @@ export function buildReadingFirstFacetIndexes({built,observations,sourcePages}){
           Number.isSafeInteger(anchor.end) && anchor.end>anchor.start &&
           text.slice(anchor.start,anchor.end)===anchor.exact_text,
           "JOURNAL_READING_FACET_ANCHOR_MISMATCH");
-        const startByte=Buffer.byteLength(text.slice(0,anchor.start),"utf8");
-        const endByte=Buffer.byteLength(text.slice(0,anchor.end),"utf8");
+        const startByte=sourceOffset+Buffer.byteLength(text.slice(0,anchor.start),"utf8");
+        const endByte=sourceOffset+Buffer.byteLength(text.slice(0,anchor.end),"utf8");
         const passages=pagePassages.filter(p=>
           Number.isSafeInteger(p.data?.start_byte) &&
           p.data.start_byte<=startByte && p.data.end_byte>=endByte &&
@@ -69,7 +82,8 @@ export function buildReadingFirstFacetIndexes({built,observations,sourcePages}){
         for(const term of tokens)add(terms,term,id);
         if(!meta.has(id))meta.set(id,[]);
         meta.get(id).push({
-          source_page:page,
+          source_page:virtual?null:page,
+          ...(virtual?{source_chunk:page,representation_id:source.representation_id}:{}),
           source_evidence_ref:record.private_reference,
           statement:finding.statement,
           required_qualifiers:[...(finding.required_qualifiers??[])],
