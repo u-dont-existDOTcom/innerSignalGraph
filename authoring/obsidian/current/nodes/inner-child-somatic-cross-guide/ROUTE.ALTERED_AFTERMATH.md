@@ -21,14 +21,15 @@ source_refs:
   - ALT.EPISTEMICS
   - AMEND.CROSS.STATE_DEPENDENT_TRANSFER
   - AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD
+  - AMEND.CROSS.RESPONSE_FIDELITY_20261025
 regression_refs:
   - G047
   - G052
   - G059
   - G135
-base_record_sha256: bd4e7e949b20c6e2f1acc2e26bed5507048e7fc27bb7de526cd5b28290f2a4ef
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: 12c15151dcc2d07a65b50faef95b704610cde60f0c3670f6f1d4111d4b29a68c
+base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # Integrate altered-state aftermath from facts toward meaning and small life changes
@@ -82,7 +83,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
       "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued.",
       "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
       "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment.",
-      "Caution about a psychoactive adverse reaction must not become advice to abruptly stop prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
+      "Caution about a psychoactive adverse reaction must not become advice to abruptly stop prescribed medication or a physically dependent substance; appropriate medical guidance may be required.",
+      "A person's words reported inside a dream are dream content, not independent waking testimony; explore the emotional meaning and any felt violation without presuming recovered history or an identified perpetrator."
     ]
   },
   "recommendations": [
@@ -92,7 +94,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds.",
     "Ask what became experientially credible or accessible in the state and what is now state-bound, fading, partially available, or usable soberly; when access is fading, treat that gap as an integration target before assuming another altered state is the default next step.",
     "Treat one psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—as enough reason not to retest that substance without professional assessment, even after apparent stabilization; weigh that history when considering other psychoactives that can also disturb reality testing. Repeated milder confusion or dissociation also matters.",
-    "Seek prompt professional help when symptoms are severe, risky or make safety uncertain; persistence or recurrence while sober strengthens the need for assessment."
+    "Seek prompt professional help when symptoms are severe, risky or make safety uncertain; persistence or recurrence while sober strengthens the need for assessment.",
+    "If a previously harmful substance or behavior returns after sustained abstinence, ask what changed in circumstances or distress and what short-term function it served before assuming the same intervention plan still fits; preserve proportionate acute safety responses."
   ],
   "successSignals": [
     "Ordinary functioning and sleep recover, facts and interpretations remain distinguishable, and any retained insight produces proportionate behavior rather than escalating practice."
@@ -110,3 +113,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER]]
 
 [[current/governance/amendments/AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD]]
+
+[[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]

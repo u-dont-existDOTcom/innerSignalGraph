@@ -27,6 +27,7 @@ source_refs:
   - AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
   - AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
+  - AMEND.CROSS.RESPONSE_FIDELITY_20261025
 regression_refs:
   - G013
   - G014
@@ -42,9 +43,9 @@ regression_refs:
   - G099
   - G101
   - G105
-base_record_sha256: 2688eac08be228b1e51c1d3604890a60f1134c29f72cf48bef67a5799ab5c34b
-base_graph_sha256: d6d57f56e114d4ef89354adc965056dd220d9489913ce4fd32833f37c2f04846
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+base_record_sha256: e19224e3eaade62160792798d23051cec75834cafc7f6d99c7f50fa11f40de03
+base_graph_sha256: 49cb6aa6e2bced7d994591a0995c4714348c7d25f177f2f5e5066dfa967e9404
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # Act on the concrete problem
@@ -122,7 +123,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
       "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
       "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
       "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn.",
-      "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus."
+      "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus.",
+      "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations."
     ]
   },
   "questionPolicy": {
@@ -141,7 +143,8 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
     "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
     "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language.",
     "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure.",
-    "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed."
+    "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed.",
+    "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -174,3 +177,5 @@ projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d1403
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
 
 [[current/governance/amendments/AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY]]
+
+[[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]

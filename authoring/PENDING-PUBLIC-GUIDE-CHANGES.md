@@ -284,3 +284,12 @@ When every pending entry above has been consumed and the public-guide sync bookk
 `Status: **EMPTY**`
 
 `No pending reader-facing semantic changes. Add the next approved reader-relevant map/source/rule change here in the same reviewed change that creates it.`
+
+## Pending bundle K — useful support without reflexive medical or practice warnings
+
+### PGQ-040 — Ask what help could actually change, and what a practice actually did
+Caused by: owner-approved `AMEND.CROSS.RESPONSE_FIDELITY_20261025` and revised medical/altered-state routes (25 Oct 2026). This is a reader-facing semantic reconciliation only; response deduplication, supervisor editing, and model-audit mechanics stay operational and need no public paragraph.
+Teaching point: After repeated unsuccessful or harmful care, another non-urgent referral should be tied to a specific possible benefit, genuinely different expertise or actionable assessment—not a ritual repetition of “see a doctor.” New severe signs still deserve proportionate urgent attention. If a person says hypnosis or somatic work helped, learn how it affected them and whether there were drawbacks before issuing abstract warnings. Separate vivid experience and meaningful feelings from unproven memories or external events; dreams are not waking testimony. A recurrence after long improvement can be used to explore the change in conditions rather than add shame. A coach's personal support is not itself evidence that a marketed mechanism or product works.
+Reader need: People who have experienced ineffective/coercive care, vivid therapy experiences, relapses or conflicting health advice need a way to judge useful next actions without being dismissed or steered toward unproved treatments.
+Already covered: PGQ-030 covers care after medical harm; PGQ-036 covers hypnosis suitability; PGQ-001 covers experience versus interpretation; PGQ-005 covers outcome horizons. Reconcile these rather than repeating them.
+Where: Only in the existing passages on seeking help, altered-state meaning, and comparing what actually worked; keep prose brief and preserve the urgent-care exception.

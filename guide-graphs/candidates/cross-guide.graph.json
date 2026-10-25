@@ -571,7 +571,8 @@
         "AMEND.CROSS.BLOCKED_ACTION_WAIT",
         "AMEND.CROSS.PRACTICAL_FOCUS_SEQUENCING",
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
-        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY"
+        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -586,7 +587,8 @@
         "Match claims about whether an action helped to the observed horizon; brief mood or symptom relief is not durable improvement or proof of mechanism.",
         "When the person already welcomes an inner-child frame and the outward step genuinely supplies care, protection, guidance, or connection, it may be named sparingly as a Nurturer/Protector/Guide move. Otherwise keep ordinary practical language.",
         "When a familiar short-term relief strategy is already documented to worsen later health or functioning, choose a feasible safer response for the next crisis instead of recommending more of the harmful coping strategy. Preserve previous unsuccessful evaluations and distinguish acute relief from definitive cure.",
-        "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed."
+        "When continuing severe pain remains inadequately managed after prior workups, seek a specific specialist pain clinic referral and written flare protocol. In France the HAS adult SDC referral form permits a physician to justify a priority request; neither a coupe-file appointment nor acceptance is guaranteed.",
+        "When a client says one symptom is the root preventing change, compare known lower-symptom periods with what problems remained and identify plausible conditions that keep bringing the symptom back; treat the causal proposal as a hypothesis."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -625,7 +627,8 @@
           "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
           "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation.",
           "Outward action can embody inner care without being labeled as reparenting; use that label only when the person already welcomes the frame, never after decline or during an acute safety turn.",
-          "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus."
+          "practical_action_state is scoped to the selected practical focus; another practical lane can remain blocked_waiting at the same time without suppressing outward action on the selected focus.",
+          "A supportive coach can supply useful accountability without validating a claimed supplement, mold or detox mechanism; test actions and observed outcomes separately from explanations."
         ]
       },
       "defaultQuestion": "What is the next observable action that could actually change this situation?",
@@ -957,7 +960,8 @@
       },
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
-        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -986,7 +990,8 @@
           "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification.",
           "The relevant distinction is function, not whether the checking happens in thought or behavior.",
           "Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless a repetitive certainty-seeking pattern is actually present.",
-          "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation."
+          "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation.",
+          "Consolidate each intervention or repeated topic into one useful passage of the response; a second mention needs a distinct decision, safety function or new evidence, not padding or another generic warning."
         ],
         "forbiddenOverclaims": [
           "Do not claim that one branch is universally superior to the others."
@@ -1186,7 +1191,8 @@
         "ALT.AFTERMATH",
         "ALT.EPISTEMICS",
         "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
-        "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD"
+        "AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD",
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1196,7 +1202,8 @@
         "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds.",
         "Ask what became experientially credible or accessible in the state and what is now state-bound, fading, partially available, or usable soberly; when access is fading, treat that gap as an integration target before assuming another altered state is the default next step.",
         "Treat one psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—as enough reason not to retest that substance without professional assessment, even after apparent stabilization; weigh that history when considering other psychoactives that can also disturb reality testing. Repeated milder confusion or dissociation also matters.",
-        "Seek prompt professional help when symptoms are severe, risky or make safety uncertain; persistence or recurrence while sober strengthens the need for assessment."
+        "Seek prompt professional help when symptoms are severe, risky or make safety uncertain; persistence or recurrence while sober strengthens the need for assessment.",
+        "If a previously harmful substance or behavior returns after sustained abstinence, ask what changed in circumstances or distress and what short-term function it served before assuming the same intervention plan still fits; preserve proportionate acute safety responses."
       ],
       "avoid": [
         "Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.",
@@ -1228,7 +1235,8 @@
           "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued.",
           "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
           "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment.",
-          "Caution about a psychoactive adverse reaction must not become advice to abruptly stop prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
+          "Caution about a psychoactive adverse reaction must not become advice to abruptly stop prescribed medication or a physically dependent substance; appropriate medical guidance may be required.",
+          "A person's words reported inside a dream are dream content, not independent waking testimony; explore the emotional meaning and any felt violation without presuming recovered history or an identified perpetrator."
         ]
       },
       "defaultQuestion": ""
@@ -1516,18 +1524,21 @@
         "ALT.CAPACITY",
         "ALT.EPISTEMICS",
         "IC.ALTERED_STATES",
-        "AMEND.CROSS.STATE_DEPENDENT_TRANSFER"
+        "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.",
         "Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.",
         "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate.",
-        "When something becomes newly emotionally real or credible—such as the younger self, innocence, grief, care, protection, or meaning—stay with the live therapeutic task and preserve the exact change for later sober transfer rather than repeatedly interrupting private processing with factual caveats."
+        "When something becomes newly emotionally real or credible—such as the younger self, innocence, grief, care, protection, or meaning—stay with the live therapeutic task and preserve the exact change for later sober transfer rather than repeatedly interrupting private processing with factual caveats.",
+        "When hypnosis or another practice is described as helpful, learn what shifted, for how long, how ordinary functioning and orientation changed, and whether any drawbacks appeared before introducing a caution, unless an adverse effect or urgent safety issue is already supported."
       ],
       "avoid": [
         "Do not automatically substitute generic grounding for the user’s actual therapeutic question when capacity is demonstrably intact.",
-        "Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete."
+        "Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete.",
+        "Do not equate hypnosis or altered attention by itself with harmful dissociation or discard a valued helpful practice without evidence."
       ],
       "successSignals": [
         "The person can engage meaningfully, retain choice, stop voluntarily, and return toward ordinary functioning without escalating intensity to keep therapy working."
@@ -1627,7 +1638,8 @@
       "sourceRefs": [
         "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
-        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY"
+        "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -1635,14 +1647,16 @@
         "Do not delay an urgent red flag with baseline-history questions. Once immediate safety is handled, return to the person's therapeutic focus when appropriate.",
         "For severe recurrent pain after prior unrevealing assessments, preserve that history. During an unbearable attack, an appropriate local medical emergency/urgent-care triage service can assess the live episode and consider pain relief despite diagnostic uncertainty; do not promise an ambulance, admission, a particular medicine, or zero cost.",
         "Near-daily familiar severe pain calls for a sustainable specialist pain-care pathway and written flare plan in addition to proportionate urgent care for dangerous or truly unmanageable episodes.",
-        "A known chronic-pain condition does not excuse overlooking new, changed or atypical urgent features; red flags take priority regardless of previous symptom frequency."
+        "A known chronic-pain condition does not excuse overlooking new, changed or atypical urgent features; red flags take priority regardless of previous symptom frequency.",
+        "When acute impairment is genuinely new or dangerous, give proportionate immediate guidance; if it does not delay help, name the specific time-sensitive or reversible problem that an assessment could identify rather than offering an unexplained generic checkup."
       ],
       "avoid": [
         "Do not park a clearly urgent medical or neurological red flag because the person mentioned it as an aside.",
         "Do not diagnose the cause from chat, and do not turn an urgent medical turn into inner-child continuity messaging.",
         "Do not substitute a generic suicide-hotline script or repeat 'see a doctor' as new advice when thoughts of death are reported as pain-triggered and the actionable problem is unbearable bodily pain. Do not weaken immediate protective action if current self-harm intent or inability to remain safe is supported.",
         "Do not recommend daily ambulance calls simply to force recognition of an inadequately treated chronic condition, and never promise that repeat emergency visits cause specialist referral.",
-        "Do not call a flare nonurgent solely because similar crises have occurred before; reassess new pattern, severity and other red flags on current evidence."
+        "Do not call a flare nonurgent solely because similar crises have occurred before; reassess new pattern, severity and other red flags on current evidence.",
+        "Do not turn a physical concern automatically into psychiatric-danger labeling or promise that seeking physical assessment cannot involve an unwanted intervention."
       ],
       "successSignals": [
         "The response prioritizes immediate medical safety without unnecessary diagnostic speculation and leaves therapy work for after the urgent issue is addressed."
@@ -1740,7 +1754,8 @@
       "sourceRefs": [
         "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
         "AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST",
-        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM"
+        "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -1756,7 +1771,8 @@
         "Do not recommend volunteering transient pain-triggered suicidal thoughts as leverage for physical-pain treatment; prior harmful psychiatric care must inform referral feasibility.",
         "Do not coach a false denial of current suicidal intent, a suicide plan, inability to remain safe, or imminent danger, inability to stay safe or another actual urgent danger; immediate protection still matters in that situation.",
         "Do not overdiagnose central sensitization or claim a PPI, antidepressant or neuromodulation response proves the pain mechanism or repairs drug-related injury.",
-        "Do not confuse treatments offered, declined, actually taken and ineffective, or invent access guarantees."
+        "Do not confuse treatments offered, declined, actually taken and ineffective, or invent access guarantees.",
+        "Do not treat another checkup as inherently therapeutic after an already extensive unsuccessful workup; do not promise specific relief or erase the person's informed understanding of local services."
       ],
       "successSignals": [
         "A specific specialist referral or justified priority request is submitted, or its exact current blocker and next step are identified.",
@@ -1785,7 +1801,8 @@
           "The primary solution to predictable recurring pain is continuity of specialist care and flare planning, not repeated emergency contact alone.",
           "Trusted voluntary advocacy is valuable when prior coercive encounters limit trust; an unsafe family member is not an automatic support.",
           "Referral urgency and access remain clinically and locally determined.",
-          "Unknown stopping/return capacity or present safety is not, by itself, evidence of impairment; the referral action is reversible, and concern about danger must be based on concrete evidence. For reported pain-triggered suicidal ideation, keep the observing/adult safety-support node selected alongside chronic-pain coordination, and never overrule actual present_safety unsafe, demonstrated lost capacity, suicidal intent or new medical red flags."
+          "Unknown stopping/return capacity or present safety is not, by itself, evidence of impairment; the referral action is reversible, and concern about danger must be based on concrete evidence. For reported pain-triggered suicidal ideation, keep the observing/adult safety-support node selected alongside chronic-pain coordination, and never overrule actual present_safety unsafe, demonstrated lost capacity, suicidal intent or new medical red flags.",
+          "Before proposing another nonurgent consultation after multiple ineffective or coercive encounters, identify a plausible new evaluation, treatment or support function that could change the plan, with actual access burdens; if none is known, ask what the person considers helpful rather than repeating a generic referral."
         ]
       },
       "defaultQuestion": "",

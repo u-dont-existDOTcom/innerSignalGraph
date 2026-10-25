@@ -7,11 +7,11 @@ source_id: AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017
 guide_id: owner-amendments
 heading: AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017
 source_role: owner-approved-extension
-source_hash: 0c64260ab7b070425b50e893b9e6dc4fa1be40dc94543c044cfb7bac788b44fd
+source_hash: 7782fe9c9753c19a7705e9d8694947eb0b19c3f609340e8bb5086a74bd85d5f1
 section_hash: 59a34896e1aa71b22ed6348b516463466b98e11b8632e87d29f4eae93b889874
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: c470b5fc06517fbb1fe21c5395f009d8078fa953605ac40ee0d140393ee12948
+projection_input_sha256: 5bf8a7c058c3a4efd2505f5681181b57c1115c863eb4a154bcfcce0cbeac44ee
 ---
 
 # AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017

@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "owner-amendments-2026-10-17-r14",
+      "version": "owner-amendments-2026-10-25-r15",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
