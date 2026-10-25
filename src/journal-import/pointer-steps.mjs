@@ -553,7 +553,7 @@ export function pointerPilotPages({ quotes, excludeUnitIds, seed, count = POINTE
  * untagged), its calls' counts, and when the answers came in, for the runtime's timings and the worker log's tokens.
  */
 export async function runPointerPilot({ quoteGeneration, excludeUnitIds, seed, stepId, deadline, port, grant, now = () => new Date(),
-  count = POINTER_PILOT_PAGES, maxBytes, oneAtATime = [] } = {}) {
+  count = POINTER_PILOT_PAGES, maxBytes, oneAtATime = [], readingContextByPage = null } = {}) {
   invariant(typeof stepId === "string" && /^[A-Za-z0-9:_-]{1,120}$/.test(stepId), "POINTER_STEP_ID_INVALID");
   invariant(grant && typeof grant.purpose === "string" && quoteGeneration && typeof quoteGeneration.generation === "string", "POINTER_STEP_INPUT_INVALID");
   const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
@@ -561,7 +561,8 @@ export async function runPointerPilot({ quoteGeneration, excludeUnitIds, seed, s
   const wanted = new Set(draw.pages.map(String));
   const quotes = input.quotes.filter((quote) => wanted.has(String(pageOf(quote))));
   const batches = batchPointerQuotes({ quotes, ...(maxBytes === undefined ? {} : { maxBytes }) });
-  const own = await tagBatches({ input, batches, pass: "pilot", stepId, deadline, port, grant, now, oneAtATime });
+  const own = await tagBatches({ input, batches, pass: "pilot", stepId, deadline, port, grant, now, oneAtATime,
+    readingContextByPage });
   const eventCheck = eventCheckCounts(own.ledger);
   const indexes = pointerTagIndexes({ batches: own.checked.map((result) => ({ units: result.unit_ids.map((unitId) => input.unitsById.get(unitId)),
     kept: result.kept, passageIdForUnit: input.passageIdForUnit })) });
