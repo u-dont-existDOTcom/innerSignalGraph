@@ -1,0 +1,13 @@
+# InnerSignal stable therapy-skill release 0.2.1 — 25 October 2026
+
+Scope: the advisory therapy **plugin only**. This release includes the current publicly reviewed and owner-approved therapy instructions and reference files, with nine explicit references and an exact pinned manifest/skill checksum audit. No backend code, private case data, credentials, environment variables, or database changes are part of this stable-source PR.
+
+Owner authorization: production release and readback explicitly requested in the October 25 InnerSignal supervision conversation. Previously approved scope includes response-fidelity corrections and the subsequently reviewed contiguous-focus, delivery-provenance, history-informed relapse response, and inclusive translation revisions. Source authority: development changes merged under commits 8686b746 and 09a0f5af; the stable branch predecessor is 018dd943.
+
+The prior installed hosted connector has protocol SHA-256 6d30a6b4b623527d2ab06d02220d20107eca2542eaade436818a6b0a9e1e120f. New expected advisory plugin protocol SHA-256, as computed using the exact hosted protocol loader with this stable candidate, is ac72686048f564440296c9a34bf02718837f0ba0134ba8d0e6418e593961b97d. This hash is for the **plugin/served protocol** and does not prove that the separate desktop application or backend response writer follows these instructions.
+
+Required gates for stable advancement: Node v24.18.0 stable package verification, pin checks for every plugin reference file, repo workflow security policy, independent source review, and clean worktree. The old stable-only importer hotfix and baseline are retained unchanged. Do not merge new main development code or journal-import changes into the hosted backend as part of this release.
+
+Independent Codex read-only source-only review of the public stable plugin delta reported **no actionable findings**, with an explicit advisory-only limitation (review packet SHA256 e9c536f726278f6011ee3ef057ebeeaeca55d68d1e6f94285f89f9afc212c848). Stable package verifier was PASS in a local detached release worktree; runtime graph regressions were PASS. Exact final commit, tree, and GitHub Actions receipts to be recorded in the PR and release follow-up.
+
+The hosted deployment, if installed, should reuse the already running known-good backend container unchanged, replace only the plugin files from exact stable commit, preserve the prior container image for rollback, and verify protocol SHA via the live authenticated MCP manifest or health endpoint. Docker administration on the VPS is a separately necessary privileged operation. Never claim live release on the basis of this document or a GitHub merge. The final readback must demonstrate the new exact protocol hash.

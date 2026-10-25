@@ -43,14 +43,21 @@ jobs:
             local expected="$1" path="$2"
             test "$(git hash-object "$path")" = "$expected"
           }
-          check_blob 4a1f9b08b23da2facd85875c19cc3660a159938c plugins/inner-signal-therapy/.codex-plugin/plugin.json
-          check_blob 91e337e39f2fc2ea8bcea4ef415b3e7c06cd6f04 plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md
+          check_blob 05be19bf1fc1f8e45638740a9099022ec24ebf3c plugins/inner-signal-therapy/.codex-plugin/plugin.json
+          check_blob d59f97191b977faf51811ebf7e39e3ec7487334d plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md
           check_blob b7561064fdbf82e67a4edd1642bc79851e300b54 plugins/inner-signal-therapy/skills/inner-signal-private-continuity/SKILL.md
-          check_blob 1fb150a0a0c2a05188fa3acf35d0f564fde9395d plugins/inner-signal-therapy/skills/inner-signal-therapy/references/INNER-CHILD-THERAPY-MAP.md
+          check_blob b1522d72e813845bdafed10f78f9b73135f86c90 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/FOCUS-DISCIPLINE.md
+          check_blob c5d37cee6c2963e94817038e82ac9f67d747e0c8 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/GUIDE-REFERRALS.md
+          check_blob 4178c1be3c1eec21d8b57365c9637262eff8952e plugins/inner-signal-therapy/skills/inner-signal-therapy/references/INNER-CHILD-THERAPY-MAP.md
+          check_blob 6d227f7b35359c81201c48d7fbc3a1e28c298e69 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/LONGITUDINAL-SYNTHESIS.md
           check_blob 6b66a331042c6ce8470e8c5f63e80e4dbc195180 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/PHENOMENOLOGY-AND-REPRESENTATION.md
+          check_blob 4887ca29f220451034e924202a73d020dea89128 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/PROTECTIVE-COMPATIBILITY.md
+          check_blob 400e8f353a351d24b37d9a8dc92487e6fb0aa744 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/PROTOCOL-STATE-PROVENANCE.md
+          check_blob 860b1ef89b8c2a826636494034fd658967e58612 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md
+          check_blob 94e261d347ad0a6d240250d80fb85431f954fe3a plugins/inner-signal-therapy/skills/inner-signal-therapy/references/ROLE-BELIEF-INTEGRITY.md
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const m = JSON.parse(fs.readFileSync('plugins/inner-signal-therapy/.codex-plugin/plugin.json', 'utf8'));
-          if (m.version !== '0.2.0' || m.interface?.displayName !== 'InnerSignal') throw new Error('Wrong InnerSignal release manifest.');
+          if (m.version !== '0.2.1' || m.interface?.displayName !== 'InnerSignal') throw new Error('Wrong InnerSignal release manifest.');
           if (!m.interface?.capabilities?.includes('Advisory') || !m.interface?.capabilities?.includes('Read')) throw new Error('Unified capabilities missing.');
           NODE
