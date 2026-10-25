@@ -3238,13 +3238,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (run.persisted?.step_id !== measured.step_id) {
           const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
           const { built, indexes } = buildPointerGeneration({ quoteGeneration, input, checked: stored.checked });
+          const readingFacets = await readingFacetsFor(built);
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
           invariant(original.byte_length === state.original.byte_length && original.sha256 === state.original.sha256, "QUOTE_ARCHIVE_COPY_MISMATCH");
           const persisted = await persistGraphGeneration({ corpusStore: quoteStore, graph: built.graph,
             sourceRepresentations: Object.fromEntries(quoteGeneration.representations.map((item) => [item.representation_id, item.text])),
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
-            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_tags: indexes.quote_tags, tag_terms: indexes.tag_terms },
+            extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_tags: indexes.quote_tags, tag_terms: indexes.tag_terms,
+              ...(readingFacets ? { reading_terms: readingFacets.readingTerms, reading_meta: readingFacets.readingMeta } : {}) },
             indexRepresentations: true });
           run.persisted = { step_id: measured.step_id, generation: run.generation, corpus_id: quoteGeneration.corpusId,
             manifest_object_id: persisted.manifest_object_id, manifest_reference: persisted.manifest_reference,
@@ -3379,6 +3381,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           // unit id, which every version keeps, and indexed under this generation's passages.
           const input = pointerPassInput({ built: buildQuoteGeneration(quoteGeneration) });
           const { built, indexes } = buildPointerGeneration({ quoteGeneration, input, checked: stored.checked });
+          const readingFacets = await readingFacetsFor(built);
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
           invariant(original.byte_length === state.original.byte_length && original.sha256 === state.original.sha256, "QUOTE_ARCHIVE_COPY_MISMATCH");
@@ -3386,7 +3389,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             sourceRepresentations: Object.fromEntries(quoteGeneration.representations.map((item) => [item.representation_id, item.text])),
             permittedUses: ["archive", "organize_search", "session_use"], archiveReferences: [original], shardTargetBytes: QUOTE_SHARD_BYTES,
             extraIndexes: { quote_meta: built.quoteMeta, quote_months: built.quoteMonths, quote_tags: indexes.quote_tags, tag_terms: indexes.tag_terms,
-              ...(quoteGeneration.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}) },
+              ...(quoteGeneration.version >= 3 ? { quote_terms: buildQuoteTermsFromGraph(built.graph) } : {}),
+              ...(readingFacets ? { reading_terms: readingFacets.readingTerms, reading_meta: readingFacets.readingMeta } : {}) },
             indexRepresentations: true });
           // The dates the carried generation gives its quotes, in counts (version 4's `time_order` among them).
           const { dated_quotes: datedQuotes, date_lines: dateLines, ranged_quotes: rangedQuotes = null, range_widths: rangeWidths = null,
