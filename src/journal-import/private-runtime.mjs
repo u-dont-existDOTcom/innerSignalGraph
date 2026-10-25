@@ -2847,6 +2847,45 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
     };
 
+    // Source-attested reading provides hints to the tagger and index while
+    // exact original spans remain authoritative. No inference from tags
+    // alone is promoted to a factual or clinical event.
+    const readingObservations = async () => {
+      if (importOrder !== "reading_first") return null;
+      await requireReadingFirstSynthesis();
+      const plan = await readLarge(state.parsed_ref);
+      const texts = new Map(plan.parsed.representations.map(p => [p.representation_id, p.text]));
+      const pages = plan.parsed.pages.map(p => ({
+        page: p.page_number, text: texts.get(p.representation_id) ?? ""
+      }));
+      const observations = [];
+      for (const page of pages) {
+        const id = "reading-first:page:" + page.page;
+        const stored = await readIfPresent(id);
+        invariant(stored?.observation && stored?.page === page.page &&
+          stored.source_page_sha256 === stored.observation.source_page_sha256,
+          "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
+        observations.push({ ...stored, private_reference: id });
+      }
+      return { observations, pages };
+    };
+    const readingFacetsFor = async built => {
+      if (importOrder !== "reading_first") return null;
+      const source = await readingObservations();
+      return buildReadingFirstFacetIndexes({
+        built, observations: source.observations, sourcePages: source.pages
+      });
+    };
+    const readingContextFor = async () => {
+      if (importOrder !== "reading_first") return null;
+      const source = await readingObservations();
+      return new Map(source.observations.map(record => [
+        record.page, (record.observation.source_findings ?? []).map(f => ({
+          page: record.page, statement: f.statement
+        }))
+      ]));
+    };
+
     async function buildQuotes() {
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
       // A new reading-first generation cannot materialize its source index from
@@ -2872,26 +2911,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const { representations } = await quoteSource();
           const input = await quoteGenerationInput(generation);
           const built = buildQuoteGeneration(input);
-          let readingFacets=null;
-          if(importOrder==="reading_first"){
-            const sourcePlan=await readLarge(state.parsed_ref);
-            const texts=new Map(sourcePlan.parsed.representations
-              .map(p=>[p.representation_id,p.text]));
-            const sourcePages=sourcePlan.parsed.pages.map(p=>({
-              page:p.page_number,text:texts.get(p.representation_id)??""
-            }));
-            const observations=[];
-            for(const page of sourcePages){
-              const id="reading-first:page:"+page.page;
-              const stored=await readIfPresent(id);
-              invariant(stored?.observation && stored?.page===page.page,
-                "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
-              observations.push({...stored,private_reference:id});
-            }
-            readingFacets=buildReadingFirstFacetIndexes({
-              built,observations,sourcePages
-            });
-          }
+          const readingFacets = await readingFacetsFor(built);
           // The quote corpus carries the archived original its locators name, so it is complete on its own.
           const original = await quoteStore.writeChunkedOriginalStream({ objectId: state.original.object_id,
             objectVersion: state.original.object_version, chunks: store.iterateOriginal(state.original) });
@@ -2918,6 +2938,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function publishQuotes() {
+      // Reading-first generations publish only after source-grounded graph
+      // construction, measurement and verification. Standalone quote
+      // publication would silently replace the enriched graph.
+      invariant(importOrder !== "reading_first",
+        "JOURNAL_READING_FIRST_GRAPH_PUBLICATION_REQUIRED");
       // Once a pointer run's generation is published, it holds the quotes and their tags: publishing the quote index alone
       // over it would drop the tags. A new quote index version goes out through pointer-rebase and pointer-publish instead.
       invariant(!(state.quote_published?.generation ?? "").includes(":pointer-"), "QUOTE_PUBLISH_WOULD_DROP_TAGS");
@@ -3161,7 +3186,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const reference = await readLarge(run.reference.result_ref);
       const pilot = await runPointerPilot({ quoteGeneration: await quoteGenerationInput(run.generation),
         excludeUnitIds: reference.units.flatMap((unit) => unit.quote_ids), seed: step.seed, stepId: step.step_id, deadline: step.deadline, port, grant, now,
-        oneAtATime: pointerTurns });
+        oneAtATime: pointerTurns, readingContextByPage: await readingContextFor() });
       await finishPointerStep(step, { pages: pilot.pages, candidate_pages: pilot.candidate_pages, event_check: pilot.event_check, report: pilot.report,
         calls: pilot.calls, answered_at: pilot.tagger_answered_at });
       return summary();
@@ -3175,7 +3200,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const quoteGeneration = await quoteGenerationInput(run.generation);
       const first = await pointerStep(run, "pass", pointerDeadlines.pass);
       if (first.status !== "done") {
-        const result = await runPointerPass({ quoteGeneration, stepId: first.step_id, deadline: first.deadline, port, grant, now, oneAtATime: pointerTurns });
+        const result = await runPointerPass({ quoteGeneration, stepId: first.step_id, deadline: first.deadline, port, grant, now, oneAtATime: pointerTurns,
+          readingContextByPage: await readingContextFor() });
         await finishPointerStep(first, { result_ref: await writeLarge(`pointer:${run.run_id}:pass`, storedPointerPass(result)), report: result.report,
           calls: result.calls, coverage_holds: result.coverage.holds, answered_at: result.tagger_answered_at });
       }
@@ -3186,7 +3212,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const step = await pointerStep(run, "coverage_pass", pointerDeadlines.pass);
         if (step.status !== "done") {
           const result = await runPointerPass({ quoteGeneration, stepId: step.step_id, deadline: step.deadline, port, grant, now, pages,
-            first: { checked: stored.checked, event_pairs: stored.event_pairs, dropped_event_pairs: stored.dropped_event_pairs }, oneAtATime: pointerTurns });
+            first: { checked: stored.checked, event_pairs: stored.event_pairs, dropped_event_pairs: stored.dropped_event_pairs }, oneAtATime: pointerTurns,
+            readingContextByPage: await readingContextFor() });
           await finishPointerStep(step, { pages, result_ref: await writeLarge(`pointer:${run.run_id}:coverage_pass`, storedPointerPass(result)),
             report: result.report, calls: result.calls, coverage_holds: result.coverage.holds, answered_at: result.tagger_answered_at });
         }
@@ -3446,6 +3473,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // quote index version, its tags carried onto the current one (pointer-rebase). It replaces the published quote
     // generation.
     async function pointerPublish() {
+      if (importOrder === "reading_first") {
+        await requireReadingFirstSynthesis();
+        invariant(state.quote_index?.generation === quoteIndexGeneration(),
+          "JOURNAL_READING_FIRST_INDEX_PRECONDITION_FAILED");
+      }
       const run = state.pointer;
       invariant(run?.measure?.status === "done" && run.measure.publish === true && !run.blocker, "POINTER_NOT_READY_TO_PUBLISH");
       invariant(run.persisted?.step_id === run.measure.measured_step_id, "POINTER_MEASURED_GENERATION_MISMATCH");
@@ -3465,6 +3497,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       try {
         const manifest = await quoteStore.readJsonObject({ objectId: target.manifest_object_id });
         invariant(manifest.generation === target.generation && manifest.graph_sha256 === target.graph_sha256, "POINTER_MEASURED_GENERATION_MISMATCH");
+        if (importOrder === "reading_first")
+          invariant(manifest.indexes?.reading_terms && manifest.indexes?.reading_meta,
+            "JOURNAL_READING_FIRST_GRAPH_READING_INDEX_MISSING");
         const persisted = { manifest, manifest_reference: target.manifest_reference, manifest_object_id: target.manifest_object_id };
         const supersedes = state.quote_published?.generation ?? null;
         await authorize();
