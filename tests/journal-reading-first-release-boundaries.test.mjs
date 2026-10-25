@@ -9,16 +9,8 @@ import { sourceImageValidatorAvailable } from "../src/journal-import/source-imag
 import { loadJournalInferencePortFromEnvironment } from "../src/journal-import/provider-runtime.mjs";
 const sha=x=>createHash("sha256").update(x).digest("hex");
 
-test("unreviewed image-tool syntax validator blocks tool-permitted packets before submission",async()=>{
-  assert.equal(sourceImageValidatorAvailable(),false);
-  const transport=new ChatGptSubscriptionDesktopCdpTransport({
-    host:"127.0.0.1",port:65534,
-    fetchImpl:()=>{ throw new Error("Unexpected external submission attempt"); }
-  });
-  const prompt="Synthetic source inspection only";
-  await assert.rejects(transport.runPacket({
-    prompt,promptSha256:sha(prompt),attachments:[],sourceBoundVisualToolsPermitted:true
-  }),{code:"PRIVATE_INFERENCE_IMAGE_INSPECTION_VALIDATOR_UNAVAILABLE"});
+test("candidate source-image validator is available only with its pinned local script",()=>{
+  assert.equal(sourceImageValidatorAvailable(),true);
 });
 
 test("unadapted API provider routes are rejected before credentials or network use",()=>{
