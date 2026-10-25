@@ -635,7 +635,15 @@ test("locked dependency update installs twice from exact source, scrubs credenti
       assert.equal(request.env.OPENAI_API_KEY,undefined);
       assert.equal(request.env.ANTHROPIC_API_KEY,undefined);
       assert.equal(request.env.npm_config_userconfig,"/dev/null");
-      assert.equal(request.env.npm_config_globalconfig,"/dev/null");
+      assert.equal(request.env.npm_config_globalconfig,
+        path.join(request.env.HOME,".npm-globalconfig"));
+      assert.notEqual(request.env.npm_config_userconfig,request.env.npm_config_globalconfig);
+      // Use the real npm config parser: passing /dev/null for both layers
+      // was rejected before npm could resolve package dependencies.
+      const npmConfig = await execFileAsync("npm",["config","get","cache"],{
+        cwd:request.cwd,env:request.env
+      });
+      assert.match(npmConfig.stdout,/\.npm-cache/);
       assert.equal(request.env.GIT_TERMINAL_PROMPT,"0");
       assert.equal(request.env.INNER_SIGNAL_VALIDATION_SANDBOX,"1");
       const destination=path.join(request.cwd,"node_modules");

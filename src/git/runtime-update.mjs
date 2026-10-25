@@ -141,7 +141,7 @@ async function installLockedRuntimeDependencies({ candidateRoot, env, run }) {
     INNER_SIGNAL_VALIDATION_SANDBOX: "1",
     npm_config_cache: path.join(env.HOME, ".npm-cache"),
     npm_config_userconfig: "/dev/null",
-    npm_config_globalconfig: "/dev/null",
+    npm_config_globalconfig: path.join(env.HOME, ".npm-globalconfig"),
     npm_config_audit: "false",
     npm_config_fund: "false",
     npm_config_update_notifier: "false"
