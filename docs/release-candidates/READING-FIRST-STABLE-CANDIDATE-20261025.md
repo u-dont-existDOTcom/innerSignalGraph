@@ -8,12 +8,12 @@
 
 The September stable branch contains no src/journal-import implementation. Applying the PR #184 patch alone fails because its pre-existing target files are absent. The importer + test static dependency closure contains 97 modules. This candidate copies the needed development-source code, schemas and synthetic tests while retaining existing stable provider modules and the existing guide-graph contract unchanged.
 
-The candidate adds 130 source/schema/test/lock files, modifies package.json, and adds this evidence note. It changes package.json only to add the journal:import command and three package dependencies (ajv, jose, pdfjs-dist); the original stable verify script and other existing scripts are preserved. package-lock.json is included for reproducibility. One newly added pointer-pass file was normalized to remove a trailing blank line; all other copied source is public development code.
+The candidate adds 135 source/schema/test/lock files, modifies package.json, and adds this evidence note. It changes package.json only to add the journal:import command and three package dependencies (ajv, jose, pdfjs-dist); the original stable verify script and other existing scripts are preserved. package-lock.json is included for reproducibility. The production parser child and its separate text/PDF adapters were included after a mock-only blind spot was discovered; both real parsers passed synthetic in-memory byte tests. One newly added pointer-pass file was normalized to remove a trailing blank line; all other copied source is public development code.
 
 ## Synthetic evaluation — 25 October 2026
 
-- Reading-first suite: 36/36 passed, including 1,000-page synthesis provenance, pending modality/refusal, stage ordering, legacy lookup, and resume.
-- Existing and new npm test suite: 286/286 passed.
+- Reading-first suite: 38/38 passed, including 1,000-page synthesis provenance, pending modality/refusal, stage ordering, legacy lookup, and resume.
+- Existing and new npm test suite: 288/288 passed.
 - Import CLI doctor --mock: passed, no private data, mutation, or external model spend.
 - Graph regression gate: passed.
 - Original stable npm run verify package gate: PASS. Mock installer, rollback, private-byte preservation, package hygiene and guide checks passed.
