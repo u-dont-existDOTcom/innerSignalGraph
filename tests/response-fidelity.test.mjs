@@ -33,3 +33,19 @@ test("owner-approved graph preserves urgent route while adding contextual care a
   assert.ok(n("ROUTE.ACT_OUTWARD").recommendations.join(" ").includes("lower-symptom periods"));
   assert.ok(n("ROUTE.THREE_WAY_GATE").effects.requiredNuance.join(" ").includes("second mention needs a distinct decision"));
 });
+
+test("first-contact and appropriately screened couples-care lessons appear in served and app rules", () => {
+  const protocol = loadTherapyProtocol();
+  const ref = load("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
+  const markers = ["REPRIMANDING_FIRST_CONTACT", "IMPOSED_UNCHOSEN_AGENDA", "ORNAMENTAL_FAITH_REFERENCE", "IPV_COUNSELING_SCOPE_COLLAPSE"];
+  for (const marker of markers) {
+    assert.ok(responseFidelityRules.includes(marker), marker);
+    assert.ok(longitudinalClinicalRules.includes(marker), marker);
+    assert.ok(ref.includes(marker), marker);
+    assert.ok(protocol.files.find(f=>f.path==="references/RESPONSE-FIDELITY.md").content.includes(marker), marker);
+  }
+  assert.match(responseFidelityRules, /never open with a bare name/);
+  assert.match(responseFidelityRules, /invite them to choose one or two themes/);
+  assert.match(responseFidelityRules, /private(?:ly)? assess both partners/);
+  assert.match(responseFidelityRules, /not alone establish current coercive control/);
+});
