@@ -51,3 +51,16 @@ test("first-contact and appropriately screened couples-care lessons appear in se
   assert.match(responseFidelityRules, /Ongoing coercion or credible safety risk makes ordinary conjoint treatment inappropriate/);
   assert.match(responseFidelityRules, /Do not assume relationship conflict makes the threatened partner responsible/);
 });
+
+test("logic and supervisor-purpose rules reach the reviewed pipeline", () => {
+ const served = load("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
+ const critique = load("../src/prompts/critique.mjs");
+ for (const code of ["NON_SEQUITUR_QUALIFICATION","UNMADE_CLAIM_REBUTTAL","QUESTION_WITHOUT_STEP_VALUE","SUPERVISOR_PURPOSE_OMITTED","EDITORIAL_AFTERCARE_OVERCOMPLETION"]) {
+   assert.ok(responseFidelityRules.includes(code));
+   assert.ok(longitudinalClinicalRules.includes(code));
+   assert.ok(served.includes(code));
+ }
+ assert.match(responseFidelityRules,/supervisor-only Therapeutic purpose statement/);
+ assert.match(responseFidelityRules,/Do not add a mandatory extra model review/);
+ assert.match(critique,/rebuttals of unmade claims/);
+});
