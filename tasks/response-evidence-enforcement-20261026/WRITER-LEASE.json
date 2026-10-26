@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "active",
+  "exclusive_writer": true,
+  "owned_branch": "task/response-evidence-architecture-20261026",
+  "integration_branch": "main",
+  "integration_base_sha": "09a0f5af80fbf80ea985ce49347a7d66565d546d",
+  "writer": "primary-architecture-writer",
+  "scope": "Architecture, implementation plan, recovery checkpoint and documentation index for issue 195; no runtime or private-data changes"
+}
