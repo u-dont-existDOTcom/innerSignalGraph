@@ -48,4 +48,6 @@ test("first-contact and appropriately screened couples-care lessons appear in se
   assert.match(responseFidelityRules, /invite them to choose one or two themes/);
   assert.match(responseFidelityRules, /private(?:ly)? assess both partners/);
   assert.match(responseFidelityRules, /not alone establish current coercive control/);
+  assert.match(responseFidelityRules, /Ongoing coercion or credible safety risk makes ordinary conjoint treatment inappropriate/);
+  assert.match(responseFidelityRules, /Do not assume relationship conflict makes the threatened partner responsible/);
 });
