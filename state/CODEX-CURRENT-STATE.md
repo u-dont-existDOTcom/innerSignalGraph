@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-25
+Updated: 2026-10-26
+
+## Mechanical response-evidence enforcement — architecture (26 October 2026; issue #195)
+
+The owner requested the enforcement architecture after the advisory therapy-plugin release. On isolated branch `task/response-evidence-architecture-20261026`, the source-grounded proposal extends the existing immutable-candidate lifecycle with a server-created evidence snapshot, explicit independent source-support review, and a shared gate at both audit-persistence paths and every owned approval/export/delivery path. It distinguishes supervisor drafts, exported artifacts, owner-reported sending, application delivery and transport acknowledgement; covers materially history-dependent advice as well as factual claims; preserves useful current-context support when journal evidence is missing; and includes the controlled supervisor draft/export surface because a read-only connector cannot intercept arbitrary host prose.
+
+Read `docs/superpowers/specs/2026-10-26-response-evidence-enforcement.md`, its companion implementation plan, and `tasks/response-evidence-enforcement-20261026/INTEGRATION.md`. Current source baseline is `09a0f5af80fbf80ea985ce49347a7d66565d546d`; actual Git/PR state outranks older checkpoints below. Related historical-delivery PR #139 is unmerged and must be reconciled, not assumed installed. The journal importer/source review remains a separate workstream.
+
+This checkpoint is design work: no runtime implementation, new connector permission, private migration, provider evaluation, stable promotion or deployment is claimed. Acceptance cases in the plan are unexecuted requirements. Next implementation step is to normalize communication/delivery evidence and test both existing store-delivery paths with synthetic encrypted cases. Do not close issue #195 on architecture publication alone.
 
 ## Reply focus and delivery fidelity — 25 October 2026 (owner-approved source candidate)
 
