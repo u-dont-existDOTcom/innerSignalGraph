@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_CARING_COMPANY
 status: owner-approved
 domain: inner-child
-base_record_sha256: 5e017702ce6498462bd3c973556850ae7c626bd71252f1e6ff7ae647c7c26186
-source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 9efadc23328513a02845076b7ec2c33895d005d2df8ee19228aa6e325fb601e3
+source_file_sha256: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # AMEND.IC.WISDOM_CARING_COMPANY
@@ -24,6 +24,6 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "status": "owner-approved",
     "text": "Where helpful, invite remembered or imagined caring company: a real caring person, a future or past self, a spiritual figure within the person's own preference, or a nonpersonified supportive stance. Do not assume family, maternal imagery or a remembered safe caregiver is available. Receiving care, generating affection and borrowing advice are related but distinct functions; choose what is actually helpful and use existing care/borrowed-adult routes without forcing a transfer. A documented Rogers care-retrieval invitation provides an exemplar, not proof of therapeutic efficacy."
   },
-  "version": "owner-amendments-2026-10-25-r16"
+  "version": "owner-amendments-2026-10-26-r17"
 }
 ```

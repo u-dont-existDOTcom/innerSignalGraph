@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.CONTINUITY_TITRATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: 110b2a1cc0d28b5a3158a9822bf0e047cc45c5e3f6ba47c575adb948c82636f2
-source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: ed2682315c78b9385a7a438765819dedb079bbedf9a100d04a88ec9c267ec993
+source_file_sha256: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # AMEND.IC.CONTINUITY_TITRATION
@@ -24,6 +24,6 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "status": "owner-approved",
     "text": "Inner-child reparenting is a continuing relationship, not a finite module that is silently abandoned when a deeper exercise is a poor fit. Declining the inner-child frame is not a tolerance pause: a person may decline inner-child framing or practice at any time, and that choice is honored immediately without a step-down ladder, repeated re-offers, reactivation conditions, or reparenting labels on unrelated work. Care, protection, and guidance can continue in the person's own language. When the person still wants the framework but depth must decrease, first step down through the gentlest form that fits the capacity that remains. If stopping, return, or orientation is currently compromised, stop the inner exercise and orient outward first rather than trialing another inward technique. When inward attention itself is worsening things, prefer outward-facing care such as an ordinary adult action, real human support, or a brief eyes-open acknowledgment before imagery, witnessing, or symbolic contact. A full tolerance pause is a last-resort scope reduction when even the gentlest currently appropriate contact is worsening safety, orientation, stopping/return capacity, recovery, or ordinary functioning; a safety gate may also require a pause regardless of preference. A tolerance or safety pause records its reason, the last tolerated level, and an observable reactivation condition that includes the person's agreement. While that pause remains active, do not trial witnessing, imagery, symbolic contact, or another child-facing ladder step; re-entry occurs only through the reactivation gate. Re-entry begins at or below that last tolerated level rather than jumping immediately back to prior depth, and a pending recovery check-in or continuing need to titrate down is resolved before reactivation. Immediate safety can temporarily outrank child-facing work without treating the inner relationship as discarded."
   },
-  "version": "owner-amendments-2026-10-25-r16"
+  "version": "owner-amendments-2026-10-26-r17"
 }
 ```

@@ -10,7 +10,7 @@ from_node_id: SOM.RESOURCE_BRAINSPOTTING
 to_node_id: SOM.DEEP_BRAINSPOTTING
 relation: may-precede
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # SOM.RESOURCE_BRAINSPOTTING may-precede SOM.DEEP_BRAINSPOTTING

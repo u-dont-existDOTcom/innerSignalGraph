@@ -22,6 +22,7 @@ source_refs:
   - AMEND.IC.NONPUNITIVE_REVIEW
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
   - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
+  - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
 regression_refs:
   - G003
   - G008
@@ -35,9 +36,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: 528cc9db04868b947021b9541bcdad5985275f4e51e10524a5e784d6b71066d0
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 574dd304f780b0ead089954eb6122de8e142ec1eb29995f7d3012c4d1e3387c6
+base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # Make the Protector visible in ordinary life
@@ -75,6 +76,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
     "Do not choose an action so large that failure becomes new evidence of unreliability.",
     "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
+    "Do not equate involuntary feeling and chosen harmful conduct, and do not use acceptance of a feeling to exempt behavior from ordinary accountability.",
     "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
   ],
   "defaultQuestion": "",
@@ -89,6 +91,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Report the action without requiring the younger state to trust it yet.",
     "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
     "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
+    "Choosing not to act on an unsuitable attraction can be a compassionate protective response, respecting the needs, boundaries and consent of everyone affected without making the feeling itself a source of shame.",
     "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
   ],
   "successSignals": [
@@ -114,3 +117,5 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
 
 [[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]
+
+[[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]

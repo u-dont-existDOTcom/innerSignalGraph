@@ -41,8 +41,8 @@ regression_refs:
   - G108
   - G139
 base_record_sha256: bb389ac48bbc66d4d012f917c4819207bd94731c1c2e11c4ef53494ea7bce14c
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # Begin with a neutral witness

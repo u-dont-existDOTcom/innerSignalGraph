@@ -18,10 +18,11 @@ source_refs:
   - IC.DIFFERENTIATION
   - AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
+  - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
 regression_refs: []
-base_record_sha256: 2f50d59757fcebac25511712f72f59494f3a7313fd33234f959734b69038ce59
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 47036e05922d6cd35a573db2c54b64139248a743ce1f0c91d05fa8885574bfd0
+base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # Untangle belonging from self-betrayal
@@ -49,7 +50,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
   },
   "avoid": [
     "Do not equate differentiation with isolation or automatic permanent cutoff.",
-    "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
+    "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate.",
+    "Do not infer wrongdoing or a hidden event solely from an unchosen attraction, or treat self-acceptance as permission for harmful chosen conduct."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -63,7 +65,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
   "recommendations": [
     "Notice where other people’s emotions and group expectations replace personal knowing.",
     "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
-    "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+    "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
+    "A spontaneous attraction or feeling can be noticed without automatically following it. Choose whether an action would support reciprocal connection, consent, safety and trustworthy boundaries; neither repress the appearance of the feeling nor treat it as a command."
   ],
   "successSignals": [
     "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
@@ -79,3 +82,5 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.IC.INTUITION_ANALYTIC_INTEGRATION]]
 
 [[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]
+
+[[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]

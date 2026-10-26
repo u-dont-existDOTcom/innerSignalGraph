@@ -18,10 +18,11 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.WISDOM_COMMON_HUMANITY
   - AMEND.IC.WISDOM_SOURCES
+  - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
 regression_refs: []
-base_record_sha256: d2e431cf1bf3e0dcd1f2051daa6405b89f84e8ed8674e5eec9bae330ab365b4c
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: f68c95c3ca8c0da0953b48b416da179fcec5fe32f21968cfab2983e9e1516534
+base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # Recognize shared humanity without minimizing this experience
@@ -102,7 +103,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Begin with the particular experience and its circumstances. If useful, recognize that the longing underneath it is something other people may know as well.",
     "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
     "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
-    "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance."
+    "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.",
+    "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict."
   ],
   "successSignals": [
     "The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized."
@@ -118,3 +120,5 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.IC.WISDOM_COMMON_HUMANITY]]
 
 [[current/governance/amendments/AMEND.IC.WISDOM_SOURCES]]
+
+[[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]

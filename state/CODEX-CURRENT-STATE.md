@@ -1,6 +1,12 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-25
+Updated: 2026-10-26
+
+## Feeling/agency and early regulation — owner-authorized development work
+
+The owner has sent the current message; this task makes no client-facing delivery. Owner-approved source amendments r17 distinguish spontaneous feelings, chosen actions and consent, correct assumptions about prior professional care, require evidence-matched sensitive referrals and return focus to conditions when known regulation methods work before severe distress. Changes are on the isolated task branch task/attraction-agency-triage-20261026 and affect shared/served prompts, the existing graph nodes, owner amendments, generated projections and pending reader-guide queue PGQ-043. No private case evidence or changed urgent gate. Original owner-authored public prose unchanged.
+
+Development checks: graph 110/110 passed, focused Node 73/73 passed, therapy lesson and authoring projection/map validation passed, repository audit passed with previously known hosted-permissions warning, local guide provenance passed. Mock latency policy SHA advanced one reviewed-tier version to current compiled semantics, fast hash/provider stages/counts and historical baselines unchanged. Independent review, full hosted CI, PR merge and any live release remain separate gates. See tasks/attraction-agency-20261026/INTEGRATION.md.
 
 ## Reply focus and delivery fidelity — 25 October 2026 (owner-approved source candidate)
 
