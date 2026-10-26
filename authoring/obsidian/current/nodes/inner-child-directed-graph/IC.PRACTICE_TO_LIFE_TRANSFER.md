@@ -22,13 +22,14 @@ source_refs:
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
   - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
+  - AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
 regression_refs:
   - G089
   - G090
   - G091
-base_record_sha256: 35e34f43763f6a03fbb42c1725260a03782bcc3c6eac272af80cddbccf8e9a59
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 68aa2934a57b9b44b71d85796b35e3cdad4cf617faf49fc5e3b3954a6f272a70
+base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # Carry a working inner adult into ordinary life
@@ -82,7 +83,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
     "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
     "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.",
-    "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization."
+    "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization.",
+    "Do not infer that a person made no effort simply because no method provided sufficient relief at the peak, or require exhaustive logs to make sense of mixed outcomes."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -106,7 +108,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
     "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity.",
     "When a currently accessible practice has a small observed benefit, compare its personally effective technique, duration, continuation, delayed costs and carryover into ordinary life before changing it or demanding more intensity.",
-    "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment."
+    "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment.",
+    "When a known practice sometimes calms early distress but fails once overwhelmed, compare the successful pre-peak contexts with the unsuccessful ones rather than asking again what worked at the worst peak."
   ],
   "successSignals": [
     "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
@@ -129,3 +132,5 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION]]
 
 [[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]
+
+[[current/governance/amendments/AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026]]

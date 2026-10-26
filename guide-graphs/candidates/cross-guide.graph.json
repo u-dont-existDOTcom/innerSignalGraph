@@ -573,7 +573,9 @@
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
         "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
         "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
-        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -593,7 +595,9 @@
         "For a repeated harmful coping choice, check recorded previous cessation attempts and why use resumed, including sleep, pain, loneliness, or an intensely valued feeling, before making withdrawal the presumed obstacle.",
         "Ask what component of an intensely valued inner state matters most and which non-harmful activities or methods have already provided some of it, without proposing a list of hidden meanings as the person's answer.",
         "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
-        "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished."
+        "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished.",
+        "When a spontaneous feeling invites an unsuitable action, help choose a consent-respecting practical boundary rather than treating the feeling itself as a diagnosis or wrongdoing.",
+        "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -607,7 +611,8 @@
         "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
         "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
         "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
-        "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting."
+        "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting.",
+        "Do not collapse feelings, chosen conduct, legal restrictions, clinical categories and consent into the same question."
       ],
       "successSignals": [
         "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -1591,20 +1596,23 @@
       "sourceRefs": [
         "AMEND.IC.COMMUNITY_REPARENTING",
         "IC.RELATIONSHIP",
-        "IC.THREE_FUNCTIONS"
+        "IC.THREE_FUNCTIONS",
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Treat a current need for human contact as a real need, not failed independence. Explore several realistic sources of recurring contact with genuine commonality: trusted people already known, peer support, spiritually fitting communities, interest/activity groups, classes, clubs, volunteering, and practical or professional services.",
         "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
         "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
-        "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language."
+        "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
+        "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add."
       ],
       "avoid": [
         "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
         "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
         "Do not prescribe a spiritual community merely because the person is spiritual, or present a long directory when one or two realistic next contacts are more usable.",
-        "Do not advise withdrawing from an existing safe support merely to diversify."
+        "Do not advise withdrawing from an existing safe support merely to diversify.",
+        "Do not treat one consultation as sustained specialist treatment, assume concerns about sexual life require partnered intercourse, or default to an institutional prevention service without a matching present need."
       ],
       "successSignals": [
         "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",

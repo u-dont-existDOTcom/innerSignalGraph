@@ -1288,6 +1288,26 @@
           "excerpt": "Owner-approved 25 October 2026 method changes (no case material): before composing any supervised reply distinguish actual delivered messages from draft-only suggestions; never treat an unsent proposal as something the recipient has heard. In a multi-topic reply assemble one contiguous block per topic and keep the active client's evidence, method-specific inquiry, and highest-value question adjacent, preferably last when the question is the reply's focus. Safety and explicit agenda changes override this order. Query available prior intervention history and journals before generic withdrawal, stopping or relapse advice; stopping previously without major difficulty and returning later are different problems. Explore the valued immediate function of risky coping and already-found safer ways to meet that need, with realistic constraints on executive functioning, sleep, money, access routes, and acceptance of proposed environmental changes. A physical sign of relaxation is partial observable relief, not proof that subjective anxiety has stopped; attend to variation, exact method, duration, after-effects and ordinary-life carryover, preserving evidence of mixed outcomes. Ask directly what part of a powerful felt experience matters most and what non-harmful prior experiences have delivered some of it. Preserve the original inclusive scope and attribution in translations and paraphrases, including both monks and nuns when monastics is intended. These changes neither alter any graph activation or emergency gates, nor impose a specific retreat, move or treatment.",
           "status": "owner-approved",
           "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+          "heading": "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "5e8d0add0a99137b8d00600488ed4efbcbf0510fae28bb2f8597b1a193d2e117",
+          "excerpt": "For nonjudgmental understanding, distinguish involuntary feelings, spontaneous thoughts, freely chosen thoughts, intentions, and reported conduct. Feelings do not by themselves establish character, misconduct or a clinical diagnosis. Preserve informed consent, vulnerability, non-exploitation, chosen boundaries and protective action; neither shame nor permission to act on every impulse follows from having a feeling. A self-chosen boundary around an unsuitable attraction can be a mature Protector act. Avoid treating variable legal rules, ethical consent and diagnoses as interchangeable. A historical trauma report merits careful support but fantasies, imagery and uncertain memories do not establish further events or a cause of attraction; no guaranteed change of attraction follows from maturation or therapy. A sexual-life concern may include shame, fantasy, arousal and intimacy even without partnered activity. Examine what a previous specialist actually did before suggesting a new specialty or assuming treatment completed. Particularly sensitive institutional referrals require verified, action-changing purpose, client fit, realistic privacy/reporting limits, independent experience and available alternatives; do not automatically recommend preventive institutions for distress about a feeling alone, while preserving appropriate protection when present supported harm risk exists.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026",
+          "heading": "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "5c8186c53138f753f36c1d872c7eb13d611c2a9a23c9692e02c9dde9b6d8e584",
+          "excerpt": "When longitudinal history establishes that coping attempts do not sufficiently relieve the worst crisis peak, do not re-ask the same question without new information. Examine earlier moments when existing methods sometimes helped and compare timing, first cues, sleep, pain, social environment, practical capacity, amount of relief, duration and after-effects. Prefer the smallest discriminating question that could improve early use. Preserve the reports of failed efforts without assuming inactivity. Prioritize feasible practical corrections to identified sleep and environment disruptions when appropriate, distinguishing effects from unproven causal theories. Do not overload the client with tracking assignments; urgent safety and consent remain independently operative.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
         }
       ]
     },
@@ -1996,7 +2016,8 @@
             "IC.PROTECTOR_VISIBLE",
             "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
             "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
-            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
+            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+            "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -2005,13 +2026,15 @@
             "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
             "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity.",
             "When a currently accessible practice has a small observed benefit, compare its personally effective technique, duration, continuation, delayed costs and carryover into ordinary life before changing it or demanding more intensity.",
-            "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment."
+            "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment.",
+            "When a known practice sometimes calms early distress but fails once overwhelmed, compare the successful pre-peak contexts with the unsuccessful ones rather than asking again what worked at the worst peak."
           ],
           "avoid": [
             "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
             "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
             "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.",
-            "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization."
+            "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization.",
+            "Do not infer that a person made no effort simply because no method provided sufficient relief at the peak, or require exhaustive logs to make sense of mixed outcomes."
           ],
           "successSignals": [
             "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
@@ -2278,7 +2301,8 @@
             "AMEND.IC.WISDOM_CORE",
             "AMEND.IC.NONPUNITIVE_REVIEW",
             "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
-            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
+            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+            "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -2286,12 +2310,14 @@
             "Report the action without requiring the younger state to trust it yet.",
             "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
             "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
+            "Choosing not to act on an unsuitable attraction can be a compassionate protective response, respecting the needs, boundaries and consent of everyone affected without making the feeling itself a source of shame.",
             "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
           ],
           "avoid": [
             "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
             "Do not choose an action so large that failure becomes new evidence of unreliability.",
             "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
+            "Do not equate involuntary feeling and chosen harmful conduct, and do not use acceptance of a feeling to exempt behavior from ordinary accountability.",
             "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
           ],
           "successSignals": [
@@ -2536,17 +2562,20 @@
           "sourceRefs": [
             "IC.DIFFERENTIATION",
             "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
-            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+            "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Notice where other people’s emotions and group expectations replace personal knowing.",
             "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
-            "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+            "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
+            "A spontaneous attraction or feeling can be noticed without automatically following it. Choose whether an action would support reciprocal connection, consent, safety and trustworthy boundaries; neither repress the appearance of the feeling nor treat it as a command."
           ],
           "avoid": [
             "Do not equate differentiation with isolation or automatic permanent cutoff.",
-            "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
+            "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate.",
+            "Do not infer wrongdoing or a hidden event solely from an unchosen attraction, or treat self-acceptance as permission for harmful chosen conduct."
           ],
           "successSignals": [
             "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
@@ -3942,14 +3971,16 @@
           "sourceRefs": [
             "AMEND.IC.WISDOM_CORE",
             "AMEND.IC.WISDOM_COMMON_HUMANITY",
-            "AMEND.IC.WISDOM_SOURCES"
+            "AMEND.IC.WISDOM_SOURCES",
+            "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
             "Begin with the particular experience and its circumstances. If useful, recognize that the longing underneath it is something other people may know as well.",
             "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
             "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
-            "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance."
+            "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.",
+            "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict."
           ],
           "avoid": [
             "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
@@ -7206,7 +7237,9 @@
             "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
             "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
             "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
-            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
+            "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+            "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+            "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -7226,7 +7259,9 @@
             "For a repeated harmful coping choice, check recorded previous cessation attempts and why use resumed, including sleep, pain, loneliness, or an intensely valued feeling, before making withdrawal the presumed obstacle.",
             "Ask what component of an intensely valued inner state matters most and which non-harmful activities or methods have already provided some of it, without proposing a list of hidden meanings as the person's answer.",
             "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
-            "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished."
+            "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished.",
+            "When a spontaneous feeling invites an unsuitable action, help choose a consent-respecting practical boundary rather than treating the feeling itself as a diagnosis or wrongdoing.",
+            "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty."
           ],
           "avoid": [
             "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -7240,7 +7275,8 @@
             "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
             "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
             "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
-            "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting."
+            "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting.",
+            "Do not collapse feelings, chosen conduct, legal restrictions, clinical categories and consent into the same question."
           ],
           "successSignals": [
             "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -8224,20 +8260,23 @@
           "sourceRefs": [
             "AMEND.IC.COMMUNITY_REPARENTING",
             "IC.RELATIONSHIP",
-            "IC.THREE_FUNCTIONS"
+            "IC.THREE_FUNCTIONS",
+            "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
             "Treat a current need for human contact as a real need, not failed independence. Explore several realistic sources of recurring contact with genuine commonality: trusted people already known, peer support, spiritually fitting communities, interest/activity groups, classes, clubs, volunteering, and practical or professional services.",
             "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
             "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
-            "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language."
+            "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
+            "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add."
           ],
           "avoid": [
             "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
             "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
             "Do not prescribe a spiritual community merely because the person is spiritual, or present a long directory when one or two realistic next contacts are more usable.",
-            "Do not advise withdrawing from an existing safe support merely to diversify."
+            "Do not advise withdrawing from an existing safe support merely to diversify.",
+            "Do not treat one consultation as sustained specialist treatment, assume concerns about sexual life require partnered intercourse, or default to an institutional prevention service without a matching present need."
           ],
           "successSignals": [
             "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",
@@ -8958,7 +8997,7 @@
     "graphCount": 3,
     "nodeCount": 86,
     "edgeCount": 121,
-    "sourceSectionCount": 146,
-    "ownerAmendmentCount": 68
+    "sourceSectionCount": 148,
+    "ownerAmendmentCount": 70
   }
 }

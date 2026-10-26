@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-25-r13`
+Queue version: `2026-10-26-r14`
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -307,3 +307,10 @@ Teaching point: Being able to stop a harmful coping habit and being able to avoi
 Reader need: A person who has repeatedly stopped and then resumed an unwanted coping strategy needs a compassionate, realistic Protector/Guide function in daily life, not a lecture about willpower or a high-effort plan beyond available capacity.
 Already covered: “Make the Protector Visible” describes small protective actions, “Also Look Outward” addresses outside supports, and PGQ-038 links one's own practical safety steps to reparenting; these do not fully distinguish successful stopping from the recurring trigger that brings a harmful coping choice back.
 Where: Next to ordinary protective choices in “Make the Protector Visible” and its PGQ-038 update, adding only the distinct functional question and low-friction protective step; no new drug protocol, relocation requirement, or expanded altered-state claim.
+
+### PGQ-043 — Notice feelings, choose actions without self-condemnation
+Caused by: Owner-approved AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026 and the revised Protector, Differentiation and Community Support nodes. Earlier advice collapsed shame, practical choice and referral suitability.
+Teaching point: A feeling may arise without deliberate choice. A person can examine it compassionately and decide against acting when it conflicts with consent, safety, vulnerability or a trusted boundary. This is mature self-protection, not proof of a defective identity. Distinguish feelings, intentions, actions, context and risks. Do not infer the origin of an attraction from unverified memories or suggest a guaranteed cure.
+Reader need: People who feel condemned for spontaneous experiences need a way to reduce shame and still exercise sound judgment, including when seeking supportive professional care.
+Already covered: Existing inherited shame discussion; the Protector's daily actions; PGQ-038 on protection; PGQ-039 on privacy; PGQ-040 on useful referrals. None states the full feeling/agency distinction.
+Where: Add one concise passage in the inherited-shame section and cross-reference “Make the Protector Visible”. Keep specialist privacy and suitability material with PGQ-039 under “Also Look Outward”. Do not include personal records or case narratives.

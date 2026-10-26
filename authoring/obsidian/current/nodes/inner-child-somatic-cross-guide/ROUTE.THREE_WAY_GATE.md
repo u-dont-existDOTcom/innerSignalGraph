@@ -24,8 +24,8 @@ regression_refs:
   - G092
   - G093
 base_record_sha256: 1f170681d32db408a8f9744fe53dad41187c355fa5fdb06cba60f071734c3dc2
-base_graph_sha256: d145252bb6e094d5fa9198c422f41f3ea60dfb0e93fc1c92682fba10ed0c81cf
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_graph_sha256: b6d0838474c8b0180c59b119cdb203deac7c39cb460afd7d48410a8e784f2809
+projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
 ---
 
 # Discriminate processing, action, and non-engagement
