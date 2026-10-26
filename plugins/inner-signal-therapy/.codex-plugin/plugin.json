@@ -1,6 +1,6 @@
 {
   "name": "inner-signal-therapy",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "InnerSignal therapy with optional authenticated private continuity in one plugin.",
   "author": {
     "name": "u-dont-existDOTcom"
