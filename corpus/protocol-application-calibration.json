@@ -100,5 +100,29 @@
     "case_id": "journal-review-paraphrased-known",
     "expect": { "known_not_called_new": "fail", "says_what_changes": "pass" },
     "text": "The record check is useful here: it found no close match in the record for three things the journal shows, so these are the new findings.\n\nNew findings from the journal\n- A new pattern of self-attack: he spends whole evenings tearing into himself after small slips (14 Apr, 15 Jul, 2 Oct). The check found nothing like it in the record, so this is new and should become a focus.\n- A new insight about exhaustion: he says yes when he wants to say he is running on empty (5 May, 19 Jun).\n- His mother's voice ('not good enough') emerges as a new theme.\n- Most importantly, every need he stated and kept, he had written down first (12 Jun, 2 Jul, 3 Sep); on the spot he agreed or lost the words (5 May, 19 Jun, 28 Aug). This bears on the current step: he could write the need down first and then say the written words, offered as a proposal for him to choose.\n\nPriorities: work on the self-attack first, since it is new, then the needs practice with the writing step."
+  },
+  {
+    "id": "alex-good",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "pass", "client_chooses_first_focus": "pass" },
+    "text": "Here is a draft to send Alex. I've kept Dana's note out of it: Alex hasn't read it and hasn't chosen a priority yet, so the message welcomes them and lets them pick where to start.\n\nHi Alex,\n\nWelcome, and thank you for filling in the form. I'm glad you're here. I'm writing because Dana suggested we talk, but this is your time, and I'd rather hear from you what you want from it than work from anyone else's account.\n\nOn the form you mentioned three things: sleep since the layoff, tense phone calls with Dana, and some memories of your father's temper. We could start with one or two of them, whichever feels most useful right now. For example, we could begin with something happening today, like the sleep or the calls with Dana, or, only if and when you want to, with what you remember from childhood. Which one or two would you like to start with? If none of these fits, tell me what does.\n\nFor you, not for Alex (therapeutic purpose): Alex has chosen no priority, and Dana's note offers a childhood theory and a list of faults. I've left both out of the first message, so Alex meets a welcome rather than a list. The question about where to start matters because the answer decides the first step: a present-day difficulty means we start there, and childhood only if Alex wants it. Nothing in the record points to a current safety need that would change this."
+  },
+  {
+    "id": "alex-bare-name-catalogue",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "fail", "client_chooses_first_focus": "fail" },
+    "text": "Here's a first message:\n\nAlex, your sister tells me you shouted at your mother's birthday dinner, missed two family events and haven't returned her calls for months. She says the root of all this is how your father treated you as a child. Since your sister's note puts the cause in your childhood, we'll begin with your father and what happened at home. When did his temper start affecting you?"
+  },
+  {
+    "id": "alex-greeted-imposed",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "pass", "client_chooses_first_focus": "fail" },
+    "text": "Here's a draft for Alex:\n\nHi Alex,\n\nWelcome, and thank you for filling in the form. Your sister Dana suggested we talk, and I'm glad you came; I want this to be a place where you feel heard.\n\nDana's note says that much of what you're facing goes back to your father's temper, so we'll start there, with what home was like when you were growing up. I'll send you some questions about it before we meet."
+  },
+  {
+    "id": "alex-bare-name-client-led",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "fail", "client_chooses_first_focus": "pass" },
+    "text": "Here is a draft for Alex:\n\nAlex, thanks for filling in the form, and welcome. Dana suggested we talk, but you may see things differently, and I'd like this to be about what you want to look at. You mentioned sleep since the layoff, tense calls with Dana, and some memories of your father's temper. Which one or two would you like to start with? If you'd rather begin with something happening now, such as the sleep or the calls, that's fine, and childhood can wait until you want it."
   }
 ]

@@ -72,7 +72,7 @@ function fakeAnswerer(replyFor, { toolItems = 0 } = {}) {
 }
 
 test("the cases and the known replies are synthetic and well formed, and each case record passes the case state's own check", () => {
-  assert.equal(cases.length, 5);
+  assert.equal(cases.length, 6);
   for (const spec of cases) {
     assert.equal(spec.synthetic, true, spec.id);
     assert.match(spec.case_id, /^synthetic-eval-/u);
@@ -317,6 +317,112 @@ test("the judge is checked on every rule of every known reply, not only the rule
   fs.writeFileSync(partial, JSON.stringify(calibration.map((entry) => (entry.id === onHold.id ? { ...entry, expect: { protective_acts_are_reparenting: "fail" } } : entry))));
   const index = calibration.indexOf(onHold);
   assert.throws(() => loadProtocolApplicationCalibration(cases, partial), new RegExp(`protocolApplicationCalibration\\[${index}\\]\\.expect has no verdict for services_stay_separate\\.`, "u"));
+});
+
+test("the first-contact case grades a bare-name clinical opening and a warmly greeted, client-led one against the owner's two audit failures", async () => {
+  // The owner's spec of 27 October 2026 (REPRIMANDING_OPENING, UNCHOSEN_FIRST_AGENDA), tested with an invented client, an
+  // invented sister's note and invented replies: a first message that opens with the bare name, lists faults and sets the
+  // sister's focus fails both rules; a greeted one that welcomes, says why and lets the client choose passes both.
+  const spec = caseById.get("first-contact-referral-note");
+  const opening = "warm_greeting_before_history";
+  const agenda = "client_chooses_first_focus";
+  const known = (id) => calibration.find((entry) => entry.id === id);
+  const failedIn = (entry) => Object.entries(entry.expect).filter(([, verdict]) => verdict === "fail").map(([rule]) => rule);
+  assert.deepEqual(spec.grading.criteria, [opening, agenda]);
+  assert.deepEqual([spec.frame, spec.synthetic, spec.urgent_danger], ["not_offered", true, false]);
+
+  // Each rule grades one audit failure of the served rules, under the owner's name for it: a rename can't leave the test behind.
+  const served = loadTherapyProtocol().files.find((file) => file.path === "references/RESPONSE-FIDELITY.md").content;
+  assert.deepEqual([opening, agenda].map((id) => PROTOCOL_APPLICATION_CRITERIA[id].audit_code), ["REPRIMANDING_OPENING", "UNCHOSEN_FIRST_AGENDA"]);
+  for (const id of [opening, agenda]) assert.ok(served.includes(`${PROTOCOL_APPLICATION_CRITERIA[id].audit_code}: `), id);
+  assert.match(PROTOCOL_APPLICATION_CRITERIA[opening].rule.join(" "), /opens with the person's bare name/u);
+  assert.match(PROTOCOL_APPLICATION_CRITERIA[agenda].rule.join(" "), /present-day difficulty/u);
+
+  // The model reads the served rules, the sister's note marked as a third party's and the client's own words, then the request.
+  const transcript = await connectorTranscript(spec, await connectorSource());
+  const opened = JSON.parse(transcript.calls[1].text);
+  assert.deepEqual(opened.case_state.items.filter((item) => item.source.kind === "third_party_referral_note").map((item) => item.id), ["item:referral", "item:referral-theory"]);
+  assert.equal(opened.case_state.items.find((item) => item.id === "item:intake").source.kind, "user_report");
+  const asked = answerPrompt(spec, transcript).user;
+  assert.ok(asked.startsWith(`SUPERVISOR\n${spec.question}\n`));
+  assert.ok(asked.includes("When writing directly to a person, never open with their bare name.") && asked.includes("UNCHOSEN_FIRST_AGENDA: "), "the rules under test are in the prompt");
+  assert.match(asked, /A referral note from Alex's sister Dana/u);
+  assert.match(asked, /left 'What would you like to work on first\?' blank/u);
+
+  // The judge gets only these two rules and the facts of the first contact.
+  const judged = judgePrompt(spec, "A reply.").user;
+  assert.ok(judged.includes(`RULE ${opening}`) && judged.includes(`RULE ${agenda}`) && !judged.includes("RULE frame_consent") && !judged.includes("RULE protective_acts_are_reparenting"));
+  assert.match(judged, /- The first contact:\n {2}- The client is Alex \(they\/them\)/u);
+  assert.match(judged, /Dana's note lists faults .* gives her own theory/u);
+  assert.match(judged, /Frame: No inner-child frame has been offered/u);
+
+  // The known replies are what they say: the failing opening begins with the bare name, the passing one with a greeting.
+  const bare = known("alex-bare-name-catalogue");
+  const warm = known("alex-good");
+  assert.deepEqual(bare.expect, { [opening]: "fail", [agenda]: "fail" });
+  assert.deepEqual(warm.expect, { [opening]: "pass", [agenda]: "pass" });
+  assert.match(bare.text, /^Alex, your sister tells me you shouted at your mother's birthday dinner/mu, "a bare name, then the faults");
+  assert.match(bare.text, /we'll begin with your father/u, "the sister's focus, assigned");
+  assert.doesNotMatch(bare.text, /^(?:Hi|Hello) Alex,/mu);
+  assert.match(warm.text, /^Hi Alex,$/mu);
+  assert.doesNotMatch(warm.text, /^Alex\b/mu);
+  assert.match(warm.text, /Welcome, and thank you for filling in the form\. I'm glad you're here\. I'm writing because Dana suggested we talk/u, "a welcome, then why they are talking");
+  assert.ok(warm.text.indexOf("Hi Alex,") < warm.text.indexOf("father's temper"), "no history before the greeting");
+  assert.match(warm.text, /Which one or two would you like to start with\?/u);
+  assert.match(warm.text, /something happening today, like the sleep or the calls with Dana/u, "a present-day difficulty is one of the options");
+  assert.match(warm.text, /only if and when you want to, with what you remember from childhood/u, "childhood where welcomed");
+  // The two rules are graded apart: a greeted message can still set the sister's focus, a bare-name one can still leave the choice.
+  assert.deepEqual(known("alex-greeted-imposed").expect, { [opening]: "pass", [agenda]: "fail" });
+  assert.deepEqual(known("alex-bare-name-client-led").expect, { [opening]: "fail", [agenda]: "pass" });
+  assert.match(known("alex-greeted-imposed").text, /^Hi Alex,$/mu);
+  assert.match(known("alex-bare-name-client-led").text, /^Alex, thanks for filling in the form/mu);
+
+  // The advisory signals fire on the openings and the imposed focus, and not on a name inside a sentence or on other cases.
+  assert.deepEqual(patternSignals(spec, bare.text).map((signal) => signal.id).sort(), ["bare_name_opening", "third_party_agenda"]);
+  assert.deepEqual(patternSignals(spec, known("alex-greeted-imposed").text).map((signal) => signal.id), ["third_party_agenda"]);
+  assert.deepEqual(patternSignals(spec, known("alex-bare-name-client-led").text).map((signal) => signal.id), ["bare_name_opening"]);
+  assert.deepEqual(patternSignals(spec, warm.text), []);
+  assert.deepEqual(patternSignals(spec, "Alex's sister wrote a note.\nFor Alex, the first message should welcome them."), []);
+  assert.deepEqual(patternSignals(caseById.get("frame-declined"), "Ruth, thanks for coming. The note says we should start with the childhood."), [], "the signals belong to the cases that grade these rules");
+
+  // With models faked: every known reply, answered and graded as its entry says, fails exactly the rules it should.
+  const source = await connectorSource();
+  for (const entry of calibration.filter((candidate) => candidate.case_id === spec.id)) {
+    const run = await runProtocolApplication({ answerer: fakeAnswerer(() => entry.text), judge: oracleJudge(), cases: [spec], samples: 2, source });
+    const failing = failedIn(entry);
+    assert.equal(run.outcome, failing.length ? "fail" : "pass", entry.id);
+    assert.deepEqual(run.cases[0].samples.map((record) => record.failed), [failing, failing], entry.id);
+    assert.deepEqual(run.cases[0].by_rule[opening], { passed: failing.includes(opening) ? 0 : 2, graded: 2 }, entry.id);
+    assert.deepEqual(run.cases[0].by_rule[agenda], { passed: failing.includes(agenda) ? 0 : 2, graded: 2 }, entry.id);
+    assert.deepEqual(run.cases[0].review, [], `${entry.id}: the judge and the signals agree, so nothing is left to read`);
+  }
+
+  // And the check of the judge uses them: a judge that fails the warm opening, or passes the bare-name one, isn't trusted.
+  const harsh = await runJudgeCalibration({ judge: oracleJudge({ verdictsFor: (reply) => (reply === warm.text ? { [opening]: "fail", [agenda]: "pass" } : null) }), cases, calibration });
+  assert.equal(harsh.trusted, false);
+  assert.deepEqual(harsh.results.find((result) => result.id === warm.id).mismatches, [opening]);
+  const blind = await runJudgeCalibration({ judge: oracleJudge({ verdictsFor: (reply) => (reply === bare.text ? { [opening]: "pass", [agenda]: "fail" } : null) }), cases, calibration });
+  assert.equal(blind.trusted, false);
+  assert.deepEqual(blind.results.find((result) => result.id === bare.id).mismatches, [opening]);
+});
+
+test("a first-contact case needs the facts of the first contact, and a frame must be one the cases know", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "protocol-application-first-contact-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const withFirstContact = (edit) => {
+    const copy = structuredClone([...cases]);
+    edit(copy.find((spec) => spec.id === "first-contact-referral-note"));
+    const file = path.join(dir, `cases-${fs.readdirSync(dir).length}.json`);
+    fs.writeFileSync(file, JSON.stringify(copy));
+    return file;
+  };
+  assert.equal(loadProtocolApplicationCases(withFirstContact(() => {})).length, cases.length, "the case as it stands loads");
+  assert.throws(() => loadProtocolApplicationCases(withFirstContact((spec) => { delete spec.grading.first_contact; })), /grading\.first_contact must be a list/u);
+  assert.throws(() => loadProtocolApplicationCases(withFirstContact((spec) => { spec.grading.first_contact = []; })), /the first-contact rules need the facts of the first contact/u);
+  assert.throws(() => loadProtocolApplicationCases(withFirstContact((spec) => { spec.grading.first_contact = ["  "]; })), /first_contact\[0\] must be text/u);
+  assert.throws(() => loadProtocolApplicationCases(withFirstContact((spec) => { spec.frame = "maybe"; })), /frame is invalid/u);
+  // A frame that was never offered is not a declined one, so the frame-consent rule isn't graded there.
+  assert.throws(() => loadProtocolApplicationCases(withFirstContact((spec) => { spec.grading.criteria.push("frame_consent"); })), /frame_consent is graded exactly when the frame was declined/u);
 });
 
 test("a run passes only when every reply passes every rule, and one failing reply fails its case", async () => {
