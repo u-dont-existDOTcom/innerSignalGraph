@@ -37,19 +37,45 @@ test("owner-approved graph preserves urgent route while adding contextual care a
 test("first-contact and appropriately screened couples-care lessons appear in served and app rules", () => {
   const protocol = loadTherapyProtocol();
   const ref = load("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
-  const markers = ["REPRIMANDING_FIRST_CONTACT", "IMPOSED_UNCHOSEN_AGENDA", "ORNAMENTAL_FAITH_REFERENCE", "IPV_COUNSELING_SCOPE_COLLAPSE"];
+  const markers = ["REPRIMANDING_OPENING", "UNCHOSEN_FIRST_AGENDA", "ORNAMENTAL_FAITH_REFERENCE", "IPV_COUNSELING_SCOPE_COLLAPSE"];
   for (const marker of markers) {
     assert.ok(responseFidelityRules.includes(marker), marker);
     assert.ok(longitudinalClinicalRules.includes(marker), marker);
     assert.ok(ref.includes(marker), marker);
     assert.ok(protocol.files.find(f=>f.path==="references/RESPONSE-FIDELITY.md").content.includes(marker), marker);
   }
-  assert.match(responseFidelityRules, /never open with a bare name/);
-  assert.match(responseFidelityRules, /invite them to choose one or two themes/);
   assert.match(responseFidelityRules, /private(?:ly)? assess both partners/);
   assert.match(responseFidelityRules, /not alone establish current coercive control/);
   assert.match(responseFidelityRules, /Ongoing coercion or credible safety risk makes ordinary conjoint treatment inappropriate/);
   assert.match(responseFidelityRules, /Do not assume relationship conflict makes the threatened partner responsible/);
+});
+
+test("the owner's 27 October 2026 first-contact spec is carried clause by clause on every surface, under the spec's audit names", () => {
+  const servedProtocol = loadTherapyProtocol().files.find(f=>f.path==="references/RESPONSE-FIDELITY.md").content;
+  const servedFile = load("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
+  const surfaces = {
+    "application rules": responseFidelityRules,
+    "longitudinal rules": longitudinalClinicalRules,
+    "served file": servedFile,
+    "served protocol": servedProtocol
+  };
+  const clauses = [
+    /When writing directly to a person, never open with their bare name\./,
+    /If using their name at the start, begin with a natural greeting, such as "Hi Alex," or "Hello Alex,"\./,
+    /For first contact, welcome the person and establish why the conversation is happening before discussing painful history, faults, interpretations/,
+    /Avoid a reprimanding or interrogative opening and avoid artificial praise/,
+    /If a new client has no already-chosen therapeutic priority, invite them to choose one or two concerns to explore\./,
+    /Offer a few relevant, grounded possibilities, including childhood patterns where welcomed and the option of starting with a present-day difficulty\./,
+    /Do not impose a focus based on a third party’s interpretation/,
+    /independently supported safety needs still take precedence/,
+    /REPRIMANDING_OPENING: a personal message opens with the bare name, or presents a distressing catalogue before a natural greeting and welcoming context\./,
+    /UNCHOSEN_FIRST_AGENDA: a first message assigns the therapeutic focus from a third-party report without a client choice, absent a current safety exception\./
+  ];
+  for (const [surface, text] of Object.entries(surfaces)) {
+    for (const clause of clauses) assert.match(text, clause, surface);
+    // The two codes were renamed to the spec's names, and the earlier names are gone from every surface.
+    for (const retired of ["REPRIMANDING_FIRST_CONTACT", "IMPOSED_UNCHOSEN_AGENDA"]) assert.ok(!text.includes(retired), `${retired} is still in the ${surface}`);
+  }
 });
 
 test("logic and supervisor-purpose rules reach the reviewed pipeline", () => {
