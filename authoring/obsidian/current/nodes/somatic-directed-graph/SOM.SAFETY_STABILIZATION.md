@@ -30,7 +30,7 @@ regression_refs:
   - G131
 base_record_sha256: e89d236a5e416e45a6e8a909a2c70bcde7a48e74c6e06d29e26eff011966b92b
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
+projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
 ---
 
 # Safety, orientation, and stopping capacity

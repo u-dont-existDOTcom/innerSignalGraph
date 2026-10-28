@@ -27,9 +27,9 @@ regression_refs:
   - G064
   - G065
   - G085
-base_record_sha256: 5f36c0085b1ace4df72df8829412a13b382cde27d36e0e50b06892dec1dd718e
-base_graph_sha256: 7b263543b134c9b20a88a86ea5d4016afb1a1f8f50bcadea32b8aca0944f894e
-projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
+base_record_sha256: d87d594df70d1d43f5fd21d0749d2fe8f669ea0d86b386db81745940ff5b7ecf
+base_graph_sha256: 4403b251e43e8fb5f5e8fca5422982c5dfc419a5e58b8eb9cfd92bde29884343
+projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
 ---
 
 # Build a diversified human support ecology
@@ -64,7 +64,7 @@ projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf
     "deferNodes": [],
     "forbiddenOverclaims": [
       "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency.",
-      "Do not promise that any listener will keep a disclosure confidential or receive it well; confidentiality limits and reporting duties differ, and the person asks about them first."
+      "Do not promise that any listener will keep a disclosure confidential or receive it well; confidentiality limits and duties to report differ, so the advice to give the person is to ask a therapist first what the therapist must report or write down."
     ],
     "requiredNuance": [
       "Human beings can need both inner adult capacity and real reciprocal attachment; these are complementary rather than competing goals.",
@@ -78,8 +78,8 @@ projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf
     "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
     "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
     "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add.",
-    "When the person carries something they believe they can't tell anyone, help them choose whom to tell and how much: a therapist they feel safe with, asked first what they must report or write down, or a friend who has shown ease with taboo subjects. Start with the general kind of thing, ask before giving details, see how a smaller truth is received, and slow down or stop if the listener seems alarmed.",
-    "Say once and early, in plain words and without alarm, that some topics may reach the limits of what the AI can help with; when one does, say what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help. When the person feels or suspects early sexual harm, offer the option of a therapist experienced with early sexual trauma without asserting that abuse happened."
+    "When the person carries something they believe they can't tell anyone, help them choose whom to tell and how much. Advice to give them: a therapist they feel safe with, asked first, in general terms, what the therapist must report or write down; a friend who has shown ease with taboo subjects; the general kind of thing first, asking before giving details, seeing how a smaller truth is received, and slowing down or stopping if the listener seems alarmed.",
+    "Early in the work, after the person has been welcomed, tell them once, in plain words and without alarm, that some topics may be beyond what the AI can help with and that if one is, the AI will say so and point to a person who can help; never as a warning about the person, and not repeated as a ritual disclaimer. When a topic is beyond what the AI can help with, say as soon as it matters what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help. When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting that abuse happened."
   ],
   "successSignals": [
     "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",

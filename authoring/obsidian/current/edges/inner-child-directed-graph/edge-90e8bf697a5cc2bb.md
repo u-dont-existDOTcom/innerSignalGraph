@@ -10,7 +10,7 @@ from_node_id: IC.BEST_FRIEND_PERSPECTIVE
 to_node_id: IC.WISER_SELF_PERSPECTIVE
 relation: offers-alternative
 base_graph_sha256: 98f5f406ed7d7da8abded2fde96d7b0c1efbda9b99e4362e2d1681a3c9190ff2
-projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
+projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
 ---
 
 # IC.BEST_FRIEND_PERSPECTIVE offers-alternative IC.WISER_SELF_PERSPECTIVE

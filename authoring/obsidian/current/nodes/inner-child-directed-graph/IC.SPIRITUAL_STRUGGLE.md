@@ -21,7 +21,7 @@ regression_refs:
   - G035
 base_record_sha256: df62359ad1ed82554fbd6ef9c8b0bcdfa920becb876ec2e0e411aca54af90d93
 base_graph_sha256: 98f5f406ed7d7da8abded2fde96d7b0c1efbda9b99e4362e2d1681a3c9190ff2
-projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
+projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
 ---
 
 # Work with spiritual struggle or sacred loss

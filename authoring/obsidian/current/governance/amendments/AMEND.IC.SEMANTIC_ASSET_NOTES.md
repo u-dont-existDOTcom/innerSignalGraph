@@ -7,8 +7,8 @@ amendment_id: AMEND.IC.SEMANTIC_ASSET_NOTES
 status: owner-approved
 domain: inner-child
 base_record_sha256: d1237f4a2cbca5eed70527bb0c5a22307fe820108f7f8431753e5bc315d99c0a
-source_file_sha256: 67db0de9a7b47558c5356dc177737244b7789b5cea73b2e36670532525595408
-projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
+source_file_sha256: 037ae0323d09a4cb616eab99feeba29ce8f99733d60b4b33267439cd0f9a870b
+projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
 ---
 
 # AMEND.IC.SEMANTIC_ASSET_NOTES

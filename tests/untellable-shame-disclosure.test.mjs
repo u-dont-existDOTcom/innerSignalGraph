@@ -16,13 +16,14 @@ import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol, unservedReferenceMentions 
 // Owner request of 26 October 2026: shame about what a person believes they can't tell anyone, graded disclosure, the AI
 // saying what it can't help with, a therapist experienced with early sexual trauma, accidental exposure, and outside review
 // only on evidence of current risk. Every example is synthetic. These static tests show where the rules are written, served
-// and bound; they do not show that a model follows them.
+// and bound, and that each added text keeps one audience; they do not show that a model follows the rules.
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
 const count = (text, part) => text.split(part).length - 1;
 const AMENDMENT = "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028";
 const PHENOMENOLOGY = "references/PHENOMENOLOGY-AND-REPRESENTATION.md";
+const SKILL = "../plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md";
 const FAILURES = [
   "DISCLOSURE_MET_WITH_ALARM",
   "MATERIAL_KIND_BLURRED",
@@ -33,22 +34,29 @@ const FAILURES = [
   "CURRENT_DANGER_CONCEALED",
   "TABOO_MATERIAL_OUTSIDE_REVIEW"
 ];
-// The owner's own sentences, kept whole, and the clauses of the two additions.
+const AUDIENCE_LINE = "These are instructions to InnerSignal. \"The person\" is the client. Advice meant for the person is written as advice to give them, never as an instruction to InnerSignal.";
+// The owner's own sentences, kept whole, and the clauses of the two additions, as the rule words them for InnerSignal.
 const OWNER_CLAUSES = [
   "Shame often guards something the person believes they can't tell anyone: a feeling, desire, fantasy, attraction, dream, memory or act they expect would bring rejection or alarm.",
   "Keeping it secret keeps the self-rejection going; being understood without flinching loosens it.",
   "Assume this may be there whenever shame is strong, journal or no journal.",
   "Name what it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act), keep it apart from the person's worth and from intent, and never answer with alarm, moralizing or a refusal script.",
-  "Help the person choose whom to tell and how much: a therapist they feel safe with, asked first, in general terms, what they must report or write down; a friend who has shown ease with taboo subjects.",
-  "Start with the general kind of thing, ask before giving details, see how a smaller truth is received, and slow down or stop if the listener seems alarmed.",
-  "When the AI can't take a topic on, say so as soon as it matters: what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help.",
-  "say once, in plain words and without alarm, that some topics may reach the limits of what the AI can help with and that if one does it will say so and point to a person who can help.",
+  "Help the person choose whom to tell and how much. Advice to give them: a therapist they feel safe with, asked first, in general terms, what the therapist must report or write down; a friend who has shown ease with taboo subjects;",
+  "start with the general kind of thing, ask before giving details, see how a smaller truth is received, and slow down or stop if the listener seems alarmed;",
+  "When a topic is beyond what InnerSignal can help with, say so as soon as it matters: what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help.",
+  "tell them once, in plain words and without alarm, that some topics may be beyond what InnerSignal can help with and that if one is, it will say so and point to a person who can help.",
   "Never present this as a warning about the person",
   "offer, as an option, a therapist experienced with early sexual trauma, without asserting that abuse happened.",
-  "Accidentally seeing illegal material isn't seeking it",
-  "to not save or share the material, to report it if they wish, and to ask a lawyer about anything legal.",
-  "Send journal or conversation material for outside review only when there's evidence of current risk to someone, never for taboo content, dreams, fantasies or a past accidental exposure."
+  "tell them accurately and without alarm that coming across it by accident is not seeking it.",
+  "Advice to give them: not to save or share it; that reporting the material itself, for example to the platform where it appeared, is their own choice; and to ask a lawyer about any legal worry.",
+  "InnerSignal itself never reports the person or passes on what they wrote, does not assess their legal exposure, and does not press for details of what was seen",
+  "Do not flag, route or recommend routing journal or conversation material for outside review because of taboo content, dreams, fantasies or a past accidental exposure.",
+  "Only evidence of current risk to someone justifies it, and that evidence stays under the ordinary safety rules, which these rules never override."
 ];
+// A pronoun addressed to the client. Every text below is written to InnerSignal or to the reviewer, never to the client.
+const SECOND_PERSON = /\byou(?:r|rs|rself|rselves)?\b/iu;
+// The sentence the owner objected to: advice to the client, readable as an instruction to report people.
+const CLIENT_ADDRESSED_ADVICE = /report it if you wish|don't save or share it|if you wish/iu;
 
 function rolePrompts() {
   const context = { guideManifest: { version: "synthetic" }, guideExcerpts: "", userFacts: [],
@@ -65,9 +73,32 @@ function rolePrompts() {
   ];
 }
 
+function stateSection() {
+  const state = read("../state/CODEX-CURRENT-STATE.md");
+  const start = state.indexOf("## Untellable shame and graded disclosure");
+  assert.ok(start >= 0, "the state checkpoint has a section for this change");
+  const next = state.indexOf("\n## ", start + 4);
+  return state.slice(start, next < 0 ? undefined : next);
+}
+
+function lessonEntry() {
+  const lessons = read("../THERAPY-LESSONS");
+  const start = lessons.indexOf("## 2026-10-28 — Meet untellable shame without alarm");
+  assert.ok(start >= 0, "the lesson exists");
+  const next = lessons.indexOf("\n## ", start + 4);
+  return lessons.slice(start, next < 0 ? undefined : next);
+}
+
+// The strings a graph node carries about this rule, wherever the node keeps them.
+function topicLines(node) {
+  const topic = /tell anyone|whom to tell|outside review|early sexual|taboo|can help with|disclosure|confidential/iu;
+  return [...node.recommendations, ...node.avoid, ...(node.effects?.forbiddenOverclaims ?? []), ...(node.effects?.requiredNuance ?? [])]
+    .filter((line) => topic.test(line));
+}
+
 test("the rule is written once, carries the owner's sentences and both additions, and names its audit failures", () => {
   for (const clause of OWNER_CLAUSES) assert.ok(untellableShameRules.includes(clause), clause);
-  assert.match(untellableShameRules, /^\nUNTELLABLE SHAME AND GRADED DISCLOSURE \(untellable-shame-v1\)\n- Shame often guards/u);
+  assert.ok(untellableShameRules.startsWith(`\nUNTELLABLE SHAME AND GRADED DISCLOSURE (untellable-shame-v1)\n${AUDIENCE_LINE}\n- Shame often guards`));
   assert.match(untellableShameRules, /\n\nUNTELLABLE SHAME AUDIT FAILURES\n- DISCLOSURE_MET_WITH_ALARM: /u);
   assert.ok(untellableShameRules.endsWith("without evidence of current risk to someone.\n"));
   for (const code of FAILURES) {
@@ -84,17 +115,19 @@ test("the rules agree with the rules already in force: no concealment of danger,
   assert.match(untellableShameRules, /None of this extends to helping hide current danger to the person or to someone else, which comes first\./u);
   assert.match(untellableShameRules, /A chosen act is still named as chosen, with responsibility and the protection of anyone affected in view; naming it neither excuses it nor condemns the person\./u);
   // The early-sexual-harm option stays inside the felt-violation rule and the 26 Oct feeling-and-agency amendment.
-  assert.match(untellableShameRules, /The trigger is the person's own report of feeling or suspecting it, not the AI's inference from a fantasy, dream or image\./u);
+  assert.match(untellableShameRules, /The trigger is the person's own report of feeling or suspecting it, not InnerSignal's inference from a fantasy, dream or image\./u);
   assert.match(untellableShameRules, /neither confirmed nor denied, no perpetrator named, no memory reconstruction steered/u);
   assert.match(untellableShameRules, /not a preventive, reporting or institutional referral/u);
   assert.match(responseFidelityRules, /A felt violation or fear can be supported and explored without identifying a perpetrator or asserting recovered abuse/u);
   assert.match(responseFidelityRules, /Do not automatically route shame about feelings alone to an institutional prevention service/u);
   assert.match(responseFidelityRules, /In a dream, vision, or intoxicated account, words attributed to another person remain words experienced in that state/u);
   // The existing instruction not to help conceal current suicidal intent or imminent danger is unchanged.
-  const skill = read("../plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md");
+  const skill = read(SKILL);
   assert.match(skill, /Do not encourage concealment or false denial of current suicidal intent, a plan, inability to stay safe or imminent danger\./u);
-  // The AI keeps its own limits on what it writes; understanding does not need explicit detail.
-  assert.match(untellableShameRules, /Understanding the material does not require explicit detail, and the AI need not write or elaborate any\./u);
+  // InnerSignal keeps its own limits on what it writes; understanding does not need explicit detail.
+  assert.match(untellableShameRules, /Understanding the material does not require explicit detail, and InnerSignal need not write or elaborate any\./u);
+  // Outside review is not a report by InnerSignal, and the ordinary safety rules are never overridden.
+  assert.match(untellableShameRules, /Outside review means passing material to anyone beyond the person's own care and chosen supporters, such as a reviewer, authority or service\./u);
 });
 
 test("the served phenomenology reference mirrors the module and no other served file carries it", () => {
@@ -103,6 +136,7 @@ test("the served phenomenology reference mirrors the module and no other served 
   const served = protocol.files.find((file) => file.path === PHENOMENOLOGY);
   assert.ok(served?.content.endsWith(untellableShameRules), "the served reference ends with the module text, byte for byte");
   assert.match(served.content, /\n## Untellable shame and graded disclosure\n\nOwner request, 26 October 2026\. Shared semantic rules; not proof of model adherence\.\n\nUNTELLABLE SHAME AND GRADED DISCLOSURE/u);
+  assert.ok(served.content.includes(AUDIENCE_LINE), "the served rules open by naming their audience");
   for (const clause of OWNER_CLAUSES) assert.ok(served.content.includes(clause), clause);
   for (const file of protocol.files) {
     if (file.path === PHENOMENOLOGY) continue;
@@ -116,7 +150,7 @@ test("the served phenomenology reference mirrors the module and no other served 
 });
 
 test("the skill sends the model to the rules, and the protocol still loads", () => {
-  const skill = read("../plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md");
+  const skill = read(SKILL);
   const readLine = skill.split("\n").find((line) => line.startsWith("Read `references/") && line.endsWith("before responding."));
   assert.ok(readLine.includes(`\`${PHENOMENOLOGY}\``), "the phenomenology reference is read before every response");
   const pointer = skill.split("\n").find((line) => line.startsWith("When shame is strong, or the person approaches something they believe they can't tell anyone"));
@@ -146,20 +180,16 @@ test("the owner amendment and the graph bind the rule, and the compiled projecti
   assert.equal(item?.status, "owner-approved");
   assert.equal(item.domain, "cross-guide");
   assert.equal(item.approvedAt, "2026-10-28");
-  // The amendment carries the owner's sentences (the module words them for the model) and the two additions.
+  // The amendment is written to InnerSignal in the voice of the other amendments, and carries the owner's sentences and both additions.
   for (const sentence of [
-    "Shame often guards something the person believes they can't tell anyone: a feeling, desire, fantasy, attraction, dream, memory or act they expect would bring rejection or alarm.",
-    "Keeping it secret keeps the self-rejection going; being understood without flinching loosens it.",
-    "Assume this may be there whenever shame is strong, journal or no journal.",
-    "name what it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act), keep it apart from the person's worth and from intent, and never answer with alarm, moralizing or a refusal script.",
-    "Help the person choose whom to tell and how much: a therapist they feel safe with, asked first what they must report or write down; a friend who has shown ease with taboo subjects.",
-    "Start with the general kind of thing, ask before giving details, see how a smaller truth is received, and slow down or stop if the listener seems alarmed.",
-    "When the AI can't take a topic on, say so as soon as it matters: what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help.",
-    "Early in the work, in plain words and without alarm, say once that some topics may reach the limits of what the AI can help with",
-    "never as a warning about the person",
-    "offer the option of a therapist experienced with early sexual trauma, without asserting that abuse happened.",
-    "Accidentally seeing illegal material isn't seeking it: don't save or share it, report it if you wish, and ask a lawyer about anything legal.",
-    "Send journal or conversation material for outside review only when there's evidence of current risk to someone, never for taboo content, dreams, fantasies or a past accidental exposure.",
+    "Shame often guards something a person believes they can't tell anyone: a feeling, desire, fantasy, attraction, dream, memory or act they expect would bring rejection or alarm.",
+    "Secrecy keeps the self-rejection going, and being understood without flinching loosens it; assume this may be present whenever shame is strong.",
+    "Read such material as ordinary therapeutic material: name its kind (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act), keep it apart from the person's worth and intent, and never answer with alarm, moralizing or a refusal script.",
+    "Help the person choose whom to tell and how much, by the listener's ease with the subject rather than closeness: the general kind of thing first, asking before details, watching how a smaller truth is received, and slowing down or stopping at alarm; with a therapist, asking first what the therapist must report.",
+    "Name a limit of the AI as soon as it matters, as a limit of the tool and not a verdict on the person, with a human who can help, and mention once, early and after the welcome, that some topics may reach that limit.",
+    "When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting abuse.",
+    "tell them that accidental exposure is not seeking it, and advise them not to save or share it, that reporting the material itself is their choice, and to ask a lawyer about legal worries; the AI never reports the person and does not assess legal exposure.",
+    "Do not route journal or conversation material for outside review because of taboo content, dreams, fantasies or a past accidental exposure; only evidence of current risk does, under the ordinary safety rules.",
     "Current danger to anyone is never hidden under this rule"
   ]) assert.ok(item.text.includes(sentence), sentence);
 
@@ -177,10 +207,12 @@ test("the owner amendment and the graph bind the rule, and the compiled projecti
     }
   }
   const community = json("../guide-graphs/candidates/cross-guide.graph.json").nodes.find((node) => node.id === "ROUTE.COMMUNITY_SUPPORT");
-  assert.match(community.recommendations.at(-2), /whom to tell and how much/u);
+  assert.match(community.recommendations.at(-2), /whom to tell and how much\. Advice to give them: a therapist they feel safe with, asked first, in general terms, what the therapist must report or write down/u);
+  assert.match(community.recommendations.at(-1), /Early in the work, after the person has been welcomed, tell them once/u);
   assert.match(community.recommendations.at(-1), /a limit of the tool and not a verdict on the person/u);
-  assert.match(community.recommendations.at(-1), /therapist experienced with early sexual trauma without asserting that abuse happened/u);
+  assert.match(community.recommendations.at(-1), /offer a therapist experienced with early sexual trauma as an option, without asserting that abuse happened/u);
   assert.match(community.avoid.at(-1), /outside review without evidence of current risk to someone/u);
+  assert.match(community.effects.forbiddenOverclaims.at(-1), /the advice to give the person is to ask a therapist first what the therapist must report or write down/u);
   assert.match(community.effects.requiredNuance.at(-1), /never extends to concealing current danger to anyone/u);
 
   const bundle = json("../guide-graphs/compiled/bundle.json");
@@ -192,57 +224,102 @@ test("the owner amendment and the graph bind the rule, and the compiled projecti
   assert.ok(read("../guide-graphs/source-maps/owner-amendments.json").includes(AMENDMENT));
 });
 
-test("the public guide handoff queues one scoped section and does not publish anything", () => {
-  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^Status: \*\*PENDING\*\*$/m);
-  assert.match(queue, /^Queue version: `2026-10-28-r15`$/m);
-  const start = queue.indexOf("### PGQ-044 — ");
-  assert.ok(start > 0);
-  assert.equal(queue.indexOf("### PGQ-044 — ", start + 1), -1, "one entry");
-  const entry = queue.slice(start);
-  for (const field of ["Caused by:", "Teaching point:", "Reader need:", "Already covered:", "Where:"]) {
-    assert.match(entry, new RegExp(`^${field} \\S.{40,}$`, "m"), field);
+test("each added text has one audience: rules to InnerSignal, advice for the person marked as such, reporting stated", () => {
+  const amendment = json("../guides/owner-amendments.json").items.find((entry) => entry.id === AMENDMENT).text;
+  const cross = json("../guide-graphs/candidates/cross-guide.graph.json");
+  const inner = json("../guide-graphs/candidates/inner-child.graph.json");
+  const nodeLines = [
+    ...topicLines(inner.nodes.find((node) => node.id === "IC.COMMON_HUMANITY")),
+    ...topicLines(cross.nodes.find((node) => node.id === "ROUTE.INFLUENCE_INTERNAL")),
+    ...topicLines(cross.nodes.find((node) => node.id === "ROUTE.COMMUNITY_SUPPORT"))
+  ];
+  assert.ok(nodeLines.length >= 8, "the nodes' lines about this rule were found");
+  const corpus = json("../corpus/untellable-shame-regression-cases.json");
+  const pointer = read(SKILL).split("\n").find((line) => line.startsWith("When shame is strong, or the person approaches"));
+  const served = loadTherapyProtocol().files.find((file) => file.path === PHENOMENOLOGY).content;
+  const texts = [
+    ["rule module", untellableShameRules],
+    ["served closing section", served.slice(served.indexOf("## Untellable shame and graded disclosure"))],
+    ["owner amendment", amendment],
+    ["skill pointer", pointer],
+    ["lesson", lessonEntry()],
+    ["state section", stateSection()],
+    ["integration record", read("../tasks/untellable-shame-disclosure-20261028/INTEGRATION.md")],
+    ...nodeLines.map((line, index) => [`graph node line ${index}`, line]),
+    ...corpus.cases.flatMap((fixture) => [[`${fixture.id} input`, fixture.input], [`${fixture.id} pass criterion`, fixture.pass_criterion]]),
+    ["corpus audience note", corpus.audience]
+  ];
+  for (const [label, text] of texts) {
+    assert.doesNotMatch(text, SECOND_PERSON, `${label} addresses no "you": the client is never the reader`);
+    assert.doesNotMatch(text, CLIENT_ADDRESSED_ADVICE, `${label} holds no advice phrased to the client`);
+    if (/save or share/iu.test(text)) {
+      // Advice about accidental exposure is marked as advice to give, says reporting the material is the person's own choice,
+      // and says InnerSignal reports no one.
+      assert.match(text, /advi[sc]e/iu, `${label} marks the exposure advice as advice`);
+      assert.match(text, /reporting the material itself/iu, `${label} says the person may report the material itself`);
+      assert.match(text, /never reports the person|reports no one/iu, `${label} says InnerSignal reports no one`);
+    }
   }
-  for (const part of [AMENDMENT, "shame often guards something you believe you can't tell anyone", "keeps the self-rejection going", "name what it is",
-    "whom to tell and how much", "ease with the subject, not how close you are", "once, early and in plain words", "as soon as it matters what it can't help with",
-    "a limit of the tool and not a verdict on you", "a therapist experienced with early sexual trauma", "Accidentally seeing illegal material is not seeking it",
-    "evidence of current risk to someone", "not as a promise about any service or data flow", "a pending queue entry is not publication authority"]) {
-    assert.ok(entry.toLowerCase().includes(part.toLowerCase()), part);
-  }
-  // Neighbouring obligations it reconciles with stay in the queue.
-  for (const id of ["PGQ-003", "PGQ-024", "PGQ-039", "PGQ-043"]) assert.match(queue, new RegExp(`### ${id} — `, "u"));
+  // The rule block and its mirror open by naming their audience; the amendment reports to nobody and says so.
+  assert.ok(untellableShameRules.includes(`\n${AUDIENCE_LINE}\n`));
+  assert.match(amendment, /the AI never reports the person and does not assess legal exposure/u);
+  // The retired guide section is gone from every text of this change.
+  for (const [label, text] of texts) assert.doesNotMatch(text, /PGQ-044/u, `${label} names no queued guide section`);
 });
 
-test("synthetic regression cases cover the five behaviors and name only this rule's audit failures", () => {
+test("synthetic regression cases cover the behaviors and name only this rule's audit failures", () => {
   const cases = json("../corpus/untellable-shame-regression-cases.json");
   assert.equal(cases.schema_version, 1);
   assert.match(cases.privacy, /Entirely synthetic examples/u);
-  assert.equal(cases.cases.length, 9);
+  assert.match(cases.audience, /written for the reviewer who judges a reply/u);
+  assert.equal(cases.cases.length, 10);
   assert.equal(new Set(cases.cases.map((fixture) => fixture.id)).size, cases.cases.length, "ids are unique");
   for (const fixture of cases.cases) {
     assert.ok(FAILURES.includes(fixture.expected_failure_code), fixture.id);
     assert.ok(fixture.input.length > 60 && fixture.pass_criterion.length > 70, fixture.id);
+    assert.match(fixture.pass_criterion, /^(?:The reply|After welcoming the person, the reply) /u, `${fixture.id} describes the reply`);
     assert.doesNotMatch(`${fixture.input} ${fixture.pass_criterion}`, /https?:|@|\b\d{4,}\b/u, `${fixture.id} holds no link, address or number`);
   }
   for (const code of FAILURES) assert.ok(cases.cases.some((fixture) => fixture.expected_failure_code === code), `${code} has a case`);
   const byId = new Map(cases.cases.map((fixture) => [fixture.id, fixture]));
   // (1) a taboo fantasy met without alarm and a graded plan, (2) a dream and an uncertain memory named as such,
-  // (3) an accidental exposure described accurately, (4) a limit named as the tool's, (5) no outside review for taboo content.
-  assert.match(byId.get("fantasy-met-without-alarm").pass_criterion, /No moralizing, no stock refusal/u);
-  assert.match(byId.get("graded-disclosure-plan").pass_criterion, /Start with the general kind of thing, ask before giving details/u);
-  assert.match(byId.get("dream-named-as-dream").pass_criterion, /Name it as a dream/u);
+  // (3) an accidental exposure described accurately, with and without the question of being reported, (4) a limit named as
+  // the tool's, (5) no outside review for taboo content.
+  assert.match(byId.get("fantasy-met-without-alarm").pass_criterion, /no moralizing, no stock refusal/u);
+  assert.match(byId.get("graded-disclosure-plan").pass_criterion, /advice for the person to weigh/u);
+  assert.match(byId.get("graded-disclosure-plan").pass_criterion, /start with the general kind of thing, ask before giving details/u);
+  assert.match(byId.get("dream-named-as-dream").pass_criterion, /names it as a dream/u);
   assert.match(byId.get("uncertain-memory-early-harm-option").pass_criterion, /without asserting that abuse happened/u);
   assert.match(byId.get("accidental-exposure-not-seeking").pass_criterion, /accidentally seeing illegal material is not seeking it/u);
   assert.match(byId.get("limit-named-as-limit").pass_criterion, /a limit of the tool and not a verdict on the person/u);
-  assert.match(byId.get("early-limits-note-once").pass_criterion, /say once, in plain words and without alarm/u);
+  assert.match(byId.get("early-limits-note-once").pass_criterion, /says once, in plain words and without alarm/u);
   assert.match(byId.get("no-outside-review-for-taboo-content").pass_criterion, /not evidence of current risk to someone/u);
-  assert.match(byId.get("current-danger-not-hidden").pass_criterion, /Do not help hide current danger/u);
+  assert.match(byId.get("current-danger-not-hidden").pass_criterion, /does not help hide current danger/u);
+  // The accidental-exposure cases: not seeking, the advice, and that InnerSignal reports no one, with no legal assessment.
+  const asked = byId.get("accidental-exposure-asks-about-reporting");
+  assert.equal(asked.expected_failure_code, "ACCIDENTAL_EXPOSURE_MISFRAMED");
+  assert.match(asked.input, /accidentally saw illegal material/u);
+  assert.match(asked.input, /whether InnerSignal will report them/u);
+  for (const part of ["accidental exposure is not seeking it", "not to save or share the material", "reporting the material itself",
+    "is their own choice", "to ask a lawyer about any legal worry", "InnerSignal reports no one", "does not assess legal exposure",
+    "does not press for details of what was seen"]) assert.ok(asked.pass_criterion.includes(part), part);
+  for (const id of ["accidental-exposure-not-seeking", "accidental-exposure-asks-about-reporting"]) {
+    assert.match(byId.get(id).pass_criterion, /InnerSignal reports no one/u, id);
+    assert.match(byId.get(id).pass_criterion, /does not assess legal exposure/u, id);
+  }
 });
 
-test("the lesson and the integration record carry the change", () => {
+test("the lesson and the integration record carry the change and declare no guide section", () => {
   const lessons = read("../THERAPY-LESSONS");
   assert.match(lessons, /^# Therapy Prompt Lessons\n\n## 2026-10-28 — Meet untellable shame without alarm/u);
   assert.ok(lessons.includes(AMENDMENT));
+  const lesson = lessonEntry();
+  assert.match(lesson, /InnerSignal reports no one and does not assess legal exposure/u);
+  assert.match(lesson, /the reader-facing guide is not changed by this lesson/u);
   const integration = read("../tasks/untellable-shame-disclosure-20261028/INTEGRATION.md");
-  for (const part of [AMENDMENT, "PGQ-044", "untellable-shame-v1", PHENOMENOLOGY, "does not install anything to `stable`"]) assert.ok(integration.includes(part), part);
+  for (const part of [AMENDMENT, "untellable-shame-v1", PHENOMENOLOGY, "does not install anything to `stable`",
+    "Guide impact: app-only", "no guide section and no public-guide queue entry", "InnerSignal reports no one"]) assert.ok(integration.includes(part), part);
+  const section = stateSection();
+  assert.ok(section.includes(AMENDMENT));
+  assert.ok(section.includes("Guide impact: app-only"));
 });

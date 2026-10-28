@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 guide_id: owner-amendments
 heading: AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
 source_role: owner-approved-extension
-source_hash: 67db0de9a7b47558c5356dc177737244b7789b5cea73b2e36670532525595408
+source_hash: 037ae0323d09a4cb616eab99feeba29ce8f99733d60b4b33267439cd0f9a870b
 section_hash: a586431f27520f369a069e2897048ec786a2de6d7f2a10905e3fd24a86ea2e18
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -17,7 +17,7 @@ cited_by_node_ids:
   - ROUTE.ACT_OUTWARD
   - ROUTE.MEDICAL_RED_FLAG
   - ROUTE.REFRACTORY_PAIN_NAVIGATION
-projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
+projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
 ---
 
 # AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
