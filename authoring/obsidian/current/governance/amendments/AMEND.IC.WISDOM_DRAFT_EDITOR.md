@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_DRAFT_EDITOR
 status: owner-approved
 domain: inner-child
-base_record_sha256: 5d390e01d6ee33156e1607840c5e0ae6966dc84820b2f26ca18ded3c50c0c602
-source_file_sha256: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: 979ddd859f2487718e37ac8486729c88f392a1333d1179ce06053421344bfebe
+source_file_sha256: 362e2f1ebe2a4aad2140f4f8e36567a41836b33788c15dba07eafa008b02412e
+projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
 ---
 
 # AMEND.IC.WISDOM_DRAFT_EDITOR
@@ -24,6 +24,6 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "status": "owner-approved",
     "text": "Preserve what the person wants to say as an optional private mental or written draft. Use a caring editor who is on the person's side and wants to be fair. Preserve valid protest, facts, necessary firmness, proportionate responsibility and appropriate requests. Check what is actually suitable to communicate now. The human decides whether to send, pause, revise, apologize, refuse or not respond. Then return to the original draft for inward understanding and care. Do not equate editing with suppression, agreeableness, or shame. The raw draft may contain mature protest and is not automatically an inner child or settled intent. Inward care may precede editing when needed; urgent external action is not delayed by the exercise. Saving, sustained venting and permanent storage are not required."
   },
-  "version": "owner-amendments-2026-10-26-r17"
+  "version": "owner-amendments-2026-10-28-r18"
 }
 ```

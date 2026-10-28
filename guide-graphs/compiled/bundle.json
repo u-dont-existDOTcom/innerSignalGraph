@@ -1308,6 +1308,16 @@
           "excerpt": "When longitudinal history establishes that coping attempts do not sufficiently relieve the worst crisis peak, do not re-ask the same question without new information. Examine earlier moments when existing methods sometimes helped and compare timing, first cues, sleep, pain, social environment, practical capacity, amount of relief, duration and after-effects. Prefer the smallest discriminating question that could improve early use. Preserve the reports of failed efforts without assuming inactivity. Prioritize feasible practical corrections to identified sleep and environment disruptions when appropriate, distinguishing effects from unproven causal theories. Do not overload the client with tracking assignments; urgent safety and consent remain independently operative.",
           "status": "owner-approved",
           "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028",
+          "heading": "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "790141ab0326af8c073e28fb0f4814690c25ce4ed56cbb23907ad4a305ce683b",
+          "excerpt": "When a person describes wanting acceptance, then a disagreement or confrontation, then rejection, recover the missing middle before interpreting it: what was first said and done, what the person said and did, what the other person said and did, the timing and any boundaries stated, and how the person read the result. When that sequence is missing, ask one specific, non-accusatory question about it, one whose plausible answers would change the next step (protective action, accountability or communication work, or developmental integration), before deciding who caused the rupture or whether an old developmental pattern explains it. Do not repeat a question the person has already answered. Keep observations, emotions, beliefs about motives and justifications apart: wanting love does not show that a confrontation was loving, and another person's discomfort does not show that they were coercive or were rejecting the person's beliefs. Genuine exclusion, a legitimate boundary in response to confrontational behavior, mixed escalation and an unknown chronology are all possible until the sequence says which fits. Anger is not hatred or current harmful intent. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions, and do not treat the more powerful or threatening party and the threatened party as equally responsible. Never force childhood imagery onto the account.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
         }
       ]
     },
@@ -6729,11 +6739,13 @@
             "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
             "AMEND.IC.WISDOM_CORE",
             "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
-            "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS"
+            "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS",
+            "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
-            "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+            "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
+            "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask one specific, non-accusatory question about it (for example, what each person said and did, in order, from the first conversation to the break) whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration. Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
             "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
             "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
             "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -8997,7 +9009,7 @@
     "graphCount": 3,
     "nodeCount": 86,
     "edgeCount": 121,
-    "sourceSectionCount": 148,
-    "ownerAmendmentCount": 70
+    "sourceSectionCount": 149,
+    "ownerAmendmentCount": 71
   }
 }

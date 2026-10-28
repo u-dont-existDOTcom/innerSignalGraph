@@ -12,7 +12,7 @@ section_hash: ace07680374c7c3be749e9add77e8455a549bb2c6b58b31d9b3b28870ac3d902
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.DISCHARGE_SETTLE_STACK
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
 ---
 
 # After EMDR

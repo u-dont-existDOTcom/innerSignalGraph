@@ -23,6 +23,7 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
   - AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
+  - AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
 regression_refs:
   - G013
   - G014
@@ -30,9 +31,9 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: 6402c41bc507769f621c6cfd64e18c9046f9d0f284e8a635f872245a78b22079
-base_graph_sha256: b6d0838474c8b0180c59b119cdb203deac7c39cb460afd7d48410a8e784f2809
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: 753ac5c7e6d6ede1c24f7314b9b0e08bb22c019a746ecf9352c845a954a6979b
+base_graph_sha256: 89de6bcf6cd683d1756004958eaf424272060f5c0132502ecd98d8241ecb5065
+projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -128,7 +129,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "unresolvedFields": []
   },
   "recommendations": [
-    "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+    "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
+    "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask one specific, non-accusatory question about it (for example, what each person said and did, in order, from the first conversation to the break) whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration. Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
     "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
     "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
     "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -165,3 +167,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
 
 [[current/governance/amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS]]
+
+[[current/governance/amendments/AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028]]

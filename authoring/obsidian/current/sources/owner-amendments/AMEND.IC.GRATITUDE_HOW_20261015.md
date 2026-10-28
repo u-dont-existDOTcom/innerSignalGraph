@@ -7,13 +7,13 @@ source_id: AMEND.IC.GRATITUDE_HOW_20261015
 guide_id: owner-amendments
 heading: AMEND.IC.GRATITUDE_HOW_20261015
 source_role: owner-approved-extension
-source_hash: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
+source_hash: 362e2f1ebe2a4aad2140f4f8e36567a41836b33788c15dba07eafa008b02412e
 section_hash: e4f730b1bf552e72400c7dd233bd2ce059346f332cb22176b6f50b6409805f26
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.REALIZATION_LOVE_INTEGRATION
   - ROUTE.GRATITUDE_PRACTICE
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
 ---
 
 # AMEND.IC.GRATITUDE_HOW_20261015
