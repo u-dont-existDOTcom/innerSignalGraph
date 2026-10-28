@@ -1,5 +1,6 @@
 import { RuntimeError } from "../core/errors.mjs";
 import { journalContinuityUnsupported } from "../case-state/journal-continuity.mjs";
+import { validateHistoricalDeliveryCheckpoint } from "./private-case-communication.mjs";
 
 export class CaseNotContinuationSafeError extends RuntimeError {
   constructor(failures) {
@@ -19,7 +20,16 @@ export function assessContinuationSafety(context) {
   if (!context?.constitution_ref?.version) failures.push("constitution reference is missing");
   const candidate = context?.candidate_response;
   const delivery = context?.delivery_completion;
-  if (!candidate?.exact_text && !delivery) failures.push("exact candidate response is missing");
+  // An owner-reported delivery of the stored pair that ends the transcript can stand in only when no candidate governs. It is
+  // continuity provenance: it records no audit and approves nothing.
+  let historicalDelivery = false;
+  if (context?.historical_delivery_completion != null) {
+    try {
+      validateHistoricalDeliveryCheckpoint(context.historical_delivery_completion);
+      historicalDelivery = true;
+    } catch { failures.push("historical delivery completion is invalid"); }
+  }
+  if (!candidate?.exact_text && !delivery && !historicalDelivery) failures.push("exact candidate response is missing");
   else if (candidate?.status === "sent") {
     if (!delivery || delivery.candidate_id !== candidate.id || delivery.candidate_version !== candidate.version) {
       failures.push("sent candidate is missing exact transcript-bound delivery evidence");
@@ -42,7 +52,8 @@ export function assessContinuationSafety(context) {
     continuation_safe: failures.length === 0,
     failures: Object.freeze(failures),
     exact_candidate_available: Boolean(candidate?.exact_text && candidate.status !== "sent"),
-    exact_delivery_available: Boolean(delivery),
+    exact_delivery_available: Boolean(delivery || historicalDelivery),
+    historical_delivery_available: historicalDelivery,
     exact_recent_verbatim_available: episodeCompleteness?.complete === true,
     journal_continuity_available: Boolean(context?.journal_continuity?.corpora?.length),
     journal_continuity_supported: context?.journal_continuity?.consumer_capability_supported === true,

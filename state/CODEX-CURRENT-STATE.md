@@ -1,6 +1,12 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-26
+Updated: 2026-10-28
+
+## Response-evidence enforcement, slice 1 — delivery states in the authoritative context (2026-10-28; tracking issue #195, design PR #196)
+
+Implementation checkpoint on branch feat/response-evidence-slice1-20261028. The private case context and every newly compiled handoff now carry a derived communication projection that keeps draft, exposed, exported, reported-sent and app-committed text apart (audience client or supervisor; delivery evidence none, owner-reported or application-persisted; records from before this change are explicitly unknown). The automatic runtime delivery now binds its inbound turn and transcript identifiers the way the ordinary delivery exit does, so both resolve to the same completion. A candidate only marked sent stays status-only: it is never delivery evidence and cannot be upgraded. An owner-reported earlier delivery is representable as continuity provenance only, bound to the stored pair that ends the transcript, with no invented audit. Additive: record version 7 and handoff packet version 4 are unchanged and older records load; the handoff gains two optional components that a reader from before this change cannot verify.
+
+Claim: the authoritative context distinguishes draft, exposed, exported, reported-sent and app-committed text. Relevant-history enforcement is NOT done yet (later slices), nor is any end-user route that records a verified owner report. Synthetic tests only; no private data and no server access. Independent review, hosted CI, merge and release remain separate gates. See docs/PRIVATE-CASE-CONTINUITY.md, "Delivery states and communication evidence".
 
 ## Feeling/agency and early regulation — owner-authorized development work
 

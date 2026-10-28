@@ -30,6 +30,35 @@ The controller is restart-safe because semantic transitions and invocation attem
 
 Handoff fidelity remains separate from candidate-audit and reconstruction-audit fidelity. Newly compiled private handoffs include a `candidate_lifecycle` component with the current candidate ID/version, parent and lineage, status, current version-bound audit status, previous findings, reconstruction-audit status, and delivery block. Schema-v3 handoffs created after delivery also include a `delivery_completion` projection whose candidate digest, approving audit, assistant turn, replied-to user turn, and timestamp are validated against the exact persisted transcript. Pre-binding immutable handoffs remain readable but carry no inferred approval; their pending candidate must pass the current fresh audit gate.
 
+## Delivery states and communication evidence
+
+A candidate that reads `sent` says little by itself: the application may have committed its exact bytes to the transcript, an operator may only have marked a status, or the owner may have reported sending the text. `src/storage/private-case-communication.mjs` derives a `communication_projection` from the record on every read (never from caller input) and keeps these apart. It is part of `loadCaseContext` and of every newly compiled handoff.
+
+| State | Audience | Delivery evidence | Meaning |
+| --- | --- | --- | --- |
+| `draft` | client | `none` | A candidate version that no evidence says reached the client, including a failed or superseded one. An unsent draft can never count as delivered history. |
+| `exposed` / `exported` | client or supervisor | `none` | The text, or a companion such as a translation, was shown to the supervisor or exported. This is never client delivery. |
+| `reported_sent` | client | `owner_reported_sent` | The owner reported sending the text. It names an exact candidate version or an exact stored user/assistant pair; an ambiguous report names several candidates and stays unresolved. |
+| `app_committed` | client | `application_persisted` | The application appended these exact bytes as the assistant turn answering a stored user turn, under the approving audit. |
+| `unknown` | unknown | `unknown` | A raw `sent` status with no transcript proof, and assistant turns that nothing vouches for. Nothing is promoted from these. |
+
+The projection lists `confirmed_or_reported_client_outbound` (only `app_committed` and `reported_sent`), `supervisor_only_artifacts` (drafts, exposures and exports) and `unresolved_delivery` (`unknown` items and ambiguous reports), each bounded with an explicit omitted count. Transport and recipient acknowledgement are reserved evidence levels that nothing records yet.
+
+Each delivery exit resolves through one function, `resolveCandidateAppDelivery`, so the case context, the projection and the handoff cannot disagree:
+
+- `deliverCandidateResponse` and the automatic `deliverPrivateRuntimeCandidate` both append the assistant turn to the exact inbound user turn's exchange and record `sent_with_audit_id`, `sent_turn_id` and `sent_in_reply_to_turn_id` on the candidate. A reply takes the user turn's episode, or the current episode when the user turn has none, and that rule is what the handoff validator accepts.
+- A runtime delivery made before candidates carried those identifiers still resolves, from the runtime turn's own delivery receipt. No stored record is migrated.
+- `deliverPrivateRuntimeDiscriminator` appends the discriminating question and is listed as `app_committed`; the failed drafts stay `draft`.
+- `markCandidateSent` stays a legacy status-only transition. It now records `sent_status_only`, resolves to `unknown`, never supplies delivery evidence, and a later `deliverCandidateResponse` is refused rather than upgrading it.
+
+Observations that are not application deliveries are appended with `recordCommunicationEvent` as immutable events (`exposed`, `exported`, `reported_sent`, or a `retraction` of an earlier event). An event never changes a candidate, writes an audit or approves anything; each event binds the exact bytes it names, a replay of the same event is a no-op, and a correction retracts the earlier event and records a new one. Provenance states how the observation reached the store: `owner_action` (a report the owner made through a verified path, recorded by trusted server code), `agent_relayed` (an authenticated agent relaying the owner's words) or `application`. The access service fixes every event it records to `agent_relayed`, so a caller cannot claim a verified owner event. Nothing in this slice exposes an end-user route that records an `owner_action` event; the importer and owner-facing routes that will do so are later work.
+
+An owner-reported delivery of an earlier reply is continuity provenance only. When no candidate governs the next decision and an `owner_action` report names the stored user/assistant pair that ends the transcript, `loadCaseContext` and the handoff carry `historical_delivery_completion`, and continuation no longer fails for lack of an exact candidate. The checkpoint binds the exact stored bytes by digest, records the reported send time or states that it is unavailable, and invents no earlier audit, candidate or approval. A newer turn, a retraction, an `agent_relayed` report, or a governing candidate each leave it out.
+
+Compatibility: the encrypted record stays at version 7. `communication_events` is an additive top-level field; a record without it loads as no events, which says nothing about what was sent, and code from before the field preserves it through its own writes. The handoff packet stays at version 4 with two optional components, `communication_projection` and `historical_delivery_completion`, covered by the component manifest. An older reader that does not know them cannot verify the manifest of a handoff compiled after this change, so roll forward rather than back once such handoffs exist; handoffs compiled earlier remain readable.
+
+This establishes that the authoritative context distinguishes draft, exposed, exported, reported-sent and app-committed text. It does not enforce anything about relevant history yet: using this evidence to decide what a reply may rely on is later work.
+
 ## Public/private boundary
 
 Public Git contains the schemas, code, tests, synthetic fixtures, constitution, and this operational contract. It must not contain real transcript text, exact real candidate replies, credentials, key bytes, bearer tokens, or private-derived hashes. Opaque stable case/candidate identifiers may appear in a handoff only when the owner explicitly authorizes that disclosure; an identifier never proves that its payload is available.
@@ -60,7 +89,7 @@ Ordinary reasoning ledgers now default to `redacted`; that form excludes user-fa
 | `recordPrivateRuntimeInvocationEvent` / `transitionPrivateRuntimeTurn` | Append retry/restart evidence and enforce the explicit state graph |
 | `commitPrivateRuntimeCandidate` / `commitPrivateRuntimeAudit` | Atomically persist immutable candidate/state or exact-version audit plus approval/repair/discriminator transition |
 | `savePrivateRuntimeDiscriminator` | Freeze the final episode-permitted one-line discriminator after repair cycle 2 |
-| `deliverPrivateRuntimeCandidate` / `deliverPrivateRuntimeDiscriminator` | Atomically append exact assistant bytes and the terminal sent/delivery state |
+| `deliverPrivateRuntimeCandidate` / `deliverPrivateRuntimeDiscriminator` | Atomically append exact assistant bytes and the terminal sent/delivery state; the candidate exit binds the exact inbound user turn and transcript identifiers the way `deliverCandidateResponse` does |
 | `saveCaseState` / `getCaseState` | Structured case state only |
 | `saveCaseDiff` / `getCaseDiff` | Versioned turn-associated diffs |
 | `appendTranscriptTurn` / `getRecentVerbatim` | Append-only raw turns and exact recent episode |
@@ -69,12 +98,13 @@ Ordinary reasoning ledgers now default to `redacted`; that form excludes user-fa
 | `recordCandidateAudit` / `getCandidateLifecycle` | Persist exact-version audit evidence and expose the current version-bound gate |
 | `reconstructCandidateResponse` | Create an immutable child version in `reconstructed_pending_audit`; never edit or reactivate the parent |
 | `approveCandidateForDelivery` / `deliverCandidateResponse` | Enforce fresh exact-version approval, append the exact assistant response, and bind sent state to the approving audit and user turn |
-| `markCandidateSent` | Retained legacy status-only transition for compatible operator recovery; ordinary and migrated deliveries use transcript-bound delivery |
+| `markCandidateSent` | Retained legacy status-only transition for compatible operator recovery; it records `sent_status_only`, is never delivery evidence, and cannot be upgraded by a later delivery. Ordinary and migrated deliveries use transcript-bound delivery |
+| `recordCommunicationEvent` | Append an immutable `exposed`, `exported`, `reported_sent` or `retraction` event with provenance; it audits, approves and marks nothing, and the access service records every event as an agent relay |
 | `updateCandidateStatus` | Legacy/manual surface restricted to explicit supersession; it cannot bypass audit, approval, or delivery gates |
 | `saveSourceArtifact` / `getSourceArtifact` | Immutable exact private source plus a contiguous byte-range integrity manifest |
 | `retrieveCaseEvidence` | Raw older turns by query, stable provenance IDs, or time range |
 | `getCurrentEpisode` | Current therapeutic path/episode |
-| `loadCaseContext` | All-in-one fresh-session bootstrap and continuation-safety gate; when no unsent candidate remains, preserves the latest exact sent candidate plus transcript-bound delivery completion |
+| `loadCaseContext` | All-in-one fresh-session bootstrap and continuation-safety gate; when no unsent candidate remains, preserves the latest exact sent candidate plus transcript-bound delivery completion. Also returns the derived `communication_projection` and, when no candidate governs, any `historical_delivery_completion` |
 | `bindCaseAlias` / `loadCaseContextByAlias` | Backend-only binding of a private name to an opaque case ID; read-only named-case bootstrap through the same authorization and continuation-safety gate |
 | `createHandoff` / `loadHandoff` | Freeze and retrieve an immutable exact private continuation snapshot; the loader needs only `handoff_id` |
 | `getStateDiffByReference` / `getRecentVerbatimByReference` | Read current or handoff-frozen state diff and exact recent episode |
@@ -86,7 +116,7 @@ Candidate audit code in `src/supervisor/private-candidate-audit.mjs` accepts a c
 
 An externally supplied fresh-audit FAIL may be ingested when the external auditor/session identifier or exact completion time is unavailable. Those facts are stored explicitly as unavailable, never as fabricated identifiers or timestamps. Separate structured provenance records the owner-authorized source, receipt time, and the exact producer context from which independence was reported. This exception is fail-closed: it requires a blocking finding, can never be sufficient for approval, and cannot authorize delivery. A passing approval audit still requires a known context distinct from the candidate producer and a known completion time.
 
-The public schemas for transcript amendments, candidate versions, candidate audits, automatic therapy-turn lifecycles, and backend operation requests are in `schemas/private-case/`. Schemas describe transport/storage shape; runtime validators additionally enforce cross-record integrity, exact byte digests, lineage, independence, event replay, and allowed state transitions.
+The public schemas for transcript amendments, candidate versions, candidate audits, automatic therapy-turn lifecycles, communication events, the communication projection, and backend operation requests are in `schemas/private-case/`. Schemas describe transport/storage shape; runtime validators additionally enforce cross-record integrity, exact byte digests, lineage, independence, event replay, and allowed state transitions.
 
 ## Encryption and key-provider model
 
@@ -205,6 +235,8 @@ The loopback web server is not a replacement for the authenticated ChatGPT MCP b
 - component byte counts/hashes plus contiguous 20,000-byte-or-smaller artifact chunks.
 
 For a sent candidate, schema-v3 packets carry no pending artifact. Instead, `delivery_completion` binds the exact transcript bytes to the sent candidate ID/version/digest, approval audit, assistant turn, replied-to user turn, and delivery time. A mismatch at any of these surfaces makes the packet invalid rather than continuation-safe.
+
+Newly compiled packets also carry the derived `communication_projection` and, when no candidate governs, `historical_delivery_completion`, both validated against the preserved raw transcript. A projection that lists a draft, export, translation, raw `sent` status or ambiguous report as client delivery makes the packet invalid, and a historical checkpoint that is not bound to the stored pair ending the transcript does too. See *Delivery states and communication evidence* above.
 
 The packet is wrapped as an exact artifact, encrypted with the existing dual-wrap case keys, stored outside Git, reopened, and compared byte-for-byte before `local_round_trip_verified` can be true. `load_handoff(handoff_id)` resolves the private locator, authorizes the resolved case before obtaining key material, decrypts and validates every identity/integrity relationship, and then applies the continuation gate. A missing or incorrect grant/key fails without falling back to a public or de-identified substitute.
 
