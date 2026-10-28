@@ -1,6 +1,6 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-26
+Updated: 2026-10-28
 
 ## Feeling/agency and early regulation — owner-authorized development work
 
@@ -15,6 +15,15 @@ Owner confirmed that the revised client response was sent; no further client mes
 Source destinations: existing cross-guide and inner-child graph nodes, shared response and focus prompts, served therapy protocol references, regenerated authoring projection and map. Public guide humanization queue PGQ-041/042 is pending; owner-authored prose unchanged. No activation or emergency safety gate changed, no private case details committed. Five synthetic model-replay fixtures and static source-propagation tests are not proof of live model adherence.
 
 Development checks at this checkpoint: 110/110 graph regressions, 62/62 focused node tests, authoring project/validate/check/maps-check, lesson verification, repository audit all passed. Independent model review, complete hosted CI, PR integration, and live connector readback remain separate gates. See tasks/response-focus-20261025/INTEGRATION.md.
+
+## Reading-first authorized review route — importer runtime (2026-10-28; branch `feat/reading-first-review-route-20261028`, onto `main`, not merged, not installed)
+
+- **Why:** The 25 Oct section below leaves the real source with 272 pages in refused raw batches and 34 with unread images, "requiring an authorized qualified review route". The importer had none. Such a page became `REVIEW_PENDING`, receipts were still signed, and `read-source` then returned early for good. One bad model answer ended every rerun the same way. A model that did not answer held a run for about 48 hours. A new execution root published into a second `corpus:<uuid>:quotes` corpus. The 18 Oct spec already allows "a human review … separate authorized channel".
+- **Change (importer runtime only; spec section 6 of `docs/superpowers/specs/2026-10-18-reading-first-journal-import-order.md`):** (a) A reviewer's bundle `reading-first-reviews.json` in the owner-only `operator_review_dir`: strict schema, bound to the source digest and each page's digest, checked against the page text like the reader's output, kept as evidence with `provenance: authorized_operator_review`; the signed receipt row carries `review_route`. (b) While any page is pending nothing is synthesized or signed: `read-source` returns `REVIEW_PENDING` with counts and the pending pages by reason, and writes `reading-first-review-worklist.json` for the reviewer. (c) A reader refusal, invalid output, retry limit or failed evidence check makes only that page pending, with a reason. (d) `operator_read_pages` sends chosen pages to a reviewer and never to the reader. (e) Quotation location tolerates whitespace and apostrophe variants. (f) `semantic_concurrency` also sets the reader's page window (strict page order kept), and `reading-first-progress.json` shows progress. (g) `replaces_published_quotes` lets a new execution root publish into the existing quote corpus and keeps the replaced generation for rollback.
+- **Unchanged:** no page counts as read without verified evidence, every page is read or reviewed before any index, only the runtime's own key attests receipts, and no encoding, chunking, model or transport retry is used to get past a refusal. No guide, prompt, rule, graph or lesson text changed; no private data; no `stable`, installed runtime or published generation touched.
+- **Limits:** The importer cannot check that a reviewer looked at a picture; it records the statement and who made it. Applied reviews are immutable (a changed one conflicts with `JOURNAL_IMMUTABLE_RESULT_CONFLICT`). A run that already signed receipts with pending pages cannot be completed in place and needs a new execution root with `replaces_published_quotes`. One stuck page holds the pages after it.
+- **Evidence:** Invented text, a mock inference port and a mock parser only. Focused tests: 109 in seven files (source producer 28, runtime 20, operator review 7, order 10, publication 9, pointer runtime 19, contracts 16), run under Node 24.18.0; repository audit 0 errors. The full `npm run verify` and the hosted checks are for the final head and are recorded on the pull request, not inferred here.
+- **Remaining:** Exact-head Codex review with nothing unresolved, hosted checks on the final commit, then the owner's merge. Using the route on the real 272 + 34 pages is separate work that needs the owner's decision on who may see which page; nothing here shows how a real reader or a real PDF behaves. No lesson was added: the failure and its fix are recorded in the spec section.
 
 ## Reading-first journal import — implementation and validation checkpoint (2026-10-25; owner tasks #183/#168; draft PR #184)
 
