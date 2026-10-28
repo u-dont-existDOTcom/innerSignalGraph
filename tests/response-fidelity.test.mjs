@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { responseFidelityRules } from "../src/prompts/response-fidelity.mjs";
 import { longitudinalClinicalRules } from "../src/prompts/common.mjs";
+import { critiquePrompt } from "../src/prompts/critique.mjs";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 
 const load = (p) => fs.readFileSync(new URL(p, import.meta.url), "utf8");
@@ -37,7 +38,7 @@ test("owner-approved graph preserves urgent route while adding contextual care a
 test("first-contact and appropriately screened couples-care lessons appear in served and app rules", () => {
   const protocol = loadTherapyProtocol();
   const ref = load("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
-  const markers = ["REPRIMANDING_OPENING", "UNCHOSEN_FIRST_AGENDA", "ORNAMENTAL_FAITH_REFERENCE", "IPV_COUNSELING_SCOPE_COLLAPSE"];
+  const markers = ["REPRIMANDING_OPENING", "UNCHOSEN_FIRST_AGENDA", "ORNAMENTAL_FAITH_REFERENCE", "UNGATED_SCRIPTURE", "IPV_COUNSELING_SCOPE_COLLAPSE"];
   for (const marker of markers) {
     assert.ok(responseFidelityRules.includes(marker), marker);
     assert.ok(longitudinalClinicalRules.includes(marker), marker);
@@ -75,6 +76,41 @@ test("the owner's 27 October 2026 first-contact spec is carried clause by clause
     for (const clause of clauses) assert.match(text, clause, surface);
     // The two codes were renamed to the spec's names, and the earlier names are gone from every surface.
     for (const retired of ["REPRIMANDING_FIRST_CONTACT", "IMPOSED_UNCHOSEN_AGENDA"]) assert.ok(!text.includes(retired), `${retired} is still in the ${surface}`);
+  }
+});
+
+test("the owner's 28 October 2026 scripture gate is carried clause by clause on every surface, with its audit failure", () => {
+  // First-contact PR #198, the owner's request of 28 October 2026: scripture is gated on the person's own orientation,
+  // learned from how they talk or by asking once, lightly, after the welcome.
+  const servedProtocol = loadTherapyProtocol().files.find(f=>f.path==="references/RESPONSE-FIDELITY.md").content;
+  const servedFile = load("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
+  const context = { guideManifest: { version: "synthetic" }, guideExcerpts: "", userFacts: [], recentTranscript: "", userMessage: "synthetic" };
+  const surfaces = {
+    "application rules": responseFidelityRules,
+    "longitudinal rules": longitudinalClinicalRules,
+    "critique prompt": critiquePrompt(context, {}, "synthetic", "synthetic").system,
+    "served file": servedFile,
+    "served protocol": servedProtocol
+  };
+  const clauses = [
+    /Gate scripture on the person's own orientation\./,
+    /Before quoting or citing scripture or another religious or spiritual text, know from the person whether they would welcome it and from which tradition or traditions:/,
+    /from how they talk \(they quote or cite a tradition's texts, or speak of their faith as a resource\)/,
+    /or, when that hasn't shown it, by asking once, lightly, near the start and after the welcome, whether they would like scripture or spiritual texts included and from which religion or religions\./,
+    /Never infer a tradition from a name, family, country or culture; "none" and "several" are ordinary answers\./,
+    /If the person declines, leave scripture out unless they bring it up later; their answer can change at any time\./,
+    /UNGATED_SCRIPTURE: a reply quotes or cites scripture or another religious text before the person's welcome for it is known from their own words or answer, uses a tradition they did not choose, or infers their tradition from a name, family, country or culture\./
+  ];
+  for (const [surface, text] of Object.entries(surfaces)) {
+    for (const clause of clauses) assert.match(text, clause, surface);
+    assert.equal(text.split("Gate scripture on the person's own orientation.").length - 1, 1, `${surface}: the gate is stated once`);
+    assert.equal(text.split("- UNGATED_SCRIPTURE: ").length - 1, 1, `${surface}: the audit failure is listed once`);
+    // The gate sits immediately before the faith-reference rule, and the audit failure immediately after ORNAMENTAL_FAITH_REFERENCE.
+    assert.match(text, /- Gate scripture on the person's own orientation\.[^\n]*\n- Treat Christian or other faith references as meaningful only when/, surface);
+    assert.match(text, /- ORNAMENTAL_FAITH_REFERENCE: [^\n]*\n- UNGATED_SCRIPTURE: /, surface);
+    // The faith-reference rule and the older audit failure are kept as they were.
+    assert.ok(text.includes("- Treat Christian or other faith references as meaningful only when a passage addresses something this person actually raised and the application respects their own interpretation. Do not insert stock verses or unrequested assurances merely to signal affinity with the client’s religion.\n"), surface);
+    assert.ok(text.includes("- ORNAMENTAL_FAITH_REFERENCE: a religious passage or reassuring theological gloss is inserted without an actual connection to the client’s relevant statement or goal.\n"), surface);
   }
 });
 
