@@ -1,0 +1,33 @@
+# Shame about what a person believes they can't tell anyone — 28 October 2026
+
+## Owner outcome
+The owner asked (26 October 2026) for InnerSignal to meet sensitive, taboo material as ordinary therapeutic material, neither ignoring it nor treating it as dangerous. Many people carry shame about something they believe they can't tell anyone (a feeling, desire, fantasy, attraction, dream, memory or act), and the hiding keeps the self-rejection going. He wants this to be a key part of InnerSignal and a section of the guide: the AI reads and understands such material, helps the person find a therapist they feel safe with and learn to talk about it with people they trust, gauging who is comfortable with what instead of "throwing things at them", says what its limits prevent it from handling and what needs a human therapist, suggests a therapist experienced with early sexual trauma when that is suspected or felt, and is accurate that accidentally seeing illegal material is not seeking it. No client information is recorded in this repository.
+
+## Change scope
+- Owner amendment `AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028` (owner-amendments r18, 71 items). It carries the owner's draft rule and two additions: a once-only, early, plain-words note that some topics may reach the limits of what the AI can help with, and the option of a therapist experienced with early sexual trauma without asserting that abuse happened.
+- Application rule module `src/prompts/untellable-shame.mjs` (`untellable-shame-v1`) in the shared longitudinal rules, so every response, review and repair role carries it once, with eight new audit failures.
+- Served as the closing section of `references/PHENOMENOLOGY-AND-REPRESENTATION.md`, byte for byte, plus one pointer paragraph in the skill instructions. No served file was added. The response-fidelity module, its served reference and the critique prompt are untouched.
+- Existing graph nodes only: `IC.COMMON_HUMANITY`, `ROUTE.INFLUENCE_INTERNAL`, `ROUTE.COMMUNITY_SUPPORT`. No new route, activation predicate, emergency exclusion or topology change.
+- Regenerated compiled graph, source map, report, authoring projection and therapy map copies.
+- Public-guide handoff `PGQ-044`: one scoped section for the humanizer. The queue is bookkeeping, not publication authority.
+- Nine synthetic regression cases in `corpus/untellable-shame-regression-cases.json`, one lesson in `THERAPY-LESSONS`, and `tests/untellable-shame-disclosure.test.mjs`.
+
+## Critical distinctions
+- Naming a thing a feeling, fantasy, dream, uncertain memory, accidental exposure or chosen act keeps it apart from the person's worth and from intent. A chosen act is still named as chosen. Neither the feeling nor the dream is treated as proof of an act, an intention or an undisclosed event.
+- Graded disclosure is the person's choice and pace. It never extends to helping hide current danger to the person or to someone else; reported intent, planning and conduct stay with the ordinary safety rules.
+- The early-sexual-harm option is offered on the person's own report of feeling or suspecting it, never inferred from a fantasy, dream or image, and never asserts abuse. It is a clinical option for their own history, not a preventive, reporting or institutional referral, so the 26 October rule on sensitive referral fit is unchanged.
+- Accidentally seeing illegal material is not seeking it. The fitting advice is to not save or share it, to report it if the person wishes, and to ask a lawyer about anything legal. The AI does not assess legal exposure or press for details.
+- Outside review of journal or conversation material happens only on evidence of current risk to someone, never for taboo content, dreams, fantasies or a past accidental exposure. The rule defines nothing about any service's data flow, retention or reporting duty.
+- The once-early limits note comes after the person is welcomed and is not repeated as a ritual disclaimer or a warning about the person.
+
+## Evidence (local, Node 24.18.0, implementation head)
+- `tests/untellable-shame-disclosure.test.mjs` 9/9. Every other repository test file together with it: 2537/2537 passed, except `tests/journal-claude-worker.test.mjs`. That file belongs to the importer worker harness, imports none of the files this change touches, and timed out repeatedly on the shared two-core development machine under heavy load; its result comes from hosted CI, not from this machine.
+- Graph regressions 110/110; `authoring:validate`, `authoring:check`, `authoring:maps:check` and `therapy-lessons:verify` pass; `audit:repository` 0 errors (the one known hosted-permissions warning remains).
+- The mock latency benchmark needed no policy re-bind: none of the three edited nodes is in its selected path, so its pinned fingerprint is unchanged.
+- The guide-change provenance check passes against the queue update. The suggested-fix inbox check could not read the cross-repository lane (HTTP 401), so that inbox state is unknown, not empty.
+
+## Boundaries
+- Product-policy change: merging is the owner's approval of this text. It changes development source only and does not install anything to `stable`; nothing reaches the installed plugin until a stable release.
+- Synthetic regression cases and static tests show where the rules are written, served and bound. They do not show that any model follows them.
+- Left alone on purpose: `docs/INSTRUCTION-CONSUMER-MAP.md` (another open change edits it, and it does not list the response-fidelity module either; a map entry for `src/prompts/untellable-shame.mjs` is a follow-up once that change has merged), the response-fidelity files, and the importer files.
+- Next boundaries: Codex review of the exact head, complete hosted checks, owner merge decision, and a separate stable release.

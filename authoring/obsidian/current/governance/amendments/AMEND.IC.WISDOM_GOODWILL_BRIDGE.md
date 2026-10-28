@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_GOODWILL_BRIDGE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 53131c6b45985286aaa8393441fc05905562744c445f7975999397bf7558fc50
-source_file_sha256: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: 5133ac3a21f6c51e6b5e95be35bd8d9002f3382cfd97ec7694cfda4e6b4ca4a4
+source_file_sha256: 67db0de9a7b47558c5356dc177737244b7789b5cea73b2e36670532525595408
+projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
 ---
 
 # AMEND.IC.WISDOM_GOODWILL_BRIDGE
@@ -24,6 +24,6 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "status": "owner-approved",
     "text": "When warm affiliative love or affection is not honestly accessible toward oneself, a younger self, a difficult person or an enemy, offer the smallest sincere benevolent wish the person can endorse rather than requiring the feeling. 'May they be loving, peaceful, and free' is an exemplar and equivalent user-chosen wording is valid; 'may they be happy' is optional and must not be forced when it feels false or like rewarding harmful behavior. Warm affection/love, benevolent goodwill/intention and non-hatred/non-cruelty are related but non-identical, with no mandatory progression and no requirement to end at 'I love you'. Goodwill may open warmth as an optional reported effect, but does not prove warm love. If goodwill is unavailable, non-cruelty or refusal to feed hatred may be the lower-cost floor without renaming it love. For harmful behavior, goodwill may wish for capacities that reduce harm without approving the behavior. Unconditional goodwill is not unconditional access: it never implies forgiveness, trust, contact, reconciliation, reduced accountability, removed consequences, relaxed boundaries, exposure to danger or a prediction about the other person. Preserve proportionate anger, external reality checking, ordinary protection, refusal, distance, documentation, support, consequences and trust calibration. Use secular language by default; religious framing is preference-dependent and not clinical-efficacy evidence. This owner-approved proposed practice is informed by adjacent compassion/metta work; engineering tests do not establish clinical efficacy."
   },
-  "version": "owner-amendments-2026-10-26-r17"
+  "version": "owner-amendments-2026-10-28-r18"
 }
 ```

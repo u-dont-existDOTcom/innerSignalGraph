@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.LITERATURE_ACTION_REVIEW
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 5da52b1d4bb377ba9726a03c530aa4bbdbf13cb9e9ae9cff270090f099213137
-source_file_sha256: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: f498c0c5b7bd6d5289cd1da50292277f5cd90c40d0c75b4b1ae6b23383e0ba4b
+source_file_sha256: 67db0de9a7b47558c5356dc177737244b7789b5cea73b2e36670532525595408
+projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
 ---
 
 # AMEND.CROSS.LITERATURE_ACTION_REVIEW
@@ -24,6 +24,6 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "status": "owner-approved",
     "text": "Use the existing outward, Protector and apprentice routes for agreed feasible actions. Establish only useful details of cue, size, resources, purpose and review. Review actual attempts and their consequences; check opportunity, practical constraints, skill, safety and competing consequences before inferring resistance. Completion or immediate relief is not the sole criterion. Rest, connection, flexibility, grief and appropriate relinquishment may be useful; activity does not mean productivity or forced exposure. Return capacity and judgment without requiring refusal of help."
   },
-  "version": "owner-amendments-2026-10-26-r17"
+  "version": "owner-amendments-2026-10-28-r18"
 }
 ```

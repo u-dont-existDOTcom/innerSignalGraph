@@ -20,6 +20,7 @@ source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
   - AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
   - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
+  - AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028
 regression_refs:
   - G015
   - G016
@@ -29,9 +30,9 @@ regression_refs:
   - G049
   - G054
   - G055
-base_record_sha256: a6d1b3debcdd132a2e3698b7f116f00933a6f3f634d6d1dda1f5121bc567f560
-base_graph_sha256: b6d0838474c8b0180c59b119cdb203deac7c39cb460afd7d48410a8e784f2809
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: 3bc3320bd91fc86d589123a43c42b153ef124c62ae59f4848637e0a63dbc701e
+base_graph_sha256: 7b263543b134c9b20a88a86ea5d4016afb1a1f8f50bcadea32b8aca0944f894e
+projection_input_sha256: fcf5ba4265a456ebd94a969736d361f132ac3c528e1c5872694dbcf7187f380a
 ---
 
 # Separate inner experience from interpretation before routing
@@ -56,7 +57,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
     "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
     "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
-    "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
+    "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values.",
+    "Do not treat taboo content, a dream, a fantasy or a past accidental exposure as evidence of intent or current risk, or as a reason to send journal or conversation material for outside review."
   ],
   "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
   "effects": {
@@ -85,7 +87,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent.",
     "Separate the occurrence of a thought, image, urge or sensation from the interpretation placed on it and from the action chosen next; a felt state can be completely real as an experience without being self-interpreting proof of identity, intention, endorsement, love, danger or required action.",
     "When shame is attached to intrusive material, protect against identity fusion and reassurance loops rather than asking the person to construct the feared moral verdict about what the material supposedly proves.",
-    "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance."
+    "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance.",
+    "When a thought, image, dream, memory or exposure carries shame the person believes they can't tell anyone, name what kind of material it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) before routing: a dream or uncertain memory is neither confirmed nor dismissed, an accidental exposure is not seeking, and a chosen act is named as chosen."
   ],
   "successSignals": [
     "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -101,3 +104,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/governance/amendments/AMEND.CROSS.INFLUENCE_PROTECTION_LOVE]]
 
 [[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]
+
+[[current/governance/amendments/AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028]]

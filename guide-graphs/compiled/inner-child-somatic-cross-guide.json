@@ -207,7 +207,8 @@
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
-        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -215,13 +216,15 @@
         "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent.",
         "Separate the occurrence of a thought, image, urge or sensation from the interpretation placed on it and from the action chosen next; a felt state can be completely real as an experience without being self-interpreting proof of identity, intention, endorsement, love, danger or required action.",
         "When shame is attached to intrusive material, protect against identity fusion and reassurance loops rather than asking the person to construct the feared moral verdict about what the material supposedly proves.",
-        "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance."
+        "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance.",
+        "When a thought, image, dream, memory or exposure carries shame the person believes they can't tell anyone, name what kind of material it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) before routing: a dream or uncertain memory is neither confirmed nor dismissed, an accidental exposure is not seeking, and a chosen act is named as chosen."
       ],
       "avoid": [
         "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
         "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
         "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
-        "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
+        "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values.",
+        "Do not treat taboo content, a dream, a fantasy or a past accidental exposure as evidence of intent or current risk, or as a reason to send journal or conversation material for outside review."
       ],
       "successSignals": [
         "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -1597,7 +1600,8 @@
         "AMEND.IC.COMMUNITY_REPARENTING",
         "IC.RELATIONSHIP",
         "IC.THREE_FUNCTIONS",
-        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -1605,14 +1609,17 @@
         "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
         "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
         "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
-        "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add."
+        "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add.",
+        "When the person carries something they believe they can't tell anyone, help them choose whom to tell and how much: a therapist they feel safe with, asked first what they must report or write down, or a friend who has shown ease with taboo subjects. Start with the general kind of thing, ask before giving details, see how a smaller truth is received, and slow down or stop if the listener seems alarmed.",
+        "Say once and early, in plain words and without alarm, that some topics may reach the limits of what the AI can help with; when one does, say what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help. When the person feels or suspects early sexual harm, offer the option of a therapist experienced with early sexual trauma without asserting that abuse happened."
       ],
       "avoid": [
         "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
         "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
         "Do not prescribe a spiritual community merely because the person is spiritual, or present a long directory when one or two realistic next contacts are more usable.",
         "Do not advise withdrawing from an existing safe support merely to diversify.",
-        "Do not treat one consultation as sustained specialist treatment, assume concerns about sexual life require partnered intercourse, or default to an institutional prevention service without a matching present need."
+        "Do not treat one consultation as sustained specialist treatment, assume concerns about sexual life require partnered intercourse, or default to an institutional prevention service without a matching present need.",
+        "Do not press for disclosure, choose the listener for the person, help hide current danger to anyone, or send journal or conversation material for outside review without evidence of current risk to someone."
       ],
       "successSignals": [
         "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",
@@ -1630,11 +1637,13 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [
-          "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency."
+          "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency.",
+          "Do not promise that any listener will keep a disclosure confidential or receive it well; confidentiality limits and reporting duties differ, and the person asks about them first."
         ],
         "requiredNuance": [
           "Human beings can need both inner adult capacity and real reciprocal attachment; these are complementary rather than competing goals.",
-          "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure."
+          "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure.",
+          "Whether, when and to whom to tell is the person's choice; graded disclosure never extends to concealing current danger to anyone, which stays under the ordinary safety routing."
         ]
       },
       "defaultQuestion": "What kinds of people or communities would actually feel like your people—and what is the smallest realistic way to try one without making it your only hope?"

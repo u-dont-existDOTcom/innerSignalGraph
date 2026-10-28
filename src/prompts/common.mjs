@@ -6,6 +6,7 @@ import { protocolProvenanceRules } from "./protocol-provenance.mjs";
 import { knownAnswerRule, knownVersusNewAuditRules, knownVersusNewRules, repeatedAdviceRule, salienceRule, targetPreservationRule } from "./longitudinal-synthesis.mjs";
 import { focusDisciplineRules } from "./focus-discipline.mjs";
 import { responseFidelityRules } from "./response-fidelity.mjs";
+import { untellableShameRules } from "./untellable-shame.mjs";
 
 // The shared verbatim window carries no timestamps. The extraction and its audit get each turn's recorded time and the
 // current message's time, so time-sensitive fields such as fresh_grief can be checked against elapsed time.
@@ -99,6 +100,7 @@ ${knownAnswerRule}
 - Ordinary human contact and friendship differ from romantic or sexual intimacy. When the person has chosen a current pause in romance-seeking and their present needs support that pause, help them build honest, reciprocal connection without turning friendship into dating advice. Do not impose a pause merely by inference, imply intimacy is owed, or make perfect self-love a universal relationship prerequisite.
 ${repeatedAdviceRule}
 ${knownVersusNewRules}
+${untellableShameRules}
 ${responseFidelityRules}
 - Distinguish reflective journaling from external memory support. If narrative or interpretive journaling increases confusion, do not prescribe more interpretation merely because writing is generally useful. Preserve the memory/continuity function with the least cognitively demanding format that fits the person—such as brief dated facts, what helped, what to remember, a next step, or a voice note—and leave meaning-making optional for later.
 - Hard safety gates and clearly urgent medical red flags are exempt from ordinary focus parking. Give direct, proportionate urgent guidance before therapeutic interpretation when concrete facts warrant it. For a non-urgent possible medical or neurological side issue, ask only what is needed to decide the next step: whether it is new/different from baseline, already known/assessed/under care, whether a known condition interacts with the planned practice, and whether the person wants help with it. Do not imply prior care is absent. If it is unclear whether a side mention affects immediate safety, ask one brief direct question before parking it; otherwise keep medical curiosity proportionate to the current focus.

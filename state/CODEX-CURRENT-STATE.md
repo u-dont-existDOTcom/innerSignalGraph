@@ -1,12 +1,18 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-26
+Updated: 2026-10-28
 
 ## Feeling/agency and early regulation — owner-authorized development work
 
 The owner has sent the current message; this task makes no client-facing delivery. Owner-approved source amendments r17 distinguish spontaneous feelings, chosen actions and consent, correct assumptions about prior professional care, require evidence-matched sensitive referrals and return focus to conditions when known regulation methods work before severe distress. Changes are on the isolated task branch task/attraction-agency-triage-20261026 and affect shared/served prompts, the existing graph nodes, owner amendments, generated projections and pending reader-guide queue PGQ-043. No private case evidence or changed urgent gate. Original owner-authored public prose unchanged.
 
 Development checks: graph 110/110 passed, focused Node 73/73 passed, therapy lesson and authoring projection/map validation passed, repository audit passed with previously known hosted-permissions warning, local guide provenance passed. Mock latency policy SHA advanced one reviewed-tier version to current compiled semantics, fast hash/provider stages/counts and historical baselines unchanged. Independent review, full hosted CI, PR merge and any live release remain separate gates. See tasks/attraction-agency-20261026/INTEGRATION.md.
+
+## Untellable shame and graded disclosure — owner-requested development work (2026-10-28)
+
+Owner request of 26 Oct 2026 (no client information recorded) on task branch feat/untellable-shame-disclosure-20261028: amendment AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028 (owner amendments r18). Strong shame often guards something the person believes they can't tell anyone; the rules read such material as ordinary therapeutic material and name its kind, help the person choose whom to tell and how much, say once and early, and again when it matters, what the AI can't help with and where a human can, offer a therapist experienced with early sexual trauma without asserting abuse, treat accidentally seeing illegal material as not seeking it, and send material for outside review only on evidence of current risk to someone. Written once in src/prompts/untellable-shame.mjs (every app role), served as the closing section of the phenomenology reference with a skill pointer (no new served file; response-fidelity files untouched), bound to three existing graph nodes, and queued as public-guide entry PGQ-044. No activation, urgent safety gate or private case data changed.
+
+Development checks: new test 9/9, all other test files 2537/2537 locally (the importer's journal-claude-worker file is load-sensitive on this machine and is left to hosted CI), graph 110/110, authoring validate/check/maps-check and lesson verification passed, repository audit 0 errors (known hosted-permissions warning only), latency fingerprint unchanged. Codex review of the exact head, full hosted checks, owner merge and any stable release remain separate gates; synthetic cases and static tests are not proof of model adherence. See tasks/untellable-shame-disclosure-20261028/INTEGRATION.md.
 
 ## Reply focus and delivery fidelity — 25 October 2026 (owner-approved source candidate)
 

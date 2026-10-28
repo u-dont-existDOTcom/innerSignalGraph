@@ -2590,7 +2590,8 @@
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.WISDOM_COMMON_HUMANITY",
         "AMEND.IC.WISDOM_SOURCES",
-        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -2598,12 +2599,14 @@
         "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
         "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
         "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.",
-        "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict."
+        "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict.",
+        "Where strong shame may be guarding something the person believes they can't tell anyone, being understood without flinching is itself the shared-humanity move. Read it as ordinary therapeutic material, name what it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) and keep it apart from the person's worth and from intent, without waiting for a journal to show it."
       ],
       "avoid": [
         "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
         "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
-        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.",
+        "Do not meet disclosed or approached taboo material with alarm, moralizing, a refusal script or a global verdict on the person's worth or intent."
       ],
       "successSignals": [
         "The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized."
