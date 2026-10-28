@@ -1,9 +1,12 @@
 // Semantic instructions, not a deterministic truth/identity classifier.
 export const ROLE_BELIEF_INTEGRITY_VERSION = "role-belief-integrity-v3";
+// An unresolved substantive or high finding under one of these codes withholds the unaudited fallback question.
+// CLAIM_SCOPE_SUBSTITUTION and UNREQUESTED_CLAIM_ADJUDICATION are recorded and sent to repair like any finding but do not
+// withhold it, until a model run shows how often they fire wrongly; blocking on the scope check is one entry here.
 export const ROLE_BELIEF_BLOCKING_CODES = Object.freeze([
   "HARMFUL_BELIEF_ENDORSEMENT", "ROLE_REVERSAL_OR_DEPENDENCY",
   "FALSE_ASSISTANT_IDENTITY", "EPISTEMIC_PROVENANCE_LAUNDERING",
-  "CORRECTION_OR_ACCOUNTABILITY_ERASURE", "CLAIM_SCOPE_SUBSTITUTION"
+  "CORRECTION_OR_ACCOUNTABILITY_ERASURE"
 ]);
 export const roleBeliefIntegrityRules = `
 ROLE AND BELIEF INTEGRITY (${ROLE_BELIEF_INTEGRITY_VERSION})

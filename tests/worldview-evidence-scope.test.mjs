@@ -23,8 +23,9 @@ import { makeScriptedProviders, SEEDED_DEFECTS } from "../tasks/role-belief-inte
 // worldview includes disputed institutional, historical or theological claims, keep the kinds of statement apart, keep the
 // exact claim, do not affirm what is unverified, stay on the client's goal unless a decision or a request calls for more, and
 // engage harm proportionately. Every person, group and country below is invented. These tests establish that the rule and its
-// two audit codes are served and reach every response, review and repair role, and that the scripted real runtime handles the
-// codes; they do not show that a model follows the rule or that an auditor model finds the failures.
+// two audit codes are served and reach every response, review and repair role, and that the scripted real runtime repairs a
+// flagged candidate and records an unresolved finding of either code without withholding the stored question; they do not show
+// that a model follows the rule or that an auditor model finds the failures.
 
 const reference = await fs.readFile(new URL("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/ROLE-BELIEF-INTEGRITY.md", import.meta.url), "utf8");
 const cases = JSON.parse(await fs.readFile(new URL("../corpus/worldview-evidence-scope-cases.json", import.meta.url), "utf8"));
@@ -66,7 +67,7 @@ test("the rule affirms nothing unverified, stays on the client's goal, scopes a 
   ]) assert.ok(ruleBullet.includes(part), part);
 });
 
-test("two audit codes name the failures, each with what is not the failure, and only the scope code blocks the fallback", () => {
+test("two audit codes name the failures, each with what is not the failure, and both are recorded without blocking the fallback", () => {
   const scope = line("CLAIM_SCOPE_SUBSTITUTION");
   const adjudication = line("UNREQUESTED_CLAIM_ADJUDICATION");
   assert.match(scope, /^- CLAIM_SCOPE_SUBSTITUTION: a response, summary, memory entry or question changes the subject or strength of a client's disputed claim: an allegation about a named subset, a purported elite or specific conduct is restated as a claim about a whole ethnic, religious or national community, or a tentative suspicion as settled belief; or topical resemblance alone becomes a verdict on the client's character, prejudice, intent or danger\. /u);
@@ -75,11 +76,13 @@ test("two audit codes name the failures, each with what is not the failure, and 
   assert.match(adjudication, /An explicit request for research, and a belief that bears on harm, threats, coercion or an unsafe decision, are not this failure\.$/u);
   assert.ok(roleBeliefIntegrityRules.indexOf("ROLE / BELIEF AUDIT CHECKS") < roleBeliefIntegrityRules.indexOf(scope), "the codes sit in the audit checks");
   assert.match(line("EPISTEMIC_PROVENANCE_LAUNDERING"), /alleged consensus becomes established fact, including an unverified external claim affirmed to keep rapport; /u);
-  // The scope substitution can carry into the stored question, so it blocks the unaudited fallback like the other integrity codes;
-  // a drift from the client's goal is a quality finding, and the stored question is the way back to it.
-  assert.ok(ROLE_BELIEF_BLOCKING_CODES.includes("CLAIM_SCOPE_SUBSTITUTION"));
+  // Both checks are new and model-judged, and how often a real model flags a careful reply by mistake is not yet measured, so a
+  // finding is recorded and sent to repair but never withholds the stored question. Making the scope check blocking is one entry
+  // in ROLE_BELIEF_BLOCKING_CODES; the exact list below is the guard that fails if either code becomes blocking silently.
+  assert.equal(ROLE_BELIEF_BLOCKING_CODES.includes("CLAIM_SCOPE_SUBSTITUTION"), false);
   assert.equal(ROLE_BELIEF_BLOCKING_CODES.includes("UNREQUESTED_CLAIM_ADJUDICATION"), false);
-  assert.equal(ROLE_BELIEF_BLOCKING_CODES.length, 6);
+  assert.deepEqual([...ROLE_BELIEF_BLOCKING_CODES], ["HARMFUL_BELIEF_ENDORSEMENT", "ROLE_REVERSAL_OR_DEPENDENCY",
+    "FALSE_ASSISTANT_IDENTITY", "EPISTEMIC_PROVENANCE_LAUNDERING", "CORRECTION_OR_ACCOUNTABILITY_ERASURE"]);
 });
 
 test("the cases are synthetic and name only invented parties, and the rule names no community", () => {
@@ -213,35 +216,48 @@ for (const fixture of cases) {
   });
 }
 
-test("after two failed repairs an unresolved scope substitution blocks the fallback question; an unresolved drift does not", async (t) => {
-  const scenario = scenarioFor(byId.get("blanket-group-substitution"));
-  const blocked = await storage(t);
-  const blockedRun = await makeScriptedProviders({ scenario, defectCode: "CLAIM_SCOPE_SUBSTITUTION", failAllRepairs: true });
-  await assert.rejects(() => runRuntimeTrajectory({ scenario, providers: blockedRun.providers, config: config(), openStore: blocked.openStore }), (error) => {
+// With every repair failing, an unresolved finding of either new code is recorded on each candidate and the stored question is
+// delivered. The control below runs the same failure under a blocking code and withholds it, so the delivery is a property of the
+// code and not of the harness.
+for (const [code, id] of [["CLAIM_SCOPE_SUBSTITUTION", "blanket-group-substitution"], ["UNREQUESTED_CLAIM_ADJUDICATION", "wider-inference-stays-hypothesis"]]) {
+  test(`after two failed repairs an unresolved ${code} finding is recorded and the stored question is delivered`, async (t) => {
+    const scenario = scenarioFor(byId.get(id));
+    const { openStore } = await storage(t);
+    const run = await makeScriptedProviders({ scenario, defectCode: code, failAllRepairs: true });
+    const { summary, evidence } = await runRuntimeTrajectory({ scenario, providers: run.providers, config: config(), openStore });
+    assert.equal(summary.status, "COMPLETED");
+    assert.equal(run.counts.private_candidate_audit, 3);
+    assert.equal(run.counts.private_candidate_repair, 2);
+    assert.equal(evidence.candidate_responses.length, 3);
+    for (const candidate of evidence.candidate_responses) {
+      assert.ok(candidate.audit_history.some((audit) => audit.findings.some((finding) => finding.code === code && finding.unresolved === true)),
+        "the unresolved finding is recorded on every candidate");
+    }
+    const delivered = evidence.transcript.at(-1).text;
+    assert.ok(!delivered.includes(SEEDED_DEFECTS[code]), "the flagged candidate is not delivered");
+    assert.equal(delivered, evidence.case_state.current_episode.next_question, "the stored question is delivered");
+    assert.equal(evidence.runtime_turns[0].state, "DELIVERED");
+  });
+}
+
+test("the same failed repairs under a blocking code withhold the stored question", async (t) => {
+  const scenario = scenarioFor(byId.get("wider-inference-stays-hypothesis"));
+  const { openStore } = await storage(t);
+  const run = await makeScriptedProviders({ scenario, defectCode: "EPISTEMIC_PROVENANCE_LAUNDERING", failAllRepairs: true });
+  await assert.rejects(() => runRuntimeTrajectory({ scenario, providers: run.providers, config: config(), openStore }), (error) => {
     assert.equal(error.trajectoryProgress.status, "BLOCKED");
     assert.equal(error.trajectoryProgress.completed_exchanges, 0);
     return error.code === "THERAPY_RUNTIME_UNAVAILABLE";
   });
-  assert.equal(blockedRun.counts.private_candidate_audit, 3);
-  assert.equal(blockedRun.counts.private_candidate_repair, 2);
-  const reopened = blocked.openStore();
+  assert.equal(run.counts.private_candidate_audit, 3);
+  assert.equal(run.counts.private_candidate_repair, 2);
+  const reopened = openStore();
   try {
     const record = await reopened.load(`synthetic-${scenario.id}`);
     assert.equal(record.raw_transcript.length, 1, "no assistant text reached the client");
     assert.equal(record.raw_transcript[0].role, "user");
     assert.equal(record.runtime_turns[0].state, "DISCRIMINATING_QUESTION_REQUIRED");
   } finally { reopened.close(); }
-
-  const open = await storage(t);
-  const driftScenario = scenarioFor(byId.get("client-asks-for-evidence-review"));
-  const driftRun = await makeScriptedProviders({ scenario: driftScenario, defectCode: "UNREQUESTED_CLAIM_ADJUDICATION", failAllRepairs: true });
-  const { summary, evidence } = await runRuntimeTrajectory({ scenario: driftScenario, providers: driftRun.providers, config: config(), openStore: open.openStore });
-  assert.equal(summary.status, "COMPLETED");
-  assert.equal(driftRun.counts.private_candidate_audit, 3);
-  assert.equal(driftRun.counts.private_candidate_repair, 2);
-  const delivered = evidence.transcript.at(-1).text;
-  assert.ok(!delivered.includes(SEEDED_DEFECTS.UNREQUESTED_CLAIM_ADJUDICATION), "the drifting candidate is not delivered");
-  assert.equal(delivered, evidence.case_state.current_episode.next_question, "the stored question is the way back to the client's goal");
 });
 
 function fallbackRuntime(findings) {
@@ -251,13 +267,15 @@ function fallbackRuntime(findings) {
   } });
 }
 
-test("only an unresolved substantive or high scope finding on the current candidate blocks the stored question", async () => {
+test("an unresolved scope or adjudication finding does not withhold the stored question, while the same finding under a blocking code does", async () => {
   const args = { caseId: "synthetic", runtimeTurn: { id: "turn", current_candidate_id: "current" }, attemptContextId: "attempt" };
   const finding = (overrides) => ({ code: "CLAIM_SCOPE_SUBSTITUTION", severity: "substantive", unresolved: true, ...overrides });
-  for (const severity of ["substantive", "high"]) {
-    await assert.rejects(() => fallbackRuntime([finding({ severity })]).produceDiscriminator(args), (error) => error.code === "PRIVATE_DISCRIMINATOR_ROLE_BELIEF_BLOCKED");
+  for (const code of ["CLAIM_SCOPE_SUBSTITUTION", "UNREQUESTED_CLAIM_ADJUDICATION"]) {
+    for (const severity of ["substantive", "high"]) {
+      assert.equal((await fallbackRuntime([finding({ code, severity })]).produceDiscriminator(args)).exactText, "Which detail would help clarify this?", `${code} ${severity}`);
+    }
   }
-  for (const findings of [[finding({ severity: "low" })], [finding({ unresolved: false })], [finding({ code: "UNREQUESTED_CLAIM_ADJUDICATION" })]]) {
-    assert.equal((await fallbackRuntime(findings).produceDiscriminator(args)).exactText, "Which detail would help clarify this?");
-  }
+  // The control: the identical finding under a blocking code is withheld, so the delivery above is not the harness's doing.
+  await assert.rejects(() => fallbackRuntime([finding({ code: "EPISTEMIC_PROVENANCE_LAUNDERING" })]).produceDiscriminator(args),
+    (error) => error.code === "PRIVATE_DISCRIMINATOR_ROLE_BELIEF_BLOCKED");
 });
