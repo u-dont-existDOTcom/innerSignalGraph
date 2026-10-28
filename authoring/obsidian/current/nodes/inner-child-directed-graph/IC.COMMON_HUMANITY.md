@@ -22,7 +22,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: f68c95c3ca8c0da0953b48b416da179fcec5fe32f21968cfab2983e9e1516534
 base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
-projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
+projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
 ---
 
 # Recognize shared humanity without minimizing this experience

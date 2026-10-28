@@ -6745,7 +6745,7 @@
           "authority": "owner-approved-extension",
           "recommendations": [
             "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
-            "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask one specific, non-accusatory question about it (for example, what each person said and did, in order, from the first conversation to the break) whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration. Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
+            "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
             "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
             "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
             "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -6802,7 +6802,7 @@
               "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy."
             ]
           },
-          "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
+          "defaultQuestion": "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?",
           "questionPolicy": {
             "purpose": "discriminate",
             "unresolvedFields": []

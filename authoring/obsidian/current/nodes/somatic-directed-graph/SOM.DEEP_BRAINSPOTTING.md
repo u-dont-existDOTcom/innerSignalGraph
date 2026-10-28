@@ -22,7 +22,7 @@ regression_refs:
   - G139
 base_record_sha256: 5bcc060e0093ae2a14b71a2e534ec332529146195241373c6a96611b00f7f4fa
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
+projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
 ---
 
 # Deep Brainspotting for diffuse or body-held material

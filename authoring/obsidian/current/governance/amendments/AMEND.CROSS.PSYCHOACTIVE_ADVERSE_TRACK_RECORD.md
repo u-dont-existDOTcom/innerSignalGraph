@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: 21b0e6080b169507439bff1e68fe2002c142b5882fcbf291bedc94dc8dfc9fd4
 source_file_sha256: 362e2f1ebe2a4aad2140f4f8e36567a41836b33788c15dba07eafa008b02412e
-projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
+projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
 ---
 
 # AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD

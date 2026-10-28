@@ -31,9 +31,10 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: 753ac5c7e6d6ede1c24f7314b9b0e08bb22c019a746ecf9352c845a954a6979b
-base_graph_sha256: 89de6bcf6cd683d1756004958eaf424272060f5c0132502ecd98d8241ecb5065
-projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
+  - G141
+base_record_sha256: c62a94d9bad298329367446d80ed782405fe81023098c97373f71f254ea553c6
+base_graph_sha256: ea0d2be564d26d2e2f98e937386c53a98e5846ef20b9a57da166be05a12c2e08
+projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -102,7 +103,7 @@ projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f
     "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
     "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships."
   ],
-  "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
+  "defaultQuestion": "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
@@ -130,7 +131,7 @@ projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f
   },
   "recommendations": [
     "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
-    "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask one specific, non-accusatory question about it (for example, what each person said and did, in order, from the first conversation to the break) whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration. Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
+    "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
     "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
     "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
     "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",

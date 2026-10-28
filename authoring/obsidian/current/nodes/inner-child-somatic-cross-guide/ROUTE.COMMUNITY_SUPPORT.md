@@ -27,8 +27,8 @@ regression_refs:
   - G065
   - G085
 base_record_sha256: 23c167be7a9cec590903c37db1dbcd3e9ef9642a0a5830d5e16795a5cdb4ceae
-base_graph_sha256: 89de6bcf6cd683d1756004958eaf424272060f5c0132502ecd98d8241ecb5065
-projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
+base_graph_sha256: ea0d2be564d26d2e2f98e937386c53a98e5846ef20b9a57da166be05a12c2e08
+projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
 ---
 
 # Build a diversified human support ecology

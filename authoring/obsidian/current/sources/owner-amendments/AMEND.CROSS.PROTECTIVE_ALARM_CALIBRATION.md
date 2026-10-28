@@ -12,7 +12,7 @@ section_hash: b61b4b2e52461fbf0607ec4c7d69ba8ff1b611cb26f1fb4bfcfeefc898712bf2
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
+projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
 ---
 
 # AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION

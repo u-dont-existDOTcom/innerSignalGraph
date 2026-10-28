@@ -14,6 +14,9 @@ import { privateRuntimeAuditPrompt } from "../src/prompts/private-runtime-audit.
 import { privateRuntimeRepairPrompt } from "../src/prompts/private-runtime-repair.mjs";
 import { compileGuideGraphs } from "../src/guide-graph/compiler.mjs";
 import { loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/therapy-protocol.mjs";
+import { planFromGraphs } from "../src/guide-graph/planner.mjs";
+import { runGraphRegressionSuite } from "../src/guide-graph/regressions.mjs";
+import { canonicalQuestion, enforceResponseContract } from "../src/orchestrator/response-contract.mjs";
 
 // Owner request of 28 October 2026 (a de-identified lesson from the architecture repository's suggested-fix lane): before
 // interpreting a reported conflict, recover what each person said and did. Every example is synthetic. These static tests show
@@ -25,6 +28,15 @@ const count = (text, part) => text.split(part).length - 1;
 const AMENDMENT = "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028";
 const NODE = "ROUTE.RELATIONAL_REALITY_CHECK";
 const CODE = "MISSING_MIDDLE_INTERPRETATION";
+// The route's own question: the planner copies it, the realization step must copy it exactly, and the response contract appends it.
+const QUESTION = "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?";
+// An account of wanting acceptance, a confrontation and rejection whose sequence has not been given (invented, no person).
+const MISSING_SEQUENCE = {
+  present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes", suicidal_state: "absent",
+  activation: "moderate", dissociation: "none", altered_state: "sober", other_person_central: "yes", belonging_pressure: "present",
+  influence_domain: "ordinary_social", relational_capacity_evidence: "insufficient", relational_check_status: "pending",
+  actionable_problem: "present", unresolved_inner_material: "present", inward_attention_effect: "neutral"
+};
 const FOCUS = "references/FOCUS-DISCIPLINE.md";
 const FIDELITY = "references/RESPONSE-FIDELITY.md";
 const BULLET_START = "- When a client describes wanting acceptance, then a disagreement or confrontation, then rejection, recover the missing middle before interpreting it:";
@@ -157,14 +169,19 @@ test("the amendment is bound to the relational reality check, the first recommen
   // One recommendation for the question and for holding back cause and pattern until the sequence is known.
   const lines = node.recommendations.filter((line) => /non-accusatory question/u.test(line));
   assert.equal(lines.length, 1);
-  assert.match(lines[0], /ask one specific, non-accusatory question about it/u);
+  assert.match(lines[0], /ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order/u);
+  assert.match(lines[0], /\(this route's next question does this\)/u);
   assert.match(lines[0], /whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration/u);
   assert.match(lines[0], /Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known/u);
   assert.match(lines[0], /do not repeat a question the person has already answered/u);
   // The safety gate, activation and question policy are unchanged.
   assert.ok(node.activation.none.some((condition) => condition.field === "present_safety" && condition.value === "unsafe"));
   assert.ok(node.activation.none.some((condition) => condition.field === "suicidal_state"));
-  assert.equal(node.questionPolicy.purpose, "discriminate");
+  assert.deepEqual(node.questionPolicy, { purpose: "discriminate", unresolvedFields: [] });
+  // The route's own question asks for both sides in order and keeps the demonstrated-capacity half it always had.
+  assert.equal(node.defaultQuestion, QUESTION);
+  assert.match(node.defaultQuestion, /^What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair\?$/u);
+  assert.doesNotMatch(node.defaultQuestion, /\b(?:why did you|whose fault|who started|who is to blame)\b/iu, "the question accuses no one");
 
   const bundle = json("../guide-graphs/compiled/bundle.json");
   assert.equal(bundle.stats.ownerAmendmentCount, 71);
@@ -222,6 +239,61 @@ test("synthetic scenes cover exclusion first, a boundary after hostility, mutual
   assert.match(threat.pass_criterion, /keep the separate safety and accountability handling/u);
   assert.match(threat.pass_criterion, /[Dd]o not treat her shouting once and his threat as equal responsibility/u);
   assert.match(threat.pass_criterion, /do not make recovering the full sequence a condition for protective steps/u);
+});
+
+test("the planner's contract question for an incomplete conflict account asks for both sides in order, and the response contract delivers it", async () => {
+  const bundle = await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({ graphs: bundle.graphs, variables: MISSING_SEQUENCE });
+  assert.equal(plan.primaryJob.id, NODE);
+  assert.equal(plan.nextQuestion, QUESTION);
+  assert.deepEqual(plan.questionContract, { mode: "canonical", question: QUESTION, source: { type: "graph-node", id: NODE } });
+  const route = plan.selectedNodes.find((item) => item.id === NODE);
+  assert.ok(route.recommendations.some((line) => /state what each person actually said and did, in order, including the user's own words and actions/u.test(line)));
+  assert.ok(route.recommendations.some((line) => /\(this route's next question does this\)/u.test(line)));
+  // A reply cannot swap in a question of its own: the response contract strips a final question the plan did not authorize and
+  // appends the plan's, and a replacement offered by the adjudicator does not displace it.
+  const adjudication = { next_question: "Why did you start the fight?" };
+  assert.equal(canonicalQuestion({ plan, adjudication }), QUESTION);
+  const delivered = enforceResponseContract({
+    answer: "That sounds painful, and I do not want to guess who did what yet.\n\nWhy did you start the fight?",
+    next_question: "Why did you start the fight?"
+  }, { plan, adjudication });
+  assert.equal(delivered.next_question, QUESTION);
+  assert.ok(delivered.answer.endsWith(QUESTION));
+  assert.doesNotMatch(delivered.answer_body, /start the fight/u);
+  assert.match(delivered.responseContract.strippedUnauthorizedFinalQuestion, /start the fight/u);
+  assert.equal(delivered.responseContract.canonicalQuestion, QUESTION);
+});
+
+test("the sequence question is not asked ahead of safety, and not asked again once the reality check is done", async () => {
+  const bundle = await compileGuideGraphs({ write: false });
+  // Present danger or suicidal ideation sends the plan to the protective routes; the sequence question is never the contract question.
+  for (const override of [{ present_safety: "unsafe" }, { suicidal_state: "ideation" }]) {
+    const plan = planFromGraphs({ graphs: bundle.graphs, variables: { ...MISSING_SEQUENCE, ...override } });
+    assert.notEqual(plan.primaryJob.id, NODE, JSON.stringify(override));
+    assert.notEqual(plan.nextQuestion, QUESTION, JSON.stringify(override));
+  }
+  const unsafe = planFromGraphs({ graphs: bundle.graphs, variables: { ...MISSING_SEQUENCE, present_safety: "unsafe" } });
+  assert.equal(unsafe.nextQuestion, "");
+  assert.equal(unsafe.questionContract.mode, "none");
+  // Once the relational check is completed or not needed, the route leaves the plan, so the same question is not put again.
+  for (const relational_check_status of ["completed", "not_needed"]) {
+    const plan = planFromGraphs({ graphs: bundle.graphs, variables: { ...MISSING_SEQUENCE, relational_check_status } });
+    assert.notEqual(plan.primaryJob.id, NODE, relational_check_status);
+    assert.notEqual(plan.nextQuestion, QUESTION, relational_check_status);
+  }
+});
+
+test("the graph regression cases cover the incomplete account and the route's changed question", async () => {
+  const missing = json("../corpus/graph-cases/G141.json");
+  assert.equal(missing.id, "G141");
+  assert.deepEqual(missing.variables, MISSING_SEQUENCE, "the case holds the same invented account the planner tests use");
+  assert.equal(missing.expected.primary, NODE);
+  assert.equal(missing.expected.nextQuestion, QUESTION);
+  assert.equal(json("../corpus/graph-cases/G013.json").expected.nextQuestion, QUESTION, "the older relational case follows the route's question");
+  const result = await runGraphRegressionSuite();
+  for (const id of ["G013", "G141"]) assert.equal(result.results.find((item) => item.id === id)?.ok, true, id);
+  assert.equal(result.ok, true);
 });
 
 test("the rule does not displace safety: the protective rules it must agree with are still in force", () => {

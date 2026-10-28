@@ -11,7 +11,7 @@ source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
 section_hash: 92d64b258a467795afc578ff4c5ba29e906149a98354778cda96b0159cea341f
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 822897a41c07051b27e6fc97c7a806c2decfb388625d30ca4c96b7f5278c60b2
+projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
 ---
 
 # Optional External Practice: Butoh-Informed Expressive Movement / Ecstatic Movement + Enactment — Experimental

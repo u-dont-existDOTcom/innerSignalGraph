@@ -21,7 +21,7 @@ test("current projection has the exact canonical inventories and resolved links"
   assert.equal(keys.filter((item) => item.includes("/nodes/")).length, 86);
   assert.equal(keys.filter((item) => item.includes("/edges/")).length, 121);
   assert.equal(keys.filter((item) => item.includes("/sources/")).length, 149);
-  assert.equal(keys.filter((item) => item.includes("/regressions/")).length, 110);
+  assert.equal(keys.filter((item) => item.includes("/regressions/")).length, 111);
   assert.equal(keys.filter((item) => item.includes("/governance/amendments/")).length, 71);
   assert.equal(keys.filter((item) => item.includes("/governance/decisions/")).length, 15);
   assert(keys.includes("current/maps/development-graph.canvas"));
