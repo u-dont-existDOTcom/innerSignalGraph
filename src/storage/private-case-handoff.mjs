@@ -193,6 +193,10 @@ export function validatePrivateHandoffPacket(value) {
   if (!value.recent_verbatim || typeof value.recent_verbatim !== "object" || !Array.isArray(value.recent_verbatim.turns)) throw new ValidationError("Private handoff recent_verbatim is invalid.");
   validateTranscriptEntries(value.recent_verbatim.turns);
   if (!Array.isArray(value.pending_artifacts)) throw new ValidationError("Private handoff pending_artifacts is invalid.");
+  // An owner-reported historical delivery stands in only for a case with no unsent candidate and no candidate delivery.
+  if (value.historical_delivery_completion != null && (value.pending_artifacts.length > 0 || value.delivery_completion != null)) {
+    throw new ValidationError("Private handoff historical delivery cannot accompany a pending candidate or a candidate delivery.");
+  }
   value.pending_artifacts.forEach(validateCandidate);
   if (value.pending_artifacts.length > 1) throw new ValidationError("Private handoff may contain only one current candidate version.");
   if (value.schema_version >= 3 && !Object.hasOwn(value, "delivery_completion")) throw new ValidationError("Private handoff v3 requires a delivery completion projection.");

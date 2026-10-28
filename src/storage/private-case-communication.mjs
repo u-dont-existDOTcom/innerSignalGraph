@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
-import { PRIVATE_CANDIDATE_STATUSES } from "../supervisor/private-candidate-lifecycle.mjs";
+import { isActivePrivateCandidate, PRIVATE_CANDIDATE_STATUSES } from "../supervisor/private-candidate-lifecycle.mjs";
 
 // Communication evidence for a private case. A candidate that reads `sent` says little by itself: the application may have
 // committed the exact bytes to the transcript, an operator may only have marked a status, or the owner may have reported
@@ -309,7 +309,10 @@ function transcriptIndex(record) {
 // An owner-reported delivery of the stored pair that ends the transcript, for a case with no candidate governing the
 // continuation decision. It is continuity provenance only: it records no audit and approves nothing. Only a report the owner
 // made through a verified path counts; an agent's relay of one is recorded but does not open this gate.
+// An unsent candidate in any active status (awaiting audit, audit failed, audited or approved) still governs the next decision,
+// whether or not the continuation context selects it, and its blocking audit must not be hidden behind an earlier delivery.
 export function resolveHistoricalDeliveryCheckpoint(record) {
+  if (record.candidate_responses.some(isActivePrivateCandidate)) return null;
   const all = events(record);
   const retracted = retractedIds(all);
   const lastIndex = record.raw_transcript.length - 1;
