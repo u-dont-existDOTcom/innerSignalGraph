@@ -1,12 +1,20 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-26
+Updated: 2026-10-28
 
 ## Feeling/agency and early regulation — owner-authorized development work
 
 The owner has sent the current message; this task makes no client-facing delivery. Owner-approved source amendments r17 distinguish spontaneous feelings, chosen actions and consent, correct assumptions about prior professional care, require evidence-matched sensitive referrals and return focus to conditions when known regulation methods work before severe distress. Changes are on the isolated task branch task/attraction-agency-triage-20261026 and affect shared/served prompts, the existing graph nodes, owner amendments, generated projections and pending reader-guide queue PGQ-043. No private case evidence or changed urgent gate. Original owner-authored public prose unchanged.
 
 Development checks: graph 110/110 passed, focused Node 73/73 passed, therapy lesson and authoring projection/map validation passed, repository audit passed with previously known hosted-permissions warning, local guide provenance passed. Mock latency policy SHA advanced one reviewed-tier version to current compiled semantics, fast hash/provider stages/counts and historical baselines unchanged. Independent review, full hosted CI, PR merge and any live release remain separate gates. See tasks/attraction-agency-20261026/INTEGRATION.md.
+
+## Worldview evidence scope — owner-requested rule (2026-10-28; branch `feat/worldview-evidence-scope-20261028`, onto `main`, not merged)
+
+- **Owner request (27 Oct, a de-identified lesson document; no client detail is in the repository):** when a client's worldview includes disputed institutional or historical claims, keep reported experience, later research, interpretations and broad allegations apart; keep a claim's exact subject and strength; never read character or intent from topical resemblance; do not affirm the unverified; stay on the client's goal unless a decision or a request calls for more; engage harm proportionately. Merging is the owner's approval of the rule.
+- **Change:** `role-belief-integrity-v3` adds one bullet and two audit codes, `CLAIM_SCOPE_SUBSTITUTION` (also in `ROLE_BELIEF_BLOCKING_CODES`, so an unresolved substantive finding blocks the unaudited fallback question) and `UNREQUESTED_CLAIM_ADJUDICATION` (not blocking). `EPISTEMIC_PROVENANCE_LAUNDERING` now names affirming an unverified claim to keep rapport. Served as `references/ROLE-BELIEF-INTEGRITY.md`, mirrored byte for byte in `src/prompts/role-belief-integrity.mjs`. Known versus new, reparenting focus and unsent replies were already served (`LONGITUDINAL-SYNTHESIS.md`, `FOCUS-DISCIPLINE.md`, the skill's supervisor-edit section, `RESPONSE-FIDELITY.md`); delivery states are being made mechanical in the separate response-evidence slice 1.
+- **Tests (synthetic only, invented people, groups and country):** `tests/worldview-evidence-scope.test.mjs` with `corpus/worldview-evidence-scope-cases.json`: the rule and codes served and mirrored, five cases (a known membership not re-asked, a wider inference kept as a hypothesis, a research request handled as its own task, a belief that bears on safety, a blanket-group substitution flagged by the new code) reaching every extraction, response, review and repair prompt, and the scripted real runtime repairing a substituted candidate and blocking or not blocking the fallback by code. These show delivery and runtime handling, not model adherence or that an auditor model finds the failures.
+- **Boundary:** guide impact is app-only (the public guide's teaching points are unchanged); no graph, owner amendment, `guides/`, `authoring/`, consumer-map or response-fidelity file changed. Development `main` only; nothing is installed or released until a stable release. Suggested-fix lane (28 Oct, read with `gh api` because the inbox script's direct request returned 401): three default-branch files and four in open Universal pull requests, all already in `docs/suggested-fixes-inbox-receipts.json`; no new item.
+- **Next:** Codex review and the hosted checks on the final commit; the owner's merge.
 
 ## Reply focus and delivery fidelity — 25 October 2026 (owner-approved source candidate)
 
