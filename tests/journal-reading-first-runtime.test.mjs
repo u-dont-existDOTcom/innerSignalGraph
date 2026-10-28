@@ -64,8 +64,9 @@ async function environment(t) {
 }
 
 // `overrides`: `visualPage` (a page number the parser says has a picture), `pages` (the source's page texts), `reviewDir`
-// (an owner-only review directory, named in the run config), `config` (more run config), and `environment` (a fixture made
-// earlier, so this run has its own source and execution root in the same private root and case).
+// (an owner-only review directory, named in the run config), `config` (more run config), `routeEnvironment` (the inference
+// route's environment variable), and `environment` (a fixture made earlier, so this run has its own source and execution root
+// in the same private root and case).
 async function fixture(t, importOrder = "reading_first", handlers = {}, overrides = {}) {
   const { root, service } = overrides.environment ?? await environment(t);
   const name = overrides.name ?? null;
@@ -106,7 +107,7 @@ async function fixture(t, importOrder = "reading_first", handlers = {}, override
   const open = (newConfig = config) => openJournalExecutionRuntime({
     config: newConfig, configPath, service,
     inferencePort: createMockJournalInferencePort({ handlers }),
-    sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER }
+    sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER, ...(overrides.routeEnvironment ?? {}) }
   });
   return { open, service, config, root, reviewDir, stateFile: path.join(config.execution_root, "state.json") };
 }
@@ -755,6 +756,29 @@ test("the reader is asked about up to semantic_concurrency pages at once, and th
   assert.equal(three.most,3,"three pages were with the reader at once");
   assert.deepEqual(three.done,one.done);
   assert.deepEqual(three.pages,one.pages,"the evidence is the same as when the pages are read one at a time");
+});
+
+test("on a direct browser route the reader takes one page at a time whatever semantic_concurrency says; an exchange takes the window", async t=>{
+  const ran=async provider=>{
+    let inFlight=0,most=0;
+    const f=await fixture(t,"reading_first",{
+      source_reader:async packet=>{
+        inFlight+=1;most=Math.max(most,inFlight);
+        // Long enough for every page the window holds to be with the reader together.
+        await new Promise(resolve=>setTimeout(resolve,60));
+        inFlight-=1;
+        return mockSourceReader(packet);
+      },
+      source_synthesizer:mockSynthesis
+    },{config:{semantic_concurrency:3},routeEnvironment:{INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON:JSON.stringify({provider})}});
+    const done=await runOnce(f,"read-source");
+    return {most,done:done.reading_first};
+  };
+  const browser=await ran("chatgpt_subscription_browser");
+  const exchange=await ran("codex_exec_exchange");
+  assert.equal(browser.most,1,"a direct browser route has one page");
+  assert.equal(exchange.most,3,"an exchange queues the window");
+  assert.deepEqual(browser.done,exchange.done);
 });
 
 const SECOND_PAGES = [

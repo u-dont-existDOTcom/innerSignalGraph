@@ -2874,7 +2874,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           persistEvidence,synthesize:adapter.synthesize,
           verifySynthesis:adapter.verifySynthesis,
           operatorReview,operatorReadPages,
-          readerConcurrency:semanticConcurrency,onProgress
+          // A direct browser route has one page and takes one call at a time, as the pointer steps' standard calls do; an
+          // exchange queues as many as the setting allows.
+          readerConcurrency:directRoute ? 1 : semanticConcurrency,onProgress
         });
         if(result.status==="REVIEW_PENDING"){
           // Nothing is signed. The pages still waiting go to the reviewer, with the text the importer will check against.
