@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -199,14 +200,19 @@ test("the worklist is replaced whole in the private directory and removed once n
   const file = path.join(dir, OPERATOR_WORKLIST_FILE);
   const worklist = (page) => ({ schema_version: 1, source_sha256: SOURCE, generation: "generation:synthetic",
     pages: [{ page, source_page_sha256: PAGE, required_modalities: "text", reason: "visual_pending", text: "An invented sentence." }] });
+  // The worklist is looked at through one handle, opened without following a link: what is a regular file, its mode and its
+  // content are those of the same file, and a link at the name would fail to open at all.
+  const seen = async () => {
+    const handle = await fs.open(file, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+    try {
+      const info = await handle.stat();
+      return { regular: info.isFile(), mode: info.mode & 0o777, content: JSON.parse(await handle.readFile("utf8")) };
+    } finally { await handle.close(); }
+  };
   await writeOperatorWorklist({ dir, verified, worklist: worklist(2) });
-  const handle = await fs.open(file, "r");
-  try {
-    assert.equal((await handle.stat()).mode & 0o777, 0o600);
-    assert.deepEqual(JSON.parse(await handle.readFile("utf8")), worklist(2));
-  } finally { await handle.close(); }
+  assert.deepEqual(await seen(), { regular: true, mode: 0o600, content: worklist(2) });
   await writeOperatorWorklist({ dir, verified, worklist: worklist(3) });
-  assert.deepEqual(JSON.parse(await fs.readFile(file, "utf8")), worklist(3), "the next worklist replaces the last");
+  assert.deepEqual(await seen(), { regular: true, mode: 0o600, content: worklist(3) }, "the next worklist replaces the last");
   assert.deepEqual(await fs.readdir(dir), [OPERATOR_WORKLIST_FILE], "no temporary file is left");
 
   // A link at the final name is replaced, never followed to what it names.
@@ -214,10 +220,10 @@ test("the worklist is replaced whole in the private directory and removed once n
   await fs.writeFile(elsewhere, "not the worklist", { mode: 0o600 });
   await fs.unlink(file);
   await fs.symlink(elsewhere, file);
+  await assert.rejects(seen(), { code: "ELOOP" }, "the link is there before the worklist is written");
   await writeOperatorWorklist({ dir, verified, worklist: worklist(4) });
   assert.equal(await fs.readFile(elsewhere, "utf8"), "not the worklist");
-  assert.equal((await fs.lstat(file)).isFile(), true);
-  assert.deepEqual(JSON.parse(await fs.readFile(file, "utf8")), worklist(4));
+  assert.deepEqual(await seen(), { regular: true, mode: 0o600, content: worklist(4) });
 
   await removeOperatorWorklist(dir);
   assert.equal(await fs.access(file).then(() => true, () => false), false);

@@ -69,9 +69,9 @@ function attestedPort(port) {
 }
 
 async function runtimeEnvironment(t, options = {}) {
-  // `options.environment` is an earlier environment: the same private root, case and service, for a second run with its own
+  // `options.earlier` is an earlier environment: the same private root, case and service, for a second run with its own
   // source (`options.pages`), execution root (`options.name`) and more run config (`options.config`).
-  const shared = options.environment ?? null;
+  const shared = options.earlier ?? null;
   const name = options.name ?? null;
   const pages = options.pages ?? PAGES;
   const root = shared?.root ?? await fs.mkdtemp(path.join(os.tmpdir(), "pointer-runtime-"));
@@ -889,7 +889,7 @@ test("a reading-first run replaces the published quote generation of a corpus in
 
   // The new run reads another source first, in its own execution root, and is told which published generation it replaces.
   const replaces = { corpus_id: one.corpus_id, generation: generationA };
-  const second = await runtimeEnvironment(t, { importOrder: "reading_first", rules: 3, environment: first, name: "second",
+  const second = await runtimeEnvironment(t, { importOrder: "reading_first", rules: 3, earlier: first, name: "second",
     pages: PAGES.map((page) => page.replace("saw a", "saw, once, a")), config: { replaces_published_quotes: replaces } });
   await second.run("stage", "read-source", "build-quotes");
   const built = JSON.parse(await fs.readFile(second.stateFile, "utf8"));
