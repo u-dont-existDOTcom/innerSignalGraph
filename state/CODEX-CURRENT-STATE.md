@@ -1,6 +1,6 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-28
+Updated: 2026-10-26
 
 ## Feeling/agency and early regulation — owner-authorized development work
 
