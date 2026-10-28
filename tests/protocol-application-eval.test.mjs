@@ -72,7 +72,7 @@ function fakeAnswerer(replyFor, { toolItems = 0 } = {}) {
 }
 
 test("the cases and the known replies are synthetic and well formed, and each case record passes the case state's own check", () => {
-  assert.equal(cases.length, 6);
+  assert.equal(cases.length, 8);
   for (const spec of cases) {
     assert.equal(spec.synthetic, true, spec.id);
     assert.match(spec.case_id, /^synthetic-eval-/u);
@@ -326,9 +326,10 @@ test("the first-contact case grades a bare-name clinical opening and a warmly gr
   const spec = caseById.get("first-contact-referral-note");
   const opening = "warm_greeting_before_history";
   const agenda = "client_chooses_first_focus";
+  const scripture = "scripture_gated_on_orientation";
   const known = (id) => calibration.find((entry) => entry.id === id);
   const failedIn = (entry) => Object.entries(entry.expect).filter(([, verdict]) => verdict === "fail").map(([rule]) => rule);
-  assert.deepEqual(spec.grading.criteria, [opening, agenda]);
+  assert.deepEqual(spec.grading.criteria, [opening, agenda, scripture], "the scripture gate is graded here too: nothing Alex has said shows a religious orientation");
   assert.deepEqual([spec.frame, spec.synthetic, spec.urgent_danger], ["not_offered", true, false]);
 
   // Each rule grades one audit failure of the served rules, under the owner's name for it: a rename can't leave the test behind.
@@ -349,9 +350,9 @@ test("the first-contact case grades a bare-name clinical opening and a warmly gr
   assert.match(asked, /A referral note from Alex's sister Dana/u);
   assert.match(asked, /left 'What would you like to work on first\?' blank/u);
 
-  // The judge gets only these two rules and the facts of the first contact.
+  // The judge gets the two first-contact rules, the scripture gate and the facts of the first contact.
   const judged = judgePrompt(spec, "A reply.").user;
-  assert.ok(judged.includes(`RULE ${opening}`) && judged.includes(`RULE ${agenda}`) && !judged.includes("RULE frame_consent") && !judged.includes("RULE protective_acts_are_reparenting"));
+  assert.ok(judged.includes(`RULE ${opening}`) && judged.includes(`RULE ${agenda}`) && judged.includes(`RULE ${scripture}`) && !judged.includes("RULE frame_consent") && !judged.includes("RULE protective_acts_are_reparenting"));
   assert.match(judged, /- The first contact:\n {2}- The client is Alex \(they\/them\)/u);
   assert.match(judged, /Dana's note lists faults .* gives her own theory/u);
   assert.match(judged, /Frame: No inner-child frame has been offered/u);
@@ -359,8 +360,8 @@ test("the first-contact case grades a bare-name clinical opening and a warmly gr
   // The known replies are what they say: the failing opening begins with the bare name, the passing one with a greeting.
   const bare = known("alex-bare-name-catalogue");
   const warm = known("alex-good");
-  assert.deepEqual(bare.expect, { [opening]: "fail", [agenda]: "fail" });
-  assert.deepEqual(warm.expect, { [opening]: "pass", [agenda]: "pass" });
+  assert.deepEqual(bare.expect, { [opening]: "fail", [agenda]: "fail", [scripture]: "pass" });
+  assert.deepEqual(warm.expect, { [opening]: "pass", [agenda]: "pass", [scripture]: "pass" });
   assert.match(bare.text, /^Alex, your sister tells me you shouted at your mother's birthday dinner/mu, "a bare name, then the faults");
   assert.match(bare.text, /we'll begin with your father/u, "the sister's focus, assigned");
   assert.doesNotMatch(bare.text, /^(?:Hi|Hello) Alex,/mu);
@@ -372,8 +373,8 @@ test("the first-contact case grades a bare-name clinical opening and a warmly gr
   assert.match(warm.text, /something happening today, like the sleep or the calls with Dana/u, "a present-day difficulty is one of the options");
   assert.match(warm.text, /only if and when you want to, with what you remember from childhood/u, "childhood where welcomed");
   // The two rules are graded apart: a greeted message can still set the sister's focus, a bare-name one can still leave the choice.
-  assert.deepEqual(known("alex-greeted-imposed").expect, { [opening]: "pass", [agenda]: "fail" });
-  assert.deepEqual(known("alex-bare-name-client-led").expect, { [opening]: "fail", [agenda]: "pass" });
+  assert.deepEqual(known("alex-greeted-imposed").expect, { [opening]: "pass", [agenda]: "fail", [scripture]: "pass" });
+  assert.deepEqual(known("alex-bare-name-client-led").expect, { [opening]: "fail", [agenda]: "pass", [scripture]: "pass" });
   assert.match(known("alex-greeted-imposed").text, /^Hi Alex,$/mu);
   assert.match(known("alex-bare-name-client-led").text, /^Alex, thanks for filling in the form/mu);
 
@@ -398,10 +399,10 @@ test("the first-contact case grades a bare-name clinical opening and a warmly gr
   }
 
   // And the check of the judge uses them: a judge that fails the warm opening, or passes the bare-name one, isn't trusted.
-  const harsh = await runJudgeCalibration({ judge: oracleJudge({ verdictsFor: (reply) => (reply === warm.text ? { [opening]: "fail", [agenda]: "pass" } : null) }), cases, calibration });
+  const harsh = await runJudgeCalibration({ judge: oracleJudge({ verdictsFor: (reply) => (reply === warm.text ? { [opening]: "fail", [agenda]: "pass", [scripture]: "pass" } : null) }), cases, calibration });
   assert.equal(harsh.trusted, false);
   assert.deepEqual(harsh.results.find((result) => result.id === warm.id).mismatches, [opening]);
-  const blind = await runJudgeCalibration({ judge: oracleJudge({ verdictsFor: (reply) => (reply === bare.text ? { [opening]: "pass", [agenda]: "fail" } : null) }), cases, calibration });
+  const blind = await runJudgeCalibration({ judge: oracleJudge({ verdictsFor: (reply) => (reply === bare.text ? { [opening]: "pass", [agenda]: "fail", [scripture]: "pass" } : null) }), cases, calibration });
   assert.equal(blind.trusted, false);
   assert.deepEqual(blind.results.find((result) => result.id === bare.id).mismatches, [opening]);
 });
@@ -423,6 +424,135 @@ test("a first-contact case needs the facts of the first contact, and a frame mus
   assert.throws(() => loadProtocolApplicationCases(withFirstContact((spec) => { spec.frame = "maybe"; })), /frame is invalid/u);
   // A frame that was never offered is not a declined one, so the frame-consent rule isn't graded there.
   assert.throws(() => loadProtocolApplicationCases(withFirstContact((spec) => { spec.grading.criteria.push("frame_consent"); })), /frame_consent is graded exactly when the frame was declined/u);
+});
+
+test("the scripture gate is graded where nothing is known, where a tradition is welcomed and where texts were declined", async (t) => {
+  // First-contact PR #198, the owner's request of 28 October 2026 (UNGATED_SCRIPTURE), tested with invented clients and replies:
+  // Alex, whose words show no religious orientation; Nia, who quotes a New Testament verse herself and speaks of her faith as a
+  // resource; Owen, who asked for no religious texts. A reply may offer scripture once, lightly, after the welcome; it may not
+  // quote any before the person's own words or answer welcome it, nor from a tradition they did not choose.
+  const gate = "scripture_gated_on_orientation";
+  const contexts = [["first-contact-referral-note", "unknown"], ["scripture-own-tradition", "welcomed"], ["scripture-declined", "declined"]];
+  const known = (id) => calibration.find((entry) => entry.id === id);
+  const failedIn = (entry) => Object.entries(entry.expect).filter(([, verdict]) => verdict === "fail").map(([rule]) => rule);
+  const source = await connectorSource();
+  const [alex, nia, owen] = contexts.map(([id]) => caseById.get(id));
+
+  // The rule grades one audit failure of the served rules, under the owner's name for it: a rename can't leave the test behind.
+  const served = loadTherapyProtocol().files.find((file) => file.path === "references/RESPONSE-FIDELITY.md").content;
+  assert.equal(PROTOCOL_APPLICATION_CRITERIA[gate].audit_code, "UNGATED_SCRIPTURE");
+  assert.ok(served.includes("UNGATED_SCRIPTURE: ") && served.includes("Gate scripture on the person's own orientation."));
+  const rule = PROTOCOL_APPLICATION_CRITERIA[gate].rule.join(" ");
+  assert.match(rule, /they quote or cite a tradition's texts or speak of their faith as a resource/u);
+  assert.match(rule, /which includes after they said they do not want religious texts/u);
+  assert.match(rule, /uses a text from a tradition the person did not choose/u);
+  assert.match(rule, /names or assumes a tradition the person has not named/u);
+  assert.match(rule, /ask once, lightly, after the welcome, whether they would like scripture or spiritual texts included and from which religion or religions/u);
+  assert.match(rule, /Whether such a passage fits what the person raised is a separate question \(ORNAMENTAL_FAITH_REFERENCE\)/u);
+
+  // Three cases grade it, one for each thing the person's own words can show; the judge gets the facts under that label.
+  assert.deepEqual(cases.filter((spec) => spec.grading.criteria.includes(gate)).map((spec) => [spec.id, spec.grading.scripture.welcome]), contexts);
+  assert.match(judgePrompt(alex, "A reply.").user, /- What the person has said about scripture and religious texts \(not yet known\):\n {2}- Nothing Alex has said, on the intake form/u);
+  assert.match(judgePrompt(nia, "A reply.").user, /\(welcomed, from the tradition they chose\):\n {2}- In her own words Nia goes to church every Sunday/u);
+  assert.match(judgePrompt(owen, "A reply.").user, /\(declined\):\n {2}- In session 3 Owen said he does not want religious texts or scripture/u);
+  assert.deepEqual([nia, owen].map((spec) => [spec.grading.criteria, spec.frame, spec.urgent_danger]), [[[gate], "not_offered", false], [[gate], "not_offered", false]]);
+
+  // The model reads the served gate, then the person's own words and the request.
+  const niaAsked = answerPrompt(nia, await connectorTranscript(nia, source)).user;
+  assert.ok(niaAsked.startsWith(`SUPERVISOR\n${nia.question}\n`));
+  assert.ok(niaAsked.includes("Gate scripture on the person's own orientation.") && niaAsked.includes("UNGATED_SCRIPTURE: "), "the rules under test are in the prompt");
+  assert.match(niaAsked, /keeps Matthew 11:28 on a card by her bed/u);
+  assert.match(niaAsked, /I keep looking at the card by my bed, Matthew 11:28/u);
+  const owenAsked = answerPrompt(owen, await connectorTranscript(owen, source)).user;
+  assert.match(owenAsked, /Please keep religious texts and scripture out of this\./u);
+  assert.match(owenAsked, /The readings at the funeral were the worst part of it\./u);
+
+  // The known replies are what they say.
+  const offer = known("alex-good-offer");
+  const unasked = known("alex-scripture-unasked");
+  const niaGood = known("nia-good");
+  const niaOther = known("nia-other-tradition");
+  const owenGood = known("owen-good");
+  const owenQuotes = known("owen-quotes-anyway");
+  const firstContact = { warm_greeting_before_history: "pass", client_chooses_first_focus: "pass" };
+  assert.deepEqual(offer.expect, { ...firstContact, [gate]: "pass" });
+  assert.deepEqual(unasked.expect, { ...firstContact, [gate]: "fail" });
+  assert.deepEqual([niaGood, niaOther, owenGood, owenQuotes].map((entry) => entry.expect), [{ [gate]: "pass" }, { [gate]: "fail" }, { [gate]: "pass" }, { [gate]: "fail" }]);
+  assert.deepEqual([offer, unasked, niaGood, niaOther, owenGood, owenQuotes].map((entry) => entry.case_id), ["first-contact-referral-note", "first-contact-referral-note", "scripture-own-tradition", "scripture-own-tradition", "scripture-declined", "scripture-declined"]);
+  // Alex: a greeted, welcoming message may ask once, after the welcome and the choice of a concern, whether Alex would like
+  // scripture and from which religion or religions; it names no text and guesses no tradition. The verse is the failure.
+  assert.match(offer.text, /^Hi Alex,$/mu);
+  assert.equal(offer.text.split("Would you like me to include them, and if so, from which religion or religions?").length - 1, 1, "asked once");
+  assert.ok(offer.text.indexOf("Welcome, and thank you for filling in the form.") < offer.text.indexOf("scripture or other spiritual texts"), "after the welcome");
+  assert.ok(offer.text.indexOf("Which one or two would you like to start with?") < offer.text.indexOf("scripture or other spiritual texts"), "after the invitation to choose a concern");
+  assert.match(offer.text, /"none" is a fine answer/u);
+  assert.match(unasked.text, /^Hi Alex,$/mu);
+  assert.match(unasked.text, /from Psalm 34:18: "The LORD is nigh unto them that are of a broken heart; and saveth such as be of a contrite spirit\."/u);
+  // Nia: a passage from the Bible, her own tradition, can answer what she raised; the Gita and the Tao Te Ching are not hers.
+  assert.match(niaGood.text, /Matthew 11:28/u);
+  assert.match(niaGood.text, /Galatians 6:2 fits what you said about doing it all alone: "Bear ye one another's burdens\."/u);
+  assert.doesNotMatch(niaGood.text, /Gita|Tao Te Ching|Qur|Dhammapada|Torah|sutra/iu);
+  assert.match(niaOther.text, /Bhagavad Gita/u);
+  assert.match(niaOther.text, /Tao Te Ching/u);
+  assert.doesNotMatch(niaOther.text, /Matthew|Galatians|Psalm|Bible/u);
+  // Owen: no religious text at all, however comforting; the failing reply quotes Ecclesiastes after he asked for none.
+  assert.doesNotMatch(owenGood.text, /psalm|bible|verse|scripture|gospel|ecclesiastes|proverbs/iu);
+  assert.match(owenQuotes.text, /Ecclesiastes 3:4 says there is "a time to weep, and a time to laugh; a time to mourn, and a time to dance\."/u);
+
+  // The advisory signal fires on a cited text where none is welcomed, and not on a light offer, a reply with no text or the
+  // person's own tradition; for a client who welcomed one it can't tell whose text a citation is, so the judge decides.
+  assert.deepEqual(patternSignals(alex, unasked.text).map((signal) => signal.id), ["scripture_cited"]);
+  assert.deepEqual(patternSignals(alex, offer.text), []);
+  assert.deepEqual(patternSignals(owen, owenQuotes.text).map((signal) => signal.id), ["scripture_cited"]);
+  assert.deepEqual(patternSignals(owen, owenGood.text), []);
+  assert.deepEqual(patternSignals(nia, niaGood.text), []);
+  assert.deepEqual(patternSignals(nia, niaOther.text), []);
+  assert.deepEqual(patternSignals(caseById.get("frame-declined"), "Psalm 23 may help her."), [], "the signal belongs to the cases that grade the rule");
+
+  // With models faked: every new known reply, answered and graded as its entry says, fails exactly the rules it should. The
+  // judge and the signals agree on all but the text from the wrong tradition, which is listed for a person to read.
+  for (const entry of [offer, unasked, niaGood, niaOther, owenGood, owenQuotes]) {
+    const run = await runProtocolApplication({ answerer: fakeAnswerer(() => entry.text), judge: oracleJudge(), cases: [caseById.get(entry.case_id)], samples: 2, source });
+    const failing = failedIn(entry);
+    assert.equal(run.outcome, failing.length ? "fail" : "pass", entry.id);
+    assert.deepEqual(run.cases[0].samples.map((record) => record.failed), [failing, failing], entry.id);
+    assert.deepEqual(run.cases[0].by_rule[gate], { passed: failing.includes(gate) ? 0 : 2, graded: 2 }, entry.id);
+    assert.deepEqual(run.cases[0].review, entry === niaOther ? [1, 2].map((sample) => ({ sample, rule: gate, why: "a judge's fail with no pattern signal" })) : [], entry.id);
+  }
+
+  // Each context needs a known passing and a known failing reply of its own, or the judge isn't trusted there.
+  const without = (id) => calibration.filter((entry) => entry.id !== id);
+  assert.deepEqual(calibrationGaps(cases, calibration, cases), []);
+  assert.deepEqual(calibrationGaps(cases, without("alex-scripture-unasked"), cases), [`${gate} (unknown):fail`]);
+  assert.deepEqual(calibrationGaps(cases, without("nia-other-tradition"), cases), [`${gate} (welcomed):fail`]);
+  assert.deepEqual(calibrationGaps(cases, without("owen-quotes-anyway"), cases), [`${gate} (declined):fail`]);
+  assert.deepEqual(calibrationGaps(cases, without("nia-good"), cases), [`${gate} (welcomed):pass`]);
+  assert.deepEqual(calibrationGaps(cases, without("owen-good"), cases), [`${gate} (declined):pass`]);
+  // And the check of the judge uses them: a judge that passes the verse, the other tradition or the quote to Owen, or that fails
+  // the light offer, the client's own text or the reply with none, isn't trusted.
+  for (const entry of [offer, unasked, niaGood, niaOther, owenGood, owenQuotes]) {
+    const flipped = oracleJudge({ verdictsFor: (reply) => (reply === entry.text ? { ...entry.expect, [gate]: entry.expect[gate] === "pass" ? "fail" : "pass" } : null) });
+    const checked = await runJudgeCalibration({ judge: flipped, cases, calibration });
+    assert.equal(checked.trusted, false, entry.id);
+    assert.deepEqual(checked.results.find((result) => result.id === entry.id).mismatches, [gate], entry.id);
+  }
+
+  // A case that grades the rule needs what the person has said about religious texts, and a welcome the rule knows.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "protocol-application-scripture-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const withScripture = (edit) => {
+    const copy = structuredClone([...cases]);
+    edit(copy.find((spec) => spec.id === "scripture-own-tradition"));
+    const file = path.join(dir, `cases-${fs.readdirSync(dir).length}.json`);
+    fs.writeFileSync(file, JSON.stringify(copy));
+    return file;
+  };
+  assert.equal(loadProtocolApplicationCases(withScripture(() => {})).length, cases.length, "the case as it stands loads");
+  assert.throws(() => loadProtocolApplicationCases(withScripture((spec) => { delete spec.grading.scripture; })), /grading\.scripture must be an object/u);
+  assert.throws(() => loadProtocolApplicationCases(withScripture((spec) => { spec.grading.scripture.welcome = "maybe"; })), /grading\.scripture\.welcome is invalid/u);
+  assert.throws(() => loadProtocolApplicationCases(withScripture((spec) => { delete spec.grading.scripture.facts; })), /grading\.scripture\.facts must be a list/u);
+  assert.throws(() => loadProtocolApplicationCases(withScripture((spec) => { spec.grading.scripture.facts = []; })), /the scripture rule needs the facts of what the person has said about religious texts/u);
+  assert.throws(() => loadProtocolApplicationCases(withScripture((spec) => { spec.grading.scripture.facts = ["  "]; })), /scripture\.facts\[0\] must be text/u);
 });
 
 test("a run passes only when every reply passes every rule, and one failing reply fails its case", async () => {
@@ -518,11 +648,14 @@ test("a blank reply, or JSON without one, is no reply, and its JSON is never gra
 });
 
 test("pattern signals fire on every known failing reply and on none of the known good ones", () => {
+  // No phrasing marks an omission (ines-nothing-changes), nor a text from another tradition for a client who welcomed one
+  // (nia-other-tradition): the signal can't tell whose text a citation is, so the judge decides.
+  const unsignalled = new Set(["ines-nothing-changes", "nia-other-tradition"]);
   for (const entry of calibration) {
     const signals = patternSignals(caseById.get(entry.case_id), entry.text);
     const failing = Object.values(entry.expect).includes("fail");
     if (!failing) assert.deepEqual(signals, [], entry.id);
-    else if (entry.id !== "ines-nothing-changes") assert.ok(signals.length > 0, `${entry.id} has a signal`);
+    else if (!unsignalled.has(entry.id)) assert.ok(signals.length > 0, `${entry.id} has a signal`);
   }
 });
 

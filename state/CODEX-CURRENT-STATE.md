@@ -1,6 +1,12 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-26
+Updated: 2026-10-28
+
+## First contact, assessed couples-care route and scripture gate (2026-10-28; PR #198, branch `fix/greeting-and-assessed-couples-route-20261026`, onto `main`, not merged)
+
+- **Scope:** response-fidelity rules (application and served mirror) for a greeting before the name, a welcoming first message in which the client chooses the focus (the owner's 27 Oct 2026 spec, audit names `REPRIMANDING_OPENING` and `UNCHOSEN_FIRST_AGENDA`) and an assessed route for a historical partner-threat report, with synthetic protocol-application coverage. Rule text, test data and docs only; no client information.
+- **Owner request, 28 Oct 2026 15:34 UTC:** "re first contact pr 198, scripture should also be gated depending on the orientation of the person. we need to ask them to begin with (or understand from hwo they talk) whether they might appreciate scripture from their religion or from which religions". Added to the same pull request: the rule "Gate scripture on the person's own orientation", the audit failure `UNGATED_SCRIPTURE`, the protocol-application rule `scripture_gated_on_orientation`, two synthetic cases and six known replies. Whether a model follows it needs the owner-run `npm run eval:protocol-application -- --mode cli`, which was not run.
+- **Open gates:** exact-head Codex review and hosted checks on the final commit, then the owner's merge; the served protocol's hash changes with this text, and promotion to `stable` and any deployed-hash readback stay separate.
 
 ## Feeling/agency and early regulation — owner-authorized development work
 

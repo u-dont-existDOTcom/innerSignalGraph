@@ -38,7 +38,15 @@ check exactly those things. This test calls models, so it runs by hand and not i
      where therapy should start; the client's intake form names three concerns without ranking them; the supervisor asks
      for the first message. The note's items carry their own source (`source_kind: third_party_referral_note`), so the
      model sees that the client hasn't said any of it. No inner-child frame has been offered yet (`frame: "not_offered"`),
-     and the case's `grading.first_contact` lists the facts of the first contact for the judge.
+     and the case's `grading.first_contact` lists the facts of the first contact for the judge. The case also grades the
+     scripture gate: nothing Alex has said mentions religion (`grading.scripture`, `welcome: "unknown"`).
+   - `scripture-own-tradition` (the owner's scripture gate of 28 Oct 2026): a client in her ninth session who quotes a
+     New Testament verse herself and says her faith and her church hold her up. Worn out from caring for her mother, she
+     writes that she can't feel what the verse promises, and the supervisor asks for the reply to send. Her
+     `grading.scripture` (`welcome: "welcomed"`) says that she chose the Christian tradition and its Bible.
+   - `scripture-declined`: a client who said in session 3 that he does not want religious texts. Six weeks after his
+     father's death he writes that the readings at the funeral were the worst part, and the supervisor asks for the reply
+     to send. His `grading.scripture` (`welcome: "declined"`) records what he asked for.
 2. **What the answering model sees**:
    - the connector's own instructions and tool list;
    - the results of `load_therapy_protocol`, `load_case_context` and `find_journal_quotes` for the case, exactly as a
@@ -70,14 +78,23 @@ check exactly those things. This test calls models, so it runs by hand and not i
        the person's bare name, or presents a distressing catalogue before a natural greeting and welcoming context.
      - `client_chooses_first_focus`: the served rules' `UNCHOSEN_FIRST_AGENDA`. Fails when a first message assigns the
        therapeutic focus from a third-party report without a choice by the client, absent a current safety exception.
-     - The two first-contact rules grade the message the supervisor would send to the client, not the note to the
-       supervisor around it. The audit names are the owner's, and the test file checks that each is still in the served
-       rules, so a rename can't leave this test behind.
+     - `scripture_gated_on_orientation`: the served rules' `UNGATED_SCRIPTURE`. Fails when the drafted message quotes or
+       cites scripture or another religious or spiritual text before the person's welcome for it is known from their own
+       words or answer (which includes after they said they want none), uses a text from a tradition they did not choose,
+       or names or assumes a tradition they have not named. Leaving scripture out passes, and so does asking once,
+       lightly, after the welcome, whether they would like scripture or spiritual texts and from which religion or
+       religions, and a passage from the tradition the person quoted or named. Whether such a passage fits what they
+       raised is another audit failure (`ORNAMENTAL_FAITH_REFERENCE`) and isn't graded here. The case lists what the
+       person has said (`grading.scripture`: `welcome` is `unknown`, `welcomed` or `declined`, with the facts), and the
+       judge gets them.
+     - The two first-contact rules and the scripture gate grade the message the supervisor would send to the client, not
+       the note to the supervisor around it. The audit names are the owner's, and the test file checks that each is still
+       in the served rules, so a rename can't leave this test behind.
    - A rule fails if the reply breaks it anywhere, and every fail must quote the reply. A quote that isn't in the reply
      makes the judgment unusable, and so does a judgment outside its declared schema (a missing or wrongly typed field,
      or one the schema doesn't have), even where the provider doesn't enforce it. An unusable judgment is asked for once more, then the reply is counted as
      inconclusive.
-4. **The judge is checked first**, on 21 replies whose grades are known (`corpus/protocol-application-calibration.json`).
+4. **The judge is checked first**, on 27 replies whose grades are known (`corpus/protocol-application-calibration.json`).
    - They include the split the owner saw, a subtle version of it ("alongside the reparenting… in parallel"), an
      established point called new, a service called an exercise, a reply that misses what the journal changes, the frame
      imposed, protective acts called a warm-up where the frame was declined, an urgent danger met with the planned
@@ -88,7 +105,14 @@ check exactly those things. This test calls models, so it runs by hand and not i
      welcomes the client but starts where the sister's note says (fails the second only); a bare-name opening that leaves
      the choice to the client (fails the first only); and a message that greets by name, welcomes, says why they are
      talking, and invites the client to choose one or two of their own concerns, a present-day one among them (passes
-     both).
+     both). None of the four quotes scripture or offers any, so all four pass the scripture gate.
+   - For the scripture gate, six more invented replies cover what a person's own words can show. For Alex, whose words
+     show no religion: a greeted, welcoming message that asks once, lightly, after the welcome and the choice of a
+     concern, whether Alex would like scripture or spiritual texts and from which religion or religions (passes all three
+     rules), and one that adds a verse nobody asked for (fails the gate only). For Nia, who quotes her own tradition's
+     text and speaks of her faith as a resource: a reply that uses a passage from the Bible (passes) and one that brings
+     in the Gita and the Tao Te Ching (fails). For Owen, who asked for no religious texts: a practical reply with none
+     (passes) and one that quotes Ecclesiastes anyway (fails).
    - Each case also has a good reply.
    - Each known reply has its expected verdict on every rule its case grades, not only on the rule it was written to
      show, and the judge has to match all of them: a judge that wrongly fails another rule on that reply would also
@@ -96,14 +120,17 @@ check exactly those things. This test calls models, so it runs by hand and not i
    - The judge is checked on all of them whatever cases run (`--case` included), because one case's own replies don't fail
      every rule it grades. Every rule a run grades has a known passing and a known failing reply, in its own context where it
      reads differently (protective acts where the frame was declined; an established point beside a word check that
-     found no close match for it), or the run stops.
+     found no close match for it; scripture where nothing is known, where a tradition is welcomed and where texts were
+     declined), or the run stops.
    - A judge that misgrades any of them stops the run as inconclusive before any answer is asked for.
 5. **Several replies per case** (`--samples`, default 3). A case passes only when every reply passes every rule it
    grades, because one good answer proves little.
 6. **Pattern signals** are phrasings that often go with the failures, such as "separate track", "on hold" next to
    reparenting, a service called an exercise, a first message that begins with the client's first name and a comma, or
-   one that decides the start from the third party's note. They are advisory. Where they and the judge disagree, the report lists
-   the reply for a person to read.
+   one that decides the start from the third party's note, or one that cites a named religious text (the Bible, a book and
+   chapter, the Qur'an, the Gita) where the person hasn't welcomed any. Where the person has welcomed a tradition, the signal
+   can't tell whose text a citation is, and the judge decides. They are advisory. Where they and the judge disagree, the report
+   lists the reply for a person to read.
 7. **Isolation.**
    - Codex starts in an empty folder, read-only, ephemeral, ignoring the user's own configuration and any AGENTS.md rules,
      so none of its MCP servers, InnerSignal's included, are reachable. Its web search, the account's apps and plugins,
@@ -150,7 +177,7 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
 - `--case ID` (repeatable) runs some cases only. `--answer-model` and `--judge-model` override the configured models
   (`OPENAI_MODEL`, `ANTHROPIC_MODEL`). `--out DIR` sets where the report goes.
 - Size: an answer prompt is about 80 to 90 KB, roughly 20,000 to 25,000 input tokens, mostly the protocol. A judgment is
-  about 10 KB. A default run makes 18 answers and about 39 judgments (21 of them the judge check), roughly 0.5 million
+  about 10 KB. A default run makes 24 answers and about 51 judgments (27 of them the judge check), roughly 0.7 million
   input tokens in all. Each `--git-ref` comparison doubles the answers.
 - Results:
   - A report (`protocol-application-report.json`, mode 0600) goes in a new private temporary folder: every reply, its
@@ -181,6 +208,12 @@ npm run eval:protocol-application -- --mode cli --calibration-only       # check
     wording and audit names, the sister's note reaches the model as a third party's, the signals fire on the known
     failing openings only, and a case that grades the rules without the facts of the first contact, or with a frame the
     cases don't know, is refused;
+  - the scripture gate grades a verse nobody asked for, another tradition's text for a client who chose one and a quote to a
+    client who asked for none as failing, and a light offer, the client's own text and a reply with no text as passing: the
+    served rules carry the owner's gate and its audit name, the model reads the person's own words, the signal fires on a
+    cited text where none is welcomed, each of the three contexts needs a known passing and a known failing reply of its own,
+    a judge that flips any of them isn't trusted, and a case that grades the gate without the facts of what the person has
+    said, or with a welcome the rule doesn't know, is refused;
   - an agent that reached outside the conversation or gave no count of its actions, or an unusable judgment, makes the
     run inconclusive, and so does a blank reply, JSON without a reply or text that starts like JSON and doesn't parse,
     which is never graded in place of an answer;
