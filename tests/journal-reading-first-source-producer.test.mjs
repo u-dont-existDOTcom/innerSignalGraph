@@ -701,7 +701,7 @@ test("pending decisions, reviews and fatal errors do not depend on the window", 
   }
 });
 
-test("a fatal error leaves no unhandled rejection from the calls still going", async () => {
+test("a fatal error waits for the calls already started, and leaves no unhandled rejection from them", async () => {
   const six = Array.from({ length: 6 }, (_, i) => `Entry ${i + 1}. Synthetic text for page ${i + 1}, invented.`);
   const sixPages = six.map((text, i) => ({ page: i + 1, text, required_modalities: "text", source_page_sha256: sha(text) }));
   const open = new Map(), started = [];
@@ -712,7 +712,8 @@ test("a fatal error leaves no unhandled rejection from the calls still going", a
   try {
     const f = argumentsFor({ sourceSha256: sha(six.join("\n")), pages: sixPages, reader, readerConcurrency: 3 });
     const running = produceReadingFirstJournal(f.params);
-    const failure = running.then(() => null, error => error);
+    let over = false;
+    const failure = running.then(() => { over = true; return null; }, error => { over = true; return error; });
     const tick = () => new Promise(resolve => setImmediate(resolve));
     await tick();
     assert.deepEqual(started, [1, 2, 3]);
@@ -721,15 +722,21 @@ test("a fatal error leaves no unhandled rejection from the calls still going", a
     open.get(2).reject(Object.assign(new Error("transport down"), { code: "NETWORK_DOWN" }));
     await tick();
     open.get(1).resolve(completed(open.get(1).req, goodObservation(open.get(1).req)));
-    const error = await failure;
-    assert.equal(error.code, "NETWORK_DOWN");
+    for (let i = 0; i < 5; i += 1) await tick();
+    await new Promise(resolve => setTimeout(resolve, 20));
     assert.deepEqual(started, [1, 2, 3, 4], "no page past the window was ever asked");
     assert.deepEqual([...f.stored.values()].map(x => x.page), [1]);
-    // The call for page 4 is still out. It fails after the run is over; nothing may surface from that.
-    open.get(4).reject(Object.assign(new Error("late transport failure"), { code: "NETWORK_DOWN" }));
+    // The run has stopped at page 2, but the call for page 4 is still out. The caller closes the store and the port when
+    // the run ends, so the error does not leave while that call can still write its answer.
+    assert.equal(over, false, "the error waits for the call still going");
+    // The call for page 4 fails now. Nothing may surface from that, and the run ends with the page's own error.
+    open.get(4).reject(Object.assign(new Error("late transport failure"), { code: "LATE_FAILURE" }));
+    const error = await failure;
+    assert.equal(error.code, "NETWORK_DOWN", "the error is the page's own, not the late call's");
     for (let i = 0; i < 5; i += 1) await tick();
     await new Promise(resolve => setTimeout(resolve, 20));
     assert.deepEqual(unhandled, []);
+    assert.deepEqual([...f.stored.values()].map(x => x.page), [1], "nothing from the calls that were waited for is kept");
   } finally { process.off("unhandledRejection", onUnhandled); }
 });
 

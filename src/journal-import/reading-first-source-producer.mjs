@@ -267,7 +267,8 @@ export async function produceReadingFirstJournal({
   // The pages the reader is asked about: text pages with text, none a reviewer was given. They are started in a window of
   // `readerConcurrency` pages from the first one not yet handled, and handled strictly in page order, so what is verified,
   // saved and left pending is the same as when they are read one at a time. A started call's outcome is always a value,
-  // never a rejection, so a call still going when a page ends the run cannot leave an unhandled rejection behind.
+  // never a rejection, so a call still going when a page ends the run cannot leave an unhandled rejection behind; and a run
+  // that ends on a page's error waits for the calls it had already started before the error leaves (see the `finally` below).
   const forReader = (page) => page.required_modalities === "text" && page.text.trim().length > 0 && !requested.has(page.page);
   const queue = pages.filter(forReader);
   const calls = new Map();
@@ -286,44 +287,52 @@ export async function produceReadingFirstJournal({
   };
 
   let handled = 0;
-  for (const page of pages) {
-    if (!forReader(page)) {
-      // Empty extraction isn't source comprehension. It may be a blank page, image-only material, or an unrecognized non-text
-      // PDF element. A page with an image needs a reviewer who looks at it. Nothing here goes to the reader.
-      await reviewOr(page, requested.has(page.page) ? "operator_review_requested"
-        : page.required_modalities !== "text" ? "visual_pending" : "source_unavailable");
-    } else {
-      startThrough(handled + readerConcurrency);
-      handled += 1;
-      await notify({ waiting_on_page: page.page });
-      const outcome = await calls.get(page.page);
-      calls.delete(page.page);
-      if (!outcome.ok) {
-        const reason = readerFailureReason(outcome.error);
-        if (reason === null) throw outcome.error;
-        await reviewOr(page, reason);
+  try {
+    for (const page of pages) {
+      if (!forReader(page)) {
+        // Empty extraction isn't source comprehension. It may be a blank page, image-only material, or an unrecognized non-text
+        // PDF element. A page with an image needs a reviewer who looks at it. Nothing here goes to the reader.
+        await reviewOr(page, requested.has(page.page) ? "operator_review_requested"
+          : page.required_modalities !== "text" ? "visual_pending" : "source_unavailable");
       } else {
-        let observation = null;
-        try { observation = verifyTextEvidence(page, outcome.output?.observation); }
-        catch (error) {
-          if (!EVIDENCE_CODES.has(error?.code)) throw error;
-        }
-        if (observation === null) {
-          await reviewOr(page, "reader_evidence_invalid");
+        startThrough(handled + readerConcurrency);
+        handled += 1;
+        await notify({ waiting_on_page: page.page });
+        const outcome = await calls.get(page.page);
+        calls.delete(page.page);
+        if (!outcome.ok) {
+          const reason = readerFailureReason(outcome.error);
+          if (reason === null) throw outcome.error;
+          await reviewOr(page, reason);
         } else {
-          const resultSha = hash(JSON.stringify(observation));
-          invariant(await verifyCompletion({ ...scope, page: page.page,
-            source_page_sha256: page.source_page_sha256,
-            input_sha256: hash(page.text), output_sha256: resultSha,
-            provider_receipt: outcome.output?.provider_receipt }) === true,
-          "JOURNAL_READING_FIRST_RECEIPT_NOT_TRUSTED");
-          // A page the reader has read does not take a review, and the reader's evidence is not kept beside one.
-          invariant(!reviews.has(page.page), "JOURNAL_READING_FIRST_OPERATOR_REVIEW_UNEXPECTED");
-          await record(page, observation, resultSha, READER_ROUTE);
+          let observation = null;
+          try { observation = verifyTextEvidence(page, outcome.output?.observation); }
+          catch (error) {
+            if (!EVIDENCE_CODES.has(error?.code)) throw error;
+          }
+          if (observation === null) {
+            await reviewOr(page, "reader_evidence_invalid");
+          } else {
+            const resultSha = hash(JSON.stringify(observation));
+            invariant(await verifyCompletion({ ...scope, page: page.page,
+              source_page_sha256: page.source_page_sha256,
+              input_sha256: hash(page.text), output_sha256: resultSha,
+              provider_receipt: outcome.output?.provider_receipt }) === true,
+            "JOURNAL_READING_FIRST_RECEIPT_NOT_TRUSTED");
+            // A page the reader has read does not take a review, and the reader's evidence is not kept beside one.
+            invariant(!reviews.has(page.page), "JOURNAL_READING_FIRST_OPERATOR_REVIEW_UNEXPECTED");
+            await record(page, observation, resultSha, READER_ROUTE);
+          }
         }
       }
+      await notify({ through_page: page.page, read: counts.read, operator_reviewed: counts.operator_reviewed, pending: counts.pending });
     }
-    await notify({ through_page: page.page, read: counts.read, operator_reviewed: counts.operator_reviewed, pending: counts.pending });
+  } finally {
+    // A page that ends the run does not stop the calls already started for the pages after it. They are waited for before the
+    // error leaves this function: the caller closes the store and the port when a run ends, and a call still going would write
+    // its answer into a closed store, or run beside the next run. Their answers are kept by the durable port for that run and
+    // nothing from them is used here. A started call's outcome is always a value, so this wait cannot throw.
+    await Promise.all(calls.values());
   }
   invariant(statuses.length === pages.length, "JOURNAL_READING_FIRST_COVERAGE_INCOMPLETE");
   invariant([...reviews.values()].every(review => review.used), "JOURNAL_READING_FIRST_OPERATOR_REVIEW_UNEXPECTED");
