@@ -15,6 +15,16 @@ test("application and served plugin share response fidelity guidance", () => {
   const ref = load("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
   assert.equal(ref.slice(ref.indexOf("RESPONSE FIDELITY AND PRACTICAL CARE VALUE")).trim(), responseFidelityRules.trim());
   assert.equal(protocol.files.find(f=>f.path==="references/RESPONSE-FIDELITY.md").content, ref);
+  // The same shame decision rule must reach application roles and MCP skill clients.
+  for (const passage of [
+    "Even accurate social rejection does not prove wrongdoing",
+    "When norms are unjust, allow differentiation and safer belonging",
+    "Do not require disclosure to a hostile or unpredictable audience"
+  ]) {
+    assert.ok(responseFidelityRules.includes(passage), passage);
+    assert.ok(longitudinalClinicalRules.includes(passage), "application: "+passage);
+    assert.ok(ref.includes(passage), "served skill: "+passage);
+  }
   for (const name of ["LOW_VALUE_REPEAT_REFERRAL","AUTOMATIC_PRACTICE_WARNING","ALTERED_SOURCE_AS_FACT","RELAPSE_CHANGE_MISSED","ROOT_CAUSE_HARDENING","RESPONSE_DUPLICATION"]) {
     assert.ok(longitudinalClinicalRules.includes(name), name);
   }

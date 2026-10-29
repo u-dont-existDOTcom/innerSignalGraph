@@ -27,6 +27,7 @@
     "authoring:task:acceptance": "node scripts/authoring-task-acceptance.mjs",
     "authoring:project": "node src/cli/authoring.mjs project",
     "authoring:check": "node src/cli/authoring.mjs check",
+    "authoring:concepts:check": "node scripts/guide-concept-read.mjs --check",
     "authoring:validate": "node src/cli/authoring.mjs validate",
     "authoring:proposal:new": "node src/cli/authoring.mjs proposal-new",
     "authoring:proposal:build": "node src/cli/authoring.mjs proposal-build",

@@ -53,6 +53,8 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   coherent_child_state: ["present", "unclear", "absent", "unknown"],
   identity_blur: ["present", "absent", "unknown"],
   belonging_pressure: ["present", "absent", "unknown"],
+  // Current-turn shame, humiliation or moral self-devaluation is distinct from generic criticism or belonging pressure.
+  shame_context: ["present", "absent", "unknown"],
   self_criticism: ["present", "absent", "unknown"],
   actionable_problem: ["present", "absent", "unknown"],
   practical_action_state: ["action_available", "blocked_waiting", "resolved", "unknown"],
