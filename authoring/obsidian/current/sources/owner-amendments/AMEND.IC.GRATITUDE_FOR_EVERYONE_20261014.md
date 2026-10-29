@@ -7,7 +7,7 @@ source_id: AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
 guide_id: owner-amendments
 heading: AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
 source_role: owner-approved-extension
-source_hash: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
+source_hash: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
 section_hash: 26c0dd7b8e27d0b726910cf56abc900c39562de5fd186f138f6a6093863ad4fb
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -17,7 +17,7 @@ cited_by_node_ids:
   - IC.REALIZATION_LOVE_INTEGRATION
   - ROUTE.FRESH_GRIEF_FIRST
   - ROUTE.GRATITUDE_PRACTICE
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
 ---
 
 # AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
