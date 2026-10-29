@@ -1,0 +1,19 @@
+{
+  "id": "G154",
+  "title": "Immediate danger suspends shame appraisal even with explicitly present shame",
+  "variables": {
+    "shame_context": "present",
+    "present_safety": "unsafe",
+    "suicidal_state": "imminent",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "altered_state": "sober",
+    "dissociation": "none"
+  },
+  "expected": {
+    "selectedExcludes": [
+      "IC.SHAME_APPRAISAL"
+    ]
+  }
+}

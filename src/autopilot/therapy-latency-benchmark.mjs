@@ -24,14 +24,14 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  // 2026-10-29: the shame-appraisal graph changes the reviewed mock answer;
-  // fast-tier hash, provider stages, provider-call counts and one planning pass remain fixed.
-  revision: "shame-appraisal-and-source-reading-2026-10-29-r10",
+  // 2026-10-29: explicit shame-context evidence gates the new appraisal route;
+  // the mock reviewed tier changes, but the fast tier and provider/planning shape remain fixed.
+  revision: "source-grounded-shame-context-2026-10-29-r11",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "df87610ba2a507ad85ff205a9b8071605154d4ab5bc77b2c4b0f1a44bc9c6e7d"
+    semanticHash: "0bf02d8c1c3d956e270be559729f1e278be5277f8831b0854b6512455b86a28f"
   })
 });
 
@@ -52,6 +52,7 @@ const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
   "thinking_yield",
   "inward_attention_effect",
   "social_connection_need",
+  "shame_context",
   "practice_challenge",
   "practice_challenge_domain",
   "practice_reapproach_willingness",

@@ -20,13 +20,14 @@ source_refs:
   - IC.SHAME_APPRAISAL
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs:
-  - G008
-  - G109
   - G150
   - G151
-base_record_sha256: 1d0f14a0534bfe11d5d0c434e41f95fc014d879bb0710ae775200082e8b693de
-base_graph_sha256: 0c38adc879614295b16177b952b4979fb80fb50a72e6fc31043b66ac3653b474
-projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
+  - G152
+  - G153
+  - G154
+base_record_sha256: 9d1d8c83f772217bfadf1991df91d7c2c73c2108122a6f9accf139eef12f45da
+base_graph_sha256: 8a6c38e4ff7831f28b045efb4ab8c4badf7368329091209c990f488cf1f99460
+projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
 ---
 
 # Differentiate shame signals, social judgments, responsibility, and viable repair
@@ -39,14 +40,9 @@ projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d5
 ```json
 {
   "activation": {
-    "any": [
+    "all": [
       {
-        "field": "self_criticism",
-        "op": "eq",
-        "value": "present"
-      },
-      {
-        "field": "belonging_pressure",
+        "field": "shame_context",
         "op": "eq",
         "value": "present"
       }
@@ -66,13 +62,34 @@ projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d5
         "field": "orientation",
         "op": "eq",
         "value": "disoriented"
+      },
+      {
+        "field": "ability_to_stop",
+        "op": "eq",
+        "value": "no"
+      },
+      {
+        "field": "ability_to_return",
+        "op": "eq",
+        "value": "no"
+      },
+      {
+        "field": "dissociation",
+        "op": "eq",
+        "value": "high"
+      },
+      {
+        "field": "suicidal_state",
+        "op": "eq",
+        "value": "imminent"
       }
     ]
   },
   "avoid": [
     "Do not use disclosure to an unpredictable or hostile listener merely to test a fear of rejection, and do not dismiss accurate rejection predictions as irrational.",
     "Do not assign numerical percentages of responsibility, require reconciliation or promise that apology produces renewed trust.",
-    "Do not call the shame feeling itself a malfunction, endorse global worthlessness or conflate involuntary experience with chosen harmful conduct."
+    "Do not call the shame feeling itself a malfunction, endorse global worthlessness or conflate involuntary experience with chosen harmful conduct.",
+    "Do not infer shame merely from self-criticism or belonging pressure when the person has not supplied evidence of shame."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -87,6 +104,7 @@ projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d5
     ]
   },
   "recommendations": [
+    "Apply this branch only when the current case evidence makes shame or humiliation relevant. Generic criticism, need for belonging, guilt or conflict do not establish shame by themselves.",
     "When shame matters to the active focus, separate the felt rejection alarm, actual social behavior, predicted judgment, chosen conduct and values, inherited self-treatment, and avoidance or self-blame. These can coexist; ask only distinctions that change the next action.",
     "Actual or predicted group rejection is not proof of moral wrongdoing. Acceptance does not prove harmlessness either. Appraise social evidence and independent ethical obligations separately.",
     "For genuinely harmful conduct, support specific acknowledgment, realistic reparability, changed behavior and appropriate consequences; release from endless self-punishment does not depend on forgiveness or restored trust.",

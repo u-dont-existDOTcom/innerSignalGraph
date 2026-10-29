@@ -45,7 +45,9 @@ export const caseSnapshotSchema = {
       type: "object",
       additionalProperties: false,
       properties: variableProperties,
-      required: CASE_VARIABLE_FIELDS
+      // Source snapshots made before the shame selector existed remain valid.
+      // New model outputs may supply the field; absent historical values route as unknown.
+      required: CASE_VARIABLE_FIELDS.filter((field) => field !== "shame_context")
     },
     hypotheses: {
       type: "array",
@@ -85,6 +87,9 @@ export const caseSnapshotSchema = {
 // Provider generation requires all newer semantic fields declared, with null for
 // unavailable evidence. Historical runtime snapshots remain compatible.
 export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
+// Provider strict JSON generation requires every declared variable, including the new
+// selector; stored historical snapshots are still allowed to omit it.
+caseSnapshotGenerationSchema.properties.variables.required.push("shame_context");
 caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway", "compatibility_assessment", "inner_speech_profile");
 caseSnapshotGenerationSchema.required.push("session_focus");
 caseSnapshotGenerationSchema.properties.unknowns.items.required.push("focus_relation", "why_it_matters");

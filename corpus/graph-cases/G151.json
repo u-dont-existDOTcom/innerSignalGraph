@@ -12,7 +12,8 @@
     "altered_state": "sober",
     "self_criticism": "absent",
     "belonging_pressure": "absent",
-    "inner_adult_access": "available"
+    "inner_adult_access": "available",
+    "shame_context": "absent"
   },
   "expected": {
     "selectedExcludes": [

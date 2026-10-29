@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: d778a18ad9d96f4322814c99d364cb375998873be73d39330e2b585b6bc6d9d8
 source_file_sha256: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
-projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
+projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
 ---
 
 # AMEND.IC.WISDOM_STORY
