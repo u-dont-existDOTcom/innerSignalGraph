@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: cf328bff8f080a8e8e75d8de11f1d044893ba2f85b6b47c4cd1e584be3eec384
-source_file_sha256: 362e2f1ebe2a4aad2140f4f8e36567a41836b33788c15dba07eafa008b02412e
-projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
+base_record_sha256: 9a5143292ee0ba646b33ad2bf432f9fed06863928f53e21e35cb2d9df30a63f4
+source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
@@ -17,13 +17,13 @@ projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce0
 
 ```json
 {
-  "approvedAt": "2026-10-25",
+  "approvedAt": "2026-10-29",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
     "status": "owner-approved",
     "text": "An external guide does not need to demand surrender. Sophisticated influence can invite the user to surrender judgment voluntarily through praise, specialness, mirroring, pity for a wounded healer, rescue or miracle hopes, attraction, belonging, spiritual charisma, hypnotic or mystical ease, confession of flaws, and humor or half-jokes that lower analytical vigilance. Openly admitting dishonesty, danger, manipulation, addiction, or another flaw may be genuine self-awareness and is simultaneously evidence that the present risk exists; saying 'I am working on it' does not convert current unreliability into trustworthiness. Compassion for a wounded person must not erase adverse evidence or exempt them from ordinary standards. A true teaching, beautiful voice, healing result, intuitive hit, moving confession, or extraordinary gift can be real without proving global trustworthiness. Evaluate trust by domain, track record, contradictions, boundaries, response to disagreement and no, and whether contrary evidence can still lower trust. Do not ban humor, spontaneity, intuition, mystical cognition, vulnerability, or compassion; the problem is when one channel becomes an epistemic bypass that prevents correction by the other."
   },
-  "version": "owner-amendments-2026-10-28-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```

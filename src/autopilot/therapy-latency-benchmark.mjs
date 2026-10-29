@@ -24,12 +24,14 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  revision: "feeling-agency-and-early-regulation-2026-10-26-r9",
+  // 2026-10-29: explicit shame-context evidence gates the new appraisal route;
+  // the mock reviewed tier changes, but the fast tier and provider/planning shape remain fixed.
+  revision: "source-grounded-shame-context-2026-10-29-r11",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "8700d81ce0a78e45f8f964d4a2175670e42f35bd40fb86854a4e2acb7ac155fc"
+    semanticHash: "0bf02d8c1c3d956e270be559729f1e278be5277f8831b0854b6512455b86a28f"
   })
 });
 
@@ -50,6 +52,7 @@ const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
   "thinking_yield",
   "inward_attention_effect",
   "social_connection_need",
+  "shame_context",
   "practice_challenge",
   "practice_challenge_domain",
   "practice_reapproach_willingness",

@@ -23,6 +23,7 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
   - AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
   - AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
 regression_refs:
   - G013
@@ -32,9 +33,9 @@ regression_refs:
   - G056
   - G061
   - G141
-base_record_sha256: c62a94d9bad298329367446d80ed782405fe81023098c97373f71f254ea553c6
-base_graph_sha256: ea0d2be564d26d2e2f98e937386c53a98e5846ef20b9a57da166be05a12c2e08
-projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
+base_record_sha256: c95bcb88c332d3338957953f2cee0b9bac0e8b5da9bfa0dbf74eb0f3c6c1b267
+base_graph_sha256: 32514ff3e749b72fea4d5e7ed3822df80dad0cf0a4dd142918e3e2e4a0c3b2ad
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -143,7 +144,8 @@ projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce0
     "Calibrate vulnerability to demonstrated trust. Privacy with strangers or low-trust contacts is not fakery and total disclosure is not required; when closeness deepens beyond the level at which the person can be meaningfully honest, either increase truthful contact at a safe pace or reduce the depth.",
     "Treat the relief of being accepted or not judged as important relational information without automatically calling it romantic love, compatibility or earned trust.",
     "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure.",
-    "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection."
+    "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection.",
+    "For shame involving social rejection, test the actual evidence and the consequences of disclosure. Correctly predicted rejection may reflect an unfair audience, not wrongdoing; do not advise disclosure to an untested or hostile person by default."
   ],
   "successSignals": [
     "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
@@ -168,5 +170,7 @@ projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce0
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
 
 [[current/governance/amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
 
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028]]

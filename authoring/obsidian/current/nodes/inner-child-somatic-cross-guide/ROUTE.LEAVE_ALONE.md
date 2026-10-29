@@ -20,6 +20,7 @@ source_refs:
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
   - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs:
   - G013
   - G014
@@ -31,9 +32,9 @@ regression_refs:
   - G054
   - G055
   - G141
-base_record_sha256: f316befa93de3b7a0079ae76cfcc3796ad6f2ff76ccf718664730a807b52cfc7
-base_graph_sha256: ea0d2be564d26d2e2f98e937386c53a98e5846ef20b9a57da166be05a12c2e08
-projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
+base_record_sha256: 8d9179847d647a6ae7b7137790e3059091cf3a1345525d37a5453cdacce45d02
+base_graph_sha256: 32514ff3e749b72fea4d5e7ed3822df80dad0cf0a4dd142918e3e2e4a0c3b2ad
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # Leave certainty-checking loops unanswered and re-enter ordinary life
@@ -92,7 +93,8 @@ projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce0
     "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action.",
     "If a concrete problem or clearly avoided inner issue later appears, route back to outward action or inward processing rather than preserving non-engagement as a dogma.",
     "Recognize behavioral checking as well as verbal rumination: repeated body scans, searches, confessions, conversations, dates, sexual or romantic encounters, or 'exposures' can all be reassurance when their primary function is to prove identity, attraction, normality, safety, worth or certainty.",
-    "When useful exposure or clinician-guided ERP is already part of the plan, keep the exposure while dropping reassurance, covert tests and repeated verdict-seeking; avoidance driven by the same doubt can maintain the loop too."
+    "When useful exposure or clinician-guided ERP is already part of the plan, keep the exposure while dropping reassurance, covert tests and repeated verdict-seeking; avoidance driven by the same doubt can maintain the loop too.",
+    "When shame demands repeated confessions, tests of worth or external verdicts after meaningful accountability is complete and no new evidence appears, apply the checking stop route rather than compulsory exposure."
   ],
   "successSignals": [
     "Checking and reassurance decrease while flexible attention, ordinary activity, relationships, and functioning increase.",
@@ -111,3 +113,5 @@ projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce0
 [[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]
 
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

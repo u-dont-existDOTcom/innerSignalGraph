@@ -141,15 +141,14 @@ test("no new evaluator: the code lives only in the response-fidelity module and 
 test("the owner amendment is approved, versioned with the manifest, and says what the rule says", () => {
   const amendments = json("../guides/owner-amendments.json");
   const manifest = json("../guides/manifest.json");
-  assert.equal(amendments.version, "owner-amendments-2026-10-28-r18");
+  assert.match(amendments.version, /^owner-amendments-\d{4}-\d{2}-\d{2}-r\d+$/u);
   assert.equal(manifest.sources.find((source) => source.id === "owner-amendments").version, amendments.version);
-  assert.equal(amendments.items.length, 71);
   assert.equal(new Set(amendments.items.map((entry) => entry.id)).size, amendments.items.length, "ids are unique");
   const item = amendments.items.find((entry) => entry.id === AMENDMENT);
   assert.equal(item?.status, "owner-approved");
   assert.equal(item.domain, "cross-guide");
   assert.equal(item.approvedAt, "2026-10-28");
-  assert.equal(amendments.items.at(-1).id, AMENDMENT, "appended after the last amendment");
+  assert.equal(amendments.items.filter((entry) => entry.id === AMENDMENT).length, 1, "recorded once");
   assert.match(item.text, /^When a person describes wanting acceptance, then a disagreement or confrontation, then rejection, recover the missing middle before interpreting it:/u);
   for (const clause of SHARED_CLAUSES) assert.ok(item.text.includes(clause), clause);
   assert.ok(item.text.includes("what the person said and did"));
@@ -162,7 +161,7 @@ test("the amendment is bound to the relational reality check, the first recommen
   const graph = json("../guide-graphs/candidates/cross-guide.graph.json");
   const node = graph.nodes.find((candidate) => candidate.id === NODE);
   assert.ok(node.sourceRefs.includes(AMENDMENT));
-  assert.equal(node.sourceRefs.at(-1), AMENDMENT);
+  assert.equal(node.sourceRefs.filter((ref) => ref === AMENDMENT).length, 1, "bound once");
   // Both sides, in order, including the user's own words and actions; no longer the other person's behavior alone.
   assert.match(node.recommendations[0], /^Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis\.$/u);
   assert.doesNotMatch(node.recommendations[0], /what the other person actually did, in sequence/u);
@@ -184,7 +183,7 @@ test("the amendment is bound to the relational reality check, the first recommen
   assert.doesNotMatch(node.defaultQuestion, /\b(?:why did you|whose fault|who started|who is to blame)\b/iu, "the question accuses no one");
 
   const bundle = json("../guide-graphs/compiled/bundle.json");
-  assert.equal(bundle.stats.ownerAmendmentCount, 71);
+  assert.equal(bundle.stats.ownerAmendmentCount, json("../guides/owner-amendments.json").items.length, "the compiled bundle counts every amendment");
   const compiled = bundle.graphs.flatMap((candidate) => candidate.nodes).find((candidate) => candidate.id === NODE);
   assert.deepEqual(compiled.recommendations, node.recommendations);
   assert.deepEqual(compiled.sourceRefs, node.sourceRefs);

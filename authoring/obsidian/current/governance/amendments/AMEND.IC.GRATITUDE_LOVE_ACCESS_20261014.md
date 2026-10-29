@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
 status: owner-approved
 domain: inner-child
-base_record_sha256: 1a23171696deb1b3466a911e5a5d5cb0ad611b4e24e9a00c0e06bf1bd3871138
-source_file_sha256: 362e2f1ebe2a4aad2140f4f8e36567a41836b33788c15dba07eafa008b02412e
-projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce092b8f210e
+base_record_sha256: e80ddd74b510c285253c55889cd47a97fd3975537418f93c90ade7bab9fd5810
+source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
@@ -17,7 +17,7 @@ projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce0
 
 ```json
 {
-  "approvedAt": "2026-10-25",
+  "approvedAt": "2026-10-29",
   "item": {
     "approvedAt": "2026-10-14",
     "domain": "inner-child",
@@ -25,6 +25,6 @@ projection_input_sha256: 7825a41bfc9d387ae2ce534d2a779e41254241f9dfbe37c78b4fce0
     "status": "owner-approved",
     "text": "In the author’s spiritual integration approach, ongoing cultivation of gratitude is essential, including for those who have already experienced divine love or feel it now: it is not merely an optional access technique, temporary remedy for fading love, or introductory ladder to graduate from. The ongoing practice can be a genuine intention without a feeling on demand. Offer sincere gratitude for a concrete present good—even a breath, ordinary bodily comfort, support, or relief amid genuine pain—as a way of nurturing softness, stillness, warmth, sacredness, or the love they call divine. Include connection to others who suffer and gratitude for the chance to care for one’s hurting inner child. Invite actual noticing rather than mere positive reframing. Do not promise any particular experience, infer deep-love access from polite words of thanks, impose a duty to appreciate harm, or claim that suffering must be welcomed. When it arises sincerely, gratitude may widen from relief and ordinary comforts to gratitude even for suffering itself: suffering makes its absence more precious and may become material for cultivating compassion, wisdom, and further gratitude. This is not merely imagining a glass half full; notice whether gratitude actually opens the heart into softness, stillness, freedom or love felt as sacred or divine. Do not require someone to endorse an injury, excuse harm, accept avoidable suffering, or delay protection, care, grief, or treatment. The person may discover this gratitude while suffering, but no one has to produce it on demand. If profound love becomes presently accessible, the next distinct invitation is whether the wounded younger self can be included. The child may be numb, dismissive, afraid, distrustful, or unwilling; do not presume the child is testing the adult, demand the child express gratitude, insist on a spiritual interpretation, or intensify the exercise. Listen with humility and patience, allowing appreciation for the child’s honesty where authentic, then demonstrate care and protection that do not depend on the child cooperating. A spiritual feast is not yet inner-child integration merely because the adult feels it; preserve real-world safety and practical action independently."
   },
-  "version": "owner-amendments-2026-10-28-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```
