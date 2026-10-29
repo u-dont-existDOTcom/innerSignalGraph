@@ -24,6 +24,7 @@ source_refs:
   - IC.SPIRITUAL_LOAN
   - IC.ALTERED_STATES
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs:
   - G003
   - G005
@@ -44,9 +45,9 @@ regression_refs:
   - G132
   - G134
   - G139
-base_record_sha256: 61461a7787a6f651dd64494ef55d8a40ead4c79892bb094e88b10666d73807cc
-base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: de4b6884741f70ed7f189d56ce18ed9415dde01516ede7ffa8410d5341a53353
+base_graph_sha256: 0c38adc879614295b16177b952b4979fb80fb50a72e6fc31043b66ac3653b474
+projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -133,7 +134,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.",
     "Start with what is actually accessible in the present. If a profound loving state is only remembered, use sober recollection or a chosen benevolent reference as preparation and see whether any caring function becomes available now.",
     "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity.",
-    "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing."
+    "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing.",
+    "When care feels unavailable, distinguish fear of compassion, lack of developed capacity and a mismatch in the form of care before attempting a different approach; none requires forcing the same image or feeling."
   ],
   "successSignals": [
     "The capacity for love becomes experientially available without coercion."
@@ -161,3 +163,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
 
 [[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

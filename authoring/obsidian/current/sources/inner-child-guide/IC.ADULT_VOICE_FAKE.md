@@ -7,20 +7,20 @@ source_id: IC.ADULT_VOICE_FAKE
 guide_id: inner-child-guide
 heading: When the Adult Voice Feels Fake
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+source_hash: 1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb
 section_hash: 7267e46c16d89ad8ab7394d258bae39905a6dd7f02c70f934019a485f53beebc
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
 ---
 
 # When the Adult Voice Feels Fake
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-10-29-r7.txt`
 
-Locator: Lines 419–428
+Locator: Lines 429–438
 
 ```text
 When the Adult Voice Feels Fake

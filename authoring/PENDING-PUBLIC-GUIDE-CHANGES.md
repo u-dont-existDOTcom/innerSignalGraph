@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-26-r14`
+Queue version: 2026-10-29-r15
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -314,3 +314,6 @@ Teaching point: A feeling may arise without deliberate choice. A person can exam
 Reader need: People who feel condemned for spontaneous experiences need a way to reduce shame and still exercise sound judgment, including when seeking supportive professional care.
 Already covered: Existing inherited shame discussion; the Protector's daily actions; PGQ-038 on protection; PGQ-039 on privacy; PGQ-040 on useful referrals. None states the full feeling/agency distinction.
 Where: Add one concise passage in the inherited-shame section and cross-reference “Make the Protector Visible”. Keep specialist privacy and suitability material with PGQ-039 under “Also Look Outward”. Do not include personal records or case narratives.
+
+### PGQ-047 — Shame appraisal, realistic repair and selective belonging
+Upstream: AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029 and AI guide r7 section IC.SHAME_APPRAISAL. Preserve separate moral responsibility and social rejection, actual repeated exclusion under unjust norms, secondary shame versus original feeling, reparability with autonomous forgiveness/trust, and noncompulsory disclosure. Check the existing humanized shame and inner-child material for full semantic coverage before writing anything; no duplication or mandatory exposure.

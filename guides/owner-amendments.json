@@ -1,6 +1,6 @@
 {
-  "version": "owner-amendments-2026-10-26-r17",
-  "approvedAt": "2026-10-25",
+  "version": "owner-amendments-2026-10-29-r18",
+  "approvedAt": "2026-10-29",
   "items": [
     {
       "id": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
@@ -435,6 +435,12 @@
       "status": "owner-approved",
       "approvedAt": "2026-10-26",
       "text": "When longitudinal history establishes that coping attempts do not sufficiently relieve the worst crisis peak, do not re-ask the same question without new information. Examine earlier moments when existing methods sometimes helped and compare timing, first cues, sleep, pain, social environment, practical capacity, amount of relief, duration and after-effects. Prefer the smallest discriminating question that could improve early use. Preserve the reports of failed efforts without assuming inactivity. Prioritize feasible practical corrections to identified sleep and environment disruptions when appropriate, distinguishing effects from unproven causal theories. Do not overload the client with tracking assignments; urgent safety and consent remain independently operative."
+    },
+    {
+      "id": "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "For strong shame distinguish the felt rejection alarm, what others actually did or might do, the person's own ethical values and chosen conduct, inherited self-condemnation, protective avoidance, and shame about the feeling itself. Social disapproval, even when accurately predicted or repeated, is not proof of wrongdoing; acceptance is not proof of innocence. Disclosure to an unpredictable or hostile audience is not a default treatment or behavioral experiment. When conduct caused actual harm, identify the person's realistic responsibility, reparability and changes that prevent repetition, preserving consequences without requiring numerical allocation, forgiveness or renewed trust. When group norms demand self-betrayal, consider boundaries, distance and healthier belonging. Preserve the original feeling without an added inner attack, and use the smallest existing routes for guard work, compassionate adult capacities, relational reality, repair and community; do not manufacture a new exercise."
     }
   ]
 }

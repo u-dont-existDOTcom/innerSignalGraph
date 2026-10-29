@@ -18,10 +18,11 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.WISDOM_CRITICISM_KERNEL
   - AMEND.IC.WISDOM_SOURCES
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs: []
-base_record_sha256: c9bf2700cdeeef0a1be7ad56c10faab210d216440e80eea13ba4e764e71c5ad4
-base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: 0c85a0eba9cc460db287d0467ac8d209cddc2f044de99db4503e225357e10bc5
+base_graph_sha256: 0c38adc879614295b16177b952b4979fb80fb50a72e6fc31043b66ac3653b474
+projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
 ---
 
 # Receive useful content without accepting contempt
@@ -101,7 +102,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
   "recommendations": [
     "After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.",
     "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
-    "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity."
+    "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
+    "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt."
   ],
   "successSignals": [
     "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."
@@ -117,3 +119,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/governance/amendments/AMEND.IC.WISDOM_CRITICISM_KERNEL]]
 
 [[current/governance/amendments/AMEND.IC.WISDOM_SOURCES]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

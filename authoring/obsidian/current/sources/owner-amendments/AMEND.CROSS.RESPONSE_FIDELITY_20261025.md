@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.RESPONSE_FIDELITY_20261025
 guide_id: owner-amendments
 heading: AMEND.CROSS.RESPONSE_FIDELITY_20261025
 source_role: owner-approved-extension
-source_hash: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
+source_hash: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
 section_hash: 40309cae80e4000313d191e63db4c31f6623d2250673e87e799d18b3f23ca01d
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -17,7 +17,7 @@ cited_by_node_ids:
   - ROUTE.MEDICAL_RED_FLAG
   - ROUTE.REFRACTORY_PAIN_NAVIGATION
   - ROUTE.THREE_WAY_GATE
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
 ---
 
 # AMEND.CROSS.RESPONSE_FIDELITY_20261025

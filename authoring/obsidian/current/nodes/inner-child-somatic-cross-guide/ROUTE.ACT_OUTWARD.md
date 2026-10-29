@@ -31,6 +31,7 @@ source_refs:
   - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
   - AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs:
   - G013
   - G014
@@ -46,9 +47,9 @@ regression_refs:
   - G099
   - G101
   - G105
-base_record_sha256: 68b3696795335c74826110d88337949209ab7a02a0fa6dade38a034e87cf884f
-base_graph_sha256: b6d0838474c8b0180c59b119cdb203deac7c39cb460afd7d48410a8e784f2809
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: faf2bb1cba2d53021db09c634d48047b5dd7b14c2638a8d23a965de202be903a
+base_graph_sha256: b08ba2c139ff212e1491133a8270281c0b21ec89f1249b8b0b1d3b6378165e1b
+projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
 ---
 
 # Act on the concrete problem
@@ -157,7 +158,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
     "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished.",
     "When a spontaneous feeling invites an unsuitable action, help choose a consent-respecting practical boundary rather than treating the feeling itself as a diagnosis or wrongdoing.",
-    "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty."
+    "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty.",
+    "If shame follows real harmful conduct, choose feasible repair, changed behavior and legitimate accountability rather than a numerical blame allocation or demand for another person's forgiveness."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -198,3 +200,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
 
 [[current/governance/amendments/AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

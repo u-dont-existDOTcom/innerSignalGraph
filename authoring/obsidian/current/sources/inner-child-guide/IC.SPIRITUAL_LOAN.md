@@ -7,7 +7,7 @@ source_id: IC.SPIRITUAL_LOAN
 guide_id: inner-child-guide
 heading: Ask God for a Loan
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+source_hash: 1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb
 section_hash: b2ff6487b10f8362b2ef524f669aebda28f3ee4eaffa9de155b1aae25f91f1c7
 locator_kind: text-lines
 cited_by_node_ids:
@@ -17,16 +17,16 @@ cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
   - IC.DEEP_LOVE_TO_CHILD
   - ROUTE.GRATITUDE_PRACTICE
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
 ---
 
 # Ask God for a Loan
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-10-29-r7.txt`
 
-Locator: Lines 271–282
+Locator: Lines 281–292
 
 ```text
 Ask God for a Loan

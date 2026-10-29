@@ -1,6 +1,15 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-26
+Updated: 2026-10-29
+
+## Shame-appraisal and semantic guide-reading candidate — 29 October 2026
+
+- **Owner outcome:** Preserve the existing broad shame work; distinguish social rejection from moral responsibility, secondary self-shaming, realistic reparability and selective belonging, and stop falsely claiming absent techniques after reading the wrong guide or relying on keyword searches.
+- **Source authority:** active registered AI guide was `inner-child-guide-2026-10-11-r6.txt`, not the historical September source. This branch preserves r6, adds `inner-child-guide-2026-10-29-r7.txt` with a compact shame section, updates the manifest/source layout and owner amendment, and does not edit public humanized prose.
+- **Executable development map:** one `IC.SHAME_APPRAISAL` node and existing guard, differentiation, critic, compassion, forgiveness, relational reality, action, community and checking routes. New shared rule does not prescribe indiscriminate disclosure or numerical blame allocation. Neighboring open PRs about sensitive disclosure and reciprocal conflict sequences remain separate.
+- **Reading tool:** `scripts/guide-concept-read.mjs` and `authoring/concepts/shame.json` verify registered source hash, exact cross-section quotations, section IDs and graph-node references. Eleven curated concepts; semantic completeness and client behavior are explicitly unverified.
+- **Checks at draft checkpoint:** graph compiler 87 nodes / 126 edges / 150 source sections / 71 amendments; graph regressions 112 passed including two new shame cases; authoring projection regenerated (581 files), validation, check and maps-check pass; focused citation validator initially had one test error-wording mismatch, corrected, final rerun required; complete package `npm run verify` running. No `stable` installation or live connector deployment authorized.
+- **Next:** Finish verification, inspect diff, independent review and normal pull request; reconcile prior pending shame and relational changes before any owner-gated merge/release, then verify `stable` separately. Keep the current public-guide queue pending until the humanized article worker reconciles it.
 
 ## Feeling/agency and early regulation — owner-authorized development work
 

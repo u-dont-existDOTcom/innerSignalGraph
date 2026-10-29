@@ -22,13 +22,14 @@ source_refs:
   - IC.RELATIONSHIP
   - IC.THREE_FUNCTIONS
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs:
   - G064
   - G065
   - G085
-base_record_sha256: 23c167be7a9cec590903c37db1dbcd3e9ef9642a0a5830d5e16795a5cdb4ceae
-base_graph_sha256: b6d0838474c8b0180c59b119cdb203deac7c39cb460afd7d48410a8e784f2809
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: 9eea98ac6b90869ad871682821e07e5cc019bd6e5c111cb693813b1f8ad725e7
+base_graph_sha256: b08ba2c139ff212e1491133a8270281c0b21ec89f1249b8b0b1d3b6378165e1b
+projection_input_sha256: 6e45a3a2b88cd00dadfa2393874ee745c979fed13684d70bf9028d581529a7f8
 ---
 
 # Build a diversified human support ecology
@@ -73,7 +74,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
     "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
     "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
-    "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add."
+    "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add.",
+    "For chronic shame under repeated exclusion, favor communities that can combine acceptance with accountability; repeated rejection may warrant differentiation or departure instead of more attempts to earn approval."
   ],
   "successSignals": [
     "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",
@@ -92,3 +94,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/sources/inner-child-guide/IC.THREE_FUNCTIONS]]
 
 [[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

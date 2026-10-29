@@ -1,0 +1,22 @@
+{
+  "id": "G151",
+  "title": "No shamelessness drill when shame is not supported by case facts",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "self_criticism": "absent",
+    "belonging_pressure": "absent",
+    "inner_adult_access": "available"
+  },
+  "expected": {
+    "selectedExcludes": [
+      "IC.SHAME_APPRAISAL"
+    ]
+  }
+}
