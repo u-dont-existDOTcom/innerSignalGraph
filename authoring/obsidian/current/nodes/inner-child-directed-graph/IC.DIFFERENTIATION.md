@@ -19,10 +19,13 @@ source_refs:
   - AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
-regression_refs: []
-base_record_sha256: 47036e05922d6cd35a573db2c54b64139248a743ce1f0c91d05fa8885574bfd0
-base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+regression_refs:
+  - G150
+  - G153
+base_record_sha256: 72130b322164a13f1d3ace62427e0fd188165e7b8b18b84ae60a584af8f9d421
+base_graph_sha256: 8a6c38e4ff7831f28b045efb4ab8c4badf7368329091209c990f488cf1f99460
+projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
 ---
 
 # Untangle belonging from self-betrayal
@@ -66,7 +69,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "Notice where other people’s emotions and group expectations replace personal knowing.",
     "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
     "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
-    "A spontaneous attraction or feeling can be noticed without automatically following it. Choose whether an action would support reciprocal connection, consent, safety and trustworthy boundaries; neither repress the appearance of the feeling nor treat it as a command."
+    "A spontaneous attraction or feeling can be noticed without automatically following it. Choose whether an action would support reciprocal connection, consent, safety and trustworthy boundaries; neither repress the appearance of the feeling nor treat it as a command.",
+    "If repeated real rejection reflects unfair group norms, respect that evidence and help consider boundaries, reduced access, another community or leaving; no requirement to disclose repeatedly to the same group."
   ],
   "successSignals": [
     "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
@@ -84,3 +88,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]
 
 [[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

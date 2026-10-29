@@ -21,6 +21,7 @@ source_refs:
   - IC.ESCAPE_URGE
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
   - AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs:
   - G001
   - G002
@@ -36,9 +37,9 @@ regression_refs:
   - G114
   - G115
   - G139
-base_record_sha256: ef132738544df05f1718ef081eff9550d67e68a541346ddf926c5409936b3cc6
-base_graph_sha256: 83d1599726791c030b4b4729eca3f2b34d1b010e75bc290f5bb8cbe8c178f549
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: 52cae8d8b499e6f92dbcac224e8891d4b787988e5f626d36e79eb3b7e2b05fec
+base_graph_sha256: 8a6c38e4ff7831f28b045efb4ab8c4badf7368329091209c990f488cf1f99460
+projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
 ---
 
 # Hear the protective response without automatically obeying it
@@ -104,7 +105,8 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
     "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
     "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
     "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
-    "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes."
+    "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
+    "When shame becomes shame about being ashamed, distinguish the initial experience from a secondary self-attack and investigate any useful protective aim without treating the first feeling as a malfunction."
   ],
   "successSignals": [
     "The protective response can be heard without running the session or being exiled."
@@ -126,3 +128,5 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
 
 [[current/governance/amendments/AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

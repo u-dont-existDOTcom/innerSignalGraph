@@ -229,6 +229,12 @@
       "toNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c"
     },
     {
+      "fromNode": "c061d4177a8d6e07adc56cbbd0d327943904ff6402d80cd871c560cc6706d79e",
+      "id": "398e99f54265f5c51dbed20c9baba1f710c75e96b6044b73d0bb98dc8de55178",
+      "label": "may-route-to",
+      "toNode": "d9201eb93608aeec31488f96ee8fcc1ddcefc2068328bb44e94185bfd151e36c"
+    },
+    {
       "fromNode": "6180b399f8f49558fc9f372a4fd3e89403dc4661aef8924a0e8848869c9ff9dc",
       "id": "3b41fb02f23d6e089f16fb8b5c3e921ce9de69f2329818744321f8a5854fdc97",
       "label": "embodies-through",
@@ -329,6 +335,12 @@
       "id": "5560cac1685543c3e03eb7a5fdffc0017d7791e9e4a787e57b6ceaf56c32197b",
       "label": "routes-to",
       "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "c061d4177a8d6e07adc56cbbd0d327943904ff6402d80cd871c560cc6706d79e",
+      "id": "593ccb9b326b56b23abf8f1968f2b4ff5fa734df9728f3f7e4217d8d57418df1",
+      "label": "may-route-to",
+      "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
     },
     {
       "fromNode": "e9eaeef47af57324a0dc343ad17643121768ffcfaeb508142999aed98490a529",
@@ -505,6 +517,12 @@
       "toNode": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5"
     },
     {
+      "fromNode": "c061d4177a8d6e07adc56cbbd0d327943904ff6402d80cd871c560cc6706d79e",
+      "id": "9694570066d12faf68d51a21a69bc4109c2b7d42600b87905081b10ca380ca21",
+      "label": "may-route-to",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
       "fromNode": "13eb02280ef3e84ed421ff45275e1013c783a46f87eab87e106fd3deac4f5c82",
       "id": "96b24ad5feb07a46dbaad8ddfc8058e69bfc81077214a7d7f30857c7263e9145",
       "label": "does-not-imply-readiness",
@@ -521,6 +539,12 @@
       "id": "99d56077b4e97a9f5f60877bf3c300afe7a3af6a2a78663f5026cf6d05a8b2ac",
       "label": "calibrates",
       "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
+    },
+    {
+      "fromNode": "c061d4177a8d6e07adc56cbbd0d327943904ff6402d80cd871c560cc6706d79e",
+      "id": "9cf94302cb264772296ce3ab0a865931f881520f4cb49ae33e1fda4dd524dab4",
+      "label": "may-route-to",
+      "toNode": "02d06e2644860c652a49ca755511d551d8a8d446300c8b5f3ee3fc0502eb9822"
     },
     {
       "fromNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323",
@@ -617,6 +641,12 @@
       "id": "ccb40506ccca7c38657c8b15a024f0889bacf7a343c9bebe8026327ee58e3a45",
       "label": "requires-reality-check",
       "toNode": "d162e5224e2d1b3b86c3871646337e27c6435b06998ee2f030fd86de810aec00"
+    },
+    {
+      "fromNode": "c061d4177a8d6e07adc56cbbd0d327943904ff6402d80cd871c560cc6706d79e",
+      "id": "cfc20cf9d491aeccde6636c019520a685fd68a7be073beb70f03d28b39f701ee",
+      "label": "may-route-to",
+      "toNode": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8"
     },
     {
       "fromNode": "0f39502ee7f3631569e7e121af6243e9e3765151a21c6255c14f770989d5fa7d",
@@ -1383,6 +1413,15 @@
       "width": 300,
       "x": 440,
       "y": 660
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.SHAME_APPRAISAL.md",
+      "height": 140,
+      "id": "c061d4177a8d6e07adc56cbbd0d327943904ff6402d80cd871c560cc6706d79e",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 2860
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.BYPASS_AUDIT.md",
