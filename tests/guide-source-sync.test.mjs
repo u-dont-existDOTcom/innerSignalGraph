@@ -93,17 +93,23 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-refractory-pain-navigation-and-care-trust-2026-10-11-r6");
-  assert.equal(active.file, "inner-child-guide-2026-10-11-r6.txt");
-  assert.equal(active.sha256, "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a");
+  assert.equal(active.version, "owner-approved-shame-integration-2026-10-29-r7");
+  assert.equal(active.file, "inner-child-guide-2026-10-29-r7.txt");
+  assert.equal(active.sha256, "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb");
   const r5 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
   assert.equal(hash(r5), "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-10-r5.txt" && item.sha256 === "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31"));
   const successor = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-11-r6.txt", import.meta.url), "utf8");
-  assert.equal(hash(successor), active.sha256);
+  assert.equal(hash(successor), "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a");
+  const currentR7 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-29-r7.txt", import.meta.url), "utf8");
+  assert.equal(hash(currentR7), active.sha256);
   for (const originalLine of current.split("\n")) {
-    if (originalLine.trim()) assert.ok(successor.includes(originalLine), "r5 preserves r4 wording: "+ originalLine.slice(0,60));
+    if (originalLine.trim()) assert.ok(successor.includes(originalLine), "r6 preserves r4 wording: "+ originalLine.slice(0,60));
   }
+  for (const originalLine of successor.split("\n")) {
+    if (originalLine.trim()) assert.ok(currentR7.includes(originalLine), "r7 preserves r6 wording: "+ originalLine.slice(0,60));
+  }
+  assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-11-r6.txt" && item.sha256 === "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a"));
   assert.ok(manifest.sourceHistory.some(item =>
     item.id === "inner-child-guide" &&
     item.file === "inner-child-guide-2026-10-04-r4.txt" &&

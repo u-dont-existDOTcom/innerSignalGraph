@@ -1,0 +1,262 @@
+{
+  "schema": "guide-concept-evidence-v1",
+  "guideId": "inner-child-guide",
+  "source": {
+    "file": "inner-child-guide-2026-10-29-r7.txt",
+    "sha256": "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb"
+  },
+  "method": "Human-curated conceptual/countercase anchors; exact source citation integrity can be tested, but semantic completeness cannot be mechanically proved.",
+  "concepts": [
+    {
+      "id": "social-vs-moral",
+      "label": "Rejection does not settle moral correctness",
+      "status": "present",
+      "nodes": [
+        "IC.SHAME_APPRAISAL",
+        "IC.DIFFERENTIATION",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "evidence": [
+        {
+          "section": "IC.SHAME_APPRAISAL",
+          "quote": "Shame can warn that someone may reject"
+        },
+        {
+          "section": "IC.RELATIONAL_REALITY",
+          "quote": "Feeling guilty does not prove that you did something wrong"
+        },
+        {
+          "section": "IC.DIFFERENTIATION",
+          "quote": "Self-differentiation means noticing where belonging is being purchased with self-betrayal"
+        }
+      ],
+      "explanation": "Acceptance and disapproval are social evidence, not moral verdicts."
+    },
+    {
+      "id": "rejection-is-real",
+      "label": "Accurate repeated rejection can justify distance",
+      "status": "present",
+      "nodes": [
+        "IC.DIFFERENTIATION",
+        "IC.SHAME_APPRAISAL",
+        "ROUTE.COMMUNITY_SUPPORT"
+      ],
+      "evidence": [
+        {
+          "section": "IC.SHAME_APPRAISAL",
+          "quote": "Repeated rejection can be reason to protect yourself"
+        },
+        {
+          "section": "IC.DIFFERENTIATION",
+          "quote": "Sometimes the leaving is permanent because returning would mean disappearing again."
+        },
+        {
+          "section": "IC.RELATIONAL_REALITY",
+          "quote": "A community is not automatically good because it offers belonging."
+        }
+      ],
+      "explanation": "Do not force return or exposure to an unfair audience."
+    },
+    {
+      "id": "guards-dialogues",
+      "label": "Critic, guard, and inner-child dialogue",
+      "status": "present",
+      "nodes": [
+        "IC.MEET_GUARD",
+        "IC.CREDIBILITY_REPAIR"
+      ],
+      "evidence": [
+        {
+          "section": "IC.START_WHATEVER",
+          "quote": "a parts dialogue may help"
+        },
+        {
+          "section": "IC.GUARDS",
+          "quote": "Treating the response as an enemy"
+        },
+        {
+          "section": "IC.BOTTOM_UP_SEQUENCE",
+          "quote": "A critic may soften into a fear"
+        }
+      ],
+      "explanation": "Purpose and impact of guard are checked separately."
+    },
+    {
+      "id": "retrospective-responsibility",
+      "label": "Real responsibility without hindsight prosecution",
+      "status": "present",
+      "nodes": [
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+        "IC.FORGIVENESS_LATER"
+      ],
+      "evidence": [
+        {
+          "section": "IC.PROTECTOR_VISIBLE",
+          "quote": "What options could they actually see and tolerate?"
+        },
+        {
+          "section": "IC.PROTECTOR_VISIBLE",
+          "quote": "What happened because of the choice?"
+        },
+        {
+          "section": "IC.FORGIVENESS",
+          "quote": "Responsibility: name your action and its impact."
+        }
+      ],
+      "explanation": "No numeric blame pie required."
+    },
+    {
+      "id": "compassion-barriers",
+      "label": "Unsafe or inaccessible compassion",
+      "status": "present",
+      "nodes": [
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION"
+      ],
+      "evidence": [
+        {
+          "section": "IC.BORROW_LOVE",
+          "quote": "If imagined closeness feels intrusive"
+        },
+        {
+          "section": "IC.LOVE_MISSING",
+          "quote": "If even that increases threat or loneliness"
+        }
+      ],
+      "explanation": "Differentiate threat, unavailable capacity and mismatched offer."
+    },
+    {
+      "id": "secondary-shame",
+      "label": "Shame about shame and secondary self-attack",
+      "status": "present",
+      "nodes": [
+        "IC.SHAME_APPRAISAL",
+        "IC.MEET_GUARD"
+      ],
+      "evidence": [
+        {
+          "section": "IC.SHAME_APPRAISAL",
+          "quote": "Someone may feel sad, then attack themself for sadness"
+        },
+        {
+          "section": "IC.INHERITED_PARENT",
+          "quote": "The inherited parent compares the outward persona with an impossible ideal"
+        }
+      ],
+      "explanation": "The original feeling need not be eliminated."
+    },
+    {
+      "id": "unchosen-versus-action",
+      "label": "Experience is not conduct",
+      "status": "present",
+      "nodes": [
+        "IC.GUIDE_LATER",
+        "ROUTE.INFLUENCE_INTERNAL",
+        "IC.SHAME_APPRAISAL"
+      ],
+      "evidence": [
+        {
+          "section": "IC.SHAME_APPRAISAL",
+          "quote": "An unchosen thought, dream, feeling or attraction is not the same thing as chosen harmful conduct."
+        },
+        {
+          "section": "IC.GUIDE_LATER",
+          "quote": "A thought can appear without your endorsing it."
+        }
+      ],
+      "explanation": "Responsibility follows actual choices, not involuntary experience."
+    },
+    {
+      "id": "realistic-repair",
+      "label": "Repair without imposed forgiveness",
+      "status": "present",
+      "nodes": [
+        "IC.FORGIVENESS_LATER",
+        "ROUTE.ACT_OUTWARD",
+        "IC.SHAME_APPRAISAL"
+      ],
+      "evidence": [
+        {
+          "section": "IC.SHAME_APPRAISAL",
+          "quote": "forgiveness and restored trust remain the other person's choice."
+        },
+        {
+          "section": "IC.FORGIVENESS",
+          "quote": "Rectify: apologize, make restitution, change the behavior, or prevent repetition where possible."
+        }
+      ],
+      "explanation": "Some harms cannot be undone and reconciliation is not owed."
+    },
+    {
+      "id": "disclosure-not-exposure",
+      "label": "Calibrated disclosure and reassurance loops",
+      "status": "present",
+      "nodes": [
+        "ROUTE.RELATIONAL_REALITY_CHECK",
+        "ROUTE.LEAVE_ALONE",
+        "IC.SHAME_APPRAISAL"
+      ],
+      "evidence": [
+        {
+          "section": "IC.RELATIONAL_REALITY",
+          "quote": "Honesty does not mean total disclosure to strangers."
+        },
+        {
+          "section": "IC.SHAME_APPRAISAL",
+          "quote": "Don't make relief from shame depend on compulsively confessing"
+        },
+        {
+          "section": "IC.CHECKING_LOOP",
+          "quote": "A checking loop can move into behavior."
+        }
+      ],
+      "explanation": "Never use an untrusted listener as a compulsory experiment."
+    },
+    {
+      "id": "imagery-related-not-identical",
+      "label": "Child imagery is not automatically formal rescripting",
+      "status": "related-not-equivalent",
+      "nodes": [
+        "IC.COMPASSIONATE_STORY",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.PHOTO_EPISTEMIC_CAUTION"
+      ],
+      "evidence": [
+        {
+          "section": "IC.HEART_SOLAR_LOOP",
+          "quote": "Try it with a manageable memory."
+        },
+        {
+          "section": "IC.PHOTOS",
+          "quote": "Emotional truth and historical fact are different questions."
+        }
+      ],
+      "explanation": "The guide includes imagery, memory and compassionate adult response.",
+      "limit": "The exact formal scene-rescripting procedure is not established present or absent by concept-level proximity."
+    },
+    {
+      "id": "relational-support",
+      "label": "Acceptance with reciprocity and independent judgment",
+      "status": "present",
+      "nodes": [
+        "ROUTE.COMMUNITY_SUPPORT",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "evidence": [
+        {
+          "section": "IC.RELATIONSHIP",
+          "quote": "a relational injury can only heal so far in isolation."
+        },
+        {
+          "section": "IC.RELATIONAL_REALITY",
+          "quote": "Healthy support and mutual co-regulation are part of relationships"
+        },
+        {
+          "section": "IC.SHAME_APPRAISAL",
+          "quote": "Another person's acceptance may help without proving that conduct was harmless"
+        }
+      ],
+      "explanation": "Social support can change shame without deciding ethics."
+    }
+  ]
+}

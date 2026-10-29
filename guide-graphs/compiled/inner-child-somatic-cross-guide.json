@@ -65,7 +65,8 @@
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
-        "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS"
+        "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -81,7 +82,8 @@
         "Calibrate vulnerability to demonstrated trust. Privacy with strangers or low-trust contacts is not fakery and total disclosure is not required; when closeness deepens beyond the level at which the person can be meaningfully honest, either increase truthful contact at a safe pace or reduce the depth.",
         "Treat the relief of being accepted or not judged as important relational information without automatically calling it romantic love, compatibility or earned trust.",
         "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure.",
-        "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection."
+        "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection.",
+        "For shame involving social rejection, test the actual evidence and the consequences of disclosure. Correctly predicted rejection may reflect an unfair audience, not wrongdoing; do not advise disclosure to an untested or hostile person by default."
       ],
       "avoid": [
         "Do not diagnose or automatically label another person emotionally immature, manipulative, narcissistic, or unsafe from a disagreement or a single frustrating interaction.",
@@ -462,7 +464,8 @@
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
         "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
-        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY"
+        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -470,7 +473,8 @@
         "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action.",
         "If a concrete problem or clearly avoided inner issue later appears, route back to outward action or inward processing rather than preserving non-engagement as a dogma.",
         "Recognize behavioral checking as well as verbal rumination: repeated body scans, searches, confessions, conversations, dates, sexual or romantic encounters, or 'exposures' can all be reassurance when their primary function is to prove identity, attraction, normality, safety, worth or certainty.",
-        "When useful exposure or clinician-guided ERP is already part of the plan, keep the exposure while dropping reassurance, covert tests and repeated verdict-seeking; avoidance driven by the same doubt can maintain the loop too."
+        "When useful exposure or clinician-guided ERP is already part of the plan, keep the exposure while dropping reassurance, covert tests and repeated verdict-seeking; avoidance driven by the same doubt can maintain the loop too.",
+        "When shame demands repeated confessions, tests of worth or external verdicts after meaningful accountability is complete and no new evidence appears, apply the checking stop route rather than compulsory exposure."
       ],
       "avoid": [
         "Do not call thought suppression, denial, emotional numbing, or ignoring a medical, safety, relational, or practical problem 'leaving it alone'.",
@@ -575,7 +579,8 @@
         "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
         "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
         "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
-        "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026"
+        "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -597,7 +602,8 @@
         "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
         "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished.",
         "When a spontaneous feeling invites an unsuitable action, help choose a consent-respecting practical boundary rather than treating the feeling itself as a diagnosis or wrongdoing.",
-        "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty."
+        "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty.",
+        "If shame follows real harmful conduct, choose feasible repair, changed behavior and legitimate accountability rather than a numerical blame allocation or demand for another person's forgiveness."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -1597,7 +1603,8 @@
         "AMEND.IC.COMMUNITY_REPARENTING",
         "IC.RELATIONSHIP",
         "IC.THREE_FUNCTIONS",
-        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -1605,7 +1612,8 @@
         "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
         "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
         "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
-        "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add."
+        "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add.",
+        "For chronic shame under repeated exclusion, favor communities that can combine acceptance with accountability; repeated rejection may warrant differentiation or departure instead of more attempts to earn approval."
       ],
       "avoid": [
         "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
@@ -1906,7 +1914,8 @@
           "ROUTE.ALTERED_STATE_TRANSFER",
           "ROUTE.ALTERED_AFTERMATH",
           "ROUTE.ALTERED_PREPARATION",
-          "IC.CONTINUITY_TITRATION"
+          "IC.CONTINUITY_TITRATION",
+          "IC.SHAME_APPRAISAL"
         ],
         "forbiddenOverclaims": [
           "Do not claim the loss happened for a reason or was meant to teach something."
