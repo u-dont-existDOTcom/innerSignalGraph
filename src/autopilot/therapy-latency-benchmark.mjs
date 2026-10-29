@@ -24,12 +24,14 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  revision: "feeling-agency-and-early-regulation-2026-10-26-r9",
+  // 2026-10-29: the shame-appraisal graph changes the reviewed mock answer;
+  // fast-tier hash, provider stages, provider-call counts and one planning pass remain fixed.
+  revision: "shame-appraisal-and-source-reading-2026-10-29-r10",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "8700d81ce0a78e45f8f964d4a2175670e42f35bd40fb86854a4e2acb7ac155fc"
+    semanticHash: "df87610ba2a507ad85ff205a9b8071605154d4ab5bc77b2c4b0f1a44bc9c6e7d"
   })
 });
 
