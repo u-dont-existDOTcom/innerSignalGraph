@@ -1,9 +1,9 @@
 {
-  "version": "source-layout-v12-2026-10-11",
+  "version": "source-layout-v13-2026-10-29",
   "textGuides": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide-2026-10-11-r6.txt",
+      "file": "inner-child-guide-2026-10-29-r7.txt",
       "sections": [
         {
           "id": "IC.CHICKEN_EGG",
@@ -24,6 +24,10 @@
         {
           "id": "IC.RELATIONAL_REALITY",
           "heading": "Also Look Outward"
+        },
+        {
+          "id": "IC.SHAME_APPRAISAL",
+          "heading": "Shame: Social Judgment, Responsibility, and Repair"
         },
         {
           "id": "IC.CHECKING_LOOP",

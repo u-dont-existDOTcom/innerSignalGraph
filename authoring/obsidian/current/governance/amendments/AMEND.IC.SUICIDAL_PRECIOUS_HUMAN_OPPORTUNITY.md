@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY
 status: owner-approved
 domain: inner-child
-base_record_sha256: a763172c68f979aa849a174c1ef7e01cde98aa235799132e076dcd6f36c5ed32
-source_file_sha256: 1f4451175a4d7793e92d27ad04edef5c1a793c71dd39b50a04a3ac31f1089bd6
-projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed2836a027876
+base_record_sha256: d83bca6c321b56af194e81bf788cd28cedd925c5006dd9ba751b47402a2d1c10
+source_file_sha256: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
+projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
 ---
 
 # AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY
@@ -17,13 +17,13 @@ projection_input_sha256: 14587e9c07ed6b512555e57fa8889bb1da0051a7ad6ad3e75b3ed28
 
 ```json
 {
-  "approvedAt": "2026-10-25",
+  "approvedAt": "2026-10-29",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
     "status": "owner-approved",
     "text": "For every suicidal desire or intent, once the person is safe and differentiated enough to reflect, give a serious spiritual/metaphysical reality check regardless of prior spiritual curiosity. Do not frame continued life merely as possibly worthwhile. Explain the Buddhist view that a human birth is an extraordinarily rare and precious opportunity to investigate dukkha, cultivate wisdom and love, and attain liberation; the blind-turtle-and-yoke analogy may be used as a vivid explanation that the person has effectively won a cosmic jackpot and should not discard the ticket before investigating what it affords. The person need not accept Buddhist doctrine, but because suicide is an irreversible act resting on assumptions about self, mind, and death, these teachings, rebirth evidence, NDE evidence and limits, and other serious continuity claims must be treated as routes to investigate rather than dismissed for lack of prior spiritual interest. A warning about hell or severe postmortem suffering may be stated plainly as Buddhist teaching and a dangerous possibility; do not suppress a relevant danger warning merely because fear is uncomfortable. Keep the evidentiary layers honest: deliberate self-harm and self-destructive mental conditioning cause harm within life; Buddhist teaching additionally says those intentional trajectories can continue through death and rebirth. Do not invent postmortem odds or claim empirical certainty about the individual destination."
   },
-  "version": "owner-amendments-2026-10-26-r17"
+  "version": "owner-amendments-2026-10-29-r18"
 }
 ```

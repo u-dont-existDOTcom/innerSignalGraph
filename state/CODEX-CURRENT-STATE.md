@@ -1,6 +1,16 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-26
+Updated: 2026-10-29
+
+## Shame-appraisal and semantic guide-reading candidate — 29 October 2026
+
+- **Owner outcome:** Preserve the existing broad shame work; distinguish social rejection from moral responsibility, secondary self-shaming, realistic reparability and selective belonging, and stop falsely claiming absent techniques after reading the wrong guide or relying on keyword searches.
+- **Source authority:** active registered AI guide was `inner-child-guide-2026-10-11-r6.txt`, not the historical September source. This branch preserves r6, adds `inner-child-guide-2026-10-29-r7.txt` with a compact shame section, updates the manifest/source layout and owner amendment, and does not edit public humanized prose.
+- **Executable development map:** one `IC.SHAME_APPRAISAL` node, selected only when the current turn has evidence of shame or humiliation (not from generic criticism/belonging pressure); existing guard, differentiation, critic, compassion, forgiveness, relational reality, action, community and checking routes remain. `shame_context` is required in new strict model outputs and optional for historical snapshots; no indiscriminate disclosure or numerical blame allocation. Neighboring open PRs about sensitive disclosure and reciprocal conflict sequences remain separate.
+- **Reading tool:** `scripts/guide-concept-read.mjs` and `authoring/concepts/shame.json` verify registered source hash, exact cross-section quotations, section IDs and graph-node references. Eleven curated concepts; semantic completeness and client behavior are explicitly unverified.
+- **Verification at current candidate:** graph compiler 87 nodes / 126 edges / 150 source sections / 71 amendments; 115 graph regressions including shame-salience, no-shame and immediate-safety countercases pass; authoring projection regenerated (584 files), validate/check/maps-check pass; 76 focused tests (formulation, selector, map, fidelity, provenance, mock latency, plugin) pass. The previous hosted full package run failed solely on a stale reviewed-tier semantic hash; that hash was corrected, but the newer selector edit requires a fresh exact-head hosted package run. No `stable` installation or live connector deployment authorized.
+- **Independent review disposition:** read-only Codex review of the first selector commit identified P2: shame decision rules reached application prompts but not the separately served therapy protocol. Fixed by relocating the exact guidance into `src/prompts/response-fidelity.mjs` with its byte-matched `references/RESPONSE-FIDELITY.md` plugin copy; `longitudinalClinicalRules` imports it once. A new three-way parity test and 32 focused protocol tests pass. Fresh final-head Codex review and hosted package check remain required.
+- **Next:** Finish final-commit hosted verification and independent review, reconcile prior pending shame and relational changes before any owner-gated merge/release, then verify `stable` separately. Keep the current public-guide queue pending until the humanized article worker reconciles it.
 
 ## Feeling/agency and early regulation — owner-authorized development work
 

@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: `2026-10-26-r14`
+Queue version: 2026-10-29-r15
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -314,3 +314,10 @@ Teaching point: A feeling may arise without deliberate choice. A person can exam
 Reader need: People who feel condemned for spontaneous experiences need a way to reduce shame and still exercise sound judgment, including when seeking supportive professional care.
 Already covered: Existing inherited shame discussion; the Protector's daily actions; PGQ-038 on protection; PGQ-039 on privacy; PGQ-040 on useful referrals. None states the full feeling/agency distinction.
 Where: Add one concise passage in the inherited-shame section and cross-reference “Make the Protector Visible”. Keep specialist privacy and suitability material with PGQ-039 under “Also Look Outward”. Do not include personal records or case narratives.
+
+### PGQ-047 — Shame appraisal, realistic repair and selective belonging
+Caused by: Owner-approved AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029 and AI guide r7 section IC.SHAME_APPRAISAL, after source audits revealed that different shame functions had already been taught but were dispersed and often confused with missing interventions.
+Teaching point: Separate actual or predicted social rejection from moral rightness; distinguish initial shame from secondary self-attack; retain precise responsibility for chosen harm, realistically possible repair, and the injured person's autonomy over forgiveness and renewed trust. Repeated rejection under unjust group norms can justify differentiation or leaving. Do not prescribe disclosure to unpredictable or hostile audiences, or numerical blame allocation.
+Reader need: Readers confronting shame require a practical way to decide whether to care for an original feeling, address inherited condemnation, repair specific harm, protect themselves from unjust rejection, or disengage from repeated reassurance-seeking without losing their moral compass.
+Already covered: The humanized guide has guard dialogue, inherited criticism, nonpunitive guidance, differentiated belonging, responsibility across developmental ages, and repair after internal attacks. The separate shame article also develops moral judgment and social reintegration. The new summary must connect those existing homes rather than duplicate or reinterpret them.
+Where: Reconcile inside existing 'Also Look Outward', 'The Parent You Inherited', 'Hear the Guard First', 'Untangling the Belonging Bargains', 'The Inner Guide' and 'How to Forgive Without Forgetting' sections; prefer one short cross-reference or transition to the complete shame guide, not another long chapter. Preserve owner edits and the source-wise qualifications.
