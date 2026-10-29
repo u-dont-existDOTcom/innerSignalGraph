@@ -7,13 +7,13 @@ source_id: AMEND.IC.BEST_FRIEND_PROMPT
 guide_id: owner-amendments
 heading: AMEND.IC.BEST_FRIEND_PROMPT
 source_role: owner-approved-extension
-source_hash: 37fde758e70f784ea48287232dfd5cd2946b8aaa992325039f07eb453cd174ff
+source_hash: b5e4bb9fa8c1354bca2e47b9c9c6eab6803de847c54eccdef2671730d59b839a
 section_hash: 492baccc8b8e0dda611e082a4aea9c51170ea4d3461c147e211a53b82fec6121
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.BEST_FRIEND_PERSPECTIVE
   - ROUTE.INFLUENCE_LOVE_CAPACITY
-projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
+projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
 ---
 
 # AMEND.IC.BEST_FRIEND_PROMPT

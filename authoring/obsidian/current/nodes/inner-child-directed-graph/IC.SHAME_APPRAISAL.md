@@ -27,7 +27,7 @@ regression_refs:
   - G154
 base_record_sha256: 9d1d8c83f772217bfadf1991df91d7c2c73c2108122a6f9accf139eef12f45da
 base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
-projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
+projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
 ---
 
 # Differentiate shame signals, social judgments, responsibility, and viable repair

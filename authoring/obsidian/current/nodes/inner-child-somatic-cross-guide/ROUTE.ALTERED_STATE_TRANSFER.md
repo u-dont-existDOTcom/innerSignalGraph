@@ -26,8 +26,8 @@ regression_refs:
   - G047
   - G048
 base_record_sha256: 3e723dc776f75c07e6999a7d87eb45b5e0f8c84c72f81a332cf9897555df5236
-base_graph_sha256: d2f28ffc6839a9e4809f6fa3ff98e2cf6e86f694f191f757d8ebfc4159f67588
-projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
+base_graph_sha256: b561192bc0b3931a924b941ac6c7185d5ab9e29966198359629befd7270b061d
+projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
 ---
 
 # Transfer altered-state access into sober credibility and capacity

@@ -38,11 +38,12 @@ const AUDIENCE_LINE = "These are instructions to InnerSignal. \"The person\" is 
 // The owner's own sentences, kept whole, and the clauses of the two additions, as the rule words them for InnerSignal.
 const OWNER_CLAUSES = [
   "Shame often guards something the person believes they can't tell anyone: a feeling, desire, fantasy, attraction, dream, memory or act they expect would bring rejection or alarm.",
-  "Keeping it secret keeps the self-rejection going; being understood without flinching loosens it.",
+  "Secrecy can add to the self-rejection, and being understood without flinching can loosen it, but relief never depends on telling anyone.",
   "Assume this may be there whenever shame is strong, journal or no journal.",
   "Name what it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act), keep it apart from the person's worth and from intent, and never answer with alarm, moralizing or a refusal script.",
   "Help the person choose whom to tell and how much. Advice to give them: a therapist they feel safe with, asked first, in general terms, what the therapist must report or write down; a friend who has shown ease with taboo subjects;",
   "start with the general kind of thing, ask before giving details, see how a smaller truth is received, and slow down or stop if the listener seems alarmed;",
+  "Whether, when and to whom to tell is the person's choice: do not press for disclosure or choose the listener for them. Disclosure is never a default treatment, a test of worth, or something owed to a hostile or unpredictable listener.",
   "When a topic is beyond what InnerSignal can help with, say so as soon as it matters: what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help.",
   "tell them once, in plain words and without alarm, that some topics may be beyond what InnerSignal can help with and that if one is, it will say so and point to a person who can help.",
   "Never present this as a warning about the person",
@@ -106,6 +107,8 @@ test("the rule is written once, carries the owner's sentences and both additions
     assert.equal(responseFidelityRules.includes(code), false, `${code} is new, not a renamed response-fidelity code`);
   }
   assert.equal(untellableShameRules.split("\n").filter((line) => /^- [A-Z_]+: /u.test(line)).length, FAILURES.length);
+  // Aligned with the shame-appraisal amendment of 29 Oct: telling is never required and never a test of worth.
+  assert.ok(untellableShameRules.includes("\n- DISCLOSURE_PRESSED_OR_UNGRADED: presses the person to tell, treats telling as a required treatment or a test of worth, chooses the listener, or sends them to a listener without the general-first, ask-before-details, watch-the-response steps.\n"));
   assert.deepEqual(unservedReferenceMentions(untellableShameRules), []);
 });
 
@@ -180,17 +183,22 @@ test("the owner amendment and the graph bind the rule, and the compiled projecti
   assert.equal(item?.status, "owner-approved");
   assert.equal(item.domain, "cross-guide");
   assert.equal(item.approvedAt, "2026-10-28");
+  // The shame-appraisal amendment merged from main stays beside this one, and this one agrees with it.
+  const appraisal = amendments.items.find((entry) => entry.id === "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029");
+  assert.equal(appraisal?.status, "owner-approved");
+  assert.match(appraisal.text, /Disclosure to an unpredictable or hostile audience is not a default treatment or behavioral experiment\./u);
   // The amendment is written to InnerSignal in the voice of the other amendments, and carries the owner's sentences and both additions.
   for (const sentence of [
     "Shame often guards something a person believes they can't tell anyone: a feeling, desire, fantasy, attraction, dream, memory or act they expect would bring rejection or alarm.",
-    "Secrecy keeps the self-rejection going, and being understood without flinching loosens it; assume this may be present whenever shame is strong.",
+    "Secrecy can add to the self-rejection and being understood without flinching can loosen it, but relief never depends on telling anyone; assume this may be present whenever shame is strong.",
     "Read such material as ordinary therapeutic material: name its kind (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act), keep it apart from the person's worth and intent, and never answer with alarm, moralizing or a refusal script.",
     "Help the person choose whom to tell and how much, by the listener's ease with the subject rather than closeness: the general kind of thing first, asking before details, watching how a smaller truth is received, and slowing down or stopping at alarm; with a therapist, asking first what the therapist must report.",
+    "Disclosure is never a default treatment, a test of worth, or owed to a hostile or unpredictable listener.",
     "Name a limit of the AI as soon as it matters, as a limit of the tool and not a verdict on the person, with a human who can help, and mention once, early and after the welcome, that some topics may reach that limit.",
     "When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting abuse.",
     "tell them that accidental exposure is not seeking it, and advise them not to save or share it, that reporting the material itself is their choice, and to ask a lawyer about legal worries; the AI never reports the person and does not assess legal exposure.",
     "Do not route journal or conversation material for outside review because of taboo content, dreams, fantasies or a past accidental exposure; only evidence of current risk does, under the ordinary safety rules.",
-    "Current danger to anyone is never hidden under this rule"
+    "Current danger to anyone is never hidden under this rule, and the rules on felt violations, unchosen feelings versus chosen conduct, shame appraisal and reparability, sensitive referral fit and protective compatibility continue to apply."
   ]) assert.ok(item.text.includes(sentence), sentence);
 
   const bindings = [
@@ -208,6 +216,7 @@ test("the owner amendment and the graph bind the rule, and the compiled projecti
   }
   const community = json("../guide-graphs/candidates/cross-guide.graph.json").nodes.find((node) => node.id === "ROUTE.COMMUNITY_SUPPORT");
   assert.match(community.recommendations.at(-2), /whom to tell and how much\. Advice to give them: a therapist they feel safe with, asked first, in general terms, what the therapist must report or write down/u);
+  assert.match(community.recommendations.at(-2), /Disclosure is never a default treatment, a test of worth, or something owed to a hostile or unpredictable listener\.$/u);
   assert.match(community.recommendations.at(-1), /Early in the work, after the person has been welcomed, tell them once/u);
   assert.match(community.recommendations.at(-1), /a limit of the tool and not a verdict on the person/u);
   assert.match(community.recommendations.at(-1), /offer a therapist experienced with early sexual trauma as an option, without asserting that abuse happened/u);
@@ -288,6 +297,7 @@ test("synthetic regression cases cover the behaviors and name only this rule's a
   assert.match(byId.get("fantasy-met-without-alarm").pass_criterion, /no moralizing, no stock refusal/u);
   assert.match(byId.get("graded-disclosure-plan").pass_criterion, /advice for the person to weigh/u);
   assert.match(byId.get("graded-disclosure-plan").pass_criterion, /start with the general kind of thing, ask before giving details/u);
+  assert.match(byId.get("graded-disclosure-plan").pass_criterion, /does not push full disclosure, treat telling as required or as a test of worth, or choose the listener/u);
   assert.match(byId.get("dream-named-as-dream").pass_criterion, /names it as a dream/u);
   assert.match(byId.get("uncertain-memory-early-harm-option").pass_criterion, /without asserting that abuse happened/u);
   assert.match(byId.get("accidental-exposure-not-seeking").pass_criterion, /accidentally seeing illegal material is not seeking it/u);
@@ -322,4 +332,19 @@ test("the lesson and the integration record carry the change and declare no guid
   const section = stateSection();
   assert.ok(section.includes(AMENDMENT));
   assert.ok(section.includes("Guide impact: app-only"));
+  // Aligned with the shame-appraisal amendment of 29 Oct: relief never depends on telling, and telling is never a default treatment.
+  const never = /disclosure is never a default treatment, a test of worth, or something owed to a hostile or unpredictable listener/iu;
+  const served = loadTherapyProtocol().files.find((file) => file.path === PHENOMENOLOGY).content;
+  const amendment = json("../guides/owner-amendments.json").items.find((entry) => entry.id === AMENDMENT).text;
+  for (const [label, text] of [["rule module", untellableShameRules], ["served closing section", served], ["lesson", lesson], ["state section", section], ["integration record", integration]]) {
+    assert.match(text, never, `${label} says disclosure is never a default treatment`);
+  }
+  for (const [label, text] of [["rule module", untellableShameRules], ["served closing section", served], ["owner amendment", amendment], ["lesson", lesson], ["integration record", integration]]) {
+    assert.match(text, /relief never depends on telling anyone/u, `${label} says relief never depends on telling anyone`);
+  }
+  for (const [label, text] of [["rule module", untellableShameRules], ["served closing section", served], ["owner amendment", amendment], ["lesson", lesson], ["integration record", integration]]) {
+    assert.doesNotMatch(text, /keeps? the self-rejection going/u, `${label} does not say that secrecy alone keeps the self-rejection going`);
+  }
+  assert.match(amendment, /Disclosure is never a default treatment, a test of worth, or owed to a hostile or unpredictable listener\./u);
+  assert.match(amendment, /shame appraisal and reparability/u);
 });

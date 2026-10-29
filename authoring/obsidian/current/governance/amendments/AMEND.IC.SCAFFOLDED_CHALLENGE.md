@@ -7,8 +7,8 @@ amendment_id: AMEND.IC.SCAFFOLDED_CHALLENGE
 status: owner-approved
 domain: inner-child
 base_record_sha256: 05fb1c2f840259a1eaded822cb6f3004dbd7f012f208a932167b4109b9ef43a3
-source_file_sha256: 37fde758e70f784ea48287232dfd5cd2946b8aaa992325039f07eb453cd174ff
-projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
+source_file_sha256: b5e4bb9fa8c1354bca2e47b9c9c6eab6803de847c54eccdef2671730d59b839a
+projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
 ---
 
 # AMEND.IC.SCAFFOLDED_CHALLENGE

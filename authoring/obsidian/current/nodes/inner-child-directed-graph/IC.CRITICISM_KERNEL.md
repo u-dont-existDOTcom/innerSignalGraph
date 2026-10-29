@@ -22,7 +22,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 0c85a0eba9cc460db287d0467ac8d209cddc2f044de99db4503e225357e10bc5
 base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
-projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
+projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
 ---
 
 # Receive useful content without accepting contempt
