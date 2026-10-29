@@ -22,14 +22,15 @@ source_refs:
   - IC.RELATIONSHIP
   - IC.THREE_FUNCTIONS
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
   - AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028
 regression_refs:
   - G064
   - G065
   - G085
-base_record_sha256: d87d594df70d1d43f5fd21d0749d2fe8f669ea0d86b386db81745940ff5b7ecf
-base_graph_sha256: 4403b251e43e8fb5f5e8fca5422982c5dfc419a5e58b8eb9cfd92bde29884343
-projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
+base_record_sha256: 831ac48d13b097cd005d53f7335dc8eeb306609aba6f4fc72e21ddc4e5982404
+base_graph_sha256: d2f28ffc6839a9e4809f6fa3ff98e2cf6e86f694f191f757d8ebfc4159f67588
+projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
 ---
 
 # Build a diversified human support ecology
@@ -78,6 +79,7 @@ projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac
     "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
     "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
     "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add.",
+    "For chronic shame under repeated exclusion, favor communities that can combine acceptance with accountability; repeated rejection may warrant differentiation or departure instead of more attempts to earn approval.",
     "When the person carries something they believe they can't tell anyone, help them choose whom to tell and how much. Advice to give them: a therapist they feel safe with, asked first, in general terms, what the therapist must report or write down; a friend who has shown ease with taboo subjects; the general kind of thing first, asking before giving details, seeing how a smaller truth is received, and slowing down or stopping if the listener seems alarmed.",
     "Early in the work, after the person has been welcomed, tell them once, in plain words and without alarm, that some topics may be beyond what the AI can help with and that if one is, the AI will say so and point to a person who can help; never as a warning about the person, and not repeated as a ritual disclaimer. When a topic is beyond what the AI can help with, say as soon as it matters what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help. When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting that abuse happened."
   ],
@@ -98,5 +100,7 @@ projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac
 [[current/sources/inner-child-guide/IC.THREE_FUNCTIONS]]
 
 [[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
 
 [[current/governance/amendments/AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028]]

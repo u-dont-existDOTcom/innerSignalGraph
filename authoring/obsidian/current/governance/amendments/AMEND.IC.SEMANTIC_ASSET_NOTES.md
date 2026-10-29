@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SEMANTIC_ASSET_NOTES
 status: owner-approved
 domain: inner-child
-base_record_sha256: d1237f4a2cbca5eed70527bb0c5a22307fe820108f7f8431753e5bc315d99c0a
-source_file_sha256: 037ae0323d09a4cb616eab99feeba29ce8f99733d60b4b33267439cd0f9a870b
-projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
+base_record_sha256: 31c44f3ee5b70ece840a0c38ede2c899fd8117a031e4497739ff8812f1ad909a
+source_file_sha256: 37fde758e70f784ea48287232dfd5cd2946b8aaa992325039f07eb453cd174ff
+projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
 ---
 
 # AMEND.IC.SEMANTIC_ASSET_NOTES
@@ -17,13 +17,13 @@ projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac
 
 ```json
 {
-  "approvedAt": "2026-10-25",
+  "approvedAt": "2026-10-29",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.SEMANTIC_ASSET_NOTES",
     "status": "owner-approved",
     "text": "Instructional images, infographics, diagrams, captions, and other visual assets may carry therapeutic or doctrinal meaning beyond nearby prose. The guide-to-map pipeline must preserve that meaning through compact semantic asset notes identifying the asset, its role, its explicit claims, and related guide sections or graph nodes. Decorative images need no semantic note. Asset notes are source provenance, not permission for the extractor to invent claims that are not actually present in the image or owner description."
   },
-  "version": "owner-amendments-2026-10-28-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```

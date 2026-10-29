@@ -16,10 +16,12 @@ graph_tags:
   - integration
 source_refs:
   - IC.FORGIVENESS
-regression_refs: []
-base_record_sha256: 003ae2954c5b90662580813ea8156252c51249fb9d3793fa74e12588a6b1a107
-base_graph_sha256: 98f5f406ed7d7da8abded2fde96d7b0c1efbda9b99e4362e2d1681a3c9190ff2
-projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+regression_refs:
+  - G152
+base_record_sha256: bfa7ffac2a3ad49efbaaef3cc6ff1f709c5d2d6e582f374b523a92ac4e6d34b6
+base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
+projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
 ---
 
 # Approach forgiveness without bypassing accountability
@@ -56,7 +58,8 @@ projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac
     "requiredNuance": []
   },
   "recommendations": [
-    "Use responsibility, remorse, rectification, and release for self-forgiveness; preserve boundaries and consequences for others."
+    "Use responsibility, remorse, rectification, and release for self-forgiveness; preserve boundaries and consequences for others.",
+    "Consider what repair is realistically possible, what cannot be undone, and what remains someone else's choice; accountability may continue even when forgiveness, renewed trust or reconciliation is unavailable."
   ],
   "successSignals": [
     "Understanding changes the emotional relationship without erasing the harm."
@@ -68,3 +71,5 @@ projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac
 ## Source navigation
 
 [[current/sources/inner-child-guide/IC.FORGIVENESS]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

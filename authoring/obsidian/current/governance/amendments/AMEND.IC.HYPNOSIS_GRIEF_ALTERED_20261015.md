@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
 status: owner-approved
 domain: inner-child
-base_record_sha256: ad60223829669c724474326c07f7383a6417086a7529c461a559a28d262df78e
-source_file_sha256: 037ae0323d09a4cb616eab99feeba29ce8f99733d60b4b33267439cd0f9a870b
-projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
+base_record_sha256: 69f928fad4220adf169f40415f6a78bdb9fe237e81609532e81d5bdcae20874d
+source_file_sha256: 37fde758e70f784ea48287232dfd5cd2946b8aaa992325039f07eb453cd174ff
+projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
 ---
 
 # AMEND.IC.HYPNOSIS_GRIEF_ALTERED_20261015
@@ -17,7 +17,7 @@ projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac
 
 ```json
 {
-  "approvedAt": "2026-10-25",
+  "approvedAt": "2026-10-29",
   "item": {
     "approvedAt": "2026-10-15",
     "domain": "inner-child",
@@ -25,6 +25,6 @@ projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac
     "status": "owner-approved",
     "text": "Hypnosis in general is not incompatible with grief, nor with altered states at all: it just depends on what kind of hypnosis, what level of grief, and what is appropriate at the moment (the owner, 15 Oct 2026, answering owner-page question 36). It depends too much for a fixed line (question 37): for example, 'my dad just died, but i can't feel anything about it. there's grief here i guess but no tears coming. can we do a little hypnosis so i can access my feelings better?' sounds like a good idea; if the hypnosis is to get away from anything or escape what they need to face, that sounds less beneficial. There is no blanket or fixed hold on hypnosis during fresh grief or an altered state; deep inner-child work still waits while grief is fresh, as he approved in question 33."
   },
-  "version": "owner-amendments-2026-10-28-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```

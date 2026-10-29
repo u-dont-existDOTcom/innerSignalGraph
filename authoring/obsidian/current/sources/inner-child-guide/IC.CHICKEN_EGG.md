@@ -7,18 +7,18 @@ source_id: IC.CHICKEN_EGG
 guide_id: inner-child-guide
 heading: The Chicken-and-Egg Problem
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+source_hash: 1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb
 section_hash: a397b837ebfa3e77e2ad67a005e942ed70dafa61c2ea9e69fa7dfff3434a72d1
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 631da8aaee50839ed0fc8d1a9c6a3b118edfde06cd1e7fb64d74bac8ca344c4e
+projection_input_sha256: 2401a5ed072ec762017f353f5fcb45fbc257f710aaca82591ca4e113c1e71b3b
 ---
 
 # The Chicken-and-Egg Problem
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-10-29-r7.txt`
 
 Locator: Lines 7–44
 
