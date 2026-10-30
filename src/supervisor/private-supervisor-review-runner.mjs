@@ -94,14 +94,18 @@ export function createSupervisorReviewRunner({
         if (recent) throw recent.error;
       }
       // A job that has to wait for a turn (another review is running for its case, or every turn is taken) takes a place in the
-      // bounded queue; one that can start at once does not.
-      if ((running >= concurrency || caseTails.has(caseId)) && waiting >= queueLimit) {
+      // bounded queue; one that can start at once takes a turn. Either is claimed here, before anything yields, so calls that arrive
+      // together are counted one after another and cannot all find the room that the first of them has already taken.
+      const startsNow = running < concurrency && !caseTails.has(caseId);
+      if (!startsNow && waiting >= queueLimit) {
         throw new RuntimeError("InnerSignal is reviewing other drafts right now. Nothing was approved; try again shortly.", { code: SUPERVISOR_REVIEW_BUSY });
       }
+      if (startsNow) running += 1;
+      else waiting += 1;
       const job = { identity, caseId, lineage, lineageKey: key, promise: null };
       job.promise = (async () => {
-        waiting += 1;
-        let counted = true;
+        let holdsTurn = startsNow;
+        let counted = !startsNow;
         const uncount = () => { if (counted) { counted = false; waiting -= 1; } };
         const previous = caseTails.get(caseId) ?? Promise.resolve();
         let releaseCase;
@@ -109,12 +113,15 @@ export function createSupervisorReviewRunner({
         caseTails.set(caseId, tail);
         try {
           await previous;
-          await acquireTurn();
+          if (!holdsTurn) {
+            await acquireTurn();
+            holdsTurn = true;
+          }
           uncount();
-          try { return await work(); }
-          finally { releaseTurn(); }
+          return await work();
         } finally {
           uncount();
+          if (holdsTurn) releaseTurn();
           releaseCase();
           if (caseTails.get(caseId) === tail) caseTails.delete(caseId);
         }

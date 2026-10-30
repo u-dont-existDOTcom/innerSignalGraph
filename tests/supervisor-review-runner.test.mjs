@@ -203,6 +203,67 @@ test("past the queue limit a call is told the service is busy, and nothing is st
   assert.equal((await runner.run({ caseId: "c3", lineage: "l3", identity: "c", work: async () => "ok" })).value, "ok");
 });
 
+test("calls that arrive in the same moment are counted one after another, so a burst cannot get past the limits", async () => {
+  for (const [concurrency, queueLimit] of [[1, 0], [1, 3], [2, 0], [2, 3]]) {
+    const runner = createSupervisorReviewRunner({ budgetMs: 5, concurrency, queueLimit });
+    const gate = deferred();
+    const started = [];
+    const calls = Array.from({ length: 20 }, (_, index) => runner.run({
+      caseId: `c${index}`,
+      lineage: `l${index}`,
+      identity: `j${index}`,
+      work: async () => { started.push(index); await gate.promise; }
+    }));
+    const settled = await Promise.allSettled(calls);
+    const room = concurrency + queueLimit;
+    const label = `${concurrency} at once, ${queueLimit} waiting`;
+    assert.equal(settled.filter((result) => result.status === "fulfilled").length, room, `${label}: only the room there is gets taken`);
+    assert.equal(settled.filter((result) => result.status === "rejected" && result.reason.code === SUPERVISOR_REVIEW_BUSY).length, 20 - room, `${label}: the rest are told the service is busy`);
+    assert.deepEqual(runner.stats(), { running: concurrency, waiting: queueLimit, jobs: room }, label);
+    gate.resolve();
+    await runner.idle();
+    assert.equal(started.length, room, `${label}: nothing that was refused ever ran`);
+    assert.deepEqual(runner.stats(), { running: 0, waiting: 0, jobs: 0 }, label);
+  }
+});
+
+test("calls for one case that arrive together fill the queue once, and still run in the order asked", async () => {
+  const runner = createSupervisorReviewRunner({ budgetMs: 5, concurrency: 2, queueLimit: 2 });
+  const gate = deferred();
+  const log = [];
+  const settled = await Promise.allSettled(Array.from({ length: 6 }, (_, index) => runner.run({
+    caseId: "c1",
+    lineage: `l${index}`,
+    identity: `j${index}`,
+    work: tracked(log, `j${index}`, gate)
+  })));
+  assert.equal(settled.filter((result) => result.status === "fulfilled").length, 3, "one runs and two wait");
+  assert.equal(settled.filter((result) => result.status === "rejected" && result.reason.code === SUPERVISOR_REVIEW_BUSY).length, 3);
+  gate.resolve();
+  await runner.idle();
+  assert.deepEqual(log, ["start:j0", "end:j0", "start:j1", "end:j1", "start:j2", "end:j2"]);
+});
+
+test("a turn claimed when a call is admitted is given back when its work fails, so failures leave the room as it was", async () => {
+  const runner = createSupervisorReviewRunner({ budgetMs: 50, concurrency: 1, queueLimit: 1, cooldownMs: 0 });
+  const settled = await Promise.allSettled(Array.from({ length: 5 }, (_, index) => runner.run({
+    caseId: `c${index}`,
+    lineage: `l${index}`,
+    identity: `j${index}`,
+    work: async () => { throw new Error("synthetic failure"); }
+  })));
+  assert.deepEqual(settled.map((result) => (result.reason.code === SUPERVISOR_REVIEW_BUSY ? "busy" : result.reason.message)), [
+    "synthetic failure",
+    "synthetic failure",
+    "busy",
+    "busy",
+    "busy"
+  ]);
+  await runner.idle();
+  assert.deepEqual(runner.stats(), { running: 0, waiting: 0, jobs: 0 });
+  assert.equal((await runner.run({ caseId: "c9", lineage: "l9", identity: "j9", work: async () => "ok" })).value, "ok");
+});
+
 test("a provider outage on a draft is not retried for the cooldown, but other drafts, other failures and later successes are unaffected", async () => {
   let clock = 1_000;
   const runner = createSupervisorReviewRunner({ budgetMs: 1_000, cooldownMs: 100, now: () => clock });
