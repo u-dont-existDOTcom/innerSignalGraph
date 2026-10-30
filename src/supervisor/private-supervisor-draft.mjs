@@ -2,7 +2,16 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, createCandidateAuditEvidence } from "./private-candidate-lifecycle.mjs";
-import { SUPERVISOR_INPUT_TYPES, SUPERVISOR_LIMITS, sha256Json, sha256Text, supervisorAuditId, supervisorCandidateId } from "../storage/private-case-supervisor.mjs";
+import {
+  SUPERVISOR_INPUT_TYPES,
+  SUPERVISOR_LIMITS,
+  findSupervisorArtifact,
+  sha256Json,
+  sha256Text,
+  supervisorAuditId,
+  supervisorCandidateId,
+  validateOperationKey
+} from "../storage/private-case-supervisor.mjs";
 
 // The controlled supervisor draft and export operations, on the same private backend the automatic runtime uses. A supervisor's
 // draft, whether an external person or host wrote its bytes or the existing runtime writes them, goes through the same
@@ -32,6 +41,12 @@ function optionalKey(value, name) {
   if (value == null) return null;
   if (typeof value !== "string" || !SAFE_KEY.test(value)) throw new ValidationError(`${name} must be 1 to 200 visible characters.`);
   return value;
+}
+
+// The operation a keyed submission is, found from its idempotency key alone, so a caller who has only the key can ask where its
+// review stands before any draft handle exists.
+export function supervisorOperationKeyForIdempotencyKey(caseId, idempotencyKey) {
+  return operationKeyFor(caseId, ["key", optionalKey(idempotencyKey, "idempotencyKey")]);
 }
 
 function requiredText(value, name, maximum) {
@@ -171,8 +186,7 @@ export function createPrivateSupervisorDraftService({
     throw new RuntimeError("The supervisor review exceeded its bounded step ceiling.", { code: "SUPERVISOR_REVIEW_UNAVAILABLE" });
   }
 
-  async function reviewResult({ caseId, operationKey, authContext, replayed }) {
-    const outcome = await driveReview({ caseId, operationKey, authContext });
+  async function describeReview({ caseId, outcome, authContext, replayed }) {
     const snapshot = await call("getSupervisorSnapshot", [caseId], authContext);
     const headArtifact = snapshot.artifacts.find((artifact) => artifact.candidate_id === outcome.head.id) ?? null;
     return Object.freeze({
@@ -187,9 +201,35 @@ export function createPrivateSupervisorDraftService({
           : "This draft was approved, but the case has changed since, so it can no longer be exported. Prepare the case again and submit a new draft.")
         : (outcome.status === "blocked"
           ? "The bounded repair limit was reached and no text is approved. Nothing can be exported for this draft."
-          : "This draft no longer governs the case; use the newest draft.")
+          : (outcome.status === "reviewing"
+            ? "The review of this draft is not finished. Nothing is approved yet."
+            : "This draft no longer governs the case; use the newest draft."))
     });
   }
+
+  async function reviewResult({ caseId, operationKey, authContext, replayed }) {
+    const outcome = await driveReview({ caseId, operationKey, authContext });
+    return describeReview({ caseId, outcome, authContext, replayed });
+  }
+
+  // The state of a draft lineage's newest version as the review loop reads it, without driving anything: `reviewing` is any state the
+  // loop would still act on.
+  const reviewStatusOf = (head) => {
+    switch (head.status) {
+      case "pending_audit":
+      case "reconstructed_pending_audit":
+      case "audited":
+        return "reviewing";
+      case "audit_failed":
+        return head.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES ? "blocked" : "reviewing";
+      case "approved_for_delivery":
+        return "approved";
+      case "superseded":
+        return "superseded";
+      default:
+        return "committed";
+    }
+  };
 
   return Object.freeze({
     // A case-authorized snapshot to draft against, after recording any current messages the owner supplied. A client message the
@@ -305,6 +345,33 @@ export function createPrivateSupervisorDraftService({
     // the access service has already checked that the caller's authorization is current.
     async getApprovedResponseArtifact({ caseId, artifactId, authContext, channel }) {
       return call("exportSupervisorArtifact", [caseId, { artifactId, channel: normalizeChannel(channel) }], authContext, trustOptions(channel));
+    },
+
+    // The operation a draft belongs to, found from the handle of any of its versions (the original, or a later repair), so a caller
+    // that holds only a handle can follow the draft's review across repairs. Read-only; a handle from another case finds nothing.
+    async findReviewLineage({ caseId, artifactId, authContext }) {
+      const record = await loadCase(caseId, authContext);
+      const operationKey = findSupervisorArtifact(record, artifactId)?.metadata?.supervisor_draft?.operation_key;
+      if (typeof operationKey !== "string") throw new ValidationError("No such supervisor artifact in this case.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+      return operationKey;
+    },
+
+    // Where one draft's review stands, read from what is stored. It drives nothing and calls no model, so it can say a review is
+    // unfinished without starting or finishing it; `resumeReview` is what continues one.
+    async getReviewStatus({ caseId, operationKey, authContext }) {
+      validateOperationKey(operationKey);
+      const record = await loadCase(caseId, authContext);
+      const head = lineageHead(record, operationKey);
+      if (!head) throw new ValidationError("The supervisor draft to review was not found.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+      return describeReview({ caseId, outcome: { status: reviewStatusOf(head), head }, authContext, replayed: true });
+    },
+
+    // Continues a stored draft's review from where its lineage stands: the same loop a submission runs, so a review that a restart
+    // or a failure left unfinished picks up at the next step, and one that is finished answers without any model call. Taken one at
+    // a time with every other call for the case.
+    async resumeReview({ caseId, operationKey, authContext }) {
+      validateOperationKey(operationKey);
+      return serialized(caseId, () => reviewResult({ caseId, operationKey, authContext, replayed: true }));
     },
 
     // Records that the owner reported sending a draft. Only the owner's own channel yields an owner-verified report; an agent
