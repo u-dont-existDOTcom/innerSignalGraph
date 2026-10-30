@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.COMMUNITY_REPARENTING
 status: owner-approved
 domain: inner-child
-base_record_sha256: aa3c83344c277981b991375d3a0a2dd27e7815404e1c59733c3f544c13a969a1
-source_file_sha256: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
-projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
+base_record_sha256: 692d6b41f420be0e2d3a30a9c4701f629dd8627c9841838a8bb1b2c468b46420
+source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # AMEND.IC.COMMUNITY_REPARENTING
@@ -24,6 +24,6 @@ projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07e
     "status": "owner-approved",
     "text": "Real human connection can embody care, protection, and guidance, and—when the person already welcomes an inner-child frame—can sometimes be named as reparenting in action. Calling a trusted friend, asking to spend time with safe people, contacting a social worker, joining a peer-support group, spiritual community, interest group, class, club, volunteer activity, or another recurring community can serve Nurturer, Protector, or Guide functions when it meets the actual need. Prefer a diversified mix: reciprocal relationships where possible, plus peer, professional, spiritual, and practical services. Build additional routes alongside existing safe supports rather than telling the person to withdraw from one merely to diversify. Do not make one partner, friend, therapist, group, spiritual authority, service, or this app the single point of emotional survival. Explore fit and practical barriers; preserve the person's spirituality without assuming religion; screen high-control groups, exploitative authorities, and unsafe or abusive relationships rather than reinforcing them as support; and treat needing people as compatible with adult capacity rather than failed independence. Use reparenting labels sparingly, only when the person already uses or welcomes that frame, never after they decline it, and never as a substitute for inner contact they are actually asking for."
   },
-  "version": "owner-amendments-2026-10-29-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```
