@@ -101,10 +101,15 @@ async function startGovernedServer(t) {
   return { store, base, revoked };
 }
 
+// A browser attaches the page's Origin to every POST it makes, same-origin ones included, so a request on the owner's channel carries
+// the application's own origin unless a test removes it (`origin: null`). A request that carries its own bearer token is an agent, which
+// is not a browser and sends none.
 async function post(base, route, body, headers = {}) {
+  const sent = { "content-type": "application/json", ...(headers.authorization === undefined ? { origin: base } : {}), ...headers };
+  for (const name of Object.keys(sent)) if (sent[name] === null) delete sent[name];
   const response = await fetch(`${base}/v1/case/supervisor/${route}`, {
     method: "POST",
-    headers: { "content-type": "application/json", ...headers },
+    headers: sent,
     body: JSON.stringify(body)
   });
   const text = await response.text();
@@ -112,6 +117,19 @@ async function post(base, route, body, headers = {}) {
 }
 
 const AGENT = { authorization: "Bearer agent-token" };
+
+// The fetch a browser gives the owner's page: the page's Origin and Sec-Fetch-Site go on every request that is not a GET or HEAD, whatever
+// the code asks for, as long as it keeps the default fetch mode. The log lets a test see the panel never asks for another mode.
+function browserFetch(base) {
+  const calls = [];
+  const fetchImpl = (url, init = {}) => {
+    const method = String(init.method ?? "GET").toUpperCase();
+    calls.push({ url, method, mode: init.mode, credentials: init.credentials });
+    const browserHeaders = method === "GET" || method === "HEAD" ? {} : { origin: base, "sec-fetch-site": "same-origin" };
+    return fetch(`${base}${url}`, { ...init, headers: { ...browserHeaders, ...init.headers } });
+  };
+  return { fetchImpl, calls };
+}
 
 test("the loopback server takes a draft through review, exact export and an owner report, and none of it is a send", async (t) => {
   const { store, base } = await startOwnerServer(t);
@@ -218,31 +236,50 @@ test("refusals map to fixed statuses and codes that carry reasons but never case
   assert.deepEqual([none.status, none.body.code], [409, "SUPERVISOR_NO_REPORTABLE_DRAFT"]);
   const badCase = await post(base, "prepare", { caseId: "Not A Valid Id" });
   assert.equal(badCase.status, 400);
-  const badBody = await fetch(`${base}/v1/case/supervisor/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: "[1]" });
+  const badBody = await fetch(`${base}/v1/case/supervisor/prepare`, { method: "POST", headers: { "content-type": "application/json", origin: base }, body: "[1]" });
   assert.equal(badBody.status, 400);
   const getRoute = await fetch(`${base}/v1/case/supervisor/prepare`);
   assert.equal(getRoute.status, 404, "the supervisor routes answer only POST");
   assert.equal((await store.load(CASE_ID)).communication_events.length, 0, "no refusal recorded an export or a report");
 });
 
-test("the owner's channel refuses cross-site, form-encoded and rebound requests, so a web page cannot forge an owner report", async (t) => {
+test("the owner's channel refuses cross-site, form-encoded, rebound and origin-less requests, so a web page or a bare client cannot forge an owner report", async (t) => {
   const { store, base } = await startOwnerServer(t);
   const submitted = await post(base, "submit", { caseId: CASE_ID, source: "external_draft", text: "Draft the page tries to report.", idempotencyKey: "csrf-1" });
   const artifactId = submitted.body.artifact.artifact_id;
   await post(base, "export", { caseId: CASE_ID, artifactId });
   const attempt = { caseId: CASE_ID, artifactId, idempotencyKey: "csrf-report" };
 
-  const plain = await fetch(`${base}/v1/case/supervisor/report-sent`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify(attempt) });
-  assert.deepEqual([plain.status, (await plain.json()).code], [415, "SUPERVISOR_UNSUPPORTED_MEDIA_TYPE"], "a simple cross-site form post is not JSON");
-  const form = await fetch(`${base}/v1/case/supervisor/report-sent`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "caseId=x" });
+  // Past the origin checks, a request that is not JSON is still refused: a simple form post cannot be a supervisor request.
+  const plain = await fetch(`${base}/v1/case/supervisor/report-sent`, { method: "POST", headers: { "content-type": "text/plain", origin: base }, body: JSON.stringify(attempt) });
+  assert.deepEqual([plain.status, (await plain.json()).code], [415, "SUPERVISOR_UNSUPPORTED_MEDIA_TYPE"], "a simple form post is not JSON");
+  const form = await fetch(`${base}/v1/case/supervisor/report-sent`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", origin: base }, body: "caseId=x" });
   assert.equal(form.status, 415);
-  for (const headers of [{ origin: "http://evil.example" }, { origin: "null" }, { origin: "https://127.0.0.1" }, { "sec-fetch-site": "cross-site" }]) {
+  const otherLoopbackName = base.replace("127.0.0.1", "localhost");
+  const otherPort = `http://127.0.0.1:${Number(new URL(base).port) + 1}`;
+  for (const headers of [
+    { origin: "http://evil.example" }, { origin: "null" }, { origin: "https://127.0.0.1" }, { origin: otherLoopbackName }, { origin: otherPort }, { origin: "" }, { origin: `${base}, ${base}` },
+    { "sec-fetch-site": "cross-site" }, { "sec-fetch-site": "same-site" },
+    // No Origin at all did not come from a page, whatever else it claims.
+    { origin: null }, { origin: null, "sec-fetch-site": "same-origin" }, { origin: null, referer: `${base}/` }
+  ]) {
     const refused = await post(base, "report-sent", attempt, headers);
     assert.deepEqual([refused.status, refused.body.code], [403, "SUPERVISOR_ORIGIN_REFUSED"], JSON.stringify(headers));
+    assert.equal(refused.text.includes("Draft the page tries to report."), false);
   }
+  // Every route of the owner's channel needs the Origin, and a refusal writes nothing.
+  const eventsBefore = (await store.load(CASE_ID)).communication_events.length;
+  const recordBefore = JSON.stringify((await store.load(CASE_ID)).supervisor_artifacts);
+  for (const [route, body] of [["prepare", { caseId: CASE_ID, inputs: [{ type: "client_message", text: "Message from a bare client.", idempotencyKey: "bare-input" }] }], ["submit", { caseId: CASE_ID, source: "external_draft", text: "Draft from a bare client.", idempotencyKey: "bare-draft" }], ["export", { caseId: CASE_ID, artifactId }], ["report-sent", attempt]]) {
+    const bare = await post(base, route, body, { origin: null });
+    assert.deepEqual([bare.status, bare.body.code], [403, "SUPERVISOR_ORIGIN_REFUSED"], `${route} with no Origin`);
+  }
+  assert.equal((await store.load(CASE_ID)).communication_events.length, eventsBefore, "no refused request recorded an export or a report");
+  assert.equal(JSON.stringify((await store.load(CASE_ID)).supervisor_artifacts), recordBefore, "no refused request stored an input or a draft");
   const host = new URL(base);
   const rebound = await new Promise((resolve, reject) => {
-    const request = http.request({ host: host.hostname, port: host.port, path: "/v1/case/supervisor/report-sent", method: "POST", headers: { host: "attacker.example", "content-type": "application/json" } }, (response) => {
+    // A rebound page names its own host in both headers, so only the loopback check on the Host can refuse it.
+    const request = http.request({ host: host.hostname, port: host.port, path: "/v1/case/supervisor/report-sent", method: "POST", headers: { host: "attacker.example", origin: "http://attacker.example", "content-type": "application/json" } }, (response) => {
       let data = "";
       response.on("data", (chunk) => { data += chunk; });
       response.on("end", () => resolve({ status: response.statusCode, body: JSON.parse(data) }));
@@ -253,9 +290,25 @@ test("the owner's channel refuses cross-site, form-encoded and rebound requests,
   assert.deepEqual([rebound.status, rebound.body.code], [403, "SUPERVISOR_ORIGIN_REFUSED"], "a rebound host name is not the owner's page");
   assert.equal((await store.load(CASE_ID)).communication_events.filter((event) => event.kind === "reported_sent").length, 0);
 
+  // The headers a browser attaches are all the owner channel can check, so a request that carries them is the owner's channel; a process
+  // on this machine that sends them on purpose cannot be told apart from the page (the documented boundary of "owner_verified").
   const sameOrigin = await post(base, "report-sent", attempt, { origin: base, "sec-fetch-site": "same-origin" });
   assert.equal(sameOrigin.status, 200, "the application's own page is accepted");
   assert.equal(sameOrigin.body.event.provenance.actor_resolution, "owner_verified");
+});
+
+test("a request with its own bearer token is an agent, needs no Origin and is not held to the owner channel's browser checks", async (t) => {
+  const { store, base } = await startGovernedServer(t);
+  const submitted = await post(base, "submit", { caseId: CASE_ID, source: "external_draft", text: "Draft an agent reports on.", idempotencyKey: "agent-origin-1" });
+  const artifactId = submitted.body.artifact.artifact_id;
+  await post(base, "export", { caseId: CASE_ID, artifactId });
+  const bare = await post(base, "report-sent", { caseId: CASE_ID, artifactId, idempotencyKey: "agent-origin-report" }, AGENT);
+  assert.equal(bare.status, 200, "an agent is not a browser and sends no Origin");
+  assert.deepEqual([bare.body.event.provenance.origin, bare.body.event.provenance.actor_resolution], ["agent_relayed", "unresolved"]);
+  const forged = await post(base, "report-sent", { caseId: CASE_ID, artifactId, idempotencyKey: "agent-origin-report" }, { ...AGENT, origin: "http://evil.example" });
+  assert.equal(forged.status, 200, "and a page-like header on an agent's request is no reason to refuse it, or to trust it more");
+  assert.equal(forged.body.event.provenance.actor_resolution, "unresolved");
+  assert.equal((await store.load(CASE_ID)).communication_events.filter((event) => event.kind === "reported_sent").length, 1, "the second call replayed the first");
 });
 
 test("through the server, an authenticated agent keeps the weaker origin and revoked access stops a new export", async (t) => {
@@ -338,7 +391,8 @@ test("the copy action asks the server for the approved bytes and puts exactly th
   const approved = "Exact approved words.\n\n  Keep   these   spaces.\n";
   const submitted = await post(base, "submit", { caseId: CASE_ID, source: "external_draft", text: approved, idempotencyKey: "copy-1" });
   const artifactId = submitted.body.artifact.artifact_id;
-  const call = (kind, body) => callSupervisor((url, init) => fetch(`${base}${url}`, init), kind, body);
+  const { fetchImpl, calls } = browserFetch(base);
+  const call = (kind, body) => callSupervisor(fetchImpl, kind, body);
   const written = [];
   const clipboard = { async writeText(value) { written.push(value); } };
   const { copied, exported } = await copyApprovedText({ call, clipboard, caseId: CASE_ID, artifactId, text: "Edited words that were never approved.", exactText: "Edited words that were never approved." });
@@ -352,10 +406,17 @@ test("the copy action asks the server for the approved bytes and puts exactly th
 
   await assert.rejects(() => copyApprovedText({ call, clipboard, caseId: CASE_ID, artifactId: `art_${"1".repeat(40)}` }), (error) => error.code === "SUPERVISOR_ARTIFACT_NOT_FOUND" && error.status === 404);
   assert.deepEqual(written, [approved], "a refused export puts nothing on the clipboard");
+  assert.ok(calls.length >= 3 && calls.every((entry) => entry.method === "POST" && entry.mode === undefined), "every call the panel makes is a POST in the default fetch mode, which is what carries the page's Origin");
+
+  // Without the Origin a browser would have added, the same action is refused by the server and nothing reaches the clipboard.
+  const bareCall = (kind, body) => callSupervisor((url, init) => fetch(`${base}${url}`, init), kind, body);
+  await assert.rejects(() => copyApprovedText({ call: bareCall, clipboard, caseId: CASE_ID, artifactId }), (error) => error.code === "SUPERVISOR_ORIGIN_REFUSED" && error.status === 403);
+  assert.deepEqual(written, [approved]);
 });
 
 test("the real panel in a browser DOM copies only the server's approved bytes, keeps the companion read-only and reports a send as the owner", async (t) => {
   const { base, store } = await startOwnerServer(t);
+  const { fetchImpl, calls } = browserFetch(base);
   const html = await fs.readFile(path.join(repositoryRoot, "apps/web/index.html"), "utf8");
   const dom = new JSDOM(html, { url: `${base}/`, pretendToBeVisual: true });
   t.after(() => dom.window.close());
@@ -369,7 +430,7 @@ test("the real panel in a browser DOM copies only the server's approved bytes, k
   initSupervisorPanel({
     document,
     getCaseId: () => CASE_ID,
-    fetchImpl: (url, init) => fetch(`${base}${url}`, init),
+    fetchImpl,
     clipboard: { async writeText(value) { written.push(value); } },
     newKey: () => `key-${keyCounter += 1}`
   });
@@ -423,6 +484,10 @@ test("the real panel in a browser DOM copies only the server's approved bytes, k
   const report = record.communication_events.find((event) => event.kind === "reported_sent");
   assert.deepEqual([report.provenance.origin, report.provenance.actor_resolution, report.sent_at_status], ["owner_action", "owner_verified", "unavailable"]);
   assert.equal(record.supervisor_artifacts.filter((entry) => entry.kind === "input").length, 1);
+  // The whole flow ran through what a browser sends: the panel only POSTs, in the default fetch mode, so each request carried the page's Origin.
+  assert.ok(calls.length >= 6);
+  assert.deepEqual([...new Set(calls.map((entry) => entry.method))], ["POST"]);
+  assert.deepEqual([...new Set(calls.map((entry) => entry.mode))], [undefined], "the panel asks for no fetch mode, so it is never no-cors or same-origin");
 });
 
 test("a stale or unapproved draft is described in plain words and offers no copy", () => {

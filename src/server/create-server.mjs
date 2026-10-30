@@ -237,22 +237,21 @@ function supervisorError(code, message) {
 
 const supervisorChannelFor = (req) => (typeof req.headers.authorization === "string" ? "authenticated_agent" : "owner_ui");
 
-// A request that rides on the server's own authorization must come from the owner's page on this machine. A browser attaches an
-// Origin to cross-site writes and sends a Host that names the attacker's page under DNS rebinding, so both are checked.
+// A request that rides on the server's own authorization must look like the owner's page on this machine. A browser attaches an
+// Origin to every POST it makes, same-origin ones included, and sends a Host that names the attacker's page under DNS rebinding, so
+// the Host must be a loopback name and the Origin must be present and name that same host over http. A request with no Origin did
+// not come from a page, so it is refused too. This is all the owner channel can check: a process on this machine that deliberately
+// sends these headers looks the same as the owner's page (see "Who is calling" in docs/PRIVATE-CASE-CONTINUITY.md).
 function assertOwnerChannelRequest(req) {
-  if (!LOOPBACK_HOST.test(String(req.headers.host ?? ""))) throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
-  const origin = req.headers.origin;
-  if (origin !== undefined) {
-    let parsed = null;
-    try { parsed = new URL(origin); } catch { /* refused below */ }
-    if (!parsed || parsed.protocol !== "http:" || parsed.host.toLowerCase() !== String(req.headers.host).toLowerCase()) {
-      throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
-    }
+  const refused = () => supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+  if (!LOOPBACK_HOST.test(String(req.headers.host ?? ""))) throw refused();
+  let origin = null;
+  if (typeof req.headers.origin === "string") {
+    try { origin = new URL(req.headers.origin); } catch { /* an unreadable Origin is refused below, like an absent one */ }
   }
+  if (!origin || origin.protocol !== "http:" || origin.host.toLowerCase() !== String(req.headers.host).toLowerCase()) throw refused();
   const site = req.headers["sec-fetch-site"];
-  if (site !== undefined && !["same-origin", "none"].includes(site)) {
-    throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
-  }
+  if (site !== undefined && !["same-origin", "none"].includes(site)) throw refused();
 }
 
 async function readSupervisorBody(req) {
