@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
 status: owner-approved
 domain: cross-guide
-base_record_sha256: c8bc990d7d10cbf5e153c212c28c6fc1d2ecacbf068b070e158f0bd090e9bca6
-source_file_sha256: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
-projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
+base_record_sha256: 364853211f32bbd8d796487a7eb9d6962822776bb5c2439a1f5d3fd058e6b339
+source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
@@ -24,6 +24,6 @@ projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07e
     "status": "owner-approved",
     "text": "Social practice or exposure should serve reciprocal contact, skill, ordinary life and chosen values rather than proving normality, attractiveness, orientation, lovability, intimacy capacity or certainty. Another person is not a diagnostic instrument or reassurance machine; healthy support and mutual co-regulation remain available, and crisis support can take priority. When an action has become certainty-seeking, remove the checking function rather than escalating the test or avoiding the situation; clinician-guided ERP and useful exposure remain compatible. Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless the repetitive certainty-seeking pattern is actually present. Calibrate closeness and disclosure to demonstrated trust: privacy is not fakery and total disclosure is not required; where disclosure is unsafe, protection comes first. Relationship depth that depends on maintaining a false normal, happy or perfect persona should become more honest at a safe pace or be reduced. Acceptance or nonjudgment can bring powerful relief without proving romantic love, compatibility or earned trust. Exposure and anti-avoidance never override consent, require continuing touch or sex after a no, require remaining in concrete danger, or justify skipping evaluation of a possible medical red flag."
   },
-  "version": "owner-amendments-2026-10-29-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```

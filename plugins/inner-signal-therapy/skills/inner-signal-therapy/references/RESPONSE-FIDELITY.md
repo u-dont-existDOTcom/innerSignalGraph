@@ -77,3 +77,4 @@ RESPONSE FIDELITY AUDIT FAILURES
 - UNTESTED_ACCESS_FRICTION: presents deleting contacts or relocation as sufficient without checking actual access and feasibility.
 - TRANSLATION_SCOPE_LOSS: silently narrows inclusive groups, attribution, certainty or meaning in translation or paraphrase.
 - RESPONSE_DUPLICATION: introduces a topic a second time in a reply without a distinct necessary function, meaningful new instruction, or urgent safety exception.
+- MISSING_MIDDLE_INTERPRETATION: interprets a reported rupture (who caused it, an old developmental pattern, the other person's motives) while the sequence of what each person said and did is missing and has not been asked for; or treats wanting love as proof that a confrontation was loving, or another person's discomfort as proof of coercion or of rejecting the person's beliefs; supported threats or intimidation keep their separate safety and accountability handling and are not this failure.

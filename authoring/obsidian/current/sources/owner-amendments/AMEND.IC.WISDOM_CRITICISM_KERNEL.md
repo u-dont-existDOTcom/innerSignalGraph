@@ -7,12 +7,12 @@ source_id: AMEND.IC.WISDOM_CRITICISM_KERNEL
 guide_id: owner-amendments
 heading: AMEND.IC.WISDOM_CRITICISM_KERNEL
 source_role: owner-approved-extension
-source_hash: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
+source_hash: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
 section_hash: 921bcde0d16344aaac229ee483c51ea74da480b6ea71106847dcd65110f846c1
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.CRITICISM_KERNEL
-projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # AMEND.IC.WISDOM_CRITICISM_KERNEL
