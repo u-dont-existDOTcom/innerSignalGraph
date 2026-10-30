@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: fa11e0c101b85a9cbcbe8f2c4df2f5d1198d63d36ea30f6aa527e4727a12e7ce
-source_file_sha256: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
-projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
+base_record_sha256: 9a5143292ee0ba646b33ad2bf432f9fed06863928f53e21e35cb2d9df30a63f4
+source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
@@ -24,6 +24,6 @@ projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07e
     "status": "owner-approved",
     "text": "An external guide does not need to demand surrender. Sophisticated influence can invite the user to surrender judgment voluntarily through praise, specialness, mirroring, pity for a wounded healer, rescue or miracle hopes, attraction, belonging, spiritual charisma, hypnotic or mystical ease, confession of flaws, and humor or half-jokes that lower analytical vigilance. Openly admitting dishonesty, danger, manipulation, addiction, or another flaw may be genuine self-awareness and is simultaneously evidence that the present risk exists; saying 'I am working on it' does not convert current unreliability into trustworthiness. Compassion for a wounded person must not erase adverse evidence or exempt them from ordinary standards. A true teaching, beautiful voice, healing result, intuitive hit, moving confession, or extraordinary gift can be real without proving global trustworthiness. Evaluate trust by domain, track record, contradictions, boundaries, response to disagreement and no, and whether contrary evidence can still lower trust. Do not ban humor, spontaneity, intuition, mystical cognition, vulnerability, or compassion; the problem is when one channel becomes an epistemic bypass that prevents correction by the other."
   },
-  "version": "owner-amendments-2026-10-29-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```

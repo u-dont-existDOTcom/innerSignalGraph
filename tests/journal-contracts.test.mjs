@@ -200,6 +200,31 @@ test("configured doctor verifies the private source while reporting missing oper
   await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
   const reviewed = (await configuredJournalDoctorReport(configPath, {})).blockers;
   assert.equal(reviewed.some((blocker) => blocker.startsWith("JOURNAL_OPERATOR_REVIEW_DIR")), false);
+  // Pages an authorized reviewer reads instead of the model are positive and listed once, and need the review directory.
+  const blockersFor = async () => {
+    await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
+    return (await configuredJournalDoctorReport(configPath, {})).blockers;
+  };
+  const readPageBlockers = (blockers) => blockers.filter((blocker) => /^JOURNAL_OPERATOR_(READ_PAGES|REVIEW_DIR_REQUIRED)/u.test(blocker));
+  for (const pages of [[0, 2], [2, 2], "2"]) {
+    invalid.operator_read_pages = pages;
+    assert.deepEqual(readPageBlockers(await blockersFor()), ["JOURNAL_OPERATOR_READ_PAGES_INVALID"], JSON.stringify(pages));
+  }
+  invalid.operator_read_pages = [2, 9];
+  assert.deepEqual(readPageBlockers(await blockersFor()), []);
+  delete invalid.operator_review_dir;
+  assert.deepEqual(readPageBlockers(await blockersFor()), ["JOURNAL_OPERATOR_REVIEW_DIR_REQUIRED"]);
+  delete invalid.operator_read_pages;
+  assert.deepEqual(readPageBlockers(await blockersFor()), []);
+  // A run that replaces a published quote corpus names the corpus whole, and the generation it has active.
+  for (const value of [{ corpus_id: "corpus:not-a-uuid", generation: "generation:synthetic" },
+    { corpus_id: "corpus:0b9f5f3e-6c52-4d5b-8f0e-5d1f3a9a7c11:quotes", generation: "generation:synthetic" },
+    { corpus_id: "corpus:0b9f5f3e-6c52-4d5b-8f0e-5d1f3a9a7c11" }]) {
+    invalid.replaces_published_quotes = value;
+    assert.ok((await blockersFor()).includes("JOURNAL_REPLACED_PUBLICATION_INVALID"), JSON.stringify(value));
+  }
+  invalid.replaces_published_quotes = { corpus_id: "corpus:0b9f5f3e-6c52-4d5b-8f0e-5d1f3a9a7c11", generation: "generation:synthetic" };
+  assert.equal((await blockersFor()).includes("JOURNAL_REPLACED_PUBLICATION_INVALID"), false);
 });
 
 test("configured doctor prepares the exchange before authorizing its inference route", async (t) => {

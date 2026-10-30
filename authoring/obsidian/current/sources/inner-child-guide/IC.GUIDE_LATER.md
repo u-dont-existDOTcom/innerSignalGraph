@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.INTUITION_TRUST_CALIBRATION
   - IC.LOVE_HORIZON_EXPLORATION
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # The Inner Guide Comes Later

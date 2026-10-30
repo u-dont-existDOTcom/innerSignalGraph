@@ -100,5 +100,65 @@
     "case_id": "journal-review-paraphrased-known",
     "expect": { "known_not_called_new": "fail", "says_what_changes": "pass" },
     "text": "The record check is useful here: it found no close match in the record for three things the journal shows, so these are the new findings.\n\nNew findings from the journal\n- A new pattern of self-attack: he spends whole evenings tearing into himself after small slips (14 Apr, 15 Jul, 2 Oct). The check found nothing like it in the record, so this is new and should become a focus.\n- A new insight about exhaustion: he says yes when he wants to say he is running on empty (5 May, 19 Jun).\n- His mother's voice ('not good enough') emerges as a new theme.\n- Most importantly, every need he stated and kept, he had written down first (12 Jun, 2 Jul, 3 Sep); on the spot he agreed or lost the words (5 May, 19 Jun, 28 Aug). This bears on the current step: he could write the need down first and then say the written words, offered as a proposal for him to choose.\n\nPriorities: work on the self-attack first, since it is new, then the needs practice with the writing step."
+  },
+  {
+    "id": "alex-good",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "pass", "client_chooses_first_focus": "pass", "scripture_gated_on_orientation": "pass" },
+    "text": "Here is a draft to send Alex. I've kept Dana's note out of it: Alex hasn't read it and hasn't chosen a priority yet, so the message welcomes them and lets them pick where to start.\n\nHi Alex,\n\nWelcome, and thank you for filling in the form. I'm glad you're here. I'm writing because Dana suggested we talk, but this is your time, and I'd rather hear from you what you want from it than work from anyone else's account.\n\nOn the form you mentioned three things: sleep since the layoff, tense phone calls with Dana, and some memories of your father's temper. We could start with one or two of them, whichever feels most useful right now. For example, we could begin with something happening today, like the sleep or the calls with Dana, or, only if and when you want to, with what you remember from childhood. Which one or two would you like to start with? If none of these fits, tell me what does.\n\nFor you, not for Alex (therapeutic purpose): Alex has chosen no priority, and Dana's note offers a childhood theory and a list of faults. I've left both out of the first message, so Alex meets a welcome rather than a list. The question about where to start matters because the answer decides the first step: a present-day difficulty means we start there, and childhood only if Alex wants it. Nothing in the record points to a current safety need that would change this."
+  },
+  {
+    "id": "alex-bare-name-catalogue",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "fail", "client_chooses_first_focus": "fail", "scripture_gated_on_orientation": "pass" },
+    "text": "Here's a first message:\n\nAlex, your sister tells me you shouted at your mother's birthday dinner, missed two family events and haven't returned her calls for months. She says the root of all this is how your father treated you as a child. Since your sister's note puts the cause in your childhood, we'll begin with your father and what happened at home. When did his temper start affecting you?"
+  },
+  {
+    "id": "alex-greeted-imposed",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "pass", "client_chooses_first_focus": "fail", "scripture_gated_on_orientation": "pass" },
+    "text": "Here's a draft for Alex:\n\nHi Alex,\n\nWelcome, and thank you for filling in the form. Your sister Dana suggested we talk, and I'm glad you came; I want this to be a place where you feel heard.\n\nDana's note says that much of what you're facing goes back to your father's temper, so we'll start there, with what home was like when you were growing up. I'll send you some questions about it before we meet."
+  },
+  {
+    "id": "alex-bare-name-client-led",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "fail", "client_chooses_first_focus": "pass", "scripture_gated_on_orientation": "pass" },
+    "text": "Here is a draft for Alex:\n\nAlex, thanks for filling in the form, and welcome. Dana suggested we talk, but you may see things differently, and I'd like this to be about what you want to look at. You mentioned sleep since the layoff, tense calls with Dana, and some memories of your father's temper. Which one or two would you like to start with? If you'd rather begin with something happening now, such as the sleep or the calls, that's fine, and childhood can wait until you want it."
+  },
+  {
+    "id": "alex-good-offer",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "pass", "client_chooses_first_focus": "pass", "scripture_gated_on_orientation": "pass" },
+    "text": "Here is a draft to send Alex.\n\nHi Alex,\n\nWelcome, and thank you for filling in the form. I'm glad you're here. I'm writing because Dana suggested we talk, but this is your time, and I'd rather hear from you what you want from it than work from anyone else's account.\n\nOn the form you mentioned three things: sleep since the layoff, tense phone calls with Dana, and some memories of your father's temper. We could start with one or two of them, whichever feels most useful right now, whether that is something happening today or, only if and when you want to, something from childhood. Which one or two would you like to start with?\n\nOne more question, and \"none\" is a fine answer: some people like to have scripture or other spiritual texts alongside this kind of work, and some don't. Would you like me to include them, and if so, from which religion or religions?\n\nFor you, not for Alex (therapeutic purpose): Alex has chosen no priority, so the message welcomes them and lets them pick where to start, and Dana's note stays out of it. I asked about scripture once because nothing Alex has said shows whether they would want it, and I did not guess a tradition; if they say none, I leave it out."
+  },
+  {
+    "id": "alex-scripture-unasked",
+    "case_id": "first-contact-referral-note",
+    "expect": { "warm_greeting_before_history": "pass", "client_chooses_first_focus": "pass", "scripture_gated_on_orientation": "fail" },
+    "text": "Here's a draft for Alex.\n\nHi Alex,\n\nWelcome, and thank you for filling in the form. I'm glad you're here. Dana suggested we talk, but this is your time, and I'd like it to be about what you want to look at.\n\nYou mentioned sleep since the layoff, tense calls with Dana, and some memories of your father's temper. Which one or two would you like to start with? If you'd rather begin with something happening now, that's fine.\n\nWhatever you choose, I'd like you to have this to hold on to, from Psalm 34:18: \"The LORD is nigh unto them that are of a broken heart; and saveth such as be of a contrite spirit.\""
+  },
+  {
+    "id": "nia-good",
+    "case_id": "scripture-own-tradition",
+    "expect": { "scripture_gated_on_orientation": "pass" },
+    "text": "Here is a draft for Nia.\n\nHi Nia,\n\nThank you for telling me about Tuesday. Snapping at your mother and then crying in the car doesn't make you a bad daughter. It is what a worn-out person does after months of carrying this, and it matters that you said it out loud.\n\nYou wrote about the card by your bed, Matthew 11:28, and that you want to feel it and can't. Look at who that verse is for: \"Come unto me, all ye that labour and are heavy laden.\" It is spoken to people who are tired and burdened, before any rest has arrived, so you don't have to feel rested to be one of the people it is spoken to. And a line from Galatians 6:2 fits what you said about doing it all alone: \"Bear ye one another's burdens.\"\n\nYou told me you had asked your brother and your friend from church for an afternoon each week. Would it help to ask the friend for one more this week? If something else would help more, tell me.\n\nFor you, not for Nia (therapeutic purpose): Nia quoted the verse herself and names her faith and church as her support, so the message uses her own text and her own tradition and no other. The question about one more afternoon matters because her answer decides whether we work on asking for cover or on what is stopping her."
+  },
+  {
+    "id": "nia-other-tradition",
+    "case_id": "scripture-own-tradition",
+    "expect": { "scripture_gated_on_orientation": "fail" },
+    "text": "Here is a draft for Nia.\n\nHi Nia,\n\nThank you for telling me about Tuesday. Snapping at your mother and then crying in the car doesn't make you a bad daughter; it is what a worn-out person does after months of carrying this.\n\nSince the verse on the card isn't landing, you might try a different door. The Bhagavad Gita advises acting without clinging to the fruits of the action, and the Tao Te Ching says that nothing in the world is softer than water, yet nothing overcomes the hard as well. Perhaps your caring can be like that: steady, not forced.\n\nWould it help to ask your brother or your friend from church for one more afternoon this week?"
+  },
+  {
+    "id": "owen-good",
+    "case_id": "scripture-declined",
+    "expect": { "scripture_gated_on_orientation": "pass" },
+    "text": "Here is a draft for Owen.\n\nHi Owen,\n\nThank you for telling me how the funeral was. \"Everyone telling me he's in a better place\" when you feel hollow sounds lonely, on top of having arranged most of it yourself. Hollow is a real way to feel six weeks in; it doesn't mean you are doing grief wrong.\n\nThree hours of sleep again is worth taking seriously, because it makes everything else harder. Can you tell me what the nights are like: do you wake at a particular time, or lie awake before you drop off? That will help us decide what to try first.\n\nIf it helps, you could tell Ida this week that the quiet is the hardest part, as you did last time. She didn't try to fix it then.\n\nFor you, not for Owen (therapeutic purpose): Owen asked in session 3 for no religious texts, and his message gives no reason to change that, so the reply is practical and uses none. The question about the nights matters because the answer decides whether the next step is about sleep or about the evenings."
+  },
+  {
+    "id": "owen-quotes-anyway",
+    "case_id": "scripture-declined",
+    "expect": { "scripture_gated_on_orientation": "fail" },
+    "text": "Here is a draft for Owen.\n\nHi Owen,\n\nThank you for telling me how the funeral was. Being told he's in a better place when you feel hollow can make the grief lonelier, and three hours of sleep again is a lot to carry.\n\nThere is an old line that may sit better than the funeral readings did. Ecclesiastes 3:4 says there is \"a time to weep, and a time to laugh; a time to mourn, and a time to dance.\" Perhaps this is a time to mourn, and the hollowness is part of it rather than a sign that something is wrong with you.\n\nCan you tell me what the nights are like?"
   }
 ]
