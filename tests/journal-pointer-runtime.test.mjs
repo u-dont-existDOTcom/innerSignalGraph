@@ -69,34 +69,44 @@ function attestedPort(port) {
 }
 
 async function runtimeEnvironment(t, options = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "pointer-runtime-"));
-  await fs.chmod(root, 0o700);
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
-  await fs.mkdir(path.join(root, "private"), { mode: 0o700 });
-  const text = PAGES.join("\n");
-  await fs.writeFile(path.join(root, "private", "source.txt"), text, { mode: 0o600 });
-  const credentialsPath = path.join(root, "credentials.json");
-  await fs.writeFile(credentialsPath, `${JSON.stringify({ schema_version: 1, root_dir: path.join(root, "vaults"), grants: [
-    { token_sha256: sha256(WRITER), principal_id: "journal-operator", case_ids: [CASE_ID], scopes: ["case:write"], purposes: ["archive", "organize_search", "session_use"] },
-    { token_sha256: sha256(READER), principal_id: "test-reader", case_ids: [CASE_ID], scopes: ["case:read"], purposes: ["organize_search", "session_use"] }
-  ], case_keys: { [CASE_ID]: { routine_kek_base64: Buffer.alloc(32, 7).toString("base64"), recovery_secret_base64: Buffer.alloc(32, 9).toString("base64") } } })}\n`, { mode: 0o600 });
-  const providers = await loadDevelopmentPrivateCaseProviders(credentialsPath);
-  t.after(() => providers.close());
-  const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider,
-    keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
-  await service.appendJournal(CASE_ID, { id: "legacy-pointer", observed_at: "2026-01-01T00:00:00.000Z", kind: "journal", text: "Invented legacy entry" }, { bearerToken: WRITER });
-  const config = { schema_version: 1, import_order: options.importOrder ?? "legacy_quote_first", max_external_spend_usd: 0, execution_root: path.join(root, "execution"), private_runtime_root: root,
-    source: { relative_path: "private/source.txt", bytes: Buffer.byteLength(text), sha256: sha256(text) },
+  // `options.earlier` is an earlier environment: the same private root, case and service, for a second run with its own
+  // source (`options.pages`), execution root (`options.name`) and more run config (`options.config`).
+  const shared = options.earlier ?? null;
+  const name = options.name ?? null;
+  const pages = options.pages ?? PAGES;
+  const root = shared?.root ?? await fs.mkdtemp(path.join(os.tmpdir(), "pointer-runtime-"));
+  const text = pages.join("\n");
+  let service = shared?.service;
+  if (!shared) {
+    await fs.chmod(root, 0o700);
+    t.after(() => fs.rm(root, { recursive: true, force: true }));
+    await fs.mkdir(path.join(root, "private"), { mode: 0o700 });
+    const credentialsPath = path.join(root, "credentials.json");
+    await fs.writeFile(credentialsPath, `${JSON.stringify({ schema_version: 1, root_dir: path.join(root, "vaults"), grants: [
+      { token_sha256: sha256(WRITER), principal_id: "journal-operator", case_ids: [CASE_ID], scopes: ["case:write"], purposes: ["archive", "organize_search", "session_use"] },
+      { token_sha256: sha256(READER), principal_id: "test-reader", case_ids: [CASE_ID], scopes: ["case:read"], purposes: ["organize_search", "session_use"] }
+    ], case_keys: { [CASE_ID]: { routine_kek_base64: Buffer.alloc(32, 7).toString("base64"), recovery_secret_base64: Buffer.alloc(32, 9).toString("base64") } } })}\n`, { mode: 0o600 });
+    const providers = await loadDevelopmentPrivateCaseProviders(credentialsPath);
+    t.after(() => providers.close());
+    service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider,
+      keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
+    await service.appendJournal(CASE_ID, { id: "legacy-pointer", observed_at: "2026-01-01T00:00:00.000Z", kind: "journal", text: "Invented legacy entry" }, { bearerToken: WRITER });
+  }
+  const sourceName = name ? `source-${name}.txt` : "source.txt";
+  await fs.writeFile(path.join(root, "private", sourceName), text, { mode: 0o600 });
+  const config = { schema_version: 1, import_order: options.importOrder ?? "legacy_quote_first", max_external_spend_usd: 0, execution_root: path.join(root, name ? `execution-${name}` : "execution"), private_runtime_root: root,
+    source: { relative_path: `private/${sourceName}`, bytes: Buffer.byteLength(text), sha256: sha256(text) },
     target_profile: { case_id: CASE_ID }, existing_grant_ref: "synthetic:grant",
     // These tests were written for owner decision 30's rules; owner decision 32's (the default for a new run) pass
     // `rules: 3`.
-    pointer_rules: options.rules ?? 2 };
-  const configPath = path.join(root, "private", "config.json");
+    pointer_rules: options.rules ?? 2,
+    ...(options.config ?? {}) };
+  const configPath = path.join(root, "private", name ? `config-${name}.json` : "config.json");
   await fs.writeFile(configPath, JSON.stringify(config), { mode: 0o600 });
   const sourceParser = async () => ({
     source: { sha256: config.source.sha256, byte_length: config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-pointer" },
-    pages: PAGES.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
-    representations: PAGES.map((page, index) => ({ representation_id: `synthetic:page:${index}`, text: page, utf8_byte_length: Buffer.byteLength(page) }))
+    pages: pages.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
+    representations: pages.map((page, index) => ({ representation_id: `synthetic:page:${index}`, text: page, utf8_byte_length: Buffer.byteLength(page) }))
   });
   const replies = handlers(options);
   if (options.importOrder === "reading_first") {
@@ -146,7 +156,7 @@ async function runtimeEnvironment(t, options = {}) {
       return summary;
     } finally { await runtime.close(); }
   };
-  return { open, run, service, config, stateFile: path.join(config.execution_root, "state.json") };
+  return { open, run, service, config, root, stateFile: path.join(config.execution_root, "state.json") };
 }
 
 test("the pointer run goes from the reference sample to publication, each step with its saved deadline", async (t) => {
@@ -867,4 +877,35 @@ test("reading-first graph publication preserves read-derived facets and uses rea
     "source-grounded interpretation retrieves exact quotes");
   assert.ok(found.quotes.every(q => !q.text.includes("reassurance")),
     "reading-derived phrases never replace original source");
+});
+
+test("a reading-first run replaces the published quote generation of a corpus in place through its pointer publication", async (t) => {
+  // An earlier run publishes its quotes (generation A) into a corpus of the case.
+  const first = await runtimeEnvironment(t);
+  await first.run("stage", "publish-quotes");
+  const one = JSON.parse(await fs.readFile(first.stateFile, "utf8"));
+  const corpusId = `${one.corpus_id}:quotes`;
+  const generationA = one.quote_index.generation;
+
+  // The new run reads another source first, in its own execution root, and is told which published generation it replaces.
+  const replaces = { corpus_id: one.corpus_id, generation: generationA };
+  const second = await runtimeEnvironment(t, { importOrder: "reading_first", rules: 3, earlier: first, name: "second",
+    pages: PAGES.map((page) => page.replace("saw a", "saw, once, a")), config: { replaces_published_quotes: replaces } });
+  await second.run("stage", "read-source", "build-quotes");
+  const built = JSON.parse(await fs.readFile(second.stateFile, "utf8"));
+  assert.equal(built.corpus_id, one.corpus_id, "the new run takes the corpus it replaces");
+  assert.equal(built.quote_index.supersedes, generationA);
+  await second.run("pointer-reference");
+  await second.run("pointer-pilot", "pointer-pass", "pointer-challenge", "pointer-measure", "pointer-rebase");
+  const deployed = await second.run("pointer-publish");
+  assert.deepEqual(deployed.replaces_published, replaces);
+  assert.equal(deployed.pointer.published.supersedes, generationA);
+
+  const corpora = (await first.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER })).journal_corpora
+    .filter((item) => item.corpus_id.endsWith(":quotes"));
+  assert.deepEqual(corpora.map((item) => item.corpus_id), [corpusId], "one quote corpus, not a second one beside the first");
+  assert.ok(corpora[0].active_generation.includes(":pointer-"), "the verified pointer generation is the active one");
+  assert.equal(corpora[0].previous_generations.at(-1).generation, generationA, "the replaced generation is kept among the previous ones");
+  const state = JSON.parse(await fs.readFile(second.stateFile, "utf8"));
+  assert.equal(state.quote_published.generation, corpora[0].active_generation);
 });

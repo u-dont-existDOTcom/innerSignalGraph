@@ -11,8 +11,11 @@ const requireReference=(snapshot)=>{
  * A corpus with an active generation takes a new one only in its place: `supersedes` names the
  * generation this one replaces, and publication refuses unless that is exactly the active one, so a
  * generation published by someone else in the meantime is never overwritten. The replaced generation is
- * kept among the corpus's previous generations. */
-export async function publishJournalGenerationFromStaging({service,sourceStore,persisted,auth,authorize,supersedes=null}){
+ * kept among the corpus's previous generations.
+ *
+ * A run told to replace a published corpus passes `corpusMustExist`: it never creates the corpus, so a corpus id that
+ * names nothing in the case is refused, not published as a second corpus beside the one meant to be replaced. */
+export async function publishJournalGenerationFromStaging({service,sourceStore,persisted,auth,authorize,supersedes=null,corpusMustExist=false}){
   const manifest=persisted.manifest,caseId=manifest.case_id,corpusId=manifest.corpus_id;
   requireValue(manifest.permitted_uses.includes('session_use'),'JOURNAL_PUBLICATION_PURPOSE_MISSING');
   requireValue(typeof authorize==='function','JOURNAL_PUBLICATION_AUTHORIZATION_REQUIRED');
@@ -27,6 +30,7 @@ export async function publishJournalGenerationFromStaging({service,sourceStore,p
   await authorize();
   const before=await inspect();
   const prior=before.reference;
+  requireValue(!corpusMustExist||prior,'JOURNAL_PUBLICATION_REPLACED_CORPUS_MISSING');
   requireValue(!prior||prior.active_generation===null||
     (prior.active_generation===manifest.generation&&prior.manifest_object_id===persisted.manifest_object_id)||
     (supersedes!==null&&prior.active_generation===supersedes),

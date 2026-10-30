@@ -9,9 +9,9 @@ import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
 import { journalImportOrder } from "../journal-import/reading-first-runtime-gate.mjs";
 import { prepareJournalOperatorEnvironment } from "../journal-import/operator-auth.mjs";
-import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalOperatorReviewDir, journalPointerCopyRunWords, journalPointerDeadlines,
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalOperatorReadPages, journalOperatorReviewDir, journalPointerCopyRunWords, journalPointerDeadlines,
   journalPointerRules,
-  journalQuoteNumericDateOrder, journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
+  journalQuoteNumericDateOrder, journalReplacedPublication, journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 
@@ -228,6 +228,10 @@ function runConfigBlockers(config) {
     const reviewDir = journalOperatorReviewDir(config);
     if (reviewDir && !outsideRepository(reviewDir)) blockers.push("JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED");
   } catch (error) { blockers.push(error.code ?? "JOURNAL_OPERATOR_REVIEW_DIR_INVALID"); }
+  try { journalOperatorReadPages(config); }
+  catch (error) { blockers.push(error.code ?? "JOURNAL_OPERATOR_READ_PAGES_INVALID"); }
+  try { journalReplacedPublication(config); }
+  catch (error) { blockers.push(error.code ?? "JOURNAL_REPLACED_PUBLICATION_INVALID"); }
   if (config.max_external_spend_usd !== 0) blockers.push("JOURNAL_ZERO_SPEND_REQUIRED");
   if (typeof config.execution_root !== "string" || !path.isAbsolute(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_REQUIRED");
   else if (!outsideRepository(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_PRIVATE_REQUIRED");
