@@ -490,6 +490,105 @@ test("replaying submit, export and report changes nothing, and a reused key for 
   await assert.rejects(() => reportSent(service, { artifactId: first.artifact.artifact_id, idempotencyKey: "idem-report", quote: "Synthetic: sent differently." }), refusal("SUPERVISOR_IDEMPOTENCY_CONFLICT"));
 });
 
+test("a keyed report that names no draft returns its original receipt when retried, and a retry that contradicts it is refused", async (t) => {
+  const { store, service } = await makeEnvironment(t);
+  const first = await submitExternal(service, "Draft whose report response is lost.", { idempotencyKey: "lost-1" });
+  await exportArtifact(service, first.artifact.artifact_id);
+  const same = { quote: "Synthetic: I sent it.", sourceRef: "message:synthetic:owner-1", sentAt: "2026-10-01T11:30:00.000Z" };
+
+  // With one exported draft waiting, the first report needs no artifact id; it then stops being reportable.
+  const original = await reportSent(service, { idempotencyKey: "lost-report", ...same });
+  assert.equal(original.artifact.artifact_id, first.artifact.artifact_id);
+  assert.equal(original.replayed, false);
+  let revision = (await store.load(CASE_ID)).revision;
+
+  // The caller never saw that answer and asks again with the same key and nothing else changed.
+  const retry = await reportSent(service, { idempotencyKey: "lost-report", ...same });
+  assert.equal(retry.replayed, true);
+  assert.deepEqual(retry.event, original.event, "the original receipt, not a second event");
+  assert.equal(retry.artifact.artifact_id, first.artifact.artifact_id);
+  assert.equal((await store.load(CASE_ID)).revision, revision, "a replay writes nothing");
+  // Naming the draft on the retry is the same request.
+  const named = await reportSent(service, { artifactId: first.artifact.artifact_id, idempotencyKey: "lost-report", ...same });
+  assert.deepEqual(named.event, original.event);
+  // Without a key there is nothing to recognise a retry by, so a bare request with nothing waiting is still refused.
+  await assert.rejects(() => reportSent(service, { ...same }), refusal("SUPERVISOR_NO_REPORTABLE_DRAFT"));
+
+  // A retry that contradicts the original is refused, whoever asks, and records nothing.
+  for (const [why, change, who] of [
+    ["another send time", { sentAt: "2026-10-01T12:30:00.000Z" }, OWNER],
+    ["no send time", { sentAt: null }, OWNER],
+    ["another quote", { quote: "Synthetic: something else." }, OWNER],
+    ["no quote", { quote: null }, OWNER],
+    ["another source", { sourceRef: "message:synthetic:owner-2" }, OWNER],
+    ["an agent replaying the owner's key", {}, AGENT]
+  ]) {
+    await assert.rejects(() => reportSent(service, { idempotencyKey: "lost-report", ...same, ...change }, who), refusal("SUPERVISOR_IDEMPOTENCY_CONFLICT"), why);
+  }
+  assert.equal((await store.load(CASE_ID)).revision, revision, "no refused retry wrote anything");
+
+  // The retry does not depend on the case: after a newer client message the original receipt is still the answer, and the draft says it is stale.
+  await store.appendTranscriptTurn(CASE_ID, turn("E3", "user", "Synthetic newer client message after the report.", 3));
+  revision = (await store.load(CASE_ID)).revision;
+  const later = await reportSent(service, { idempotencyKey: "lost-report", ...same });
+  assert.equal(later.replayed, true);
+  assert.deepEqual(later.event, original.event);
+  assert.equal(later.artifact.fresh, false);
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+
+  // A key that was used for one draft cannot be reused to report another.
+  const second = await submitExternal(service, "A second exported draft.", { idempotencyKey: "lost-2" });
+  await exportArtifact(service, second.artifact.artifact_id);
+  revision = (await store.load(CASE_ID)).revision;
+  await assert.rejects(() => reportSent(service, { artifactId: second.artifact.artifact_id, idempotencyKey: "lost-report", ...same }), refusal("SUPERVISOR_IDEMPOTENCY_CONFLICT"));
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+  assert.equal((await store.load(CASE_ID)).communication_events.filter((event) => event.kind === "reported_sent").length, 1);
+});
+
+test("a keyed ambiguous report is retried as the same ambiguous report", async (t) => {
+  const { store, service } = await makeEnvironment(t);
+  for (const [text, key] of [["First exported draft.", "amb-1"], ["Second exported draft.", "amb-2"]]) {
+    const submitted = await submitExternal(service, text, { idempotencyKey: key });
+    await exportArtifact(service, submitted.artifact.artifact_id);
+  }
+  const original = await reportSent(service, { idempotencyKey: "amb-report" });
+  assert.equal(original.event.subject.kind, "unresolved");
+  const revision = (await store.load(CASE_ID)).revision;
+  const retry = await reportSent(service, { idempotencyKey: "amb-report" });
+  assert.equal(retry.replayed, true);
+  assert.deepEqual(retry.event, original.event);
+  assert.equal(retry.artifact, null);
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+});
+
+test("a keyed submission retried after the case moved on returns the stored review, while a new submission against the old case state is still refused", async (t) => {
+  const { store, service, runtime } = await makeEnvironment(t);
+  const prepared = await service.prepareResponseContext({ caseId: CASE_ID, ...OWNER });
+  const text = "Draft whose submit response is lost.";
+  const first = await submitExternal(service, text, { basisSha256: prepared.basis.sha256, idempotencyKey: "lost-submit" });
+  assert.equal(first.status, "approved");
+  assert.equal(first.exportable, true);
+
+  // The client wrote again before the caller retried the request whose answer was lost.
+  await store.appendTranscriptTurn(CASE_ID, turn("E3", "user", "Synthetic newer client message after the lost response.", 3));
+  const revision = (await store.load(CASE_ID)).revision;
+  const audits = runtime.calls.filter((call) => call.role === "audit").length;
+  const retry = await submitExternal(service, text, { basisSha256: prepared.basis.sha256, idempotencyKey: "lost-submit" });
+  assert.equal(retry.replayed, true);
+  assert.equal(retry.artifact.artifact_id, first.artifact.artifact_id);
+  assert.equal(retry.exportable, false, "the stored review is returned, and it says the draft is no longer exportable");
+  assert.deepEqual(retry.artifact.stale_reasons, ["newer_client_message"]);
+  assert.match(retry.notice, /no longer/);
+  assert.equal((await store.load(CASE_ID)).revision, revision, "a replay writes nothing");
+  assert.equal(runtime.calls.filter((call) => call.role === "audit").length, audits, "and audits nothing again");
+
+  // Only the replay of an operation already done skips the check: a new draft against the old case state is refused, and so is other content under the used key.
+  await assert.rejects(() => submitExternal(service, "Another draft.", { basisSha256: prepared.basis.sha256, idempotencyKey: "other-submit" }), refusal("SUPERVISOR_BASIS_CHANGED"));
+  await assert.rejects(() => submitExternal(service, "Different bytes.", { basisSha256: prepared.basis.sha256, idempotencyKey: "lost-submit" }), refusal("SUPERVISOR_IDEMPOTENCY_CONFLICT"));
+  await assert.rejects(() => submitExternal(service, text, { basisSha256: prepared.basis.sha256 }), refusal("SUPERVISOR_BASIS_CHANGED"), "a retry with no key is not recognised, so the old case state refuses it");
+  assert.equal((await store.load(CASE_ID)).candidate_responses.length, 1);
+});
+
 test("a submission with no key is replayed by its content and the case it was written against", async (t) => {
   const { store, service } = await makeEnvironment(t);
   const first = await submitExternal(service, "Keyless draft.");

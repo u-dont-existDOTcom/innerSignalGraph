@@ -1791,17 +1791,40 @@ export function createEncryptedPrivateCaseStore({
     // channel; a bare assertion from an authenticated agent keeps the weaker `agent_relayed` origin. With no artifact named, a
     // single exported draft not yet reported is the unambiguous target; with several, the report is recorded as unresolved
     // rather than guessed. An unsupplied send time stays unknown.
+    //
+    // A retry with the same `idempotencyKey` is resolved from the report that key already made, before any currently reportable
+    // draft is inferred: once a report is recorded its draft is no longer waiting, so inferring first would turn a caller's retry
+    // of a lost answer into a refusal. The retry must repeat the original inputs, and naming a draft must name the same one.
     async recordSupervisorReport(caseId, { artifactId = null, origin, sentAt = null, quote = null, sourceRef = null, idempotencyKey = null } = {}) {
       if (!["owner_action", "agent_relayed"].includes(origin)) throw new ValidationError("A reported delivery needs an owner or relayed origin.");
       if (sentAt != null && (typeof sentAt !== "string" || Number.isNaN(Date.parse(sentAt)))) throw new ValidationError("sentAt must be a timestamp when supplied.");
       await readRequired(caseId);
       let targetCandidate = null;
       let reportEventId = null;
+      let replayed = false;
       const record = await mutate(caseId, (record) => {
+        replayed = false;
+        targetCandidate = null;
         const events = record.communication_events;
         const retracted = new Set(events.filter((event) => event.kind === "retraction").map((event) => event.retracts_event_id));
+        const conflict = () => new ValidationError("This delivery report was already recorded with different content.", { code: "SUPERVISOR_IDEMPOTENCY_CONFLICT" });
         const activeFor = (candidate, kind) => events.filter((event) => event.kind === kind && !retracted.has(event.id) && event.subject.kind === "candidate"
           && event.subject.candidate_id === candidate.id && event.subject.candidate_version === candidate.version);
+        const keyedEventId = idempotencyKey != null ? `evt:report:${sha256Json([caseId, ["key", idempotencyKey]]).slice(0, 40)}` : null;
+        const keyed = keyedEventId ? events.find((entry) => entry.id === keyedEventId) : null;
+        if (keyed) {
+          const named = artifactId != null ? findSupervisorArtifact(record, artifactId) : null;
+          if (artifactId != null && !named) throw new ValidationError("No such supervisor artifact in this case.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+          const sameInputs = keyed.kind === "reported_sent" && keyed.provenance.origin === origin
+            && (keyed.provenance.source_ref ?? null) === (sourceRef ?? null) && (keyed.provenance.quote ?? null) === (quote ?? null)
+            && (keyed.sent_at ?? null) === (sentAt ?? null);
+          const sameTarget = !named || (keyed.subject?.kind === "candidate" && keyed.subject.candidate_id === named.id && keyed.subject.candidate_version === named.version);
+          if (!sameInputs || !sameTarget) throw conflict();
+          replayed = true;
+          reportEventId = keyed.id;
+          targetCandidate = keyed.subject.kind === "candidate" ? keyed.subject.candidate_id : null;
+          return null;
+        }
         let subject;
         let subjectKey;
         if (artifactId != null) {
@@ -1824,7 +1847,7 @@ export function createEncryptedPrivateCaseStore({
             subjectKey = `unresolved:${refs.map((candidate) => `${candidate.id}:${candidate.version}`).join(",")}`;
           }
         }
-        const eventId = `evt:report:${sha256Json([caseId, idempotencyKey != null ? ["key", idempotencyKey] : ["derived", subjectKey, origin, sentAt ?? null]]).slice(0, 40)}`;
+        const eventId = keyedEventId ?? `evt:report:${sha256Json([caseId, ["derived", subjectKey, origin, sentAt ?? null]]).slice(0, 40)}`;
         reportEventId = eventId;
         const event = createCommunicationEvent(record, {
           eventId,
@@ -1836,7 +1859,8 @@ export function createEncryptedPrivateCaseStore({
         }, { recordedAt: now() });
         const existing = events.find((entry) => entry.id === eventId);
         if (existing) {
-          if (!sameCommunicationEvent(existing, event)) throw new ValidationError("This delivery report was already recorded with different content.", { code: "SUPERVISOR_IDEMPOTENCY_CONFLICT" });
+          if (!sameCommunicationEvent(existing, event)) throw conflict();
+          replayed = true;
           return null;
         }
         validateCommunicationEvents([...record.communication_events, event], record);
@@ -1846,6 +1870,7 @@ export function createEncryptedPrivateCaseStore({
       return Object.freeze({
         case_id: caseId,
         revision: record.revision,
+        replayed,
         event: structuredClone(record.communication_events.find((event) => event.id === reportEventId) ?? null),
         artifact: targetCandidate ? supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === targetCandidate)) : null,
         communication_projection: projectCommunicationState(record)

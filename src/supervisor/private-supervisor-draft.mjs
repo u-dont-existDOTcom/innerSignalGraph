@@ -182,7 +182,9 @@ export function createPrivateSupervisorDraftService({
       exportable: headArtifact?.exportable === true,
       artifact: headArtifact,
       notice: outcome.status === "approved"
-        ? "The exact reviewed text is approved for controlled export. Export it from here; text edited or retyped elsewhere inherits no approval."
+        ? (headArtifact?.exportable === true
+          ? "The exact reviewed text is approved for controlled export. Export it from here; text edited or retyped elsewhere inherits no approval."
+          : "This draft was approved, but the case has changed since, so it can no longer be exported. Prepare the case again and submit a new draft.")
         : (outcome.status === "blocked"
           ? "The bounded repair limit was reached and no text is approved. Nothing can be exported for this draft."
           : "This draft no longer governs the case; use the newest draft.")
@@ -231,13 +233,17 @@ export function createPrivateSupervisorDraftService({
       else if (text != null || companionInput) throw new ValidationError("A backend-produced draft takes no text or companion from the caller.");
       return serialized(caseId, async () => {
         const snapshot = await call("getSupervisorSnapshot", [caseId], authContext);
-        if (basisSha256 != null && basisSha256 !== snapshot.basis.sha256) {
+        // A retry with the same key is the operation already done, so it is recognised before the case state the caller prepared
+        // against is compared with the present one: the case may have moved on since the answer that never arrived, and the
+        // stored review, with its present state, is still the right reply. A new submission is always compared.
+        const keyedOperation = key ? operationKeyFor(caseId, ["key", key]) : null;
+        const keyedExisting = keyedOperation ? await call("getCandidateResponse", [caseId, supervisorCandidateId(keyedOperation, 1)], authContext) : null;
+        if (!keyedExisting && basisSha256 != null && basisSha256 !== snapshot.basis.sha256) {
           throw new ValidationError("The case changed after this draft was prepared; prepare the case again before submitting.", { code: "SUPERVISOR_BASIS_CHANGED" });
         }
-        const operationKey = key
-          ? operationKeyFor(caseId, ["key", key])
-          : operationKeyFor(caseId, [source, source === "external_draft" ? sha256Text(text) : "", companionInput ? sha256Json(companionInput) : "", snapshot.basis.sha256]);
-        const existing = await call("getCandidateResponse", [caseId, supervisorCandidateId(operationKey, 1)], authContext);
+        const operationKey = keyedOperation
+          ?? operationKeyFor(caseId, [source, source === "external_draft" ? sha256Text(text) : "", companionInput ? sha256Json(companionInput) : "", snapshot.basis.sha256]);
+        const existing = keyedExisting ?? await call("getCandidateResponse", [caseId, supervisorCandidateId(operationKey, 1)], authContext);
         let replayed = Boolean(existing);
         if (source === "external_draft") {
           const stored = await call("submitSupervisorDraft", [caseId, {

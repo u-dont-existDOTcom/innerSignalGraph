@@ -291,7 +291,7 @@ export function initSupervisorPanel({
     try {
       const result = await call("submit", body);
       clearKey(slot);
-      status(result.notice, result.status === "approved" ? "info" : "error");
+      status(result.notice, result.exportable ? "info" : "error");
       await refresh({ quiet: true });
     } catch (error) {
       if (error.status && error.status < 500) clearKey(slot);

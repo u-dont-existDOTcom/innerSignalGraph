@@ -147,7 +147,21 @@ test("the loopback server takes a draft through review, exact export and an owne
   record = await store.load(CASE_ID);
   assert.deepEqual(record.communication_events.map((event) => event.kind), ["exported", "exported", "reported_sent"]);
 
-  const health = await (await fetch(`${base}/health`)).json();
+  // A report whose answer never arrived is retried exactly as it was sent. The first call took the draft out of the waiting set,
+  // so the retry names no draft and is still answered from the report already recorded rather than refused or recorded twice.
+  assert.equal(reported.body.replayed, false);
+  const retried = await post(base, "report-sent", { caseId: CASE_ID, idempotencyKey: "route-report-1" });
+  assert.equal(retried.status, 200);
+  assert.equal(retried.body.replayed, true);
+  assert.equal(retried.body.event.id, reported.body.event.id);
+  assert.equal(retried.body.artifact.artifact_id, artifactId);
+  assert.equal((await store.load(CASE_ID)).communication_events.length, 3, "the retry recorded nothing new");
+  // The same key carrying another send time is a different report, not a retry, and is refused.
+  const contradicted = await post(base, "report-sent", { caseId: CASE_ID, idempotencyKey: "route-report-1", sentAt: "2026-10-02T13:00:00.000Z" });
+  assert.deepEqual([contradicted.status, contradicted.body.code], [409, "SUPERVISOR_IDEMPOTENCY_CONFLICT"]);
+  assert.equal((await store.load(CASE_ID)).communication_events.length, 3);
+
+  const health =await (await fetch(`${base}/health`)).json();
   for (const route of ["prepare", "submit", "export", "report-sent"]) assert.ok(health.endpoints.includes(`/v1/case/supervisor/${route}`));
 });
 
