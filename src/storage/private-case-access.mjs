@@ -281,6 +281,14 @@ export function createPrivateCaseAccessService({
     async deliverCandidateResponse(caseId, candidateId, input, authContext) {
       return write(caseId, authContext, (store) => store.deliverCandidateResponse(caseId, candidateId, input));
     },
+    // Every observation that arrives through this service is an authenticated agent's relay. Account authentication does not
+    // establish who wrote a report, so the origin is fixed here and a caller cannot claim a verified owner event; a report the
+    // owner made through a verified path reaches the store from trusted server code instead.
+    async recordCommunicationEvent(caseId, input, authContext) {
+      const { provenance: supplied, ...rest } = input ?? {};
+      const provenance = { origin: "agent_relayed", sourceRef: supplied?.sourceRef ?? null, quote: supplied?.quote ?? null };
+      return write(caseId, authContext, (store) => store.recordCommunicationEvent(caseId, { ...rest, provenance }));
+    },
     async getCandidateResponse(caseId, selector, authContext) { return read(caseId, authContext, (store) => store.getCandidateResponse(caseId, selector)); },
     async getCandidateLifecycle(caseId, authContext) { return read(caseId, authContext, (store) => store.getCandidateLifecycle(caseId)); },
     async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata, authContext) {
