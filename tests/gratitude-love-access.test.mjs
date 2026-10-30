@@ -471,7 +471,7 @@ test("how gratitude comes in: sideways and at times, by asking, with the owner's
   assert.ok(node.avoid.some((line) => /every cloud has a silver lining/.test(line)), "question 34, second line: left out");
   // The four lines the owner agreed to have reworded (question 34) appear nowhere, in the route or in his amendment.
   const amendments = JSON.parse(await fs.readFile(new URL("../guides/owner-amendments.json", import.meta.url), "utf8"));
-  assert.equal(amendments.version, "owner-amendments-2026-10-29-r19");
+  assert.equal(amendments.version, "owner-amendments-2026-10-30-r20");
   const how = amendments.items.find((item) => item.id === "AMEND.IC.GRATITUDE_HOW_20261015");
   assert.equal(how.status, "owner-approved");
   for (const text of [how.text, ...node.recommendations, ...node.avoid]) {

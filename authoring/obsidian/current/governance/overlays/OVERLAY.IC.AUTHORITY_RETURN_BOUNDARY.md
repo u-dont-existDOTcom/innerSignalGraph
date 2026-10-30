@@ -14,7 +14,7 @@ reconciled_nodes:
   - IC.BORROW_ONE_FUNCTION
   - IC.ADULT_APPRENTICE
 base_record_sha256: b3d9649314354d6b1e6f882c3fef2746041749f0ea8537395c785a5f86df5e5a
-projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
+projection_input_sha256: 86ae8843eb5637cdf9d6ac39a1f3e4fe894714b2bece5a6bada1843bc9ae2292
 ---
 
 # Borrow capacity without surrendering judgment

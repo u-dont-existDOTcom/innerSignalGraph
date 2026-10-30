@@ -52,6 +52,13 @@
       "destination": "tasks/guide-map-intake-reconcile-20261022/INTEGRATION.md; the new source/graph/rules proposal PR is review-only until Claude+owner sign-off",
       "implementation": "REVIEW_ORDER_PRESERVED",
       "nextCondition": "Claude independent review of T1/T2/C1-C3/P1-P2/F1-F2/O1/G1 and six queue cases; owner finalizes semantic choices"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-28-reconstruct-reciprocal-conflict-sequence.md",
+      "disposition": "ADOPTED",
+      "destination": "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028 + ROUTE.RELATIONAL_REALITY_CHECK + one focus-discipline-v1 rule + MISSING_MIDDLE_INTERPRETATION audit failure (task branch feat/relational-missing-middle-20261028); delivery item already covered; guide sentence waits for owner question 46, part 2",
+      "implementation": "PROPOSED_ON_TASK_BRANCH",
+      "nextCondition": "Review and merge the candidate PR to main; the public-guide sentence needs the owner's answer to question 46, part 2; deployment is a separate owner-gated step"
     }
   ]
 }

@@ -28,7 +28,7 @@ regression_refs:
   - G134
 base_record_sha256: b3d453b8a855f668409b1d8b210130ca5abeb0ad04ec5ba4ad2dd702857236ff
 base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
-projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
+projection_input_sha256: 86ae8843eb5637cdf9d6ac39a1f3e4fe894714b2bece5a6bada1843bc9ae2292
 ---
 
 # Use familiar music as an optional emotional-access doorway

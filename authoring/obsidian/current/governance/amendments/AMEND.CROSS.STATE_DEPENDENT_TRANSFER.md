@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.STATE_DEPENDENT_TRANSFER
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 15594a657acd19d4c41211f7e04b77ccfcd7b37e3cb557bf054dde4d0654f6b7
-source_file_sha256: b5e4bb9fa8c1354bca2e47b9c9c6eab6803de847c54eccdef2671730d59b839a
-projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
+base_record_sha256: 34ecc236de1eda4174cca28695a12aa899d53cedaa21fe10c610fb5ab2516f80
+source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+projection_input_sha256: 86ae8843eb5637cdf9d6ac39a1f3e4fe894714b2bece5a6bada1843bc9ae2292
 ---
 
 # AMEND.CROSS.STATE_DEPENDENT_TRANSFER
@@ -24,6 +24,6 @@ projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02d
     "status": "owner-approved",
     "text": "Treat state-dependent therapeutic access as a transfer problem, not automatically as evidence that the altered experience was false or that another altered state is required. Some people can understand an inner-child, compassion, grief, spiritual, or trauma-related insight soberly yet experience it as emotionally real or credible only in an altered state; after the state ends, ordinary cognition may dismiss it or lose access to the position from which it felt true. Before planned altered-state work, familiarize the person with the relevant Nurturer, Protector, Guide, guard, safety, and closure map so newly accessible material has somewhere to land; preparation does not demand a particular revelation. During a coherent and physically stable altered state, follow the live therapeutic task and preserve what becomes accessible without repeatedly interrupting private meaning-making with forensic caveats. When an accusation, confrontation, public disclosure, medical or legal action, or another consequential external claim depends on historical or ontological certainty, preserve ordinary evidence and sober review. Afterward, distinguish an experience that occurred once from state-bound access, fading access, partial sober transfer, and integrated sober access. Record what changed and translate a small part into sober relationship, protection, practice, or action. Before another altered-state session, distinguish genuinely new exploration from mainly trying to recover a known state, conviction, love, or relationship. Repetition alone does not prove avoidance, dependence, or failed integration. When the main function is restoring access, work on the transfer failure first and define what sober carryover would count as progress rather than reflexively escalating or recreating the state. This framework does not claim that preparation or integration can replace altered-state methods for every person, or that it will reduce the number of sessions any individual needs."
   },
-  "version": "owner-amendments-2026-10-29-r19"
+  "version": "owner-amendments-2026-10-30-r20"
 }
 ```

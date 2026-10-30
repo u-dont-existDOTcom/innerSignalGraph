@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.BEST_FRIEND_PROMPT
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4e4795a718dd02eee1dec914fa0407e50a78bd860383caa6183051af5761adad
-source_file_sha256: b5e4bb9fa8c1354bca2e47b9c9c6eab6803de847c54eccdef2671730d59b839a
-projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
+base_record_sha256: bbb9d3dc0bc154c730a6bdf1c3d05f5f57b21bef7c1e18921cf0b0c6ff497389
+source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+projection_input_sha256: 86ae8843eb5637cdf9d6ac39a1f3e4fe894714b2bece5a6bada1843bc9ae2292
 ---
 
 # AMEND.IC.BEST_FRIEND_PROMPT
@@ -24,6 +24,6 @@ projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02d
     "status": "owner-approved",
     "text": "Ask: 'What would I tell my best friend in this exact situation?' Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action for the self."
   },
-  "version": "owner-amendments-2026-10-29-r19"
+  "version": "owner-amendments-2026-10-30-r20"
 }
 ```

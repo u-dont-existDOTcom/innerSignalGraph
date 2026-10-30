@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017
 status: owner-approved
 domain: inner-child
-base_record_sha256: 45194ab552ed80dd74a8820baa2f3ddcd9ef652d9d824a104f126721ba9c0867
-source_file_sha256: b5e4bb9fa8c1354bca2e47b9c9c6eab6803de847c54eccdef2671730d59b839a
-projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
+base_record_sha256: 4e5655757c95594ef9dc55826feeb838cd09e7f5c8c6ef9eb494964b5c6840a9
+source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+projection_input_sha256: 86ae8843eb5637cdf9d6ac39a1f3e4fe894714b2bece5a6bada1843bc9ae2292
 ---
 
 # AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017
@@ -25,6 +25,6 @@ projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02d
     "status": "owner-approved",
     "text": "The owner, 17 Oct 2026 (issue #172), after a supervisor answer once again set everyday protective action and practical safety against reparenting, a false distinction the rules already forbid: ordinary self-protective acts should be recognized as reparenting when that is the client-welcomed frame, not reclassified as a separate therapy. Appropriate independent medical and safety actions remain independently available. Protective care is recognized as part of reparenting without labeling medical navigation itself as an exercise. Safety needs and consent can override ordinary priorities. The client keeps the ability to revise or decline the frame (AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016, AMEND.IC.COMMUNITY_REPARENTING)."
   },
-  "version": "owner-amendments-2026-10-29-r19"
+  "version": "owner-amendments-2026-10-30-r20"
 }
 ```

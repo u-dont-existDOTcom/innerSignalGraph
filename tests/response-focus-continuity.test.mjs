@@ -36,7 +36,7 @@ test("app and served protocol use the same expanded fidelity and focus rules", (
 test("delivery, functional coping and focus nuance reach compiled guide sources with unchanged safety routing", () => {
   const owner = json("../guides/owner-amendments.json");
   const manifest = json("../guides/manifest.json");
-  assert.equal(owner.version, "owner-amendments-2026-10-29-r19");
+  assert.equal(owner.version, "owner-amendments-2026-10-30-r20");
   assert.equal(owner.items.find(x=>x.id===name)?.status, "owner-approved");
   assert.equal(manifest.sources.find(x=>x.id==="owner-amendments")?.version, owner.version);
   const paths = [

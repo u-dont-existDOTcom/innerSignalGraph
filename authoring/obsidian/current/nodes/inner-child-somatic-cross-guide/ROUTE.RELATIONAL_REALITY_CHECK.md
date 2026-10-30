@@ -24,6 +24,7 @@ source_refs:
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
   - AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+  - AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
 regression_refs:
   - G013
   - G014
@@ -31,9 +32,10 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: c8c1f8d9a24a29eb82d23dd1ba7a811b805f0cb63b8483315455708f6435aa1e
-base_graph_sha256: b561192bc0b3931a924b941ac6c7185d5ab9e29966198359629befd7270b061d
-projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
+  - G141
+base_record_sha256: c95bcb88c332d3338957953f2cee0b9bac0e8b5da9bfa0dbf74eb0f3c6c1b267
+base_graph_sha256: 20f40a9060a42470c0f8a9956a00d1957ef33d05c3b01743c8b2cd1c508d9776
+projection_input_sha256: 86ae8843eb5637cdf9d6ac39a1f3e4fe894714b2bece5a6bada1843bc9ae2292
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -102,7 +104,7 @@ projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02d
     "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
     "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships."
   ],
-  "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
+  "defaultQuestion": "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
@@ -129,7 +131,8 @@ projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02d
     "unresolvedFields": []
   },
   "recommendations": [
-    "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+    "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
+    "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
     "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
     "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
     "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -169,3 +172,5 @@ projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02d
 [[current/governance/amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS]]
 
 [[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
+
+[[current/governance/amendments/AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028]]

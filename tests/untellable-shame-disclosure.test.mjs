@@ -176,9 +176,9 @@ test("every response, review and repair role carries the rules once, inside the 
 test("the owner amendment and the graph bind the rule, and the compiled projections follow", () => {
   const amendments = json("../guides/owner-amendments.json");
   const manifest = json("../guides/manifest.json");
-  assert.equal(amendments.version, "owner-amendments-2026-10-29-r19");
+  assert.equal(amendments.version, "owner-amendments-2026-10-30-r20");
   assert.equal(manifest.sources.find((source) => source.id === "owner-amendments").version, amendments.version);
-  assert.equal(amendments.items.length, 72);
+  assert.equal(amendments.items.length, 73);
   const item = amendments.items.find((entry) => entry.id === AMENDMENT);
   assert.equal(item?.status, "owner-approved");
   assert.equal(item.domain, "cross-guide");
@@ -225,7 +225,7 @@ test("the owner amendment and the graph bind the rule, and the compiled projecti
   assert.match(community.effects.requiredNuance.at(-1), /never extends to concealing current danger to anyone/u);
 
   const bundle = json("../guide-graphs/compiled/bundle.json");
-  assert.equal(bundle.stats.ownerAmendmentCount, 72);
+  assert.equal(bundle.stats.ownerAmendmentCount, 73);
   for (const id of ["IC.COMMON_HUMANITY", "ROUTE.INFLUENCE_INTERNAL", "ROUTE.COMMUNITY_SUPPORT"]) {
     const node = bundle.graphs.flatMap((graph) => graph.nodes).find((candidate) => candidate.id === id);
     assert.ok(node?.sourceRefs.includes(AMENDMENT), `${id} in the compiled bundle`);

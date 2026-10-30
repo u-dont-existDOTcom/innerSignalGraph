@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.RELATIONAL_REALITY_CHECK
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 3ef56332a8de79e4f7a8f445df51a7d167975311e6e3b88ad247f94c9b95a255
-source_file_sha256: b5e4bb9fa8c1354bca2e47b9c9c6eab6803de847c54eccdef2671730d59b839a
-projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02db6458402d
+base_record_sha256: 7d63b221a23c72e6a117eefbdb8d9266edd92956046b252f4e4e3cd05ec967db
+source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+projection_input_sha256: 86ae8843eb5637cdf9d6ac39a1f3e4fe894714b2bece5a6bada1843bc9ae2292
 ---
 
 # AMEND.CROSS.RELATIONAL_REALITY_CHECK
@@ -24,6 +24,6 @@ projection_input_sha256: e49163f827f1ac7ce00bd516b36b6d05402cf234de9d0000fc5d02d
     "status": "owner-approved",
     "text": "When another person is central, do not begin by asking only what inside the user was triggered. First use detached observation: identify observable behavior and sequence; assess only the relational capacities the person has demonstrated, including tolerance of disagreement, empathy, accountability, respect for no, repair, and reality-based conduct under stress; notice whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; and define a realistic interaction outcome before re-engaging. The available outcome may be mutual understanding, conveying information, a boundary or refusal, distance or ending the interaction, or learning how the person responds to a limit. Act outward as needed, then route inward only if useful. Preserve inner boundaries and self-possession. A history of internalizing, managing adults, or forced adulthood can make self-analysis or caretaking reflexive, but do not infer that history without evidence. Select and invest for demonstrated reciprocal maturity rather than motive or potential. Do not diagnose or automatically label someone emotionally immature, recommend cutoff by default, or treat disagreement as immaturity."
   },
-  "version": "owner-amendments-2026-10-29-r19"
+  "version": "owner-amendments-2026-10-30-r20"
 }
 ```
