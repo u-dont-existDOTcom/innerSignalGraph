@@ -10,7 +10,8 @@ import { createPrivateCaseAccessService } from "../src/storage/private-case-acce
 import { projectCommunicationState } from "../src/storage/private-case-communication.mjs";
 import { assessSupervisorArtifact } from "../src/storage/private-case-supervisor.mjs";
 import { createEncryptedPrivateCaseStore, validatePrivateCaseRecord } from "../src/storage/private-case-store.mjs";
-import { REPAIR_INDUCED_ERROR_CHECKS, createCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
+import { validatePrivateHandoffPacket } from "../src/storage/private-case-handoff.mjs";
+import { REPAIR_INDUCED_ERROR_CHECKS, candidateDeliveryGate, createCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { createPrivateSupervisorDraftService } from "../src/supervisor/private-supervisor-draft.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 
@@ -1165,12 +1166,60 @@ test("handoffs from before a supervisor draft still load, and a handoff written 
   assert.deepEqual(packet.pending_artifacts.map((candidate) => [candidate.exact_text, candidate.status]), [["Synthetic repaired reply 2.", "audit_failed"]], "the handoff carries the exact failed head, not an approval");
 });
 
-test("a supervisor draft approved and not yet committed is refused by the handoff exactly as an ordinary approved candidate is", async (t) => {
+// A handoff is stored as canonical JSON, which sorts object keys, and a gate that carries an audit id (APPROVE_FOR_DELIVERY and DELIVER)
+// is built in another order. The handoff compares the gate by value, so these states compile, open from storage and validate. The
+// handoff is still marked unsafe to continue from, because a continuation needs a pending candidate or an exact persisted delivery.
+let handoffNumber = 0;
+async function compileAndOpenHandoff(store, candidateId) {
+  const handoffId = `handoff:00000000-0000-4000-8000-0000000003${String(handoffNumber += 1).padStart(2, "0")}`;
+  const created = await store.createHandoff(CASE_ID, { handoffId, runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" });
+  const { artifact_manifest: manifest, encrypted_round_trip_verified: verified, ...packet } = await store.loadHandoff(CASE_ID, handoffId);
+  assert.equal(verified, true);
+  assert.ok(manifest.utf8_bytes > 0);
+  validatePrivateHandoffPacket(structuredClone(packet));
+  const candidate = (await store.load(CASE_ID)).candidate_responses.find((entry) => entry.id === candidateId);
+  const gate = candidateDeliveryGate(candidate);
+  assert.deepEqual(packet.candidate_lifecycle.delivery_gate, gate, "the stored gate is the exact gate of the exact candidate");
+  assert.equal(typeof gate.audit_id, "string", "the gate carries an audit id, the case that key order broke");
+  assert.deepEqual(packet.pending_artifacts.map((entry) => [entry.id, entry.status, entry.exact_text]), [[candidate.id, candidate.status, candidate.exact_text]]);
+  assert.equal(created.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
+  return { packet, gate };
+}
+
+for (const status of ["audited", "approved_for_delivery"]) {
+  test(`a handoff compiles, opens and validates with the exact gate while an ordinary candidate is ${status} and not delivered`, async (t) => {
+    const { store } = await makeEnvironment(t);
+    const candidateId = "candidate:ordinary:handoff";
+    await store.saveCandidateResponse(CASE_ID, candidateId, "Ordinary candidate awaiting delivery.", { producer_context_id: "context:ordinary-producer" });
+    const audit = createCandidateAuditEvidence({
+      auditId: `audit:ordinary:${status}`,
+      candidate: await store.getCandidateResponse(CASE_ID, candidateId),
+      auditVersion: "synthetic-audit",
+      auditorContext: { kind: "independent", context_id: `context:ordinary-auditor:${status}` },
+      findings: [],
+      completedAt: "2026-10-01T12:00:00.000Z"
+    });
+    await store.recordCandidateAudit(CASE_ID, candidateId, audit);
+    if (status === "approved_for_delivery") await store.approveCandidateForDelivery(CASE_ID, candidateId, audit.id);
+    const { packet, gate } = await compileAndOpenHandoff(store, candidateId);
+    assert.equal(packet.candidate_lifecycle.candidate_status, status);
+    assert.deepEqual([gate.action, gate.audit_id], [status === "audited" ? "APPROVE_FOR_DELIVERY" : "DELIVER", audit.id]);
+  });
+}
+
+test("a handoff compiles, opens and validates with the exact gate for a supervisor draft the owner exported and reported sent", async (t) => {
   const { store, service } = await makeEnvironment(t);
-  const submitted = await submitExternal(service, "Approved draft awaiting the owner.", { idempotencyKey: "handoff-2" });
+  const submitted = await submitExternal(service, "Approved draft the owner sent.", { idempotencyKey: "handoff-2" });
   assert.equal(submitted.status, "approved");
-  const refusalOfHandoff = await store.createHandoff(CASE_ID, { handoffId: "handoff:00000000-0000-4000-8000-000000000103", runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" }).then(() => null, (error) => error);
-  assert.match(refusalOfHandoff?.message ?? "", /delivery gate is inconsistent/, "the refusal for an approved, undelivered candidate predates supervisor drafts");
+  await exportArtifact(service, submitted.artifact.artifact_id);
+  const report = await reportSent(service, { artifactId: submitted.artifact.artifact_id, idempotencyKey: "handoff-2-report", sentAt: "2026-10-02T12:30:00.000Z" });
+  assert.equal(report.event.provenance.actor_resolution, "owner_verified");
+  const candidateId = (await store.load(CASE_ID)).candidate_responses.at(-1).id;
+  const { packet, gate } = await compileAndOpenHandoff(store, candidateId);
+  assert.equal(packet.candidate_lifecycle.candidate_status, "approved_for_delivery", "the draft is never marked sent: only the owner's report is recorded");
+  assert.deepEqual([gate.action, gate.delivery_allowed], ["DELIVER", true]);
+  assert.equal(packet.historical_delivery_completion, null, "a report cannot stand in for the candidate that still governs");
+  assert.deepEqual(packet.communication_projection.confirmed_or_reported_client_outbound.map((entry) => entry.state), ["reported_sent"], "the owner's report travels with the handoff as a report, not a delivery");
 });
 
 const SCHEMA_BASE = "https://inner-signal.local/schemas/private-case";
