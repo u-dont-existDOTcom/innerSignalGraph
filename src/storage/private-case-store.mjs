@@ -32,6 +32,14 @@ import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-
 import { openVaultWithDevelopmentAuthorization, openVaultWithManagedSecretAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
 import { chunkExactSourceText, createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
 import { assessContinuationSafety } from "./private-case-continuity.mjs";
+import {
+  createCommunicationEvent,
+  projectCommunicationState,
+  resolveCandidateAppDelivery,
+  resolveHistoricalDeliveryCheckpoint,
+  sameCommunicationEvent,
+  validateCommunicationEvents
+} from "./private-case-communication.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
 import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
 import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
@@ -233,6 +241,10 @@ function validateCandidateResponse(value, index) {
   catch { throw new ValidationError(`candidate_responses[${index}].metadata must be JSON serializable.`); }
   if (metadataBytes > PRIVATE_RECORD_LIMITS.candidate_metadata_bytes) throw new ValidationError(`candidate_responses[${index}].metadata exceeds the bounded limit.`);
   validateCandidateLifecycleFields(value);
+  // A status-only `sent` is an operator's marking and must stay distinguishable from a transcript-bound delivery.
+  if (value.metadata.sent_status_only === true && (value.status !== "sent" || value.metadata.sent_turn_id != null || value.metadata.sent_in_reply_to_turn_id != null)) {
+    throw new ValidationError(`candidate_responses[${index}] status-only delivery cannot carry transcript delivery identifiers.`);
+  }
   return value;
 }
 
@@ -286,6 +298,9 @@ function normalizePrivateCaseRecord(value) {
     migrated.journal_corpora = [];
     migrated.journal_corpus_keys = [];
   }
+  // Additive within record version 7: a record from before communication evidence has no events, which says nothing
+  // about whether anything was ever sent. Code from before this field keeps it through its own writes.
+  if (!Object.hasOwn(migrated, "communication_events")) migrated.communication_events = [];
   return migrated;
 }
 
@@ -367,9 +382,15 @@ export function validatePrivateCaseRecord(value) {
             || audit.candidate_sha256 !== runtimeTurn.delivery.sha256) {
           throw new ValidationError(`Private runtime turn ${runtimeTurn.id} delivery is not bound to an exact independently approved candidate.`);
         }
+        // Deliveries made before the candidate carried its transcript identifiers have neither; when present they must agree.
+        if ((candidate.metadata.sent_turn_id != null && candidate.metadata.sent_turn_id !== runtimeTurn.delivery.assistant_turn_id)
+            || (candidate.metadata.sent_in_reply_to_turn_id != null && candidate.metadata.sent_in_reply_to_turn_id !== runtimeTurn.user_turn_id)) {
+          throw new ValidationError(`Private runtime turn ${runtimeTurn.id} delivery transcript identifiers disagree with its candidate.`);
+        }
       }
     }
   }
+  validateCommunicationEvents(value.communication_events, value);
   if (!Array.isArray(value.journal_corpora) || !Array.isArray(value.journal_corpus_keys)) {
     throw new ValidationError("Journal corpus extensions are invalid.");
   }
@@ -423,6 +444,7 @@ function newRecord(caseId, now) {
     candidate_responses: [],
     runtime_turns: [],
     source_artifacts: [],
+    communication_events: [],
     journal_corpora: [],
     journal_corpus_keys: []
   };
@@ -469,6 +491,12 @@ function assertAppendOnly(previous, next) {
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
     if (JSON.stringify(previous.source_artifacts[index]) !== JSON.stringify(next.source_artifacts[index])) throw new ValidationError("Exact source artifacts are immutable and cannot be rewritten.");
   }
+  const previousEvents = previous.communication_events ?? [];
+  const nextEvents = next.communication_events ?? [];
+  if (nextEvents.length < previousEvents.length) throw new ValidationError("Communication events are append-only.");
+  for (let index = 0; index < previousEvents.length; index += 1) {
+    if (JSON.stringify(previousEvents[index]) !== JSON.stringify(nextEvents[index])) throw new ValidationError("Communication events are immutable and cannot be rewritten.");
+  }
   if (next.journal_corpus_keys.length < previous.journal_corpus_keys.length) throw new ValidationError("Journal corpus keys are append-only.");
   for (let index = 0; index < previous.journal_corpus_keys.length; index += 1) {
     if (JSON.stringify(previous.journal_corpus_keys[index]) !== JSON.stringify(next.journal_corpus_keys[index])) {
@@ -509,13 +537,11 @@ function selectContinuationCandidate(record, candidateId) {
   return latest?.status === "sent" ? latest : null;
 }
 
+// The sent candidate whose exact bytes the application committed as the answer to the user turn, however it was delivered.
+// A candidate that was only marked `sent` has no such proof and resolves to null.
 function candidateDeliveryCompletion(record, candidate) {
-  if (candidate?.status !== "sent") return null;
-  const sentTurn = record.raw_transcript.find((turn) => turn.id === candidate.metadata.sent_turn_id);
-  return sentTurn?.role === "assistant" && sentTurn.text === candidate.exact_text
-      && candidate.metadata.sent_with_audit_id && candidate.metadata.sent_in_reply_to_turn_id
-    ? { candidate_id: candidate.id, candidate_version: candidate.version }
-    : null;
+  const delivery = resolveCandidateAppDelivery(record, candidate);
+  return delivery ? { candidate_id: delivery.candidate_id, candidate_version: delivery.candidate_version } : null;
 }
 
 export function createEncryptedPrivateCaseStore({
@@ -986,11 +1012,23 @@ export function createEncryptedPrivateCaseStore({
           throw new ValidationError("Runtime candidate compatibility-state binding is stale; a new candidate and audit are required.", { code: "PROTECTIVE_COMPATIBILITY_BINDING_STALE" });
         }
         if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
+        // Bound to the exact inbound turn the way deliverCandidateResponse binds it, so both exits resolve to the same completion.
+        const userTurn = record.raw_transcript.find((entry) => entry.id === runtimeTurn.user_turn_id);
+        if (!userTurn || userTurn.role !== "user" || userTurn.exchange_id !== runtimeTurn.exchange_id || userTurn.text !== runtimeTurn.inbound.exact_text) {
+          throw new ValidationError("Runtime candidate delivery requires its exact inbound user turn in the transcript.");
+        }
         const timestamp = now();
-        record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: candidate.exact_text, at: timestamp, episode_id: record.case_state.current_episode?.id ?? null });
+        record.raw_transcript.push({
+          id: assistantTurnId,
+          exchange_id: userTurn.exchange_id,
+          role: "assistant",
+          text: candidate.exact_text,
+          at: timestamp,
+          episode_id: userTurn.episode_id ?? record.case_state.current_episode?.id ?? null
+        });
         candidate.status = "sent";
         candidate.updated_at = timestamp;
-        candidate.metadata = { ...candidate.metadata, sent_with_audit_id: gate.audit_id };
+        candidate.metadata = { ...candidate.metadata, sent_with_audit_id: gate.audit_id, sent_turn_id: assistantTurnId, sent_in_reply_to_turn_id: userTurn.id };
         const delivery = {
           kind: "candidate",
           assistant_turn_id: assistantTurnId,
@@ -1333,9 +1371,11 @@ export function createEncryptedPrivateCaseStore({
         if (!candidate || current?.id !== candidateId) throw new ValidationError("Delivery must target the exact current candidate version.");
         const gate = candidateDeliveryGate(candidate);
         if (!gate.delivery_allowed) throw new ValidationError(`Candidate delivery is blocked: ${gate.reason}`, { code: "PRIVATE_CANDIDATE_DELIVERY_BLOCKED" });
+        // Legacy recovery: a status transition with no transcript entry and no recipient proof. It is labeled so it can never
+        // read as delivered history, and deliverCandidateResponse cannot later upgrade it.
         candidate.status = "sent";
         candidate.updated_at = now();
-        candidate.metadata = { ...candidate.metadata, sent_with_audit_id: gate.audit_id };
+        candidate.metadata = { ...candidate.metadata, sent_with_audit_id: gate.audit_id, sent_status_only: true };
         validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
         return record;
       });
@@ -1390,6 +1430,28 @@ export function createEncryptedPrivateCaseStore({
         validateTranscriptEntries(record.raw_transcript);
         validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
         return record;
+      });
+    },
+    // Appends one observation about who has seen a piece of text: shown to the supervisor, exported, or reported as sent to the
+    // client. It never changes a candidate, never writes an audit, and never marks anything delivered; a report binds the exact
+    // bytes it names and states how it reached the store. An exact replay is a no-op; a correction retracts and records anew.
+    async recordCommunicationEvent(caseId, input) {
+      const record = await mutate(caseId, (record) => {
+        const event = createCommunicationEvent(record, input, { recordedAt: now() });
+        const existing = record.communication_events.find((entry) => entry.id === event.id);
+        if (existing) {
+          if (!sameCommunicationEvent(existing, event)) throw new ValidationError(`Communication event ${event.id} conflicts with an existing immutable event.`);
+          return null;
+        }
+        validateCommunicationEvents([...record.communication_events, event], record);
+        record.communication_events.push(event);
+        return record;
+      });
+      return Object.freeze({
+        case_id: caseId,
+        revision: record.revision,
+        event: structuredClone(record.communication_events.find((entry) => entry.id === input.eventId)),
+        communication_projection: projectCommunicationState(record)
       });
     },
     async getCandidateResponse(caseId, selector = "current_pending") {
@@ -1573,6 +1635,7 @@ export function createEncryptedPrivateCaseStore({
       });
       const candidate = selectContinuationCandidate(record, candidateId);
       const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
+      const historicalDelivery = candidate == null ? resolveHistoricalDeliveryCheckpoint(record) : null;
       const recent = Object.keys(episodePolicy).length
         ? selectRecentVerbatimWindow(transcript, {
             currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
@@ -1596,6 +1659,8 @@ export function createEncryptedPrivateCaseStore({
         transcript_amendments: structuredClone(record.transcript_amendments),
         candidate_response: candidate ? structuredClone(candidate) : null,
         delivery_completion: deliveryCompletion ? structuredClone(deliveryCompletion) : null,
+        historical_delivery_completion: historicalDelivery ? structuredClone(historicalDelivery) : null,
+        communication_projection: projectCommunicationState(record),
         source_artifact_refs: record.source_artifacts.map((artifact) => ({
           id: artifact.id,
           version: artifact.version,
@@ -1633,6 +1698,7 @@ export function createEncryptedPrivateCaseStore({
       });
       const candidate = selectContinuationCandidate(record, "current_pending");
       const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
+      const historicalDelivery = candidate == null ? resolveHistoricalDeliveryCheckpoint(record) : null;
       const context = {
         case_state: record.case_state,
         last_state_diff: lastTurnDiff(record),
@@ -1640,6 +1706,7 @@ export function createEncryptedPrivateCaseStore({
         constitution_ref: durableContext.constitution_ref,
         candidate_response: candidate,
         delivery_completion: deliveryCompletion,
+        historical_delivery_completion: historicalDelivery,
         recent_verbatim: recentVerbatim,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
         targeted_older_evidence: durableContext.targeted_older_evidence,
@@ -1654,6 +1721,7 @@ export function createEncryptedPrivateCaseStore({
         record,
         recentVerbatim,
         continuationSafety,
+        historicalDelivery,
         runtimeVersion,
         auditVersion,
         createdAt

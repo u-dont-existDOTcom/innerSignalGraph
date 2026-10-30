@@ -2,6 +2,7 @@ import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
 
 export function critiquePrompt(context, candidate, criticName, candidateName) {
   const system = `You are the ${criticName} adversarial critic reviewing an answer drafted by ${candidateName}.${sharedClinicalRules}
+Check each substantive draft clause against the client’s actual statements: identify unsupported premises, disconnected contrasts or qualifications, rebuttals of unmade claims, and questions with no plausible answer that changes the therapeutic next step. Preserve necessary safety and uncertainty; do not invent a defect simply to criticize.
 Do not manufacture disagreement. Preserve genuinely strong insights. Identify unsupported certainty, generic scripts, omitted distinctions, and guide misapplication before recommending corrections.
 
 Return exactly one JSON object with this shape:

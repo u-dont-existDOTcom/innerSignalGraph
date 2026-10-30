@@ -9,14 +9,15 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
-import { createPrivateCaseHandoff, openPrivateHandoffArtifact, validatePrivateCaseHandoff } from "../src/storage/private-case-handoff.mjs";
+import { createPrivateCaseHandoff, openPrivateHandoffArtifact, validatePrivateCaseHandoff, validatePrivateHandoffPacket } from "../src/storage/private-case-handoff.mjs";
 import { writePrivateCaseAliasLocator } from "../src/storage/private-case-alias-locator.mjs";
-import { deserializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
+import { createEncryptedPrivateCaseStore, deserializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
 import { decryptVaultEnvelopeWithRecoverySecret } from "../src/storage/vault-crypto.mjs";
 import { chunkExactSourceText, reconstructExactSourceChunks } from "../src/storage/exact-source-artifact.mjs";
 import { validateTrackerEntry } from "../src/case-state/tracker.mjs";
 import { selectRecentVerbatimWindow } from "../src/case-state/context-window.mjs";
 import { runPrivateCandidateAudit } from "../src/supervisor/private-candidate-audit.mjs";
+import { createCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -847,3 +848,232 @@ test("synthetic private payload is not emitted into repository or public fixture
     /mode 0600 or stricter/
   );
 });
+
+// A case whose transcript ends with a reply the application did not generate and that has no candidate governing the next
+// turn, as when an owner brings an existing conversation in. The reply is real history; nothing says it was ever audited.
+async function seedCaseWithoutCandidate(environment) {
+  const payloadPath = path.join(environment.privateRoot, "seed-payload-no-candidate.json");
+  await fs.writeFile(payloadPath, `${JSON.stringify({ ...environment.payload, candidate_responses: [] })}\n`, { mode: 0o600 });
+  await runSession("seed", environment, { fourthArg: payloadPath });
+}
+
+async function openServices(t, environment) {
+  const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  t.after(() => providers.close());
+  const service = createPrivateCaseAccessService({
+    rootDir: providers.rootDir,
+    authorizationProvider: providers.authorizationProvider,
+    keyProvider: providers.keyProvider,
+    allowDevelopmentFileProvider: true
+  });
+  // The application's own trusted code path, which is the only one that can record a report the owner made through a verified route.
+  const trusted = createEncryptedPrivateCaseStore({
+    rootDir: environment.vaultRoot,
+    routineKek: Buffer.alloc(32, 17),
+    recoverySecretBytes: Buffer.alloc(32, 23),
+    developmentExternalCredentialAuthorized: true,
+    now: () => "2026-09-10T12:00:00.000Z"
+  });
+  t.after(() => trusted.close());
+  const auth = { bearerToken: TOKEN };
+  const inspect = () => service.loadCaseContext(CASE_ID, auth, { requireContinuationSafe: false, requireAuditScope: true, episodePolicy: { requireCompleteEpisode: true } });
+  return { service, trusted, auth, inspect };
+}
+
+const LATEST_PAIR = { kind: "transcript_turn", assistantTurnId: "E5-assistant", inReplyToTurnId: "E5-user" };
+const MISSING_CANDIDATE = ["exact candidate response is missing"];
+
+test("an owner-reported delivery of the stored pair lets a case with no governing candidate continue without inventing an audit", async (t) => {
+  const environment = await makeEnvironment(t);
+  await seedCaseWithoutCandidate(environment);
+  const { service, trusted, auth, inspect } = await openServices(t, environment);
+
+  let context = await inspect();
+  assert.equal(context.candidate_response, null);
+  assert.equal(context.historical_delivery_completion, null);
+  assert.deepEqual(context.continuation_safety.failures, MISSING_CANDIDATE, "with nothing reported, the unchanged message still blocks");
+  assert.equal(context.continuation_safety.exact_delivery_available, false);
+
+  // An agent relaying the owner's words is recorded as a weaker source and cannot claim to be a verified owner event.
+  await assert.rejects(
+    () => service.recordCommunicationEvent(CASE_ID, { eventId: "comm:relay:denied", kind: "reported_sent", audience: "client", subject: LATEST_PAIR }, { bearerToken: "wrong-token" }),
+    { code: "PRIVATE_CASE_ACCESS_DENIED" }
+  );
+  const relayed = await service.recordCommunicationEvent(CASE_ID, {
+    eventId: "comm:relay:e5",
+    kind: "reported_sent",
+    audience: "client",
+    subject: LATEST_PAIR,
+    sentAt: "2026-09-05T12:30:00.000Z",
+    provenance: { origin: "owner_action", sourceRef: "message:synthetic:relay", quote: "Synthetic: I sent your last reply." }
+  }, auth);
+  assert.deepEqual([relayed.event.provenance.origin, relayed.event.provenance.actor_resolution], ["agent_relayed", "unresolved"]);
+  context = await inspect();
+  assert.equal(context.historical_delivery_completion, null, "a relayed report does not open the continuation gate");
+  assert.deepEqual(context.continuation_safety.failures, MISSING_CANDIDATE);
+  assert.deepEqual(
+    context.communication_projection.confirmed_or_reported_client_outbound.map((entry) => [entry.subject.kind, entry.state, entry.delivery_evidence, entry.source.actor_resolution]),
+    [["transcript_turn", "reported_sent", "owner_reported_sent", "unresolved"]]
+  );
+
+  await trusted.recordCommunicationEvent(CASE_ID, {
+    eventId: "comm:owner:e5",
+    kind: "reported_sent",
+    audience: "client",
+    subject: LATEST_PAIR,
+    sentAt: "2026-09-05T12:30:00.000Z",
+    provenance: { origin: "owner_action", sourceRef: "message:synthetic:owner", quote: null }
+  });
+  context = await service.loadCaseContext(CASE_ID, auth, { requireContinuationSafe: true, requireAuditScope: true, episodePolicy: { requireCompleteEpisode: true } });
+  assert.equal(context.continuation_safety.continuation_safe, true);
+  assert.deepEqual(
+    [context.continuation_safety.exact_delivery_available, context.continuation_safety.historical_delivery_available, context.continuation_safety.exact_candidate_available],
+    [true, true, false]
+  );
+  assert.deepEqual([context.candidate_response, context.delivery_completion], [null, null]);
+  assert.deepEqual(context.historical_delivery_completion, {
+    schema_version: 1,
+    kind: "owner_reported_historical_delivery",
+    event_id: "comm:owner:e5",
+    assistant_turn_id: "E5-assistant",
+    in_reply_to_turn_id: "E5-user",
+    text_sha256: sha256Hex("Synthetic episode latest response."),
+    reported_sent_at_status: "known",
+    reported_sent_at: "2026-09-05T12:30:00.000Z",
+    recorded_at: "2026-09-10T12:00:00.000Z",
+    provenance: { origin: "owner_action", actor_resolution: "owner_verified" }
+  });
+  const record = await trusted.load(CASE_ID);
+  assert.deepEqual(record.candidate_responses, [], "no candidate, audit or approval was invented for the earlier reply");
+
+  const receipt = await service.createHandoff(CASE_ID, { handoffId: HANDOFF_ID, runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" }, auth);
+  assert.equal(receipt.handoff_status, "READY_FOR_FRESH_SESSION_TEST");
+  assert.deepEqual(receipt.candidate_ids, []);
+  const fresh = JSON.parse((await runFreshHandoffSession(environment, HANDOFF_ID)).stdout);
+  assert.equal(fresh.fresh_session_status, "FRESH_SESSION_GREEN");
+  assert.deepEqual(fresh.packet.historical_delivery_completion, context.historical_delivery_completion);
+  assert.deepEqual(fresh.decision_projection.historical_delivery_completion, context.historical_delivery_completion);
+  assert.equal(fresh.packet.delivery_completion, null);
+  assert.deepEqual(fresh.packet.pending_artifacts, []);
+  assert.deepEqual(fresh.packet.communication_projection, context.communication_projection);
+});
+
+test("the historical checkpoint covers only the stored pair that ends the transcript and a retraction withdraws it", async (t) => {
+  const environment = await makeEnvironment(t);
+  await seedCaseWithoutCandidate(environment);
+  const { service, trusted, auth, inspect } = await openServices(t, environment);
+  const owner = { origin: "owner_action", sourceRef: "message:synthetic:owner", quote: null };
+
+  // A pair that is not adjacent, or whose reply is not the assistant's, cannot be reported.
+  const refused = (subject) => trusted.recordCommunicationEvent(CASE_ID, { eventId: "comm:owner:bad", kind: "reported_sent", audience: "client", subject, provenance: owner });
+  await assert.rejects(() => refused({ kind: "transcript_turn", assistantTurnId: "E5-assistant", inReplyToTurnId: "E4-user" }), /adjacent stored user turn/);
+  await assert.rejects(() => refused({ kind: "transcript_turn", assistantTurnId: "E5-user", inReplyToTurnId: "E5-assistant" }), /adjacent stored user turn/);
+  await assert.rejects(() => refused({ kind: "transcript_turn", assistantTurnId: "E9-assistant", inReplyToTurnId: "E9-user" }), /adjacent stored user turn/);
+
+  await trusted.recordCommunicationEvent(CASE_ID, { eventId: "comm:owner:e5", kind: "reported_sent", audience: "client", subject: LATEST_PAIR, provenance: owner });
+  let context = await inspect();
+  assert.deepEqual([context.historical_delivery_completion.event_id, context.historical_delivery_completion.reported_sent_at_status, context.historical_delivery_completion.reported_sent_at], ["comm:owner:e5", "unavailable", null], "an unreported time stays unavailable");
+  assert.equal(context.continuation_safety.continuation_safe, true);
+
+  // A newer user turn means the reported reply no longer ends the transcript, so it can no longer stand in for the next decision.
+  await service.appendTranscriptTurn(CASE_ID, turn("E6", "user", "Synthetic newer user turn waiting for an answer.", "episode:active", 6), auth);
+  context = await inspect();
+  assert.equal(context.historical_delivery_completion, null);
+  assert.deepEqual(context.continuation_safety.failures, MISSING_CANDIDATE);
+  assert.equal(context.communication_projection.confirmed_or_reported_client_outbound.length, 1, "the report remains history");
+
+  await trusted.recordCommunicationEvent(CASE_ID, { eventId: "comm:owner:withdrawn", kind: "retraction", retractsEventId: "comm:owner:e5", reason: "The owner said the reply was never sent.", provenance: owner });
+  context = await inspect();
+  assert.deepEqual(context.communication_projection.confirmed_or_reported_client_outbound, []);
+  assert.equal(context.communication_projection.retracted_event_count, 1);
+  assert.equal((await trusted.load(CASE_ID)).communication_events.length, 2, "the report stays on the record next to its retraction");
+});
+
+test("a pending candidate keeps governing the next turn when the owner reports the stored pair as sent", async (t) => {
+  const environment = await makeEnvironment(t);
+  await runSession("seed", environment);
+  const { service, trusted, auth, inspect } = await openServices(t, environment);
+  await trusted.recordCommunicationEvent(CASE_ID, {
+    eventId: "comm:owner:e5",
+    kind: "reported_sent",
+    audience: "client",
+    subject: LATEST_PAIR,
+    provenance: { origin: "owner_action", sourceRef: "message:synthetic:owner", quote: null }
+  });
+  const context = await inspect();
+  assert.equal(context.candidate_response.id, CANDIDATE_ID);
+  assert.equal(context.candidate_response.status, "pending_audit");
+  assert.equal(context.historical_delivery_completion, null, "a report cannot replace the candidate that governs");
+  assert.equal(context.continuation_safety.continuation_safe, true);
+  assert.equal(context.continuation_safety.exact_candidate_available, true);
+  assert.equal(context.continuation_safety.historical_delivery_available, false);
+  const candidate = await service.getCandidateResponse(CASE_ID, CANDIDATE_ID, auth);
+  assert.deepEqual([candidate.status, candidate.audit_history.length], ["pending_audit", 0], "reporting history audits and approves nothing");
+  assert.deepEqual(
+    context.communication_projection.supervisor_only_artifacts.map((entry) => [entry.subject.candidate_id, entry.state, entry.candidate_status]),
+    [["candidate:superseded:000", "draft", "superseded"], [CANDIDATE_ID, "draft", "pending_audit"]]
+  );
+});
+
+// A candidate that failed its audit, passed it or was approved but not yet delivered is still unsent and still governs the next
+// decision, although the continuation context only selects a candidate that awaits audit. A report about the stored pair that
+// ends the transcript must not hide it behind an earlier delivery.
+for (const status of ["audit_failed", "audited", "approved_for_delivery"]) {
+  test(`an unsent ${status} candidate keeps governing and an owner report of the stored pair cannot stand in for it`, async (t) => {
+    const environment = await makeEnvironment(t);
+    await runSession("seed", environment);
+    const { trusted, inspect } = await openServices(t, environment);
+    const audit = createCandidateAuditEvidence({
+      auditId: `audit:synthetic:${status}`,
+      candidate: await trusted.getCandidateResponse(CASE_ID, CANDIDATE_ID),
+      auditVersion: "synthetic-audit",
+      auditorContext: { kind: "independent", context_id: `session:auditor:${status}` },
+      findings: status === "audit_failed" ? [{ id: "finding:synthetic:substantive", code: "SYNTHETIC_UNCERTAINTY", severity: "substantive", summary: "Synthetic repair is required." }] : [],
+      completedAt: "2026-09-10T12:00:00.000Z"
+    });
+    await trusted.recordCandidateAudit(CASE_ID, CANDIDATE_ID, audit);
+    if (status === "approved_for_delivery") await trusted.approveCandidateForDelivery(CASE_ID, CANDIDATE_ID, audit.id);
+    assert.equal((await trusted.getCandidateResponse(CASE_ID, CANDIDATE_ID)).status, status);
+    const owner = { origin: "owner_action", sourceRef: "message:synthetic:owner", quote: null };
+    await trusted.recordCommunicationEvent(CASE_ID, { eventId: "comm:owner:e5", kind: "reported_sent", audience: "client", subject: LATEST_PAIR, provenance: owner });
+
+    const context = await inspect();
+    assert.equal(context.candidate_response, null, "the continuation context selects only a candidate awaiting audit, as before");
+    assert.equal(context.historical_delivery_completion, null);
+    assert.equal(context.continuation_safety.continuation_safe, false);
+    assert.deepEqual(context.continuation_safety.failures, MISSING_CANDIDATE, "the case stays blocked exactly as it was before the report");
+    assert.equal(context.continuation_safety.historical_delivery_available, false);
+    assert.equal(context.communication_projection.confirmed_or_reported_client_outbound.length, 1, "the report is still recorded as history");
+    assert.ok(context.communication_projection.supervisor_only_artifacts.some((entry) => entry.subject.candidate_id === CANDIDATE_ID && entry.state === "draft" && entry.candidate_status === status), "the unsent candidate stays a draft");
+
+    // A handoff cannot be compiled while a candidate is audited or approved but undelivered (the refusal predates this change), so
+    // the handoff half of this test follows the candidate that failed its audit.
+    if (status === "audit_failed") {
+      await trusted.createHandoff(CASE_ID, { handoffId: HANDOFF_ID, runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" });
+      const packet = await trusted.loadHandoff(CASE_ID, HANDOFF_ID);
+      assert.equal(packet.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
+      assert.equal(packet.historical_delivery_completion, null);
+      assert.deepEqual(packet.pending_artifacts.map((entry) => [entry.id, entry.status]), [[CANDIDATE_ID, status]], "the handoff keeps the exact unsent candidate and its audit");
+      const forged = structuredClone(packet);
+      forged.historical_delivery_completion = {
+        schema_version: 1,
+        kind: "owner_reported_historical_delivery",
+        event_id: "comm:owner:e5",
+        assistant_turn_id: "E5-assistant",
+        in_reply_to_turn_id: "E5-user",
+        text_sha256: sha256Hex("Synthetic episode latest response."),
+        reported_sent_at_status: "unavailable",
+        reported_sent_at: null,
+        recorded_at: "2026-09-10T12:00:00.000Z",
+        provenance: { origin: "owner_action", actor_resolution: "owner_verified" }
+      };
+      assert.throws(() => validatePrivateHandoffPacket(forged), /historical delivery cannot accompany a pending candidate or a candidate delivery/);
+    }
+
+    // Once no unsent candidate remains, the same report governs again.
+    await trusted.updateCandidateStatus(CASE_ID, CANDIDATE_ID, "superseded");
+    const released = await inspect();
+    assert.equal(released.historical_delivery_completion.event_id, "comm:owner:e5");
+    assert.equal(released.continuation_safety.continuation_safe, true);
+  });
+}

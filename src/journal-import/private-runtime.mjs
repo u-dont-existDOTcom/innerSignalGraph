@@ -5,9 +5,9 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalOperatorReviewDir, journalPointerCopyRunWords,
-  journalPointerDeadlines, journalPointerRules, journalQuoteNumericDateOrder, journalSemanticConcurrency, JOURNAL_HARDEST_EFFORTS,
-  normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
+import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, journalOperatorReadPages, journalOperatorReviewDir,
+  journalPointerCopyRunWords, journalPointerDeadlines, journalPointerRules, journalQuoteNumericDateOrder, journalReplacedPublication,
+  journalSemanticConcurrency, JOURNAL_HARDEST_EFFORTS, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -15,6 +15,7 @@ import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessS
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
 import { journalImportOrder, readingFirstAttestationKey, verifiedReadingFirstSynthesis } from "./reading-first-runtime-gate.mjs";
 import { produceReadingFirstJournal } from "./reading-first-source-producer.mjs";
+import { readOperatorReviewBundle, removeOperatorWorklist, writeOperatorWorklist } from "./reading-first-operator-review.mjs";
 import { createReadingFirstPortAdapter } from "./reading-first-port-adapter.mjs";
 import { buildReadingFirstFacetIndexes } from "./reading-first-facets.mjs";
 import { JOURNAL_CODEX_EXCHANGE_PROVIDER, JOURNAL_EXCHANGE_PROVIDER } from "./exchange-port.mjs";
@@ -184,6 +185,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   const pointerDeadlines = journalPointerDeadlines(config);
   const pointerCopyRunWords = journalPointerCopyRunWords(config);
   const pointerRules = journalPointerRules(config);
+  const operatorReadPages = journalOperatorReadPages(config);
+  const replacedPublication = journalReplacedPublication(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -246,7 +249,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     let state = await existingJson(stateFile);
     const importOrder = journalImportOrder(config, { existingState: state });
     if (!state) {
-      state = { schema_version: 1, case_id: caseId, corpus_id: `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, import_order: importOrder, stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
+      // A run that replaces a published quote corpus takes that corpus's id and records the generation it replaces as
+      // already published, so its quote generations are published into the same corpus in place of that one (and the old
+      // one stays among the corpus's previous generations). The archived original is named for its source's digest, so a
+      // second source can be published into the same corpus without colliding with the first one's.
+      state = { schema_version: 1, case_id: caseId, corpus_id: replacedPublication?.corpus_id ?? `corpus:${randomUUID()}`, generation: `generation:${randomUUID()}`, source_sha256: config.source.sha256, import_order: importOrder,
+        original_object_id: `original:source:${config.source.sha256.slice(0, 24)}`,
+        ...(replacedPublication ? { replaces_published: { ...replacedPublication },
+          quote_published: { generation: replacedPublication.generation, manifest_object_id: null, at: null } } : {}),
+        stage: "INTAKE", completion: completions(), completed_units: [], completed_visual_pages: [], calibration: "not_run", calibration_epoch: 0, calibration_history: [], blocker: null };
       await privateJson(stateFile, state);
     }
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
@@ -254,6 +265,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // silently switch an in-progress generation into a different pipeline.
     invariant((state.import_order ?? "legacy_quote_first") === importOrder,
       "JOURNAL_IMPORT_ORDER_CHANGED");
+    // The corpus a run replaces is fixed when the run starts, like its order: a config that names another corpus or
+    // generation (or none), or drops the one it started with, would publish somewhere the run did not begin for.
+    invariant((state.replaces_published ?? null) === null ? replacedPublication === null
+      : (replacedPublication !== null && replacedPublication.corpus_id === state.replaces_published.corpus_id
+        && replacedPublication.generation === state.replaces_published.generation),
+    "JOURNAL_REPLACED_PUBLICATION_CHANGED");
     store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: state.corpus_id, corpusKey: key, resumeMatchingObjects: true });
     const hardestLane = normalizeJournalHardestLaneConfig(config);
     invariant(Number.isSafeInteger(hardestLane.daily_limit) && hardestLane.daily_limit >= 1, "HARDEST_LANE_CONFIG_INVALID");
@@ -431,8 +448,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       import_order: state.import_order ?? "legacy_quote_first",
       ...(state.reading_first_counts ? {reading_first:{
         ...structuredClone(state.reading_first_counts),
-        status:state.reading_first_counts.pending>0 ? "REVIEW_PENDING" : "SOURCE_SYNTHESIZED"
+        status:state.reading_first_counts.pending>0 ? "REVIEW_PENDING" : "SOURCE_SYNTHESIZED",
+        // Pages still waiting for a review, by number and reason only; their text is in the review worklist, not here.
+        ...(state.reading_first_pending?.length ? { pending_pages: state.reading_first_pending.map(({ page, reason }) => ({ page, reason })) } : {})
       }} : {}),
+      ...(state.replaces_published ? { replaces_published: structuredClone(state.replaces_published) } : {}),
       calibration_epoch: calibrationEpoch(), calibration_history_length: state.calibration_history?.length ?? 0,
       ...(state.calibration_resumes?.length ? { calibration_resume_count: state.calibration_resumes.length } : {}),
       ...(state.calibration_history?.length ? { previous_failure:
@@ -527,7 +547,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // run continue.
         const verified = await readVerifiedSource();
         try {
-          const reference = await store.writeChunkedOriginal({ objectId: "original:source", bytes: verified });
+          // A run begun before the archive was named for its source's digest (no `original_object_id`) keeps the one name.
+          const reference = await store.writeChunkedOriginal({ objectId: state.original_object_id ?? "original:source", bytes: verified });
           await store.writeJsonObject({ objectId: "intake:original", value: reference });
         } finally { verified.fill(0); }
       }
@@ -2744,6 +2765,27 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
 
     // The private reading stage is explicitly opt-in on NEW generations.
     // It does not re-run historical refusals or change live legacy imports.
+    //
+    // A page the reader cannot read (an image, an empty page, a refusal, an invalid or mismatched answer, a reader that cannot
+    // answer) stays pending for an authorized review, and nothing is synthesized or signed while any page is pending. The
+    // reviews are the operator's `reading-first-reviews.json` in the review directory the run config names
+    // (reading-first-operator-review.mjs); this writes `reading-first-review-worklist.json` there, the pages still waiting with
+    // the exact text the importer will check a quotation against. A rerun replays the reader's stored answers (no new model
+    // calls for a page already answered) and applies the reviews. Evidence for a page, the reader's or a review's, is kept the
+    // first time it is accepted and cannot later be changed (writeOnce): a review that changes after it was applied is refused.
+    const readingFirstProgressFile = path.join(root, "reading-first-progress.json");
+    // The last progress record of the reading stage as `status` shows it: page numbers, counts and a time, nothing else, and
+    // none when the stage has not run or its file cannot be read.
+    const readingFirstProgress = async () => {
+      let saved;
+      try { saved = await existingJson(readingFirstProgressFile); } catch { return null; }
+      if (saved === null || typeof saved !== "object" || Array.isArray(saved)) return null;
+      const shown = {};
+      for (const name of ["waiting_on_page", "through_page", "read", "operator_reviewed", "pending"])
+        if (Number.isSafeInteger(saved[name]) && saved[name] >= 0) shown[name] = saved[name];
+      if (typeof saved.updated_at === "string" && saved.updated_at.length <= 40) shown.updated_at = saved.updated_at;
+      return Object.keys(shown).length > 0 ? shown : null;
+    };
     async function readSource() {
       invariant(importOrder === "reading_first", "JOURNAL_READING_FIRST_ORDER_REQUIRED");
       await stage();
@@ -2772,6 +2814,17 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           return { page:p.page_number, text,source_page_sha256,required_modalities };
         });
       invariant(pages.length>0, "JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE");
+
+      // The review directory is checked, and the reviews in it read, before any page goes to the reader, so a directory or
+      // bundle that cannot be used stops the run before it spends a call.
+      const reviewDir = journalOperatorReviewDir(config);
+      let operatorReview = null;
+      if (reviewDir) {
+        // Never inside the public repository, where a routine commit could publish it (as execution_root).
+        invariant(isOutside(repositoryRoot, reviewDir), "JOURNAL_OPERATOR_REVIEW_DIR_PRIVATE_REQUIRED");
+        await checkReviewDirectory(reviewDir);
+        operatorReview = await readOperatorReviewBundle(reviewDir);
+      }
 
       const attestationKey=readingFirstAttestationKey(key);
       try {
@@ -2806,6 +2859,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             "JOURNAL_READING_FIRST_SOURCE_PERSISTENCE_FAILED");
           return {private_reference:objectId};
         };
+        // Where the run is, by page number and counts only: the page it waits on, and the pages done through the last one.
+        let progress={ schema_version:1 };
+        const onProgress=async message=>{
+          progress=Object.hasOwn(message,"waiting_on_page") ? { ...progress, ...message } : { schema_version:1, ...message };
+          await privateJson(readingFirstProgressFile,{ ...progress, updated_at:now().toISOString() });
+        };
         const result=await produceReadingFirstJournal({
           sourceSha256:state.source_sha256,
           generation:state.generation,
@@ -2813,14 +2872,35 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           pages,attestationKey,
           reader,verifyCompletion:adapter.verifyCompletion,
           persistEvidence,synthesize:adapter.synthesize,
-          verifySynthesis:adapter.verifySynthesis
+          verifySynthesis:adapter.verifySynthesis,
+          operatorReview,operatorReadPages,
+          // A direct browser route has one page and takes one call at a time, as the pointer steps' standard calls do; an
+          // exchange queues as many as the setting allows.
+          readerConcurrency:directRoute ? 1 : semanticConcurrency,onProgress
         });
+        if(result.status==="REVIEW_PENDING"){
+          // Nothing is signed. The pages still waiting go to the reviewer, with the text the importer will check against.
+          if(reviewDir){
+            await writeOperatorWorklist({ dir:reviewDir, verified:await checkReviewDirectory(reviewDir), worklist:{
+              schema_version:1, source_sha256:state.source_sha256, generation:state.generation,
+              pages:result.pending_pages.map(item=>({ page:item.page, source_page_sha256:item.source_page_sha256,
+                required_modalities:item.required_modalities, reason:item.reason, text:pages[item.page-1].text })) } });
+          }
+          state.reading_first_counts=result.counts;
+          state.reading_first_pending=result.pending_pages.map(({ page, reason, required_modalities, source_page_sha256 }) =>
+            ({ page, reason, required_modalities, source_page_sha256 }));
+          await save();
+          return summary();
+        }
         // The final journal is source-bound and held only in the encrypted
         // private corpus store. A new index is still blocked on any gaps.
         const ref=await writeLarge("reading-first:attested-receipts",result.receipt_journal);
         state.reading_first_receipts_ref=ref;
         state.reading_first_counts=result.counts;
+        delete state.reading_first_pending;
         await save();
+        // The worklist held journal text for pages that are all reviewed now.
+        if(reviewDir) await removeOperatorWorklist(reviewDir);
         return summary();
       } finally {attestationKey.fill(0);}
     }
@@ -2828,6 +2908,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const requireReadingFirstSynthesis = async () => {
       if (importOrder !== "reading_first") return;
       invariant(state.parsed_ref && state.completion.archive_verified === "pass", "JOURNAL_SOURCE_NOT_STAGED");
+      // Pages still waiting for a review: nothing is signed yet, and no index is built over unread pages.
+      invariant(state.reading_first_receipts_ref || !state.reading_first_pending?.length, "JOURNAL_READING_FIRST_REVIEW_PENDING");
       invariant(state.reading_first_receipts_ref, "JOURNAL_READING_FIRST_STAGE_INCOMPLETE");
       const sourcePlan = await readLarge(state.parsed_ref);
       const pageCount = sourcePlan.parsed.pages?.length ?? 0;
@@ -2954,7 +3036,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           manifest_object_id: manifestObjectId };
         await authorize();
         const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize,
-          supersedes: state.quote_index.supersedes ?? null });
+          supersedes: state.quote_index.supersedes ?? null, corpusMustExist: Boolean(state.replaces_published) });
         const receipt = typeof service.rootDir === "string"
           ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
           : await publish();
@@ -3507,7 +3589,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const persisted = { manifest, manifest_reference: target.manifest_reference, manifest_object_id: target.manifest_object_id };
         const supersedes = state.quote_published?.generation ?? null;
         await authorize();
-        const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize, supersedes });
+        const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: quoteStore, persisted, auth, authorize, supersedes,
+          corpusMustExist: Boolean(state.replaces_published) });
         const receipt = typeof service.rootDir === "string"
           ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
           : await publish();
@@ -3571,6 +3654,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (command === "commit") return commit();
         if (["status", "report", "delete-plan"].includes(command)) {
           if (command === "report") await privateJson(path.join(root, "completion-report.json"), { ...summary(), source_chat: config.source_chat, generation: state.generation });
+          if (command === "status") {
+            const progress = await readingFirstProgress();
+            if (progress) return { ...summary(), reading_first_progress: progress };
+          }
           return summary();
         }
         if (command === "verify") {
