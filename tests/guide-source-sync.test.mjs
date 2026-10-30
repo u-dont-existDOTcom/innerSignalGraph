@@ -93,16 +93,19 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-shame-integration-2026-10-29-r7");
-  assert.equal(active.file, "inner-child-guide-2026-10-29-r7.txt");
-  assert.equal(active.sha256, "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb");
+  assert.equal(active.version, "owner-approved-disclosure-additions-2026-10-30-r8");
+  assert.equal(active.file, "inner-child-guide-2026-10-30-r8.txt");
+  assert.equal(active.sha256, "d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d");
   const r5 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
   assert.equal(hash(r5), "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-10-r5.txt" && item.sha256 === "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31"));
   const successor = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-11-r6.txt", import.meta.url), "utf8");
   assert.equal(hash(successor), "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a");
   const currentR7 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-29-r7.txt", import.meta.url), "utf8");
-  assert.equal(hash(currentR7), active.sha256);
+  assert.equal(hash(currentR7), "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb");
+  assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-29-r7.txt" && item.sha256 === "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb"));
+  const currentR8 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-30-r8.txt", import.meta.url), "utf8");
+  assert.equal(hash(currentR8), active.sha256);
   for (const originalLine of current.split("\n")) {
     if (originalLine.trim()) assert.ok(successor.includes(originalLine), "r6 preserves r4 wording: "+ originalLine.slice(0,60));
   }
@@ -120,6 +123,53 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
     && item.version === "owner-approved-continuity-scaffolding-2026-10-04-r3-reader-facing"
     && item.sha256 === "f2d285911a07a8ab0b189bc53914b535db68c88dbad66a529c69b41c08f9053e"
   ));
+});
+
+test("October 30 r8 is October 29 r7 plus exactly the owner's two approved additions (question 46, option A)", async () => {
+  // The owner's answer of 30 October 2026, 22:03 UTC ("56a", read as "46: A"): add both additions as written. The bytes below are the
+  // approved text. r7 stays immutable; r8 differs from it by these two insertions, each after one existing sentence, and nothing else.
+  const additionOne = `If there's something you've never told anyone and you do want one person to know, choose them by how easily they handle difficult subjects, not by how close they are. Start with the general kind of thing, such as "it's about something sexual" or "it's about my childhood", ask whether they're open to hearing more, and see how a smaller truth is received before you give details; if they seem alarmed, you can slow down or stop. With a therapist, it's fine to ask first, in general terms, what they would have to report or write down. If you feel or suspect that something sexual and harmful happened to you early in life, a therapist experienced with early sexual trauma can help, and you don't need to be sure what happened to look for one. If you came across illegal material by accident, seeing it isn't the same as seeking it: don't save or share it, report it to the platform if you wish, and ask a lawyer if you're worried about the law. An AI helper can help you think these things through, but some topics are beyond it; a good one tells you so plainly and points you to a person who can help.`;
+  const additionTwo = `Before deciding what someone's reaction to a disagreement means, go back over what each of you actually said and did, in order.`;
+  const afterDisclosure = "Choose disclosure according to trust, purpose and consequences.";
+  const afterAssessment = "Keep that assessment specific and revisable.";
+  const r7 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-29-r7.txt", import.meta.url), "utf8");
+  const r8 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-30-r8.txt", import.meta.url), "utf8");
+  assert.equal(hash(r7), "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb", "r7 is untouched");
+  assert.equal(hash(r8), "d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d");
+  assert.equal(additionOne.length, 1102);
+  assert.equal(additionTwo.length, 127);
+  for (const addition of [additionOne, additionTwo]) {
+    assert.match(addition, /^[\x20-\x7e]+$/u, "plain ASCII: no typographic quotes, no line breaks");
+    assert.equal(r7.includes(addition), false, "the additions are new to r7");
+  }
+  for (const anchor of [afterDisclosure, afterAssessment]) assert.equal(r7.split(anchor).length - 1, 1, anchor);
+
+  // r8 is r7 with one space and each addition inserted right after its anchor sentence, and taking the two insertions out gives r7 back.
+  const built = r7
+    .replace(afterAssessment, () => `${afterAssessment} ${additionTwo}`)
+    .replace(afterDisclosure, () => `${afterDisclosure} ${additionOne}`);
+  assert.equal(r8, built);
+  assert.equal(r8.replace(` ${additionOne}`, "").replace(` ${additionTwo}`, ""), r7);
+  assert.equal(r8.length - r7.length, additionOne.length + additionTwo.length + 2);
+
+  // Line by line, exactly two lines differ. The paragraphs continue as before after each insertion.
+  const before = r7.split("\n");
+  const after = r8.split("\n");
+  assert.equal(after.length, before.length, "no line is added or removed, so no line number moves");
+  const changed = after.flatMap((line, index) => (line === before[index] ? [] : [index + 1]));
+  assert.deepEqual(changed, [153, 189]);
+  assert.ok(after[152].startsWith(`${afterAssessment} ${additionTwo} Someone disagreeing with you, `));
+  assert.ok(after[188].includes(`${afterDisclosure} ${additionOne} If another disclosure is really a repeated test of worth or certainty, `));
+
+  // Each insertion sits inside the section it was written for, so the section map and the graph nodes that cite those sections still resolve.
+  const sections = JSON.parse(await fs.readFile(new URL("../guide-graphs/source-maps/inner-child-guide.json", import.meta.url), "utf8")).sections;
+  const sectionOf = line => sections.find(section => section.lineStart <= line && line <= section.lineEnd)?.id;
+  assert.equal(sectionOf(153), "IC.RELATIONAL_REALITY");
+  assert.equal(sectionOf(189), "IC.SHAME_APPRAISAL");
+  const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
+  const layout = JSON.parse(await fs.readFile(new URL("../guides/source-layout.json", import.meta.url), "utf8"));
+  assert.equal(layout.textGuides.find(guide => guide.guideId === "inner-child-guide").file, manifest.sources.find(source => source.id === "inner-child-guide").file);
+  assert.equal(manifest.sources.find(source => source.id === "inner-child-guide").file, "inner-child-guide-2026-10-30-r8.txt");
 });
 
 test("current source preservation proof rejects both loss and unapproved extra wording", async () => {

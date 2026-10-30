@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-approved-shame-integration-2026-10-29-r7",
-      "file": "inner-child-guide-2026-10-29-r7.txt",
-      "sha256": "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb",
+      "version": "owner-approved-disclosure-additions-2026-10-30-r8",
+      "file": "inner-child-guide-2026-10-30-r8.txt",
+      "sha256": "d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d",
       "role": "primary-framework",
       "format": "text"
     },
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "October 11 r6 preserves immutable October 10 r5, adds chronic pain specialist-navigation and clinician-trust distinctions, and retains immediate safety when it is truly needed. Humanized changes remain queued and not automatically published; deployment remains separately gated. October 14 owner-supplied clarification makes gratitude essential as an ongoing cultivation within the chosen divine-love and inner-child integration path, not just a technique for regaining access or a prerequisite to helping someone; the public passage remains protected owner-authored memoir. The owner's answers later on October 14 widen gratitude to everyone, with or without a religion, aimed at unconditional love, and set what comes first when the younger self doesn't want the love, when an obvious contradiction shows, and after a fresh death or harm. On October 15 the owner set how gratitude comes in: sideways and at times rather than pushed, with his example questions, an answer to 'toxic positivity', no modeled thanks from an AI, and a contradiction worked toward from the love side; and he let it into a calm altered state. He also said hypnosis in general isn't incompatible with grief or altered states; it depends on the kind of hypnosis, the level of grief and what is appropriate at the moment. On October 16 the owner corrected how reparenting is framed: reparenting is not an exercise but the ongoing relationship in which the present-day adult cares for, validates, protects and guides the vulnerable younger self, including through truthful boundaries, repair and ordinary-life choices; helping someone feel safe while expressing feelings, needs and boundaries is that work, and meditations, imagery, dialogue and affirmations are methods within it. October 29 owner-approved shame integration adds an explicit social-judgment, moral-responsibility, second-layer-shame, reparability and noncompulsory-disclosure guide section; r6 stays immutable.",
+  "notes": "October 11 r6 preserves immutable October 10 r5, adds chronic pain specialist-navigation and clinician-trust distinctions, and retains immediate safety when it is truly needed. Humanized changes remain queued and not automatically published; deployment remains separately gated. October 14 owner-supplied clarification makes gratitude essential as an ongoing cultivation within the chosen divine-love and inner-child integration path, not just a technique for regaining access or a prerequisite to helping someone; the public passage remains protected owner-authored memoir. The owner's answers later on October 14 widen gratitude to everyone, with or without a religion, aimed at unconditional love, and set what comes first when the younger self doesn't want the love, when an obvious contradiction shows, and after a fresh death or harm. On October 15 the owner set how gratitude comes in: sideways and at times rather than pushed, with his example questions, an answer to 'toxic positivity', no modeled thanks from an AI, and a contradiction worked toward from the love side; and he let it into a calm altered state. He also said hypnosis in general isn't incompatible with grief or altered states; it depends on the kind of hypnosis, the level of grief and what is appropriate at the moment. On October 16 the owner corrected how reparenting is framed: reparenting is not an exercise but the ongoing relationship in which the present-day adult cares for, validates, protects and guides the vulnerable younger self, including through truthful boundaries, repair and ordinary-life choices; helping someone feel safe while expressing feelings, needs and boundaries is that work, and meditations, imagery, dialogue and affirmations are methods within it. October 29 owner-approved shame integration adds an explicit social-judgment, moral-responsibility, second-layer-shame, reparability and noncompulsory-disclosure guide section; r6 stays immutable. October 30 owner-approved disclosure additions (owner question 46, option A, answered 30 October 2026 at 22:03 UTC) add two sentences to r7: how to choose whom to tell, with the limits of an AI helper, a therapist experienced with early sexual trauma and accidental exposure to illegal material, in the shame section; and going back over what each person said and did before judging a reaction to a disagreement, in the relational-reality section. The accidental-exposure sentence is queued for the legal review the public-guide queue requires; r7 stays immutable.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -143,6 +143,14 @@
       "version": "owner-approved-refractory-pain-navigation-and-care-trust-2026-10-11-r6",
       "file": "inner-child-guide-2026-10-11-r6.txt",
       "sha256": "de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a",
+      "role": "primary-framework",
+      "format": "text"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-approved-shame-integration-2026-10-29-r7",
+      "file": "inner-child-guide-2026-10-29-r7.txt",
+      "sha256": "1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb",
       "role": "primary-framework",
       "format": "text"
     }
