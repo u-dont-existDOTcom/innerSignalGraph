@@ -43,6 +43,12 @@ function canonicalJson(value, path = "$") {
   return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key], `${path}.${key}`)}`).join(",")}}`;
 }
 
+// The delivery gate is compared by value, never by key order. A handoff is stored as canonical JSON, which sorts keys, so a gate that
+// carries an audit id (DELIVER and APPROVE_FOR_DELIVERY) comes back from storage in a different order than the one it was built in.
+function sameDeliveryGate(stored, expected) {
+  return stored !== null && typeof stored === "object" && !Array.isArray(stored) && canonicalJson(stored) === canonicalJson(expected);
+}
+
 function validateJournalEntry(value, index) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`journal_entries[${index}] must be an object.`);
   bounded(value.id, `journal_entries[${index}].id`, null, 160);
@@ -97,7 +103,7 @@ function validateCandidateLifecycleProjection(value, candidate, deliveryCompleti
       return value;
     }
     const gate = candidateDeliveryGate(null);
-    if (value.current_candidate_id !== null || value.current_candidate_version !== null || JSON.stringify(value.delivery_gate) !== JSON.stringify(gate)) {
+    if (value.current_candidate_id !== null || value.current_candidate_version !== null || !sameDeliveryGate(value.delivery_gate, gate)) {
       throw new ValidationError("Private handoff empty candidate lifecycle is inconsistent.");
     }
     return value;
@@ -122,7 +128,7 @@ function validateCandidateLifecycleProjection(value, candidate, deliveryCompleti
     throw new ValidationError("Private handoff audit status is not tied to the exact current candidate version.");
   }
   const gate = candidateDeliveryGate(candidate);
-  if (JSON.stringify(value.delivery_gate) !== JSON.stringify(gate)) throw new ValidationError("Private handoff candidate delivery gate is inconsistent.");
+  if (!sameDeliveryGate(value.delivery_gate, gate)) throw new ValidationError("Private handoff candidate delivery gate is inconsistent.");
   const expectedReconstructionStatus = candidate.parent_candidate_id == null
     ? "not_applicable"
     : (latestAudit?.sufficient_for_approval ? "fresh_independent_pass" : "pending_fresh_independent_audit");

@@ -1046,29 +1046,26 @@ for (const status of ["audit_failed", "audited", "approved_for_delivery"]) {
     assert.equal(context.communication_projection.confirmed_or_reported_client_outbound.length, 1, "the report is still recorded as history");
     assert.ok(context.communication_projection.supervisor_only_artifacts.some((entry) => entry.subject.candidate_id === CANDIDATE_ID && entry.state === "draft" && entry.candidate_status === status), "the unsent candidate stays a draft");
 
-    // A handoff cannot be compiled while a candidate is audited or approved but undelivered (the refusal predates this change), so
-    // the handoff half of this test follows the candidate that failed its audit.
-    if (status === "audit_failed") {
-      await trusted.createHandoff(CASE_ID, { handoffId: HANDOFF_ID, runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" });
-      const packet = await trusted.loadHandoff(CASE_ID, HANDOFF_ID);
-      assert.equal(packet.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
-      assert.equal(packet.historical_delivery_completion, null);
-      assert.deepEqual(packet.pending_artifacts.map((entry) => [entry.id, entry.status]), [[CANDIDATE_ID, status]], "the handoff keeps the exact unsent candidate and its audit");
-      const forged = structuredClone(packet);
-      forged.historical_delivery_completion = {
-        schema_version: 1,
-        kind: "owner_reported_historical_delivery",
-        event_id: "comm:owner:e5",
-        assistant_turn_id: "E5-assistant",
-        in_reply_to_turn_id: "E5-user",
-        text_sha256: sha256Hex("Synthetic episode latest response."),
-        reported_sent_at_status: "unavailable",
-        reported_sent_at: null,
-        recorded_at: "2026-09-10T12:00:00.000Z",
-        provenance: { origin: "owner_action", actor_resolution: "owner_verified" }
-      };
-      assert.throws(() => validatePrivateHandoffPacket(forged), /historical delivery cannot accompany a pending candidate or a candidate delivery/);
-    }
+    // The handoff keeps the exact unsent candidate whichever step of its review it reached, and the report cannot be added to it.
+    await trusted.createHandoff(CASE_ID, { handoffId: HANDOFF_ID, runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" });
+    const packet = await trusted.loadHandoff(CASE_ID, HANDOFF_ID);
+    assert.equal(packet.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
+    assert.equal(packet.historical_delivery_completion, null);
+    assert.deepEqual(packet.pending_artifacts.map((entry) => [entry.id, entry.status]), [[CANDIDATE_ID, status]], "the handoff keeps the exact unsent candidate and its audit");
+    const forged = structuredClone(packet);
+    forged.historical_delivery_completion = {
+      schema_version: 1,
+      kind: "owner_reported_historical_delivery",
+      event_id: "comm:owner:e5",
+      assistant_turn_id: "E5-assistant",
+      in_reply_to_turn_id: "E5-user",
+      text_sha256: sha256Hex("Synthetic episode latest response."),
+      reported_sent_at_status: "unavailable",
+      reported_sent_at: null,
+      recorded_at: "2026-09-10T12:00:00.000Z",
+      provenance: { origin: "owner_action", actor_resolution: "owner_verified" }
+    };
+    assert.throws(() => validatePrivateHandoffPacket(forged), /historical delivery cannot accompany a pending candidate or a candidate delivery/);
 
     // Once no unsent candidate remains, the same report governs again.
     await trusted.updateCandidateStatus(CASE_ID, CANDIDATE_ID, "superseded");

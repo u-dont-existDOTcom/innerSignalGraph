@@ -1,4 +1,5 @@
 import { createSpeechPlaybackController, deriveSpeechPlaybackUi } from "./speech-playback.js";
+import { initSupervisorPanel } from "./supervisor-panel.js";
 
 const STORAGE_KEY = "inner-signal-settings-v1";
 const LEGACY_STORAGE_KEYS = ["inner-signal-runtime-v0100", "inner-signal-runtime-v093", "inner-signal-runtime-v092", "inner-signal-runtime-v091", "inner-signal-runtime-v090", "inner-signal-runtime-v080", "inner-signal-runtime-v070", "inner-signal-runtime-v060"];
@@ -681,6 +682,7 @@ async function checkHealth() {
 }
 
 for (const button of $$(".tab")) button.addEventListener("click", () => activateTab(button.dataset.tab));
+initSupervisorPanel({ getCaseId: () => state.caseId });
 
 $("#therapy-form").addEventListener("submit", async (event) => {
   event.preventDefault();

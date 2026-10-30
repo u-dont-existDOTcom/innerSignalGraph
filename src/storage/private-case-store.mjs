@@ -14,6 +14,7 @@ import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "../supervisor/private-candidate
 import {
   MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES,
   PRIVATE_CANDIDATE_STATUSES,
+  REPAIR_INDUCED_ERROR_CHECKS,
   candidateDeliveryGate,
   isActivePrivateCandidate,
   projectCandidateLifecycle,
@@ -40,6 +41,35 @@ import {
   sameCommunicationEvent,
   validateCommunicationEvents
 } from "./private-case-communication.mjs";
+import {
+  SUPERVISOR_DRAFT_VERSION,
+  SUPERVISOR_LIMITS,
+  assertSameSupervisorOperation,
+  assessSupervisorArtifact,
+  companionForCandidate,
+  companionView,
+  computeResponseBasis,
+  createSupervisorCompanionEntry,
+  createSupervisorInputEntry,
+  createSupervisorReviewReceipt,
+  findSupervisorArtifact,
+  isSupervisorDraftCandidate,
+  responseBasisDigest,
+  sha256Json,
+  sha256Text,
+  supervisorArtifactId,
+  supervisorArtifactView,
+  supervisorArtifactViews,
+  supervisorAuditId,
+  supervisorCandidateId,
+  supervisorEntries,
+  supervisorInputIdentity,
+  supervisorInputViews,
+  supervisorReportIdentity,
+  supervisorSubmissionIdentity,
+  validateOperationKey,
+  validateSupervisorArtifacts
+} from "./private-case-supervisor.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
 import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
 import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
@@ -301,6 +331,9 @@ function normalizePrivateCaseRecord(value) {
   // Additive within record version 7: a record from before communication evidence has no events, which says nothing
   // about whether anything was ever sent. Code from before this field keeps it through its own writes.
   if (!Object.hasOwn(migrated, "communication_events")) migrated.communication_events = [];
+  // Additive within record version 7, like communication events: a record from before controlled supervisor drafts has no
+  // supervisor inputs, companions or review receipts. Code from before this field keeps it through its own writes.
+  if (!Object.hasOwn(migrated, "supervisor_artifacts")) migrated.supervisor_artifacts = [];
   return migrated;
 }
 
@@ -391,6 +424,7 @@ export function validatePrivateCaseRecord(value) {
     }
   }
   validateCommunicationEvents(value.communication_events, value);
+  validateSupervisorArtifacts(value.supervisor_artifacts, value);
   if (!Array.isArray(value.journal_corpora) || !Array.isArray(value.journal_corpus_keys)) {
     throw new ValidationError("Journal corpus extensions are invalid.");
   }
@@ -445,6 +479,7 @@ function newRecord(caseId, now) {
     runtime_turns: [],
     source_artifacts: [],
     communication_events: [],
+    supervisor_artifacts: [],
     journal_corpora: [],
     journal_corpus_keys: []
   };
@@ -496,6 +531,12 @@ function assertAppendOnly(previous, next) {
   if (nextEvents.length < previousEvents.length) throw new ValidationError("Communication events are append-only.");
   for (let index = 0; index < previousEvents.length; index += 1) {
     if (JSON.stringify(previousEvents[index]) !== JSON.stringify(nextEvents[index])) throw new ValidationError("Communication events are immutable and cannot be rewritten.");
+  }
+  const previousSupervisor = previous.supervisor_artifacts ?? [];
+  const nextSupervisor = next.supervisor_artifacts ?? [];
+  if (nextSupervisor.length < previousSupervisor.length) throw new ValidationError("Supervisor artifacts are append-only.");
+  for (let index = 0; index < previousSupervisor.length; index += 1) {
+    if (JSON.stringify(previousSupervisor[index]) !== JSON.stringify(nextSupervisor[index])) throw new ValidationError("Supervisor artifacts are immutable and cannot be rewritten.");
   }
   if (next.journal_corpus_keys.length < previous.journal_corpus_keys.length) throw new ValidationError("Journal corpus keys are append-only.");
   for (let index = 0; index < previous.journal_corpus_keys.length; index += 1) {
@@ -755,6 +796,108 @@ export function createEncryptedPrivateCaseStore({
     });
   };
 
+  // The supervisor path owns this metadata key: it carries the basis a draft was written against, and a caller that could set it
+  // on an ordinary candidate could make a stale draft look current.
+  const rejectReservedCandidateMetadata = (metadata) => {
+    if (metadata && typeof metadata === "object" && !Array.isArray(metadata) && Object.hasOwn(metadata, "supervisor_draft")) {
+      throw new ValidationError("Candidate metadata supervisor_draft is reserved for the controlled supervisor path.");
+    }
+  };
+  const appendOriginalCandidate = (record, candidateId, exactText, metadata, { supersedeFailed = false } = {}) => {
+    if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate response metadata must be an object.");
+    if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
+    if ((metadata.status ?? "pending_audit") !== "pending_audit") throw new ValidationError("A new original candidate must begin pending_audit.");
+    const activeCandidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+    // A new submission from the supervisor is new bytes from a person, the way a new inbound turn is for the runtime: it may
+    // replace a candidate that failed its audit. The runtime's own repair of a failed candidate still goes through reconstruction.
+    if (activeCandidate?.status === "audit_failed" && !supersedeFailed) throw new ValidationError("An audit-failed candidate must be repaired through reconstruction so its lineage and repair cycle cannot be bypassed.");
+    if (typeof metadata.producer_context_id !== "string" || !metadata.producer_context_id.trim()) throw new ValidationError("A new candidate producer_context_id is required.");
+    const timestamp = now();
+    const candidate = {
+      id: candidateId,
+      version: record.candidate_responses.length + 1,
+      exact_text: exactText,
+      status: "pending_audit",
+      created_at: timestamp,
+      updated_at: timestamp,
+      parent_candidate_id: null,
+      root_candidate_id: candidateId,
+      repair_cycle: 0,
+      producer_context_id: metadata.producer_context_id ?? null,
+      audit_history: [],
+      metadata: Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => !["status", "producer_context_id"].includes(key)))
+    };
+    validateCandidateResponse(candidate, record.candidate_responses.length);
+    for (const previousCandidate of record.candidate_responses.filter(isActivePrivateCandidate)) {
+      previousCandidate.metadata = { ...previousCandidate.metadata, superseded_from_status: previousCandidate.status, superseded_by_candidate_id: candidateId };
+      previousCandidate.status = "superseded";
+      previousCandidate.updated_at = timestamp;
+    }
+    record.candidate_responses.push(candidate);
+    return candidate;
+  };
+  const appendReconstruction = (record, parentCandidateId, candidateId, exactText, metadata) => {
+    if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
+    if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate reconstruction metadata must be an object.");
+    const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
+    const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+    if (!parent || current?.id !== parentCandidateId) throw new ValidationError("Reconstruction must name the exact current candidate as its parent.");
+    if (parent.status !== "audit_failed") throw new ValidationError("A substantive reconstruction requires unresolved substantive/high audit findings on its parent.");
+    if (parent.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) {
+      throw new ValidationError("Maximum two repair cycles reached; use the smallest discriminating question, explicit uncertainty, or block delivery.", { code: "PRIVATE_CANDIDATE_REPAIR_LIMIT" });
+    }
+    if (exactText === parent.exact_text) throw new ValidationError("A substantive reconstruction must create different immutable candidate bytes.");
+    if (typeof metadata.producer_context_id !== "string" || !metadata.producer_context_id.trim()) throw new ValidationError("A reconstruction producer_context_id is required.");
+    const sourceAudit = [...parent.audit_history].reverse().find((audit) => audit.verdict === "fail");
+    if (!sourceAudit) throw new ValidationError("A reconstruction requires version-bound failed audit evidence.");
+    if (metadata.based_on_audit_id != null && metadata.based_on_audit_id !== sourceAudit.id) throw new ValidationError("Reconstruction based_on_audit_id must identify the current parent audit.");
+    const forbiddenProducerContexts = new Set([parent.producer_context_id, ...parent.audit_history.map((audit) => audit.auditor_context_id)]);
+    if (forbiddenProducerContexts.has(metadata.producer_context_id)) throw new ValidationError("A reconstruction must use a separate producer context from the parent producer and auditor.");
+    const timestamp = now();
+    const candidate = {
+      id: candidateId,
+      version: record.candidate_responses.length + 1,
+      exact_text: exactText,
+      status: "reconstructed_pending_audit",
+      created_at: timestamp,
+      updated_at: timestamp,
+      parent_candidate_id: parent.id,
+      root_candidate_id: parent.root_candidate_id,
+      repair_cycle: parent.repair_cycle + 1,
+      producer_context_id: metadata.producer_context_id,
+      audit_history: [],
+      metadata: {
+        ...Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => !["producer_context_id", "based_on_audit_id"].includes(key))),
+        based_on_audit_id: sourceAudit.id,
+        substantive_reconstruction: true
+      }
+    };
+    validateCandidateResponse(candidate, record.candidate_responses.length);
+    parent.metadata = { ...parent.metadata, superseded_from_status: parent.status, superseded_by_candidate_id: candidateId };
+    parent.status = "superseded";
+    parent.updated_at = timestamp;
+    record.candidate_responses.push(candidate);
+    return candidate;
+  };
+  const applyCandidateAudit = (record, candidateId, evidence) => {
+    const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+    if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
+    const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+    if (current?.id !== candidateId || !["pending_audit", "reconstructed_pending_audit"].includes(candidate.status)) {
+      throw new ValidationError("Only the exact current pending candidate version can receive new audit evidence.");
+    }
+    const audit = structuredClone(validateCandidateAuditEvidence(evidence, candidate));
+    if (record.candidate_responses.some((entry) => entry.audit_history.some((prior) => prior.id === audit.id))) throw new ValidationError(`Candidate audit ${audit.id} already exists.`);
+    candidate.audit_history.push(audit);
+    if (audit.verdict === "fail") candidate.status = "audit_failed";
+    else if (audit.sufficient_for_approval) candidate.status = "audited";
+    candidate.updated_at = now();
+    validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+    return { candidate, audit };
+  };
+
   return Object.freeze({
     format: ENVELOPE_FORMAT,
     rootDir,
@@ -852,6 +995,7 @@ export function createEncryptedPrivateCaseStore({
           throw new ValidationError(`Candidate response ${candidateId} exists outside the expected runtime frontier.`);
         }
         if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate runtime metadata must be an object.");
+        rejectReservedCandidateMetadata(metadata);
         const timestamp = now();
         let candidate;
         if (parentCandidateId == null) {
@@ -1233,35 +1377,8 @@ export function createEncryptedPrivateCaseStore({
     },
     async saveCandidateResponse(caseId, candidateId, exactText, metadata = {}) {
       const record = await mutate(caseId, (record) => {
-        if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
-        if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate response metadata must be an object.");
-        if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
-        if ((metadata.status ?? "pending_audit") !== "pending_audit") throw new ValidationError("A new original candidate must begin pending_audit.");
-        const activeCandidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
-        if (activeCandidate?.status === "audit_failed") throw new ValidationError("An audit-failed candidate must be repaired through reconstruction so its lineage and repair cycle cannot be bypassed.");
-        if (typeof metadata.producer_context_id !== "string" || !metadata.producer_context_id.trim()) throw new ValidationError("A new candidate producer_context_id is required.");
-        const timestamp = now();
-        const candidate = {
-          id: candidateId,
-          version: record.candidate_responses.length + 1,
-          exact_text: exactText,
-          status: "pending_audit",
-          created_at: timestamp,
-          updated_at: timestamp,
-          parent_candidate_id: null,
-          root_candidate_id: candidateId,
-          repair_cycle: 0,
-          producer_context_id: metadata.producer_context_id ?? null,
-          audit_history: [],
-          metadata: Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => !["status", "producer_context_id"].includes(key)))
-        };
-        validateCandidateResponse(candidate, record.candidate_responses.length);
-        for (const previousCandidate of record.candidate_responses.filter(isActivePrivateCandidate)) {
-          previousCandidate.metadata = { ...previousCandidate.metadata, superseded_from_status: previousCandidate.status, superseded_by_candidate_id: candidateId };
-          previousCandidate.status = "superseded";
-          previousCandidate.updated_at = timestamp;
-        }
-        record.candidate_responses.push(candidate);
+        rejectReservedCandidateMetadata(metadata);
+        appendOriginalCandidate(record, candidateId, exactText, metadata);
         return record;
       });
       await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
@@ -1271,6 +1388,7 @@ export function createEncryptedPrivateCaseStore({
       return mutate(caseId, (record) => {
         if (status !== "superseded") throw new ValidationError("Candidate audit, approval, and delivery statuses are managed by the binding lifecycle gates.");
         if (!metadataPatch || typeof metadataPatch !== "object" || Array.isArray(metadataPatch)) throw new ValidationError("Candidate response metadata patch must be an object.");
+        rejectReservedCandidateMetadata(metadataPatch);
         const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
         if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
         if (!isActivePrivateCandidate(candidate)) throw new ValidationError("Only the current active candidate can be superseded.");
@@ -1283,65 +1401,14 @@ export function createEncryptedPrivateCaseStore({
     },
     async recordCandidateAudit(caseId, candidateId, evidence) {
       return mutate(caseId, (record) => {
-        const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
-        if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
-        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
-        if (current?.id !== candidateId || !["pending_audit", "reconstructed_pending_audit"].includes(candidate.status)) {
-          throw new ValidationError("Only the exact current pending candidate version can receive new audit evidence.");
-        }
-        const audit = structuredClone(validateCandidateAuditEvidence(evidence, candidate));
-        if (record.candidate_responses.some((entry) => entry.audit_history.some((prior) => prior.id === audit.id))) throw new ValidationError(`Candidate audit ${audit.id} already exists.`);
-        candidate.audit_history.push(audit);
-        if (audit.verdict === "fail") candidate.status = "audit_failed";
-        else if (audit.sufficient_for_approval) candidate.status = "audited";
-        candidate.updated_at = now();
-        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        applyCandidateAudit(record, candidateId, evidence);
         return record;
       });
     },
     async reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata = {}) {
       const record = await mutate(caseId, (record) => {
-        if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
-        if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
-        if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate reconstruction metadata must be an object.");
-        const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
-        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
-        if (!parent || current?.id !== parentCandidateId) throw new ValidationError("Reconstruction must name the exact current candidate as its parent.");
-        if (parent.status !== "audit_failed") throw new ValidationError("A substantive reconstruction requires unresolved substantive/high audit findings on its parent.");
-        if (parent.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) {
-          throw new ValidationError("Maximum two repair cycles reached; use the smallest discriminating question, explicit uncertainty, or block delivery.", { code: "PRIVATE_CANDIDATE_REPAIR_LIMIT" });
-        }
-        if (exactText === parent.exact_text) throw new ValidationError("A substantive reconstruction must create different immutable candidate bytes.");
-        if (typeof metadata.producer_context_id !== "string" || !metadata.producer_context_id.trim()) throw new ValidationError("A reconstruction producer_context_id is required.");
-        const sourceAudit = [...parent.audit_history].reverse().find((audit) => audit.verdict === "fail");
-        if (!sourceAudit) throw new ValidationError("A reconstruction requires version-bound failed audit evidence.");
-        if (metadata.based_on_audit_id != null && metadata.based_on_audit_id !== sourceAudit.id) throw new ValidationError("Reconstruction based_on_audit_id must identify the current parent audit.");
-        const forbiddenProducerContexts = new Set([parent.producer_context_id, ...parent.audit_history.map((audit) => audit.auditor_context_id)]);
-        if (forbiddenProducerContexts.has(metadata.producer_context_id)) throw new ValidationError("A reconstruction must use a separate producer context from the parent producer and auditor.");
-        const timestamp = now();
-        const candidate = {
-          id: candidateId,
-          version: record.candidate_responses.length + 1,
-          exact_text: exactText,
-          status: "reconstructed_pending_audit",
-          created_at: timestamp,
-          updated_at: timestamp,
-          parent_candidate_id: parent.id,
-          root_candidate_id: parent.root_candidate_id,
-          repair_cycle: parent.repair_cycle + 1,
-          producer_context_id: metadata.producer_context_id,
-          audit_history: [],
-          metadata: {
-            ...Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => !["producer_context_id", "based_on_audit_id"].includes(key))),
-            based_on_audit_id: sourceAudit.id,
-            substantive_reconstruction: true
-          }
-        };
-        validateCandidateResponse(candidate, record.candidate_responses.length);
-        parent.metadata = { ...parent.metadata, superseded_from_status: parent.status, superseded_by_candidate_id: candidateId };
-        parent.status = "superseded";
-        parent.updated_at = timestamp;
-        record.candidate_responses.push(candidate);
+        rejectReservedCandidateMetadata(metadata);
+        appendReconstruction(record, parentCandidateId, candidateId, exactText, metadata);
         return record;
       });
       await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
@@ -1451,6 +1518,373 @@ export function createEncryptedPrivateCaseStore({
         case_id: caseId,
         revision: record.revision,
         event: structuredClone(record.communication_events.find((entry) => entry.id === input.eventId)),
+        communication_projection: projectCommunicationState(record)
+      });
+    },
+    // --- Controlled supervisor drafts -----------------------------------------------------------------------------------------
+    // The owner's current messages and revision instructions, recorded with the channel that supplied them. They are not
+    // transcript turns: nothing here says the client wrote them, and a supervisor revision is never a client inbound message.
+    async recordSupervisorInputs(caseId, { inputs, channel } = {}) {
+      if (!Array.isArray(inputs) || inputs.length === 0 || inputs.length > SUPERVISOR_LIMITS.inputs_per_request) {
+        throw new ValidationError(`Supervisor inputs must be a list of one to ${SUPERVISOR_LIMITS.inputs_per_request}.`);
+      }
+      await readRequired(caseId);
+      const recorded = [];
+      const record = await mutate(caseId, (record) => {
+        recorded.length = 0;
+        const recordedAt = now();
+        let changed = false;
+        for (const input of inputs) {
+          const entry = createSupervisorInputEntry({ id: input?.inputId, inputType: input?.inputType, text: input?.text, channel, recordedAt });
+          const existing = record.supervisor_artifacts.find((candidate) => candidate.id === entry.id);
+          if (existing) {
+            assertSameSupervisorOperation(supervisorInputIdentity(existing, entry));
+            recorded.push(existing);
+            continue;
+          }
+          record.supervisor_artifacts.push(entry);
+          recorded.push(entry);
+          changed = true;
+        }
+        return changed ? record : null;
+      });
+      return Object.freeze({
+        case_id: caseId,
+        revision: record.revision,
+        inputs: supervisorInputViews({ supervisor_artifacts: recorded })
+      });
+    },
+    // What a supervisor needs before drafting: the basis a draft will be written against, the newest client turn, the owner's
+    // recorded inputs with who supplied them, every supervisor artifact and its state, and what the case can truthfully say
+    // about who has seen what. It states its own review scope so no one reads more into an approval than it carries.
+    async getSupervisorSnapshot(caseId) {
+      const record = await readRequired(caseId);
+      const transcript = effectiveTranscript(record);
+      const latestClientTurn = [...transcript].reverse().find((turn) => turn.role === "user") ?? null;
+      const basis = computeResponseBasis(record);
+      const projection = projectCommunicationState(record);
+      const active = [...record.candidate_responses].reverse().find(isActivePrivateCandidate) ?? null;
+      const artifacts = supervisorArtifactViews(record);
+      return Object.freeze({
+        schema_version: 1,
+        case_id: caseId,
+        case_revision: record.revision,
+        basis: { ...basis, sha256: responseBasisDigest(basis) },
+        latest_client_turn: latestClientTurn ? { turn_id: latestClientTurn.id, at: latestClientTurn.at, text: latestClientTurn.text } : null,
+        last_transcript_role: transcript.at(-1)?.role ?? null,
+        owner_supplied_inputs: supervisorInputViews(record),
+        active_candidate: active ? { candidate_id: active.id, candidate_version: active.version, status: active.status, supervisor_draft: isSupervisorDraftCandidate(active) } : null,
+        artifacts: artifacts.slice(-25),
+        artifacts_omitted: Math.max(0, artifacts.length - 25),
+        communication: {
+          confirmed_or_reported_client_outbound: projection.confirmed_or_reported_client_outbound,
+          supervisor_only_artifacts: projection.supervisor_only_artifacts,
+          unresolved_delivery: projection.unresolved_delivery,
+          omitted: projection.omitted
+        },
+        review_scope: {
+          audit: "existing_independent_audit",
+          audit_evidence: "stored_case_record_only",
+          owner_inputs_in_audit_packet: false,
+          translation_meaning: "unreviewed",
+          source_support_coverage: "not_enforced_in_this_version",
+          claim_scope: "Approval and export cover only the exact bytes InnerSignal stored; text edited, retyped, translated or paraphrased elsewhere inherits none of it."
+        }
+      });
+    },
+    // Finds the draft a submission already made, or says there is none. A retried submission is answered from the stored draft only
+    // if it repeats everything that defined that draft (where its bytes came from, the bytes, the companion and who supplied it,
+    // and the case state it was prepared against when it states one); otherwise it is refused here, before the caller generates,
+    // skips or returns anything. The service learns whether a draft exists only through this lookup, so a draft written by the
+    // backend (which a retry does not write again) is checked by the same comparison as one the caller supplied. Read-only.
+    async resolveSupervisorSubmission(caseId, { operationKey, source, exactText, producerContextId, companion, basisSha256, channel } = {}) {
+      validateOperationKey(operationKey);
+      if (!["external_draft", "backend_produced"].includes(source)) throw new ValidationError("Supervisor draft source is invalid.");
+      const record = await readRequired(caseId);
+      const stored = record.candidate_responses.find((entry) => entry.id === supervisorCandidateId(operationKey, 1));
+      if (!stored) return Object.freeze({ case_id: caseId, found: false, artifact: null });
+      assertSameSupervisorOperation(supervisorSubmissionIdentity(record, stored, { source, exactText, producerContextId, companion, basisSha256, channel }));
+      return Object.freeze({ case_id: caseId, found: true, artifact: supervisorArtifactView(record, stored) });
+    },
+    // Stores one supervisor draft as an immutable candidate that begins pending its independent audit, together with the basis it
+    // was written against. `external_draft` bytes are stored exactly as received and the original writer is not attested;
+    // `backend_produced` bytes come from the existing runtime with its own receipts. A replay of the same operation changes
+    // nothing; the same operation with other bytes is refused.
+    async submitSupervisorDraft(caseId, {
+      operationKey,
+      source,
+      exactText,
+      producerContextId,
+      receipts = {},
+      expectedBasisSha256 = null,
+      companion = null,
+      channel
+    } = {}) {
+      validateOperationKey(operationKey);
+      if (!["external_draft", "backend_produced"].includes(source)) throw new ValidationError("Supervisor draft source is invalid.");
+      if (typeof exactText !== "string" || !exactText.trim()) throw new ValidationError("Draft text must be non-empty.");
+      if (exactText.length > PRIVATE_RECORD_LIMITS.candidate_text) throw new ValidationError("Draft text exceeds the private candidate limit.");
+      if (typeof producerContextId !== "string" || !producerContextId.trim() || producerContextId.length > 160) throw new ValidationError("A draft producer context is required.");
+      if (expectedBasisSha256 != null && !/^[a-f0-9]{64}$/.test(expectedBasisSha256)) throw new ValidationError("basisSha256 is invalid.");
+      if (!receipts || typeof receipts !== "object" || Array.isArray(receipts)
+          || Object.keys(receipts).some((key) => !["producer_attempt_context_id", "journal_evidence_sha256"].includes(key))) {
+        throw new ValidationError("Draft receipts may carry only the producer attempt context and the journal evidence digest.");
+      }
+      if (source === "external_draft" && Object.keys(receipts).length) throw new ValidationError("An external draft carries no producer receipts.");
+      if (companion != null && (typeof companion !== "object" || Array.isArray(companion))) throw new ValidationError("companion must be an object.");
+      const candidateId = supervisorCandidateId(operationKey, 1);
+      await readRequired(caseId);
+      let replayed = false;
+      const record = await mutate(caseId, (record) => {
+        replayed = false;
+        const existing = record.candidate_responses.find((entry) => entry.id === candidateId);
+        if (existing) {
+          // The same comparison the service's lookup makes (resolveSupervisorSubmission), repeated here inside the write.
+          assertSameSupervisorOperation(supervisorSubmissionIdentity(record, existing, { source, exactText, producerContextId, companion: companion ?? null, channel }));
+          replayed = true;
+          return null;
+        }
+        const basis = computeResponseBasis(record, candidateId);
+        const basisSha256 = responseBasisDigest(basis);
+        if (expectedBasisSha256 != null && expectedBasisSha256 !== basisSha256) {
+          throw new ValidationError("The case changed after this draft was prepared; prepare the case again before submitting.", { code: "SUPERVISOR_BASIS_CHANGED" });
+        }
+        const candidate = appendOriginalCandidate(record, candidateId, exactText, {
+          producer_context_id: producerContextId,
+          compatibility_state_binding: basis.compatibility_state_binding,
+          ...structuredClone(receipts),
+          supervisor_draft: {
+            schema_version: SUPERVISOR_DRAFT_VERSION,
+            source,
+            root_source: source,
+            operation_key: operationKey,
+            text_sha256: sha256Text(exactText),
+            basis,
+            basis_sha256: basisSha256,
+            exposure: {
+              exact_bytes: source === "external_draft" ? "received_and_stored" : "produced_by_backend",
+              original_writer: source === "external_draft" ? "not_attested" : "backend_inclusion_receipts",
+              auditor_inputs: "case_record_only"
+            }
+          }
+        }, { supersedeFailed: true });
+        if (companion) {
+          record.supervisor_artifacts.push(createSupervisorCompanionEntry({
+            id: `companion:${operationKey}:v1`,
+            candidate,
+            language: companion.language,
+            text: companion.text,
+            channel,
+            recordedAt: candidate.created_at
+          }));
+        }
+        return record;
+      });
+      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
+      const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+      return Object.freeze({ case_id: caseId, revision: record.revision, replayed, artifact: supervisorArtifactView(record, candidate) });
+    },
+    // The same audit persistence as recordCandidateAudit, restricted to supervisor drafts, plus what that audit run reported
+    // having been shown, written in the same step so a stored audit and its receipt cannot come apart.
+    async recordSupervisorAudit(caseId, candidateId, evidence, { disclosureManifest = null, providerReceipt = null } = {}) {
+      return mutate(caseId, (record) => {
+        const target = record.candidate_responses.find((entry) => entry.id === candidateId);
+        if (!target || !isSupervisorDraftCandidate(target)) throw new ValidationError("Only a supervisor draft can receive supervisor review evidence.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+        const { candidate, audit } = applyCandidateAudit(record, candidateId, evidence);
+        record.supervisor_artifacts.push(createSupervisorReviewReceipt({
+          id: `receipt:${audit.id}`,
+          candidate,
+          auditId: audit.id,
+          disclosureManifest,
+          providerReceipt,
+          recordedAt: now()
+        }));
+        return record;
+      });
+    },
+    // One bounded repair of a supervisor draft that failed its audit. The repaired bytes are a new candidate that inherits the
+    // basis of its parent and no approval, and the caller supplies neither the basis nor the source.
+    async reconstructSupervisorDraft(caseId, parentCandidateId, { exactText, producerContextId } = {}) {
+      let childId = null;
+      const record = await mutate(caseId, (record) => {
+        const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
+        if (!parent || !isSupervisorDraftCandidate(parent)) throw new ValidationError("Only a supervisor draft can be repaired here.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+        const draft = parent.metadata.supervisor_draft;
+        childId = supervisorCandidateId(draft.operation_key, parent.repair_cycle + 2);
+        const existing = record.candidate_responses.find((entry) => entry.id === childId);
+        if (existing) {
+          assertSameSupervisorOperation([
+            ["parent", existing.parent_candidate_id, parent.id],
+            ["exact_text", existing.exact_text, exactText],
+            ["producer_context", existing.producer_context_id, producerContextId]
+          ]);
+          return null;
+        }
+        appendReconstruction(record, parent.id, childId, exactText, {
+          producer_context_id: producerContextId,
+          compatibility_state_binding: parent.metadata.compatibility_state_binding ?? null,
+          repair_induced_error_checks_required: [...REPAIR_INDUCED_ERROR_CHECKS],
+          supervisor_draft: {
+            ...structuredClone(draft),
+            source: "backend_repair",
+            text_sha256: sha256Text(exactText),
+            exposure: { exact_bytes: "produced_by_backend_repair", original_writer: "backend_inclusion_receipts", auditor_inputs: "case_record_only" }
+          }
+        });
+        return record;
+      });
+      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: childId, caseId });
+      return Object.freeze({ case_id: caseId, revision: record.revision, artifact: supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === childId)) });
+    },
+    // The only function that returns the exact approved client text. It re-checks, inside the same write that records the export,
+    // that the bytes are the audited bytes, the audit passed and the candidate is approved, and that nothing has made the draft
+    // stale: a newer client message, a correction, a changed delivery state, a new owner input or a newer draft. An export is
+    // recorded as `exported` and never as sent; a replay returns the same bytes and records nothing new.
+    async exportSupervisorArtifact(caseId, { artifactId, channel } = {}) {
+      await readRequired(caseId);
+      let exported = null;
+      const record = await mutate(caseId, (record) => {
+        const candidate = findSupervisorArtifact(record, artifactId);
+        if (!candidate) throw new ValidationError("No such supervisor artifact in this case.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+        const assessment = assessSupervisorArtifact(record, candidate);
+        if (assessment.refusal) {
+          throw new ValidationError(`Export refused: ${assessment.refusal.reasons.join(", ")}.`, { code: assessment.refusal.code, details: { reasons: [...assessment.refusal.reasons] } });
+        }
+        const events = record.communication_events;
+        const retracted = new Set(events.filter((event) => event.kind === "retraction").map((event) => event.retracts_event_id));
+        const base = `evt:export:${artifactId.slice(4)}`;
+        const activeExport = (id) => events.find((event) => event.id === id && event.kind === "exported" && !retracted.has(event.id)) ?? null;
+        const freshEventId = (stem) => {
+          let attempt = 0;
+          while (events.some((event) => event.id === (attempt ? `${stem}:r${attempt}` : stem))) attempt += 1;
+          return attempt ? `${stem}:r${attempt}` : stem;
+        };
+        const sourceRef = `supervisor:export:${channel === "owner_ui" ? "owner_ui" : "authenticated_agent"}`;
+        const recordedAt = now();
+        let changed = false;
+        const ensure = (stem, kindInput) => {
+          const present = events.filter((event) => event.id === stem || event.id.startsWith(`${stem}:r`)).map((event) => activeExport(event.id)).find(Boolean);
+          if (present) return present;
+          const event = createCommunicationEvent(record, { eventId: freshEventId(stem), kind: "exported", provenance: { origin: "application", sourceRef, quote: null }, ...kindInput }, { recordedAt });
+          validateCommunicationEvents([...record.communication_events, event], record);
+          record.communication_events.push(event);
+          changed = true;
+          return event;
+        };
+        const clientEvent = ensure(base, { audience: "client", subject: { kind: "candidate", candidateId: candidate.id, candidateVersion: candidate.version } });
+        const companion = companionForCandidate(record, candidate);
+        const companionEvent = companion
+          ? ensure(`${base}:companion`, { audience: "supervisor", subject: { kind: "companion", companionOf: { candidateId: candidate.id, candidateVersion: candidate.version }, artifactSha256: companion.text_sha256 } })
+          : null;
+        exported = {
+          candidate_id: candidate.id,
+          candidate_version: candidate.version,
+          client_text: candidate.exact_text,
+          client_text_sha256: sha256Text(candidate.exact_text),
+          approval_audit_id: assessment.approval_audit_id,
+          checks: { ...assessment.checks },
+          event: { event_id: clientEvent.id, recorded_at: clientEvent.recorded_at },
+          replayed: !changed,
+          companion: companion ? { ...companionView(companion, { includeText: true }), event: { event_id: companionEvent.id, recorded_at: companionEvent.recorded_at } } : null
+        };
+        return changed ? record : null;
+      });
+      const candidate = findSupervisorArtifact(record, artifactId);
+      return Object.freeze({
+        case_id: caseId,
+        revision: record.revision,
+        artifact_id: artifactId,
+        ...exported,
+        artifact: supervisorArtifactView(record, candidate),
+        sent_status: "not_sent",
+        notice: "Exported text has been released from InnerSignal; it has not been sent. InnerSignal records a send only when the owner reports it."
+      });
+    },
+    // Records that the owner reported sending a supervisor draft to the client. The caller names the origin from its own trusted
+    // channel; a bare assertion from an authenticated agent keeps the weaker `agent_relayed` origin. With no artifact named, a
+    // single exported draft not yet reported is the unambiguous target; with several, the report is recorded as unresolved
+    // rather than guessed. An unsupplied send time stays unknown.
+    //
+    // A retry with the same `idempotencyKey` is resolved from the report that key already made, before any currently reportable
+    // draft is inferred: once a report is recorded its draft is no longer waiting, so inferring first would turn a caller's retry
+    // of a lost answer into a refusal. The retry must repeat the original inputs, and naming a draft must name the same one.
+    async recordSupervisorReport(caseId, { artifactId = null, origin, sentAt = null, quote = null, sourceRef = null, idempotencyKey = null } = {}) {
+      if (!["owner_action", "agent_relayed"].includes(origin)) throw new ValidationError("A reported delivery needs an owner or relayed origin.");
+      if (sentAt != null && (typeof sentAt !== "string" || Number.isNaN(Date.parse(sentAt)))) throw new ValidationError("sentAt must be a timestamp when supplied.");
+      await readRequired(caseId);
+      let targetCandidate = null;
+      let reportEventId = null;
+      let replayed = false;
+      const record = await mutate(caseId, (record) => {
+        replayed = false;
+        targetCandidate = null;
+        const events = record.communication_events;
+        const retracted = new Set(events.filter((event) => event.kind === "retraction").map((event) => event.retracts_event_id));
+        const activeFor = (candidate, kind) => events.filter((event) => event.kind === kind && !retracted.has(event.id) && event.subject.kind === "candidate"
+          && event.subject.candidate_id === candidate.id && event.subject.candidate_version === candidate.version);
+        const keyedEventId = idempotencyKey != null ? `evt:report:${sha256Json([caseId, ["key", idempotencyKey]]).slice(0, 40)}` : null;
+        const keyed = keyedEventId ? events.find((entry) => entry.id === keyedEventId) : null;
+        if (keyed) {
+          const named = artifactId != null ? findSupervisorArtifact(record, artifactId) : null;
+          if (artifactId != null && !named) throw new ValidationError("No such supervisor artifact in this case.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+          assertSameSupervisorOperation(supervisorReportIdentity(keyed, { origin, sourceRef, quote, sentAt }, named ?? undefined));
+          replayed = true;
+          reportEventId = keyed.id;
+          targetCandidate = keyed.subject.kind === "candidate" ? keyed.subject.candidate_id : null;
+          return null;
+        }
+        let subject;
+        let subjectKey;
+        if (artifactId != null) {
+          const candidate = findSupervisorArtifact(record, artifactId);
+          if (!candidate) throw new ValidationError("No such supervisor artifact in this case.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+          targetCandidate = candidate.id;
+          subject = { kind: "candidate", candidateId: candidate.id, candidateVersion: candidate.version };
+          subjectKey = `${candidate.id}:${candidate.version}`;
+        } else {
+          const open = record.candidate_responses.filter((candidate) => isSupervisorDraftCandidate(candidate)
+            && activeFor(candidate, "exported").length > 0 && activeFor(candidate, "reported_sent").length === 0);
+          if (open.length === 0) throw new ValidationError("No exported supervisor draft is waiting to be reported; name the artifact.", { code: "SUPERVISOR_NO_REPORTABLE_DRAFT" });
+          if (open.length === 1) {
+            targetCandidate = open[0].id;
+            subject = { kind: "candidate", candidateId: open[0].id, candidateVersion: open[0].version };
+            subjectKey = `${open[0].id}:${open[0].version}`;
+          } else {
+            const refs = open.slice(-10);
+            subject = { kind: "unresolved", candidateRefs: refs.map((candidate) => ({ candidateId: candidate.id, candidateVersion: candidate.version })) };
+            subjectKey = `unresolved:${refs.map((candidate) => `${candidate.id}:${candidate.version}`).join(",")}`;
+          }
+        }
+        const eventId = keyedEventId ?? `evt:report:${sha256Json([caseId, ["derived", subjectKey, origin, sentAt ?? null]]).slice(0, 40)}`;
+        reportEventId = eventId;
+        const event = createCommunicationEvent(record, {
+          eventId,
+          kind: "reported_sent",
+          audience: "client",
+          subject,
+          sentAt,
+          provenance: { origin, sourceRef, quote }
+        }, { recordedAt: now() });
+        const existing = events.find((entry) => entry.id === eventId);
+        if (existing) {
+          // The same comparison as a keyed retry, and the whole stored event besides: this identity was derived, not named.
+          assertSameSupervisorOperation([
+            ...supervisorReportIdentity(existing, { origin, sourceRef, quote, sentAt }, artifactId != null ? findSupervisorArtifact(record, artifactId) ?? undefined : undefined),
+            ["event", true, sameCommunicationEvent(existing, event)]
+          ]);
+          replayed = true;
+          return null;
+        }
+        validateCommunicationEvents([...record.communication_events, event], record);
+        record.communication_events.push(event);
+        return record;
+      });
+      return Object.freeze({
+        case_id: caseId,
+        revision: record.revision,
+        replayed,
+        event: structuredClone(record.communication_events.find((event) => event.id === reportEventId) ?? null),
+        artifact: targetCandidate ? supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === targetCandidate)) : null,
         communication_projection: projectCommunicationState(record)
       });
     },
