@@ -67,6 +67,8 @@ function nonJournalStateDigest(record) {
 // Judged on real locations: a link back into the checkout is inside, and so is a name like "..private".
 const isWithin = (parent, candidate) => !isOutside(parent, candidate);
 
+const supervisorChannel = (options) => (options?.ownerChannel === true ? "owner_ui" : "authenticated_agent");
+
 function assertProvider(provider, method, name) {
   if (!provider || typeof provider[method] !== "function") throw new ValidationError(`${name} must implement ${method}().`);
 }
@@ -288,6 +290,33 @@ export function createPrivateCaseAccessService({
       const { provenance: supplied, ...rest } = input ?? {};
       const provenance = { origin: "agent_relayed", sourceRef: supplied?.sourceRef ?? null, quote: supplied?.quote ?? null };
       return write(caseId, authContext, (store) => store.recordCommunicationEvent(caseId, { ...rest, provenance }));
+    },
+    // Controlled supervisor drafts. Every call authorizes against the case first, so access that has been revoked stops a new
+    // export. Who supplied a value is decided here from the caller's trusted channel, never from a field the caller sends: only
+    // server code that has itself established the owner's own app channel passes `ownerChannel`, and anything else, including an
+    // authenticated agent that claims to speak for the owner, keeps the weaker origin.
+    async recordSupervisorInputs(caseId, input, authContext, options = {}) {
+      return write(caseId, authContext, (store) => store.recordSupervisorInputs(caseId, { ...input, channel: supervisorChannel(options) }));
+    },
+    async getSupervisorSnapshot(caseId, authContext) { return read(caseId, authContext, (store) => store.getSupervisorSnapshot(caseId)); },
+    async submitSupervisorDraft(caseId, input, authContext, options = {}) {
+      return write(caseId, authContext, (store) => store.submitSupervisorDraft(caseId, { ...input, channel: supervisorChannel(options) }));
+    },
+    async recordSupervisorAudit(caseId, candidateId, evidence, receipt, authContext) {
+      return auditWrite(caseId, authContext, (store) => store.recordSupervisorAudit(caseId, candidateId, evidence, receipt));
+    },
+    async reconstructSupervisorDraft(caseId, parentCandidateId, input, authContext) {
+      return write(caseId, authContext, (store) => store.reconstructSupervisorDraft(caseId, parentCandidateId, input));
+    },
+    async exportSupervisorArtifact(caseId, input, authContext, options = {}) {
+      return write(caseId, authContext, async (store) => {
+        const exported = await store.exportSupervisorArtifact(caseId, { ...input, channel: supervisorChannel(options) });
+        return Object.freeze({ ...exported, checks: Object.freeze({ ...exported.checks, authorization_current: true }) });
+      });
+    },
+    async recordSupervisorReport(caseId, input, authContext, options = {}) {
+      const { origin: _claimedOrigin, ...rest } = input ?? {};
+      return write(caseId, authContext, (store) => store.recordSupervisorReport(caseId, { ...rest, origin: options?.ownerChannel === true ? "owner_action" : "agent_relayed" }));
     },
     async getCandidateResponse(caseId, selector, authContext) { return read(caseId, authContext, (store) => store.getCandidateResponse(caseId, selector)); },
     async getCandidateLifecycle(caseId, authContext) { return read(caseId, authContext, (store) => store.getCandidateLifecycle(caseId)); },

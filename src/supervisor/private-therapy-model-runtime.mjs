@@ -113,13 +113,15 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
   const repairProvider = providers.privateRepairer ?? providers.renderer ?? providers.anthropic;
 
   return Object.freeze({
-    async produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence = null, authContext, attemptContextId }) {
+    // `inboundAlreadyRecorded` is for a caller whose inbound client message is already the newest stored user turn, as it is when a
+    // supervisor asks for a draft; the runtime's own turns commit their inbound later, so they leave it off.
+    async produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence = null, authContext, attemptContextId, inboundAlreadyRecorded = false }) {
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
       const previousCaseState = record.case_state;
       const context = await buildContext({
         caseId,
         userMessage: runtimeTurn.inbound.exact_text,
-        recentTranscriptEntries: record.raw_transcript,
+        recentTranscriptEntries: inboundAlreadyRecorded ? record.raw_transcript.filter((turn) => turn.id !== runtimeTurn.user_turn_id) : record.raw_transcript,
         durableCaseState: previousCaseState,
         trackerEntries: record.tracker_entries
       }, { ...config, ledgerMode: "off", devAutomationEnabled: false }, { currentTurnAt: runtimeTurn.inbound.received_at });

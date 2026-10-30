@@ -34,6 +34,7 @@ import {
 import { summarizeTrackerWindow } from "../case-state/tracker.mjs";
 import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-model-runtime.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
+import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -42,6 +43,7 @@ const STATIC = Object.freeze({
   "/index.html": ["index.html", "text/html; charset=utf-8"],
   "/app.js": ["app.js", "text/javascript; charset=utf-8"],
   "/speech-playback.js": ["speech-playback.js", "text/javascript; charset=utf-8"],
+  "/supervisor-panel.js": ["supervisor-panel.js", "text/javascript; charset=utf-8"],
   "/styles.css": ["styles.css", "text/css; charset=utf-8"]
 });
 const SAFE_SLUG = /^[a-z][a-z0-9-]{0,63}$/;
@@ -207,7 +209,64 @@ async function readJson(req, maxBytes = 2_000_000) {
   return JSON.parse(body.toString("utf8"));
 }
 
-export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null }) {
+// --- Controlled supervisor drafts -------------------------------------------------------------------------------------------
+// Who is calling decides what a report or an input is worth, so the server decides it from how the request was authenticated and
+// never from a field the caller sends. The owner's own app sends no credential of its own, because the server holds the owner's
+// authorization; a request that carries its own bearer token is an authenticated agent acting for someone, which does not make
+// it the owner.
+const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
+const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
+const SUPERVISOR_STATUS = Object.freeze({
+  SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
+  SUPERVISOR_ARTIFACT_STALE: 409,
+  SUPERVISOR_ARTIFACT_NOT_APPROVED: 409,
+  SUPERVISOR_IDEMPOTENCY_CONFLICT: 409,
+  SUPERVISOR_BASIS_CHANGED: 409,
+  SUPERVISOR_NO_PENDING_CLIENT_MESSAGE: 409,
+  SUPERVISOR_NO_REPORTABLE_DRAFT: 409,
+  SUPERVISOR_REVIEW_UNAVAILABLE: 503,
+  SUPERVISOR_ORIGIN_REFUSED: 403,
+  SUPERVISOR_UNSUPPORTED_MEDIA_TYPE: 415
+});
+
+function supervisorError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+const supervisorChannelFor = (req) => (typeof req.headers.authorization === "string" ? "authenticated_agent" : "owner_ui");
+
+// A request that rides on the server's own authorization must come from the owner's page on this machine. A browser attaches an
+// Origin to cross-site writes and sends a Host that names the attacker's page under DNS rebinding, so both are checked.
+function assertOwnerChannelRequest(req) {
+  if (!LOOPBACK_HOST.test(String(req.headers.host ?? ""))) throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+  const origin = req.headers.origin;
+  if (origin !== undefined) {
+    let parsed = null;
+    try { parsed = new URL(origin); } catch { /* refused below */ }
+    if (!parsed || parsed.protocol !== "http:" || parsed.host.toLowerCase() !== String(req.headers.host).toLowerCase()) {
+      throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+    }
+  }
+  const site = req.headers["sec-fetch-site"];
+  if (site !== undefined && !["same-origin", "none"].includes(site)) {
+    throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+  }
+}
+
+async function readSupervisorBody(req) {
+  if (!/^application\/json(?:\s*;|$)/iu.test(String(req.headers["content-type"] ?? ""))) {
+    throw supervisorError("SUPERVISOR_UNSUPPORTED_MEDIA_TYPE", "Supervisor requests must be sent as application/json.");
+  }
+  let input;
+  try { input = await readJson(req); }
+  catch { throw Object.assign(new Error("The request body must be valid JSON."), { code: "VALIDATION_ERROR" }); }
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw Object.assign(new Error("The request body must be a JSON object."), { code: "VALIDATION_ERROR" });
+  return input;
+}
+
+export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null, privateSupervisorService = null }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
   const automaticPrivateTherapy = privateTherapyController ?? (privateCaseSource
     ? createPrivateTherapyTurnController({
@@ -216,6 +275,18 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
       })
     : null);
+  // Built on first use, so a server that never serves a supervisor request never builds a second model runtime.
+  let supervisorDrafts = privateSupervisorService;
+  const supervisorDraftService = () => {
+    if (!supervisorDrafts && privateCaseSource) {
+      supervisorDrafts = createPrivateSupervisorDraftService({
+        privateCaseSource,
+        modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
+        maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
+      });
+    }
+    return supervisorDrafts;
+  };
   const requestAuthContext = (req) => ({
     ...(privateAuthContext ?? {}),
     ...(typeof req.headers.authorization === "string" ? { bearerToken: req.headers.authorization.replace(/^Bearer\s+/iu, "") } : {})
@@ -251,7 +322,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
           privateCaseStorage: { available: Boolean(privateCaseSource), plaintextFallback: false, automaticOrchestration: Boolean(automaticPrivateTherapy) },
-          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
+          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
       if (req.method === "POST" && url.pathname === "/v1/plan") {
@@ -542,18 +613,63 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         const decision = await writeHumanDecision(config, jobId, input.decision);
         return send(res, 200, { ok: true, decision });
       }
+      const supervisorRoute = req.method === "POST" ? SUPERVISOR_PATH.exec(url.pathname) : null;
+      if (supervisorRoute) {
+        const drafts = supervisorDraftService();
+        if (!drafts) return send(res, 503, { error: "Encrypted private case storage is not configured; supervisor drafts are unavailable.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const channel = supervisorChannelFor(req);
+        if (channel === "owner_ui") assertOwnerChannelRequest(req);
+        const input = await readSupervisorBody(req);
+        const caseId = readCaseId(input.caseId);
+        const authContext = requestAuthContext(req);
+        switch (supervisorRoute[1]) {
+          case "prepare":
+            return send(res, 200, await drafts.prepareResponseContext({ caseId, inputs: input.inputs ?? [], authContext, channel }));
+          case "submit":
+            return send(res, 200, await drafts.submitCandidateForReview({
+              caseId,
+              source: input.source,
+              text: input.text ?? null,
+              companion: input.companion ?? null,
+              basisSha256: input.basisSha256 ?? null,
+              idempotencyKey: input.idempotencyKey ?? null,
+              authContext,
+              channel
+            }));
+          case "export":
+            return send(res, 200, await drafts.getApprovedResponseArtifact({ caseId, artifactId: input.artifactId, authContext, channel }));
+          default:
+            return send(res, 200, await drafts.recordReportedDelivery({
+              caseId,
+              artifactId: input.artifactId ?? null,
+              sentAt: input.sentAt ?? null,
+              quote: input.quote ?? null,
+              sourceRef: input.sourceRef ?? null,
+              idempotencyKey: input.idempotencyKey ?? null,
+              authContext,
+              channel
+            }));
+        }
+      }
       return send(res, 404, { error: "Not found" });
     } catch (error) {
       const code = error.code ?? "UNEXPECTED_ERROR";
-      const status = code === "VALIDATION_ERROR" ? 400
-        : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
-          : code === "PRIVATE_CASE_NOT_FOUND" ? 404
-          : ["THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_CASE_KEY_UNAVAILABLE"].includes(code) ? 503
-            : 500;
+      const status = SUPERVISOR_STATUS[code]
+        ?? (code === "VALIDATION_ERROR" ? 400
+          : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
+            : code === "PRIVATE_CASE_NOT_FOUND" ? 404
+            : ["THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_CASE_KEY_UNAVAILABLE"].includes(code) ? 503
+              : 500);
       const privateFailure = /^(?:PRIVATE_|THERAPY_RUNTIME_|PROVIDER_)/u.test(code);
+      // The reasons a supervisor draft was refused are fixed words, never case content, so they are safe to return.
+      const reasons = Object.hasOwn(SUPERVISOR_STATUS, code) && Array.isArray(error.details?.reasons)
+        && error.details.reasons.every((reason) => typeof reason === "string" && /^[a-z_]{1,60}$/u.test(reason))
+        ? { reasons: error.details.reasons }
+        : {};
       return send(res, status, {
         error: privateFailure ? "InnerSignal could not safely complete this request." : error.message,
-        code
+        code,
+        ...reasons
       });
     }
   });
