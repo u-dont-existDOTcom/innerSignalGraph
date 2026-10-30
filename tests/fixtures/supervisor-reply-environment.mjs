@@ -180,27 +180,10 @@ export function between(text, begin, end) {
   return text.slice(start, to);
 }
 
-// The connector over an access service the caller built: the draft service and runner, the tools, and a listener. `provider`
-// is the scripted reviewer; `reviewAvailable: false` builds the connector without any review runtime.
-export async function buildReplyConnector(t, {
-  access,
-  verdicts = ["pass"],
-  hooks = {},
-  provider = scriptedProvider({ verdicts, hooks }),
-  reviewAvailable = true,
-  runnerOptions = {},
-  produced = undefined,
-  attempts = 1,
-  withTools = true,
-  oauth = null,
-  defaultToken = "token-reply-only"
-}) {
-  const source = access.supervisorDraftAccess.source;
-  const runtime = reviewAvailable ? reviewRuntime({ source, provider, ...(produced === undefined ? {} : { produced }) }) : null;
-  const drafts = createPrivateSupervisorDraftService({ privateCaseSource: source, modelRuntime: runtime, maximumInvocationAttempts: attempts });
-  const runner = createSupervisorReviewRunner({ budgetMs: 5_000, cooldownMs: 0, ...runnerOptions });
-  const tools = createSupervisorReplyTools({ draftAccess: access.supervisorDraftAccess, drafts, runner, reviewAvailable });
-  const listener = await listenPrivateCaseMcp({ caseAccessService: access, therapyProtocol: null, supervisorReply: withTools ? tools : null, oauth, port: 0 });
+// A listener in front of an access service, serving the reply-draft `tools` (or none), and the calls a test makes through it over
+// HTTP as a connector client would. `defaultToken` is the bearer a call uses unless it names another.
+export async function serveReplyTools(t, { access, tools, oauth = null, defaultToken = "token-reply-only" }) {
+  const listener = await listenPrivateCaseMcp({ caseAccessService: access, therapyProtocol: null, supervisorReply: tools, oauth, port: 0 });
   t.after(() => listener.close());
   const call = async (name, args, token = defaultToken) => {
     const { status, headers, body } = await rpc(listener.url, "tools/call", { name, arguments: args }, token);
@@ -222,7 +205,31 @@ export async function buildReplyConnector(t, {
   };
   const submit = (args, token) => ok("submit_reply_draft", { case_id: CASE_ID, source: "external_draft", idempotency_key: "key-default", ...args }, token);
   const list = async () => (await rpc(listener.url, "tools/list", {}, null)).body.result.tools;
-  return { source, runtime, drafts, runner, tools, provider, listener, url: listener.url, call, ok, refused, submit, list };
+  return { listener, url: listener.url, call, ok, refused, submit, list };
+}
+
+// The connector over an access service the caller built: the draft service and runner, the tools, and a listener. `provider`
+// is the scripted reviewer; `reviewAvailable: false` builds the connector without any review runtime.
+export async function buildReplyConnector(t, {
+  access,
+  verdicts = ["pass"],
+  hooks = {},
+  provider = scriptedProvider({ verdicts, hooks }),
+  reviewAvailable = true,
+  runnerOptions = {},
+  produced = undefined,
+  attempts = 1,
+  withTools = true,
+  oauth = null,
+  defaultToken = "token-reply-only"
+}) {
+  const source = access.supervisorDraftAccess.source;
+  const runtime = reviewAvailable ? reviewRuntime({ source, provider, ...(produced === undefined ? {} : { produced }) }) : null;
+  const drafts = createPrivateSupervisorDraftService({ privateCaseSource: source, modelRuntime: runtime, maximumInvocationAttempts: attempts });
+  const runner = createSupervisorReviewRunner({ budgetMs: 5_000, cooldownMs: 0, ...runnerOptions });
+  const tools = createSupervisorReplyTools({ draftAccess: access.supervisorDraftAccess, drafts, runner, reviewAvailable });
+  const served = await serveReplyTools(t, { access, tools: withTools ? tools : null, oauth, defaultToken });
+  return { source, runtime, drafts, runner, tools, provider, ...served };
 }
 
 // Builds two cases, each with one client message waiting for a reply, and the connector in front of them. `rootDir` reuses an

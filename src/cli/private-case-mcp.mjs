@@ -118,7 +118,12 @@ const ready = {
   journalEnabled: providers.journalEnabled === true,
   journalWork: Boolean(journalWork),
   // Present only when the reply-draft tools are on, so the ready line of a deployment that has not turned them on is unchanged.
-  ...(supervisorReply ? { supervisorDrafts: true, supervisorReview: supervisorReply.reviewAvailable ? "available" : "unavailable" } : {})
+  // `supervisorBackendDrafts` is whether InnerSignal can also write a draft itself, which needs the OpenAI key as well.
+  ...(supervisorReply ? {
+    supervisorDrafts: true,
+    supervisorReview: supervisorReply.reviewAvailable ? "available" : "unavailable",
+    supervisorBackendDrafts: supervisorReply.backendDraftsAvailable ? "available" : "unavailable"
+  } : {})
 };
 const readyFile = valueAfter("--ready-file");
 if (readyFile) {

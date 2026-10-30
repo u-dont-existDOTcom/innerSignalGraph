@@ -150,7 +150,7 @@ test("the setting off builds nothing, and on without a model mode builds no prov
     const connector = await createSupervisorReplyConnector({ ...options, environment: { [SETTING]: "true", ...(mode === undefined ? {} : { INNER_SIGNAL_MODE: mode }) } });
     assert.equal(connector.reviewAvailable, false, `mode ${JSON.stringify(mode)} gives no review`);
   }
-  assert.deepEqual(events, Array(5).fill({ event: "supervisor_review", available: false, reason: "NO_PROVIDER_MODE" }));
+  assert.deepEqual(events, Array(5).fill({ event: "supervisor_review", available: false, reason: "NO_PROVIDER_MODE", backend_drafts: false }));
 });
 
 test("model settings that fail to load leave the tools offered but review unavailable, for a stated reason that carries no detail", async (t) => {
@@ -167,7 +167,7 @@ test("model settings that fail to load leave the tools offered but review unavai
       const options = { access, environment, log: (event) => events.push(event), loadConfigFn: () => ({}), createProvidersFn: () => ({}), [where]: () => { throw error; } };
       const connector = await createSupervisorReplyConnector(options);
       assert.equal(connector.reviewAvailable, false);
-      assert.deepEqual(events, [{ event: "supervisor_review", available: false, reason }]);
+      assert.deepEqual(events, [{ event: "supervisor_review", available: false, reason, backend_drafts: false }]);
       assert.ok(!JSON.stringify(events).includes("synthetic"), "no setting or key value reaches the log");
     }
   }
@@ -240,7 +240,8 @@ test("with the setting on and no model configured the tools are offered, say rev
   const run = await start(t, environment, { settings: { [SETTING]: "true" } });
   assert.equal(run.ready.supervisorDrafts, true);
   assert.equal(run.ready.supervisorReview, "unavailable");
-  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: false, reason: "NO_PROVIDER_MODE" }]);
+  assert.equal(run.ready.supervisorBackendDrafts, "unavailable");
+  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: false, reason: "NO_PROVIDER_MODE", backend_drafts: false }]);
   const names = await run.toolNames();
   for (const tool of REPLY_TOOLS) assert.ok(names.includes(tool), `${tool} is offered`);
   assert.match(await run.instructions(), /reply-draft/iu);
@@ -271,7 +272,8 @@ test("with the setting on and the model settings incomplete, review is unavailab
   const run = await start(t, environment, { settings: { [SETTING]: "true", INNER_SIGNAL_MODE: "api" } });
   assert.equal(run.ready.supervisorDrafts, true);
   assert.equal(run.ready.supervisorReview, "unavailable");
-  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: false, reason: "BAD_CONFIG" }]);
+  assert.equal(run.ready.supervisorBackendDrafts, "unavailable");
+  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: false, reason: "BAD_CONFIG", backend_drafts: false }]);
   const submitted = await run.call("submit_reply_draft", { case_id: CASE_ID, source: "external_draft", text: "Synthetic reply.", idempotency_key: "key-1" }, environment.tokens.scoped);
   assert.equal(submitted.structured.code, "SUPERVISOR_REVIEW_UNAVAILABLE");
 });
@@ -281,11 +283,41 @@ test("with the setting on and the model configured the review is available, and 
   const run = await start(t, environment, { settings: { [SETTING]: "true", ...API_SETTINGS } });
   assert.equal(run.ready.supervisorDrafts, true);
   assert.equal(run.ready.supervisorReview, "available");
-  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: true, reason: null }]);
+  assert.equal(run.ready.supervisorBackendDrafts, "available");
+  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: true, reason: null, backend_drafts: true }]);
   const snapshot = await run.call("get_reply_draft_context", { case_id: CASE_ID }, environment.tokens.scoped);
   assert.equal(snapshot.isError, false);
   await run.stop();
   for (const secret of [API_SETTINGS.OPENAI_API_KEY, API_SETTINGS.ANTHROPIC_API_KEY]) assert.ok(!run.stderr().includes(secret), "no provider key reaches the log");
+});
+
+test("with the setting on and only an Anthropic key, the connector reviews a draft someone else wrote and says it cannot write one itself", async (t) => {
+  const environment = await setup(t);
+  const before = await fingerprintOf(environment.vaults);
+  const settings = { [SETTING]: "true", INNER_SIGNAL_MODE: "api", ANTHROPIC_API_KEY: API_SETTINGS.ANTHROPIC_API_KEY, ACKNOWLEDGE_PROVIDER_RETENTION: "true" };
+  const run = await start(t, environment, { settings });
+  assert.equal(run.ready.supervisorReview, "available");
+  assert.equal(run.ready.supervisorBackendDrafts, "unavailable");
+  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: true, reason: null, backend_drafts: false }]);
+  const refused = await run.call("submit_reply_draft", { case_id: CASE_ID, source: "backend_produced", idempotency_key: "key-backend" }, environment.tokens.scoped);
+  assert.equal(refused.isError, true);
+  assert.equal(refused.structured.code, "SUPERVISOR_REVIEW_UNAVAILABLE");
+  assert.deepEqual(refused.structured.reasons, ["backend_drafts_need_openai_key"]);
+  await run.stop();
+  assert.ok(!run.stderr().includes(API_SETTINGS.ANTHROPIC_API_KEY), "no provider key reaches the log");
+  assert.equal(await fingerprintOf(environment.vaults), before, "the stored case is exactly as it was");
+});
+
+test("with the setting on and only an OpenAI key, the connector starts and the review is unavailable, because the reviewer is Anthropic's", async (t) => {
+  const environment = await setup(t);
+  const settings = { [SETTING]: "true", INNER_SIGNAL_MODE: "api", OPENAI_API_KEY: API_SETTINGS.OPENAI_API_KEY, ACKNOWLEDGE_PROVIDER_RETENTION: "true" };
+  const run = await start(t, environment, { settings });
+  assert.equal(run.ready.supervisorReview, "unavailable");
+  assert.equal(run.ready.supervisorBackendDrafts, "unavailable");
+  assert.deepEqual(reviewEvents(run), [{ event: "supervisor_review", available: false, reason: "BAD_CONFIG", backend_drafts: false }]);
+  const submitted = await run.call("submit_reply_draft", { case_id: CASE_ID, source: "external_draft", text: "Synthetic reply.", idempotency_key: "key-1" }, environment.tokens.scoped);
+  assert.equal(submitted.structured.code, "SUPERVISOR_REVIEW_UNAVAILABLE");
+  assert.equal(submitted.structured.reasons, undefined);
 });
 
 test("in the hosted image's file layout the connector starts whether the setting is off, or on with a model", async (t) => {

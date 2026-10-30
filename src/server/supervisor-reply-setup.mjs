@@ -12,13 +12,22 @@ import { createSupervisorReplyTools } from "./supervisor-reply-tools.mjs";
 // by it would mean nothing, and an unset mode reads as `mock`. The review runtime is a seam: a host-side worker that reviews a
 // draft elsewhere could take its place without a change to the tools.
 //
+// Which keys a review needs. The independent reviewer, and the repair of a draft that fails its review, are Anthropic's models, so
+// a draft someone else wrote is reviewed with an Anthropic key alone. A draft that InnerSignal writes itself (`backend_produced`)
+// also runs the therapy pipeline, whose reviewed and deeper tiers call OpenAI, so it needs the OpenAI key too. In `api` mode with
+// only an Anthropic key, only the Anthropic providers are built and writing a draft is refused up front; with only an OpenAI key
+// there is no reviewer and the review stays unavailable; with both keys nothing differs. No OpenAI provider is ever built from a
+// key that was not given.
+//
 // The runtime, its provider factory and their configuration are loaded only when the tools are on and a real mode is set. The
 // private-case connector therefore starts with exactly the modules it always did while the setting is off, which is how it is
 // deployed today.
 
 export const SUPERVISOR_REPLY_SETTING = "INNER_SIGNAL_MCP_SUPERVISOR_DRAFTS";
 const REAL_MODES = Object.freeze(["api", "cli"]);
+const ANTHROPIC_ONLY = Object.freeze(["anthropic"]);
 const DEFAULT_INVOCATION_ATTEMPTS = 2;
+const hasKey = (value) => typeof value === "string" && value.trim() !== "";
 
 export function supervisorRepliesEnabled(environment = process.env) {
   const raw = environment[SUPERVISOR_REPLY_SETTING];
@@ -29,23 +38,29 @@ export function supervisorRepliesEnabled(environment = process.env) {
   throw new Error(`${SUPERVISOR_REPLY_SETTING} must be true or false.`);
 }
 
-// The review runtime built from configuration, or null with a fixed-word reason (never a setting's value or a key).
+// The review runtime built from configuration, or null with a fixed-word reason (never a setting's value or a key). `backendDrafts`
+// says whether InnerSignal can also write a draft itself, which needs the OpenAI providers as well.
 export async function buildSupervisorReviewRuntime({ environment = process.env, source, loadConfigFn = null, createProvidersFn = null } = {}) {
-  if (!REAL_MODES.includes(environment.INNER_SIGNAL_MODE)) return { runtime: null, reason: "NO_PROVIDER_MODE", maximumInvocationAttempts: DEFAULT_INVOCATION_ATTEMPTS };
+  const unavailable = (reason) => ({ runtime: null, reason, backendDrafts: false, maximumInvocationAttempts: DEFAULT_INVOCATION_ATTEMPTS });
+  if (!REAL_MODES.includes(environment.INNER_SIGNAL_MODE)) return unavailable("NO_PROVIDER_MODE");
+  const anthropicOnly = environment.INNER_SIGNAL_MODE === "api" && hasKey(environment.ANTHROPIC_API_KEY) && !hasKey(environment.OPENAI_API_KEY);
   try {
     const loadConfig = loadConfigFn ?? (await import("../core/config.mjs")).loadConfig;
     const createProviders = createProvidersFn ?? (await import("../providers/factory.mjs")).createProviders;
     const { createPrivateTherapyModelRuntime } = await import("../supervisor/private-therapy-model-runtime.mjs");
-    const config = loadConfig();
-    const providers = createProviders(config);
+    const config = anthropicOnly ? loadConfig({}, { providers: ANTHROPIC_ONLY }) : loadConfig();
+    const providers = anthropicOnly ? createProviders(config, { providers: ANTHROPIC_ONLY }) : createProviders(config);
+    const complete = createPrivateTherapyModelRuntime({ privateCaseSource: source, providers, config });
     return {
-      runtime: createPrivateTherapyModelRuntime({ privateCaseSource: source, providers, config }),
+      // Without the OpenAI providers the runtime is handed over without the step that writes a draft, so nothing that reaches it can
+      // call a provider that was not built.
+      runtime: anthropicOnly ? Object.freeze({ auditCandidate: complete.auditCandidate, repairCandidate: complete.repairCandidate }) : complete,
       reason: null,
+      backendDrafts: !anthropicOnly,
       maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? DEFAULT_INVOCATION_ATTEMPTS
     };
   } catch (error) {
-    const code = typeof error?.code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/u.test(error.code) ? error.code : "PROVIDER_SETUP_FAILED";
-    return { runtime: null, reason: code, maximumInvocationAttempts: DEFAULT_INVOCATION_ATTEMPTS };
+    return unavailable(typeof error?.code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/u.test(error.code) ? error.code : "PROVIDER_SETUP_FAILED");
   }
 }
 
@@ -65,8 +80,10 @@ export async function createSupervisorReplyConnector({
   if (!draftAccess || typeof draftAccess.authorize !== "function" || !draftAccess.source) throw new TypeError("An access service with supervisorDraftAccess is required.");
   const built = modelRuntime === undefined
     ? await buildSupervisorReviewRuntime({ environment, source: draftAccess.source, loadConfigFn, createProvidersFn })
-    : { runtime: modelRuntime, reason: modelRuntime ? null : "NO_PROVIDER_MODE", maximumInvocationAttempts: DEFAULT_INVOCATION_ATTEMPTS };
-  try { log({ event: "supervisor_review", available: built.runtime !== null, reason: built.reason }); } catch { /* a log sink never breaks startup */ }
+    : { runtime: modelRuntime, reason: modelRuntime ? null : "NO_PROVIDER_MODE", backendDrafts: modelRuntime !== null, maximumInvocationAttempts: DEFAULT_INVOCATION_ATTEMPTS };
+  const reviewAvailable = built.runtime !== null;
+  const backendDraftsAvailable = reviewAvailable && built.backendDrafts === true;
+  try { log({ event: "supervisor_review", available: reviewAvailable, reason: built.reason, backend_drafts: backendDraftsAvailable }); } catch { /* a log sink never breaks startup */ }
   const drafts = createPrivateSupervisorDraftService({
     privateCaseSource: draftAccess.source,
     modelRuntime: built.runtime,
@@ -76,6 +93,7 @@ export async function createSupervisorReplyConnector({
     draftAccess,
     drafts,
     runner: createSupervisorReviewRunner(runnerOptions),
-    reviewAvailable: built.runtime !== null
+    reviewAvailable,
+    backendDraftsAvailable
   });
 }

@@ -44,7 +44,7 @@ export const SUPERVISOR_REPLY_TOOL_DEFINITIONS = Object.freeze([
   Object.freeze({
     name: "submit_reply_draft",
     title: "Submit a reply draft to the client for InnerSignal's independent review",
-    description: "Stores one reply draft and has InnerSignal review it independently. With source external_draft, text is stored exactly as sent, byte for byte, and its original writer is recorded as not attested. With source backend_produced, InnerSignal's own runtime writes the draft from the newest client message, and text is not sent. companion is an optional rendering for the supervisor only: it can never be sent to the client. Nothing is approved until the independent review passes the exact stored text; if the review has to repair it, the approved text is the repaired text and can differ from what was sent. A review can take minutes, so this call answers within about 25 seconds; if the review is not finished it answers reviewing, and get_reply_draft_status with the same idempotency_key follows it. A retry with the same idempotency_key and the same content is answered from the stored draft; the same key with different content is refused. basis_sha256, from get_reply_draft_context, makes the call refuse if the case has changed since. This sends nothing to anyone.",
+    description: "Stores one reply draft and has InnerSignal review it independently. With source external_draft, text is stored exactly as sent, byte for byte, and its original writer is recorded as not attested. With source backend_produced, InnerSignal's own runtime writes the draft from the newest client message, and text is not sent; InnerSignal can write a draft itself only on a deployment that has an OpenAI key as well as an Anthropic one, so on a deployment with only the Anthropic key backend_produced is refused with SUPERVISOR_REVIEW_UNAVAILABLE and nothing is stored, and external_draft is the way to have a draft reviewed. companion is an optional rendering for the supervisor only: it can never be sent to the client. Nothing is approved until the independent review passes the exact stored text; if the review has to repair it, the approved text is the repaired text and can differ from what was sent. A review can take minutes, so this call answers within about 25 seconds; if the review is not finished it answers reviewing, and get_reply_draft_status with the same idempotency_key follows it. A retry with the same idempotency_key and the same content is answered from the stored draft; the same key with different content is refused. basis_sha256, from get_reply_draft_context, makes the call refuse if the case has changed since. This sends nothing to anyone.",
     inputSchema: Object.freeze({
       type: "object",
       additionalProperties: false,
@@ -137,6 +137,12 @@ const REFUSALS = Object.freeze({
 });
 const REASON_WORD = /^[a-z_]{1,60}$/u;
 
+// Said when a deployment can review a draft but cannot write one: it has the Anthropic key (the reviewer's) and not the OpenAI key.
+const BACKEND_DRAFTS_NEED_OPENAI_KEY = Object.freeze({
+  message: "InnerSignal can write a draft itself only on a deployment that has an OpenAI key as well as an Anthropic one, and this deployment does not. Nothing was stored or approved. Submit the draft you wrote with source external_draft and InnerSignal will review it.",
+  reasons: Object.freeze(["backend_drafts_need_openai_key"])
+});
+
 function refusalFor(error) {
   const message = Object.hasOwn(REFUSALS, error?.code) ? REFUSALS[error.code] : null;
   if (message === null) return null;
@@ -184,8 +190,10 @@ function exportText(exported) {
 
 // `draftAccess` is the access service's `supervisorDraftAccess`; `drafts` is a draft service built on its `source`. `runner` keeps
 // a review going after the call that started it has been answered. With no `reviewAvailable`, nothing here can approve a draft:
-// submitting says plainly that review is unavailable and stores nothing.
-export function createSupervisorReplyTools({ draftAccess, drafts, runner, reviewAvailable = false } = {}) {
+// submitting says plainly that review is unavailable and stores nothing. `backendDraftsAvailable` is whether InnerSignal can also
+// write a draft itself (it follows `reviewAvailable` unless a host says otherwise); without it a `backend_produced` request is
+// refused the same way, before anything is stored, and a draft someone else wrote is still reviewed.
+export function createSupervisorReplyTools({ draftAccess, drafts, runner, reviewAvailable = false, backendDraftsAvailable = reviewAvailable } = {}) {
   if (!draftAccess || typeof draftAccess.authorize !== "function") throw new TypeError("draftAccess from the access service is required.");
   if (!drafts || typeof drafts.submitCandidateForReview !== "function" || typeof drafts.getReviewStatus !== "function") throw new TypeError("A supervisor draft service is required.");
   if (!runner || typeof runner.run !== "function" || typeof runner.watch !== "function") throw new TypeError("A supervisor review runner is required.");
@@ -249,6 +257,9 @@ export function createSupervisorReplyTools({ draftAccess, drafts, runner, review
       if (args.companion !== undefined && !args.companion.text.trim()) return toolError("REPLY_DRAFT_REQUEST_INVALID", REFUSALS.VALIDATION_ERROR);
       const ticket = await draftAccess.authorize(caseId, authContext);
       if (!reviewAvailable) return toolError("SUPERVISOR_REVIEW_UNAVAILABLE", REFUSALS.SUPERVISOR_REVIEW_UNAVAILABLE);
+      if (args.source === "backend_produced" && !backendDraftsAvailable) {
+        return toolError("SUPERVISOR_REVIEW_UNAVAILABLE", BACKEND_DRAFTS_NEED_OPENAI_KEY.message, { reasons: [...BACKEND_DRAFTS_NEED_OPENAI_KEY.reasons] });
+      }
       const operationKey = supervisorOperationKeyForIdempotencyKey(caseId, args.idempotency_key);
       // An identical request that arrives while its review runs joins it. Any difference makes a separate job, which the draft
       // service then compares with what the first one stored.
@@ -344,6 +355,7 @@ export function createSupervisorReplyTools({ draftAccess, drafts, runner, review
     scopes: (name) => (Object.hasOwn(handlers, name) ? [PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT] : []),
     instructions: SUPERVISOR_REPLY_INSTRUCTIONS,
     reviewAvailable: reviewAvailable === true,
+    backendDraftsAvailable: reviewAvailable === true && backendDraftsAvailable === true,
     async call(name, args, authContext) {
       if (!Object.hasOwn(handlers, name)) return toolError("MCP_TOOL_NOT_FOUND", "Unknown reply-draft tool.");
       const invalid = invalidArguments(name, args);
