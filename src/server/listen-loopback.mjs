@@ -1,6 +1,7 @@
 import { createInnerSignalServer } from "./create-server.mjs";
 import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-model-runtime.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
+import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
 
 function listen(server, port, host) {
   return new Promise((resolve, reject) => {
@@ -36,11 +37,20 @@ export async function listenInnerSignalLoopback({
   privateCaseAccessService = null,
   privateAuthContext = null,
   privateTherapyController = null,
+  privateSupervisorService = null,
   port = config.port
 }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
   const sharedPrivateTherapyController = privateTherapyController ?? (privateCaseSource
     ? createPrivateTherapyTurnController({
+        privateCaseSource,
+        modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
+        maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
+      })
+    : null);
+  // One supervisor draft service for both listeners, so one case's reviews are taken one at a time across them.
+  const sharedPrivateSupervisorService = privateSupervisorService ?? (privateCaseSource
+    ? createPrivateSupervisorDraftService({
         privateCaseSource,
         modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
         maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
@@ -52,7 +62,8 @@ export async function listenInnerSignalLoopback({
     privateCaseStore,
     privateCaseAccessService,
     privateAuthContext,
-    privateTherapyController: sharedPrivateTherapyController
+    privateTherapyController: sharedPrivateTherapyController,
+    privateSupervisorService: sharedPrivateSupervisorService
   };
   const ipv4 = createInnerSignalServer(serverOptions);
   await listen(ipv4, port, "127.0.0.1");

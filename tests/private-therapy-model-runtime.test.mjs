@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
+import { loadConfig } from "../src/core/config.mjs";
+import { createProviders } from "../src/providers/factory.mjs";
 import { createPrivateTherapyModelRuntime } from "../src/supervisor/private-therapy-model-runtime.mjs";
 
 const candidate = Object.freeze({
@@ -101,4 +104,47 @@ test("a provider without mechanical packet-only isolation is rejected before inv
     (error) => error.code === "PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE"
   );
   assert.equal(calls, 0);
+});
+
+// A supervisor asks for a draft after the client's message was stored, so that message is already the newest stored user turn. The
+// runtime's own turns store it later; for them nothing changes.
+test("a caller whose inbound message is already stored does not show the model that message twice, and the earlier turns stay", async () => {
+  const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false });
+  const providers = createProviders(config);
+  const newest = "Synthetic newest client message waiting for a reply.";
+  const earlier = "Synthetic earlier client message.";
+  const turns = [
+    { id: "E1-user", exchange_id: "E1", role: "user", text: earlier, at: "2026-09-01T12:00:00.000Z" },
+    { id: "E1-assistant", exchange_id: "E1", role: "assistant", text: "Synthetic earlier reply.", at: "2026-09-01T12:00:01.000Z" },
+    { id: "E2-user", exchange_id: "E2", role: "user", text: newest, at: "2026-09-02T12:00:00.000Z" }
+  ];
+  const sent = [];
+  const spied = Object.fromEntries(Object.entries(providers).map(([key, provider]) => [key, provider && typeof provider.generate === "function"
+    ? new Proxy(provider, {
+      get(target, property) {
+        if (property === "generate") return async (input) => { sent.push(JSON.stringify(input)); return target.generate(input); };
+        const value = target[property];
+        return typeof value === "function" ? value.bind(target) : value;
+      }
+    })
+    : provider]));
+  const source = { async loadPrivateRuntimeCase() { return { case_id: "synthetic", case_state: createEmptyCaseState({ caseId: "synthetic" }), raw_transcript: turns, tracker_entries: [] }; } };
+  const runtime = createPrivateTherapyModelRuntime({ privateCaseSource: source, providers: spied, config });
+  const runtimeTurn = { user_turn_id: "E2-user", inbound: { exact_text: newest, received_at: turns[2].at } };
+  const count = (text) => sent.join("\n").split(text).length - 1;
+  const produce = async (extra) => {
+    sent.length = 0;
+    const result = await runtime.produceCandidate({ caseId: "synthetic", runtimeTurn, userInput: { processingMode: "fast" }, authContext: {}, attemptContextId: "attempt:inbound", ...extra });
+    assert.equal(typeof result.exactText, "string");
+    return { newest: count(newest), earlier: count(earlier), calls: sent.length };
+  };
+
+  const own = await produce({});
+  const explicitOwn = await produce({ inboundAlreadyRecorded: false });
+  const supervisor = await produce({ inboundAlreadyRecorded: true });
+  assert.deepEqual(explicitOwn, own, "the runtime's own turns are unchanged by the new option");
+  assert.ok(own.calls > 0 && supervisor.calls === own.calls);
+  assert.ok(supervisor.newest > 0, "the message is still shown to the model as the current message");
+  assert.ok(supervisor.newest < own.newest, "but no longer a second time as part of the recent transcript");
+  assert.equal(supervisor.earlier, own.earlier, "the earlier turns are all still shown");
 });
