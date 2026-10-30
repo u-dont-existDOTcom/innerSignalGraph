@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 03d135ccc2b3e12c9c39f221bca680b603ebaec0d0e905f60938b92b9c5f1a64
-source_file_sha256: bf2cf6b3d460f09b079611bd9930f46e621b2b7e98bcb84c59412227e34f9279
-projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
+base_record_sha256: 01d1eafc86bfc0d429995908c581f1287324d7ca82ab76147ab8a42455e90330
+source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
@@ -25,6 +25,6 @@ projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07e
     "status": "owner-approved",
     "text": "For nonjudgmental understanding, distinguish involuntary feelings, spontaneous thoughts, freely chosen thoughts, intentions, and reported conduct. Feelings do not by themselves establish character, misconduct or a clinical diagnosis. Preserve informed consent, vulnerability, non-exploitation, chosen boundaries and protective action; neither shame nor permission to act on every impulse follows from having a feeling. A self-chosen boundary around an unsuitable attraction can be a mature Protector act. Avoid treating variable legal rules, ethical consent and diagnoses as interchangeable. A historical trauma report merits careful support but fantasies, imagery and uncertain memories do not establish further events or a cause of attraction; no guaranteed change of attraction follows from maturation or therapy. A sexual-life concern may include shame, fantasy, arousal and intimacy even without partnered activity. Examine what a previous specialist actually did before suggesting a new specialty or assuming treatment completed. Particularly sensitive institutional referrals require verified, action-changing purpose, client fit, realistic privacy/reporting limits, independent experience and available alternatives; do not automatically recommend preventive institutions for distress about a feeling alone, while preserving appropriate protection when present supported harm risk exists."
   },
-  "version": "owner-amendments-2026-10-29-r18"
+  "version": "owner-amendments-2026-10-29-r19"
 }
 ```

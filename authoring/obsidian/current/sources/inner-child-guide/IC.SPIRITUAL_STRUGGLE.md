@@ -11,7 +11,7 @@ source_hash: 1a3382826c7f1db8fcf0139f156daca0a44235337cc2a23af45ae0a25acc0adb
 section_hash: 34e9aa701d2417b5721b32ff4ee918c35a758f0df14e6cc603718cf0d1bee49a
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: cd0e4117aa80edb99ee0724f9e31e4a7ae42368186e7fdc137fe07eefc3f70bc
+projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
 ---
 
 # When the Spiritual Relationship Hurts
