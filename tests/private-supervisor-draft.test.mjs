@@ -90,6 +90,7 @@ const submitExternal = (service, text, extra = {}, who = OWNER) => service.submi
 const exportArtifact = (service, artifactId, who = OWNER) => service.getApprovedResponseArtifact({ caseId: CASE_ID, artifactId, ...who });
 const reportSent = (service, input = {}, who = OWNER) => service.recordReportedDelivery({ caseId: CASE_ID, ...input, ...who });
 const refusal = (code) => (error) => error?.code === code;
+const supervisorCompanions = (record) => record.supervisor_artifacts.filter((entry) => entry.kind === "companion");
 
 test("an external draft with no host attestation is stored byte for byte as not_attested and admitted when the independent audit passes", async (t) => {
   const { store, service, runtime } = await makeEnvironment(t);
@@ -587,6 +588,236 @@ test("a keyed submission retried after the case moved on returns the stored revi
   await assert.rejects(() => submitExternal(service, "Different bytes.", { basisSha256: prepared.basis.sha256, idempotencyKey: "lost-submit" }), refusal("SUPERVISOR_IDEMPOTENCY_CONFLICT"));
   await assert.rejects(() => submitExternal(service, text, { basisSha256: prepared.basis.sha256 }), refusal("SUPERVISOR_BASIS_CHANGED"), "a retry with no key is not recognised, so the old case state refuses it");
   assert.equal((await store.load(CASE_ID)).candidate_responses.length, 1);
+});
+
+// What defined an operation is compared with the stored record on every retry, in one place, before anything is returned or skipped.
+// The refusal names the fields that differ in fixed words and never repeats case content.
+const conflictNaming = (...fields) => (error) => {
+  assert.equal(error?.code, "SUPERVISOR_IDEMPOTENCY_CONFLICT");
+  for (const field of fields) assert.ok(error.details?.reasons?.includes(field), `${field} is named in ${JSON.stringify(error.details?.reasons)}`);
+  return true;
+};
+
+test("a retried external draft is answered from the stored one only if it repeats its source, bytes, companion and the state it was prepared against", async (t) => {
+  const { store, service, runtime } = await makeEnvironment(t);
+  const prepared = await service.prepareResponseContext({ caseId: CASE_ID, ...OWNER });
+  const text = "Synthetic external draft held under a key.";
+  const companion = { language: "en", text: "Synthetic companion for the external draft." };
+  const send = ({ text: draft = text, ...extra } = {}, who = OWNER) => submitExternal(service, draft, { companion, basisSha256: prepared.basis.sha256, idempotencyKey: "defined-1", ...extra }, who);
+  const first = await send();
+  assert.equal(first.status, "approved");
+  const revision = (await store.load(CASE_ID)).revision;
+  const modelCalls = runtime.calls.length;
+
+  // A backend-produced submission can never stand in for the external draft that holds the key, and the reverse is refused below.
+  await assert.rejects(() => service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", basisSha256: prepared.basis.sha256, idempotencyKey: "defined-1", ...OWNER }), conflictNaming("source"));
+  await assert.rejects(() => send({ text: `${text} ` }), conflictNaming("exact_text"));
+  await assert.rejects(() => send({ companion: null }), conflictNaming("companion"));
+  await assert.rejects(() => send({ companion: { ...companion, text: "Another companion." } }), conflictNaming("companion"));
+  await assert.rejects(() => send({ companion: { ...companion, language: "fr" } }), conflictNaming("companion"));
+  await assert.rejects(() => send({ basisSha256: sha256("another prepared case state") }), conflictNaming("basis"));
+  await assert.rejects(() => send({}, AGENT), conflictNaming("companion_supplier"));
+  assert.equal((await store.load(CASE_ID)).revision, revision, "no refused retry wrote anything");
+  assert.equal(runtime.calls.length, modelCalls, "and none generated, audited or repaired anything");
+
+  // The same call, repeated, is the operation already done.
+  const again = await send();
+  assert.equal(again.replayed, true);
+  assert.equal(again.artifact.artifact_id, first.artifact.artifact_id);
+  assert.equal(again.status, "approved");
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+  assert.equal(runtime.calls.length, modelCalls);
+});
+
+test("a retried draft that had no companion is not answered from the stored one when the retry adds one", async (t) => {
+  const { store, service, runtime } = await makeEnvironment(t);
+  const text = "Synthetic external draft with no companion.";
+  const first = await submitExternal(service, text, { idempotencyKey: "defined-2" });
+  const revision = (await store.load(CASE_ID)).revision;
+  await assert.rejects(() => submitExternal(service, text, { idempotencyKey: "defined-2", companion: { language: "en", text: "A companion added on the retry." } }), conflictNaming("companion"));
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+  assert.equal(supervisorCompanions(await store.load(CASE_ID)).length, 0, "the retry attached no companion");
+  assert.equal((await submitExternal(service, text, { idempotencyKey: "defined-2" })).artifact.artifact_id, first.artifact.artifact_id);
+  assert.equal(runtime.calls.filter((call) => call.role === "audit").length, 1);
+});
+
+test("an external draft cannot stand in for a backend-produced one, or the reverse, by reusing its idempotency key", async (t) => {
+  const { store, service, runtime } = await makeEnvironment(t);
+  const prepared = await service.prepareResponseContext({ caseId: CASE_ID, ...OWNER });
+  const backend = await service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", basisSha256: prepared.basis.sha256, idempotencyKey: "defined-3", ...OWNER });
+  assert.equal(backend.status, "approved");
+  const stored = await store.load(CASE_ID);
+  const revision = stored.revision;
+  const modelCalls = runtime.calls.length;
+
+  await assert.rejects(() => submitExternal(service, "Synthetic bytes a person wrote.", { basisSha256: prepared.basis.sha256, idempotencyKey: "defined-3" }), conflictNaming("source"));
+  await assert.rejects(() => submitExternal(service, stored.candidate_responses.at(-1).exact_text, { basisSha256: prepared.basis.sha256, idempotencyKey: "defined-3" }), conflictNaming("source"), "even the very same bytes are not the same operation");
+  await assert.rejects(() => service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", basisSha256: sha256("another prepared case state"), idempotencyKey: "defined-3", ...OWNER }), conflictNaming("basis"));
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+  assert.equal(runtime.calls.length, modelCalls, "nothing was generated or audited for a refused retry");
+
+  const again = await service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", basisSha256: prepared.basis.sha256, idempotencyKey: "defined-3", ...OWNER });
+  assert.equal(again.replayed, true);
+  assert.equal(again.artifact.artifact_id, backend.artifact.artifact_id);
+  assert.equal(runtime.calls.filter((call) => call.role === "produce").length, 1, "a backend draft is written once, not again on a retry");
+
+  // The reverse: a key held by an external draft cannot be used to have the backend write, and approve, a reply.
+  const external = await submitExternal(service, "Synthetic person-written draft.", { idempotencyKey: "defined-4" });
+  const produced = runtime.calls.filter((call) => call.role === "produce").length;
+  await assert.rejects(() => service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", idempotencyKey: "defined-4", ...OWNER }), conflictNaming("source"));
+  assert.equal(runtime.calls.filter((call) => call.role === "produce").length, produced);
+  assert.equal(external.status, "approved");
+});
+
+test("the service learns that a draft already exists only through the store's comparison, so a wrapper cannot answer a retry around it", async (t) => {
+  const { store, runtime } = await makeEnvironment(t);
+  const seen = [];
+  let injected = null;
+  const wrapped = Object.freeze(Object.fromEntries(Object.entries(store).map(([name, value]) => [
+    name,
+    typeof value !== "function" ? value : async (...args) => {
+      seen.push({ name, args });
+      if (name === "resolveSupervisorSubmission" && injected) throw injected;
+      return value.apply(store, args);
+    }
+  ])));
+  const service = createPrivateSupervisorDraftService({ privateCaseSource: wrapped, modelRuntime: runtime });
+  const first = await service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", idempotencyKey: "wrapper-1", ...OWNER });
+  assert.equal(first.status, "approved");
+  const draftId = (await store.load(CASE_ID)).candidate_responses.at(-1).id;
+
+  // A matching retry consults the store's lookup, writes nothing and generates nothing; the service has no other way to find the draft.
+  seen.length = 0;
+  const modelCalls = runtime.calls.length;
+  const again = await service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", idempotencyKey: "wrapper-1", ...OWNER });
+  assert.equal(again.replayed, true);
+  assert.ok(seen.some((entry) => entry.name === "resolveSupervisorSubmission"), "the store's comparison ran");
+  assert.equal(seen.some((entry) => entry.name === "getCandidateResponse" && entry.args[1] === draftId), false, "the service never looked the draft up around the store");
+  assert.equal(seen.some((entry) => entry.name === "submitSupervisorDraft"), false);
+  assert.equal(runtime.calls.length, modelCalls);
+
+  // When the store refuses the retry, the service refuses it too: no stored review is returned and no step is skipped or taken.
+  injected = Object.assign(new Error("Refused by the store."), { code: "SUPERVISOR_IDEMPOTENCY_CONFLICT", details: { reasons: ["source"] } });
+  seen.length = 0;
+  await assert.rejects(() => service.submitCandidateForReview({ caseId: CASE_ID, source: "backend_produced", idempotencyKey: "wrapper-1", ...OWNER }), conflictNaming("source"));
+  assert.deepEqual(seen.filter((entry) => !["getSupervisorSnapshot", "resolveSupervisorSubmission"].includes(entry.name)).map((entry) => entry.name), [], "nothing else was called");
+  assert.equal(runtime.calls.length, modelCalls);
+});
+
+test("the store itself refuses a replayed submission that differs, because the comparison also runs inside the write", async (t) => {
+  const { store } = await makeEnvironment(t);
+  const operationKey = "0123456789abcdef01234567";
+  const draft = { operationKey, source: "external_draft", exactText: "Synthetic stored bytes.", producerContextId: `context:external:${operationKey}`, companion: { language: "en", text: "Synthetic companion." }, channel: "owner_ui" };
+  const stored = await store.submitSupervisorDraft(CASE_ID, draft);
+  assert.equal(stored.replayed, false);
+  const revision = (await store.load(CASE_ID)).revision;
+  for (const [change, field] of [
+    [{ source: "backend_produced" }, "source"],
+    [{ exactText: "Other bytes." }, "exact_text"],
+    [{ companion: null }, "companion"],
+    [{ companion: { language: "en", text: "Other companion." } }, "companion"],
+    [{ channel: "authenticated_agent" }, "companion_supplier"]
+  ]) {
+    await assert.rejects(() => store.submitSupervisorDraft(CASE_ID, { ...draft, ...change }), conflictNaming(field));
+  }
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+  assert.equal((await store.submitSupervisorDraft(CASE_ID, draft)).replayed, true);
+});
+
+test("a repair already recorded is replayed only with the same parent, bytes and producer context", async (t) => {
+  const { store, service } = await makeEnvironment(t, { verdicts: ["fail", "pass"] });
+  const reviewed = await submitExternal(service, "Synthetic draft that fails its first audit.", { idempotencyKey: "repair-replay" });
+  assert.equal(reviewed.status, "approved");
+  const record = await store.load(CASE_ID);
+  const [parent, child] = record.candidate_responses;
+  assert.equal(child.parent_candidate_id, parent.id);
+  const repair = { exactText: child.exact_text, producerContextId: child.producer_context_id };
+  const revision = record.revision;
+  await store.reconstructSupervisorDraft(CASE_ID, parent.id, repair);
+  assert.equal((await store.load(CASE_ID)).revision, revision, "the same repair is a replay and writes nothing");
+  await assert.rejects(() => store.reconstructSupervisorDraft(CASE_ID, parent.id, { ...repair, exactText: "Other repaired bytes." }), conflictNaming("exact_text"));
+  await assert.rejects(() => store.reconstructSupervisorDraft(CASE_ID, parent.id, { ...repair, producerContextId: "context:other-repair" }), conflictNaming("producer_context"));
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+});
+
+test("a keyed report names its origin, time, quote, source reference and draft, and a retry that differs in any of them says which", async (t) => {
+  const { service } = await makeEnvironment(t);
+  const first = await submitExternal(service, "Synthetic draft that was sent.", { idempotencyKey: "report-defined" });
+  const artifactId = first.artifact.artifact_id;
+  await exportArtifact(service, artifactId);
+  const original = { artifactId, idempotencyKey: "report-key", sentAt: "2026-10-02T12:30:00.000Z", quote: "Synthetic: sent it.", sourceRef: "synthetic:note-1" };
+  const report = await reportSent(service, original);
+  assert.equal(report.replayed, false);
+
+  const differs = (change, who = OWNER) => reportSent(service, { ...original, ...change }, who);
+  await assert.rejects(() => differs({ sentAt: "2026-10-02T12:31:00.000Z" }), conflictNaming("sent_at"));
+  await assert.rejects(() => differs({ sentAt: null }), conflictNaming("sent_at"));
+  await assert.rejects(() => differs({ quote: "Synthetic: sent differently." }), conflictNaming("quote"));
+  await assert.rejects(() => differs({ quote: null }), conflictNaming("quote"));
+  await assert.rejects(() => differs({ sourceRef: "synthetic:note-2" }), conflictNaming("source_ref"));
+  await assert.rejects(() => differs({ sourceRef: null }), conflictNaming("source_ref"));
+  await assert.rejects(() => differs({}, AGENT), conflictNaming("origin"));
+  // A bare retry that names no draft asserts nothing about the draft, so it is the same operation; naming another draft is not.
+  const second = await submitExternal(service, "Synthetic second draft.", { idempotencyKey: "report-defined-2" });
+  await exportArtifact(service, second.artifact.artifact_id);
+  await assert.rejects(() => differs({ artifactId: second.artifact.artifact_id }), conflictNaming("artifact"));
+  const bare = await differs({ artifactId: null });
+  assert.equal(bare.replayed, true);
+  assert.equal(bare.event.id, report.event.id);
+  assert.equal((await differs({})).replayed, true);
+});
+
+test("a report with no key is identified by its draft, origin and send time, and a repeat that changes its quote or source reference is refused", async (t) => {
+  const { store, service } = await makeEnvironment(t);
+  const first = await submitExternal(service, "Synthetic draft reported without a key.", { idempotencyKey: "keyless-report-draft" });
+  const artifactId = first.artifact.artifact_id;
+  await exportArtifact(service, artifactId);
+  const original = { artifactId, sentAt: "2026-10-02T12:30:00.000Z", quote: "Synthetic: sent it.", sourceRef: "synthetic:note-1" };
+  const report = await reportSent(service, original);
+  assert.equal((await reportSent(service, original)).event.id, report.event.id);
+  assert.equal((await store.load(CASE_ID)).communication_events.filter((event) => event.kind === "reported_sent").length, 1);
+  await assert.rejects(() => reportSent(service, { ...original, quote: "Synthetic: sent differently." }), conflictNaming("event"));
+  await assert.rejects(() => reportSent(service, { ...original, sourceRef: "synthetic:note-2" }), conflictNaming("source_ref"));
+  await assert.rejects(() => reportSent(service, { ...original, quote: null }), conflictNaming("quote"));
+  assert.equal((await store.load(CASE_ID)).communication_events.filter((event) => event.kind === "reported_sent").length, 1);
+});
+
+test("a keyless submission prepared against an older case is refused as such even when the same draft already exists for the present case", async (t) => {
+  const { store, service } = await makeEnvironment(t);
+  const stale = await service.prepareResponseContext({ caseId: CASE_ID, ...OWNER });
+  await store.appendTranscriptTurn(CASE_ID, turn("E3", "user", "Synthetic newer client message.", 3));
+  const current = await service.prepareResponseContext({ caseId: CASE_ID, ...OWNER });
+  const text = "Synthetic draft written for the present case.";
+  const made = await submitExternal(service, text, { basisSha256: current.basis.sha256 });
+  assert.equal(made.status, "approved");
+  const revision = (await store.load(CASE_ID)).revision;
+  await assert.rejects(() => submitExternal(service, text, { basisSha256: stale.basis.sha256 }), refusal("SUPERVISOR_BASIS_CHANGED"));
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+  assert.equal((await submitExternal(service, text, { basisSha256: current.basis.sha256 })).replayed, true);
+});
+
+test("an input supplied twice under one key is the same input only for the same type, text and supplying channel", async (t) => {
+  const { store, service } = await makeEnvironment(t);
+  const input = { type: "client_message", text: "Synthetic message the owner relayed.", idempotencyKey: "input-defined" };
+  await service.prepareResponseContext({ caseId: CASE_ID, inputs: [input], ...OWNER });
+  const revision = (await store.load(CASE_ID)).revision;
+  await assert.rejects(() => service.prepareResponseContext({ caseId: CASE_ID, inputs: [{ ...input, type: "supervisor_revision" }], ...OWNER }), conflictNaming("input_type"));
+  await assert.rejects(() => service.prepareResponseContext({ caseId: CASE_ID, inputs: [{ ...input, text: "Other words." }], ...OWNER }), conflictNaming("text"));
+  await assert.rejects(() => service.prepareResponseContext({ caseId: CASE_ID, inputs: [input], ...AGENT }), conflictNaming("supplied_by"), "an agent cannot replay what the owner supplied");
+  assert.equal((await store.load(CASE_ID)).revision, revision);
+  assert.equal((await service.prepareResponseContext({ caseId: CASE_ID, inputs: [input], ...OWNER })).owner_supplied_inputs.length, 1);
+});
+
+test("an export is not keyed by a caller: any authorized channel gets the same re-verified bytes, once recorded, and a stale draft is refused to all", async (t) => {
+  const { store, service } = await makeEnvironment(t);
+  const first = await submitExternal(service, "Synthetic draft exported twice.", { idempotencyKey: "export-channels" });
+  const byOwner = await exportArtifact(service, first.artifact.artifact_id);
+  const byAgent = await exportArtifact(service, first.artifact.artifact_id, AGENT);
+  assert.deepEqual([byOwner.replayed, byAgent.replayed], [false, true]);
+  assert.equal(byAgent.client_text, byOwner.client_text);
+  assert.equal((await store.load(CASE_ID)).communication_events.filter((event) => event.kind === "exported").length, 1, "the release is recorded once, by the first channel to make it");
+  await store.appendTranscriptTurn(CASE_ID, turn("E3", "user", "Synthetic newer client message.", 3));
+  for (const who of [OWNER, AGENT]) await assert.rejects(() => exportArtifact(service, first.artifact.artifact_id, who), refusal("SUPERVISOR_ARTIFACT_STALE"));
 });
 
 test("a submission with no key is replayed by its content and the case it was written against", async (t) => {

@@ -44,6 +44,7 @@ import {
 import {
   SUPERVISOR_DRAFT_VERSION,
   SUPERVISOR_LIMITS,
+  assertSameSupervisorOperation,
   assessSupervisorArtifact,
   companionForCandidate,
   companionView,
@@ -62,7 +63,10 @@ import {
   supervisorAuditId,
   supervisorCandidateId,
   supervisorEntries,
+  supervisorInputIdentity,
   supervisorInputViews,
+  supervisorReportIdentity,
+  supervisorSubmissionIdentity,
   validateOperationKey,
   validateSupervisorArtifacts
 } from "./private-case-supervisor.mjs";
@@ -1529,15 +1533,12 @@ export function createEncryptedPrivateCaseStore({
       const record = await mutate(caseId, (record) => {
         recorded.length = 0;
         const recordedAt = now();
-        const withoutTime = ({ recorded_at: _recordedAt, ...rest }) => sha256Json(rest);
         let changed = false;
         for (const input of inputs) {
           const entry = createSupervisorInputEntry({ id: input?.inputId, inputType: input?.inputType, text: input?.text, channel, recordedAt });
           const existing = record.supervisor_artifacts.find((candidate) => candidate.id === entry.id);
           if (existing) {
-            if (withoutTime(existing) !== withoutTime(entry)) {
-              throw new ValidationError(`Supervisor input ${entry.id} conflicts with an existing immutable input.`, { code: "SUPERVISOR_IDEMPOTENCY_CONFLICT" });
-            }
+            assertSameSupervisorOperation(supervisorInputIdentity(existing, entry));
             recorded.push(existing);
             continue;
           }
@@ -1591,6 +1592,20 @@ export function createEncryptedPrivateCaseStore({
         }
       });
     },
+    // Finds the draft a submission already made, or says there is none. A retried submission is answered from the stored draft only
+    // if it repeats everything that defined that draft (where its bytes came from, the bytes, the companion and who supplied it,
+    // and the case state it was prepared against when it states one); otherwise it is refused here, before the caller generates,
+    // skips or returns anything. The service learns whether a draft exists only through this lookup, so a draft written by the
+    // backend (which a retry does not write again) is checked by the same comparison as one the caller supplied. Read-only.
+    async resolveSupervisorSubmission(caseId, { operationKey, source, exactText, producerContextId, companion, basisSha256, channel } = {}) {
+      validateOperationKey(operationKey);
+      if (!["external_draft", "backend_produced"].includes(source)) throw new ValidationError("Supervisor draft source is invalid.");
+      const record = await readRequired(caseId);
+      const stored = record.candidate_responses.find((entry) => entry.id === supervisorCandidateId(operationKey, 1));
+      if (!stored) return Object.freeze({ case_id: caseId, found: false, artifact: null });
+      assertSameSupervisorOperation(supervisorSubmissionIdentity(record, stored, { source, exactText, producerContextId, companion, basisSha256, channel }));
+      return Object.freeze({ case_id: caseId, found: true, artifact: supervisorArtifactView(record, stored) });
+    },
     // Stores one supervisor draft as an immutable candidate that begins pending its independent audit, together with the basis it
     // was written against. `external_draft` bytes are stored exactly as received and the original writer is not attested;
     // `backend_produced` bytes come from the existing runtime with its own receipts. A replay of the same operation changes
@@ -1622,14 +1637,10 @@ export function createEncryptedPrivateCaseStore({
       let replayed = false;
       const record = await mutate(caseId, (record) => {
         replayed = false;
-        const conflict = () => new ValidationError("This supervisor operation was already used with different content.", { code: "SUPERVISOR_IDEMPOTENCY_CONFLICT" });
         const existing = record.candidate_responses.find((entry) => entry.id === candidateId);
         if (existing) {
-          if (existing.metadata.supervisor_draft?.source !== source || existing.exact_text !== exactText || existing.producer_context_id !== producerContextId) throw conflict();
-          if (companion) {
-            const bound = companionForCandidate(record, existing);
-            if (!bound || bound.language !== companion.language || bound.text !== companion.text) throw conflict();
-          }
+          // The same comparison the service's lookup makes (resolveSupervisorSubmission), repeated here inside the write.
+          assertSameSupervisorOperation(supervisorSubmissionIdentity(record, existing, { source, exactText, producerContextId, companion: companion ?? null, channel }));
           replayed = true;
           return null;
         }
@@ -1702,9 +1713,11 @@ export function createEncryptedPrivateCaseStore({
         childId = supervisorCandidateId(draft.operation_key, parent.repair_cycle + 2);
         const existing = record.candidate_responses.find((entry) => entry.id === childId);
         if (existing) {
-          if (existing.parent_candidate_id !== parent.id || existing.exact_text !== exactText || existing.producer_context_id !== producerContextId) {
-            throw new ValidationError("This supervisor repair was already recorded with different content.", { code: "SUPERVISOR_IDEMPOTENCY_CONFLICT" });
-          }
+          assertSameSupervisorOperation([
+            ["parent", existing.parent_candidate_id, parent.id],
+            ["exact_text", existing.exact_text, exactText],
+            ["producer_context", existing.producer_context_id, producerContextId]
+          ]);
           return null;
         }
         appendReconstruction(record, parent.id, childId, exactText, {
@@ -1807,7 +1820,6 @@ export function createEncryptedPrivateCaseStore({
         targetCandidate = null;
         const events = record.communication_events;
         const retracted = new Set(events.filter((event) => event.kind === "retraction").map((event) => event.retracts_event_id));
-        const conflict = () => new ValidationError("This delivery report was already recorded with different content.", { code: "SUPERVISOR_IDEMPOTENCY_CONFLICT" });
         const activeFor = (candidate, kind) => events.filter((event) => event.kind === kind && !retracted.has(event.id) && event.subject.kind === "candidate"
           && event.subject.candidate_id === candidate.id && event.subject.candidate_version === candidate.version);
         const keyedEventId = idempotencyKey != null ? `evt:report:${sha256Json([caseId, ["key", idempotencyKey]]).slice(0, 40)}` : null;
@@ -1815,11 +1827,7 @@ export function createEncryptedPrivateCaseStore({
         if (keyed) {
           const named = artifactId != null ? findSupervisorArtifact(record, artifactId) : null;
           if (artifactId != null && !named) throw new ValidationError("No such supervisor artifact in this case.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
-          const sameInputs = keyed.kind === "reported_sent" && keyed.provenance.origin === origin
-            && (keyed.provenance.source_ref ?? null) === (sourceRef ?? null) && (keyed.provenance.quote ?? null) === (quote ?? null)
-            && (keyed.sent_at ?? null) === (sentAt ?? null);
-          const sameTarget = !named || (keyed.subject?.kind === "candidate" && keyed.subject.candidate_id === named.id && keyed.subject.candidate_version === named.version);
-          if (!sameInputs || !sameTarget) throw conflict();
+          assertSameSupervisorOperation(supervisorReportIdentity(keyed, { origin, sourceRef, quote, sentAt }, named ?? undefined));
           replayed = true;
           reportEventId = keyed.id;
           targetCandidate = keyed.subject.kind === "candidate" ? keyed.subject.candidate_id : null;
@@ -1859,7 +1867,11 @@ export function createEncryptedPrivateCaseStore({
         }, { recordedAt: now() });
         const existing = events.find((entry) => entry.id === eventId);
         if (existing) {
-          if (!sameCommunicationEvent(existing, event)) throw conflict();
+          // The same comparison as a keyed retry, and the whole stored event besides: this identity was derived, not named.
+          assertSameSupervisorOperation([
+            ...supervisorReportIdentity(existing, { origin, sourceRef, quote, sentAt }, artifactId != null ? findSupervisorArtifact(record, artifactId) ?? undefined : undefined),
+            ["event", true, sameCommunicationEvent(existing, event)]
+          ]);
           replayed = true;
           return null;
         }

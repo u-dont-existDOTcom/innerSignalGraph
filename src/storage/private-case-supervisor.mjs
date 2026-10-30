@@ -387,6 +387,65 @@ export function companionForCandidate(record, candidate) {
     && entry.companion_of.candidate_version === candidate.version && entry.companion_of.candidate_sha256 === sha) ?? null;
 }
 
+// --- Retries --------------------------------------------------------------------------------------------------------------------
+// A retried call is the operation already done only if it repeats everything that defined that operation. Every keyed supervisor
+// operation puts what defined it through this one comparison before anything is returned or skipped: the store's writes use it,
+// and so does the lookup the service makes before it skips work for a draft that already exists, so a wrapper cannot answer a
+// retry from the stored record without the comparison having run. A caller lists what defined its operation as
+// [name, stored, requested] triples; a requested value of `undefined` means the caller asserted nothing about that field, and
+// `null` means it asserted there is none. A retry that differs in any field is refused with the names of the fields that differ
+// (fixed words, never case content), and the stored result is not returned for it.
+export function assertSameSupervisorOperation(comparisons) {
+  const differing = comparisons
+    .filter(([, stored, requested]) => requested !== undefined && (stored ?? null) !== requested)
+    .map(([name]) => name);
+  if (differing.length === 0) return;
+  throw new ValidationError("This supervisor operation was already used with different content.", {
+    code: "SUPERVISOR_IDEMPOTENCY_CONFLICT",
+    details: { reasons: differing }
+  });
+}
+
+// What defined one supplied input: its type, its exact text and the channel that supplied it.
+export const supervisorInputIdentity = (stored, requested) => [
+  ["input_type", stored.input_type, requested.input_type],
+  ["text", stored.text_sha256, requested.text_sha256],
+  ["supplied_by", stored.supplied_by?.channel, requested.supplied_by?.channel]
+];
+
+const companionDigest = (companion) => (companion ? sha256Json({ language: companion.language, text: companion.text }) : null);
+
+// What defined one submitted draft: where its bytes came from, the bytes (when the caller supplies them), the companion and who
+// supplied it, and the case state it was prepared against when the caller states one. `requested.companion` is `null` when the
+// caller sent no companion, which differs from a stored draft that has one.
+export function supervisorSubmissionIdentity(record, stored, requested) {
+  const draft = stored.metadata?.supervisor_draft;
+  const companion = companionForCandidate(record, stored);
+  const rows = [
+    ["source", draft?.source, requested.source],
+    ["exact_text", stored.exact_text, requested.exactText],
+    ["producer_context", stored.producer_context_id, requested.producerContextId],
+    ["companion", companionDigest(companion), requested.companion === undefined ? undefined : companionDigest(requested.companion)],
+    ["basis", draft?.basis_sha256, requested.basisSha256 ?? undefined]
+  ];
+  if (companion && requested.companion) rows.push(["companion_supplier", companion.supplied_by?.channel, requested.channel]);
+  return rows;
+}
+
+// What defined one delivery report: that it is a report, who made it, how it was cited, what was quoted, when it was sent, and
+// which draft it names (`undefined` when it names none, which asserts nothing about the draft).
+export function supervisorReportIdentity(storedEvent, requested, named) {
+  const target = storedEvent.subject?.kind === "candidate" ? `${storedEvent.subject.candidate_id}:${storedEvent.subject.candidate_version}` : null;
+  return [
+    ["kind", storedEvent.kind, "reported_sent"],
+    ["origin", storedEvent.provenance?.origin, requested.origin],
+    ["source_ref", storedEvent.provenance?.source_ref, requested.sourceRef ?? null],
+    ["quote", storedEvent.provenance?.quote, requested.quote ?? null],
+    ["sent_at", storedEvent.sent_at, requested.sentAt ?? null],
+    ["artifact", target, named ? `${named.id}:${named.version}` : undefined]
+  ];
+}
+
 export function companionView(entry, { includeText = false } = {}) {
   if (!entry) return null;
   return {

@@ -299,6 +299,9 @@ export function createPrivateCaseAccessService({
       return write(caseId, authContext, (store) => store.recordSupervisorInputs(caseId, { ...input, channel: supervisorChannel(options) }));
     },
     async getSupervisorSnapshot(caseId, authContext) { return read(caseId, authContext, (store) => store.getSupervisorSnapshot(caseId)); },
+    async resolveSupervisorSubmission(caseId, input, authContext, options = {}) {
+      return read(caseId, authContext, (store) => store.resolveSupervisorSubmission(caseId, { ...input, channel: supervisorChannel(options) }));
+    },
     async submitSupervisorDraft(caseId, input, authContext, options = {}) {
       return write(caseId, authContext, (store) => store.submitSupervisorDraft(caseId, { ...input, channel: supervisorChannel(options) }));
     },

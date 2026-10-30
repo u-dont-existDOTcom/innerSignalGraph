@@ -233,19 +233,35 @@ export function createPrivateSupervisorDraftService({
       else if (text != null || companionInput) throw new ValidationError("A backend-produced draft takes no text or companion from the caller.");
       return serialized(caseId, async () => {
         const snapshot = await call("getSupervisorSnapshot", [caseId], authContext);
-        // A retry with the same key is the operation already done, so it is recognised before the case state the caller prepared
-        // against is compared with the present one: the case may have moved on since the answer that never arrived, and the
-        // stored review, with its present state, is still the right reply. A new submission is always compared.
-        const keyedOperation = key ? operationKeyFor(caseId, ["key", key]) : null;
-        const keyedExisting = keyedOperation ? await call("getCandidateResponse", [caseId, supervisorCandidateId(keyedOperation, 1)], authContext) : null;
-        if (!keyedExisting && basisSha256 != null && basisSha256 !== snapshot.basis.sha256) {
+        const external = source === "external_draft";
+        const changedSincePrepared = basisSha256 != null && basisSha256 !== snapshot.basis.sha256;
+        // A keyless submission's identity is the case state, so the state it was prepared against is compared with the present one
+        // first. A retry with the same key is the operation already done: it is recognised, and compared with what defined that
+        // operation, before the present case state is looked at, because the case may have moved on since the answer that never
+        // arrived and the stored review, with its present state, is still the right reply. A new keyed submission is compared too.
+        if (!key && changedSincePrepared) {
           throw new ValidationError("The case changed after this draft was prepared; prepare the case again before submitting.", { code: "SUPERVISOR_BASIS_CHANGED" });
         }
-        const operationKey = keyedOperation
-          ?? operationKeyFor(caseId, [source, source === "external_draft" ? sha256Text(text) : "", companionInput ? sha256Json(companionInput) : "", snapshot.basis.sha256]);
-        const existing = keyedExisting ?? await call("getCandidateResponse", [caseId, supervisorCandidateId(operationKey, 1)], authContext);
-        let replayed = Boolean(existing);
-        if (source === "external_draft") {
+        const operationKey = key
+          ? operationKeyFor(caseId, ["key", key])
+          : operationKeyFor(caseId, [source, external ? sha256Text(text) : "", companionInput ? sha256Json(companionInput) : "", snapshot.basis.sha256]);
+        // The only way this service learns that a draft already exists. The store compares the retry with everything that defined
+        // the stored draft (its source included) and refuses a retry that differs, so no replay is answered, and no generation
+        // is skipped, on the strength of the key alone.
+        const resolved = await call("resolveSupervisorSubmission", [caseId, {
+          operationKey,
+          source,
+          exactText: external ? text : undefined,
+          producerContextId: external ? `context:external:${operationKey}` : undefined,
+          companion: companionInput,
+          basisSha256
+        }], authContext, trustOptions(channel));
+        const existing = resolved.found;
+        if (!existing && changedSincePrepared) {
+          throw new ValidationError("The case changed after this draft was prepared; prepare the case again before submitting.", { code: "SUPERVISOR_BASIS_CHANGED" });
+        }
+        let replayed = existing;
+        if (external) {
           const stored = await call("submitSupervisorDraft", [caseId, {
             operationKey,
             source,

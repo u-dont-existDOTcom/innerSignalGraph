@@ -21,7 +21,8 @@ const START = Date.parse("2026-10-02T12:00:00.000Z");
 
 const OPERATIONS = ["prepareResponseContext", "submitCandidateForReview", "getApprovedResponseArtifact", "recordReportedDelivery"];
 const snake = (name) => name.replace(/[A-Z]/gu, (letter) => `_${letter.toLowerCase()}`);
-const STORE_MUTATORS = ["recordSupervisorInputs", "submitSupervisorDraft", "recordSupervisorAudit", "reconstructSupervisorDraft", "exportSupervisorArtifact", "recordSupervisorReport"];
+// The store methods only the supervisor path uses: its writes, and the lookup that checks a retried submission against the draft it made.
+const SUPERVISOR_STORE_METHODS = ["recordSupervisorInputs", "resolveSupervisorSubmission", "submitSupervisorDraft", "recordSupervisorAudit", "reconstructSupervisorDraft", "exportSupervisorArtifact", "recordSupervisorReport"];
 
 const scriptedRuntime = () => ({
   async produceCandidate() { throw new Error("unused"); },
@@ -117,7 +118,7 @@ test("the connector advertises only read-only tools and none of the supervisor's
 test("calling a supervisor operation through the connector is refused and changes nothing", async (t) => {
   const { access, rootDir, artifactId } = await setup(t);
   const calls = [];
-  // Every method the connector reaches on the access service is recorded, so a mutator that was called is seen even if it failed.
+  // Every method the connector reaches on the access service is recorded, so a supervisor method that was called is seen even if it failed.
   const recording = recordingCopy(access, calls);
   const listener = await listenPrivateCaseMcp({ caseAccessService: recording, therapyProtocol: null, port: 0 });
   t.after(() => listener.close());
@@ -139,7 +140,7 @@ test("calling a supervisor operation through the connector is refused and change
   assert.equal((await rpc(listener.url, "tools/call", { name: "submitCandidateForReview", arguments: { case_id: CASE_ID } }, null)).status, 422);
 
   assert.equal(await fingerprint(rootDir), before, "no byte of the case changed");
-  for (const mutator of STORE_MUTATORS) assert.equal(calls.includes(mutator), false, `${mutator} was never reached`);
+  for (const method of SUPERVISOR_STORE_METHODS) assert.equal(calls.includes(method), false, `${method} was never reached`);
   assert.deepEqual(calls, [], "a refused tool call does not even read the case");
 });
 
@@ -170,7 +171,7 @@ test("reading a case that holds an approved, exported and reported supervisor dr
   }
   assert.ok(Object.keys(outcomes).length >= 10, "the sweep covered the connector's tools");
   assert.equal(await fingerprint(rootDir), before, "no read tool wrote anything");
-  for (const mutator of STORE_MUTATORS) assert.equal(calls.includes(mutator), false, `${mutator} was never reached by a read tool`);
+  for (const method of SUPERVISOR_STORE_METHODS) assert.equal(calls.includes(method), false, `${method} was never reached by a read tool`);
   const recordAfter = await store.load(CASE_ID);
   assert.deepEqual(recordAfter.communication_events, recordBefore.communication_events);
   assert.deepEqual(recordAfter.candidate_responses.map((candidate) => [candidate.id, candidate.status]), recordBefore.candidate_responses.map((candidate) => [candidate.id, candidate.status]));
@@ -183,6 +184,6 @@ test("the connector's source holds no path to the supervisor's operations", asyn
     assert.equal(source.includes(operation), false, operation);
     assert.equal(source.includes(snake(operation)), false, snake(operation));
   }
-  for (const mutator of STORE_MUTATORS) assert.equal(source.includes(mutator), false, mutator);
+  for (const method of SUPERVISOR_STORE_METHODS) assert.equal(source.includes(method), false, method);
   assert.equal(/private-supervisor-draft|supervisor-draft/u.test(source), false, "the connector does not import the draft service");
 });

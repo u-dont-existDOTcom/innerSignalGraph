@@ -165,6 +165,36 @@ test("the loopback server takes a draft through review, exact export and an owne
   for (const route of ["prepare", "submit", "export", "report-sent"]) assert.ok(health.endpoints.includes(`/v1/case/supervisor/${route}`));
 });
 
+test("over HTTP a retry that changes what defined a submission or an input is refused with the fields named, and the stored result is not returned for it", async (t) => {
+  const { store, base } = await startGovernedServer(t);
+  const text = "Synthetic external draft held under a key.";
+  const companion = { language: "en", text: "Synthetic companion." };
+  const submit = (body, headers) => post(base, "submit", { caseId: CASE_ID, idempotencyKey: "route-defined", ...body }, headers);
+  const refused = (response, ...fields) => {
+    assert.deepEqual([response.status, response.body.code], [409, "SUPERVISOR_IDEMPOTENCY_CONFLICT"]);
+    for (const field of fields) assert.ok(response.body.reasons.includes(field), `${field} is named in ${JSON.stringify(response.body.reasons)}`);
+    assert.equal(response.text.includes(text) || response.text.includes("Synthetic companion"), false, "the refusal carries no case content");
+  };
+
+  const first = await submit({ source: "external_draft", text, companion });
+  assert.equal(first.status, 200);
+  const revision = (await store.load(CASE_ID)).revision;
+  // The reported case: the external draft's key cannot be reused to have the backend write a draft that takes over its approval.
+  refused(await submit({ source: "backend_produced" }), "source");
+  refused(await submit({ source: "external_draft", text: `${text}!`, companion }), "exact_text");
+  refused(await submit({ source: "external_draft", text }), "companion");
+  refused(await submit({ source: "external_draft", text, companion }, AGENT), "companion_supplier");
+  assert.equal((await store.load(CASE_ID)).revision, revision, "nothing refused was written");
+  const replay = await submit({ source: "external_draft", text, companion });
+  assert.deepEqual([replay.status, replay.body.replayed, replay.body.artifact.artifact_id], [200, true, first.body.artifact.artifact_id]);
+
+  const input = { type: "client_message", text: "Synthetic message the owner relayed.", idempotencyKey: "route-input" };
+  assert.equal((await post(base, "prepare", { caseId: CASE_ID, inputs: [input] })).status, 200);
+  refused(await post(base, "prepare", { caseId: CASE_ID, inputs: [input] }, AGENT), "supplied_by");
+  refused(await post(base, "prepare", { caseId: CASE_ID, inputs: [{ ...input, text: "Other words." }] }), "text");
+  assert.equal((await post(base, "prepare", { caseId: CASE_ID, inputs: [input] })).status, 200, "the owner's own retry is the same input");
+});
+
 test("refusals map to fixed statuses and codes that carry reasons but never case content", async (t) => {
   const { store, base } = await startOwnerServer(t);
   const secret = "Synthetic draft text that must stay out of every error.";
