@@ -1,9 +1,9 @@
 {
-  "version": "source-layout-v14-2026-10-30",
+  "version": "source-layout-v15-2026-10-31",
   "textGuides": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide-2026-10-30-r8.txt",
+      "file": "inner-child-guide-2026-10-31-r9.txt",
       "sections": [
         {
           "id": "IC.CHICKEN_EGG",

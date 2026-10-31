@@ -15,14 +15,15 @@ graph_tags:
   - criticism-kernel
   - optional
 source_refs:
+  - IC.INHERITED_PARENT
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.WISDOM_CRITICISM_KERNEL
   - AMEND.IC.WISDOM_SOURCES
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs: []
-base_record_sha256: 0c85a0eba9cc460db287d0467ac8d209cddc2f044de99db4503e225357e10bc5
-base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+base_record_sha256: e548d1b69d1675daa6bd4a923049599206dab0d0fb13fa947734a9e4a91bc154
+base_graph_sha256: e5f728eda7192aeef14be8ffa682074c2107b709baa8063dd90231f41bf51dec
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # Receive useful content without accepting contempt
@@ -103,7 +104,8 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
     "After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.",
     "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
     "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
-    "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt."
+    "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt.",
+    "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or a vulnerable part of them from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish when the person finds that useful; understanding it does not mean agreeing with it or letting it keep attacking."
   ],
   "successSignals": [
     "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."
@@ -113,6 +115,8 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
 <!-- inner-signal:payload:end -->
 
 ## Source navigation
+
+[[current/sources/inner-child-guide/IC.INHERITED_PARENT]]
 
 [[current/governance/amendments/AMEND.IC.WISDOM_CORE]]
 

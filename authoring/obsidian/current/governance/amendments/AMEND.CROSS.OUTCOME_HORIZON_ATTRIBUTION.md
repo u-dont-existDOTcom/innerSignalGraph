@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 51a8744078c69a735228a4179902febf8f0a564e17c78c3a3c0d3c103ead4333
-source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+base_record_sha256: 6d38af4b03fbd00ed842da8f4bec958252de3aa79729dce3359c267261c30016
+source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
@@ -24,6 +24,6 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
     "status": "owner-approved",
     "text": "Match treatment and causal claims to the observed horizon. Brief relief followed by recurrence is evidence of brief relief or temporal association, not resolution, durable improvement or proof of mechanism. Review onset, duration, recurrence and later functioning in a brief bounded way; tracking must not become another checking ritual. Apply this to ordinary actions and somatic methods, not only one named technique."
   },
-  "version": "owner-amendments-2026-10-30-r20"
+  "version": "owner-amendments-2026-10-31-r21"
 }
 ```

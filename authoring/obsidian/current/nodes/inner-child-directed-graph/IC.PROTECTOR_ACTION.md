@@ -17,6 +17,8 @@ graph_tags:
 source_refs:
   - IC.PROTECTOR_VISIBLE
   - IC.ADULT_APPRENTICE
+  - IC.GUIDE_LATER
+  - IC.INHERITED_PARENT
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.NONPUNITIVE_REVIEW
@@ -36,9 +38,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: 574dd304f780b0ead089954eb6122de8e142ec1eb29995f7d3012c4d1e3387c6
-base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+base_record_sha256: aabb4531e2f597328da1cc287566e23a489a54e724ec864a08249b489ab821bd
+base_graph_sha256: e5f728eda7192aeef14be8ffa682074c2107b709baa8063dd90231f41bf51dec
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # Make the Protector visible in ordinary life
@@ -75,6 +77,7 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
   "avoid": [
     "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
     "Do not choose an action so large that failure becomes new evidence of unreliability.",
+    "Do not mistake escape from anything difficult for self-love: without direction, reparenting can become permissive.",
     "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
     "Do not equate involuntary feeling and chosen harmful conduct, and do not use acceptance of a feeling to exempt behavior from ordinary accountability.",
     "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
@@ -90,6 +93,7 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
     "Report the action without requiring the younger state to trust it yet.",
     "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
+    "The inner adult can meet a harsh inner voice with compassion, curiosity and understanding and still give it firm limits: reject the insult and stop the attack without first settling which purpose the voice serves, take seriously anything useful in the message and, if it is willing, see whether it would make its point without the contempt. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.",
     "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
     "Choosing not to act on an unsuitable attraction can be a compassionate protective response, respecting the needs, boundaries and consent of everyone affected without making the feeling itself a source of shame.",
     "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
@@ -107,6 +111,10 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
 [[current/sources/inner-child-guide/IC.PROTECTOR_VISIBLE]]
 
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
+
+[[current/sources/inner-child-guide/IC.GUIDE_LATER]]
+
+[[current/sources/inner-child-guide/IC.INHERITED_PARENT]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
 

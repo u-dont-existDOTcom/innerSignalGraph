@@ -7,21 +7,21 @@ source_id: IC.FORGIVENESS
 guide_id: inner-child-guide
 heading: How to Forgive Without Forgetting
 source_role: primary-framework
-source_hash: d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d
+source_hash: 9a7929664ee14184e68052fe27092e342ae7092134f825c14bf16dd6514b7dc7
 section_hash: 02211ea4068f9703baf92c8d52bb917cd71649e5447f95fcdf2e68e1a3d3ed24
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.FORGIVENESS_LATER
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # How to Forgive Without Forgetting
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-30-r8.txt`
+Authority path: `guides/inner-child-guide-2026-10-31-r9.txt`
 
-Locator: Lines 909–958
+Locator: Lines 915–964
 
 ```text
 How to Forgive Without Forgetting

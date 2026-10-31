@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.RESPONSE_FIDELITY_20261025
 status: owner-approved
 domain: cross-guide
-base_record_sha256: c9b9b1b53c3fc842afdeeb652af88191228d3219ee6fbf4739acfc33c534244e
-source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+base_record_sha256: 2a3970006506dda17f5cdaf277928b62725c01665d3f1eb9fae28d0f5210fb38
+source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # AMEND.CROSS.RESPONSE_FIDELITY_20261025
@@ -25,6 +25,6 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
     "status": "owner-approved",
     "text": "Owner correction of 25 October 2026, expressed as general response-quality rules without private case data: medical referral after repeatedly ineffective or harmful encounters must have a plausible new clinical benefit, specific evaluation or management target and feasible care pathway, except that new severe acute impairment still warrants proportionate immediate safety action. When a practice is reported helpful, ask what it changed and about observed downside rather than issuing generic dissociation cautions. Preserve that speech in a dream is not verified waking testimony while allowing compassionate work with experienced fear or violation without asserting historical abuse. A new clustered recurrence after sustained abstinence should prompt inquiry into what changed and what the behavior supplied, without repeating a settled intention to stop. Examine one-root-cause theories through known low-symptom intervals and maintaining feedback loops instead of declaring trauma, anxiety, shame or biochemistry the single established cause. Separate a coach's practical support from unverified product or detox claims. In a single reply, consolidate discussion of each practice or topic once while preserving distinct action-changing or urgent information."
   },
-  "version": "owner-amendments-2026-10-30-r20"
+  "version": "owner-amendments-2026-10-31-r21"
 }
 ```

@@ -20,7 +20,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 55925ed93944a342858e3863af8b9b691e2323101accdcbf5ebe518a88d18edf
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # Use touch or massage only as a wanted, revisable support

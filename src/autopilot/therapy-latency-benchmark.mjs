@@ -24,14 +24,17 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  // 2026-10-29: explicit shame-context evidence gates the new appraisal route;
-  // the mock reviewed tier changes, but the fast tier and provider/planning shape remain fixed.
-  revision: "source-grounded-shame-context-2026-10-29-r11",
+  // 2026-10-31: the critical-voice recommendation on IC.PROTECTOR_ACTION (the inner adult can meet a harsh inner voice with
+  // compassion, curiosity and understanding and still give it firm limits: reject the insult and stop the attack, take
+  // seriously anything useful in the message and, if it is willing, see whether it would make its point without the
+  // contempt, as revised after the owner's follow-up and again in the review of it) reaches the mock reviewed tier's plan,
+  // so its hash changes; the fast tier and provider/planning shape remain fixed.
+  revision: "critical-voice-refinements-2026-10-31-r15",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "0bf02d8c1c3d956e270be559729f1e278be5277f8831b0854b6512455b86a28f"
+    semanticHash: "c160c2b590e1cde813dcf3820192140271313e78138549dc06b42cf32eb2e8ec"
   })
 });
 
