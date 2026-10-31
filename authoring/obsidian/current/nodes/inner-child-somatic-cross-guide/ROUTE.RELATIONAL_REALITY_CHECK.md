@@ -37,9 +37,9 @@ regression_refs:
   - G142
   - G143
   - G144
-base_record_sha256: f51f3ad48a7df70b87c7526ee4c952a4b8dccacf06d96c8e73837111cc80b2a9
-base_graph_sha256: faee4224b45b3e390e473e315a3afc248736c8235ce11e98beb4fb9430e85477
-projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
+base_record_sha256: 360a49e1e82404f6b3b6f2abfd7b5ea1d75de22d3e0ef19be66a45e694d0129d
+base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
+projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -138,7 +138,7 @@ projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b1
   "recommendations": [
     "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
     "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
-    "Once that sequence is known well enough, review the completed encounter before choosing a next step: distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time (including surprise or a foreseeable tradeoff), and how they now judge both their manner and what followed, then compare the three. This is not the same as defining a realistic outcome for a future interaction (below). Let the comparison choose the next step among communication repair, a boundary, a decision about relational fit and optional developmental work. When context already suggests what the person hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now, and asking all three is not required every time. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions and do not treat the threatening and the threatened party as equally responsible.",
+    "Once that sequence is known well enough, review the completed encounter before choosing a next step: distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time (including surprise or a foreseeable tradeoff), and how they now judge both their manner and what followed, then compare the three. This is not the same as defining a realistic outcome for a future interaction (below). The next step may be communication repair, a boundary, a decision about relational fit or optional developmental work. When context already suggests what the person hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now, and asking all three is not required every time. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions and do not treat the threatening and the threatened party as equally responsible.",
     "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
     "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
     "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",

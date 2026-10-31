@@ -66,6 +66,13 @@
       "destination": "AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031 + ROUTE.RELATIONAL_REALITY_CHECK + one focus-discipline-v1 rule + one response-fidelity question-selection rule + AI guide r9 + PGQ-051 for the humanized guide (draft PR #213, task branch feat/map-identity-play-permissive-20261031), after the owner's answer 51a on 31 Oct 2026",
       "implementation": "PROPOSED_ON_TASK_BRANCH",
       "nextCondition": "Review and merge the candidate PR to main; the humanized-guide sentence (PGQ-051) waits for the owner to place it in the public guide; deployment is a separate owner-gated step"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-31-mailbox-every-turn.md",
+      "disposition": "ADOPTED",
+      "destination": "AGENTS.md 'Suggested fixes from other projects' replaced with the item's exact text; the project-specific inbox paragraph kept (batch PR #213, task branch feat/map-identity-play-permissive-20261031)",
+      "implementation": "PROPOSED_ON_TASK_BRANCH",
+      "nextCondition": "Review and merge #213 to main"
     }
   ]
 }

@@ -25,9 +25,9 @@ source_refs:
   - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 regression_refs:
   - G010
-base_record_sha256: db30cda67a5cde89abc3014a37a23008572fcec69da0e9610a4e126a0adc8a65
-base_graph_sha256: 0fc4cf105376b05ed1ddabe06ee93146e085e60838609d2e9dc6a1178565f44f
-projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
+base_record_sha256: e64e4a0edda8ee85770779d928f8963b50ce4b7c9d2d89fd7a1e0cc6078c8036
+base_graph_sha256: 1be36fd7dc3435ef3c08b90afa3b6810738aa4e5170dcc0d727279ac7a61a3bc
+projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
 ---
 
 # Bring in direction without demanding mental perfection
@@ -78,7 +78,7 @@ projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b1
     "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
     "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
     "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks.",
-    "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not answer that with the opposite trap, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.",
+    "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not fall into the opposite trap either, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.",
     "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity."
   ],
   "defaultQuestion": "",

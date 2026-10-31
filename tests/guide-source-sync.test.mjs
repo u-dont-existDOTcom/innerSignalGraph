@@ -265,7 +265,7 @@ test("October 31 r9 also carries exactly the three owner-approved refinements of
   }
   const qualifiedLine = before.find(line => line.includes(GUARD_OLD)).replace(GUARD_OLD, () => GUARD_NEW);
   assert.deepEqual(added.filter(line => line.trim() !== ""), [CRITICAL_VOICE, qualifiedLine, DRAWING_HEADING, DRAWING],
-    "the only lines that are not in the question 51 form are the two approved passages, the qualified line and the approved heading");
+    "the only lines that are not in the question 51 form are the two approved passages, the qualified line and the heading chosen for the drawing practice (the issue gave none)");
   assert.equal(added.filter(line => line.trim() === "").length, 3, "plus the three blank lines that keep the paragraphs apart");
 
   // They sit in the sections they were written for, so the section map and the nodes that cite those sections still resolve.

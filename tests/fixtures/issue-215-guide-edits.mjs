@@ -13,6 +13,7 @@ export const GUARD_PHRASE = "a self-critical strategy that is trying to prevent 
 
 // Edit 3: one short optional practice under "Simple Practices", directly after "Journal With Each Hand" and before the next heading.
 export const JOURNAL_ANCHOR = "Don’t demand the child before the guard has spoken.";
+// The heading was chosen in this change: issue 215 gave the practice's wording but no heading, so the owner may rename it.
 export const DRAWING_HEADING = "Draw or Scribble the Anger";
 export const DRAWING = "If anger is hard to put into words, try drawing or scribbling how it feels. You don’t need to make anything recognizable. When you’re finished, notice whether something has become clearer: a feeling, an unmet need, a boundary, or something you’d like the adult in you to do. The drawing doesn’t have to reveal a hidden memory or produce emotional release to be useful.";
 export const NEXT_HEADING = "“And So That’s the Way It Happened!”";

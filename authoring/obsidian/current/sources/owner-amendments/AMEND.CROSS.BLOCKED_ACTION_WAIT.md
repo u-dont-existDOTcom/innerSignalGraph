@@ -7,13 +7,13 @@ source_id: AMEND.CROSS.BLOCKED_ACTION_WAIT
 guide_id: owner-amendments
 heading: AMEND.CROSS.BLOCKED_ACTION_WAIT
 source_role: owner-approved-extension
-source_hash: 7d9423e87dfa7125955700ca53ed11bcb68cc1f272536d24637249a85938d319
+source_hash: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
 section_hash: d8c5a89a5a2f407c0c3971727cd3481e1f40cac3298b723d66e29a167dc8b627
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.ACT_OUTWARD
   - ROUTE.DEFINED_WAIT
-projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
+projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
 ---
 
 # AMEND.CROSS.BLOCKED_ACTION_WAIT

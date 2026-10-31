@@ -168,6 +168,7 @@ test("the guide carries the issue's approved wording in the three places it name
   // The approved text, character for character, apart from the apostrophes the guide sets typographically.
   assert.equal(CRITICAL_VOICE.replaceAll("’", "'"), ISSUE_CRITICAL_VOICE);
   assert.equal(DRAWING.replaceAll("’", "'"), ISSUE_DRAWING);
+  // The heading is ours, chosen in this change; the issue gave the practice's wording but no heading.
   assert.equal(DRAWING_HEADING, "Draw or Scribble the Anger");
   assert.equal(GUARD_NEW, GUARD_OLD.replace("inner critic", GUARD_PHRASE));
   assert.equal(GUARD_PHRASE, "a self-critical strategy that is trying to prevent a feared outcome");

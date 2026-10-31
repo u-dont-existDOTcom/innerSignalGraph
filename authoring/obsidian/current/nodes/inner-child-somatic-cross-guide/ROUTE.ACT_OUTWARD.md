@@ -52,8 +52,8 @@ regression_refs:
   - G143
   - G144
 base_record_sha256: faf2bb1cba2d53021db09c634d48047b5dd7b14c2638a8d23a965de202be903a
-base_graph_sha256: faee4224b45b3e390e473e315a3afc248736c8235ce11e98beb4fb9430e85477
-projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
+base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
+projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
 ---
 
 # Act on the concrete problem

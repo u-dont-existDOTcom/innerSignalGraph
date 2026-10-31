@@ -45,7 +45,7 @@ const SHARED_CLAUSES = [
   "This is not the same as defining a realistic outcome for a future interaction.",
   "Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character:",
   " can stand by a position, regret the wording and grieve the loss at once.",
-  "Let the comparison choose the next step among communication repair, a boundary, a decision about relational fit and optional developmental work.",
+  "The next step may be communication repair, a boundary, a decision about relational fit or optional developmental work.",
   "Once that sequence is known, stop asking for incident detail unless the missing detail would change the next step or safety.",
   " hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now.",
   "This is not a requirement to ask all three every time.",
@@ -212,7 +212,7 @@ test("the amendment extends the existing reality check once, with no duplicate n
   assert.ok(futureIndex > sequenceIndex + 1, "the future-outcome recommendation is separate and later");
   assert.match(review, /^Once that sequence is known well enough, review the completed encounter before choosing a next step: distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time \(including surprise or a foreseeable tradeoff\), and how they now judge both their manner and what followed, then compare the three\./u);
   assert.match(review, /This is not the same as defining a realistic outcome for a future interaction \(below\)\./u);
-  assert.match(review, /Let the comparison choose the next step among communication repair, a boundary, a decision about relational fit and optional developmental work\./u);
+  assert.match(review, /The next step may be communication repair, a boundary, a decision about relational fit or optional developmental work\./u);
   assert.match(review, /do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now, and asking all three is not required every time\./u);
   assert.match(review, /Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions and do not treat the threatening and the threatened party as equally responsible\./u);
   // One avoid line, last in the list.
@@ -461,6 +461,12 @@ test("the humanized-guide queue carries the same teaching point as PGQ-051, and 
   assert.ok(entry.includes(AMENDMENT));
   assert.ok(entry.includes("inner-child-guide-2026-10-31-r9.txt"));
   assert.ok(entry.includes(ANCHOR));
+  // "Already covered" points at the guide's own lines: the owner's two sentences are in the paragraph at r9 line 153, and the paragraph
+  // after it, at line 155, is the one that says feeling guilty proves neither fault nor manipulation.
+  const r9Lines = read("../guides/inner-child-guide-2026-10-31-r9.txt").split("\n");
+  assert.ok(r9Lines[152].includes(ADDITION), "line 153 carries the owner's two sentences");
+  assert.match(r9Lines[154], /^Notice your side too\. Feeling guilty does not prove that you did something wrong; it also does not prove that somebody manipulated you\./u);
+  assert.ok(entry.includes("does not make someone emotionally immature, and the paragraph after it (r9 line 155) says that feeling guilty proves neither fault nor manipulation."));
   assert.match(entry, /not publication authority/u);
   assert.match(queue, /^Queue version: 2026-10-31-r19$/mu);
   // The earlier entries on the same passage and on the schema comparison are still there, once.

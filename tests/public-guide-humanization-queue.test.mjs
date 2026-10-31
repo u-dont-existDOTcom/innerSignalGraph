@@ -76,7 +76,7 @@ const SCHEMA_THERAPY_PASSAGE = [
 test("PGQ-050 queues the schema-therapy comparison for the humanized guide only, with the passage and its source note unchanged", async () => {
   const [queue, guide, agents] = await Promise.all([
     read("authoring/PENDING-PUBLIC-GUIDE-CHANGES.md"),
-    read("guides/inner-child-guide-2026-10-30-r8.txt"),
+    read("guides/inner-child-guide-2026-10-31-r9.txt"),
     read("AGENTS.md")
   ]);
   const heading = "### PGQ-050 — How this guide differs from schema therapy";
@@ -93,10 +93,16 @@ test("PGQ-050 queues the schema-therapy comparison for the humanized guide only,
   assert.match(text, /^Caused by: Owner request of 31 Oct 2026: /m);
   assert.match(text, /written for him at his request for him to place in the humanized public guide/u);
   assert.match(text, /The wording is proposed and not yet placed/u);
-  assert.match(text, /changes nothing in the AI guide \(`inner-child-guide-2026-10-30-r8\.txt`\) or in the app/u);
+  assert.match(text, /changes nothing in the AI guide \(`inner-child-guide-2026-10-31-r9\.txt`\) or in the app/u);
   // Scope: the owner's humanized public guide only; the AI guide's own related-work section is the anchor, not the destination.
   assert.match(text, /^Where: Humanized public guide only, not the AI guide, and only where the owner chooses to place it;/m);
   assert.match(text, /IC\.RELATED_CLINICAL_WORK/u);
+  // The line anchors are those of the current AI guide (r9), tied to its source map rather than remembered.
+  const related = JSON.parse(await read("guide-graphs/source-maps/inner-child-guide.json")).sections.find(section => section.id === "IC.RELATED_CLINICAL_WORK");
+  assert.deepEqual([related.lineStart, related.lineEnd], [1027, 1044]);
+  assert.equal(guide.split("\n")[related.lineStart - 1], "Related Clinical Work");
+  assert.match(text, /\(IC\.RELATED_CLINICAL_WORK, r9, lines 1027–1044\)/u);
+  assert.doesNotMatch(text, /\br8\b/u, "no stale r8 anchor remains in the entry");
   assert.match(text, /a pending queue entry is not publication authority/u);
   assert.match(text, /does not check the cited pages/u);
   // The anchor really says what the entry says it says, and the passage is not already in the AI guide or the app.

@@ -35,12 +35,13 @@ const TRUE_SELF_AVOID = "Do not assume a fully formed true self is merely hidden
 const FAKE_PART_AVOID = "Do not set up the performed self as a “fake” part to erase; the aim is a more workable internal relationship, not a new division between the acceptable self and another self that must disappear.";
 const LARGE_ACTION_AVOID = "Do not choose an action so large that failure becomes new evidence of unreliability.";
 const ESCAPE_AVOID = "Do not mistake escape from anything difficult for self-love: without direction, reparenting can become permissive.";
-const PERMISSIVE_AVOID = "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not answer that with the opposite trap, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.";
+const PERMISSIVE_AVOID = "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not fall into the opposite trap either, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.";
 const PURITY_AVOID_START = "Do not turn the Guide into mental-purity policing";
 const REVIEW_AVOID_START = "Do not make review punitive";
-// The two rules the served references and every response and review role carry, frame-neutral and in one sentence each.
+// The two rules the served references and every response and review role carry, in one sentence each. The permissive-reparenting rule is
+// the owner's own wording and names reparenting, as the guide's warning does; it does not widen it to self-care or to any frame.
 const PERFORMED_SELF_RULE = "Where childhood was organized around avoiding pain and preserving attachment, the performed self may have become skilled at surviving while the less-practiced self stayed blurry; count late developmental pl/ork (play + work: enough safety for preference, curiosity and experimentation to grow) as part of recovery rather than only uncovering a hidden true self, and do not set the performed self up as a \"fake\" part to erase.";
-const PERMISSIVE_RULE = "Without direction, self-care in any frame, including reparenting where the person welcomes that frame, can become permissive, giving attention without development while candy, screens and escape from anything difficult masquerade as self-love; the opposite trap is forced adulthood (perfect discipline, no visible needs, very little joy or closeness), where the next adult act may be asking for help, expressing a preference or letting a safe person see something imperfect, not tightening control again.";
+const PERMISSIVE_RULE = "Without direction, reparenting can become permissive, giving attention without development while candy, screens and escape from anything difficult can masquerade as self-love; the opposite trap is forced adulthood (perfect discipline, no visible needs, very little joy or closeness), where the next adult act may be asking for help, expressing a preference or letting a safe person see something imperfect, not tightening control again.";
 
 const candidateGraph = json("../guide-graphs/candidates/inner-child.graph.json");
 const candidate = (id) => candidateGraph.nodes.find((node) => node.id === id);
@@ -236,7 +237,7 @@ test("the planner puts each line in front of the model where its node applies, a
   assert.equal(settled.avoid.includes(FAKE_PART_AVOID), false);
 });
 
-test("the two rules are adjacent bullets of the response-fidelity rules, mirrored byte for byte in the served reference and frame-neutral", () => {
+test("the two rules are adjacent bullets of the response-fidelity rules, mirrored byte for byte in the served reference, and the permissive one stays about reparenting", () => {
   const bullets = responseFidelityRules.split("\n").filter((line) => line.startsWith("- "));
   const start = bullets.indexOf(`- ${PERFORMED_SELF_RULE}`);
   assert.ok(start >= 0, "the performed-self rule is a bullet");
@@ -249,10 +250,11 @@ test("the two rules are adjacent bullets of the response-fidelity rules, mirrore
     assert.ok(rule.length < 520, `${rule.length} characters`);
     assert.equal(count(rule, ". "), 0, "one sentence");
     assert.doesNotMatch(rule, /\byou(?:r|rs|rself)?\b/iu, "written to InnerSignal, not to the person");
-    assert.doesNotMatch(rule, /inner[- ]child|younger self|untellable/iu, "no frame is required");
+    assert.doesNotMatch(rule, /inner[- ]child|younger self|untellable/iu, "no inner-child, younger-self or untellable framing is required");
     assert.deepEqual(unservedReferenceMentions(rule), []);
   }
-  assert.match(PERMISSIVE_RULE, /in any frame, including reparenting where the person welcomes that frame/u);
+  assert.match(PERMISSIVE_RULE, /^Without direction, reparenting can become permissive/u, "the guide's warning is about reparenting, and the rule must not widen it");
+  assert.doesNotMatch(PERMISSIVE_RULE, /any frame|self-care/u, "the guide's warning is about reparenting, and the rule must not widen it");
   assert.doesNotMatch(`${PERFORMED_SELF_RULE} ${PERMISSIVE_RULE}`, /(?:completed|enacted) reparenting/iu);
 
   const reference = read("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/RESPONSE-FIDELITY.md");
