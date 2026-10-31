@@ -697,6 +697,21 @@ export function createEncryptedPrivateCaseStore({
     if (!record) throw new ValidationError(`Private case ${caseId} was not found.`, { code: "PRIVATE_CASE_NOT_FOUND" });
     return record;
   };
+  // Delivery approval of the exact current candidate on a fresh independent audit that certifies that exact ID and version.
+  const approveCandidateInRecord = (record, candidateId, auditId) => {
+    const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+    const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+    if (!candidate || current?.id !== candidateId) throw new ValidationError("Delivery approval must target the exact current candidate version.");
+    if (candidate.status !== "audited") throw new ValidationError("Candidate must pass a fresh independent audit before delivery approval.");
+    const audit = candidate.audit_history.find((entry) => entry.id === auditId);
+    if (!audit?.sufficient_for_approval || audit.candidate_id !== candidate.id || audit.candidate_version !== candidate.version) {
+      throw new ValidationError("Delivery approval audit does not certify the exact current candidate ID/version.");
+    }
+    candidate.status = "approved_for_delivery";
+    candidate.updated_at = now();
+    candidate.metadata = { ...candidate.metadata, approval_audit_id: audit.id };
+    validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+  };
   // A plan decision's diff is `roadmap:<decision id>`; that prefix is kept for recordRoadmapDecision (`plan: true`).
   const isPlanDiff = (entry) => entry.id.startsWith("roadmap:");
   const appendDiff = (record, diff, { turnId = "unknown-turn", diffId = null, recordedAt = now(), last = true, plan = false } = {}) => {
@@ -1416,18 +1431,26 @@ export function createEncryptedPrivateCaseStore({
     },
     async approveCandidateForDelivery(caseId, candidateId, auditId) {
       return mutate(caseId, (record) => {
+        approveCandidateInRecord(record, candidateId, auditId);
+        return record;
+      });
+    },
+    // The same approval, for a supervisor draft only, and only on the audit that the supervisor review itself recorded: that audit
+    // has a review receipt, which only recordSupervisorAudit writes. It is the narrow approval the connector's review runs under
+    // the backend's own authority (not the caller's), so it can never approve another kind of candidate, or one whose audit was
+    // written some other way. Every other check is the generic approval's, run by the same function.
+    async approveSupervisorDraft(caseId, candidateId, auditId) {
+      return mutate(caseId, (record) => {
         const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
-        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
-        if (!candidate || current?.id !== candidateId) throw new ValidationError("Delivery approval must target the exact current candidate version.");
-        if (candidate.status !== "audited") throw new ValidationError("Candidate must pass a fresh independent audit before delivery approval.");
-        const audit = candidate.audit_history.find((entry) => entry.id === auditId);
-        if (!audit?.sufficient_for_approval || audit.candidate_id !== candidate.id || audit.candidate_version !== candidate.version) {
-          throw new ValidationError("Delivery approval audit does not certify the exact current candidate ID/version.");
+        if (!candidate || !isSupervisorDraftCandidate(candidate)) {
+          throw new ValidationError("Only a supervisor draft can be approved here.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
         }
-        candidate.status = "approved_for_delivery";
-        candidate.updated_at = now();
-        candidate.metadata = { ...candidate.metadata, approval_audit_id: audit.id };
-        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        const recorded = supervisorEntries(record, "review_receipt")
+          .some((entry) => entry.audit_id === auditId && entry.candidate_id === candidate.id && entry.candidate_version === candidate.version);
+        if (!recorded) {
+          throw new ValidationError("A supervisor draft is approved only on the audit its supervisor review recorded.", { code: "SUPERVISOR_ARTIFACT_NOT_APPROVED" });
+        }
+        approveCandidateInRecord(record, candidateId, auditId);
         return record;
       });
     },

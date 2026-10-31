@@ -15,6 +15,12 @@ COPY src ./src
 COPY plugins/inner-signal-therapy ./plugins/inner-signal-therapy
 # The journal import contracts are read at runtime.
 COPY schemas ./schemas
+# The reply-draft review (INNER_SIGNAL_MCP_SUPERVISOR_DRAFTS) runs the same therapy model runtime as the rest of InnerSignal,
+# and that runtime reads the guide texts, the compiled guide graph and the romance-guide source files from disk. They are only
+# read when the setting is on and a model is configured; they are packaged so that turning the setting on cannot fail at start.
+COPY guides ./guides
+COPY guide-graphs/compiled ./guide-graphs/compiled
+COPY tasks/romance-guide-20260907 ./tasks/romance-guide-20260907
 
 USER node
 EXPOSE 8787

@@ -20,7 +20,11 @@ export const PRIVATE_CASE_SCOPES = Object.freeze({
   AUDIT: "case:audit",
   // Narrow: lets a connector caller submit an answer for an outstanding journal work item and
   // nothing else. It opens no case store and grants no other write.
-  JOURNAL_SUBMIT: "journal:submit"
+  JOURNAL_SUBMIT: "journal:submit",
+  // Narrow: lets the reply-draft connector tools read the case's draft state, submit one reply draft for InnerSignal's own
+  // review, ask for the exact approved words and note that a reply was sent. It grants none of case:write, case:audit or the
+  // journal scopes: the review itself runs under the backend's own authority (see supervisorDraftAccess), never the caller's.
+  SUPERVISOR_DRAFT: "case:supervisor_draft"
 });
 
 export const PRIVATE_JOURNAL_PURPOSES = Object.freeze({
@@ -68,6 +72,8 @@ function nonJournalStateDigest(record) {
 const isWithin = (parent, candidate) => !isOutside(parent, candidate);
 
 const supervisorChannel = (options) => (options?.ownerChannel === true ? "owner_ui" : "authenticated_agent");
+// Everything that arrives through the reply-draft connector is an authenticated agent's.
+const SUPERVISOR_CONNECTOR_CHANNEL = "authenticated_agent";
 
 function assertProvider(provider, method, name) {
   if (!provider || typeof provider[method] !== "function") throw new ValidationError(`${name} must implement ${method}().`);
@@ -84,7 +90,7 @@ export function createPrivateCaseAccessService({
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
   assertProvider(authorizationProvider, "authorize", "authorizationProvider");
   assertProvider(keyProvider, "getCaseKeyMaterial", "keyProvider");
-  const withStore = async (caseId, authContext, requiredScope, operation, requiredPurpose = null) => {
+  const authorizeFor = async (caseId, authContext, requiredScope, requiredPurpose = null) => {
     let authorization;
     try {
       authorization = await authorizationProvider.authorize({ caseId, authContext, requiredScope, requiredPurpose });
@@ -96,7 +102,17 @@ export function createPrivateCaseAccessService({
     if (requiredPurpose != null && (!Array.isArray(authorization.purposes) || !authorization.purposes.includes(requiredPurpose))) {
       throw new PrivateCaseAccessDeniedError();
     }
-
+    return authorization;
+  };
+  const withStore = async (caseId, authContext, requiredScope, operation, requiredPurpose = null) => {
+    // The reply-draft scope opens a case only through `supervisorDraftAccess`, never through a method that takes a scope as a
+    // parameter, so no caller-chosen scope can turn it into access to the whole store.
+    if (requiredScope === PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT) throw new PrivateCaseAccessDeniedError();
+    const authorization = await authorizeFor(caseId, authContext, requiredScope, requiredPurpose);
+    return runWithStore(caseId, authContext, authorization, operation);
+  };
+  // Opens the case's store for an operation, given an authorization that has already been checked.
+  const runWithStore = async (caseId, authContext, authorization, operation) => {
     let material;
     let routineKek;
     let recoverySecretBytes;
@@ -151,26 +167,101 @@ export function createPrivateCaseAccessService({
     try { return await resolvePrivateCaseAliasCaseId({ rootDir, alias: caseAlias }); }
     catch { throw new PrivateCaseAccessDeniedError(); }
   };
-  const loadCaseContextForId = async (caseId, authContext, options = {}) => {
-    const requiredScope = options.requireAuditScope === false ? PRIVATE_CASE_SCOPES.READ : PRIVATE_CASE_SCOPES.AUDIT;
-    const effectiveOptions = {
-      ...options,
-      episodePolicy: {
-        requireCompleteEpisode: options.episodePolicy?.requireCompleteEpisode !== false,
-        ...(options.episodePolicy?.maximumSelectedTurns != null ? { maximumSelectedTurns: options.episodePolicy.maximumSelectedTurns } : {}),
-        ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {}),
-        ...(options.episodePolicy?.currentEpisodeStartTurnId ? { currentEpisodeStartTurnId: options.episodePolicy.currentEpisodeStartTurnId } : {})
-      }
-    };
-    const context = await withStore(caseId, authContext, requiredScope, (store) => store.loadCaseContext(caseId, effectiveOptions));
+  const caseContextOptions = (options) => ({
+    ...options,
+    episodePolicy: {
+      requireCompleteEpisode: options.episodePolicy?.requireCompleteEpisode !== false,
+      ...(options.episodePolicy?.maximumSelectedTurns != null ? { maximumSelectedTurns: options.episodePolicy.maximumSelectedTurns } : {}),
+      ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {}),
+      ...(options.episodePolicy?.currentEpisodeStartTurnId ? { currentEpisodeStartTurnId: options.episodePolicy.currentEpisodeStartTurnId } : {})
+    }
+  });
+  const withContinuationSafety = (context, options) => {
     const continuationSafety = assessContinuationSafety(context);
     const result = Object.freeze({ ...context, continuation_safety: continuationSafety });
     if (options.requireContinuationSafe !== false && !continuationSafety.continuation_safe) throw new CaseNotContinuationSafeError(continuationSafety.failures);
     return result;
   };
+  const loadCaseContextForId = async (caseId, authContext, options = {}) => {
+    const requiredScope = options.requireAuditScope === false ? PRIVATE_CASE_SCOPES.READ : PRIVATE_CASE_SCOPES.AUDIT;
+    const effectiveOptions = caseContextOptions(options);
+    const context = await withStore(caseId, authContext, requiredScope, (store) => store.loadCaseContext(caseId, effectiveOptions));
+    return withContinuationSafety(context, options);
+  };
+
+  // --- The reply-draft connector's path ------------------------------------------------------------------------------------
+  // A caller who holds case:supervisor_draft (and whose case ACL grants it) may use the connector's reply-draft tools for that
+  // case. That scope opens none of the existing methods above: every one of them still asks for case:read, case:write or
+  // case:audit, so a token holding only this scope is refused by all of them.
+  //
+  // The independent review of a submitted draft needs writes the caller has no scope for: the audit, the approval, a repair. They
+  // run here under this service's own authority instead, through the methods of `supervisorDraftAccess.source` below, and only:
+  //   - for supervisor drafts (the store refuses any other candidate, and approves only on the audit the supervisor review itself
+  //     recorded, so the independence, version-binding, repair-limit and delivery-gate checks of the existing lifecycle all apply);
+  //   - with a review ticket, which only `supervisorDraftAccess.authorize` mints, after the caller was authorized for this case,
+  //     and which names this case and nothing else;
+  //   - with audit evidence built by the backend's own model runtime. No method here takes evidence, findings, a verdict or an
+  //     approval from a caller, and the connector's tools have no argument that could carry one.
+  // The release operations (export, a report of sending) never accept a ticket: they authorize the caller's own bearer afresh in
+  // the same call as the write, so revoking access stops the next export at once. Everything through here is the authenticated
+  // agent channel; there is no owner channel, and a caller's claim about who it is changes nothing.
+  const reviewTickets = new WeakMap();
+  const mintReviewTicket = (caseId, authorization) => {
+    const ticket = Object.freeze({ kind: "supervisor_review_ticket", caseId, principalId: authorization.principalId });
+    reviewTickets.set(ticket, authorization);
+    return ticket;
+  };
+  const supervisorRun = async (caseId, authContext, accept, operation) => {
+    let authorization;
+    if (reviewTickets.has(authContext)) {
+      if (accept === "bearer" || authContext.caseId !== caseId) throw new PrivateCaseAccessDeniedError();
+      authorization = reviewTickets.get(authContext);
+    } else {
+      if (accept === "ticket") throw new PrivateCaseAccessDeniedError();
+      authorization = await authorizeFor(caseId, authContext, PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT);
+    }
+    return runWithStore(caseId, authContext, authorization, operation);
+  };
+  const supervisorDraftSource = Object.freeze({
+    // The caller's own bearer, authorized for the case, or a ticket for it.
+    getSupervisorSnapshot: (caseId, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.getSupervisorSnapshot(caseId)),
+    resolveSupervisorSubmission: (caseId, input, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.resolveSupervisorSubmission(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL })),
+    submitSupervisorDraft: (caseId, input, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.submitSupervisorDraft(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL })),
+    // A ticket only: the review lifecycle, which runs under the backend's authority.
+    loadPrivateRuntimeCase: (caseId, authContext) => supervisorRun(caseId, authContext, "ticket", async (store) => {
+      const record = await store.load(caseId);
+      if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+      return record;
+    }),
+    loadCaseContext: async (caseId, authContext, options = {}) => withContinuationSafety(
+      await supervisorRun(caseId, authContext, "ticket", (store) => store.loadCaseContext(caseId, caseContextOptions(options))),
+      options
+    ),
+    recordSupervisorAudit: (caseId, candidateId, evidence, receipt, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.recordSupervisorAudit(caseId, candidateId, evidence, receipt)),
+    approveCandidateForDelivery: (caseId, candidateId, auditId, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.approveSupervisorDraft(caseId, candidateId, auditId)),
+    reconstructSupervisorDraft: (caseId, parentCandidateId, input, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.reconstructSupervisorDraft(caseId, parentCandidateId, input)),
+    // The caller's own bearer only, authorized afresh in this call.
+    exportSupervisorArtifact: (caseId, input, authContext) => supervisorRun(caseId, authContext, "bearer", async (store) => {
+      const exported = await store.exportSupervisorArtifact(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL });
+      return Object.freeze({ ...exported, checks: Object.freeze({ ...exported.checks, authorization_current: true }) });
+    }),
+    recordSupervisorReport: (caseId, input, authContext) => {
+      const { origin: _claimedOrigin, ...rest } = input ?? {};
+      return supervisorRun(caseId, authContext, "bearer", (store) => store.recordSupervisorReport(caseId, { ...rest, origin: "agent_relayed" }));
+    }
+  });
+  const supervisorDraftAccess = Object.freeze({
+    scope: PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT,
+    // Checks that the caller's bearer holds case:supervisor_draft for this case, and returns the ticket a review runs under.
+    async authorize(caseId, authContext) {
+      return mintReviewTicket(caseId, await authorizeFor(caseId, authContext, PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT));
+    },
+    source: supervisorDraftSource
+  });
 
   return Object.freeze({
     rootDir,
+    supervisorDraftAccess,
     // Checks only the caller's token, without opening any case, so a transport can tell a denial
     // that signing in again could cure from one it could not. Null means invalid, or unknown
     // because the authorization provider cannot say.

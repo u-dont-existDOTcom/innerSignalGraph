@@ -6,7 +6,11 @@ import { ClaudeCliProvider } from "./claude-cli.mjs";
 import { MockProvider } from "./mock.mjs";
 import { projectRoot } from "../core/config.mjs";
 
-export function createProviders(config, { fixturePath } = {}) {
+// `providers` names the providers to build in api mode (both by default), the same option `loadConfig` takes. An API key belongs to
+// one provider, so a deployment that holds only Anthropic's key builds only the Anthropic providers: no provider is ever made
+// with a key it was not given, and the one that was not built is missing from the result rather than present and unusable.
+// `mock` and `cli` hold no keys, so they build both whatever is named.
+export function createProviders(config, { fixturePath, providers = ["openai", "anthropic"] } = {}) {
   if (config.mode === "mock") {
     const resolvedFixture = fixturePath ?? path.join(projectRoot, "fixtures/mock-responses/A001.json");
     return {
@@ -45,24 +49,28 @@ export function createProviders(config, { fixturePath } = {}) {
     };
   }
 
-  return {
-    openai: new OpenAIProvider({
+  const built = {};
+  if (providers.includes("openai")) {
+    built.openai = new OpenAIProvider({
       apiKey: config.openaiApiKey,
       model: config.openaiModel,
       timeoutMs: config.requestTimeoutMs,
       maxOutputTokens: config.maxOutputTokens
-    }),
-    anthropic: new AnthropicProvider({
+    });
+  }
+  if (providers.includes("anthropic")) {
+    built.anthropic = new AnthropicProvider({
       apiKey: config.anthropicApiKey,
       model: config.anthropicModel,
       timeoutMs: config.requestTimeoutMs,
       maxOutputTokens: config.maxOutputTokens
-    }),
-    renderer: new AnthropicProvider({
+    });
+    built.renderer = new AnthropicProvider({
       apiKey: config.anthropicApiKey,
       model: config.responseRendererModel || config.anthropicModel,
       timeoutMs: config.requestTimeoutMs,
       maxOutputTokens: config.maxOutputTokens
-    })
-  };
+    });
+  }
+  return built;
 }

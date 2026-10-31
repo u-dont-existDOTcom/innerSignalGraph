@@ -275,30 +275,33 @@ const THERAPY_INSTRUCTIONS = [
 const AUTHORIZATION_INSTRUCTION = "Authorization is transport-owned; never put bearer tokens or key material in tool arguments.";
 
 // Keep the ordinary and journal-enabled continuity instructions aligned; journal mode adds only its mutation exception and journal-specific instructions.
-function serverInstructions(journalWork) {
+// The reply-draft tools, when enabled, add their own exception and instructions the same way.
+function serverInstructions(journalWork, supervisorReply = null) {
+  const writers = [...(journalWork ? ["submit_journal_work_result"] : []), ...(supervisorReply ? ["the reply-draft tools"] : [])];
   return [
     ...THERAPY_INSTRUCTIONS,
-    journalWork
-      ? "To continue from an InnerSignal handoff, call load_handoff first. If the user names a known private case but supplies no opaque ID, call load_case_context_by_alias before searching or reconstructing prior conversation. The private case tools are read-only, except submit_journal_work_result."
-      : "To continue from an InnerSignal handoff, call load_handoff first. If the user names a known private case but supplies no opaque ID, call load_case_context_by_alias before searching or reconstructing prior conversation. The private case tools are read-only.",
+    `To continue from an InnerSignal handoff, call load_handoff first. If the user names a known private case but supplies no opaque ID, call load_case_context_by_alias before searching or reconstructing prior conversation. ${writers.length ? `The private case tools are read-only, except ${writers.join(" and ")}.` : "The private case tools are read-only."}`,
     ...(journalWork ? [journalWork.instructions] : []),
+    ...(supervisorReply ? [supervisorReply.instructions] : []),
     AUTHORIZATION_INSTRUCTION
   ].join(" ");
 }
 
 const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "load_case_context_by_alias", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
-const toolScopes = (name, journalWork = null) => {
+const toolScopes = (name, journalWork = null, supervisorReply = null) => {
+  if (supervisorReply?.names.has(name)) return [...supervisorReply.scopes(name)];
   if (journalWork?.names.has(name)) return [...journalWork.scopes(name)];
   return AUDIT_TOOLS.has(name)
     ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
     : [PRIVATE_CASE_SCOPES.READ];
 };
 
-function advertisedTools(oauthEnabled, journalWork = null, journalApi = null) {
+function advertisedTools(oauthEnabled, journalWork = null, journalApi = null, supervisorReply = null) {
   const privateTools = [
     ...TOOL_DEFINITIONS,
     ...(journalApi ? JOURNAL_READ_ONLY_MCP_TOOLS : []),
-    ...(journalWork ? journalWork.definitions : [])
+    ...(journalWork ? journalWork.definitions : []),
+    ...(supervisorReply ? supervisorReply.definitions : [])
   ];
   if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...privateTools];
   const protocolTools = PROTOCOL_TOOL_DEFINITIONS.map((tool) => Object.freeze({
@@ -309,14 +312,14 @@ function advertisedTools(oauthEnabled, journalWork = null, journalApi = null) {
     ...tool,
     securitySchemes: Object.freeze([Object.freeze({
       type: "oauth2",
-      scopes: Object.freeze(toolScopes(tool.name, journalWork))
+      scopes: Object.freeze(toolScopes(tool.name, journalWork, supervisorReply))
     })])
   }))];
 }
 
-// A journal answer that fails its schema is an ordinary tool error the model can read and fix,
-// not a transport failure.
-function journalWorkToolError({ code, message, details }) {
+// A journal answer that fails its schema, or a reply-draft call the draft service refuses, is an ordinary tool error the model
+// can read and act on, not a transport failure.
+function extensionToolError({ code, message, details }) {
   return {
     content: [{ type: "text", text: details ? `${message}\n${JSON.stringify(details)}` : message }],
     structuredContent: { code, ...(details ?? {}) },
@@ -459,13 +462,15 @@ function oauthChallenge(oauth, error = "invalid_token", description = "Authentic
 // A challenge asks only for what the called tool needs. The journal submission scope is requested
 // only by the journal work tools, never by the ordinary read-only tools, so ordinary sign-ins are
 // unaffected when the exchange is enabled. Both journal tools ask for the import pair (read and
-// submit), so the import account signs in once instead of once per tool.
-function challengeScopes(oauth, name, journalWork) {
+// submit), so the import account signs in once instead of once per tool. The reply-draft scope is likewise requested only by
+// the reply-draft tools, never by the ordinary read-only tools.
+function challengeScopes(oauth, name, journalWork, supervisorReply = null) {
   if (!oauth) return null;
+  if (supervisorReply?.names.has(name)) return [...new Set(supervisorReply.scopes(name))];
   if (journalWork?.names.has(name)) {
     return [...new Set([PRIVATE_CASE_SCOPES.READ, ...[...journalWork.names].flatMap((tool) => toolScopes(tool, journalWork))])];
   }
-  return oauth.scopesSupported.filter((scope) => scope !== PRIVATE_CASE_SCOPES.JOURNAL_SUBMIT);
+  return oauth.scopesSupported.filter((scope) => scope !== PRIVATE_CASE_SCOPES.JOURNAL_SUBMIT && scope !== PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT);
 }
 
 function authenticationRequiredResult(challenge) {
@@ -483,11 +488,11 @@ function authenticationRequiredResult(challenge) {
 // request refused for the case or handoff itself (a wrong ID). That gets a tool error instead of
 // a challenge that would send the host into a pointless re-authentication. The error is the same
 // whether or not the case exists.
-async function deniedForSignedInAccount(service, token, name, journalWork = null) {
+async function deniedForSignedInAccount(service, token, name, journalWork = null, supervisorReply = null) {
   if (!token || typeof service?.authenticate !== "function") return false;
   try {
     const identity = await service.authenticate({ bearerToken: token });
-    return identity?.onlyGrantedAccount === true && toolScopes(name, journalWork).every((scope) => identity.scopes.includes(scope));
+    return identity?.onlyGrantedAccount === true && toolScopes(name, journalWork, supervisorReply).every((scope) => identity.scopes.includes(scope));
   } catch {
     return false;
   }
@@ -638,18 +643,31 @@ async function callTool(service, name, args, authContext, journalApi = null) {
 // class (the next power of two, so a case's exact size can't be followed across lines). Never its arguments, a case
 // reference or any content: the trace shows which tools were called and when, not what was read. A sink that throws or
 // rejects never affects a call.
-export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, callLog = null } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, supervisorReply = null, callLog = null } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function" || typeof caseAccessService.loadCaseContextByAlias !== "function") throw new TypeError("caseAccessService with exact-ID and alias continuity is required.");
   if (journalWork !== null && (typeof journalWork?.call !== "function" || !(journalWork.names instanceof Set))) {
     throw new TypeError("journalWork must come from createJournalWorkTools.");
   }
+  // Tools added by the reply-draft feature, which is off unless a caller passes them (see createSupervisorReplyTools).
+  if (supervisorReply !== null) {
+    if (typeof supervisorReply?.call !== "function" || !(supervisorReply.names instanceof Set) || !Array.isArray(supervisorReply.definitions)
+        || typeof supervisorReply.scopes !== "function" || typeof supervisorReply.instructions !== "string") {
+      throw new TypeError("supervisorReply must come from createSupervisorReplyTools.");
+    }
+    const taken = new Set([...TOOL_DEFINITIONS, ...PROTOCOL_TOOL_DEFINITIONS, ...JOURNAL_READ_ONLY_MCP_TOOLS, ...(journalWork ? journalWork.definitions : [])].map((tool) => tool.name));
+    if ([...supervisorReply.names].some((name) => taken.has(name))) throw new TypeError("supervisorReply tool names collide with existing tools.");
+  }
   const normalizedOauth = normalizeOauth(oauth);
+  // The scope is advertised only when the feature is on.
+  if (normalizedOauth?.scopesSupported.includes(PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT) && supervisorReply === null) {
+    throw new TypeError("oauth.scopesSupported names the reply-draft scope but the reply-draft tools are not enabled.");
+  }
   if (journalApi != null && typeof journalApi.search !== "function") throw new TypeError("journalApi is invalid.");
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
   if (callLog !== null && typeof callLog !== "function") throw new TypeError("callLog must be a function.");
-  const tools = advertisedTools(Boolean(normalizedOauth), journalWork, journalApi);
+  const tools = advertisedTools(Boolean(normalizedOauth), journalWork, journalApi, supervisorReply);
   const toolNames = new Set(tools.map((tool) => tool.name));
-  const instructions = serverInstructions(journalWork);
+  const instructions = serverInstructions(journalWork, supervisorReply);
   const serveRoot = !normalizedOauth || new URL(normalizedOauth.resource).pathname === "/";
   // Loaded once per process: a redeploy is what changes the served protocol.
   const protocol = therapyProtocol === undefined ? loadProtocolOrNull() : therapyProtocol;
@@ -720,17 +738,23 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
       if (journalWork?.names.has(name)) {
         const outcome = await journalWork.call(name, args, { bearerToken: token });
         return outcome.toolError
-          ? reply(200, success(request.id, journalWorkToolError(outcome.toolError)), outcome.toolError.code ?? "JOURNAL_WORK_TOOL_ERROR")
+          ? reply(200, success(request.id, extensionToolError(outcome.toolError)), outcome.toolError.code ?? "JOURNAL_WORK_TOOL_ERROR")
           : reply(200, success(request.id, toolResult(outcome.value)));
+      }
+      if (supervisorReply?.names.has(name)) {
+        const outcome = await supervisorReply.call(name, args, { bearerToken: token });
+        if (outcome.toolError) return reply(200, success(request.id, extensionToolError(outcome.toolError)), outcome.toolError.code ?? "REPLY_DRAFT_TOOL_ERROR");
+        // A tool may state its result in words of its own; the structured result stays the same value.
+        return reply(200, success(request.id, { ...toolResult(outcome.value), ...(typeof outcome.text === "string" ? { content: [{ type: "text", text: outcome.text }] } : {}) }));
       }
       const value = await callTool(caseAccessService, name, args, { bearerToken: token }, journalApi);
       return reply(200, success(request.id, toolResult(CASE_OPENING_TOOLS.has(name) ? withCaseRules(value, protocol, toolNames) : value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
-        if (await deniedForSignedInAccount(caseAccessService, token, name, journalWork)) {
+        if (await deniedForSignedInAccount(caseAccessService, token, name, journalWork, supervisorReply)) {
           return reply(200, success(request.id, caseNotAuthorizedResult()), "PRIVATE_CASE_NOT_AUTHORIZED");
         }
-        const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.", challengeScopes(normalizedOauth, name, journalWork));
+        const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.", challengeScopes(normalizedOauth, name, journalWork, supervisorReply));
         return reply(401, success(request.id, authenticationRequiredResult(challenge)), "AUTHENTICATION_REQUIRED", { "www-authenticate": challenge });
       }
       const safeCode = error instanceof PrivateCaseKeyUnavailableError
@@ -743,8 +767,8 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
   }
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, callLog = null, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService, journalApi, oauth, productionAuthReady, therapyProtocol, journalWork, callLog });
+export async function listenPrivateCaseMcp({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, supervisorReply = null, callLog = null, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, journalApi, oauth, productionAuthReady, therapyProtocol, journalWork, supervisorReply, callLog });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);
