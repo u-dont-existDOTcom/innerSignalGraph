@@ -13,7 +13,9 @@ Use the host's authenticated private continuity MCP only when its tools are actu
 
 When the user provides an InnerSignal `handoff_id`, call `load_handoff` first. Treat a successful returned handoff as the continuation authority for that private episode. Do not reconstruct prior therapy from memory, public repository summaries, or guesses when exact private context is available.
 
-When the user instead supplies or clearly selects an authorized private case and no handoff identifier is available, use `load_case_context` when the host exposes it. Use narrower tools only as needed:
+When the user instead names a known private case but does not supply an opaque `case_id` or `handoff_id`, use `load_case_context_by_alias` when the host exposes it. This alias route is deliberately non-enumerable: resolve only the name the user actually supplied. Do not search ChatGPT conversation history, browser history, public repository material, or memory to reconstruct the case first when the private alias resolver is available. If the alias is not bound or authorized, state that exact boundary rather than silently falling back to a reconstructed history.
+
+When the user supplies an opaque authorized private case ID, use `load_case_context`. Use narrower tools only as needed:
 
 - `get_state_diff` for the frozen/current structured change;
 - `get_recent_verbatim` for the exact active episode;
@@ -21,7 +23,8 @@ When the user instead supplies or clearly selects an authorized private case and
 - `get_pending_candidate` or `get_candidate_response` for exact candidate text;
 - `get_tracker_window` for descriptive longitudinal tracker data;
 - `get_journal_entries` for exact journal/dream entries without promoting them into settled facts;
-- `get_source_artifact` for an authorized exact source artifact.
+- `get_source_artifact` for an authorized exact source artifact;
+- `check_case_known_vs_new` before presenting a pattern, insight or recommendation as new: it shows where the record holds a point in the same words. It matches words, not meaning, so a point it finds no close match for may still be in the record in other words; read the record before calling anything new.
 
 Do not call tools merely to collect everything. Prefer `load_handoff` as the normal one-call bootstrap, then retrieve only missing evidence that materially changes the current response.
 
@@ -29,10 +32,10 @@ Do not call tools merely to collect everything. Prefer `load_handoff` as the nor
 
 If authentication is required, let the host surface its ordinary connection/authorization flow. Do not ask the user to paste bearer tokens, credentials, keys, private locator databases, or secret material into chat.
 
-If the current host does not expose the required tool, authentication fails, access is denied, or the handoff is not continuation-safe, state that exact boundary. Do not silently substitute a summary, public fixture, stale memory, regenerated candidate, or another person's context.
+If the current host does not expose the required tool, authentication fails, access is denied, or the handoff is not continuation-safe, state that exact boundary. An opened case's `connector_tools` names what the connector offers now: a tool named there that you can't call means the app holds an older tool list for the connector, and refreshing the connector's tools in the app's settings brings in the new one (in ChatGPT, the InnerSignal plugin's tools; a new chat keeps the old list). Do not silently substitute a summary, public fixture, stale memory, regenerated candidate, or another person's context.
 
 ## Therapy continuation
 
-After exact context is available, apply the `inner-signal-therapy` skill to the live user request. Preserve the distinction between exact transcript evidence, structured state, hypotheses, and current interpretation. Private continuity supplies context; it does not make every prior inference true.
+After exact context is available, apply the `inner-signal-therapy` skill to the live user request. Read the case's `case_plan` first: what is primary, what is being worked on now, what waits and why, when priorities would change, and whose priority each goal is. A `proposed_reconstruction` is rebuilt from the record and is not the plan; offer its parts as proposals. Preserve the distinction between exact transcript evidence, structured state, hypotheses, and current interpretation. Private continuity supplies context; it does not make every prior inference true.
 
 Do not expose hidden chain-of-thought. Do not publish private case content or identifiers outside the user's authorized conversation merely because the tools can retrieve them.

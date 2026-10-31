@@ -1,0 +1,7 @@
+# InnerSignal therapy plugin 0.2.3 — 31 October 2026
+
+Scope: update only the packaged advisory plugin. Seven plugin files become byte-identical to `main` at `bfe35804`, carrying the merged and reviewed development PRs #198, #200, #202, #204 and #205. The private-continuity skill text also returns to main's reviewed wording from #136, #176, #178 and #179, whose tools and fields (`load_case_context_by_alias`, `check_case_known_vs_new`, `connector_tools`, `case_plan`, `proposed_reconstruction`) the running backend `8686b746` already serves. The manifest changes only its version, to 0.2.3. Stable predecessor: `30d798ad238ffeef0718dfd3bea8f3aae400d31c`; prior live protocol (0.2.2): `a37f1afd0014995f2b3abcb39d24c2a78a8401272b00182a27e0bc17b1dd3d1f`.
+
+Not in this release: backend code (the delivery states, the supervisor-draft code and its connector permission), guide sources, compiled guide graphs, journal import changes and public-guide publication. Those need a rebuilt backend image and go in a separate backend release. Preserve the existing backend image, private data, credentials and the 0.2.2 image for rollback.
+
+Release gates: pinned stable plugin blobs and full package CI; independent exact-diff review; exact stable commit and tree; the candidate protocol hash computed on the host by the running backend's canonical loader and matched by the offline candidate image and the live health check; service-only transactional activation with rollback to 0.2.2; post-restart health and live protocol readback. A stable merge is not proof of deployment.
