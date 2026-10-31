@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: 2026-10-30-r16
+Queue version: 2026-10-31-r17
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -335,3 +335,30 @@ Teaching point: Before deciding what someone's reaction to a disagreement means,
 Reader need: Readers deciding what another person's reaction to a disagreement means need to start from the order of events, including their own part, before reaching the assessment that the surrounding passage asks them to keep specific and revisable.
 Already covered: The AI-guide paragraph this sentence joins already says to keep the assessment of another person specific and revisable, and that disagreeing, needing time or setting a boundary does not make someone emotionally immature. No queue entry asks the reader to rebuild the sequence first. Reconcile with the public guide's matching passage rather than repeating it.
 Where: “Also Look Outward”, in the public guide's passage that matches the AI guide's paragraph beginning “Keep that assessment specific and revisable.”, as one sentence right after that passage's first sentence. Humanize in the owner's voice, keeping the meaning. Guide Packet and public-guide sync gates remain; a pending queue entry is not publication authority.
+
+## Pending bundle L — owner-requested comparison with schema therapy
+
+### PGQ-050 — How this guide differs from schema therapy
+Caused by: Owner request of 31 Oct 2026: a passage on how this guide differs from schema therapy, written for him at his request for him to place in the humanized public guide. The wording is proposed and not yet placed. It changes nothing in the AI guide (`inner-child-guide-2026-10-30-r8.txt`) or in the app, and its claims about schema therapy rest on the source cited in the passage's last paragraph.
+Teaching point: The guide keeps three ideas from schema therapy (a need is different from the strategy used to meet it, a pattern can be confronted with compassion, and what changes in a session has to carry over into ordinary life) and differs in four ways. The reader describes what a part does and how it feels in their own words rather than being mapped onto named schemas and modes with questionnaires. A label does not guess at a family history; the reader's history is what the reader tells. Reparenting is something the reader learns to do for themselves, and any helper, whether a therapist, a friend or an AI helper, hands that role back. No part is fought, defeated or expelled: a harsh inner critic may once have tried to protect, gets heard, and its contempt does not have to be obeyed. Research on schema therapy does not show that this guide works, and the guide does not claim it does. The full proposed passage follows the fields.
+Reader need: Readers who know schema therapy, or who meet its terms (schemas, modes, the Punitive Parent, therapist reparenting), need to see plainly what this guide took from it, where it differs, and that research on schema therapy is not evidence for this guide, so that they can judge the guide for themselves.
+Already covered: The AI guide's “Related Clinical Work” (IC.RELATED_CLINICAL_WORK, r8, lines 1021–1038) says that later revisions also draw on comparisons with schema therapy among other approaches, that these approaches do not all make the same claims, and that the guide borrows particular distinctions and practices rather than claiming their research validates the synthesis as a package. It does not say which ideas were kept or how the guide differs, and no earlier queue entry covers either. PGQ-037 and PGQ-038 teach reparenting as an ongoing relationship rather than an exercise, and PGQ-047 points to the public guide's guard-dialogue passage (“Hear the Guard First”); reconcile with them rather than repeating them.
+Where: Humanized public guide only, not the AI guide, and only where the owner chooses to place it; the nearest AI-guide anchor is “Related Clinical Work” (IC.RELATED_CLINICAL_WORK), so the public guide's matching related-work passage is the natural neighbour. Keep the source note (the last paragraph below) with the passage as the source and rationale for its claims; this change transcribes the passage and its note and does not check the cited pages. Guide Packet and public-guide sync gates remain; a pending queue entry is not publication authority.
+
+Proposed passage, as written for the owner (title line, six paragraphs, then the source note):
+
+> **How this guide differs from schema therapy**
+>
+> Schema therapy, developed by Jeffrey Young and colleagues, is one of the best-known therapies built around reparenting, and I've learned from it. I kept three of its ideas: a need is different from the strategy someone uses to meet it; a pattern can be confronted with compassion; and what changes in a session has to carry over into ordinary life.
+>
+> This guide differs in four ways. Schema therapy maps a person's difficulties onto eighteen named schemas and a set of modes, such as the Vulnerable Child or the Punitive Parent, often with questionnaires. Here you describe what a part of you does and how it feels, in your own words, and there's no inventory to fill in.
+>
+> In Young's model each group of schemas comes with a typical family origin, such as a cold, rejecting or unpredictable home, so a label can slide into guessing what someone's childhood was like. Here, your history is what you tell, not what a label implies.
+>
+> In schema therapy the therapist reparents the client within the limits of the professional relationship, and the client's healthy adult side grows partly by modelling the therapist. Here, reparenting is something you learn to do for yourself. Anyone who helps along the way, a therapist, a friend or an AI helper, hands that role back to you.
+>
+> Young's practitioner's guide has therapist and client fight the harshest inner voice, the Punitive Parent, until it's defeated and expelled. This guide doesn't make war on any part of you. A harsh inner critic may once have tried to protect you: it gets heard, what's useful in it can be kept, and its contempt doesn't have to be obeyed.
+>
+> Schema therapy's research comes from long courses with trained therapists, mostly for personality disorders. It doesn't show that this guide works, and I don't claim it does.
+>
+> Source for the claims: Young, Klosko and Weishaar, *Schema Therapy: A Practitioner's Guide* (Guilford, 2003): schemas and typical family origins, Figure 1.1, p. 13; fighting, defeating and expelling the Punitive Parent, pp. 270, 307, 325; the healthy adult "battling or moderating" the parent modes, p. 305.

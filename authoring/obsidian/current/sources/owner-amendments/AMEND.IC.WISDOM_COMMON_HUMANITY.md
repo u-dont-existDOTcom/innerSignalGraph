@@ -12,7 +12,7 @@ section_hash: 9c59fe467e60712dc2fccbf63936d7648e1e611428b9735e79648ff67adc0c25
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.COMMON_HUMANITY
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+projection_input_sha256: 9bb6431d55c3ce9a1577c3db6d11d0b19879c7c291594657d7ff7d9a47aaa8f3
 ---
 
 # AMEND.IC.WISDOM_COMMON_HUMANITY

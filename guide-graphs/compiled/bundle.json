@@ -2339,6 +2339,7 @@
           "sourceRefs": [
             "IC.PROTECTOR_VISIBLE",
             "IC.ADULT_APPRENTICE",
+            "IC.GUIDE_LATER",
             "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
             "AMEND.IC.WISDOM_CORE",
             "AMEND.IC.NONPUNITIVE_REVIEW",
@@ -2358,6 +2359,7 @@
           "avoid": [
             "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
             "Do not choose an action so large that failure becomes new evidence of unreliability.",
+            "Do not mistake escape from anything difficult for self-love: reparenting without direction can become permissive, and a small chosen ask can be care too.",
             "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
             "Do not equate involuntary feeling and chosen harmful conduct, and do not use acceptance of a feeling to exempt behavior from ordinary accountability.",
             "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
@@ -2558,12 +2560,14 @@
           ],
           "authority": "author-framework",
           "recommendations": [
+            "When childhood was organized around avoiding pain and preserving attachment, attention went into reading danger, meeting other people’s expectations, and keeping the bond, leaving much less room for the ordinary experiments (what do I like, what do I want to try, who am I when nobody is grading me) through which identity grows by trial and error. When curiosity or mistakes brought ridicule, punishment, or withdrawal of love, the performed self got better at surviving while the less-practiced self stayed blurry. Recovery includes more than uncovering a fully formed “true self” hidden underneath: some of it is developmental pl/ork (play + work) done late, creating enough safety for preference, curiosity, and experimentation to grow.",
             "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
             "Protect the beginner from immediate talent judgments.",
             "Make room for being interested in and enjoying the child, not only correcting or protecting them. A secure base supports safe exploration; outward competence alone does not demonstrate warmth or vitality."
           ],
           "avoid": [
-            "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
+            "Do not assume a fully formed true self is merely hidden and waiting to be uncovered.",
+            "Do not set up the performed self as a “fake” part to erase; the aim is a more workable internal relationship, not a new division between the acceptable self and another self that must disappear."
           ],
           "successSignals": [
             "Preferences become more stable across relationships and settings."
@@ -2701,6 +2705,7 @@
             "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
             "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
             "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks.",
+            "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not answer that with the opposite trap, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.",
             "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity."
           ],
           "successSignals": [

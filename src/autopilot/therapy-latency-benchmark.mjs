@@ -24,14 +24,14 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  // 2026-10-29: explicit shame-context evidence gates the new appraisal route;
-  // the mock reviewed tier changes, but the fast tier and provider/planning shape remain fixed.
-  revision: "source-grounded-shame-context-2026-10-29-r11",
+  // 2026-10-31: the early avoid line on IC.PROTECTOR_ACTION (reparenting without direction can become permissive)
+  // reaches the mock reviewed tier's plan, so its hash changes; the fast tier and provider/planning shape remain fixed.
+  revision: "performed-self-permissive-reparenting-2026-10-31-r12",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "0bf02d8c1c3d956e270be559729f1e278be5277f8831b0854b6512455b86a28f"
+    semanticHash: "e60f17d599245de00e81bbb09129e5344ab597af59e16de53c37729ecd142d8b"
   })
 });
 

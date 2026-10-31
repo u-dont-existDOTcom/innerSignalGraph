@@ -21,7 +21,7 @@ regression_refs:
   - G004
 base_record_sha256: 2a36db3d57035768292f7c90baa1da929afd564a3df8be7b16bd65e75f55cddf
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+projection_input_sha256: 9bb6431d55c3ce9a1577c3db6d11d0b19879c7c291594657d7ff7d9a47aaa8f3
 ---
 
 # EMDR for a discrete target in a stable person

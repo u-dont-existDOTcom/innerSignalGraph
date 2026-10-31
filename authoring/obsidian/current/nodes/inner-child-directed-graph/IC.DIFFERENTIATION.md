@@ -24,8 +24,8 @@ regression_refs:
   - G150
   - G153
 base_record_sha256: 72130b322164a13f1d3ace62427e0fd188165e7b8b18b84ae60a584af8f9d421
-base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+base_graph_sha256: 4232ebba93f18314c97998eae9b7bcd2d4f1b8f9826938e743cfc21760ab384a
+projection_input_sha256: 9bb6431d55c3ce9a1577c3db6d11d0b19879c7c291594657d7ff7d9a47aaa8f3
 ---
 
 # Untangle belonging from self-betrayal
