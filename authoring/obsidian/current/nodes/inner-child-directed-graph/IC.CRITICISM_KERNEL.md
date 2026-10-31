@@ -21,8 +21,8 @@ source_refs:
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs: []
 base_record_sha256: 0c85a0eba9cc460db287d0467ac8d209cddc2f044de99db4503e225357e10bc5
-base_graph_sha256: 4232ebba93f18314c97998eae9b7bcd2d4f1b8f9826938e743cfc21760ab384a
-projection_input_sha256: 9bb6431d55c3ce9a1577c3db6d11d0b19879c7c291594657d7ff7d9a47aaa8f3
+base_graph_sha256: 31446a453afa034e8eb517fd9931eada91d2a024f49501f5abcbe9d89c1a6c06
+projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
 ---
 
 # Receive useful content without accepting contempt

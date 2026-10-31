@@ -24,14 +24,14 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  // 2026-10-31: the early avoid line on IC.PROTECTOR_ACTION (reparenting without direction can become permissive)
+  // 2026-10-31: the early avoid line on IC.PROTECTOR_ACTION (without direction, reparenting can become permissive)
   // reaches the mock reviewed tier's plan, so its hash changes; the fast tier and provider/planning shape remain fixed.
   revision: "performed-self-permissive-reparenting-2026-10-31-r12",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "e60f17d599245de00e81bbb09129e5344ab597af59e16de53c37729ecd142d8b"
+    semanticHash: "6ed7a2b7f3508753a8010a7ef35b0fcb37ff4a5239359b72365652c3da83140d"
   })
 });
 

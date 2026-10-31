@@ -34,7 +34,7 @@ const PERFORMED_SELF_RECOMMENDATION = "When childhood was organized around avoid
 const TRUE_SELF_AVOID = "Do not assume a fully formed true self is merely hidden and waiting to be uncovered.";
 const FAKE_PART_AVOID = "Do not set up the performed self as a “fake” part to erase; the aim is a more workable internal relationship, not a new division between the acceptable self and another self that must disappear.";
 const LARGE_ACTION_AVOID = "Do not choose an action so large that failure becomes new evidence of unreliability.";
-const ESCAPE_AVOID = "Do not mistake escape from anything difficult for self-love: reparenting without direction can become permissive, and a small chosen ask can be care too.";
+const ESCAPE_AVOID = "Do not mistake escape from anything difficult for self-love: without direction, reparenting can become permissive.";
 const PERMISSIVE_AVOID = "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not answer that with the opposite trap, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.";
 const PURITY_AVOID_START = "Do not turn the Guide into mental-purity policing";
 const REVIEW_AVOID_START = "Do not make review punitive";
@@ -167,8 +167,11 @@ test("the wording stays inside the owner's words in the guide sections it is bou
   ]) {
     assert.ok(plain(PERMISSIVE_AVOID).includes(piece), `the Guide node carries: ${piece}`);
   }
+  // The early line is the owner's own sentence and nothing else: each half of it is in the guide section.
   assert.ok(plain(ESCAPE_AVOID).includes("escape from anything difficult"));
-  assert.ok(plain(ESCAPE_AVOID).includes("reparenting without direction can become permissive"));
+  assert.ok(plain(ESCAPE_AVOID).includes("without direction, reparenting can become permissive"));
+  assert.ok(later.includes("without direction, reparenting can become permissive"), "the guide section says: without direction, reparenting can become permissive");
+  assert.ok(later.includes("escape from anything difficult can masquerade as self-love"), "the guide section says: escape from anything difficult can masquerade as self-love");
   // The sections are the ones the three nodes name, so the binding is to the guide and not to a new amendment.
   const amendments = json("../guides/owner-amendments.json");
   assert.equal(amendments.items.some((item) => /PERFORMED|PERMISSIVE|FORCED_ADULT|IDENTITY_PLAY/u.test(item.id)), false, "no owner amendment for this change");
@@ -308,8 +311,8 @@ test("five synthetic scenes cover the performed self, permissive self-care, the 
   assert.match(forced, /asking for help, saying one preference or letting a safe person see something imperfect, not tightening control again/u);
   assert.match(forced, /do not swing back to indulgence/u);
   const early = byId.get("escape-called-self-love-early").pass_criterion;
-  assert.match(early, /reparenting without any direction can become permissive, because escape from anything difficult is not the same as care/u);
-  assert.match(early, /a small chosen ask can be care too/u);
+  assert.match(early, /without direction, reparenting can become permissive, because escape from anything difficult is not the same as care/u);
+  assert.match(early, /Offer a smaller, chosen action that is also care/u);
   assert.match(early, /failing it would not become new evidence/u);
   // The over-application guard: a protective exit is protection, and the permissive-reparenting warning is not turned against it.
   const exit = byId.get("protective-exit-is-not-escape").pass_criterion;

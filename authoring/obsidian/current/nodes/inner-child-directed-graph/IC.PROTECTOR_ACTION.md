@@ -37,9 +37,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: 37cafb5d710a8317674dfe0d5401fe73625b6a708721f40b31508e34403e1216
-base_graph_sha256: 4232ebba93f18314c97998eae9b7bcd2d4f1b8f9826938e743cfc21760ab384a
-projection_input_sha256: 9bb6431d55c3ce9a1577c3db6d11d0b19879c7c291594657d7ff7d9a47aaa8f3
+base_record_sha256: 2f294147989b4801f14c8caba06e7a5e347300f682686da47a5157594f5c8ca5
+base_graph_sha256: 31446a453afa034e8eb517fd9931eada91d2a024f49501f5abcbe9d89c1a6c06
+projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
 ---
 
 # Make the Protector visible in ordinary life
@@ -76,7 +76,7 @@ projection_input_sha256: 9bb6431d55c3ce9a1577c3db6d11d0b19879c7c291594657d7ff7d9
   "avoid": [
     "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
     "Do not choose an action so large that failure becomes new evidence of unreliability.",
-    "Do not mistake escape from anything difficult for self-love: reparenting without direction can become permissive, and a small chosen ask can be care too.",
+    "Do not mistake escape from anything difficult for self-love: without direction, reparenting can become permissive.",
     "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
     "Do not equate involuntary feeling and chosen harmful conduct, and do not use acceptance of a feeling to exempt behavior from ordinary accountability.",
     "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
