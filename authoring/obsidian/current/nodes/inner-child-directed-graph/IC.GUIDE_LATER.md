@@ -25,9 +25,9 @@ source_refs:
   - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 regression_refs:
   - G010
-base_record_sha256: 9959e25f6f727eee8cc53b4431a5630ae1d587167ff75d48b3cb9d10101924ae
-base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
-projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
+base_record_sha256: e64e4a0edda8ee85770779d928f8963b50ce4b7c9d2d89fd7a1e0cc6078c8036
+base_graph_sha256: e5f728eda7192aeef14be8ffa682074c2107b709baa8063dd90231f41bf51dec
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # Bring in direction without demanding mental perfection
@@ -78,6 +78,7 @@ projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f
     "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
     "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
     "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks.",
+    "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not fall into the opposite trap either, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.",
     "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity."
   ],
   "defaultQuestion": "",

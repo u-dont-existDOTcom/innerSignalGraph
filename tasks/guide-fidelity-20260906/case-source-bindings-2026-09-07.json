@@ -1,7 +1,7 @@
 {
   "version": 10,
-  "sourceFile": "guides/inner-child-guide-2026-10-30-r8.txt",
-  "sourceSha256": "d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d",
+  "sourceFile": "guides/inner-child-guide-2026-10-31-r9.txt",
+  "sourceSha256": "9a7929664ee14184e68052fe27092e342ae7092134f825c14bf16dd6514b7dc7",
   "purpose": "Historical source-fidelity cases and graders remain frozen; the current verified guide is October 11 r6, with the exact October 10 r5 retained as immutable predecessor.",
   "additionalSourceRefs": {
     "GF01": [

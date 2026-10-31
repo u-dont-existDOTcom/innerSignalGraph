@@ -716,6 +716,7 @@
         "IC.GUARDS",
         "IC.BOTTOM_UP_SEQUENCE",
         "IC.ESCAPE_URGE",
+        "IC.INHERITED_PARENT",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
         "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
         "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
@@ -724,12 +725,14 @@
       "recommendations": [
         "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
         "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
+        "Meet a critical inner voice with compassion, curiosity and understanding as well as firm limits. Where a protective purpose is plausible, do not assume it protects only the younger self: it may be guarding another vulnerable part, belonging, status, control or safety. Explore what it fears or is trying to accomplish when the person finds that useful, treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief.",
         "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
         "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
         "When shame becomes shame about being ashamed, distinguish the initial experience from a secondary self-attack and investigate any useful protective aim without treating the first feeling as a malfunction."
       ],
       "avoid": [
         "Do not classify the voice more confidently than the transcript supports or push past it.",
+        "Do not assume an inner critic is a guard: it is one when it works as a self-critical strategy trying to prevent a feared outcome, but a critical voice may also, or instead, replay something learned from a parent or point to a real problem in a cruel way.",
         "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex."
       ],
       "successSignals": [
@@ -919,6 +922,8 @@
       "sourceRefs": [
         "IC.PROTECTOR_VISIBLE",
         "IC.ADULT_APPRENTICE",
+        "IC.GUIDE_LATER",
+        "IC.INHERITED_PARENT",
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.NONPUNITIVE_REVIEW",
@@ -931,6 +936,7 @@
         "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
         "Report the action without requiring the younger state to trust it yet.",
         "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
+        "The inner adult can meet a harsh inner voice with compassion, curiosity and understanding and still give it firm limits: reject the insult and stop the attack without first settling which purpose the voice serves, take seriously anything useful in the message and, if it is willing, see whether it would make its point without the contempt. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.",
         "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
         "Choosing not to act on an unsuitable attraction can be a compassionate protective response, respecting the needs, boundaries and consent of everyone affected without making the feeling itself a source of shame.",
         "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
@@ -938,6 +944,7 @@
       "avoid": [
         "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
         "Do not choose an action so large that failure becomes new evidence of unreliability.",
+        "Do not mistake escape from anything difficult for self-love: without direction, reparenting can become permissive.",
         "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
         "Do not equate involuntary feeling and chosen harmful conduct, and do not use acceptance of a feeling to exempt behavior from ordinary accountability.",
         "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
@@ -1138,12 +1145,14 @@
       ],
       "authority": "author-framework",
       "recommendations": [
+        "When childhood was organized around avoiding pain and preserving attachment, attention went into reading danger, meeting other people’s expectations, and keeping the bond, leaving much less room for the ordinary experiments (what do I like, what do I want to try, who am I when nobody is grading me) through which identity grows by trial and error. When curiosity or mistakes brought ridicule, punishment, or withdrawal of love, the performed self got better at surviving while the less-practiced self stayed blurry. Recovery includes more than uncovering a fully formed “true self” hidden underneath: some of it is developmental pl/ork (play + work) done late, creating enough safety for preference, curiosity, and experimentation to grow.",
         "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
         "Protect the beginner from immediate talent judgments.",
         "Make room for being interested in and enjoying the child, not only correcting or protecting them. A secure base supports safe exploration; outward competence alone does not demonstrate warmth or vitality."
       ],
       "avoid": [
-        "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
+        "Do not assume a fully formed true self is merely hidden and waiting to be uncovered.",
+        "Do not set up the performed self as a “fake” part to erase; the aim is a more workable internal relationship, not a new division between the acceptable self and another self that must disappear."
       ],
       "successSignals": [
         "Preferences become more stable across relationships and settings."
@@ -1281,6 +1290,7 @@
         "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
         "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
         "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks.",
+        "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not fall into the opposite trap either, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.",
         "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity."
       ],
       "successSignals": [
@@ -2784,6 +2794,7 @@
         ]
       },
       "sourceRefs": [
+        "IC.INHERITED_PARENT",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.WISDOM_CRITICISM_KERNEL",
         "AMEND.IC.WISDOM_SOURCES",
@@ -2794,7 +2805,8 @@
         "After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.",
         "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
         "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
-        "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt."
+        "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt.",
+        "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or a vulnerable part of them from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish when the person finds that useful; understanding it does not mean agreeing with it or letting it keep attacking."
       ],
       "avoid": [
         "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",

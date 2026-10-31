@@ -1,6 +1,6 @@
 {
   "guideId": "inner-child-guide",
-  "file": "inner-child-guide-2026-10-30-r8.txt",
+  "file": "inner-child-guide-2026-10-31-r9.txt",
   "sections": [
     {
       "id": "IC.CHICKEN_EGG",
@@ -39,7 +39,7 @@
       "heading": "Also Look Outward",
       "lineStart": 147,
       "lineEnd": 180,
-      "sha256": "5e4d921dcaa624d978af35d22f72824666bb4cb8f51353eeaab627fd1a8d9ffb",
+      "sha256": "2c17377adc7208f9e1a6ebcc781a42c3b820bc369e46924a004bb694d7284170",
       "excerpt": "Also Look Outward\n\nNot every hook is mainly old material. Before analyzing the child or protector, also notice what the other person is actually doing. Can they tolerate disagreement, reflect on their behavior, take responsibility, and make room for your experience—or does the interaction repeatedly end with you carrying their feelings and abandoning your own position?\n\nLindsay Gibson’s work on emotional immaturity is useful here because it shifts attention from chasing motives to demonstrated r"
     },
     {
@@ -150,159 +150,159 @@
       "id": "IC.INHERITED_PARENT",
       "heading": "The Parent You Inherited",
       "lineStart": 439,
-      "lineEnd": 446,
-      "sha256": "4255c955c5f25244e0491b293237c216b7edc4c6e7eccdc52802ce5e4613d79c",
+      "lineEnd": 448,
+      "sha256": "a5cc97e79125929961ea84806d35111597f4a917d71a5ca4f14671098a95cc46",
       "excerpt": "The Parent You Inherited\n\nBefore you deliberately build the Nurturer, Protector, and Guide, you usually already have a learned way of treating yourself: the inner parent “script” you inherited from how you were treated. It may show up as words, feelings, expectations, or habits rather than a literal inner voice. It can be warm, but for many people its first version is a critic or warden: don’t cry, don’t be needy, don’t get angry, don’t embarrass us, don’t become too independent. Piece by piece,"
     },
     {
       "id": "IC.START_WHATEVER",
       "heading": "Start With Whatever Showed Up",
-      "lineStart": 447,
-      "lineEnd": 466,
+      "lineStart": 449,
+      "lineEnd": 468,
       "sha256": "26c121459967799e1c277672dbbdab487c4de20dfddd09f99ed8b0af66050ae6",
       "excerpt": "Start With Whatever Showed Up\n\nThe cynical voice, numbness, urge to scroll, anger, dissociation, or sudden need to do something else all belong inside the pl/ork. The response may be a protector, the child speaking directly, an inherited critic, a present-day grievance, or a blend. Start with what it is trying to prevent, accomplish, or communicate before deciding who is speaking.\n\nSometimes it is only a thought. Do not create a new inner person every time the mind produces a sentence. Use the l"
     },
     {
       "id": "IC.GUARDS",
       "heading": "Two Common Protective Patterns",
-      "lineStart": 467,
-      "lineEnd": 474,
-      "sha256": "827d28ad3cea4f58bc04e3e144b5d6f345899a1a9335c834c3222aad3169b171",
-      "excerpt": "Two Common Protective Patterns\n\nTwo patterns often do have a protective function. Proactive protection stays on duty most of the time: the skeptic, intellectualizer, inner critic, or voice watching for weakness and self-indulgence. It may have spent years preventing humiliation, deception, overwhelm, or another abandonment. It has probably watched you begin other healing methods with great enthusiasm and then disappear. It may be tired, but it is experienced and competent.\n\nReactive protection o"
+      "lineStart": 469,
+      "lineEnd": 476,
+      "sha256": "0129eca949e871983de66a06c60f86a0e792e18244698ede54297d4f624e8fd5",
+      "excerpt": "Two Common Protective Patterns\n\nTwo patterns often do have a protective function. Proactive protection stays on duty most of the time: the skeptic, intellectualizer, a self-critical strategy that is trying to prevent a feared outcome, or voice watching for weakness and self-indulgence. It may have spent years preventing humiliation, deception, overwhelm, or another abandonment. It has probably watched you begin other healing methods with great enthusiasm and then disappear. It may be tired, but "
     },
     {
       "id": "IC.BOTTOM_UP_SEQUENCE",
       "heading": "A Bottom-Up Sequence",
-      "lineStart": 475,
-      "lineEnd": 508,
+      "lineStart": 477,
+      "lineEnd": 510,
       "sha256": "b935ce45c4789b28e25185fcfdf0b425dbffb94b2af324b6ab1281664ad88823",
       "excerpt": "A Bottom-Up Sequence\n\nNotice the protective part. Don’t push through it.\n\nOffer it the same Nurturer voice you intended for the child. “I see you. I know you’re trying to protect something. I want to understand.” Borrow that voice from somebody safe when you can’t generate it yourself.\n\nAsk what it expects will happen if it steps back. The answer may be: “This will become another performance, and you’ll lie to yourself again.” Or: “If you really feel that pain, it will destroy you.” Or: “You tri"
     },
     {
       "id": "IC.ESCAPE_URGE",
       "heading": "When the Urge to Escape Arrives",
-      "lineStart": 509,
-      "lineEnd": 526,
+      "lineStart": 511,
+      "lineEnd": 528,
       "sha256": "185ab402b2799ce7e8b62c04be54a0e748002d00a54b11e0d24e714b174f32b0",
       "excerpt": "When the Urge to Escape Arrives\n\nSometimes the protective response is a sudden desire for a substance, a relationship, a new project, or anything else that can move attention away from pain. Don’t shame the urge. Notice what it may be signaling: something painful has come close enough to require management. That can be progress.\n\nThank the protective part. Slow down. Bring in support when the material is bigger than your present capacity.\n\nIf the urge to escape comes during severe physical pain,"
     },
     {
       "id": "IC.NO_CLEAR_CHILD",
       "heading": "Sometimes There Isn’t a Clear Child Yet",
-      "lineStart": 527,
-      "lineEnd": 534,
+      "lineStart": 529,
+      "lineEnd": 536,
       "sha256": "66fd9f93831bcf68ccf34c8bb153dcdacf2942542906fd0bd08531d246b6503f",
       "excerpt": "Sometimes There Isn’t a Clear Child Yet\n\nReparenting assumes there is a coherent inner child to love. For many people, there is. For others—especially people raised in controlling families, rigid religious environments, or any setting where belonging required performing someone else—the authentic child-self may never have had room to form.\n\nThe performed self began so early and became so complete that “What do I believe?” or “What do I want?” has no clear private answer. Asking those questions m"
     },
     {
       "id": "IC.IDENTITY_PLAY",
       "heading": "From Survival to Experimental Play",
-      "lineStart": 535,
-      "lineEnd": 562,
+      "lineStart": 537,
+      "lineEnd": 564,
       "sha256": "669b5f1500e2d426854b92d6d99a65e06640f63bc374299a25e874136577d2a9",
       "excerpt": "From Survival to Experimental Play\n\nWhen childhood is organized around avoiding pain and preserving attachment, attention goes into reading danger, meeting other people’s expectations, and keeping the bond. There is much less room for the ordinary experiments that answer, “What do I like? What do I want to try? Who am I when nobody is grading me?”\n\nIdentity grows through trial and error: choosing clothes, hobbies, friends, ideas, and roles, then changing your mind. When curiosity or mistakes bri"
     },
     {
       "id": "IC.DIFFERENTIATION",
       "heading": "Untangling the Belonging Bargains",
-      "lineStart": 563,
-      "lineEnd": 608,
+      "lineStart": 565,
+      "lineEnd": 610,
       "sha256": "175946baad61afece11586ab7c4303d666031a9b6a24c155f0e66c53544c10c1",
       "excerpt": "Untangling the Belonging Bargains\n\nIdentity formation also requires untangling from family emotional systems, religious orthodoxies, group identities, political tribes, and individual relationships that pull you away from your own knowing in exchange for belonging.\n\nMost social systems ask for some conformity. Families want a particular kind of son, daughter, or sibling. Religions want particular beliefs and behavior. Political tribes expect consistent positions and predictable reactions. Friend"
     },
     {
       "id": "IC.CHILD_BAD_THINGS",
       "heading": "Let the Child Be Bad at Things",
-      "lineStart": 609,
-      "lineEnd": 616,
+      "lineStart": 611,
+      "lineEnd": 618,
       "sha256": "06f98e9d8e4e162abc6c2602733fc06c784e1f727145dbdfa8ddc8ade6d48b80",
       "excerpt": "Let the Child Be Bad at Things\n\nReflection can reveal what was suppressed, but identity also needs experiments. Try painting, dancing, gardening, a language, a sport, volunteering, music, or something else that has no obvious value to your résumé or social position. Notice what holds your attention when nobody is impressed.\n\nThe old internal parent may demand immediate talent. The first awkward attempt becomes evidence that you are stupid, clumsy, or not “really” that kind of person. The adult h"
     },
     {
       "id": "IC.GUIDE_LATER",
       "heading": "The Inner Guide Comes Later",
-      "lineStart": 617,
-      "lineEnd": 668,
+      "lineStart": 619,
+      "lineEnd": 670,
       "sha256": "c26b76d382b2a97c6301f3060a149d2f48930a7a6e9c929d33e1a68932b2f9c2",
       "excerpt": "The Inner Guide Comes Later\n\nKey adds the third adult function: the Leader, Guide, or Guru. A competent parent does more than soothe and shield. The parent chooses education and experience, holds standards, requires difficult things for growth, and exposes the child to art, music, beauty, nature, and the wider world.\n\nWithout direction, reparenting can become permissive. The child receives attention but doesn’t develop. Candy, screens, and escape from anything difficult can masquerade as self-lo"
     },
     {
       "id": "IC.HEART_SOLAR_LOOP",
       "heading": "A Heart-to-Child Loop",
-      "lineStart": 669,
-      "lineEnd": 718,
-      "sha256": "1db7683962b01e113624600884f6aa7501ba9d366da07ca7ce07eb1b682f589f",
+      "lineStart": 671,
+      "lineEnd": 724,
+      "sha256": "4741fc586497a522e6c94464de3499428927a91a0b64f51255d260184fde883e",
       "excerpt": "A Heart-to-Child Loop\n\nIf you can feel even a little warmth, put one hand on the center of your chest, at the heart chakra, and feel for love. Put the other on the solar plexus, just below the chest, and feel for the inner child.\n\nThe solar plexus is the most vulnerable part of the torso. One punch there hurts a lot, as I sadly learned while getting beaten up every day at kindergarten recess by a gang organized by my best friend. Can you believe it? So it feels natural to locate the vulnerable i"
     },
     {
       "id": "IC.PHOTOS",
       "heading": "Use Childhood Photographs Without Interrogating Them",
-      "lineStart": 719,
-      "lineEnd": 748,
+      "lineStart": 725,
+      "lineEnd": 754,
       "sha256": "0defff175f1394ced6c9ed6d5f77b158f2cbda1af1ed9a45f7044fef5e382db1",
       "excerpt": "Use Childhood Photographs Without Interrogating Them\n\nA childhood photograph can help when visualization feels fake. You don’t have to invent the child’s face or posture; you can look at an image from that time. Look gently and notice what arises without deciding what the picture is supposed to prove.\n\nUseful questions include:\n\nWhat do I notice in my body?\n\nWhat feeling, impulse, or association arises?\n\nWhat does the younger part seem to want me to understand?\n\nWhat do I remember directly?\n\nWha"
     },
     {
       "id": "IC.SESSION_CLOSURE",
       "heading": "Close the Session and Return to Life",
-      "lineStart": 749,
-      "lineEnd": 764,
+      "lineStart": 755,
+      "lineEnd": 770,
       "sha256": "9ce3d1ce6c041a758765ef20529180bdbdec835305c1fbff6c15dfed5979a330",
       "excerpt": "Close the Session and Return to Life\n\nGive every inner-child session a definite ending. Endless processing can become another way to avoid living.\n\nLook around and name where you are.\n\nFeel your feet, the chair, or another external contact point.\n\nRelax your jaw and hands.\n\nName one ordinary action that comes next.\n\nSay: “That is enough for today. We are returning to the life we are building.”\n\nThe session does not have to resolve every feeling before you make food, answer a message, take a walk"
     },
     {
       "id": "IC.LOVE_MISSING",
       "heading": "When Love Still Feels Missing",
-      "lineStart": 765,
-      "lineEnd": 798,
+      "lineStart": 771,
+      "lineEnd": 804,
       "sha256": "eca5dd42b9fe81133386193bdd22ffc93c52a7849978efd490ba48122fa866ad",
       "excerpt": "When Love Still Feels Missing\n\nIf you weren’t well-loved as a child, “love your inner child” may sound like nonsense. You may sincerely want the best for the child, hug them in imagination, or miss them—and still feel none of the beautiful warmth people mean by love.\n\nBegin with smaller recognitions:\n\nLove may already be familiar in another form—or only imaginable as a direction. If care for a friend, child, animal, place, or beauty feels real, borrow from that. If nobody usable comes to mind, i"
     },
     {
       "id": "IC.SOMATIC_HEART_OPENING",
       "heading": "Somatic Heart Opening",
-      "lineStart": 799,
-      "lineEnd": 860,
+      "lineStart": 805,
+      "lineEnd": 866,
       "sha256": "2ce5c09cda65122145017fdf01fe8ed40813f8964f8b1f3f3008cf3f3c5ee4b6",
       "excerpt": "Somatic Heart Opening\n\nRumi says you must keep breaking your heart until it stays open.\n\nSome people find that deep grieving gives way to warmth, connection, or a bodily sense of being held by the universe. That describes an experience, not evidence for one particular physiological mechanism. Love can also open grief in the other direction: receiving care may bring sadness for the care that was missing. That need not mean the love failed. Stay with it when you can remain present and retain choic"
     },
     {
       "id": "IC.ALTERED_STATES",
       "heading": "Altered States Can Deepen the Therapy",
-      "lineStart": 861,
-      "lineEnd": 908,
+      "lineStart": 867,
+      "lineEnd": 914,
       "sha256": "c9e47358967ee5982471b9f1eeadd81056f524d9b15f8cc6aa23626c8fccc689",
       "excerpt": "Altered States Can Deepen the Therapy\n\nLearn to do inner-child therapy sober, in your ordinary mindstate. When you’re ready, my self-hypnosis guide or lucid-dreaming guide can take it deeper. Low doses of entheogens can also synergize: cactus, CBD tea with sublingual mapacho, Loveyhuasca, iboga, and others.\n\nThe gate matters. Altered states can get past the guards before the adult functions are ready to hold what appears. Build sober Nurturer and Protector capacity first, or borrow those capacit"
     },
     {
       "id": "IC.FORGIVENESS",
       "heading": "How to Forgive Without Forgetting",
-      "lineStart": 909,
-      "lineEnd": 958,
+      "lineStart": 915,
+      "lineEnd": 964,
       "sha256": "02211ea4068f9703baf92c8d52bb917cd71649e5447f95fcdf2e68e1a3d3ed24",
       "excerpt": "How to Forgive Without Forgetting\n\nFor many people, healing eventually includes some form of forgiveness or release from active resentment. It can’t be required on schedule, and it isn’t a prerequisite for safety, accountability, boundaries, justice, or recovery.\n\nActive resentment can narrow what you see and keep the child organized around the injury. Pressure to forgive early creates an enlightened performance while the wound goes underground.\n\nThe understanding that helps me is seeing how a p"
     },
     {
       "id": "IC.RELATIONSHIP",
       "heading": "Borrowed Adulthood in Relationship",
-      "lineStart": 959,
-      "lineEnd": 1002,
+      "lineStart": 965,
+      "lineEnd": 1008,
       "sha256": "9f393be80523bdb37eddb12a53e1b74184c719a6c882043b68e562f716bbce3d",
       "excerpt": "Borrowed Adulthood in Relationship\n\nReparenting is usually framed as something you do alone or with a therapist. The child was wounded in relationship, though, and a relational injury can only heal so far in isolation.\n\nSupportive company, friendship, and romantic or sexual intimacy are different relationships. Real intimacy emerges between people who can meet one another honestly, with mutual interest and consent; nobody owes it as a reward for suffering or doing self-work. If you're desperate "
     },
     {
       "id": "IC.IFS",
       "heading": "How This Relates to IFS",
-      "lineStart": 1003,
-      "lineEnd": 1020,
+      "lineStart": 1009,
+      "lineEnd": 1026,
       "sha256": "8b697cc55bb689fb5a8ce63d55c73ce91066e3e68a3a7a0953ea8a5c3ec0a9c5",
       "excerpt": "How This Relates to IFS\n\nInternal Family Systems, or IFS, overlaps with this guide. It recognizes protective parts and teaches people to approach them without shame or combat. The “meet the protector first” sequence is compatible with IFS.\n\nMy reparenting method diverges from IFS at an important point. Standard IFS treats the healer as the Self, a calm and compassionate inner source assumed to be available once parts “unblend.” I emphasize the inner adult you build and practice occupying: Nurtur"
     },
     {
       "id": "IC.RELATED_CLINICAL_WORK",
       "heading": "Related Clinical Work",
-      "lineStart": 1021,
-      "lineEnd": 1038,
+      "lineStart": 1027,
+      "lineEnd": 1044,
       "sha256": "be4059ea79b5b355f2cf6a63d0dc950049201ae07637bd66b298019352ff2139",
       "excerpt": "Related Clinical Work\n\nThis framework developed through the teachers and collaborators credited below and my own practice. Later revisions also draw on comparisons with schema therapy, compassion-focused therapy, attachment repair, motivational interviewing, mentalizing, metacognitive therapy, behavioral activation, radically open DBT, emotion-focused therapy, and spiritually integrated psychotherapy. These approaches do not all make the same claims. I borrow particular distinctions and practice"
     }

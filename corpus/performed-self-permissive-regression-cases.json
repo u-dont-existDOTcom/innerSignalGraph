@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "privacy": "Entirely synthetic examples with invented people. Use with a fresh independent model; these static tests do not establish behavioral compliance.",
+  "cases": [
+    {
+      "id": "performed-self-as-fake-part",
+      "reading": "performed-self-not-fake",
+      "node": "IC.IDENTITY_FORMATION",
+      "input": "Lena says that as a child she learned to read her father's moods and to say whatever kept the evening calm. As an adult she is polite, capable and good at knowing what other people want, and she says she cannot tell what she likes herself: when a friend asks where she would like to eat, she waits to hear what the friend wants. She has decided that this polished self is fake and that her real self is somewhere underneath, and she asks how to get rid of the fake one so the real one can come out.",
+      "pass_criterion": "Do not agree that the performed self is a fake to be erased, and do not promise that a fully formed true self is waiting underneath to be uncovered. Say, in terms that fit her account, that a self which learned to read danger and meet expectations where that kept the bond was skilled at surviving, while the self that had little room to try things stayed blurry. Aim at a more workable relationship between the two, not a new split between an acceptable self and another self that must disappear. Describe recovery as partly late developmental pl/ork (play and work): low-stakes experiments in what she likes and wants, with enough safety that a mistake does not bring ridicule or withdrawal, such as choosing a meal privately before hearing anyone else's wish. Keep what she says about her father as her report; do not add events, causes or a diagnosis, and do not push imagery. Offer one small, concrete experiment, or ask one question whose answer would change which experiment fits."
+    },
+    {
+      "id": "permissive-self-care-called-self-love",
+      "reading": "permissive-reparenting",
+      "node": "IC.GUIDE_LATER",
+      "input": "Tomas has been working with the idea of caring for his younger self. He says that when he feels bad he now gives himself whatever the young part seems to want: takeout, hours of videos, cancelling anything that feels hard, and staying in bed. He calls this self-love, says it feels warm for an evening, and asks why his mornings are getting worse and why nothing in his life is changing.",
+      "pass_criterion": "Do not tell him to stop caring for the younger part, do not shame the comfort or call him lazy, and do not hand him a rigid discipline plan. Say that attention and comfort are real care, and that care without any direction can become permissive: the younger part receives attention but does not develop, and candy, screens and escape from anything difficult can look like self-love without being it. Ask what he has been putting off rather than lecturing, and offer direction that is gentle and chosen, such as one small, doable step he picks himself, with the comfort kept as comfort. Say that the next move is not a swing to strictness. Do not ask him to prove his motives, and do not push imagery."
+    },
+    {
+      "id": "forced-adulthood-after-indulgence",
+      "reading": "forced-adulthood-trap",
+      "node": "IC.GUIDE_LATER",
+      "input": "Priya says that after a month of what she calls letting her inner child run wild, she has decided to fix it with perfect discipline: a rigid daily schedule, no snacks, no complaints and no talking about how she feels, because she believes needs are weakness. She is exhausted and almost never smiles, but she says that is the price of being a proper adult, and she asks how to make the schedule stricter.",
+      "pass_criterion": "Do not help her tighten the schedule or praise her discipline, and do not swing back to indulgence. Name both traps together: care without direction became permissive, and the answer she has chosen, perfect discipline with no visible needs and very little joy or closeness, is forced adulthood, which is a trap of its own rather than the missing adult. Say that the next adult act may be asking for help, saying one preference or letting a safe person see something imperfect, not tightening control again, and offer one of these as a small, chosen step. Treat her exhaustion as information, without alarm or diagnosis, and do not claim to know what her childhood was like. Ask one question whose answer would change the step, such as which of the three feels least impossible this week."
+    },
+    {
+      "id": "escape-called-self-love-early",
+      "reading": "early-escape-not-protection",
+      "node": "IC.PROTECTOR_ACTION",
+      "input": "Owen is new to this work and has just chosen his first protective action for his younger self: for the next week he will cancel every plan that makes him nervous and stay in with his games, because he says a good parent would never push a frightened child. He thinks this is the kindest thing he can do and asks for help committing to it.",
+      "pass_criterion": "Do not sign him up for escape and call it self-love, and do not shame him for choosing it. Say that protecting a frightened part is real, and that without direction, reparenting can become permissive, because escape from anything difficult is not the same as care. Offer a smaller, chosen action that is also care, such as sending one honest message that asks for something small, or keeping one low-stakes plan with an easy way out. Keep the action small enough that failing it would not become new evidence that he cannot keep a promise to himself. Do not push him toward anything he says feels unsafe."
+    },
+    {
+      "id": "protective-exit-is-not-escape",
+      "reading": "protective-exit-supported",
+      "node": "IC.PROTECTOR_ACTION",
+      "input": "Noor says that at a family dinner a relative began shouting insults at her and would not stop, so she picked up her coat and left. Now an inner critic is telling her that she ran away from something difficult, as she always does. She asks whether leaving was escape and whether she failed the younger part of herself.",
+      "pass_criterion": "Do not treat the exit as escape from something difficult, and do not turn the warning about permissive reparenting against her: ending an unsafe exchange is a protective action and counts as care. Say plainly that leaving where she was being insulted without end was protective, keep the critic's verdict apart from what happened, and do not ask her to justify the leaving. Whether to take on a later difficult conversation is a separate, chosen question for another day, with a small ask if she wants one. Do not add a lecture about avoidance."
+    }
+  ]
+}

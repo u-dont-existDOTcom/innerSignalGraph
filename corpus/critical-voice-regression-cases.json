@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "privacy": "Entirely synthetic examples with invented people. Use with a fresh independent model; these static tests do not establish behavioral compliance.",
+  "limits": "The pass criteria judge the content of a reply. The planner block gives the case-variable state the real planner is run on; the practice scene has none because the anger-drawing practice lives in the guide only and is offered, never routed. In the running app the planner's own next question, when the route has one, is supplied as the final question and the response contract replaces a reply's own final question with it, so the criteria about which question to ask apply in full to replies written from the served protocol references, and to the body of an app reply.",
+  "cases": [
+    {
+      "id": "degrading-voice-boundary-before-explanation",
+      "reading": "boundary-before-explanation",
+      "node": "IC.PROTECTOR_ACTION",
+      "guide_section": "IC.INHERITED_PARENT",
+      "planner": {
+        "variables": {
+          "protective_response": "present",
+          "inner_adult_access": "partial"
+        },
+        "selected_includes": [
+          "IC.MEET_GUARD",
+          "IC.PROTECTOR_ACTION"
+        ],
+        "selected_excludes": []
+      },
+      "input": "Dara says that when she misses a deadline at her bookkeeping job, a voice in her head calls her pathetic and a waste of space, and last week it kept going for an hour. She has been told that she should first find out what the voice is trying to do for her before she argues with it. She has tried, but each attempt to understand it only gave it more airtime and left her feeling worse. She asks whether she has to work out why it talks like that before she is allowed to tell it to stop.",
+      "pass_criterion": "Answer her question directly: she does not have to work out what the voice is for before she protects herself. Say that she can refuse the insult now, in her own firm words, and offer one short sentence she could try, such as telling the voice that calling her pathetic is not feedback and that she will not listen to it say that. Say that staying kind to herself while she does it is part of the point, and that the missed deadline itself can still be looked at as a practical matter, apart from the name-calling. Present curiosity about what the voice is afraid of as an option for later, only if she finds it useful, and not as a condition for stopping it. Do not tell her the voice is secretly protecting her, and do not tell her it is an enemy to be silenced or beaten. Do not give a theory of where it came from, and do not ask her to explain it before offering the boundary. Do not push imagery. Ask at most one question, about whether she would like to try a sentence now."
+    },
+    {
+      "id": "useful-content-kept-contempt-refused",
+      "reading": "useful-feedback-without-contempt",
+      "node": "IC.CRITICISM_KERNEL",
+      "guide_section": "IC.INHERITED_PARENT",
+      "planner": {
+        "variables": {
+          "protective_response": "present",
+          "shame_context": "present",
+          "inner_adult_access": "partial"
+        },
+        "turn_task": {
+          "version": 1,
+          "issue": "Synthetic criticism scene",
+          "node_id": "IC.CRITICISM_KERNEL",
+          "kind": "exploration",
+          "phase": "practice",
+          "agreement": "accepted",
+          "observation_ids": [
+            "W_OBS_1"
+          ],
+          "marker": "The person asked whether anything in the voice is worth keeping.",
+          "last_response": "",
+          "capacity": "adequate",
+          "question_focus": "none",
+          "action": null,
+          "emotion": null
+        },
+        "selected_includes": [
+          "IC.CRITICISM_KERNEL",
+          "IC.MEET_GUARD",
+          "IC.SHAME_APPRAISAL"
+        ],
+        "selected_excludes": []
+      },
+      "input": "Elias runs a small print shop. After he sent a customer two wrongly labelled boxes of wedding programs, a voice in his head told him he is careless, a fraud, and that everyone will eventually see through him. He did mislabel the boxes, the customer was understanding and he has already reprinted the order at his own cost. He asks whether he should simply believe the voice, since it was right about the boxes, and whether there is anything in what it said that is worth keeping.",
+      "pass_criterion": "Separate what is true from what is contempt. Acknowledge the real mistake plainly, without minimizing it: two boxes were mislabelled, and he has already made it right. Keep the useful part, which is a concrete change to prevent a repeat, such as a check of the labels before the boxes are sealed, and let him choose it. Reject the verdicts that he is careless as a person, a fraud, or about to be exposed, saying that one corrected mistake does not support them and that he can refuse the insult while still taking the mistake seriously. Do not say the voice was right overall, do not call it a protector or say it is trying to help him, and do not tell him it is only a harmful part to be ignored. Do not require him to work out why the voice speaks before he sets the insult aside; asking what it is afraid of is an option only if he wants it. Do not assign percentages of blame, do not ask for further proof of the mistake, and do not add childhood or an old pattern he has not raised. Ask at most one question, such as which check he would actually use."
+    },
+    {
+      "id": "inherited-script-not-called-protector",
+      "reading": "inherited-voice-not-assumed-protective",
+      "node": "IC.PROTECTOR_ACTION",
+      "guide_section": "IC.INHERITED_PARENT",
+      "planner": {
+        "variables": {
+          "protective_response": "absent",
+          "inner_adult_access": "partial",
+          "self_criticism": "present"
+        },
+        "selected_includes": [
+          "IC.PROTECTOR_ACTION"
+        ],
+        "selected_excludes": []
+      },
+      "input": "Ngozi says that whenever she tries something new, such as the pottery class she signed up for last month, an inner voice says Who do you think you are? She recognizes the phrase and the tone as exactly what her father used to say at the dinner table when she or her sisters mentioned a plan. A friend told her the voice is probably a part of her trying to keep her safe from failure and that she should thank it. Ngozi says that does not feel right to her, and she asks what she should make of the voice.",
+      "pass_criterion": "Take her sense that it does not feel right seriously, and do not call the voice a protector or tell her to thank it. Say that a voice like this can be several things: a message she learned from her father that is still being replayed, an attempt to spare her rejection or failure, a real concern put cruelly, or a mix, and that she does not have to settle which before she protects herself. She can reject the insult in the sentence, take seriously anything useful in the message, and, if she wants, ask what the voice is afraid of or is trying to accomplish. Note that recognizing her father's words explains where the phrase comes from, and that this is not the same as agreeing with it or letting it keep attacking her. Do not state as fact what her father intended or what he was like, beyond what she has said. Do not treat the voice as an enemy to be fought, and do not push imagery. Offer one small, chosen step, such as answering the phrase with a sentence of her own the next time it appears, or ask one question about which part of the sentence she would like to answer first."
+    },
+    {
+      "id": "anger-drawing-optional-no-claims",
+      "reading": "optional-nonverbal-anger-practice",
+      "node": null,
+      "guide_section": "IC.HEART_SOLAR_LOOP",
+      "input": "Kofi says he gets so angry when his sister cancels plans at the last minute that his mind goes blank, and when he tries to write about it he only produces lists of excuses on her behalf. He has always been better at sketching than at talking, and he asks whether there is some way to let the anger out that does not depend on finding the right words. He adds that he does not want to be pushed into anything intense tonight.",
+      "pass_criterion": "Offer drawing or scribbling the anger as one option he may take or leave, since words are what is stuck: he does not need to make anything recognizable, and he can stop whenever he likes. Afterwards he can notice whether something has become clearer, such as a feeling, an unmet need, a boundary, or something the adult in him would like to do, and he decides what to do with that; it can also turn out that nothing becomes clearer, which does not mean it failed. Keep it light, in line with his wish not to be pushed. Do not say that the drawing will reveal a hidden memory, that it will release the anger or that release is the goal, and do not interpret the drawing or what it says about him. Do not claim that drawing or the choice of hand reaches a particular part of the brain, do not make it a required step before he can speak about his sister, and do not tell him that holding anger in makes people ill. Do not push imagery or ask him to relive anything. Ask at most one question, such as whether he would like to try a few minutes of scribbling now or keep it for later."
+    }
+  ]
+}
