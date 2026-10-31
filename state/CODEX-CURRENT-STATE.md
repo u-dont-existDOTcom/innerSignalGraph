@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-29
+Updated: 2026-10-31
+
+## Reading-first summary step: merge long summaries within the real request room — 31 October 2026
+
+- **Owner outcome:** finish the 1,192-page journal import the owner approved on 26 October ("build and stage the graph and deploy").
+- **Failure:** after the reading completed, the hierarchical summary stopped with `JOURNAL_READING_FIRST_SYNTHESIS_NONPROGRESS` (31 Oct, 05:55 UTC, after 471 summarizer answers). Aggregation grouped child summaries within half of the 42,000-byte request limit; once every child summary passed about 10.5 KB, no two fitted and the level could not shrink. The known state such a request also carries is about 150 bytes.
+- **Fix (`src/journal-import/reading-first-port-adapter.mjs`):** the half-size grouping stays first, so every level that already shrank keeps byte-identical requests and the restarted import reuses all stored answers; only when it cannot combine any two summaries does the level group within the room a request really has (the limit minus the known state, scope label and wrapper). Every complete request is still checked against the limit, the non-progress stop remains for summaries too large to pair even then, and no child summary or source reference can be dropped.
+- **Tests:** `tests/journal-reading-first-port-adapter.test.mjs` pins the request sequences of levels the old grouping could reduce (digests taken before the change), proves the case that stopped the import now completes within the limit with full provenance, and keeps a real non-progress case.
+- **Not done here:** deployment to the import server (after the owner merges, under his 26 October `deploy`), restart of the import worker, and the remaining import steps.
 
 ## Shame-appraisal and semantic guide-reading candidate — 29 October 2026
 

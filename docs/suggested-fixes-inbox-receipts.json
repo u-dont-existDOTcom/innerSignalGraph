@@ -59,6 +59,13 @@
       "destination": "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028 + ROUTE.RELATIONAL_REALITY_CHECK + one focus-discipline-v1 rule + MISSING_MIDDLE_INTERPRETATION audit failure (task branch feat/relational-missing-middle-20261028); delivery item already covered; guide sentence waits for owner question 46, part 2",
       "implementation": "PROPOSED_ON_TASK_BRANCH",
       "nextCondition": "Review and merge the candidate PR to main; the public-guide sentence needs the owner's answer to question 46, part 2; deployment is a separate owner-gated step"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-10-30-interpersonal-intention-expectation-retrospective-review.md",
+      "disposition": "DEFERRED",
+      "destination": "Owner question 51 (31 Oct 2026); with A or B, ROUTE.RELATIONAL_REALITY_CHECK and the focus/response-fidelity rules on draft PR #213 (branch feat/map-identity-play-permissive-20261031); with A, also the AI-guide sentence and its humanized-guide queue entry",
+      "implementation": "NOT_STARTED",
+      "nextCondition": "The owner's answer to question 51 on his owner page"
     }
   ]
 }
