@@ -21,7 +21,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 7844caea433336af24dceb7dac9cc9f546b22d65f3ebeec65e15e512aeace25e
 base_graph_sha256: faee4224b45b3e390e473e315a3afc248736c8235ce11e98beb4fb9430e85477
-projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
+projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
 ---
 
 # Treat medical danger or impaired capacity as a real-world safety problem

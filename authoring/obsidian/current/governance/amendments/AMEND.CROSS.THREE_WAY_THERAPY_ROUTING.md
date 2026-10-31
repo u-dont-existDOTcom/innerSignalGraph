@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: f06a8c611987ccf1de0f2c770da44a8a1c84fd7842ec335531185a7e1c69ee80
 source_file_sha256: 7d9423e87dfa7125955700ca53ed11bcb68cc1f272536d24637249a85938d319
-projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
+projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
 ---
 
 # AMEND.CROSS.THREE_WAY_THERAPY_ROUTING

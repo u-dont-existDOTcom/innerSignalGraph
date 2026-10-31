@@ -19,6 +19,7 @@ source_refs:
   - IC.GUARDS
   - IC.BOTTOM_UP_SEQUENCE
   - IC.ESCAPE_URGE
+  - IC.INHERITED_PARENT
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
   - AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
@@ -37,9 +38,9 @@ regression_refs:
   - G114
   - G115
   - G139
-base_record_sha256: 52cae8d8b499e6f92dbcac224e8891d4b787988e5f626d36e79eb3b7e2b05fec
-base_graph_sha256: 31446a453afa034e8eb517fd9931eada91d2a024f49501f5abcbe9d89c1a6c06
-projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
+base_record_sha256: 2fab9e6c7218dc423ad12f6c986c3f1629e31942e711017aec8d9a381815b949
+base_graph_sha256: 0fc4cf105376b05ed1ddabe06ee93146e085e60838609d2e9dc6a1178565f44f
+projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
 ---
 
 # Hear the protective response without automatically obeying it
@@ -75,6 +76,7 @@ projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7
   },
   "avoid": [
     "Do not classify the voice more confidently than the transcript supports or push past it.",
+    "Do not assume an inner critic is a guard: it may replay a parent, be a self-critical strategy trying to prevent a feared outcome, point to a real problem in a cruel way, or be a blend.",
     "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex."
   ],
   "defaultQuestion": "",
@@ -104,6 +106,7 @@ projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7
   "recommendations": [
     "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
     "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
+    "Explore what a critical voice fears or is trying to accomplish only when a protective purpose is plausible and the person finds that useful, treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief.",
     "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
     "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
     "When shame becomes shame about being ashamed, distinguish the initial experience from a secondary self-attack and investigate any useful protective aim without treating the first feeling as a malfunction."
@@ -124,6 +127,8 @@ projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7
 [[current/sources/inner-child-guide/IC.BOTTOM_UP_SEQUENCE]]
 
 [[current/sources/inner-child-guide/IC.ESCAPE_URGE]]
+
+[[current/sources/inner-child-guide/IC.INHERITED_PARENT]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
 

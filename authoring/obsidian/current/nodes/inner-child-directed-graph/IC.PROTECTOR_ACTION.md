@@ -18,6 +18,7 @@ source_refs:
   - IC.PROTECTOR_VISIBLE
   - IC.ADULT_APPRENTICE
   - IC.GUIDE_LATER
+  - IC.INHERITED_PARENT
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.NONPUNITIVE_REVIEW
@@ -37,9 +38,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: 2f294147989b4801f14c8caba06e7a5e347300f682686da47a5157594f5c8ca5
-base_graph_sha256: 31446a453afa034e8eb517fd9931eada91d2a024f49501f5abcbe9d89c1a6c06
-projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
+base_record_sha256: 14c3f7f4e726e0e078f145fc04615374f34bb1bb68514108c8677d5a9d5c2dd4
+base_graph_sha256: 0fc4cf105376b05ed1ddabe06ee93146e085e60838609d2e9dc6a1178565f44f
+projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
 ---
 
 # Make the Protector visible in ordinary life
@@ -92,6 +93,7 @@ projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
     "Report the action without requiring the younger state to trust it yet.",
     "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
+    "The inner adult may reject the insult and firmly stop degrading inner speech without first settling what the voice is for, keeping compassion, boundaries and accountability for real conduct. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.",
     "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
     "Choosing not to act on an unsuitable attraction can be a compassionate protective response, respecting the needs, boundaries and consent of everyone affected without making the feeling itself a source of shame.",
     "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
@@ -111,6 +113,8 @@ projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
 
 [[current/sources/inner-child-guide/IC.GUIDE_LATER]]
+
+[[current/sources/inner-child-guide/IC.INHERITED_PARENT]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
 

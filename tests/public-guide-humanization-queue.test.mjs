@@ -32,7 +32,7 @@ test("public-guide humanization bootstrap always points to the durable pending q
 
 test("guide r8's two owner-approved additions are queued, and the accidental-exposure sentence is held for the legal check", async () => {
   const queue = await read("authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^Queue version: 2026-10-31-r18$/m);
+  assert.match(queue, /^Queue version: 2026-10-31-r19$/m);
   const entry = id => {
     const start = queue.indexOf(`### ${id} — `);
     assert.ok(start >= 0, `${id} is queued`);

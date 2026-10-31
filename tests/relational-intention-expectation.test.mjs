@@ -17,6 +17,7 @@ import { compileGuideGraphs } from "../src/guide-graph/compiler.mjs";
 import { loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/therapy-protocol.mjs";
 import { planFromGraphs } from "../src/guide-graph/planner.mjs";
 import { runGraphRegressionSuite } from "../src/guide-graph/regressions.mjs";
+import { withoutIssue215, QUESTION_51_R9_SHA256 } from "./fixtures/issue-215-guide-edits.mjs";
 
 // Owner answer of 31 October 2026 (question 51, option A) to a de-identified lesson from the architecture repository's
 // suggested-fix lane: once the sequence of a painful disagreement is known well enough, compare what the person was trying to
@@ -427,9 +428,13 @@ test("AI guide r9 is r8 plus the owner's two sentences directly after the going-
   const active = manifest.sources.find((source) => source.id === "inner-child-guide");
   assert.equal(active.file, "inner-child-guide-2026-10-31-r9.txt");
   assert.equal(active.version, "owner-approved-conflict-appraisal-addition-2026-10-31-r9");
-  const r9 = read("../guides/inner-child-guide-2026-10-31-r9.txt");
+  // Later the same day the owner approved three Inner Child refinements (issue 215), made inside r9 itself. They are tested in the
+  // guide source-sync test; taking them out here leaves the question 51 form this test is about, byte for byte.
+  const r9Now = read("../guides/inner-child-guide-2026-10-31-r9.txt");
+  const r9 = withoutIssue215(r9Now);
   const r8 = read("../guides/inner-child-guide-2026-10-30-r8.txt");
-  assert.equal(sha256(r9), active.sha256);
+  assert.equal(sha256(r9Now), active.sha256);
+  assert.equal(sha256(r9), QUESTION_51_R9_SHA256);
   assert.equal(count(r9, `${ANCHOR} ${ADDITION}`), 1, "the two sentences follow the anchor sentence, once");
   assert.equal(count(r9, ADDITION), 1);
   assert.equal(count(r8, "After a painful disagreement, ask what you were trying to achieve"), 0, "r8 does not carry them");
@@ -457,7 +462,7 @@ test("the humanized-guide queue carries the same teaching point as PGQ-051, and 
   assert.ok(entry.includes("inner-child-guide-2026-10-31-r9.txt"));
   assert.ok(entry.includes(ANCHOR));
   assert.match(entry, /not publication authority/u);
-  assert.match(queue, /^Queue version: 2026-10-31-r18$/mu);
+  assert.match(queue, /^Queue version: 2026-10-31-r19$/mu);
   // The earlier entries on the same passage and on the schema comparison are still there, once.
   for (const id of ["PGQ-049", "PGQ-050"]) assert.equal(count(queue, `\n### ${id} — `), 1, id);
 });

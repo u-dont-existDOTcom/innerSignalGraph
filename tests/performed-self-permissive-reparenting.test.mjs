@@ -126,14 +126,16 @@ test("IC.PROTECTOR_ACTION carries one early line after its action-size line, bou
   assert.doesNotMatch(ESCAPE_AVOID, /\b(?:leave|leaving|left|unsafe|exit)\b/iu);
   assert.match(node.recommendations[0], /an unsafe exchange ended, or help requested/u);
   assert.match(node.recommendations.join(" "), /Choosing not to act on an unsuitable attraction can be a compassionate protective response/u);
-  // Bound to the Guide section that carries the warning; the earlier eight references are unchanged and in order.
+  // Bound to the Guide section that carries the warning; the earlier eight references are unchanged and in order. Issue 215 later
+  // added one guide section right after it (IC.INHERITED_PARENT, for the critical-voice recommendation); the amendments stay behind.
   assert.equal(node.sourceRefs.filter((ref) => ref === LATER).length, 1);
-  assert.deepEqual(node.sourceRefs.filter((ref) => ref !== LATER), [
+  assert.deepEqual(node.sourceRefs.filter((ref) => ref !== LATER && ref !== "IC.INHERITED_PARENT"), [
     "IC.PROTECTOR_VISIBLE", "IC.ADULT_APPRENTICE", "AMEND.CROSS.LITERATURE_ACTION_REVIEW", "AMEND.IC.WISDOM_CORE",
     "AMEND.IC.NONPUNITIVE_REVIEW", "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
     "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025", "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
   ]);
   assert.equal(node.sourceRefs.indexOf(LATER), 2, "listed with the other guide sections, before the amendments");
+  assert.equal(node.sourceRefs.indexOf("IC.INHERITED_PARENT"), 3, "the issue 215 section follows it, still before the amendments");
 });
 
 test("the wording stays inside the owner's words in the guide sections it is bound to", () => {

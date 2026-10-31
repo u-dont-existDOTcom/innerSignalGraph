@@ -31,7 +31,7 @@ The validator binds the concept ledger `authoring/concepts/shame.json` to the ac
 
 The semantic index binds independent social versus moral judgment; repeated unfair exclusion and possible departure; dialogue with guards; developmental and real responsibility; compassion barriers; secondary self-shaming; unchosen experience versus chosen action; reparability without guaranteed trust; selective disclosure rather than compulsory exposure; and reciprocal relational support. It explicitly refuses to identify general imagery-based reparenting with the exact formal scene-rescripting protocol.
 
-The exact current authority is the October 31 r9 AI-guide candidate (registered in its manifest; the October 29 r7 text plus the owner-approved additions of r8 and r9), not a humanized Substack edition. The small shame summary section, added in r7, connects the existing dispersed teachings rather than replacing them.
+The exact current authority is the October 31 r9 AI-guide candidate (registered in its manifest; the October 29 r7 text plus the owner-approved additions of r8 and r9, and the issue 215 refinements about a critical voice and an optional anger-drawing practice, made inside r9), not a humanized Substack edition. The small shame summary section, added in r7, connects the existing dispersed teachings rather than replacing them.
 
 ## Operational regression cases
 
@@ -39,6 +39,7 @@ The exact current authority is the October 31 r9 AI-guide candidate (registered 
 - A client has caused actual harm and seeks a moral ruling from strangers: recognize conduct and an attainable repair step independently of public acceptance.
 - A person attacks themselves for experiencing shame: distinguish the initial feeling and secondary attack.
 - A protective part expects compassion to be weak or dangerous: hear that expectation instead of escalating imagery.
+- A critical inner voice insults the person: reject the contempt and any degrading wording, keep whatever in it is useful and truly theirs to answer for, and do not assume the voice is a protector, or make an enemy of the part producing it, before a boundary or relief.
 - Someone is rejected repeatedly by a community that requires self-betrayal: support differentiation or departure, not forced reconciliation.
 - Memory work is framed as a brand-new method despite existing reparenting imagery: distinguish exact procedure from related function and do not invent a missing component.
 - A reviewer accidentally selects September 7 rather than the registered guide: refuse the evidence receipt before evaluating concepts.

@@ -15,14 +15,15 @@ graph_tags:
   - criticism-kernel
   - optional
 source_refs:
+  - IC.INHERITED_PARENT
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.WISDOM_CRITICISM_KERNEL
   - AMEND.IC.WISDOM_SOURCES
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs: []
-base_record_sha256: 0c85a0eba9cc460db287d0467ac8d209cddc2f044de99db4503e225357e10bc5
-base_graph_sha256: 31446a453afa034e8eb517fd9931eada91d2a024f49501f5abcbe9d89c1a6c06
-projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
+base_record_sha256: 01ff58bf2050f625eba4f2d8b19a93b9c1029f561276b9831430467cd2ed058d
+base_graph_sha256: 0fc4cf105376b05ed1ddabe06ee93146e085e60838609d2e9dc6a1178565f44f
+projection_input_sha256: 17963f67fa6c0272ac4c78133068a70762197f64ad82f586e7d73b175a6126b8
 ---
 
 # Receive useful content without accepting contempt
@@ -103,7 +104,8 @@ projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7
     "After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.",
     "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
     "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
-    "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt."
+    "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt.",
+    "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person from rejection or failure, pointing to a real problem in a cruel way, or doing several of these at once. The person does not have to settle which before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish only if that helps."
   ],
   "successSignals": [
     "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."
@@ -113,6 +115,8 @@ projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7
 <!-- inner-signal:payload:end -->
 
 ## Source navigation
+
+[[current/sources/inner-child-guide/IC.INHERITED_PARENT]]
 
 [[current/governance/amendments/AMEND.IC.WISDOM_CORE]]
 

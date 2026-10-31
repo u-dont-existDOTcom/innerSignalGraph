@@ -3,7 +3,7 @@
   "guideId": "inner-child-guide",
   "source": {
     "file": "inner-child-guide-2026-10-31-r9.txt",
-    "sha256": "266af0240da3091552438fb89b10f73186d2718d28c35675e0527d763c453404"
+    "sha256": "0e27b0e92e520d5300c9a7f778c08cfbae48013614693d2f3a330c1e18781ccb"
   },
   "method": "Human-curated conceptual/countercase anchors; exact source citation integrity can be tested, but semantic completeness cannot be mechanically proved.",
   "concepts": [
@@ -63,7 +63,9 @@
       "status": "present",
       "nodes": [
         "IC.MEET_GUARD",
-        "IC.CREDIBILITY_REPAIR"
+        "IC.CREDIBILITY_REPAIR",
+        "IC.CRITICISM_KERNEL",
+        "IC.PROTECTOR_ACTION"
       ],
       "evidence": [
         {
@@ -77,9 +79,17 @@
         {
           "section": "IC.BOTTOM_UP_SEQUENCE",
           "quote": "A critic may soften into a fear"
+        },
+        {
+          "section": "IC.INHERITED_PARENT",
+          "quote": "You can reject the insult, take seriously anything useful in the message"
+        },
+        {
+          "section": "IC.GUARDS",
+          "quote": "a self-critical strategy that is trying to prevent a feared outcome"
         }
       ],
-      "explanation": "Purpose and impact of guard are checked separately."
+      "explanation": "Purpose and impact of guard are checked separately. A critical voice is not assumed to be a guard: it may replay a parent, try to protect, point to a real problem cruelly or be a blend, and the insult can be rejected without first settling which."
     },
     {
       "id": "retrospective-responsibility",
