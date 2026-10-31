@@ -236,7 +236,8 @@ test("October 31 r9 also carries exactly the three owner-approved refinements of
   // Issue 215 (owner approval, 31 October 2026): a critical-voice paragraph, a qualified proactive-protection example and one optional
   // anger-drawing practice. They went into r9 itself (the same revision, not an r10), so r9 now differs from its question 51 form by
   // these three edits only, and a reviewer can take them out again byte for byte. The critical-voice paragraph was then revised in place
-  // after the owner's follow-up correction of 31 October 2026, 15:11 UTC (recorded on issue 215), so the bytes pinned here are the revised ones.
+  // after the owner's follow-up correction of 31 October 2026, 15:11 UTC (recorded on issue 215) and adjusted once more in the review of that
+  // follow-up, so the bytes pinned here are the revised ones.
   const r9Now = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-31-r9.txt", import.meta.url), "utf8");
   const r9Before = withoutIssue215(r9Now);
   assert.equal(hash(r9Before), QUESTION_51_R9_SHA256);

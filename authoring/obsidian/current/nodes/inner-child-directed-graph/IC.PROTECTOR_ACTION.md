@@ -38,9 +38,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: 6d7c78538d9d4b9f2f0204953c7631dfb98964a748ca3d9a851118eecb6d28e7
-base_graph_sha256: 489d612d9de08a9d7f618229f9a285ee9e7024f598f7cf288b19725e0923698c
-projection_input_sha256: 2d09d02d33a18619c3cf39ff2e120706573e4b682902b3002a062516537c3a4a
+base_record_sha256: aabb4531e2f597328da1cc287566e23a489a54e724ec864a08249b489ab821bd
+base_graph_sha256: e5f728eda7192aeef14be8ffa682074c2107b709baa8063dd90231f41bf51dec
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # Make the Protector visible in ordinary life
@@ -93,7 +93,7 @@ projection_input_sha256: 2d09d02d33a18619c3cf39ff2e120706573e4b682902b3002a06251
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
     "Report the action without requiring the younger state to trust it yet.",
     "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
-    "Protective action toward a harsh inner voice is neither only confrontation nor only reassurance: the inner adult may reject the insult and stop the attack without first settling which purpose the voice serves, while caring about what it may be trying to do, taking seriously anything useful in the message and, if it is willing, seeing whether it would make its point without the contempt. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.",
+    "The inner adult can meet a harsh inner voice with compassion, curiosity and understanding and still give it firm limits: reject the insult and stop the attack without first settling which purpose the voice serves, take seriously anything useful in the message and, if it is willing, see whether it would make its point without the contempt. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.",
     "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
     "Choosing not to act on an unsuitable attraction can be a compassionate protective response, respecting the needs, boundaries and consent of everyone affected without making the feeling itself a source of shame.",
     "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."

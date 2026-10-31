@@ -24,16 +24,17 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  // 2026-10-31: the critical-voice recommendation on IC.PROTECTOR_ACTION (protective action is neither only confrontation
-  // nor only reassurance: the inner adult may reject the insult and stop the attack while caring about what the voice may
-  // be trying to do, as revised after the owner's follow-up) reaches the mock reviewed tier's plan, so its hash changes;
-  // the fast tier and provider/planning shape remain fixed.
-  revision: "critical-voice-refinements-2026-10-31-r14",
+  // 2026-10-31: the critical-voice recommendation on IC.PROTECTOR_ACTION (the inner adult can meet a harsh inner voice with
+  // compassion, curiosity and understanding and still give it firm limits: reject the insult and stop the attack, take
+  // seriously anything useful in the message and, if it is willing, see whether it would make its point without the
+  // contempt, as revised after the owner's follow-up and again in the review of it) reaches the mock reviewed tier's plan,
+  // so its hash changes; the fast tier and provider/planning shape remain fixed.
+  revision: "critical-voice-refinements-2026-10-31-r15",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "ed0c02d81b464fd6d786d31ae15745bd784eb3822c745bf304c5559082635835"
+    semanticHash: "c160c2b590e1cde813dcf3820192140271313e78138549dc06b42cf32eb2e8ec"
   })
 });
 

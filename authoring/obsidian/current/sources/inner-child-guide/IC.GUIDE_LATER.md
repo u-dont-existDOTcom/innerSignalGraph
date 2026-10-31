@@ -7,7 +7,7 @@ source_id: IC.GUIDE_LATER
 guide_id: inner-child-guide
 heading: The Inner Guide Comes Later
 source_role: primary-framework
-source_hash: 3b7bf4dc5a016699cdfdbaa58092af21bfa9c0394d5297b0709c9c508fd42d7c
+source_hash: 9a7929664ee14184e68052fe27092e342ae7092134f825c14bf16dd6514b7dc7
 section_hash: c26b76d382b2a97c6301f3060a149d2f48930a7a6e9c929d33e1a68932b2f9c2
 locator_kind: text-lines
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - IC.LOVE_HORIZON_EXPLORATION
   - IC.PROTECTOR_ACTION
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: 2d09d02d33a18619c3cf39ff2e120706573e4b682902b3002a062516537c3a4a
+projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
 ---
 
 # The Inner Guide Comes Later
