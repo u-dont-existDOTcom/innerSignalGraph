@@ -19,10 +19,11 @@ source_refs:
   - AMEND.IC.WISDOM_COMMON_HUMANITY
   - AMEND.IC.WISDOM_SOURCES
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
+  - AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028
 regression_refs: []
-base_record_sha256: f68c95c3ca8c0da0953b48b416da179fcec5fe32f21968cfab2983e9e1516534
-base_graph_sha256: 8a6c38e4ff7831f28b045efb4ab8c4badf7368329091209c990f488cf1f99460
-projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
+base_record_sha256: 746af17017092f3d222c3d78b9ab80579f57d05311a4c755473c380b60bc139b
+base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
+projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
 ---
 
 # Recognize shared humanity without minimizing this experience
@@ -78,7 +79,8 @@ projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf8
   "avoid": [
     "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
     "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
-    "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+    "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.",
+    "Do not meet disclosed or approached taboo material with alarm, moralizing, a refusal script or a global verdict on the person's worth or intent."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -104,7 +106,8 @@ projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf8
     "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
     "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
     "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.",
-    "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict."
+    "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict.",
+    "Where strong shame may be guarding something the person believes they can't tell anyone, being understood without flinching is itself the shared-humanity move. Read it as ordinary therapeutic material, name what it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) and keep it apart from the person's worth and from intent, without waiting for a journal to show it."
   ],
   "successSignals": [
     "The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized."
@@ -122,3 +125,5 @@ projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf8
 [[current/governance/amendments/AMEND.IC.WISDOM_SOURCES]]
 
 [[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
+
+[[current/governance/amendments/AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028]]
