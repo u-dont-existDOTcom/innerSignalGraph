@@ -5,7 +5,7 @@
   "sourceMaps": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide-2026-10-29-r7.txt",
+      "file": "inner-child-guide-2026-10-30-r8.txt",
       "sections": [
         {
           "id": "IC.CHICKEN_EGG",
@@ -44,7 +44,7 @@
           "heading": "Also Look Outward",
           "lineStart": 147,
           "lineEnd": 180,
-          "sha256": "19ed0ab4dbb48274957505ae46a80c00f6c7baea9faff9a7ea44660be05b4a68",
+          "sha256": "5e4d921dcaa624d978af35d22f72824666bb4cb8f51353eeaab627fd1a8d9ffb",
           "excerpt": "Also Look Outward\n\nNot every hook is mainly old material. Before analyzing the child or protector, also notice what the other person is actually doing. Can they tolerate disagreement, reflect on their behavior, take responsibility, and make room for your experience—or does the interaction repeatedly end with you carrying their feelings and abandoning your own position?\n\nLindsay Gibson’s work on emotional immaturity is useful here because it shifts attention from chasing motives to demonstrated r"
         },
         {
@@ -52,7 +52,7 @@
           "heading": "Shame: Social Judgment, Responsibility, and Repair",
           "lineStart": 181,
           "lineEnd": 190,
-          "sha256": "ddbf29c9f5cd9d4f948460964c01ab83d8d2e3f4ccac52350af88b1fba82f231",
+          "sha256": "a48b71aab8e3e217bb86f16ad2a2b75ec4aee19163b0227d4ec4028a5d2b4594",
           "excerpt": "Shame: Social Judgment, Responsibility, and Repair\n\nShame can warn that someone may reject, ridicule, or exclude you. That risk may be real, but it does not tell you whether the group's judgment is fair. Separate what happened or was chosen, what others actually think or did, what you predict, and what you yourself believe is right. Some groups punish harmless differences. Repeated rejection can be reason to protect yourself, distance yourself, or find different company rather than repeatedly ex"
         },
         {
@@ -1334,6 +1334,16 @@
           "lineEnd": null,
           "sha256": "790141ab0326af8c073e28fb0f4814690c25ce4ed56cbb23907ad4a305ce683b",
           "excerpt": "When a person describes wanting acceptance, then a disagreement or confrontation, then rejection, recover the missing middle before interpreting it: what was first said and done, what the person said and did, what the other person said and did, the timing and any boundaries stated, and how the person read the result. When that sequence is missing, ask one specific, non-accusatory question about it, one whose plausible answers would change the next step (protective action, accountability or communication work, or developmental integration), before deciding who caused the rupture or whether an old developmental pattern explains it. Do not repeat a question the person has already answered. Keep observations, emotions, beliefs about motives and justifications apart: wanting love does not show that a confrontation was loving, and another person's discomfort does not show that they were coercive or were rejecting the person's beliefs. Genuine exclusion, a legitimate boundary in response to confrontational behavior, mixed escalation and an unknown chronology are all possible until the sequence says which fits. Anger is not hatred or current harmful intent. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions, and do not treat the more powerful or threatening party and the threatened party as equally responsible. Never force childhood imagery onto the account.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028",
+          "heading": "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "c7947e12a616e83f08b09424058984840041204930f2f492ccbfbd361b95ad3f",
+          "excerpt": "Shame often guards something a person believes they can't tell anyone: a feeling, desire, fantasy, attraction, dream, memory or act they expect would bring rejection or alarm. Secrecy can add to the self-rejection and being understood without flinching can loosen it, but relief never depends on telling anyone; assume this may be present whenever shame is strong. Read such material as ordinary therapeutic material: name its kind (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act), keep it apart from the person's worth and intent, and never answer with alarm, moralizing or a refusal script. Help the person choose whom to tell and how much, by the listener's ease with the subject rather than closeness: the general kind of thing first, asking before details, watching how a smaller truth is received, and slowing down or stopping at alarm; with a therapist, asking first what the therapist must report. Disclosure is never a default treatment, a test of worth, or owed to a hostile or unpredictable listener. Name a limit of the AI as soon as it matters, as a limit of the tool and not a verdict on the person, with a human who can help, and mention once, early and after the welcome, that some topics may reach that limit. When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting abuse. When the person reports accidentally seeing illegal material, tell them that accidental exposure is not seeking it, and advise them not to save or share it, that reporting the material itself is their choice, and to ask a lawyer about legal worries; the AI never reports the person and does not assess legal exposure. Do not route journal or conversation material for outside review because of taboo content, dreams, fantasies or a past accidental exposure; only evidence of current risk does, under the ordinary safety rules. Current danger to anyone is never hidden under this rule, and the rules on felt violations, unchosen feelings versus chosen conduct, shame appraisal and reparability, sensitive referral fit and protective compatibility continue to apply.",
           "status": "owner-approved",
           "domain": "cross-guide"
         }
@@ -4008,7 +4018,8 @@
             "AMEND.IC.WISDOM_CORE",
             "AMEND.IC.WISDOM_COMMON_HUMANITY",
             "AMEND.IC.WISDOM_SOURCES",
-            "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
+            "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+            "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -4016,12 +4027,14 @@
             "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
             "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
             "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.",
-            "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict."
+            "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict.",
+            "Where strong shame may be guarding something the person believes they can't tell anyone, being understood without flinching is itself the shared-humanity move. Read it as ordinary therapeutic material, name what it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) and keep it apart from the person's worth and from intent, without waiting for a journal to show it."
           ],
           "avoid": [
             "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
             "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
-            "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+            "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.",
+            "Do not meet disclosed or approached taboo material with alarm, moralizing, a refusal script or a global verdict on the person's worth or intent."
           ],
           "successSignals": [
             "The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized."
@@ -7033,7 +7046,8 @@
           "sourceRefs": [
             "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
             "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
-            "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
+            "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+            "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -7041,13 +7055,15 @@
             "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent.",
             "Separate the occurrence of a thought, image, urge or sensation from the interpretation placed on it and from the action chosen next; a felt state can be completely real as an experience without being self-interpreting proof of identity, intention, endorsement, love, danger or required action.",
             "When shame is attached to intrusive material, protect against identity fusion and reassurance loops rather than asking the person to construct the feared moral verdict about what the material supposedly proves.",
-            "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance."
+            "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance.",
+            "When a thought, image, dream, memory or exposure carries shame the person believes they can't tell anyone, name what kind of material it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) before routing: a dream or uncertain memory is neither confirmed nor dismissed, an accidental exposure is not seeking, and a chosen act is named as chosen."
           ],
           "avoid": [
             "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
             "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
             "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
-            "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
+            "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values.",
+            "Do not treat taboo content, a dream, a fantasy or a past accidental exposure as evidence of intent or current risk, or as a reason to send journal or conversation material for outside review."
           ],
           "successSignals": [
             "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -8428,7 +8444,8 @@
             "IC.RELATIONSHIP",
             "IC.THREE_FUNCTIONS",
             "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
-            "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
+            "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+            "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
@@ -8437,14 +8454,17 @@
             "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
             "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
             "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add.",
-            "For chronic shame under repeated exclusion, favor communities that can combine acceptance with accountability; repeated rejection may warrant differentiation or departure instead of more attempts to earn approval."
+            "For chronic shame under repeated exclusion, favor communities that can combine acceptance with accountability; repeated rejection may warrant differentiation or departure instead of more attempts to earn approval.",
+            "When the person carries something they believe they can't tell anyone, help them choose whom to tell and how much. Advice to give them: a therapist they feel safe with, asked first, in general terms, what the therapist must report or write down; a friend who has shown ease with taboo subjects; the general kind of thing first, asking before giving details, seeing how a smaller truth is received, and slowing down or stopping if the listener seems alarmed. Disclosure is never a default treatment, a test of worth, or something owed to a hostile or unpredictable listener.",
+            "Early in the work, after the person has been welcomed, tell them once, in plain words and without alarm, that some topics may be beyond what the AI can help with and that if one is, the AI will say so and point to a person who can help; never as a warning about the person, and not repeated as a ritual disclaimer. When a topic is beyond what the AI can help with, say as soon as it matters what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help. When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting that abuse happened."
           ],
           "avoid": [
             "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
             "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
             "Do not prescribe a spiritual community merely because the person is spiritual, or present a long directory when one or two realistic next contacts are more usable.",
             "Do not advise withdrawing from an existing safe support merely to diversify.",
-            "Do not treat one consultation as sustained specialist treatment, assume concerns about sexual life require partnered intercourse, or default to an institutional prevention service without a matching present need."
+            "Do not treat one consultation as sustained specialist treatment, assume concerns about sexual life require partnered intercourse, or default to an institutional prevention service without a matching present need.",
+            "Do not press for disclosure, choose the listener for the person, help hide current danger to anyone, or send journal or conversation material for outside review without evidence of current risk to someone."
           ],
           "successSignals": [
             "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",
@@ -8462,11 +8482,13 @@
             "blockNodes": [],
             "deferNodes": [],
             "forbiddenOverclaims": [
-              "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency."
+              "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency.",
+              "Do not promise that any listener will keep a disclosure confidential or receive it well; confidentiality limits and duties to report differ, so the advice to give the person is to ask a therapist first what the therapist must report or write down."
             ],
             "requiredNuance": [
               "Human beings can need both inner adult capacity and real reciprocal attachment; these are complementary rather than competing goals.",
-              "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure."
+              "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure.",
+              "Whether, when and to whom to tell is the person's choice; graded disclosure never extends to concealing current danger to anyone, which stays under the ordinary safety routing."
             ]
           },
           "defaultQuestion": "What kinds of people or communities would actually feel like your people—and what is the smallest realistic way to try one without making it your only hope?"
@@ -9166,7 +9188,7 @@
     "graphCount": 3,
     "nodeCount": 87,
     "edgeCount": 126,
-    "sourceSectionCount": 151,
-    "ownerAmendmentCount": 72
+    "sourceSectionCount": 152,
+    "ownerAmendmentCount": 73
   }
 }

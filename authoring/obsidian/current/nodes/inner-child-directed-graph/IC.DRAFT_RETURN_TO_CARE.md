@@ -20,8 +20,8 @@ source_refs:
   - AMEND.IC.WISDOM_SOURCES
 regression_refs: []
 base_record_sha256: 67f1f7fdb2953b8f87def0213588e1234b4927017bd03873cded71893a810c6c
-base_graph_sha256: 8a6c38e4ff7831f28b045efb4ab8c4badf7368329091209c990f488cf1f99460
-projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
+base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
+projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
 ---
 
 # Return to the first draft for understanding and care

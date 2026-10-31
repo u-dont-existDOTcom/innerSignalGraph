@@ -29,6 +29,36 @@ test("public-guide humanization bootstrap always points to the durable pending q
   if (pending) assert.match(queue, /^### PGQ-\d+/m);
 });
 
+test("guide r8's two owner-approved additions are queued, and the accidental-exposure sentence is held for the legal check", async () => {
+  const queue = await read("authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  assert.match(queue, /^Queue version: 2026-10-30-r16$/m);
+  const entry = id => {
+    const start = queue.indexOf(`### ${id} — `);
+    assert.ok(start >= 0, `${id} is queued`);
+    const next = queue.indexOf("\n#", start + 4);
+    return queue.slice(start, next < 0 ? undefined : next);
+  };
+  const disclosure = entry("PGQ-048");
+  const sequence = entry("PGQ-049");
+  for (const text of [disclosure, sequence]) {
+    for (const field of ["Caused by:", "Teaching point:", "Reader need:", "Already covered:", "Where:"]) {
+      assert.match(text, new RegExp(`^${field} \\S`, "m"), field);
+    }
+    // The provenance of the approval: the owner's chat answer, its reading, and the revision that carries the wording.
+    assert.match(text, /30 Oct 2026, 22:03 UTC, to owner question 46/u);
+    assert.match(text, /“56a”/u);
+    assert.match(text, /“46: A”/u);
+    assert.match(text, /inner-child-guide-2026-10-30-r8\.txt/u);
+    assert.match(text, /a pending queue entry is not publication authority/u);
+  }
+  assert.match(disclosure, /IC\.SHAME_APPRAISAL/u);
+  assert.match(sequence, /IC\.RELATIONAL_REALITY/u);
+  // Only the accidental-exposure sentence is marked: it goes into the public guide after the legal review this queue already requires.
+  assert.match(disclosure, /\*\*Needs the legal check:\*\* the accidental-exposure sentence \(“If you came across illegal material by accident, …”\)/u);
+  assert.match(disclosure, /only after the legal review this queue requires \(PGQ-039:/u);
+  assert.doesNotMatch(sequence, /legal check|legal review/iu);
+});
+
 test("current pending queue carries the consolidated inner-child guide obligations", async () => {
   const queue = await read("authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
   assert.match(queue, /Experience is not its own interpretation/);

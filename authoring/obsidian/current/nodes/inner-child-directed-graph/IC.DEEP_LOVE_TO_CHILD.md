@@ -31,8 +31,8 @@ regression_refs:
   - G121
   - G123
 base_record_sha256: 4f9dcf7d9937f07b4f1fa02e671121b7235bf9a685f61aaeb70249c64355dedf
-base_graph_sha256: 8a6c38e4ff7831f28b045efb4ab8c4badf7368329091209c990f488cf1f99460
-projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
+base_graph_sha256: 3e2065e68183f51361b42e6bc085172aa2467ff991d01ba765406a399aa7e3dc
+projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
 ---
 
 # Bring already-accessible deep love to the younger self without force

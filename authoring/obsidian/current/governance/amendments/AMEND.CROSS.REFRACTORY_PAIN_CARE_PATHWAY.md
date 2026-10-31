@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 7196c4793d13fedf5f276bcc515b4d3f1fb129ba7a802955847933c86d1ca794
-source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
-projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
+base_record_sha256: 31ee7433dfe1bc40b25a5fb300d834f19e726143d05c9e332dbb1862dc41f50d
+source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
 ---
 
 # AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
@@ -25,6 +25,6 @@ projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf8
     "status": "owner-approved",
     "text": "With frequent debilitating chronic pain despite substantial workups or unsatisfactory treatment, prioritize a feasible referral to specialist chronic pain care, a clinician-justified urgency request when local policy allows, and a written flare protocol instead of treating repeated emergency visits as a long-term strategy. Emergency assessment remains available for genuinely urgent or unmanageable acute episodes. Preserve prior harmful treatment, whether drugs were taken or only prescribed, real access barriers and outcomes. Do not promise triage, ambulance, fast appointment, medicine, diagnosis or cure; evaluate tDCS/rTMS only as evidence-limited specialist options, not diagnostic confirmation or repair. The French SDC care pathway is documented in the Haute Autorité de Santé 2024 chronic-pain guide (https://has-sante.fr/jcms/p_3218057/fr/parcours-de-sante-d-une-personne-presentant-une-douleur-chronique); named services must be verified locally, and a familiar pain history never removes the need to assess new acute symptoms."
   },
-  "version": "owner-amendments-2026-10-29-r19"
+  "version": "owner-amendments-2026-10-30-r20"
 }
 ```

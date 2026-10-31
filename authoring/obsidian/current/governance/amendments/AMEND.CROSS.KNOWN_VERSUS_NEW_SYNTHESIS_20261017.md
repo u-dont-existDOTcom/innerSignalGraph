@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017
 status: owner-approved
 domain: cross-guide
-base_record_sha256: e540e6cbd8b3f50c61cf4f7940d8509a023a52f6afd3d2acdbc078acf20788ba
-source_file_sha256: d4186f1765db6512ed1134016091889a9510c89a703419890d467111cd13d26e
-projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
+base_record_sha256: b00b5ce4b2336ac9337e122386c1fb898f96a02368cf8fedd6422ec31653aaea
+source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
 ---
 
 # AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017
@@ -25,6 +25,6 @@ projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf8
     "status": "owner-approved",
     "text": "The owner, 17 Oct 2026 (issue #172), after a supervisor answer described as a new idea something already established repeatedly and did not distinguish what an imported journal changed in the case plan: any longitudinal synthesis gets a known versus genuinely new check. Identify whether a suggested insight is already established, a new supporting example, a contradiction, a new actionable lever, or a significant change to ranking. Search imported journals for decision-relevant deltas, not simply thousands of examples of a known problem. Do not call an old theme new because the source format is new. Do not treat an imported journal's model-generated tags as clinical diagnoses or as approval of treatment goals. Priorities are stated as explicit client preference, an authorized human or supervisor plan, or a provisional model recommendation, never silently conflated; safety needs and consent can override ordinary rank."
   },
-  "version": "owner-amendments-2026-10-29-r19"
+  "version": "owner-amendments-2026-10-30-r20"
 }
 ```

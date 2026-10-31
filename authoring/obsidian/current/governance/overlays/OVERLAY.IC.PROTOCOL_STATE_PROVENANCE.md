@@ -13,7 +13,7 @@ anchors:
   - IC.CREDIBILITY_REPAIR
 reconciled_nodes: []
 base_record_sha256: 0d87fd0531be7edb57470f892b70eac49af501ae30aa7fe0afd81127496b588b
-projection_input_sha256: b6c328802fa429b0e6ad6830c39588882761a581e69be6a2605ebf82a2144b3b
+projection_input_sha256: ec86a0744c16447d9adac460b8947d3cd3e34a24eeb48583c07da2f0bc04071c
 ---
 
 # Hypothetical care is not an enacted exercise
