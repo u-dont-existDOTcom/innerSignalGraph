@@ -117,13 +117,21 @@ export function createReadingFirstPortAdapter({
     synthesisReceipts.set(workId,{receipt:item.receipt, output_sha256:sha(JSON.stringify(output))});
     return { ...output, provider_receipt:{...item.receipt,operation_key:workId} };
   }
-  function batches(records) {
+  // The room an aggregate request really has for its child summaries: the
+  // whole limit minus the known state, the scope label and the JSON wrapper.
+  // synthCall still checks every complete request against MAX_SYNTHESIS_INPUT.
+  function aggregateRoom(level) {
+    return MAX_SYNTHESIS_INPUT - Buffer.byteLength(JSON.stringify({
+      observations:[],prior_summaries:[],known_state:knownState??{},
+      review_scope:"chronological_aggregate:"+level+":"+Number.MAX_SAFE_INTEGER}),"utf8");
+  }
+  function batches(records,limit=MAX_SYNTHESIS_INPUT/2) {
     const grouped=[];let group=[],bytes=0;
     for(const v of records){
       const size=Buffer.byteLength(JSON.stringify(v),"utf8")+128;
       invariant(size<=MAX_SYNTHESIS_INPUT,
         "JOURNAL_READING_FIRST_SYNTHESIS_PACKET_TOO_LARGE");
-      if(group.length && (group.length>=MAX_GROUP || bytes+size>MAX_SYNTHESIS_INPUT/2)){
+      if(group.length && (group.length>=MAX_GROUP || bytes+size>limit)){
         grouped.push(group);group=[];bytes=0;
       }
       group.push(v);bytes+=size;
@@ -182,7 +190,12 @@ export function createReadingFirstPortAdapter({
             entry.provider_receipt.receipt_id)],
         meaningful_changes:entry.meaningful_changes
       }));
-      const groups=batches(packetItems);
+      // The half-size grouping stays first, so every level that already made
+      // progress keeps exactly the same requests (and their stored answers).
+      // Only when it cannot combine any two summaries does the level use the
+      // room an aggregate request really has.
+      let groups=batches(packetItems);
+      if(groups.length>=current.length) groups=batches(packetItems,aggregateRoom(level));
       invariant(groups.length<current.length,
         "JOURNAL_READING_FIRST_SYNTHESIS_NONPROGRESS");
       const next=[];
