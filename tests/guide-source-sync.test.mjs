@@ -235,7 +235,8 @@ test("October 31 r9 is October 30 r8 plus exactly the owner's two approved sente
 test("October 31 r9 also carries exactly the three owner-approved refinements of issue 215, made in place, and nothing else", async () => {
   // Issue 215 (owner approval, 31 October 2026): a critical-voice paragraph, a qualified proactive-protection example and one optional
   // anger-drawing practice. They went into r9 itself (the same revision, not an r10), so r9 now differs from its question 51 form by
-  // these three edits only, and a reviewer can take them out again byte for byte.
+  // these three edits only, and a reviewer can take them out again byte for byte. The critical-voice paragraph was then revised in place
+  // after the owner's follow-up correction of 31 October 2026, 15:11 UTC (recorded on issue 215), so the bytes pinned here are the revised ones.
   const r9Now = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-31-r9.txt", import.meta.url), "utf8");
   const r9Before = withoutIssue215(r9Now);
   assert.equal(hash(r9Before), QUESTION_51_R9_SHA256);
@@ -265,7 +266,7 @@ test("October 31 r9 also carries exactly the three owner-approved refinements of
   }
   const qualifiedLine = before.find(line => line.includes(GUARD_OLD)).replace(GUARD_OLD, () => GUARD_NEW);
   assert.deepEqual(added.filter(line => line.trim() !== ""), [CRITICAL_VOICE, qualifiedLine, DRAWING_HEADING, DRAWING],
-    "the only lines that are not in the question 51 form are the two approved passages, the qualified line and the heading chosen for the drawing practice (the issue gave none)");
+    "the only lines that are not in the question 51 form are the revised critical-voice paragraph, the approved drawing practice, the qualified line and the heading chosen for the drawing practice (the issue gave none)");
   assert.equal(added.filter(line => line.trim() === "").length, 3, "plus the three blank lines that keep the paragraphs apart");
 
   // They sit in the sections they were written for, so the section map and the nodes that cite those sections still resolve.
@@ -292,6 +293,7 @@ test("October 31 r9 also carries exactly the three owner-approved refinements of
   assert.equal(active.file, "inner-child-guide-2026-10-31-r9.txt");
   assert.equal(active.sha256, CURRENT_R9_SHA256);
   assert.match(manifest.notes, /Inner Child refinements, filed as issue 215 on 31 October 2026 at 13:39 UTC, are made inside this same r9 file rather than a new revision/u);
+  assert.match(manifest.notes, /revised in place after the owner's follow-up correction of 31 October 2026 at 15:11 UTC, recorded on issue 215/u, "the notes say the paragraph was revised in place");
   assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 16);
   assert.equal(manifest.sourceHistory.some(item => /r9|r10/u.test(item.file)), false, "neither r9 nor an r10 is in the history of earlier revisions");
 });

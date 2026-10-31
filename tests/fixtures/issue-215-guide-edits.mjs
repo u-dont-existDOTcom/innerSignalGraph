@@ -1,10 +1,12 @@
 // The owner-approved Inner Child guide refinements of issue 215 (31 October 2026), written exactly as they stand in the guide:
-// the issue's approved wording with typographic apostrophes. They were made inside r9 itself (no r10), so reversing them gives the
-// question 51 revision of r9 back byte for byte. Tests use this one copy so the approved bytes are written down once.
+// the issue's approved wording with typographic apostrophes, except the critical-voice paragraph of edit 1, which was revised in place
+// after the owner's follow-up correction of 31 October 2026, 15:11 UTC (recorded on issue 215). They were made inside r9 itself (no r10),
+// so reversing them gives the question 51 revision of r9 back byte for byte. Tests use this one copy so the bytes are written down once.
 
-// Edit 1: a new paragraph in "The Parent You Inherited", right after the paragraph that ends with this sentence.
+// Edit 1: a new paragraph in "The Parent You Inherited", right after the paragraph that ends with this sentence (revised in place after the
+// owner's follow-up correction).
 export const PARENT_ANCHOR = "No wonder the inner child doesn’t immediately answer when a new adult voice appears and says, “Trust me.”";
-export const CRITICAL_VOICE = "A critical voice may be replaying something you learned from a parent, trying to protect you from rejection or failure, pointing to a real problem in a cruel way, or doing several of these at once. You don’t have to settle which one it is before protecting yourself. You can reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish, if that helps. Understanding where the criticism comes from doesn’t mean agreeing with it or allowing it to keep attacking you.";
+export const CRITICAL_VOICE = "A critical voice may be replaying something you learned from a parent, trying to protect you, or another vulnerable part of you, from rejection or failure, holding on to belonging, status, control, or safety, pointing to a real problem in a cruel way, or doing several of these at once. You can meet it with compassion, curiosity, and understanding and still give it firm limits; caring about the voice doesn’t compete with protecting the child. You don’t have to settle which one it is before protecting yourself. You can reject the insult, take seriously anything useful in the message, ask what the voice is afraid of or trying to accomplish, and see whether it would make its point without the contempt. Understanding where the criticism comes from doesn’t mean agreeing with it or allowing it to keep attacking you.";
 
 // Edit 2: in "Two Common Protective Patterns", the unconditional "inner critic" in the list of proactive protection becomes a qualified one.
 export const GUARD_OLD = "the skeptic, intellectualizer, inner critic, or voice watching for weakness and self-indulgence.";
@@ -20,7 +22,7 @@ export const NEXT_HEADING = "“And So That’s the Way It Happened!”";
 
 // The question 51 revision of r9 (before issue 215) and the revision as it stands now.
 export const QUESTION_51_R9_SHA256 = "266af0240da3091552438fb89b10f73186d2718d28c35675e0527d763c453404";
-export const CURRENT_R9_SHA256 = "0e27b0e92e520d5300c9a7f778c08cfbae48013614693d2f3a330c1e18781ccb";
+export const CURRENT_R9_SHA256 = "3b7bf4dc5a016699cdfdbaa58092af21bfa9c0394d5297b0709c9c508fd42d7c";
 
 const once = (text, part, label) => {
   const found = text.split(part).length - 1;

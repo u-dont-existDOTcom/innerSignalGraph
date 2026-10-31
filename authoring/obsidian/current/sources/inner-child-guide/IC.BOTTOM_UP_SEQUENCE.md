@@ -7,7 +7,7 @@ source_id: IC.BOTTOM_UP_SEQUENCE
 guide_id: inner-child-guide
 heading: A Bottom-Up Sequence
 source_role: primary-framework
-source_hash: 0e27b0e92e520d5300c9a7f778c08cfbae48013614693d2f3a330c1e18781ccb
+source_hash: 3b7bf4dc5a016699cdfdbaa58092af21bfa9c0394d5297b0709c9c508fd42d7c
 section_hash: b935ce45c4789b28e25185fcfdf0b425dbffb94b2af324b6ab1281664ad88823
 locator_kind: text-lines
 cited_by_node_ids:
@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
   - IC.DEEP_LOVE_TO_CHILD
   - IC.MEET_GUARD
-projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
+projection_input_sha256: 2d09d02d33a18619c3cf39ff2e120706573e4b682902b3002a062516537c3a4a
 ---
 
 # A Bottom-Up Sequence

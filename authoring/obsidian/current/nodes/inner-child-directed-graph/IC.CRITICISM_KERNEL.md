@@ -21,9 +21,9 @@ source_refs:
   - AMEND.IC.WISDOM_SOURCES
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs: []
-base_record_sha256: 01ff58bf2050f625eba4f2d8b19a93b9c1029f561276b9831430467cd2ed058d
-base_graph_sha256: 1be36fd7dc3435ef3c08b90afa3b6810738aa4e5170dcc0d727279ac7a61a3bc
-projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
+base_record_sha256: 844af1e352c58d425acfaed491dd4a55014fc4b16309b08abf157f1a9c9b4284
+base_graph_sha256: 489d612d9de08a9d7f618229f9a285ee9e7024f598f7cf288b19725e0923698c
+projection_input_sha256: 2d09d02d33a18619c3cf39ff2e120706573e4b682902b3002a062516537c3a4a
 ---
 
 # Receive useful content without accepting contempt
@@ -105,7 +105,7 @@ projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac
     "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
     "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
     "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt.",
-    "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person from rejection or failure, pointing to a real problem in a cruel way, or doing several of these at once. The person does not have to settle which before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish only if that helps."
+    "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or another vulnerable part from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish; understanding it does not mean agreeing with it or letting it keep attacking."
   ],
   "successSignals": [
     "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."

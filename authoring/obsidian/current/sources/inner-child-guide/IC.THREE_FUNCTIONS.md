@@ -7,14 +7,14 @@ source_id: IC.THREE_FUNCTIONS
 guide_id: inner-child-guide
 heading: The Three Adult Functions
 source_role: primary-framework
-source_hash: 0e27b0e92e520d5300c9a7f778c08cfbae48013614693d2f3a330c1e18781ccb
+source_hash: 3b7bf4dc5a016699cdfdbaa58092af21bfa9c0394d5297b0709c9c508fd42d7c
 section_hash: d8d3048a1540ca60516bcc01d8b7f05fbd009dfc36ae2ec5ed0ebadd340a53d5
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.CONTINUITY_TITRATION
   - IC.GUIDE_LATER
   - ROUTE.COMMUNITY_SUPPORT
-projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
+projection_input_sha256: 2d09d02d33a18619c3cf39ff2e120706573e4b682902b3002a062516537c3a4a
 ---
 
 # The Three Adult Functions

@@ -22,9 +22,12 @@ import {
 
 // Owner-approved Inner Child refinements, filed as issue 215 on 31 October 2026: a critical inner voice can be refused without first
 // being explained and without assuming it is a protector; the guide's list of proactive protectors no longer names every inner critic;
-// and one optional nonverbal practice is offered for anger that is hard to put into words. The guide wording is the issue's approved
-// text. The map change refines four existing nodes and adds none. Every example is synthetic. These static tests show where the lines
-// are written, bound, compiled, planned, served and mirrored; they do not show that a model follows them.
+// and one optional nonverbal practice is offered for anger that is hard to put into words. The guide wording of the last two is the
+// issue's approved text. The critical-voice paragraph was then revised in place after the owner's follow-up correction of 31 October
+// 2026, 15:11 UTC, recorded on issue 215: the voice is met with compassion, curiosity and understanding as well as firm limits, and a
+// protective purpose, where plausible, may serve another vulnerable part, belonging, status, control or safety. The map change refines
+// four existing nodes and adds none. Every example is synthetic. These static tests show where the lines are written, bound, compiled,
+// planned, served and mirrored; they do not show that a model follows them.
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
@@ -40,15 +43,18 @@ const PROTECTOR = "IC.PROTECTOR_ACTION";
 const SHAME = "IC.SHAME_APPRAISAL";
 const FIDELITY = "references/RESPONSE-FIDELITY.md";
 
-// The issue's approved wording, with the straight apostrophes the issue has (the guide's are typographic).
+// The issue's approved wording, with the straight apostrophes the issue has (the guide's are typographic). The critical-voice paragraph
+// was revised in place afterwards (FOLLOW_UP_CRITICAL_VOICE below); the original stays here as the text it was revised from.
 const ISSUE_CRITICAL_VOICE = "A critical voice may be replaying something you learned from a parent, trying to protect you from rejection or failure, pointing to a real problem in a cruel way, or doing several of these at once. You don't have to settle which one it is before protecting yourself. You can reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish, if that helps. Understanding where the criticism comes from doesn't mean agreeing with it or allowing it to keep attacking you.";
 const ISSUE_DRAWING = "If anger is hard to put into words, try drawing or scribbling how it feels. You don't need to make anything recognizable. When you're finished, notice whether something has become clearer: a feeling, an unmet need, a boundary, or something you'd like the adult in you to do. The drawing doesn't have to reveal a hidden memory or produce emotional release to be useful.";
+// The critical-voice paragraph as revised in place after the owner's follow-up correction (31 October 2026, 15:11 UTC), straight apostrophes.
+const FOLLOW_UP_CRITICAL_VOICE = "A critical voice may be replaying something you learned from a parent, trying to protect you, or another vulnerable part of you, from rejection or failure, holding on to belonging, status, control, or safety, pointing to a real problem in a cruel way, or doing several of these at once. You can meet it with compassion, curiosity, and understanding and still give it firm limits; caring about the voice doesn't compete with protecting the child. You don't have to settle which one it is before protecting yourself. You can reject the insult, take seriously anything useful in the message, ask what the voice is afraid of or trying to accomplish, and see whether it would make its point without the contempt. Understanding where the criticism comes from doesn't mean agreeing with it or allowing it to keep attacking you.";
 
-// The new node lines.
-const KERNEL_LINE = "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person from rejection or failure, pointing to a real problem in a cruel way, or doing several of these at once. The person does not have to settle which before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish only if that helps.";
-const GUARD_RECOMMENDATION = "Explore what a critical voice fears or is trying to accomplish only when a protective purpose is plausible and the person finds that useful, treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief.";
-const GUARD_AVOID = "Do not assume an inner critic is a guard: it may replay a parent, be a self-critical strategy trying to prevent a feared outcome, point to a real problem in a cruel way, or be a blend.";
-const PROTECTOR_RECOMMENDATION = "The inner adult may reject the insult and firmly stop degrading inner speech without first settling what the voice is for, keeping compassion, boundaries and accountability for real conduct. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.";
+// The new node lines, as revised in place after the owner's follow-up correction (31 October 2026, 15:11 UTC).
+const KERNEL_LINE = "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or another vulnerable part from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish; understanding it does not mean agreeing with it or letting it keep attacking.";
+const GUARD_RECOMMENDATION = "Meet a critical voice with compassion, curiosity and understanding as well as firm limits. Where a protective purpose is plausible, do not assume it protects only the younger self: it may be guarding another vulnerable part, belonging, status, control or safety. Explore what it fears or is trying to accomplish when the person finds that useful, treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief.";
+const GUARD_AVOID = "Do not assume an inner critic is a guard: it is one when it works as a self-critical strategy trying to prevent a feared outcome, but a critical voice may also, or instead, replay something learned from a parent or point to a real problem in a cruel way.";
+const PROTECTOR_RECOMMENDATION = "Protective action toward a harsh inner voice is neither only confrontation nor only reassurance: the inner adult may reject the insult and stop the attack without first settling which purpose the voice serves, while caring about what it may be trying to do, taking seriously anything useful in the message and, if it is willing, seeing whether it would make its point without the contempt. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.";
 
 // Lines the nodes already carried before this change, kept word for word. They are the "ALREADY COVERED" anchors.
 const KERNEL_COVERED = [
@@ -109,7 +115,7 @@ const SHAME_ACTIVATION = {
 };
 
 // The rule the served references and every response and review role carry, frame-neutral.
-const RULE = "When an inner voice is critical or degrading, in any frame, support rejecting the insult while keeping anything useful in the message and any real responsibility. Do not presume the voice is a protector, since it may replay something learned from a parent, point to a real problem cruelly or be a blend, nor treat whatever produces it as an enemy; asking what it fears or is trying to accomplish is optional and is not required before a boundary or relief.";
+const RULE = "When an inner voice is critical or degrading, in any frame, support meeting it with compassion, curiosity and understanding as well as firm limits: reject the insult while keeping anything useful in the message and any real responsibility. Do not presume the voice is a protector, since it may replay something learned from a parent, point to a real problem cruelly or be a blend, and where it does protect, do not assume it protects only one thing: another vulnerable part, belonging, status, control or safety are all possible. Never treat whatever produces it as an enemy; asking what it fears or is trying to accomplish is welcome but not required before a boundary or relief.";
 
 const candidateGraph = json("../guide-graphs/candidates/inner-child.graph.json");
 const candidate = (id) => candidateGraph.nodes.find((node) => node.id === id);
@@ -164,9 +170,16 @@ function pluginFiles() {
   return files;
 }
 
-test("the guide carries the issue's approved wording in the three places it names, with typographic apostrophes, and nothing it rules out", () => {
-  // The approved text, character for character, apart from the apostrophes the guide sets typographically.
-  assert.equal(CRITICAL_VOICE.replaceAll("’", "'"), ISSUE_CRITICAL_VOICE);
+test("the guide carries the issue's approved wording for the qualified example and the drawing practice, the revised critical-voice paragraph, typographic apostrophes, and nothing it rules out", () => {
+  // The approved text, character for character, apart from the apostrophes the guide sets typographically. The critical-voice paragraph is the
+  // exception: it was revised in place after the owner's follow-up correction (31 October 2026, 15:11 UTC), so it is checked against the revised
+  // text, and against the approved sentences and clause that the revision kept.
+  assert.equal(CRITICAL_VOICE.replaceAll("’", "'"), FOLLOW_UP_CRITICAL_VOICE);
+  assert.notEqual(FOLLOW_UP_CRITICAL_VOICE, ISSUE_CRITICAL_VOICE);
+  for (const kept of ["You don't have to settle which one it is before protecting yourself.", "You can reject the insult, take seriously anything useful in the message,",
+    "Understanding where the criticism comes from doesn't mean agreeing with it or allowing it to keep attacking you."]) {
+    assert.ok(ISSUE_CRITICAL_VOICE.includes(kept) && FOLLOW_UP_CRITICAL_VOICE.includes(kept), kept);
+  }
   assert.equal(DRAWING.replaceAll("’", "'"), ISSUE_DRAWING);
   // The heading is ours, chosen in this change; the issue gave the practice's wording but no heading.
   assert.equal(DRAWING_HEADING, "Draw or Scribble the Anger");
@@ -255,6 +268,57 @@ test("IC.CRITICISM_KERNEL, IC.MEET_GUARD and IC.PROTECTOR_ACTION each gain their
     ["IC.AGE_RESPONSIBILITY_CLARIFICATION", GUARD, KERNEL, PROTECTOR].sort().join(","), "the section is cited by its earlier node and by these three");
 });
 
+test("a critical voice is met with compassion, curiosity and understanding as well as firm limits, in the paragraph, the three node lines and the rule, and only in the inner-voice lines", () => {
+  // The revised guide paragraph (typographic apostrophes) names the stance, keeps every reading of the voice and keeps the limit.
+  assert.match(CRITICAL_VOICE, /You can meet it with compassion, curiosity, and understanding and still give it firm limits; caring about the voice doesn’t compete with protecting the child\./u);
+  assert.match(CRITICAL_VOICE, /trying to protect you, or another vulnerable part of you, from rejection or failure, holding on to belonging, status, control, or safety/u);
+  assert.match(CRITICAL_VOICE, /pointing to a real problem in a cruel way/u);
+  assert.match(CRITICAL_VOICE, /see whether it would make its point without the contempt/u);
+  assert.match(CRITICAL_VOICE, /doesn’t mean agreeing with it or allowing it to keep attacking you\.$/u);
+
+  // The node lines and the rule name the same stance. IC.CRITICISM_KERNEL, IC.MEET_GUARD and the rule name it in these words.
+  for (const [label, line] of [[KERNEL, KERNEL_LINE], [GUARD, GUARD_RECOMMENDATION], ["the response-fidelity rule", RULE]]) {
+    assert.match(line, /compassion, curiosity and understanding as well as firm limits/u, label);
+  }
+  // IC.PROTECTOR_ACTION says it in the revised paragraph's own words: protection is neither only confrontation nor only reassurance, the
+  // insult is rejected and the attack stopped, and the voice is still cared about, with understanding never meaning agreement.
+  assert.match(PROTECTOR_RECOMMENDATION, /neither only confrontation nor only reassurance/u);
+  assert.match(PROTECTOR_RECOMMENDATION, /may reject the insult and stop the attack without first settling which purpose the voice serves/u);
+  assert.match(PROTECTOR_RECOMMENDATION, /while caring about what it may be trying to do/u);
+  assert.match(PROTECTOR_RECOMMENDATION, /if it is willing, seeing whether it would make its point without the contempt/u);
+  assert.match(PROTECTOR_RECOMMENDATION, /does not mean agreeing with it or allowing it to keep attacking\.$/u);
+
+  // A real problem put cruelly stays one of the readings.
+  assert.ok(KERNEL_LINE.includes("pointing to a real problem in a cruel way"));
+  assert.ok(GUARD_AVOID.includes("point to a real problem in a cruel way"));
+  assert.ok(RULE.includes("point to a real problem cruelly"));
+
+  // A protective target is conditional and is never presumed to be the younger self alone.
+  assert.match(GUARD_RECOMMENDATION, /^Meet a critical voice with compassion, curiosity and understanding as well as firm limits\. Where a protective purpose is plausible, do not assume it protects only the younger self: it may be guarding another vulnerable part, belonging, status, control or safety\./u);
+  assert.match(GUARD_RECOMMENDATION, /treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief\.$/u);
+  assert.match(GUARD_AVOID, /^Do not assume an inner critic is a guard: it is one when it works as a self-critical strategy trying to prevent a feared outcome, but a critical voice may also, or instead, replay something learned from a parent/u);
+  assert.match(KERNEL_LINE, /trying to protect the person or another vulnerable part from rejection or failure, holding on to belonging, status, control or safety/u);
+  assert.match(RULE, /Do not presume the voice is a protector, since it may replay something learned from a parent, point to a real problem cruelly or be a blend, and where it does protect, do not assume it protects only one thing/u);
+
+  // The stance stays in the inner-voice lines: the criticism node's first four recommendations are about criticism from other people and
+  // say nothing about compassion toward the critic, and nothing else in that node does either.
+  const kernel = candidate(KERNEL);
+  for (const index of [0, 1, 2, 3]) {
+    assert.doesNotMatch(kernel.recommendations[index], /compassion|curiosity|understanding|caring about|vulnerable part/iu, `recommendation ${index} is about criticism from other people`);
+  }
+  assert.equal(kernel.recommendations.filter((line) => /compassion/iu.test(line)).length, 1, "the stance is written once, in the inner-voice line");
+  assert.equal(kernel.recommendations[4], KERNEL_LINE);
+  assert.equal(count(JSON.stringify({ ...kernel, recommendations: kernel.recommendations.slice(0, 4) }), "compassion"), 0);
+  // The existing protective-compatibility restriction and the gates are exactly as before (the node-line test above pins them node by node).
+  assert.equal(candidate(GUARD).recommendations.filter((line) => /compassion/iu.test(line)).length, 1);
+  assert.equal(candidate(PROTECTOR).recommendations.filter((line) => /compassion/iu.test(line)).length, 1, "the existing compassionate-protective-response line, not a new one");
+  // Issue 215's "compassion, boundaries and accountability" for real conduct are carried by the paragraph and by the protector node's existing lines.
+  const protector = candidate(PROTECTOR);
+  assert.match(protector.recommendations[0], /a boundary/u, "recommendation 0 names the boundary");
+  assert.match(protector.recommendations[5], /^Choosing not to act on an unsuitable attraction can be a compassionate protective response/u, "recommendation 5 is the compassionate protective response");
+  assert.match(protector.avoid[4], /ordinary accountability/u, "avoid 4 keeps ordinary accountability");
+});
+
 test("IC.SHAME_APPRAISAL already separates real responsibility from global self-condemnation, so it is unchanged, and nothing new was added to the taxonomy", async () => {
   const shame = candidate(SHAME);
   for (const [index, line] of SHAME_COVERED.recommendations) assert.equal(shame.recommendations[index], line, `ALREADY COVERED: recommendation ${index}`);
@@ -290,13 +354,13 @@ test("IC.SHAME_APPRAISAL already separates real responsibility from global self-
 test("every new node line stays inside the words of the guide section it is bound to", () => {
   const bound = [
     { line: KERNEL_LINE, sections: [SECTION], pieces: [
-      "replaying something", "from a parent", "trying to protect", "from rejection or failure", "pointing to a real problem in a cruel way",
-      "doing several of these at once", "settle which", "before protecting", "reject the insult", "take seriously anything useful in the message",
-      "ask what the voice is afraid of or trying to accomplish"
+      "replaying something", "from a parent", "trying to protect", "another vulnerable part", "from rejection or failure", "holding on to belonging, status, control",
+      "pointing to a real problem in a cruel way", "doing several of these at once", "compassion, curiosity", "firm limits", "settle which", "before protecting",
+      "reject the insult", "take seriously anything useful in the message", "ask what the voice is afraid of or trying to accomplish", "mean agreeing with it", "keep attacking"
     ] },
-    { line: GUARD_RECOMMENDATION, sections: ["IC.START_WHATEVER", SECTION], pieces: ["trying to accomplish", "the insult", "hypothesis"] },
-    { line: GUARD_AVOID, sections: ["IC.GUARDS", SECTION], pieces: ["a self-critical strategy", "prevent a feared outcome", "a real problem in a cruel way"] },
-    { line: PROTECTOR_RECOMMENDATION, sections: [SECTION], pieces: ["reject the insult", "agreeing with it or allowing it to keep attacking", "understanding where the criticism comes from"] }
+    { line: GUARD_RECOMMENDATION, sections: ["IC.START_WHATEVER", SECTION], pieces: ["compassion, curiosity", "firm limits", "another vulnerable part", "belonging, status, control", "trying to accomplish", "the insult", "hypothesis"] },
+    { line: GUARD_AVOID, sections: ["IC.GUARDS", SECTION], pieces: ["a self-critical strategy", "prevent a feared outcome", "from a parent", "a real problem in a cruel way"] },
+    { line: PROTECTOR_RECOMMENDATION, sections: [SECTION], pieces: ["reject the insult", "caring about", "seriously anything useful in the message", "whether it would make its point without the contempt", "agreeing with it or allowing it to keep attacking", "understanding where the criticism comes from"] }
   ];
   for (const { line, sections, pieces } of bound) {
     for (const piece of pieces) {
@@ -365,12 +429,12 @@ test("the rule is one bullet right after the shame bullet, written to InnerSigna
   assert.match(bullets[index + 1], /^- Do not infer an undisclosed event, perpetrator, diagnosis or psychological cause/u);
   assert.equal(count(responseFidelityRules, RULE), 1);
   assert.ok(responseFidelityRules.indexOf(RULE) < responseFidelityRules.indexOf("RESPONSE FIDELITY AUDIT FAILURES"), "among the rules, not the audit failures");
-  assert.ok(RULE.length < 600, `${RULE.length} characters`);
+  assert.ok(RULE.length < 700, `${RULE.length} characters`);
   assert.doesNotMatch(RULE, /\byou(?:r|rs|rself)?\b/iu, "written to InnerSignal, not to the person");
   assert.doesNotMatch(RULE, /inner[- ]child|younger self|untellable|reparent/iu, "no frame is required");
   assert.doesNotMatch(RULE, /inner brat|cathar|hemisphere|repress|spiritual child/iu);
   assert.deepEqual(unservedReferenceMentions(RULE), []);
-  for (const part of ["support rejecting the insult", "keeping anything useful in the message and any real responsibility", "Do not presume the voice is a protector", "nor treat whatever produces it as an enemy", "is optional and is not required before a boundary or relief"]) {
+  for (const part of ["support meeting it with compassion, curiosity and understanding as well as firm limits", "reject the insult while keeping anything useful in the message and any real responsibility", "Do not presume the voice is a protector", "do not assume it protects only one thing", "another vulnerable part, belonging, status, control or safety", "Never treat whatever produces it as an enemy", "welcome but not required before a boundary or relief"]) {
     assert.ok(RULE.includes(part), part);
   }
   // No new audit failure code.
@@ -488,6 +552,10 @@ test("the humanized-guide queue carries PGQ-052 to PGQ-054, keeps every earlier 
   for (const id of ["PGQ-052", "PGQ-053", "PGQ-054"]) assert.ok(entry(id).includes("AI guide r9"), `${id} names the guide it comes from`);
   assert.match(entry("PGQ-052"), /PGQ-050/u);
   assert.match(entry("PGQ-052"), /PGQ-047/u);
+  // The paragraph was revised in place after the owner's follow-up correction, and the entry says so and gives the comment.
+  assert.ok(entry("PGQ-052").includes("revised in place after the owner's follow-up correction of 31 October 2026, 15:11 UTC, recorded on issue 215 (https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/215#issuecomment-6546274735)"));
+  assert.match(entry("PGQ-052"), /compassion, curiosity and understanding together with firm limits/u);
+  assert.doesNotMatch(entry("PGQ-052"), /the three points together/u, "the Where field no longer counts three points");
   assert.match(entry("PGQ-054"), /makes no claim that a drawing reveals a hidden memory, that release is the aim, that a drawing can be read as a diagnosis/u);
 
   // Every entry that was there before is still there, exactly once.
@@ -508,7 +576,9 @@ test("the lesson and the state section name issue 215, the changes and what is n
   const lesson = lessons.slice(start, lessons.indexOf("\nThis root log records", start));
   for (const part of ["issue 215", SECTION, "IC.GUARDS", "IC.HEART_SOLAR_LOOP", KERNEL, GUARD, PROTECTOR, SHAME, "ALREADY COVERED", "no r10", "No new node, edge, taxonomy or owner amendment",
     "response-fidelity", "PGQ-052", "PGQ-053", "PGQ-054", "PLANNED_SEPARATE_HUMANIZED", "tests/critical-voice-refinements.test.mjs",
-    "do not show that any model follows the rules", "Merged: no", "Public text published: no", "Therapy protocol served live: no", "Inner Brat", "Spiritual Child"]) {
+    "do not show that any model follows the rules", "Merged: no", "Public text published: no", "Therapy protocol served live: no", "Inner Brat", "Spiritual Child",
+    "follow-up correction", "15:11 UTC", "compassion, curiosity and understanding together with firm limits", "another vulnerable part", "belonging, status, control or safety",
+    "recommendation 0's boundary, recommendation 5's compassionate protective response and avoid 4's ordinary accountability"]) {
     assert.ok(lesson.includes(part), part);
   }
   const state = read("../state/CODEX-CURRENT-STATE.md");
@@ -517,9 +587,10 @@ test("the lesson and the state section name issue 215, the changes and what is n
   const from = state.indexOf(heading);
   assert.ok(from > 0, "the state section exists, away from the top of the file");
   const section = state.slice(from, state.indexOf("\n## ", from + 5));
-  for (const part of ["issue 215", "draft PR #213", "same revision, no r10", SECTION, "IC.GUARDS", "IC.HEART_SOLAR_LOOP", "0e27b0e9", "266af024", KERNEL, GUARD, PROTECTOR, SHAME, "ALREADY COVERED", "owner-amendments-2026-10-31-r21",
-    "RESPONSE-FIDELITY.md", "PGQ-052", "PGQ-053", "PGQ-054", "2026-10-31-r19", "PLANNED_SEPARATE_HUMANIZED", "critical-voice-refinements-2026-10-31-r13", "tests/critical-voice-refinements.test.mjs",
-    "development merged: no", "Public text published: no", "Therapy protocol served live: no", "issue 154", "private MCP was not restarted", "journal-import worker was not touched"]) {
+  for (const part of ["issue 215", "draft PR #213", "same revision, no r10", SECTION, "IC.GUARDS", "IC.HEART_SOLAR_LOOP", CURRENT_R9_SHA256.slice(0, 8), "266af024", KERNEL, GUARD, PROTECTOR, SHAME, "ALREADY COVERED", "owner-amendments-2026-10-31-r21",
+    "RESPONSE-FIDELITY.md", "PGQ-052", "PGQ-053", "PGQ-054", "2026-10-31-r19", "PLANNED_SEPARATE_HUMANIZED", "critical-voice-refinements-2026-10-31-r14", "tests/critical-voice-refinements.test.mjs",
+    "development merged: no", "Public text published: no", "Therapy protocol served live: no", "issue 154", "private MCP was not restarted", "journal-import worker was not touched",
+    "Owner follow-up correction", "15:11 UTC", "compassion, curiosity and understanding as well as firm limits", "recommendations 0 to 3"]) {
     assert.ok(section.includes(part), part);
   }
 });

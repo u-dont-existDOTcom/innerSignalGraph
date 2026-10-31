@@ -38,9 +38,9 @@ regression_refs:
   - G114
   - G115
   - G139
-base_record_sha256: 2fab9e6c7218dc423ad12f6c986c3f1629e31942e711017aec8d9a381815b949
-base_graph_sha256: 1be36fd7dc3435ef3c08b90afa3b6810738aa4e5170dcc0d727279ac7a61a3bc
-projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac097f9c1c7
+base_record_sha256: 1784c0d0981623423b8f155e6b595acb57dd1e67411e19d6ae43e51816dd60af
+base_graph_sha256: 489d612d9de08a9d7f618229f9a285ee9e7024f598f7cf288b19725e0923698c
+projection_input_sha256: 2d09d02d33a18619c3cf39ff2e120706573e4b682902b3002a062516537c3a4a
 ---
 
 # Hear the protective response without automatically obeying it
@@ -76,7 +76,7 @@ projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac
   },
   "avoid": [
     "Do not classify the voice more confidently than the transcript supports or push past it.",
-    "Do not assume an inner critic is a guard: it may replay a parent, be a self-critical strategy trying to prevent a feared outcome, point to a real problem in a cruel way, or be a blend.",
+    "Do not assume an inner critic is a guard: it is one when it works as a self-critical strategy trying to prevent a feared outcome, but a critical voice may also, or instead, replay something learned from a parent or point to a real problem in a cruel way.",
     "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex."
   ],
   "defaultQuestion": "",
@@ -106,7 +106,7 @@ projection_input_sha256: 1a2c76f605f0712c39a31c625acdeb404804395f06b9a0d80bb03ac
   "recommendations": [
     "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
     "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
-    "Explore what a critical voice fears or is trying to accomplish only when a protective purpose is plausible and the person finds that useful, treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief.",
+    "Meet a critical voice with compassion, curiosity and understanding as well as firm limits. Where a protective purpose is plausible, do not assume it protects only the younger self: it may be guarding another vulnerable part, belonging, status, control or safety. Explore what it fears or is trying to accomplish when the person finds that useful, treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief.",
     "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
     "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
     "When shame becomes shame about being ashamed, distinguish the initial experience from a secondary self-attack and investigate any useful protective aim without treating the first feeling as a malfunction."
