@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.NONPUNITIVE_REVIEW
 status: owner-approved
 domain: inner-child
-base_record_sha256: 5c1a6322f9ad8bd287a532d94ac2a9487439bae569c04764294049d64b95df3c
-source_file_sha256: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
-projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
+base_record_sha256: a26a11a010d7718a61fd58299b767b3eb4660bff01cc12a9c2b3f655fbbf25d3
+source_file_sha256: 7d9423e87dfa7125955700ca53ed11bcb68cc1f272536d24637249a85938d319
+projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
 ---
 
 # AMEND.IC.NONPUNITIVE_REVIEW
@@ -24,6 +24,6 @@ projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f2
     "status": "owner-approved",
     "text": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established."
   },
-  "version": "owner-amendments-2026-10-30-r20"
+  "version": "owner-amendments-2026-10-31-r21"
 }
 ```

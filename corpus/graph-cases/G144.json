@@ -1,0 +1,46 @@
+{
+  "id": "G144",
+  "description": "A painful disagreement where the person stands by the decision but an older, unfinished feeling has come up: the reality check stays primary and inward work is selected beside it as an option, while outward action is not pushed.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "other_person_central": "yes",
+    "belonging_pressure": "present",
+    "influence_domain": "ordinary_social",
+    "relational_capacity_evidence": "mixed",
+    "relational_check_status": "pending",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "inward_attention_effect": "neutral"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "ROUTE.RELATIONAL_REALITY_CHECK",
+    "selectedIncludes": [
+      "ROUTE.RELATIONAL_REALITY_CHECK",
+      "ROUTE.GO_INWARD"
+    ],
+    "selectedExcludes": [
+      "ROUTE.ACT_OUTWARD",
+      "ROUTE.LEAVE_ALONE"
+    ],
+    "matchedIncludes": [
+      "ROUTE.RELATIONAL_REALITY_CHECK",
+      "ROUTE.GO_INWARD"
+    ],
+    "deferredIncludes": [],
+    "blockedIncludes": [],
+    "requiredNuancePatterns": [
+      "Relational capacity is not motive or diagnosis"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "hidden motives or fixed character"
+    ]
+  }
+}

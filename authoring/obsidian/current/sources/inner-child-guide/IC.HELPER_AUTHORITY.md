@@ -7,18 +7,18 @@ source_id: IC.HELPER_AUTHORITY
 guide_id: inner-child-guide
 heading: Don’t Give the Inner Adult Away
 source_role: primary-framework
-source_hash: d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d
+source_hash: 266af0240da3091552438fb89b10f73186d2718d28c35675e0527d763c453404
 section_hash: e7f4c769bf33ac1d1bd00b35ec45a244b4ecc2b76f7c8a667fa55c81140cd0b7
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
+projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
 ---
 
 # Don’t Give the Inner Adult Away
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-30-r8.txt`
+Authority path: `guides/inner-child-guide-2026-10-31-r9.txt`
 
 Locator: Lines 45–66
 

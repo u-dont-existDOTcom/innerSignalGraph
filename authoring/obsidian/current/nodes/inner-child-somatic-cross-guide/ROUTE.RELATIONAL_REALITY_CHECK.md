@@ -25,6 +25,7 @@ source_refs:
   - AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
   - AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
+  - AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031
 regression_refs:
   - G013
   - G014
@@ -33,9 +34,12 @@ regression_refs:
   - G056
   - G061
   - G141
-base_record_sha256: c95bcb88c332d3338957953f2cee0b9bac0e8b5da9bfa0dbf74eb0f3c6c1b267
-base_graph_sha256: 20f40a9060a42470c0f8a9956a00d1957ef33d05c3b01743c8b2cd1c508d9776
-projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
+  - G142
+  - G143
+  - G144
+base_record_sha256: f51f3ad48a7df70b87c7526ee4c952a4b8dccacf06d96c8e73837111cc80b2a9
+base_graph_sha256: faee4224b45b3e390e473e315a3afc248736c8235ce11e98beb4fb9430e85477
+projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -102,7 +106,8 @@ projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f2
     "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.",
     "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
     "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
-    "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships."
+    "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships.",
+    "Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement: a person can stand by a position, regret the wording and grieve the loss at once. Once the sequence is known, do not keep asking for incident detail unless the missing detail would change the next step or safety."
   ],
   "defaultQuestion": "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?",
   "effects": {
@@ -133,6 +138,7 @@ projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f2
   "recommendations": [
     "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
     "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
+    "Once that sequence is known well enough, review the completed encounter before choosing a next step: distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time (including surprise or a foreseeable tradeoff), and how they now judge both their manner and what followed, then compare the three. This is not the same as defining a realistic outcome for a future interaction (below). Let the comparison choose the next step among communication repair, a boundary, a decision about relational fit and optional developmental work. When context already suggests what the person hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now, and asking all three is not required every time. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions and do not treat the threatening and the threatened party as equally responsible.",
     "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
     "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
     "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -174,3 +180,5 @@ projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f2
 [[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
 
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028]]
+
+[[current/governance/amendments/AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031]]

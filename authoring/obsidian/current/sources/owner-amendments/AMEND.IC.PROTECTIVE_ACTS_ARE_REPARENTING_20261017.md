@@ -7,11 +7,11 @@ source_id: AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017
 guide_id: owner-amendments
 heading: AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017
 source_role: owner-approved-extension
-source_hash: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+source_hash: 7d9423e87dfa7125955700ca53ed11bcb68cc1f272536d24637249a85938d319
 section_hash: dc0e268f5f2fb08e5e91851db849b86e991706f188d68a1e904c4c232170d686
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
+projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
 ---
 
 # AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017

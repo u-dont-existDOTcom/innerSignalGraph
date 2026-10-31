@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: 2026-10-31-r17
+Queue version: 2026-10-31-r18
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -362,3 +362,12 @@ Proposed passage, as written for the owner (title line, six paragraphs, then the
 > Schema therapy's research comes from long courses with trained therapists, mostly for personality disorders. It doesn't show that this guide works, and I don't claim it does.
 >
 > Source for the claims: Young, Klosko and Weishaar, *Schema Therapy: A Practitioner's Guide* (Guilford, 2003): schemas and typical family origins, Figure 1.1, p. 13; fighting, defeating and expelling the Punitive Parent, pp. 270, 307, 325; the healthy adult "battling or moderating" the parent modes, p. 305.
+
+## Pending bundle M — looking back on a painful disagreement
+
+### PGQ-051 — After a painful disagreement, ask what you aimed for, what you expected and how you judge it now
+Caused by: Owner answer of 31 Oct 2026, 12:43 UTC (“51a”), to owner question 51, option A: put the teaching point from the architecture repository's lesson on intention, expected response and later judgment into a new AI-guide revision and queue the matching change for the humanized guide. This entry is that teaching point, now in AI guide r9 (`inner-child-guide-2026-10-31-r9.txt`), “Also Look Outward” (IC.RELATIONAL_REALITY), directly after the sentence of PGQ-049 and next to the app-side rule in AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031. The wording is owner-approved; the owner's merge of the pull request that carries r9 is the final approval.
+Teaching point: After a painful disagreement, ask what you were trying to achieve, what response you expected, and how you now feel about what you said and what followed. You can stand by your convictions and still wish you had expressed them differently; you may also accept an unavoidable consequence without regretting your choice.
+Reader need: Readers looking back on a disagreement that hurt need a way to hold what they were aiming for, what they expected and how they judge their manner and the outcome now, without being pushed toward regret or toward self-justification, so that the next step (repairing how it was said, keeping a boundary, deciding what the relationship can hold, or looking at an old pattern if they want to) fits what they find.
+Already covered: PGQ-049 asks the reader to go back over what each person said and did, in order, before judging a reaction, and the AI-guide paragraph this sentence pair joins already says that disagreeing, needing time or setting a boundary does not make someone emotionally immature and that feeling guilty proves neither fault nor manipulation. None of them asks the reader to set their aim, their expected response and their present judgment side by side, or says that standing by a position, wishing it had been said differently and accepting a foreseen consequence can all be true at once. Reconcile with the public guide's matching passage rather than repeating it.
+Where: “Also Look Outward”, in the public guide's passage that matches the AI guide's paragraph beginning “Keep that assessment specific and revisable.”, right after the sentence PGQ-049 adds. In the AI guide the two sentences sit inside that paragraph, after “Before deciding what someone's reaction to a disagreement means, go back over what each of you actually said and did, in order.” and before “Someone disagreeing with you, needing time, or setting their own boundary does not make them emotionally immature.” Humanize in the owner's voice, keeping the meaning. Guide Packet and public-guide sync gates remain; a pending queue entry is not publication authority.

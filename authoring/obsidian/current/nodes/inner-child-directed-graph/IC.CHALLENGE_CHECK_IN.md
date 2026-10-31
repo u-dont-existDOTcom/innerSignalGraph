@@ -26,7 +26,7 @@ regression_refs:
   - G088
 base_record_sha256: 514fad7c3d0c8ec88e3f9f63a8434857c94b0ec73f221b1c6d2377b77d3db8be
 base_graph_sha256: 31446a453afa034e8eb517fd9931eada91d2a024f49501f5abcbe9d89c1a6c06
-projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
+projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
 ---
 
 # Check how difficult material landed before choosing depth

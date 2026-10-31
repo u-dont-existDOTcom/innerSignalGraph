@@ -7,13 +7,13 @@ source_id: AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
 guide_id: owner-amendments
 heading: AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
 source_role: owner-approved-extension
-source_hash: 19425e8bbe7bf8b426924e608e859b9367506625b418adf69b7d6d09d828f36f
+source_hash: 7d9423e87dfa7125955700ca53ed11bcb68cc1f272536d24637249a85938d319
 section_hash: 13b4c4c301e809c76cc457bd7f02b07e2a9e4549ad13567ce210ac5ca8dfeddb
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.SUICIDAL_ADULT_SEAT
   - ROUTE.REFRACTORY_PAIN_NAVIGATION
-projection_input_sha256: b4a6e73f888e81f14230e1c2655e69c0eeb4c35a64abb7c409702f29ac7afebb
+projection_input_sha256: 071576ac603f494feb704a7e13b67ff93d4ff0e66d7502125ae42c7f603b63e7
 ---
 
 # AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST

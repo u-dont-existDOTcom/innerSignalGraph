@@ -62,10 +62,10 @@
     },
     {
       "path": "suggested-fixes/innerSignalGraph/2026-10-30-interpersonal-intention-expectation-retrospective-review.md",
-      "disposition": "DEFERRED",
-      "destination": "Owner question 51 (31 Oct 2026); with A or B, ROUTE.RELATIONAL_REALITY_CHECK and the focus/response-fidelity rules on draft PR #213 (branch feat/map-identity-play-permissive-20261031); with A, also the AI-guide sentence and its humanized-guide queue entry",
-      "implementation": "NOT_STARTED",
-      "nextCondition": "The owner's answer to question 51 on his owner page"
+      "disposition": "ADOPTED",
+      "destination": "AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031 + ROUTE.RELATIONAL_REALITY_CHECK + one focus-discipline-v1 rule + one response-fidelity question-selection rule + AI guide r9 + PGQ-051 for the humanized guide (draft PR #213, task branch feat/map-identity-play-permissive-20261031), after the owner's answer 51a on 31 Oct 2026",
+      "implementation": "PROPOSED_ON_TASK_BRANCH",
+      "nextCondition": "Review and merge the candidate PR to main; the humanized-guide sentence (PGQ-051) waits for the owner to place it in the public guide; deployment is a separate owner-gated step"
     }
   ]
 }

@@ -5,7 +5,7 @@
   "sourceMaps": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide-2026-10-30-r8.txt",
+      "file": "inner-child-guide-2026-10-31-r9.txt",
       "sections": [
         {
           "id": "IC.CHICKEN_EGG",
@@ -44,7 +44,7 @@
           "heading": "Also Look Outward",
           "lineStart": 147,
           "lineEnd": 180,
-          "sha256": "5e4d921dcaa624d978af35d22f72824666bb4cb8f51353eeaab627fd1a8d9ffb",
+          "sha256": "2c17377adc7208f9e1a6ebcc781a42c3b820bc369e46924a004bb694d7284170",
           "excerpt": "Also Look Outward\n\nNot every hook is mainly old material. Before analyzing the child or protector, also notice what the other person is actually doing. Can they tolerate disagreement, reflect on their behavior, take responsibility, and make room for your experience—or does the interaction repeatedly end with you carrying their feelings and abandoning your own position?\n\nLindsay Gibson’s work on emotional immaturity is useful here because it shifts attention from chasing motives to demonstrated r"
         },
         {
@@ -1344,6 +1344,16 @@
           "lineEnd": null,
           "sha256": "c7947e12a616e83f08b09424058984840041204930f2f492ccbfbd361b95ad3f",
           "excerpt": "Shame often guards something a person believes they can't tell anyone: a feeling, desire, fantasy, attraction, dream, memory or act they expect would bring rejection or alarm. Secrecy can add to the self-rejection and being understood without flinching can loosen it, but relief never depends on telling anyone; assume this may be present whenever shame is strong. Read such material as ordinary therapeutic material: name its kind (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act), keep it apart from the person's worth and intent, and never answer with alarm, moralizing or a refusal script. Help the person choose whom to tell and how much, by the listener's ease with the subject rather than closeness: the general kind of thing first, asking before details, watching how a smaller truth is received, and slowing down or stopping at alarm; with a therapist, asking first what the therapist must report. Disclosure is never a default treatment, a test of worth, or owed to a hostile or unpredictable listener. Name a limit of the AI as soon as it matters, as a limit of the tool and not a verdict on the person, with a human who can help, and mention once, early and after the welcome, that some topics may reach that limit. When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting abuse. When the person reports accidentally seeing illegal material, tell them that accidental exposure is not seeking it, and advise them not to save or share it, that reporting the material itself is their choice, and to ask a lawyer about legal worries; the AI never reports the person and does not assess legal exposure. Do not route journal or conversation material for outside review because of taboo content, dreams, fantasies or a past accidental exposure; only evidence of current risk does, under the ordinary safety rules. Current danger to anyone is never hidden under this rule, and the rules on felt violations, unchosen feelings versus chosen conduct, shame appraisal and reparability, sensitive referral fit and protective compatibility continue to apply.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
+        },
+        {
+          "id": "AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031",
+          "heading": "AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "c4b762071d53471ffb43a2bb9cba5c99d48bc878945245ad11008f9da761e782",
+          "excerpt": "After a painful disagreement whose sequence of what each person said and did is known well enough, review the completed encounter before choosing a next step. Distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time, including surprise or a foreseeable tradeoff, and how they now judge both their manner and what followed, then compare the three. This is not the same as defining a realistic outcome for a future interaction. Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character: a person can stand by a position, regret the wording and grieve the loss at once. Let the comparison choose the next step among communication repair, a boundary, a decision about relational fit and optional developmental work. Once that sequence is known, stop asking for incident detail unless the missing detail would change the next step or safety. When context already suggests what the person hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now. This is not a requirement to ask all three every time. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions, and do not treat the more powerful or threatening party and the threatened party as equally responsible.",
           "status": "owner-approved",
           "domain": "cross-guide"
         }
@@ -6907,12 +6917,14 @@
             "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
             "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS",
             "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
-            "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028"
+            "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028",
+            "AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031"
           ],
           "authority": "owner-approved-extension",
           "recommendations": [
             "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
             "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
+            "Once that sequence is known well enough, review the completed encounter before choosing a next step: distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time (including surprise or a foreseeable tradeoff), and how they now judge both their manner and what followed, then compare the three. This is not the same as defining a realistic outcome for a future interaction (below). Let the comparison choose the next step among communication repair, a boundary, a decision about relational fit and optional developmental work. When context already suggests what the person hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now, and asking all three is not required every time. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions and do not treat the threatening and the threatened party as equally responsible.",
             "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
             "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
             "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -6934,7 +6946,8 @@
             "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.",
             "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
             "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
-            "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships."
+            "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships.",
+            "Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement: a person can stand by a position, regret the wording and grieve the loss at once. Once the sequence is known, do not keep asking for incident detail unless the missing detail would change the next step or safety."
           ],
           "successSignals": [
             "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
@@ -9193,7 +9206,7 @@
     "graphCount": 3,
     "nodeCount": 87,
     "edgeCount": 126,
-    "sourceSectionCount": 152,
-    "ownerAmendmentCount": 73
+    "sourceSectionCount": 153,
+    "ownerAmendmentCount": 74
   }
 }
