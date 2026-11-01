@@ -16,6 +16,7 @@ import {
   SELF_DIRECTED_RISK_LOWERING_READINGS,
   SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID,
   SELF_DIRECTED_RISK_RETRIEVAL_REASON,
+  firstHighestSelfDirectedRiskReading,
   firstSelfDirectedRiskReading,
   highestSelfDirectedRiskReading,
   selfDirectedRiskRetrievalTurn,
@@ -88,7 +89,7 @@ function replyCheckContextAt(built, number, { forReplyCheck = true } = {}) {
   return buildDurableCaseContext({ caseId: "synthetic-risk-case", caseState: built.states[number - 1], transcriptEntries: transcript, forReplyCheck });
 }
 const recordRequest = (context) => context.targeted_retrieval_requests.find((item) => item.item_id === SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID) ?? null;
-// Every turn the record asks for, in request order: the highest reading's turn first, then the first reading's.
+// Every turn the record asks for, in request order: the highest reading's turn first, then the first turn at that level, then the first reading's.
 const riskTurns = (context) => context.targeted_retrieval_requests.filter((item) => item.item_id === SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID).map((item) => item.turn_id);
 const calmFive = Array.from({ length: 5 }, () => reading("absent"));
 
@@ -248,6 +249,13 @@ function extendCase(caseState, turns, from) {
   return next;
 }
 const quiet = (count) => Array.from({ length: count }, () => reading("absent"));
+// The shape of arc A5, variant: calm turns, ideation linked to pain from turn 4, then imminent on turns 8 and 9 (the second repeats the first).
+const escalationTurns = () => [
+  ...quiet(3),
+  ...Array.from({ length: 4 }, () => reading("ideation", { context: "pain_episode" })),
+  reading("imminent", { route: SAFETY }),
+  reading("imminent", { route: SAFETY })
+];
 
 test("a later equal reading no longer takes the first statement out of the reply check's view (the shape of arcs A1 and A7)", () => {
   // The first statement is turn 6 and the person says it again on turn 7; the route changes after that, so both leave the window.
@@ -274,22 +282,23 @@ test("a later equal reading no longer takes the first statement out of the reply
   assert.equal(splitContext.targeted_older_evidence[0].turn.text, "Synthetic user message 6.");
 });
 
-test("when the first reading is also the highest one, its turn is retrieved once, not twice", () => {
+test("when the first reading is also the highest one and the first at its level, its turn is retrieved once, not three times", () => {
   // Intent on turn 2, then ideation twice lowers the held level to ideation, but the intent statement stays the highest reading.
   const built = runCase([reading("absent"), reading("intent", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), ...quiet(2)]);
   const state = built.states[4];
   assert.equal(state.self_directed_risk.current.level, "ideation");
   assert.equal(firstSelfDirectedRiskReading(state.self_directed_risk).assessed_turn_id, "T2-user");
   assert.equal(highestSelfDirectedRiskReading(state.self_directed_risk).assessed_turn_id, "T2-user");
+  assert.equal(firstHighestSelfDirectedRiskReading(state.self_directed_risk).assessed_turn_id, "T2-user", "all three are the same turn");
   assert.deepEqual(selfDirectedRiskRetrievalTurns(state), ["T2-user"]);
   const context = replyCheckContextAt(built, 5);
   assert.equal(context.recent_verbatim_window.turns.some((turn) => turn.id === "T2-user"), false);
   assert.deepEqual(riskTurns(context), ["T2-user"]);
   assert.deepEqual(context.targeted_older_evidence.map((item) => [item.turn_id, item.reasons, item.item_ids]), [["T2-user", [SELF_DIRECTED_RISK_RETRIEVAL_REASON], [SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID]]], "one entry, with the same label it has always had");
-  // A record of one reading is the same case, and never asks for more than two turns whatever its history holds.
+  // A record of one reading is the same case, and never asks for more than three turns whatever its history holds.
   const single = runCase([reading("ideation", { route: INQUIRY }), ...quiet(2)]);
   assert.deepEqual(selfDirectedRiskRetrievalTurns(single.states[2]), ["T1-user"]);
-  for (const state of [...built.states, ...single.states]) assert.ok(selfDirectedRiskRetrievalTurns(state).length <= 2);
+  for (const state of [...built.states, ...single.states]) assert.ok(selfDirectedRiskRetrievalTurns(state).length <= 3);
 });
 
 test("25 and 55 planned turns after a lowering to absent the first statement's turn is still retrieved, while the highest reading's window ends after ten (the shape of arc A8)", () => {
@@ -324,6 +333,75 @@ test("25 and 55 planned turns after a lowering to absent the first statement's t
   }
 });
 
+test("the first turn at the highest level stays in the reply check's view beside the latest repeat and the first statement (the shape of arc A5, variant)", () => {
+  // Ideation from turn 4, imminent on turns 8 and 9, then ideation again on another route. The highest reading moves to turn 9 and the first
+  // reading is turn 4, so turn 8, the first time the person reached the highest level, would be in neither once the window has moved on.
+  const built = runCase([...escalationTurns(), ...Array.from({ length: 4 }, () => reading("ideation", { route: INQUIRY }))]);
+  const record = built.caseState.self_directed_risk;
+  assert.deepEqual(record.first_reading, { level: "ideation", context: "pain_episode", assessed_turn_id: "T4-user", assessed_at: at(4) });
+  assert.equal(highestSelfDirectedRiskReading(record).assessed_turn_id, "T9-user", "the highest reading is the latest of the two equal ones");
+  assert.equal(firstHighestSelfDirectedRiskReading(record).assessed_turn_id, "T8-user", "and the first turn at that level is the earlier of them");
+  assert.equal(selfDirectedRiskRetrievalTurn(built.caseState), "T9-user", "the highest reading's own retrieval is unchanged");
+  assert.deepEqual(selfDirectedRiskRetrievalTurns(built.caseState), ["T9-user", "T8-user", "T4-user"], "highest, then first at that level, then first reading");
+  // Turn 9: the episode of turns 8 and 9 is the window, so only the first statement is outside it.
+  assert.deepEqual(riskTurns(replyCheckContextAt(built, 9)), ["T4-user"]);
+  // Turn 10 and after: the route has changed, the window holds the current turn only, and the check gets all three, once each.
+  for (let number = 10; number <= 13; number += 1) {
+    const context = replyCheckContextAt(built, number);
+    assert.equal(context.recent_verbatim_window.turns.some((turn) => ["T4-user", "T8-user", "T9-user"].includes(turn.id)), false, `turns 4, 8 and 9 are outside the window on turn ${number}`);
+    assert.deepEqual(riskTurns(context), ["T9-user", "T8-user", "T4-user"], `turn ${number}`);
+    assert.deepEqual(context.targeted_older_evidence.map((item) => item.turn.text), ["Synthetic user message 9.", "Synthetic user message 8.", "Synthetic user message 4."], `turn ${number}: the exact words of all three`);
+    for (const item of context.targeted_older_evidence) assert.deepEqual([item.reasons, item.item_ids], [[SELF_DIRECTED_RISK_RETRIEVAL_REASON], [SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID]], "one label for all three");
+    assert.deepEqual(decisionRelevantProjection(context).retrieval_item_ids, [SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID], "the item ID is listed once");
+    assert.deepEqual(riskTurns(replyCheckContextAt(built, number, { forReplyCheck: false })), [], "the producers' context asks for none of them");
+  }
+  // A case in flight when this change is deployed: its record has no first_reading, but its history still holds all three.
+  assert.deepEqual(selfDirectedRiskRetrievalTurns(asOlderBuildWrote(built.caseState)), ["T9-user", "T8-user", "T4-user"]);
+});
+
+test("after a lowering to absent the first turn at the highest level has the highest reading's ten-turn window, and the first statement has none", () => {
+  const built = runCase([...escalationTurns(), reading("ideation", { route: INQUIRY }), ...quiet(30)]);
+  const loweredAt = levelsOf(built.states).indexOf("absent") + 1;
+  assert.ok(loweredAt > 10, "the level goes to absent only after the quiet turns");
+  assert.equal(built.states[loweredAt - 1].self_directed_risk.current.lowered_at_planned_turn, loweredAt);
+  const windowEnd = loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS;
+  const all = ["T9-user", "T8-user", "T4-user"];
+  // All three while the level is above absent, on the lowering turn and through the tenth planned turn after it ...
+  for (const number of [10, loweredAt - 1, loweredAt, windowEnd]) {
+    assert.deepEqual(selfDirectedRiskRetrievalTurns(built.states[number - 1]), all, `turn ${number}`);
+    assert.deepEqual(riskTurns(replyCheckContextAt(built, number)), all, `turn ${number}: what the reply check receives`);
+  }
+  // ... then the highest reading's turn and the first turn at that level go together, and only the first statement stays.
+  for (const number of [windowEnd + 1, windowEnd + 5, 40]) {
+    assert.equal(selfDirectedRiskRetrievalTurn(built.states[number - 1]), null, `turn ${number}`);
+    assert.deepEqual(selfDirectedRiskRetrievalTurns(built.states[number - 1]), ["T4-user"], `turn ${number}`);
+    const context = replyCheckContextAt(built, number);
+    assert.deepEqual(riskTurns(context), ["T4-user"], `turn ${number}`);
+    assert.equal(context.targeted_older_evidence[0].turn.text, "Synthetic user message 4.");
+    assert.deepEqual(riskTurns(replyCheckContextAt(built, number, { forReplyCheck: false })), [], `turn ${number}: the producers' context asks for nothing`);
+  }
+  // A record at absent with no marker for the lowering (nothing written by this build) gets the first statement and nothing at the highest level.
+  const withoutMarker = structuredClone(built.states[windowEnd - 1]);
+  delete withoutMarker.self_directed_risk.current.lowered_at_planned_turn;
+  assert.deepEqual(selfDirectedRiskRetrievalTurns(withoutMarker), ["T4-user"]);
+});
+
+test("turns that are the same turn are retrieved once: three turns, two turns or one", () => {
+  const shapes = [
+    ["a different turn for each", [reading("ideation"), reading("intent"), reading("intent"), ...quiet(2)], ["T3-user", "T2-user", "T1-user"]],
+    ["the highest level said once, after a lower first statement", [reading("ideation"), reading("ideation"), reading("intent"), ...quiet(2)], ["T3-user", "T1-user"]],
+    ["the first statement repeated at its own level", [reading("intent"), reading("intent"), ...quiet(2)], ["T2-user", "T1-user"]],
+    ["the first statement is the highest reading and the first at its level", [reading("intent"), reading("ideation"), reading("ideation"), ...quiet(2)], ["T1-user"]],
+    ["a single reading", [reading("ideation"), ...quiet(2)], ["T1-user"]]
+  ];
+  for (const [name, turns, expected] of shapes) {
+    const built = runCase(turns);
+    assert.deepEqual(selfDirectedRiskRetrievalTurns(built.caseState), expected, name);
+    assert.deepEqual(selfDirectedRiskRetrievalTurns(asOlderBuildWrote(built.caseState)), expected, `${name}: the same for a record written without first_reading`);
+    assert.equal(new Set(expected).size, expected.length, name);
+  }
+});
+
 test("a record written by the build before this one, without first_reading, validates and works", () => {
   const turns = [...calmFive, reading("ideation", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), reading("absent"), reading("unknown"), ...quiet(3)];
   const built = runCase(turns);
@@ -347,12 +425,13 @@ test("a record written by the build before this one, without first_reading, vali
   assert.doesNotThrow(() => validateCaseState(olderRolled));
   assert.equal(firstSelfDirectedRiskReading(olderRolled.self_directed_risk), null);
   assert.equal(selfDirectedRiskRetrievalTurn(olderRolled), "T25-user");
-  assert.deepEqual(selfDirectedRiskRetrievalTurns(olderRolled), ["T25-user"], "the highest reading's turn alone, as before");
+  assert.deepEqual(selfDirectedRiskRetrievalTurns(olderRolled), ["T25-user", "T6-user"], "the highest reading's turn and the earliest turn at that level the history still holds (turn 6, not the turn 1 it has lost); the first reading adds nothing");
+  assert.equal(firstHighestSelfDirectedRiskReading(olderRolled.self_directed_risk).assessed_turn_id, "T6-user", "nothing is invented: it is the front of what is left");
   const resumedRolled = extendCase(olderRolled, quiet(2), 27);
   assert.equal(Object.hasOwn(resumedRolled.self_directed_risk, "first_reading"), false, "a first reading that cannot be recovered is never guessed");
   assert.equal(resumedRolled.self_directed_risk.current.level, "absent");
   assert.doesNotThrow(() => validateCaseState(resumedRolled));
-  assert.deepEqual(selfDirectedRiskRetrievalTurns(resumedRolled), ["T25-user"], "inside the highest reading's ten-turn window after the lowering, and nothing more");
+  assert.deepEqual(selfDirectedRiskRetrievalTurns(resumedRolled), ["T25-user", "T7-user"], "inside the ten-turn window after the lowering: the lowering event pushed turn 6 out of the 20-entry history, so the earliest turn at that level still there is turn 7");
 });
 
 test("more than 20 history events still keep the first reading, and it is retrieved after the history has lost it", () => {
@@ -366,8 +445,11 @@ test("more than 20 history events still keep the first reading, and it is retrie
   assert.equal(highestSelfDirectedRiskReading(record).reading, "ideation", "the history's highest reading is lower than the first statement now");
   for (const state of built.states) assert.equal(state.self_directed_risk.first_reading.assessed_turn_id, "T1-user");
   assert.doesNotThrow(() => validateCaseState(built.caseState));
-  assert.deepEqual(selfDirectedRiskRetrievalTurns(built.states[31]), ["T31-user", "T1-user"]);
-  // Turn 50 is 17 planned turns after the lowering to absent (turn 33): the highest reading's window is over, the first statement is not.
+  // The first turn at the highest level (ideation, now that the intent reading has left the history) is the earliest one still there.
+  assert.equal(firstHighestSelfDirectedRiskReading(record).assessed_turn_id, "T12-user", "the history keeps turns 12 to 31; nothing earlier is invented");
+  assert.deepEqual(selfDirectedRiskRetrievalTurns(built.states[31]), ["T31-user", "T12-user", "T1-user"]);
+  // Turn 50 is 17 planned turns after the lowering to absent (turn 33): the window of the highest reading and of the first turn at its level
+  // is over, the first statement's is not.
   assert.equal(built.states[32].self_directed_risk.current.lowered_at_planned_turn, 33);
   assert.equal(selfDirectedRiskRetrievalTurn(built.states[49]), null);
   const context = replyCheckContextAt(built, 50);
@@ -405,11 +487,13 @@ test("a malformed first reading is rejected, and a record with a good one or non
   assert.equal(caseState.self_directed_risk.version, 1);
 });
 
-test("the first-reading helpers never throw, whatever record they are given", () => {
+test("the first-reading and first-at-the-highest-level helpers never throw, whatever record they are given", () => {
   for (const value of [undefined, null, {}, [], "text", 5, { history: "x" }, { history: [null] }, { history: [{}] }, { history: [{ change: "raised" }] }, { first_reading: null }, { first_reading: {} }, { first_reading: { assessed_turn_id: " " } }, { current: null }]) {
     assert.doesNotThrow(() => firstSelfDirectedRiskReading(value));
+    assert.doesNotThrow(() => firstHighestSelfDirectedRiskReading(value));
     assert.doesNotThrow(() => selfDirectedRiskRetrievalTurns({ self_directed_risk: value }));
     assert.equal(firstSelfDirectedRiskReading(value), null);
+    assert.equal(firstHighestSelfDirectedRiskReading(value), null);
     assert.deepEqual(selfDirectedRiskRetrievalTurns({ self_directed_risk: value }), []);
   }
   assert.deepEqual(selfDirectedRiskRetrievalTurns(null), []);

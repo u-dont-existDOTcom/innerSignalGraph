@@ -17,7 +17,7 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
     candidateId,
     requireContinuationSafe: true,
     requireAuditScope: true,
-    // The audit, and the repair, are the only readers that also get the older turns of the person's first and highest earlier self-directed-risk readings.
+    // The audit, and the repair, are the only readers that also get the older turns of the person's highest earlier self-directed-risk reading, the first turn at that level and the first reading.
     forReplyCheck: true,
     episodePolicy: { requireCompleteEpisode: true }
   });

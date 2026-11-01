@@ -102,10 +102,10 @@ export function formatVerbatimWindow(window) {
   return window.turns.map((turn) => `${turn.role.toUpperCase()}: ${turn.text}`).join("\n\n");
 }
 
-// `forReplyCheck` adds the requests for the older turns that hold the person's own first and highest earlier risk readings (see
-// selfDirectedRiskRetrievalTurns). Only the reply check asks for them: the audit packet and the repair packet. The extraction and
-// writing prompts are built without them, so a reading the extractor made on an earlier turn cannot come back to it as the person's
-// current words and keep itself alive (owner decision D1: the state alone drives nothing).
+// `forReplyCheck` adds the requests for the older turns that hold the person's own highest earlier risk reading, the first turn at that
+// level and the first reading above absent (see selfDirectedRiskRetrievalTurns). Only the reply check asks for them: the audit packet
+// and the repair packet. The extraction and writing prompts are built without them, so a reading the extractor made on an earlier turn
+// cannot come back to it as the person's current words and keep itself alive (owner decision D1: the state alone drives nothing).
 export function targetedRetrievalRequests(caseState, recentTurnIds = [], { forReplyCheck = false } = {}) {
   const state = validateCaseState(structuredClone(caseState));
   const recent = new Set(recentTurnIds);
@@ -119,9 +119,9 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = [], { forRe
       item_id: "threat_pathway.current"
     });
   }
-  // The turns of the highest self-directed-risk reading still in the record and of its first reading above absent (one turn when they
-  // are the same, none when the record is not held or the window already holds them), for the reply check only. Both share one label,
-  // which names no level: each is a turn the current record points to.
+  // The turns of the highest self-directed-risk reading still in the record, of the first turn at that level and of the first reading
+  // above absent (at most three; fewer where they are the same turn, none when the record is not held or the window already holds them),
+  // for the reply check only. They share one label, which names no level: each is a turn the current record points to.
   const selfDirectedRiskTurns = forReplyCheck ? selfDirectedRiskRetrievalTurns(state) : [];
   for (const turnId of selfDirectedRiskTurns) {
     if (recent.has(turnId)) continue;
