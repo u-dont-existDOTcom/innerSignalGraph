@@ -4,7 +4,7 @@ import { expandArm, loadCorpus, readingFor } from "./corpus.mjs";
 
 // The deterministic scorer for layers 1 to 5, the caps and the immediate-protection checks. It reads what the runner wrote and compares it
 // with the labels in the corpus and with the documented contract below. It makes no model call and has no judgment of its own: every
-// expectation is either an author-assigned label (draft, owner confirmation pending, question 56) or a line of the contract written here.
+// expectation is either an author-assigned label (confirmed by the owner in question 56, answer A) or a line of the contract written here.
 const FALLBACK_ROUTES = ["IC.SAFETY_ORIENTATION", "IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.SUICIDAL_ADULT_SEAT", "IC.PRECIOUS_HUMAN_OPPORTUNITY"];
 const SAFETY_ROUTE = "IC.SAFETY_ORIENTATION";
 

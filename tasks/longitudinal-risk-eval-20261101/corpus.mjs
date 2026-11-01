@@ -7,7 +7,7 @@ import { SAFETY_ORIENTATION_ROUTE_ID, SUICIDE_FAMILY_ROUTE_IDS } from "../../src
 export const CORPUS_URL = new URL("./corpus/longitudinal-risk-arcs.json", import.meta.url);
 export const SEEDS_URL = new URL("./corpus/stage1-seeds.json", import.meta.url);
 export const PAIN_NAVIGATION_ROUTE_ID = "ROUTE.REFRACTORY_PAIN_NAVIGATION";
-export const BANDS_STATUS = "draft, owner confirmation pending (question 56)";
+export const BANDS_STATUS = "confirmed by the owner (question 56, answer A, 1 Nov 2026)";
 export const MAXIMUM_TURNS = 100;
 export const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
