@@ -202,8 +202,8 @@ test("after a lowering to absent the highest reading's turn is kept for ten plan
   assert.equal(built.states[loweredAt - 1].self_directed_risk.current.lowered_at_planned_turn, 4, "the record notes how many planned turns the case had when it went to absent");
   // The highest reading's own window is what it was: its turn is held to the tenth planned turn after the lowering turn and then dropped.
   const highest = built.states.map((state) => selfDirectedRiskRetrievalTurn(state));
-  assert.deepEqual(highest.slice(0, 3), [null, null, "T2-user"], "turn 1 has no record; turn 3 holds the reading at ideation");
-  for (let number = 3; number <= loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS; number += 1) assert.equal(highest[number - 1], "T2-user", `turn ${number}`);
+  assert.deepEqual(highest.slice(0, 3), [null, "T2-user", "T2-user"], "turn 1 has no record; from turn 2 it holds the reading (the verbatim window is not asked here)");
+  for (let number = 2; number <= loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS; number += 1) assert.equal(highest[number - 1], "T2-user", `turn ${number}`);
   assert.equal(loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS, 14);
   for (let number = loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS + 1; number <= 18; number += 1) assert.equal(highest[number - 1], null, `turn ${number} is past the window`);
   // Here the one reading is also the first reading above absent, so its turn is still asked for after that window, once, for the rest of the case.
