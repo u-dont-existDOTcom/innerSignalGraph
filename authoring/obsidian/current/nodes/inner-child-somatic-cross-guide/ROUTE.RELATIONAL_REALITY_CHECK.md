@@ -39,7 +39,7 @@ regression_refs:
   - G144
 base_record_sha256: 360a49e1e82404f6b3b6f2abfd7b5ea1d75de22d3e0ef19be66a45e694d0129d
 base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # Reality-check relationships and keep social practice reciprocal

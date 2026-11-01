@@ -7,7 +7,7 @@ source_id: IC.REGULATION_BEFORE_DIALOGUE
 guide_id: inner-child-guide
 heading: Regulation May Come Before Dialogue
 source_role: primary-framework
-source_hash: 9a7929664ee14184e68052fe27092e342ae7092134f825c14bf16dd6514b7dc7
+source_hash: 0ad32952057b1fbf4c8407bef8035475c9629ad4be7545adee76652ba7774ab2
 section_hash: 813585bd0c0c8b82492ae85097e384d32f01c9c00449db7f4df2fb2c1650a45b
 locator_kind: text-lines
 cited_by_node_ids:
@@ -15,14 +15,14 @@ cited_by_node_ids:
   - IC.SAFETY_ORIENTATION
   - IC.SCAFFOLDED_CHALLENGE
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # Regulation May Come Before Dialogue
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-31-r9.txt`
+Authority path: `guides/inner-child-guide-2026-10-31-r10.txt`
 
 Locator: Lines 95–146
 

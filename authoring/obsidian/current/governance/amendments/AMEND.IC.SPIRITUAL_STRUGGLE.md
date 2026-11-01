@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: b6e8dc7a412a01747248b149e98443744c0d5600c226a6b5c0e51775933a57b6
 source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # AMEND.IC.SPIRITUAL_STRUGGLE

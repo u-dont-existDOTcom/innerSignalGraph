@@ -31,7 +31,7 @@ The validator binds the concept ledger `authoring/concepts/shame.json` to the ac
 
 The semantic index binds independent social versus moral judgment; repeated unfair exclusion and possible departure; dialogue with guards; developmental and real responsibility; compassion barriers; secondary self-shaming; unchosen experience versus chosen action; reparability without guaranteed trust; selective disclosure rather than compulsory exposure; and reciprocal relational support. It explicitly refuses to identify general imagery-based reparenting with the exact formal scene-rescripting protocol.
 
-The exact current authority is the October 31 r9 AI-guide candidate (registered in its manifest; the October 29 r7 text plus the owner-approved additions of r8 and r9, and the issue 215 refinements about a critical voice and an optional anger-drawing practice, made inside r9), not a humanized Substack edition. The small shame summary section, added in r7, connects the existing dispersed teachings rather than replacing them.
+The exact current authority is the October 31 r10 AI-guide candidate (registered in its manifest; the October 29 r7 text plus the owner-approved additions of r8 and r9, the issue 215 refinements about a critical voice and an optional anger-drawing practice, made inside r9, and the one spiritual-source paragraph that r10 adds in the Ask God for a Loan section), not a humanized Substack edition. The small shame summary section, added in r7, connects the existing dispersed teachings rather than replacing them.
 
 ## Operational regression cases
 

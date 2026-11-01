@@ -97,9 +97,9 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-conflict-appraisal-addition-2026-10-31-r9");
-  assert.equal(active.file, "inner-child-guide-2026-10-31-r9.txt");
-  assert.equal(active.sha256, CURRENT_R9_SHA256);
+  assert.equal(active.version, "owner-approved-spiritual-source-paragraph-2026-10-31-r10");
+  assert.equal(active.file, "inner-child-guide-2026-10-31-r10.txt");
+  assert.equal(active.sha256, "0ad32952057b1fbf4c8407bef8035475c9629ad4be7545adee76652ba7774ab2");
   const r5 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
   assert.equal(hash(r5), "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-10-r5.txt" && item.sha256 === "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31"));
@@ -112,7 +112,10 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
   assert.equal(hash(currentR8), "d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-30-r8.txt" && item.sha256 === "d3237e79680b8eeeacaa14836c908cba25cb0ac84a17cf6ec1fc0bb26f73245d"));
   const currentR9 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-31-r9.txt", import.meta.url), "utf8");
-  assert.equal(hash(currentR9), active.sha256);
+  assert.equal(hash(currentR9), CURRENT_R9_SHA256);
+  assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-31-r9.txt" && item.sha256 === CURRENT_R9_SHA256));
+  const currentR10 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-31-r10.txt", import.meta.url), "utf8");
+  assert.equal(hash(currentR10), active.sha256);
   for (const originalLine of current.split("\n")) {
     if (originalLine.trim()) assert.ok(successor.includes(originalLine), "r6 preserves r4 wording: "+ originalLine.slice(0,60));
   }
@@ -173,7 +176,7 @@ test("October 30 r8 is October 29 r7 plus exactly the owner's two approved addit
   const sectionOf = line => sections.find(section => section.lineStart <= line && line <= section.lineEnd)?.id;
   assert.equal(sectionOf(153), "IC.RELATIONAL_REALITY");
   assert.equal(sectionOf(189), "IC.SHAME_APPRAISAL");
-  // r9 is the active revision now; r8 stays as it was and is registered in the manifest's source history.
+  // r10 is the active revision now; r8 stays as it was and is registered in the manifest's source history.
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-30-r8.txt" && item.sha256 === hash(r8)));
 });
@@ -210,25 +213,28 @@ test("October 31 r9 is October 30 r8 plus exactly the owner's two approved sente
   assert.ok(after[152].startsWith(`Keep that assessment specific and revisable. ${anchor} ${addition} Someone disagreeing with you, `));
 
   // It sits inside the relational-reality section the graph already cites, so the section map and the nodes that cite it still resolve.
+  // (The source map describes the active revision, r10, which adds its one paragraph far below line 153, so this line has not moved.)
   const sourceMap = JSON.parse(await fs.readFile(new URL("../guide-graphs/source-maps/inner-child-guide.json", import.meta.url), "utf8"));
   assert.equal(sourceMap.sections.find(section => section.lineStart <= 153 && 153 <= section.lineEnd)?.id, "IC.RELATIONAL_REALITY");
   assert.equal(sourceMap.sections.length, 38, "no section is added or removed");
 
-  // Everything that names the active revision names r9 and its hash.
+  // r10 (owner question 52) is the active revision now: everything that names the active revision names r10 and its hash, and r9 is kept in the history.
+  const r10 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-31-r10.txt", import.meta.url), "utf8");
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const layout = JSON.parse(await fs.readFile(new URL("../guides/source-layout.json", import.meta.url), "utf8"));
   const bindings = JSON.parse(await fs.readFile(new URL("../tasks/guide-fidelity-20260906/case-source-bindings-2026-09-07.json", import.meta.url), "utf8"));
   const concept = JSON.parse(await fs.readFile(new URL("../authoring/concepts/shame.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.file, "inner-child-guide-2026-10-31-r9.txt");
-  assert.equal(active.sha256, hash(r9Now));
-  assert.equal(layout.version, "source-layout-v15-2026-10-31");
+  assert.equal(active.file, "inner-child-guide-2026-10-31-r10.txt");
+  assert.equal(active.sha256, hash(r10));
+  assert.equal(layout.version, "source-layout-v16-2026-10-31");
   assert.equal(layout.textGuides.find(guide => guide.guideId === "inner-child-guide").file, active.file);
   assert.equal(bindings.sourceFile, `guides/${active.file}`);
   assert.equal(bindings.sourceSha256, active.sha256);
   assert.equal(concept.source.file, active.file);
   assert.equal(concept.source.sha256, active.sha256);
-  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 16, "every earlier revision is kept in the history");
+  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 17, "every earlier revision is kept in the history");
+  assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-31-r9.txt" && item.sha256 === hash(r9Now)), "r9 is in the history with its own hash");
   assert.equal(sourceMap.file, active.file);
 });
 
@@ -270,33 +276,37 @@ test("October 31 r9 also carries exactly the three owner-approved refinements of
     "the only lines that are not in the question 51 form are the revised critical-voice paragraph, the approved drawing practice, the qualified line and the heading chosen for the drawing practice (the issue gave none)");
   assert.equal(added.filter(line => line.trim() === "").length, 3, "plus the three blank lines that keep the paragraphs apart");
 
-  // They sit in the sections they were written for, so the section map and the nodes that cite those sections still resolve.
+  // They sit in the sections they were written for, so the section map and the nodes that cite those sections still resolve. The source map
+  // describes the active revision, r10, which is r9 plus one paragraph (owner question 52); the same passages are in it, so they are read there.
   const sourceMap = JSON.parse(await fs.readFile(new URL("../guide-graphs/source-maps/inner-child-guide.json", import.meta.url), "utf8"));
-  const lineOf = part => after.findIndex(line => line.includes(part)) + 1;
+  const r10 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-31-r10.txt", import.meta.url), "utf8");
+  const mapped = r10.split("\n");
+  const lineOf = part => mapped.findIndex(line => line.includes(part)) + 1;
   const sectionAt = line => sourceMap.sections.find(section => section.lineStart <= line && line <= section.lineEnd)?.id;
   assert.equal(sectionAt(lineOf(CRITICAL_VOICE)), "IC.INHERITED_PARENT");
   assert.equal(sectionAt(lineOf(GUARD_PHRASE)), "IC.GUARDS");
   assert.equal(sectionAt(lineOf(DRAWING_HEADING)), "IC.HEART_SOLAR_LOOP", "the practices under Simple Practices belong to the section that precedes the next listed heading");
   assert.equal(sectionAt(lineOf(DRAWING)), "IC.HEART_SOLAR_LOOP");
   assert.equal(lineOf(CRITICAL_VOICE) < lineOf(GUARD_PHRASE) && lineOf(GUARD_PHRASE) < lineOf(DRAWING_HEADING), true);
-  assert.equal(after[lineOf(CRITICAL_VOICE) - 3].endsWith(PARENT_ANCHOR), true, "directly after the paragraph that ends with the anchor sentence");
-  assert.equal(after[lineOf(CRITICAL_VOICE)].trim(), "");
-  assert.ok(after[lineOf(CRITICAL_VOICE) + 1].startsWith("Borrowed adulthood helps because"), "and before the paragraph that follows it");
-  assert.equal(after[lineOf(DRAWING_HEADING) - 3].endsWith(JOURNAL_ANCHOR), true, "directly after Journal With Each Hand");
-  assert.equal(after[lineOf(DRAWING) + 1], NEXT_HEADING, "and before the next heading");
+  assert.equal(mapped[lineOf(CRITICAL_VOICE) - 3].endsWith(PARENT_ANCHOR), true, "directly after the paragraph that ends with the anchor sentence");
+  assert.equal(mapped[lineOf(CRITICAL_VOICE)].trim(), "");
+  assert.ok(mapped[lineOf(CRITICAL_VOICE) + 1].startsWith("Borrowed adulthood helps because"), "and before the paragraph that follows it");
+  assert.equal(mapped[lineOf(DRAWING_HEADING) - 3].endsWith(JOURNAL_ANCHOR), true, "directly after Journal With Each Hand");
+  assert.equal(mapped[lineOf(DRAWING) + 1], NEXT_HEADING, "and before the next heading");
   assert.equal(sourceMap.sections.length, 38, "no section is added or removed");
-  assert.equal(sourceMap.file, "inner-child-guide-2026-10-31-r9.txt");
+  assert.equal(sourceMap.file, "inner-child-guide-2026-10-31-r10.txt");
 
-  // The manifest keeps the same revision label, records the new hash and says what the issue added; the history gains nothing (no r10).
+  // The manifest's notes still say the issue's edits were made inside r9. r9 keeps its issue 215 digest in the history; r10 (owner question 52,
+  // the spiritual-source paragraph) is the active revision, so the active entry names r10 and the history gains r9.
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-approved-conflict-appraisal-addition-2026-10-31-r9");
-  assert.equal(active.file, "inner-child-guide-2026-10-31-r9.txt");
-  assert.equal(active.sha256, CURRENT_R9_SHA256);
+  assert.equal(active.version, "owner-approved-spiritual-source-paragraph-2026-10-31-r10");
+  assert.equal(active.file, "inner-child-guide-2026-10-31-r10.txt");
+  assert.equal(active.sha256, hash(r10));
   assert.match(manifest.notes, /Inner Child refinements, filed as issue 215 on 31 October 2026 at 13:39 UTC, are made inside this same r9 file rather than a new revision/u);
   assert.match(manifest.notes, /revised in place after the owner's follow-up correction of 31 October 2026 at 15:11 UTC, recorded on issue 215/u, "the notes say the paragraph was revised in place");
-  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 16);
-  assert.equal(manifest.sourceHistory.some(item => /r9|r10/u.test(item.file)), false, "neither r9 nor an r10 is in the history of earlier revisions");
+  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 17);
+  assert.deepEqual(manifest.sourceHistory.filter(item => /r9|r10/u.test(item.file)).map(item => [item.file, item.sha256]), [["inner-child-guide-2026-10-31-r9.txt", CURRENT_R9_SHA256]], "r9 is in the history with its issue 215 digest, and the active r10 is not");
 });
 
 test("current source preservation proof rejects both loss and unapproved extra wording", async () => {

@@ -34,7 +34,7 @@ regression_refs:
   - G129
 base_record_sha256: af4f693b0f665fb273cf448a9430620b091b2dc1b5731e067916e9ce3919a657
 base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # Handle an urgent medical red flag before therapy interpretation

@@ -45,9 +45,9 @@ regression_refs:
   - G132
   - G134
   - G139
-base_record_sha256: de4b6884741f70ed7f189d56ce18ed9415dde01516ede7ffa8410d5341a53353
-base_graph_sha256: e5f728eda7192aeef14be8ffa682074c2107b709baa8063dd90231f41bf51dec
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+base_record_sha256: f9c3089a0ffdf8430707ce7a973c74a44f336633f9784ce51e8a91c803772d43
+base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -135,7 +135,8 @@ projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1a
     "Start with what is actually accessible in the present. If a profound loving state is only remembered, use sober recollection or a chosen benevolent reference as preparation and see whether any caring function becomes available now.",
     "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity.",
     "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing.",
-    "When care feels unavailable, distinguish fear of compassion, lack of developed capacity and a mismatch in the form of care before attempting a different approach; none requires forcing the same image or feeling."
+    "When care feels unavailable, distinguish fear of compassion, lack of developed capacity and a mismatch in the form of care before attempting a different approach; none requires forcing the same image or feeling.",
+    "When a person reports contact with a deeper spiritual level of perfection, wisdom or compassion, it may bring release, love and reassurance in its own right and can help build the inner Nurturer, Protector and Guide; do not treat it as a source of specific facts about ordinary life or let it replace discernment, so an impression that seems to come through it is tested like any other, and neither affirm nor deny what it is."
   ],
   "successSignals": [
     "The capacity for love becomes experientially available without coercion."

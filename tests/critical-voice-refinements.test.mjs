@@ -196,13 +196,18 @@ test("the guide carries the issue's approved wording for the qualified example a
   assert.ok(at("\nSimple Practices\n") < at("\nJournal With Each Hand\n"));
   assert.ok(at(`${JOURNAL_ANCHOR}\n\n${DRAWING_HEADING}\n\n${DRAWING}\n\n${NEXT_HEADING}\n`) > at("\nJournal With Each Hand\n"));
 
-  // The same revision, not a new one: r9 is the active file, its hash is the manifest's, and there is no r10.
+  // The same revision, not a new one: the issue's edits were made inside r9 itself, which is immutable and whose digest the fixture pins. The owner's
+  // answer to question 52 later added one paragraph elsewhere as r10, the active file the source map describes, so every passage above is in r10 as well
+  // (the file read above) and r9 is kept in the manifest's history with its digest.
   const manifest = json("../guides/manifest.json");
   const active = manifest.sources.find((source) => source.id === "inner-child-guide");
-  assert.equal(active.file, "inner-child-guide-2026-10-31-r9.txt");
-  assert.equal(active.sha256, CURRENT_R9_SHA256);
-  assert.equal(sha256(guideText), CURRENT_R9_SHA256);
-  assert.equal(fs.existsSync(new URL("../guides/inner-child-guide-2026-10-31-r10.txt", import.meta.url)), false, "there is no r10");
+  assert.equal(active.file, "inner-child-guide-2026-10-31-r10.txt");
+  assert.equal(sha256(guideText), active.sha256);
+  const r9Text = read("../guides/inner-child-guide-2026-10-31-r9.txt");
+  assert.equal(sha256(r9Text), CURRENT_R9_SHA256);
+  assert.ok(manifest.sourceHistory.some((entry) => entry.id === "inner-child-guide" && entry.file === "inner-child-guide-2026-10-31-r9.txt" && entry.sha256 === CURRENT_R9_SHA256), "r9 is in the history with its digest");
+  for (const part of [CRITICAL_VOICE, DRAWING, GUARD_NEW, `${DRAWING_HEADING}\n\n${DRAWING}`]) assert.equal(count(r9Text, part), 1, `r9 itself carries: ${part.slice(0, 50)}`);
+  assert.equal(guideText.split("\n").length - r9Text.split("\n").length, 2, "r10 is r9 plus one paragraph and its blank line (tested in the spiritual-source-paragraph test)");
 
   // The optional practice stays optional and claims nothing: no diagnosis, hidden memory, forced release or required stage.
   assert.match(DRAWING, /^If anger is hard to put into words, try drawing or scribbling how it feels\./u);
@@ -544,7 +549,7 @@ test("four synthetic scenes cover a degrading voice, useful content kept, an inh
 test("the humanized-guide queue carries PGQ-052 to PGQ-054, keeps every earlier entry, and the public-guide sync file is unchanged", () => {
   const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
   assert.match(queue, /^Status: \*\*PENDING\*\*$/mu);
-  assert.match(queue, /^Queue version: 2026-10-31-r19$/mu);
+  assert.match(queue, /^Queue version: 2026-10-31-r20$/mu);
   const entry = (id) => {
     const start = queue.indexOf(`\n### ${id} — `);
     assert.ok(start >= 0, `${id} is queued`);
@@ -614,13 +619,21 @@ test("the lesson and the state section name issue 215, the changes and what is n
     "ask what it fears or aims at when the person finds that useful"]) {
     assert.ok(section.includes(part), part);
   }
-  // The digest bullet names the files that carry the r9 digest: each of them does, and the concept reading document, which does not, is not named.
+  // The digest bullet records which files carried the r9 digest when this change was made, and the concept reading document, which did not, is not named.
   const digestBullet = section.split("\n").find((line) => line.startsWith("- **AI guide r9, same revision, no r10:**"));
   assert.ok(digestBullet, "the digest bullet exists");
   for (const carrier of ["the manifest", "`case-source-bindings`", "the shame concept ledger", "`tests/fixtures/issue-215-guide-edits.mjs`"]) assert.ok(digestBullet.includes(carrier), carrier);
   assert.equal(digestBullet.includes("CONCEPT-SOURCE-READING"), false, "the concept reading document does not carry the r9 digest");
   assert.equal(read("../docs/CONCEPT-SOURCE-READING.md").includes(CURRENT_R9_SHA256), false);
-  for (const file of ["../guides/manifest.json", "../tasks/guide-fidelity-20260906/case-source-bindings-2026-09-07.json", "../authoring/concepts/shame.json", "./fixtures/issue-215-guide-edits.mjs"]) {
-    assert.ok(read(file).includes(CURRENT_R9_SHA256), `${file} carries the current r9 digest`);
+  // Since owner question 52, r10 is the active revision: the manifest (in its history) and the fixture still carry r9's digest, while the case-source
+  // bindings and the shame ledger follow the active revision, as they followed r9 before it.
+  for (const file of ["../guides/manifest.json", "./fixtures/issue-215-guide-edits.mjs"]) {
+    assert.ok(read(file).includes(CURRENT_R9_SHA256), `${file} carries the r9 digest`);
+  }
+  const activeDigest = json("../guides/manifest.json").sources.find((source) => source.id === "inner-child-guide").sha256;
+  assert.notEqual(activeDigest, CURRENT_R9_SHA256);
+  for (const file of ["../tasks/guide-fidelity-20260906/case-source-bindings-2026-09-07.json", "../authoring/concepts/shame.json"]) {
+    assert.ok(read(file).includes(activeDigest), `${file} carries the active revision's digest`);
+    assert.equal(read(file).includes(CURRENT_R9_SHA256), false, `${file} no longer carries the r9 digest`);
   }
 });

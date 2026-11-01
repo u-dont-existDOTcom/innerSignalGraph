@@ -12,7 +12,7 @@ section_hash: f4ae9829b075f36f2f9a37f14154227d94586df616a87d880bcd575294a44079
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.COMPASSIONATE_STORY
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # AMEND.IC.WISDOM_STORY
