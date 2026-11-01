@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { loadConfig } from "../../src/core/config.mjs";
+import { diffCaseStates } from "../../src/case-state/longitudinal-state.mjs";
 import { createEncryptedPrivateCaseStore } from "../../src/storage/private-case-store.mjs";
 import { createPrivateTherapyModelRuntime } from "../../src/supervisor/private-therapy-model-runtime.mjs";
 import { createPrivateTherapyTurnController } from "../../src/supervisor/private-therapy-turn-controller.mjs";
@@ -37,6 +38,12 @@ export function syntheticMessage(number) {
  * @param options.onPrompt ({ stage, turn, input }) => void, called for every provider call.
  * @param options.ownerFallback true to turn the fixed fallback message on (INNER_SIGNAL_OWNER_FALLBACK). Off by default, as it is in production,
  *   and set explicitly in the config so that the environment of whoever runs the tests never decides it.
+ * @param options.forcedRoute a route id, or ({ turn }) => route id or null, written to the stored episode's route and active step after the
+ *   real pipeline has produced the turn's candidate. For a route the planner does not choose: IC.PRECIOUS_HUMAN_OPPORTUNITY is not the
+ *   primary job for any variable set, because the inquiry and adult-seat routes that outrank it are active whenever it is (a test in
+ *   owner-fallback-routes.test.mjs checks this, and fails if a graph change makes the route reachable). Everything after that point (the
+ *   audit loop, the repairs, the discriminator step, the store) is real. The state diff is recomputed for the changed state. Leave it out to
+ *   use the planner's own route.
  */
 export async function openScriptedRiskRuntime(t, {
   caseId = "synthetic-risk-runtime",
@@ -47,7 +54,8 @@ export async function openScriptedRiskRuntime(t, {
   auditFails = () => false,
   onAuditPacket = () => {},
   onPrompt = () => {},
-  ownerFallback = false
+  ownerFallback = false,
+  forcedRoute = null
 } = {}) {
   if (![1, 6].includes(itemsPerTurn)) throw new Error("itemsPerTurn must be 1 or 6.");
   if (!Number.isSafeInteger(maximumTurns) || maximumTurns < 1 || maximumTurns > MAXIMUM_TURNS) throw new Error("maximumTurns is out of range.");
@@ -119,7 +127,18 @@ export async function openScriptedRiskRuntime(t, {
     };
   }
 
-  const modelRuntime = createPrivateTherapyModelRuntime({ privateCaseSource: store, providers, config });
+  const routed = (runtime) => (forcedRoute == null ? runtime : Object.freeze({
+    ...runtime,
+    async produceCandidate(input) {
+      const produced = await runtime.produceCandidate(input);
+      const route = typeof forcedRoute === "function" ? forcedRoute({ turn }) : forcedRoute;
+      if (!route || !produced.caseState.current_episode) return produced;
+      const previous = (await store.load(input.caseId)).case_state;
+      const caseState = { ...produced.caseState, current_episode: { ...produced.caseState.current_episode, route, active_step: route } };
+      return { ...produced, caseState, stateDiff: diffCaseStates(previous, caseState) };
+    }
+  }));
+  const modelRuntime = routed(createPrivateTherapyModelRuntime({ privateCaseSource: store, providers, config }));
   const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime, maximumInvocationAttempts: 1 });
   // Runs the nth user turn through the given controller.
   function runThrough(through, number) {
@@ -149,7 +168,7 @@ export async function openScriptedRiskRuntime(t, {
     // A second model runtime and controller over the same store and the same scripted providers, with the setting chosen here. For a test
     // that opens a case again under the other setting: the case, its saved turns and the providers' turn count carry over.
     reopen({ ownerFallback: enabled = false } = {}) {
-      const reopenedRuntime = createPrivateTherapyModelRuntime({ privateCaseSource: store, providers, config: { ...config, ownerFallbackEnabled: enabled === true } });
+      const reopenedRuntime = routed(createPrivateTherapyModelRuntime({ privateCaseSource: store, providers, config: { ...config, ownerFallbackEnabled: enabled === true } }));
       const reopenedController = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: reopenedRuntime, maximumInvocationAttempts: 1 });
       return { modelRuntime: reopenedRuntime, controller: reopenedController, run: (number) => runThrough(reopenedController, number) };
     },

@@ -7,7 +7,8 @@ import { SELF_DIRECTED_RISK_HISTORY_LIMIT, SELF_DIRECTED_RISK_LOWERING_READINGS,
 export const TRAJECTORY_DIGEST_VERSION = 1;
 // The three routes the planner picks for ideation, intent or imminent. The planner can send a first disclosure to the adult-seat
 // route (it is chosen when adult access or a witness is low, absent or unknown), so it belongs in the digest's counting. That is
-// all this list does: the owner-pending fallback message covers two routes, not this one (owner question 55 decides that).
+// all this list does: it is a list for counting, and it is separate from the routes that can deliver the fixed fallback message
+// (OWNER_FALLBACK_ROUTE_IDS in src/supervisor/owner-fallback-message.mjs, owner question 55, answer A), which add the safety route.
 export const SUICIDE_FAMILY_ROUTE_IDS = Object.freeze(["IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY", "IC.SUICIDAL_ADULT_SEAT"]);
 export const SAFETY_ORIENTATION_ROUTE_ID = "IC.SAFETY_ORIENTATION";
 const MAXIMUM_ROUTE_RUNS = 30;

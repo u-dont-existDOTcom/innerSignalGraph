@@ -14,7 +14,7 @@ function booleanEnv(name, fallback = false) {
   throw new RuntimeError(`${name} must be true or false.`, { code: "BAD_CONFIG" });
 }
 
-// The fixed fallback message for the two risk routes (see src/supervisor/owner-fallback-message.mjs). Off unless this is turned on, and
+// The fixed fallback message for the four risk routes (see src/supervisor/owner-fallback-message.mjs). Off unless this is turned on, and
 // read exactly as INNER_SIGNAL_MCP_SUPERVISOR_DRAFTS is: absent or blank is off, and a value that is not true or false stops startup.
 export const OWNER_FALLBACK_SETTING = "INNER_SIGNAL_OWNER_FALLBACK";
 

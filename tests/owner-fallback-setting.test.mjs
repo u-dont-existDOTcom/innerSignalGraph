@@ -10,7 +10,7 @@ import { createInnerSignalServer } from "../src/server/create-server.mjs";
 import { listenInnerSignalLoopback } from "../src/server/listen-loopback.mjs";
 import { SUPERVISOR_REPLY_SETTING, supervisorRepliesEnabled } from "../src/server/supervisor-reply-setup.mjs";
 import { projectCommunicationState } from "../src/storage/private-case-communication.mjs";
-import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
+import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE, OWNER_FALLBACK_ROUTE_IDS } from "../src/supervisor/owner-fallback-message.mjs";
 import { validatePrivateRuntimeTurn } from "../src/supervisor/private-runtime-turn-lifecycle.mjs";
 import { createPrivateTherapyModelRuntime } from "../src/supervisor/private-therapy-model-runtime.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
@@ -169,9 +169,9 @@ function discriminatorRuntime({ activeStep, nextQuestion, config }) {
   return () => runtime.produceDiscriminator({ caseId: "synthetic-case", runtimeTurn: { id: "runtime-turn-1", current_candidate_id: "candidate-1" }, authContext: null, attemptContextId: "attempt-1" });
 }
 
-test("with the setting off, both routes take the ordinary path exactly: the stored question is sent, and no question is PRIVATE_DISCRIMINATOR_UNAVAILABLE", async () => {
+test("with the setting off, all four routes take the ordinary path exactly: the stored question is sent, and no question is PRIVATE_DISCRIMINATOR_UNAVAILABLE", async () => {
   const off = { ownerFallbackEnabled: false };
-  for (const activeStep of [INQUIRY, SAFETY]) {
+  for (const activeStep of OWNER_FALLBACK_ROUTE_IDS) {
     // The result is deep-equal to what a calm route gets for the same input, receipt and context identity included.
     const ordinary = await discriminatorRuntime({ activeStep: CALM, nextQuestion: QUESTION, config: off })();
     assert.deepEqual(await discriminatorRuntime({ activeStep, nextQuestion: QUESTION, config: off })(), ordinary, activeStep);
@@ -188,7 +188,7 @@ test("with the setting off, both routes take the ordinary path exactly: the stor
   }
 });
 
-test("with the setting on, the same two routes get the fixed message, and the setting is the only difference", async () => {
+test("with the setting on, the same routes get the fixed message, and the setting is the only difference", async () => {
   const on = { ownerFallbackEnabled: true };
   const off = { ownerFallbackEnabled: false };
   for (const nextQuestion of [QUESTION, "", undefined]) {

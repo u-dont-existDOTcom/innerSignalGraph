@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import { buildDurableCaseContext } from "../src/case-state/context-window.mjs";
 import { buildTrajectoryDigest, SAFETY_ORIENTATION_ROUTE_ID, SUICIDE_FAMILY_ROUTE_IDS } from "../src/case-state/trajectory-digest.mjs";
@@ -179,16 +180,20 @@ test("the audit input carries the digest, computed in code from the same context
   assert.ok(input.instructions.some((line) => /trajectory_digest/u.test(line)));
 });
 
-// ---- The owner-pending fallback wording ------------------------------------------------------------------------------------
+// ---- The approved fallback wording ------------------------------------------------------------------------------------------
 
-test("the fallback is one named constant with the exact draft wording and an owner-pending comment", async () => {
+test("the fallback is one named constant with the owner's wording, byte-identical to the text approved, and the approval recorded in its comment", async () => {
   assert.equal(OWNER_FALLBACK_MESSAGE, EXPECTED_FALLBACK);
+  // The text did not change when the owner approved it (question 54, answer A): these are the size and digest it had in the commits before.
+  assert.equal(Buffer.byteLength(OWNER_FALLBACK_MESSAGE, "utf8"), 261);
+  assert.equal(createHash("sha256").update(OWNER_FALLBACK_MESSAGE, "utf8").digest("hex"), "94523796880b5742ff094bb7a2bfd6d35648221603d6c360aac3863892fbebf6");
   assert.equal((OWNER_FALLBACK_MESSAGE.match(/’/gu) ?? []).length, 5, "five curly apostrophes");
   assert.equal(OWNER_FALLBACK_MESSAGE.includes("'"), false, "no straight apostrophes");
   assert.equal(OWNER_FALLBACK_MESSAGE.includes("?"), false, "it is not a question, so it cannot pass as a discriminating question");
   assert.equal(isDeliverableDiscriminatorQuestion(OWNER_FALLBACK_MESSAGE), false);
   const source = await fs.readFile(new URL("../src/supervisor/owner-fallback-message.mjs", import.meta.url), "utf8");
-  assert.match(source, /OWNER-PENDING[^\n]*has not yet approved it/u);
+  assert.match(source, /^\/\/ Approved by the owner: question 54, answer A, 1 Nov 2026, 12:00 UTC\.$/mu);
+  assert.equal(/OWNER-PENDING|not (yet )?approved|\bdraft\b|\bpending\b/iu.test(source), false, "nothing in the file calls the wording pending, a draft or unapproved");
   assert.equal(source.split("couldn’t finish a reply").length - 1, 1, "the wording appears once, in the constant");
   // No other source file repeats the wording, so a change of approved copy is one edit.
   const runtimeSource = await fs.readFile(new URL("../src/supervisor/private-therapy-model-runtime.mjs", import.meta.url), "utf8");
@@ -262,9 +267,9 @@ test("produceDiscriminator on the self-death inquiry route always uses the fallb
   assert.notEqual(fallback.contextId, question.contextId, "the two paths never share a context identity");
 });
 
-test("produceDiscriminator on every other route is unchanged, with or without a question", async () => {
-  // The adult-seat route is in the digest's suicide family but not in the fallback: owner question 55 decides that, so it keeps its stored question.
-  for (const activeStep of [CALM, PRECIOUS, ADULT_SEAT, "IC.SOMETHING_ELSE", null]) {
+test("produceDiscriminator on a route outside the list of four is unchanged, with or without a question", async () => {
+  // The adult-seat and precious-opportunity routes joined the list with the owner's answer to question 55 (owner-fallback-routes.test.mjs).
+  for (const activeStep of [CALM, "IC.SOMETHING_ELSE", null]) {
     const produced = await discriminatorRuntime({ activeStep, route: activeStep ?? CALM, nextQuestion: QUESTION })();
     assert.equal(produced.exactText, QUESTION, String(activeStep));
     assert.equal(Object.hasOwn(produced, "kind"), false, String(activeStep));
@@ -287,9 +292,10 @@ test("a state flag or a held risk record alone never produces the fallback", asy
   await assert.rejects(discriminatorRuntime({ activeStep: CALM, nextQuestion: "", extra: held }), unavailable("PRIVATE_DISCRIMINATOR_UNAVAILABLE"));
 });
 
-test("an unresolved role or belief finding is checked before the fallback, and cannot be bypassed by it", async () => {
-  for (const activeStep of [INQUIRY, SAFETY]) {
-    await assert.rejects(discriminatorRuntime({ activeStep, nextQuestion: "", findings: [{ ...ROLE_BELIEF_FINDING, unresolved: true }] }), unavailable("PRIVATE_DISCRIMINATOR_ROLE_BELIEF_BLOCKED"), activeStep);
+test("an unresolved role or belief finding is checked before the stored question and before the fallback, and still blocks on a route outside the list", async () => {
+  // On the four risk routes the fixed message is delivered in its place (owner-fallback-routes.test.mjs); on any other route the block is unchanged.
+  for (const activeStep of [CALM, "IC.SOMETHING_ELSE", null]) {
+    await assert.rejects(discriminatorRuntime({ activeStep, route: activeStep ?? CALM, nextQuestion: "", findings: [{ ...ROLE_BELIEF_FINDING, unresolved: true }] }), unavailable("PRIVATE_DISCRIMINATOR_ROLE_BELIEF_BLOCKED"), String(activeStep));
   }
   // Findings that do not block today still do not block: a resolved finding, a low one, or another code.
   for (const findings of [[{ ...ROLE_BELIEF_FINDING, unresolved: false }], [{ ...ROLE_BELIEF_FINDING, severity: "medium" }], [BLOCKING_FINDING]]) {
@@ -372,10 +378,12 @@ test("a calm turn whose candidate fails twice still gets today's stored question
   assert.doesNotThrow(() => validatePrivateRuntimeTurn(structuredClone(result.runtimeTurn)));
 });
 
-test("an unresolved role or belief finding on the inquiry route still ends the turn unavailable, with nothing delivered", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["ideation"], auditFindings: () => [ROLE_BELIEF_FINDING], ownerFallback: true });
+test("an unresolved role or belief finding on a calm route still ends the turn unavailable, with nothing delivered, even with the fallback on", async (t) => {
+  // On the four risk routes the fixed message is delivered here instead (owner-fallback-routes.test.mjs).
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["absent"], auditFindings: () => [ROLE_BELIEF_FINDING], ownerFallback: true });
   await assert.rejects(() => runtime.run(1), unavailable("THERAPY_RUNTIME_UNAVAILABLE"));
   const record = await runtime.load();
+  assert.equal(record.case_state.current_episode.active_step, CALM);
   assert.equal(record.runtime_turns[0].state, "DISCRIMINATING_QUESTION_REQUIRED");
   assert.equal(record.runtime_turns[0].discriminator, null);
   assert.deepEqual(record.raw_transcript.map((entry) => entry.role), ["user"]);
@@ -390,10 +398,11 @@ test("an operational failure of the audit on the inquiry route is not turned int
   assert.deepEqual(record.raw_transcript.map((entry) => entry.role), ["user"]);
 });
 
-test("the precious-opportunity inquiry route and the calm route are untouched by the fallback", async (t) => {
+test("the calm route is untouched by the fallback, even with the setting on", async (t) => {
   assert.ok(SUICIDE_FAMILY_ROUTE_IDS.includes(PRECIOUS) && SUICIDE_FAMILY_ROUTE_IDS.includes(ADULT_SEAT) && SAFETY_ORIENTATION_ROUTE_ID === SAFETY);
   const runtime = await openScriptedRiskRuntime(t, { readings: ["absent"], auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
   const result = await runtime.run(1);
+  assert.equal((await runtime.load()).case_state.current_episode.active_step, CALM);
   assert.equal(result.deliveryKind, "discriminator");
   assert.notEqual(result.answer, OWNER_FALLBACK_MESSAGE);
 });
@@ -624,19 +633,4 @@ test("the turn stays in the audit packet for ten planned turns after the lowerin
   assert.equal(holds(16), false);
   assert.equal(packets.get(15).trajectory_digest.self_directed_risk.level, "absent", "the record itself stays, with its history");
   assert.equal(packets.get(15).trajectory_digest.self_directed_risk.history.length, 2);
-});
-
-// ---- Known gap, pinned: the fallback does not cover the adult-seat route -------------------------------------------------------
-
-test("the adult-seat route is counted by the digest but its stored question is still what is delivered after two failed repairs (owner question 55)", async (t) => {
-  const readings = [{ state: "ideation", variables: { inner_adult_access: "low", witness_capacity: "absent" } }];
-  const runtime = await openScriptedRiskRuntime(t, { readings, auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
-  const result = await runtime.run(1);
-  const stored = await runtime.load();
-  assert.equal(stored.case_state.current_episode.active_step, ADULT_SEAT, "the planner routed this reading to the adult-seat route");
-  assert.equal(result.deliveryKind, "discriminator", "no owner fallback here: extending it to this route is not part of this change");
-  assert.notEqual(result.answer, OWNER_FALLBACK_MESSAGE);
-  assert.equal(result.answer, stored.case_state.current_episode.next_question);
-  assert.equal(Object.hasOwn(stored.runtime_turns[0].discriminator, "kind"), false);
-  assert.deepEqual([runtime.counts.private_candidate_audit, runtime.counts.private_candidate_repair], [3, 2]);
 });

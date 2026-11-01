@@ -12,8 +12,8 @@ import { isDeliverableDiscriminatorQuestion } from "./private-runtime-turn-lifec
 import {
   OWNER_FALLBACK_KIND,
   OWNER_FALLBACK_MESSAGE,
-  OWNER_FALLBACK_SAFETY_ROUTE_ID,
-  OWNER_FALLBACK_SELF_DEATH_INQUIRY_ROUTE_ID
+  OWNER_FALLBACK_ROUTE_IDS,
+  OWNER_FALLBACK_SAFETY_ROUTE_ID
 } from "./owner-fallback-message.mjs";
 import {
   privateRuntimeAuditResultSchema,
@@ -103,6 +103,16 @@ function sealAuditPacket(input, journalEvidence = null) {
       self_directed_risk_record_included: input.trajectory_digest?.self_directed_risk != null
     })
   });
+}
+
+// The fixed fallback as a discriminator result: its own kind, the fixed text, and a receipt that says no model wrote it.
+function ownerFallbackDiscriminator({ attemptContextId, runtimeTurn }) {
+  return {
+    kind: OWNER_FALLBACK_KIND,
+    exactText: OWNER_FALLBACK_MESSAGE,
+    contextId: `context:${hash(`deterministic-owner-fallback:${attemptContextId}:${runtimeTurn.id}`)}`,
+    providerReceipt: { provider: "deterministic-owner-fallback", model: null, response_id: attemptContextId, isolation: { packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false } }
+  };
 }
 
 function directAuditAccess(privateCaseSource) {
@@ -245,9 +255,19 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
       const currentCandidate = record.candidate_responses?.find((candidate) => candidate.id === runtimeTurn.current_candidate_id);
       const unresolved = currentCandidate?.audit_history?.at(-1)?.findings ?? [];
-      if (unresolved.some((finding) => finding.unresolved !== false
-          && ["substantive", "high"].includes(finding.severity)
-          && ROLE_BELIEF_BLOCKING_CODES.includes(finding.code))) {
+      const roleBeliefHold = unresolved.some((finding) => finding.unresolved !== false
+        && ["substantive", "high"].includes(finding.severity)
+        && ROLE_BELIEF_BLOCKING_CODES.includes(finding.code));
+      // The fixed fallback is considered only while the setting is on, and only for a route in OWNER_FALLBACK_ROUTE_IDS. The route is the
+      // turn's own (the episode's active step, then its route), never suicidal_state or any other variable, so a calm turn, an
+      // approved candidate and every other route are unaffected. With the setting off `route` stays null, `ownerFallbackRoute` is false,
+      // and every line below is what it was before the fallback existed.
+      const route = ownerFallbackEnabled ? (record.case_state?.current_episode?.active_step ?? record.case_state?.current_episode?.route ?? null) : null;
+      const ownerFallbackRoute = ownerFallbackEnabled && OWNER_FALLBACK_ROUTE_IDS.includes(route);
+      if (roleBeliefHold) {
+        // On the four risk routes the fixed text is delivered instead of leaving the turn unfinished: it carries no claim about a role or
+        // a belief, so the finding cannot reach the person through it. On every other route, and with the setting off, the block is as it was.
+        if (ownerFallbackRoute) return ownerFallbackDiscriminator({ attemptContextId, runtimeTurn });
         throw new ValidationError("A role or belief integrity finding remains unresolved; unaudited fallback delivery is blocked.", {
           code: "PRIVATE_DISCRIMINATOR_ROLE_BELIEF_BLOCKED"
         });
@@ -257,22 +277,12 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       const question = compatibility.gate !== "NOT_BLOCKED" && childContactViolations(currentQuestion).length
         ? restrictedCompatibilityFallback(compatibility).next_question
         : currentQuestion;
-      // The fixed fallback replaces an unaudited question or an empty result on exactly two routes, and only here, after the audit loop
-      // has ended without a reply that can be sent. It is chosen by the turn's route and this terminal state, never by suicidal_state
-      // or any other variable, so a calm turn, an approved candidate and every other route are unaffected. With the setting off this
-      // block is skipped and the code below is what it was before the fallback existed: the stored question is sent, and no question
-      // ends the turn as PRIVATE_DISCRIMINATOR_UNAVAILABLE.
-      if (ownerFallbackEnabled) {
-        const route = record.case_state.current_episode?.active_step ?? record.case_state.current_episode?.route ?? null;
+      // Here the audit loop has ended, after the second failed repair, without a reply that can be sent. On three of the four routes the
+      // unaudited stored question is never sent. The safety-orientation route keeps it when it can be sent, and has the fallback only
+      // when no sendable question exists (where nothing was delivered before).
+      if (ownerFallbackRoute) {
         const questionCanBeSent = typeof question === "string" && question.trim() && isDeliverableDiscriminatorQuestion(question.trim());
-        if (route === OWNER_FALLBACK_SELF_DEATH_INQUIRY_ROUTE_ID || (route === OWNER_FALLBACK_SAFETY_ROUTE_ID && !questionCanBeSent)) {
-          return {
-            kind: OWNER_FALLBACK_KIND,
-            exactText: OWNER_FALLBACK_MESSAGE,
-            contextId: `context:${hash(`deterministic-owner-fallback:${attemptContextId}:${runtimeTurn.id}`)}`,
-            providerReceipt: { provider: "deterministic-owner-fallback", model: null, response_id: attemptContextId, isolation: { packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false } }
-          };
-        }
+        if (route !== OWNER_FALLBACK_SAFETY_ROUTE_ID || !questionCanBeSent) return ownerFallbackDiscriminator({ attemptContextId, runtimeTurn });
       }
       if (typeof question !== "string" || !question.trim()) {
         throw new ValidationError("The current episode has no authorized discriminating question; delivery remains blocked.", { code: "PRIVATE_DISCRIMINATOR_UNAVAILABLE" });
