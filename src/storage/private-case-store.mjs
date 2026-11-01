@@ -2090,8 +2090,8 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async getCurrentEpisode(caseId) { return structuredClone((await readRequired(caseId)).case_state.current_episode); },
-    // `forReplyCheck` is set only by the audit input and the repair packet. It adds the older turn that holds the person's highest
-    // earlier self-directed-risk reading to targeted_older_evidence; every other caller gets the context without it.
+    // `forReplyCheck` is set only by the audit input and the repair packet. It adds the older turns that hold the person's first and
+    // highest earlier self-directed-risk readings to targeted_older_evidence; every other caller gets the context without them.
     async loadCaseContext(caseId, { candidateId = "current_pending", episodePolicy = {}, evidenceQuery = null, journalContinuitySupported = false, forReplyCheck = false } = {}) {
       const record = await readRequired(caseId);
       const transcript = effectiveTranscript(record);

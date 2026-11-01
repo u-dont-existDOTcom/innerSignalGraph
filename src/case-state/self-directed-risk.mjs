@@ -9,7 +9,8 @@ import { ValidationError } from "../core/errors.mjs";
 // state alone neither selects a safety tier nor appends a crisis script. Nothing here feeds the planner. The extraction and
 // writing prompts get neither the record (promptCaseState strips it) nor the retrieval request for the older turn it points to
 // (buildDurableCaseContext leaves that request out unless it is built for the reply check). The reply check reads the record in
-// the digest of its audit packet and receives that older turn in the audit packet and the repair packet.
+// the digest of its audit packet and receives up to two older turns in the audit packet and the repair packet: the turn of the
+// highest reading and the turn of the first reading above absent (see selfDirectedRiskRetrievalTurns).
 export const SELF_DIRECTED_RISK_VERSION = 1;
 export const SELF_DIRECTED_RISK_LEVELS = Object.freeze(["absent", "ideation", "intent", "imminent"]);
 export const SELF_DIRECTED_RISK_CONTEXTS = Object.freeze(["pain_episode", "other_or_unclear", "not_in_play", "unknown"]);
@@ -24,9 +25,12 @@ export const SELF_DIRECTED_RISK_LOWERING_READINGS = 2;
 // Once the level has been lowered to absent, the reply check keeps receiving the exact turn of the highest earlier reading for this
 // many planned turns after the lowering turn (and on the lowering turn itself), then stops. Ten is a short stretch of ordinary work on
 // a new topic: long enough for the check to see what was said while quiet turns may still be reading absent, short enough that old
-// text does not ride along in every packet of a case that has settled.
+// text does not ride along in every packet of a case that has settled. The one turn that does ride along for the rest of the case
+// is the first reading above absent (the first time the person said it), because a person may refer back to it at any later point
+// and the check needs their exact words to compare a reply with.
 export const SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS = 10;
-// How the retrieval request for the turn above is named in targeted_retrieval_requests and targeted_older_evidence.
+// How the retrieval requests for the turns above are named in targeted_retrieval_requests and targeted_older_evidence. Both turns
+// (the highest reading's and the first reading's) share the one reason and the one item ID: each is a turn the current record points to.
 export const SELF_DIRECTED_RISK_RETRIEVAL_REASON = "current-self-directed-risk-record";
 export const SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID = "self_directed_risk.current";
 
@@ -66,6 +70,13 @@ export function updateSelfDirectedRiskState(previous, variables, { turnId, recor
   checkText(recordedAt, "self-directed risk recordedAt", 80);
   const observed = [...new Set(observationIds.filter((id) => typeof id === "string" && id.trim()))].slice(0, SELF_DIRECTED_RISK_OBSERVATION_LIMIT);
   const history = previous?.history ?? [];
+  // The first reading above absent is set once, when the record is created, and carried unchanged after that. It lives outside the
+  // history, which keeps only its latest events, so it can never fall off with them. A record written before this field existed gets
+  // it here from its history while the history still holds that reading; when it no longer does, the first reading stays unknown and
+  // nothing is invented (firstSelfDirectedRiskReading). It is read before any event is appended, because appending can cut the front.
+  const firstReading = prior
+    ? firstSelfDirectedRiskReading(previous)
+    : { level: state, context, assessed_turn_id: turnId, assessed_at: recordedAt };
   // The history keeps only its latest SELF_DIRECTED_RISK_HISTORY_LIMIT events. The readings above absent that fall off its front are
   // counted, so the digest can say its counts of earlier risk turns are a lower bound instead of presenting them as the whole case.
   let dropped = previous?.risk_readings_dropped_from_history ?? 0;
@@ -79,6 +90,7 @@ export function updateSelfDirectedRiskState(previous, variables, { turnId, recor
     version: SELF_DIRECTED_RISK_VERSION,
     current: nextCurrent,
     history: nextHistory,
+    ...(firstReading ? { first_reading: firstReading } : {}),
     ...(dropped > 0 ? { risk_readings_dropped_from_history: dropped } : {})
   });
   // `denied` only says the latest reading was the extractor's `absent`. The extraction has no separate explicit-denial value, so it
@@ -154,6 +166,14 @@ export function validateSelfDirectedRiskState(value) {
   if (!Array.isArray(current.lowering_readings) || current.lowering_readings.length > SELF_DIRECTED_RISK_LOWERING_READINGS) fail("caseState.self_directed_risk.current.lowering_readings is invalid.");
   if (Object.hasOwn(current, "lowered_at_planned_turn") && !isCount(current.lowered_at_planned_turn)) fail("caseState.self_directed_risk.current.lowered_at_planned_turn is invalid.");
   if (Object.hasOwn(value, "risk_readings_dropped_from_history") && !isCount(value.risk_readings_dropped_from_history)) fail("caseState.self_directed_risk.risk_readings_dropped_from_history is invalid.");
+  // Optional, like the two fields above: a record written without it (by a build before it existed) stays valid.
+  if (Object.hasOwn(value, "first_reading")) {
+    const first = value.first_reading;
+    const name = "caseState.self_directed_risk.first_reading";
+    if (!isRecord(first) || !SELF_DIRECTED_RISK_LEVELS.includes(first.level) || first.level === "absent" || !SELF_DIRECTED_RISK_CONTEXTS.includes(first.context)) fail(`${name} is invalid.`);
+    checkText(first.assessed_turn_id, `${name}.assessed_turn_id`, 160);
+    checkText(first.assessed_at, `${name}.assessed_at`, 80);
+  }
   current.lowering_readings.forEach((item, index) => {
     const name = `caseState.self_directed_risk.current.lowering_readings[${index}]`;
     if (!isRecord(item) || !SELF_DIRECTED_RISK_LEVELS.includes(item.state) || !SELF_DIRECTED_RISK_CONTEXTS.includes(item.context)) fail(`${name} is invalid.`);
@@ -181,10 +201,28 @@ export function highestSelfDirectedRiskReading(record) {
   return best;
 }
 
-// The turn whose exact text the reply check should receive for this case state, or null. While the level is above absent it is the
+// The record's first reading above absent, or null when it is unknown: the turn the person first said it, whatever came after. It is the
+// stored `first_reading` (set once, outside the history). A record written before that field existed has no such field, so the first
+// reading is taken from the front of its history, which is the raise that created the record, but only while no reading above absent
+// has left that history (risk_readings_dropped_from_history is absent or 0): once one has, the front is no longer the first reading.
+// Never throws, so it is safe on any record a build has written.
+export function firstSelfDirectedRiskReading(record) {
+  const stored = record?.first_reading;
+  if (isRecord(stored) && typeof stored.assessed_turn_id === "string" && stored.assessed_turn_id.trim()) {
+    return { level: stored.level, context: stored.context, assessed_turn_id: stored.assessed_turn_id, assessed_at: stored.assessed_at };
+  }
+  const front = Array.isArray(record?.history) ? record.history[0] : null;
+  const leftTheHistory = Number.isSafeInteger(record?.risk_readings_dropped_from_history) && record.risk_readings_dropped_from_history > 0;
+  if (leftTheHistory || front?.change !== "raised" || !front.reading || front.reading === "absent"
+      || typeof front.assessed_turn_id !== "string" || !front.assessed_turn_id.trim()) return null;
+  return { level: front.reading, context: front.context, assessed_turn_id: front.assessed_turn_id, assessed_at: front.assessed_at };
+}
+
+// The turn whose exact text the reply check should receive for the highest reading, or null. While the level is above absent it is the
 // turn of the highest reading still in the history, so lowering intent to ideation does not take the intent statement out of the
 // packet. After a lowering to absent it is the same turn, on the lowering turn and for SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS
 // planned turns after it, then null. A record with no marker for the lowering (nothing written by this build) retrieves nothing.
+// This is the highest reading's turn only; selfDirectedRiskRetrievalTurns adds the first reading's, which has no window.
 export function selfDirectedRiskRetrievalTurn(state) {
   const record = state?.self_directed_risk;
   const current = record?.current;
@@ -194,4 +232,17 @@ export function selfDirectedRiskRetrievalTurn(state) {
   if (current.level !== "absent") return turnId;
   const planned = Array.isArray(state.intervention_history) ? state.intervention_history.length : 0;
   return isCount(current.lowered_at_planned_turn) && planned - current.lowered_at_planned_turn <= SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS ? turnId : null;
+}
+
+// Every turn whose exact text the reply check should receive for this case state: at most two, without duplicates, [] when there is no
+// record. They are the turn of the highest reading (selfDirectedRiskRetrievalTurn: the latest when several are equal, and after a lowering
+// to absent only for SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS planned turns) and the turn of the first reading above absent
+// (firstSelfDirectedRiskReading), which is kept for the rest of the case, also after a lowering to absent. When the first reading is the
+// highest one they are the same turn and it appears once. A first reading that is unknown adds nothing, so such a record retrieves what
+// it did before the first reading was kept.
+export function selfDirectedRiskRetrievalTurns(state) {
+  const record = state?.self_directed_risk;
+  if (!record?.current) return [];
+  const turns = [selfDirectedRiskRetrievalTurn(state), firstSelfDirectedRiskReading(record)?.assessed_turn_id ?? null];
+  return [...new Set(turns.filter((turnId) => typeof turnId === "string" && turnId.length > 0))];
 }
