@@ -18,7 +18,7 @@ const USAGE = `Commands:
   stage1-sizes --sealed DIR                                                            recompute the sizes of what will be sent from the sealed bytes
   stage1-audit --sealed DIR --out DIR --mock | --live [--limit N] [--concurrency 1-3]  send the sealed prompts to the auditor; 144 calls at most (--live needs the opt-in below)
   stage1-score --run DIR                                                               score a stage 1 receipts folder
-  stage1-selfcheck --sealed DIR [--work DIR]                                           check the driver's guards with the scripted stand-in (no model call)
+  stage1-selfcheck --sealed DIR [--work DIR]                                           check the driver's guards with the scripted stand-in (no model call); --work must be new or empty and is kept, without it a private temporary folder is used and removed
 Live runs also need INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1 and the Claude CLI signed in to the subscription that is meant to pay for them.`;
 
 function parse(argv) {
@@ -123,7 +123,8 @@ async function main() {
 
   if (command === "stage1-selfcheck") {
     const { runGuardSelfCheck } = await import("./guard-selfcheck.mjs");
-    const report = await runGuardSelfCheck({ sealedDir: assertOutsideRepository(options.sealed), workDir: assertOutsideRepository(options.work ?? path.join(os.tmpdir(), `inner-signal-guard-selfcheck-${stamp()}`)) });
+    if (options.work === true) throw new Error("--work needs a folder that is new or empty.");
+    const report = await runGuardSelfCheck({ sealedDir: assertOutsideRepository(options.sealed), workDir: options.work === undefined ? null : assertOutsideRepository(options.work) });
     for (const row of report.rows) console.log(`${row.ok ? "PASS" : "FAIL"} ${row.name}${row.ok || row.detail == null ? "" : `\n     ${JSON.stringify(row.detail)}`}`);
     console.log(`${report.passed} passed, ${report.failed} failed`);
     if (report.failed) process.exitCode = 1;

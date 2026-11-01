@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -99,7 +100,7 @@ export async function sealedSizes(sealedDir) {
 // ---- receipts ----------------------------------------------------------------------------------------------------------------------------
 
 async function readReceipts(dir) {
-  await fs.mkdir(dir, { recursive: true });
+  await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   const history = new Map();
   for (const name of (await fs.readdir(dir)).sort()) {
     const match = /^(.+)\.a(\d+)\.(started|result)\.json$/u.exec(name);
@@ -115,8 +116,9 @@ async function readReceipts(dir) {
 }
 
 async function writeResult(dir, base, result) {
-  const temporary = path.join(dir, `.${base}.result.tmp`);
-  await fs.writeFile(temporary, json(result));
+  // The temporary file has a name nobody can guess and is created exclusively (never through a link already there), then renamed into place.
+  const temporary = path.join(dir, `.${base}.${randomUUID()}.tmp`);
+  await fs.writeFile(temporary, json(result), { flag: "wx", mode: 0o600 });
   await fs.rename(temporary, path.join(dir, `${base}.result.json`));
 }
 
@@ -269,7 +271,7 @@ export async function runStage1Audit({ sealedDir, outDir, mode, limit = null, mo
   const sealed = await loadSealed(sealedDir);
   const schedule = buildSchedule(sealed.manifest);
   const receiptsDir = path.join(outDir, "receipts");
-  await fs.mkdir(receiptsDir, { recursive: true });
+  await fs.mkdir(receiptsDir, { recursive: true, mode: 0o700 });
   const manifestCopy = path.join(outDir, "sealed-manifest.json");
   if (await exists(manifestCopy)) {
     if (sha256(await fs.readFile(manifestCopy)) !== sealed.manifestSha256) throw new Error("This receipts folder belongs to a different sealed folder. Use a new folder.");

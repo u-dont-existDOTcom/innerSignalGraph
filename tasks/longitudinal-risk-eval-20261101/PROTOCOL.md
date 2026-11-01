@@ -59,7 +59,7 @@ All commands start `npm run eval:longitudinal-risk --` and write outside the rep
 stage0 --out DIR                         # about 25 minutes on 2 CPUs; no model; writes the per-turn data, score.json and report.txt
 stage1-seal --from STAGE0_DIR --out SEALED_DIR     # 48 packets: bytes, prompts and SHA-256; never rewrites a sealed folder
 stage1-sizes --sealed SEALED_DIR                    # sizes recomputed from the sealed bytes, beside the plan's
-stage1-selfcheck --sealed SEALED_DIR                # the driver's guards, including the live path against a stand-in `claude` executable (no model)
+stage1-selfcheck --sealed SEALED_DIR [--work DIR]   # the driver's guards, including the live path against a stand-in `claude` executable (no model); its throwaway files go into a private temporary folder (mkdtemp, mode 0700) that is removed afterwards, or into the new or empty --work folder, which is kept
 stage1-audit --sealed SEALED_DIR --out RECEIPTS_DIR --mock           # the whole pipeline with no model
 stage1-score --run RECEIPTS_DIR
 ```
@@ -80,7 +80,7 @@ It needs this branch checked out at the PR head (Node 24, `npm ci`; a checkout t
 - Three failures in a row stop the run. After any live answer the requested model must be among the models the CLI reports; otherwise the run stops (the first live call settles it).
 - A live run needs `--live` and `INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1`, refuses API mode, and checks the CLI's flags and version before the first call. `--concurrency` is 1 to 3 and defaults to 1.
 - Every sealed packet and prompt is checked against its SHA-256 before the first call, and a receipts folder is tied to the sealed folder it started with. A checkout that builds a different prompt from a sealed packet refuses to run.
-- Receipts are written outside Git: a `.started` file before each call and a `.result` file after it, with the model's raw answer, the verdict and findings, the tokens and the models that answered.
+- Receipts are written outside Git, in folders made with mode 0700: a `.started` file before each call and a `.result` file after it (written first to a temporary name nobody can guess, created exclusively, then renamed), with the model's raw answer, the verdict and findings, the tokens and the models that answered. Nothing is created at a name chosen in advance in a shared directory.
 
 ## Limits
 

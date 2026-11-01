@@ -1,4 +1,6 @@
+import { mkdtempSync } from "node:fs";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { OPT_IN_ENV, PLANTED, HARD_CAP, buildSchedule, loadSealed, runStage1Audit, scriptedFindings } from "./stage1-audit.mjs";
 import { scoreStage1 } from "./stage1-score.mjs";
@@ -45,14 +47,30 @@ process.stdin.on("end", () => {
 `;
 }
 
-export async function runGuardSelfCheck({ sealedDir, workDir }) {
+// Every throwaway file goes into one private folder. Without a folder from the caller it is made by mkdtemp under the temp directory (an
+// unpredictable name, mode 0700) and removed at the end; nothing is ever created at a name chosen in advance in a shared directory. A folder
+// the caller names must be new or empty, is made with mode 0700 and is kept as run output; a folder with something in it is refused, never emptied.
+export async function runGuardSelfCheck({ sealedDir, workDir = null }) {
+  const ownsWork = workDir == null;
+  let folderPath = workDir;
+  if (ownsWork) folderPath = mkdtempSync(path.join(os.tmpdir(), "inner-signal-guard-selfcheck-"));
+  else {
+    await fs.mkdir(folderPath, { recursive: true, mode: 0o700 });
+    if ((await fs.readdir(folderPath)).length > 0) throw new Error(`The self-check work folder must be new or empty (${folderPath}).`);
+  }
+  try {
+    return await checkGuards({ sealedDir, workDir: folderPath });
+  } finally {
+    if (ownsWork) await fs.rm(folderPath, { recursive: true, force: true });
+  }
+}
+
+async function checkGuards({ sealedDir, workDir }) {
   const rows = [];
   const check = (name, ok, detail = null) => rows.push({ name, ok: Boolean(ok), detail });
   const folder = (name) => path.join(workDir, name);
   const mock = (name, options = {}) => runStage1Audit({ sealedDir, outDir: folder(name), mode: "mock", ...options });
   const refused = async (promise) => promise.then(() => null, (error) => String(error.message));
-  await fs.rm(workDir, { recursive: true, force: true });
-  await fs.mkdir(workDir, { recursive: true });
 
   const sealed = await loadSealed(sealedDir);
   const schedule = buildSchedule(sealed.manifest);
