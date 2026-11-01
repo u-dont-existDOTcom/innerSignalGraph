@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES } from "./private-candidate-lifecycle.mjs";
+import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "./owner-fallback-message.mjs";
 
 export const PRIVATE_RUNTIME_TURN_STATES = Object.freeze([
   "RECEIVED",
@@ -65,6 +66,18 @@ function validateQuestion(value) {
   return value;
 }
 
+// Whether a stored question could be saved and sent as the discriminator. The same rule validateQuestion enforces.
+export function isDeliverableDiscriminatorQuestion(value) {
+  try { validateQuestion(value); return true; } catch { return false; }
+}
+
+// The owner fallback is fixed text, not a question. Only the named constant can be created; a stored one is read back by shape,
+// so a later change to the approved wording never makes a case that already holds an earlier delivery unreadable.
+function validateOwnerFallbackText(value) {
+  if (typeof value !== "string" || !value || value.length > 2_000) throw new ValidationError("The owner fallback must be bounded text.");
+  return value;
+}
+
 function validateEvent(event, index) {
   if (!event || typeof event !== "object" || Array.isArray(event)) throw new ValidationError(`runtime events[${index}] must be an object.`);
   requiredId(event.id, `runtime events[${index}].id`);
@@ -126,7 +139,9 @@ export function validatePrivateRuntimeTurn(value) {
 
   if (value.discriminator != null) {
     if (!value.discriminator || typeof value.discriminator !== "object" || Array.isArray(value.discriminator)) throw new ValidationError("Private runtime discriminator is invalid.");
-    validateQuestion(value.discriminator.exact_text);
+    if (value.discriminator.kind === OWNER_FALLBACK_KIND) validateOwnerFallbackText(value.discriminator.exact_text);
+    else if (value.discriminator.kind != null) throw new ValidationError("Private runtime discriminator kind is invalid.");
+    else validateQuestion(value.discriminator.exact_text);
     requiredId(value.discriminator.producer_context_id, "runtime discriminator producer_context_id", 160);
     requiredTimestamp(value.discriminator.created_at, "runtime discriminator created_at");
     if (value.discriminator.sha256 !== sha256ExactText(value.discriminator.exact_text)) throw new ValidationError("Runtime discriminator digest does not match its exact bytes.");
@@ -138,7 +153,7 @@ export function validatePrivateRuntimeTurn(value) {
     const delivery = value.delivery;
     if (!delivery || typeof delivery !== "object" || Array.isArray(delivery)) throw new ValidationError("Private runtime delivery is invalid.");
     if (value.state !== "DELIVERED" || value.assistant_turn_id == null) throw new ValidationError("Private runtime delivery may exist only in DELIVERED state.");
-    if (!['candidate', 'discriminator'].includes(delivery.kind)) throw new ValidationError("Private runtime delivery kind is invalid.");
+    if (!['candidate', 'discriminator', OWNER_FALLBACK_KIND].includes(delivery.kind)) throw new ValidationError("Private runtime delivery kind is invalid.");
     requiredId(delivery.assistant_turn_id, "runtime delivery assistant_turn_id");
     if (delivery.assistant_turn_id !== value.assistant_turn_id) throw new ValidationError("Runtime delivery assistant turn binding is inconsistent.");
     if (typeof delivery.exact_text !== "string" || !delivery.exact_text) throw new ValidationError("Runtime delivery exact_text is required.");
@@ -151,6 +166,8 @@ export function validatePrivateRuntimeTurn(value) {
       if (delivery.candidate_id !== value.current_candidate_id) throw new ValidationError("Runtime delivery is not bound to the current candidate.");
     } else if (value.discriminator?.exact_text !== delivery.exact_text) {
       throw new ValidationError("Runtime discriminator delivery bytes are inconsistent.");
+    } else if ((delivery.kind === OWNER_FALLBACK_KIND) !== (value.discriminator?.kind === OWNER_FALLBACK_KIND)) {
+      throw new ValidationError("Runtime delivery kind does not match its discriminator kind.");
     }
   }
   return value;
@@ -233,11 +250,16 @@ export function appendPrivateRuntimeInvocationEvent(runtimeTurn, { eventId, even
   return validatePrivateRuntimeTurn(next);
 }
 
-export function createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt }) {
-  validateQuestion(exactText);
+export function createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt, kind = null }) {
+  if (kind === OWNER_FALLBACK_KIND) {
+    if (exactText !== OWNER_FALLBACK_MESSAGE) throw new ValidationError("The owner fallback must be exactly the fixed fallback message.");
+  } else if (kind != null) throw new ValidationError("Private runtime discriminator kind is invalid.");
+  else validateQuestion(exactText);
   requiredId(producerContextId, "runtime discriminator producerContextId", 160);
   requiredTimestamp(createdAt, "runtime discriminator createdAt");
   return Object.freeze({
+    // A question carries no kind field, so every stored question stays byte-identical to what earlier builds wrote.
+    ...(kind === OWNER_FALLBACK_KIND ? { kind } : {}),
     exact_text: exactText,
     sha256: sha256ExactText(exactText),
     producer_context_id: producerContextId,

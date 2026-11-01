@@ -77,8 +77,13 @@ test("auditor receives only the authorized packet and no producer context or hid
     repair_rationale_history_included: false,
     prior_verdicts_included: false,
     tools_available: false,
-    filesystem_available: false
+    filesystem_available: false,
+    // Added with the trajectory digest: computed in code from the stored case, no model call, no record on this synthetic case.
+    trajectory_digest_included: true,
+    trajectory_digest_computed_in_code_without_model: true,
+    self_directed_risk_record_included: false
   });
+  assert.match(captured[0].user, /"trajectory_digest"/u);
 });
 
 test("audit output cannot smuggle replacement text through the strict result contract", async () => {

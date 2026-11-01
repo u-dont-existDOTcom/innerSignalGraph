@@ -488,7 +488,8 @@ test("the lesson, the state section, the ledger and the intake receipt carry the
   assert.doesNotMatch(lesson, /https?:|@/u);
   const state = read("../state/CODEX-CURRENT-STATE.md");
   assert.equal((state.match(/^Updated: /gmu) ?? []).length, 1, "exactly one Updated line");
-  assert.match(state, /^Updated: 2026-10-31$/mu);
+  // The date moves each time the file is updated, so this checks its form and not one day.
+  assert.match(state, /^Updated: \d{4}-\d{2}-\d{2}$/mu);
   const heading = state.indexOf("## Intention, expected reaction and later judgment after a conflict");
   assert.ok(heading > 0, "the state section exists");
   const section = state.slice(heading, state.indexOf("\n## ", heading + 5));

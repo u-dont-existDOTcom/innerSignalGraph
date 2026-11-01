@@ -2,6 +2,7 @@ import { projectEvidenceAuthority } from "./evidence-authority.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
 import { createEmptyCaseState, validateCaseState } from "./longitudinal-state.mjs";
+import { activeSelfDirectedRisk } from "./self-directed-risk.mjs";
 import { summarizeTrackerWindow } from "./tracker.mjs";
 
 export const CONTEXT_WINDOW_LIMITS = Object.freeze({
@@ -114,6 +115,16 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
       item_id: "threat_pathway.current"
     });
   }
+  // The turn that established the held self-directed-risk level. The label names no level on purpose: writing and extraction
+  // prompts show these requests too, and the level belongs to the reply check alone (see promptCaseState).
+  const selfDirectedRisk = activeSelfDirectedRisk(state);
+  if (selfDirectedRisk?.assessed_turn_id && !recent.has(selfDirectedRisk.assessed_turn_id)) {
+    refs.push({
+      reason: "current-self-directed-risk-record",
+      turn_id: selfDirectedRisk.assessed_turn_id,
+      item_id: "self_directed_risk.current"
+    });
+  }
   const compatibility = state.protective_compatibility?.current;
   if (compatibility?.assessed_turn_id && !recent.has(compatibility.assessed_turn_id)
       && compatibility.gate !== "NOT_BLOCKED") {
@@ -190,6 +201,15 @@ export function decisionRelevantProjection(context) {
       present_signal_kinds: state.threat_pathway.current.present_signal_kinds,
       denied_signal_kinds: state.threat_pathway.current.denied_signal_kinds,
       unknown_signal_kinds: state.threat_pathway.current.unknown_signal_kinds
+    } : null,
+    self_directed_risk: state.self_directed_risk?.current ? {
+      level: state.self_directed_risk.current.level,
+      context: state.self_directed_risk.current.context,
+      assessed_turn_id: state.self_directed_risk.current.assessed_turn_id,
+      latest_turn_id: state.self_directed_risk.current.latest_turn_id,
+      denied: state.self_directed_risk.current.denied,
+      unknown: state.self_directed_risk.current.unknown,
+      observation_ids: state.self_directed_risk.current.observation_ids
     } : null,
     protective_compatibility: state.protective_compatibility?.current ? {
       gate: state.protective_compatibility.current.gate,

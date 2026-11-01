@@ -482,7 +482,7 @@ export function projectCommunicationState(record) {
 
   for (const runtimeTurn of record.runtime_turns ?? []) {
     const delivery = runtimeTurn.delivery;
-    if (delivery?.kind !== "discriminator") continue;
+    if (!["discriminator", "owner_fallback"].includes(delivery?.kind)) continue;
     attributedAssistantTurns.add(delivery.assistant_turn_id);
     committedByApp.add(delivery.assistant_turn_id);
     pairItems.push({ list: "confirmed", value: item({
@@ -490,7 +490,7 @@ export function projectCommunicationState(record) {
       audience: "client",
       state: "app_committed",
       evidence: "application_persisted",
-      source: sourceOf("application_transcript", { route: "runtime_discriminator" }),
+      source: sourceOf("application_transcript", { route: delivery.kind === "owner_fallback" ? "runtime_owner_fallback" : "runtime_discriminator" }),
       inReplyTo: runtimeTurn.user_turn_id,
       assistantTurnId: delivery.assistant_turn_id,
       time: { at: delivery.delivered_at, status: "known" },

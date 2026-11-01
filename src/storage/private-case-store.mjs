@@ -11,6 +11,7 @@ import { appendTrackerEntry, summarizeTrackerWindow, validateTrackerEntry } from
 import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "../supervisor/private-candidate-audit.mjs";
+import { OWNER_FALLBACK_KIND } from "../supervisor/owner-fallback-message.mjs";
 import {
   MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES,
   PRIVATE_CANDIDATE_STATUSES,
@@ -1134,11 +1135,11 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
-    async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, { exactText, producerContextId }) {
+    async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, { exactText, producerContextId, kind = null }) {
       return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED") throw new ValidationError("Runtime discriminator requires its explicit terminal-uncertainty state.");
-        const discriminator = createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt: now() });
+        const discriminator = createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt: now(), kind });
         if (runtimeTurn.discriminator) {
           if (!sameJson(runtimeTurn.discriminator, discriminator)) throw new ValidationError("Private runtime discriminator conflicts with immutable bytes.");
           return null;
@@ -1213,20 +1214,28 @@ export function createEncryptedPrivateCaseStore({
       return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.state === "DELIVERED") {
-          if (runtimeTurn.delivery?.kind === "discriminator" && runtimeTurn.assistant_turn_id === assistantTurnId) return null;
+          if (["discriminator", OWNER_FALLBACK_KIND].includes(runtimeTurn.delivery?.kind) && runtimeTurn.assistant_turn_id === assistantTurnId) return null;
           throw new ValidationError("Private runtime delivery conflicts with an existing immutable delivery.");
         }
         if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED" || !runtimeTurn.discriminator) throw new ValidationError("Runtime discriminator delivery is not ready.");
+        // The owner fallback is delivered through the same terminal state as a question but is recorded as its own kind.
+        const deliveryKind = runtimeTurn.discriminator.kind === OWNER_FALLBACK_KIND ? OWNER_FALLBACK_KIND : "discriminator";
         if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
         const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
         if (!candidate || candidate.status !== "audit_failed" || candidate.repair_cycle !== MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) throw new ValidationError("Runtime discriminator requires the exact final failed candidate.");
         const timestamp = now();
         record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: runtimeTurn.discriminator.exact_text, at: timestamp, episode_id: record.case_state.current_episode?.id ?? null });
-        candidate.metadata = { ...candidate.metadata, superseded_from_status: candidate.status, superseded_by_discriminator_runtime_turn_id: runtimeTurn.id };
+        candidate.metadata = {
+          ...candidate.metadata,
+          superseded_from_status: candidate.status,
+          ...(deliveryKind === OWNER_FALLBACK_KIND
+            ? { superseded_by_owner_fallback_runtime_turn_id: runtimeTurn.id }
+            : { superseded_by_discriminator_runtime_turn_id: runtimeTurn.id })
+        };
         candidate.status = "superseded";
         candidate.updated_at = timestamp;
         const delivery = {
-          kind: "discriminator",
+          kind: deliveryKind,
           assistant_turn_id: assistantTurnId,
           exact_text: runtimeTurn.discriminator.exact_text,
           sha256: runtimeTurn.discriminator.sha256,
@@ -1236,7 +1245,7 @@ export function createEncryptedPrivateCaseStore({
           eventId,
           toState: "DELIVERED",
           at: timestamp,
-          details: { kind: "discriminator" },
+          details: { kind: deliveryKind },
           projectionPatch: { assistant_turn_id: assistantTurnId, delivery }
         });
         Object.assign(runtimeTurn, updatedRuntime);
@@ -2127,6 +2136,8 @@ export function createEncryptedPrivateCaseStore({
         targeted_older_evidence: structuredClone(context.targeted_older_evidence),
         queried_evidence: queriedEvidence,
         current_episode: structuredClone(record.case_state.current_episode),
+        // Whole-case count for the trajectory digest; the window above holds only the current episode's turns.
+        user_turn_count: transcript.filter((turn) => turn.role === "user").length,
         tracker_window: structuredClone(context.tracker_window),
         journal_continuity: createJournalContinuityProjection(record.journal_corpora, {
           consumerCapabilitySupported: journalContinuitySupported

@@ -26,9 +26,15 @@ CURRENT MESSAGE TIME: ${now}`;
 // A case's stored plan is shown as its plan view (what is primary, current, waiting and why, and whose each goal is), not as the
 // stored record with every goal's history and the decisions applied to it. A case without a plan shows as before. Every prompt
 // that shows a case state uses this: the producing roles here, and the private audit and repair roles.
+//
+// The self-directed-risk record is never part of that view. It is written by the runtime for the reply check, which receives it
+// in the trajectory digest of its own packet; the extraction, writing and repair prompts must not read it back, or the level
+// the extractor reported last turn would shape what it reports this turn (owner decision D1: the state alone drives nothing).
 export function promptCaseState(state) {
-  if (state?.roadmap == null) return state;
-  const { roadmap: _stored, ...rest } = state;
+  if (state == null || typeof state !== "object") return state;
+  const view = Object.hasOwn(state, "self_directed_risk") ? Object.fromEntries(Object.entries(state).filter(([key]) => key !== "self_directed_risk")) : state;
+  if (view?.roadmap == null) return view;
+  const { roadmap: _stored, ...rest } = view;
   return { ...rest, case_plan: projectCasePlan(state) };
 }
 

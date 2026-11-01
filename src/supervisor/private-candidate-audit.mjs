@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
+import { buildTrajectoryDigest } from "../case-state/trajectory-digest.mjs";
 import {
   POST_RECONSTRUCTION_AUDIT_RULE,
   REPAIR_INDUCED_ERROR_CHECKS,
   createCandidateAuditEvidence
 } from "./private-candidate-lifecycle.mjs";
 
-export const PRIVATE_CANDIDATE_AUDIT_VERSION = "private-candidate-audit-v3";
+// v4: the packet gained trajectory_digest (the whole-case view and the self-directed-risk record) and the audit text gained the
+// self-directed-risk codes. The version is informational on stored evidence; it does not change how an audit is validated.
+export const PRIVATE_CANDIDATE_AUDIT_VERSION = "private-candidate-audit-v4";
 
 export async function buildPrivateCandidateAuditInput({ caseAccessService, caseId, candidateId = "current_pending", authContext } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new ValidationError("caseAccessService is required.");
@@ -35,6 +38,7 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
     recent_verbatim: context.recent_verbatim,
     targeted_older_evidence: context.targeted_older_evidence,
     current_episode: context.current_episode,
+    trajectory_digest: buildTrajectoryDigest(context),
     continuation_safety: context.continuation_safety,
     binding_rule: POST_RECONSTRUCTION_AUDIT_RULE,
     reconstruction_audit_required: candidate.parent_candidate_id != null,
@@ -46,7 +50,8 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
       "Audit evidence applies only to this exact candidate_id and candidate_version.",
       "If this is reconstructed, explicitly inspect every repair_induced_error_check and do not rely on the parent candidate's audit.",
       "Do not convert hypotheses into facts, repeat answered questions, expose hidden reasoning, or substitute a summary/hash for candidate_response.",
-      "When case_state.protective_compatibility.current.gate is HOLD or BLOCKED, fail any direct or indirect inner-child/younger-self contact invitation anywhere in the exact candidate, including its final question, task, referral, or homework. A promise, conversion, calm, or general audit PASS cannot clear the gate."
+      "When case_state.protective_compatibility.current.gate is HOLD or BLOCKED, fail any direct or indirect inner-child/younger-self contact invitation anywhere in the exact candidate, including its final question, task, referral, or homework. A promise, conversion, calm, or general audit PASS cannot clear the gate.",
+      "Compare the exact candidate_response with case_state, trajectory_digest (including its self_directed_risk record), and the exact episode transcript together; the digest covers the whole case, not only the turns in recent_verbatim."
     ],
     hidden_reasoning_included: false
   });
