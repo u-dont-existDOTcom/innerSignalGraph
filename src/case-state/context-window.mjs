@@ -2,6 +2,7 @@ import { projectEvidenceAuthority } from "./evidence-authority.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
 import { createEmptyCaseState, validateCaseState } from "./longitudinal-state.mjs";
+import { SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID, SELF_DIRECTED_RISK_RETRIEVAL_REASON, selfDirectedRiskRetrievalTurn } from "./self-directed-risk.mjs";
 import { summarizeTrackerWindow } from "./tracker.mjs";
 
 export const CONTEXT_WINDOW_LIMITS = Object.freeze({
@@ -101,7 +102,11 @@ export function formatVerbatimWindow(window) {
   return window.turns.map((turn) => `${turn.role.toUpperCase()}: ${turn.text}`).join("\n\n");
 }
 
-export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
+// `forReplyCheck` adds the request for the older turn that holds the person's own highest earlier risk reading (see
+// selfDirectedRiskRetrievalTurn). Only the reply check asks for it: the audit packet and the repair packet. The extraction and
+// writing prompts are built without it, so a reading the extractor made on an earlier turn cannot come back to it as the person's
+// current words and keep itself alive (owner decision D1: the state alone drives nothing).
+export function targetedRetrievalRequests(caseState, recentTurnIds = [], { forReplyCheck = false } = {}) {
   const state = validateCaseState(structuredClone(caseState));
   const recent = new Set(recentTurnIds);
   const refs = [];
@@ -112,6 +117,15 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
       reason: `current-threat-pathway-${threat.level.toLowerCase()}`,
       turn_id: threat.assessed_turn_id,
       item_id: "threat_pathway.current"
+    });
+  }
+  // The turn of the highest self-directed-risk reading still in the record, for the reply check only. The label names no level.
+  const selfDirectedRiskTurn = forReplyCheck ? selfDirectedRiskRetrievalTurn(state) : null;
+  if (selfDirectedRiskTurn && !recent.has(selfDirectedRiskTurn)) {
+    refs.push({
+      reason: SELF_DIRECTED_RISK_RETRIEVAL_REASON,
+      turn_id: selfDirectedRiskTurn,
+      item_id: SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID
     });
   }
   const compatibility = state.protective_compatibility?.current;
@@ -137,14 +151,14 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
   return [...new Map(refs.map((item) => [`${item.turn_id}:${item.item_id}`, item])).values()].slice(0, CONTEXT_WINDOW_LIMITS.retrieval_requests);
 }
 
-export function buildDurableCaseContext({ caseId = "local-case", caseState = null, transcriptEntries = [], trackerEntries = [], currentUserMessage = "" } = {}) {
+export function buildDurableCaseContext({ caseId = "local-case", caseState = null, transcriptEntries = [], trackerEntries = [], currentUserMessage = "", forReplyCheck = false } = {}) {
   const state = caseState ? validateCaseState(projectEvidenceAuthority(caseState)) : createEmptyCaseState({ caseId });
   const recent = selectRecentVerbatimWindow(transcriptEntries, {
     currentEpisodeId: state.current_episode?.id ?? null,
     currentEpisodeStartTurnId: state.current_episode?.started_turn_id ?? null,
     requireCompleteEpisode: Boolean(state.current_episode)
   });
-  const retrieval = targetedRetrievalRequests(state, recent.turns.map((turn) => turn.id));
+  const retrieval = targetedRetrievalRequests(state, recent.turns.map((turn) => turn.id), { forReplyCheck });
   const transcriptById = new Map(validateTranscriptEntries(transcriptEntries).map((turn) => [turn.id, turn]));
   const requestsByTurn = new Map();
   for (const request of retrieval) {
@@ -190,6 +204,15 @@ export function decisionRelevantProjection(context) {
       present_signal_kinds: state.threat_pathway.current.present_signal_kinds,
       denied_signal_kinds: state.threat_pathway.current.denied_signal_kinds,
       unknown_signal_kinds: state.threat_pathway.current.unknown_signal_kinds
+    } : null,
+    self_directed_risk: state.self_directed_risk?.current ? {
+      level: state.self_directed_risk.current.level,
+      context: state.self_directed_risk.current.context,
+      assessed_turn_id: state.self_directed_risk.current.assessed_turn_id,
+      latest_turn_id: state.self_directed_risk.current.latest_turn_id,
+      denied: state.self_directed_risk.current.denied,
+      unknown: state.self_directed_risk.current.unknown,
+      observation_ids: state.self_directed_risk.current.observation_ids
     } : null,
     protective_compatibility: state.protective_compatibility?.current ? {
       gate: state.protective_compatibility.current.gate,

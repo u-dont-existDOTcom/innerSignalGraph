@@ -8,6 +8,13 @@ import { diffCaseStates, mergeRuntimeSnapshotIntoCaseState } from "../case-state
 import { assessContinuationSafety } from "../storage/private-case-continuity.mjs";
 import { buildPrivateCandidateAuditInput } from "./private-candidate-audit.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "./private-candidate-lifecycle.mjs";
+import { isDeliverableDiscriminatorQuestion } from "./private-runtime-turn-lifecycle.mjs";
+import {
+  OWNER_FALLBACK_KIND,
+  OWNER_FALLBACK_MESSAGE,
+  OWNER_FALLBACK_ROUTE_IDS,
+  OWNER_FALLBACK_SAFETY_ROUTE_ID
+} from "./owner-fallback-message.mjs";
 import {
   privateRuntimeAuditResultSchema,
   privateRuntimeRepairResultSchema,
@@ -74,6 +81,7 @@ function sealAuditPacket(input, journalEvidence = null) {
     recent_verbatim: input.recent_verbatim,
     targeted_older_evidence: input.targeted_older_evidence,
     current_episode: input.current_episode,
+    trajectory_digest: input.trajectory_digest ?? null,
     binding_rule: input.binding_rule,
     reconstruction_audit_required: input.reconstruction_audit_required,
     repair_induced_error_checks: input.repair_induced_error_checks,
@@ -87,9 +95,24 @@ function sealAuditPacket(input, journalEvidence = null) {
       repair_rationale_history_included: false,
       prior_verdicts_included: false,
       tools_available: false,
-      filesystem_available: false
+      filesystem_available: false,
+      // The digest and the risk record come from the stored case, computed in code. They are inside the case's existing audit
+      // packet and go to no recipient that did not already receive it.
+      trajectory_digest_included: input.trajectory_digest != null,
+      trajectory_digest_computed_in_code_without_model: true,
+      self_directed_risk_record_included: input.trajectory_digest?.self_directed_risk != null
     })
   });
+}
+
+// The fixed fallback as a discriminator result: its own kind, the fixed text, and a receipt that says no model wrote it.
+function ownerFallbackDiscriminator({ attemptContextId, runtimeTurn }) {
+  return {
+    kind: OWNER_FALLBACK_KIND,
+    exactText: OWNER_FALLBACK_MESSAGE,
+    contextId: `context:${hash(`deterministic-owner-fallback:${attemptContextId}:${runtimeTurn.id}`)}`,
+    providerReceipt: { provider: "deterministic-owner-fallback", model: null, response_id: attemptContextId, isolation: { packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false } }
+  };
 }
 
 function directAuditAccess(privateCaseSource) {
@@ -111,6 +134,10 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
   if (!privateCaseSource || !providers || !config) throw new ValidationError("Private therapy model runtime requires case source, providers, and config.");
   const auditProvider = providers.privateAuditor ?? providers.anthropic;
   const repairProvider = providers.privateRepairer ?? providers.renderer ?? providers.anthropic;
+  // The fixed fallback message is written only when INNER_SIGNAL_OWNER_FALLBACK is on (loadConfig reads it into config; off by default,
+  // and off for any config that does not carry it). Reading a saved fallback never depends on this: the validators and the store accept
+  // owner_fallback whatever the setting. Fixed at construction, so one runtime behaves the same way for its whole life.
+  const ownerFallbackEnabled = config.ownerFallbackEnabled === true;
 
   return Object.freeze({
     // `inboundAlreadyRecorded` is for a caller whose inbound client message is already the newest stored user turn, as it is when a
@@ -189,6 +216,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         candidateId: candidate.id,
         requireContinuationSafe: true,
         requireAuditScope: true,
+        forReplyCheck: true,
         episodePolicy: { requireCompleteEpisode: true }
       });
       const failedAudit = candidate.audit_history.at(-1);
@@ -198,7 +226,8 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         role: "AUTHORIZED_PRIVATE_CANDIDATE_REPAIR",
         candidate_binding: { id: candidate.id, version: candidate.version, parent_candidate_id: candidate.parent_candidate_id, repair_cycle: candidate.repair_cycle },
         failed_candidate_response: candidate.exact_text,
-        binding_audit: { id: failedAudit.id, candidate_id: failedAudit.candidate_id, candidate_version: failedAudit.candidate_version, findings: failedAudit.findings },
+        // Record-only findings are kept in the audit history for review and do not reach the repair writer.
+        binding_audit: { id: failedAudit.id, candidate_id: failedAudit.candidate_id, candidate_version: failedAudit.candidate_version, findings: Array.isArray(failedAudit.findings) ? failedAudit.findings.filter((finding) => finding.record_only !== true) : failedAudit.findings },
         constitution_ref: context.constitution_ref,
         case_state: context.case_state,
         last_state_diff: context.last_state_diff,
@@ -226,9 +255,19 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
       const currentCandidate = record.candidate_responses?.find((candidate) => candidate.id === runtimeTurn.current_candidate_id);
       const unresolved = currentCandidate?.audit_history?.at(-1)?.findings ?? [];
-      if (unresolved.some((finding) => finding.unresolved !== false
-          && ["substantive", "high"].includes(finding.severity)
-          && ROLE_BELIEF_BLOCKING_CODES.includes(finding.code))) {
+      const roleBeliefHold = unresolved.some((finding) => finding.unresolved !== false
+        && ["substantive", "high"].includes(finding.severity)
+        && ROLE_BELIEF_BLOCKING_CODES.includes(finding.code));
+      // The fixed fallback is considered only while the setting is on, and only for a route in OWNER_FALLBACK_ROUTE_IDS. The route is the
+      // turn's own (the episode's active step, then its route), never suicidal_state or any other variable, so a calm turn, an
+      // approved candidate and every other route are unaffected. With the setting off `route` stays null, `ownerFallbackRoute` is false,
+      // and every line below is what it was before the fallback existed.
+      const route = ownerFallbackEnabled ? (record.case_state?.current_episode?.active_step ?? record.case_state?.current_episode?.route ?? null) : null;
+      const ownerFallbackRoute = ownerFallbackEnabled && OWNER_FALLBACK_ROUTE_IDS.includes(route);
+      if (roleBeliefHold) {
+        // On the four risk routes the fixed text is delivered instead of leaving the turn unfinished: it carries no claim about a role or
+        // a belief, so the finding cannot reach the person through it. On every other route, and with the setting off, the block is as it was.
+        if (ownerFallbackRoute) return ownerFallbackDiscriminator({ attemptContextId, runtimeTurn });
         throw new ValidationError("A role or belief integrity finding remains unresolved; unaudited fallback delivery is blocked.", {
           code: "PRIVATE_DISCRIMINATOR_ROLE_BELIEF_BLOCKED"
         });
@@ -238,6 +277,13 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       const question = compatibility.gate !== "NOT_BLOCKED" && childContactViolations(currentQuestion).length
         ? restrictedCompatibilityFallback(compatibility).next_question
         : currentQuestion;
+      // Here the audit loop has ended, after the second failed repair, without a reply that can be sent. On three of the four routes the
+      // unaudited stored question is never sent. The safety-orientation route keeps it when it can be sent, and has the fallback only
+      // when no sendable question exists (where nothing was delivered before).
+      if (ownerFallbackRoute) {
+        const questionCanBeSent = typeof question === "string" && question.trim() && isDeliverableDiscriminatorQuestion(question.trim());
+        if (route !== OWNER_FALLBACK_SAFETY_ROUTE_ID || !questionCanBeSent) return ownerFallbackDiscriminator({ attemptContextId, runtimeTurn });
+      }
       if (typeof question !== "string" || !question.trim()) {
         throw new ValidationError("The current episode has no authorized discriminating question; delivery remains blocked.", { code: "PRIVATE_DISCRIMINATOR_UNAVAILABLE" });
       }

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
+import { SELF_DIRECTED_RISK_AUDIT_CODES } from "../prompts/self-directed-risk-audit.mjs";
 
 export const PRIVATE_CANDIDATE_STATUSES = Object.freeze([
   "pending_audit",
@@ -44,6 +45,9 @@ const ACTIVE_STATUSES = new Set(PRIVATE_CANDIDATE_STATUSES.filter((status) => ![
 const AUDITABLE_STATUSES = new Set(["pending_audit", "reconstructed_pending_audit"]);
 const BLOCKING_SEVERITIES = new Set(["substantive", "high"]);
 const FINDING_SEVERITIES = new Set(["low", "medium", ...BLOCKING_SEVERITIES]);
+// Findings under these codes are recorded in the audit history and never block delivery or start a repair.
+export const RECORD_ONLY_AUDIT_CODES = SELF_DIRECTED_RISK_AUDIT_CODES;
+const RECORD_ONLY_CODE_SET = new Set(RECORD_ONLY_AUDIT_CODES);
 const AVAILABILITY_STATUSES = new Set(["known", "unavailable"]);
 const sha256Hex = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -65,6 +69,19 @@ export function isSubstantiveAuditFinding(finding) {
   return finding?.unresolved !== false && BLOCKING_SEVERITIES.has(finding?.severity);
 }
 
+// A record-only finding is stored as a non-blocking fact: the severity the auditor reported is kept as reported_severity and the
+// stored severity is capped at medium. Doing it where the evidence is created, rather than in isSubstantiveAuditFinding, keeps
+// every stored record consistent for any reader, including an earlier build that loads this case: it sees a medium finding, an
+// empty list of unresolved substantive findings and a pass, exactly as the stored evidence says.
+function normalizeRecordOnlyFinding(finding) {
+  if (!RECORD_ONLY_CODE_SET.has(finding?.code)) return finding;
+  return {
+    ...finding,
+    record_only: true,
+    ...(BLOCKING_SEVERITIES.has(finding.severity) ? { severity: "medium", reported_severity: finding.severity } : {})
+  };
+}
+
 export function validateCandidateAuditFinding(value, index = 0) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`audit findings[${index}] must be an object.`);
   bounded(value.id, `audit findings[${index}].id`, 160);
@@ -72,6 +89,10 @@ export function validateCandidateAuditFinding(value, index = 0) {
   bounded(value.summary, `audit findings[${index}].summary`, 2_000);
   if (!FINDING_SEVERITIES.has(value.severity)) throw new ValidationError(`audit findings[${index}].severity is invalid.`);
   if (value.unresolved != null && typeof value.unresolved !== "boolean") throw new ValidationError(`audit findings[${index}].unresolved is invalid.`);
+  if (value.record_only != null && value.record_only !== true) throw new ValidationError(`audit findings[${index}].record_only is invalid.`);
+  if (value.reported_severity != null && (value.record_only !== true || !FINDING_SEVERITIES.has(value.reported_severity))) {
+    throw new ValidationError(`audit findings[${index}].reported_severity is invalid.`);
+  }
   if (value.evidence_turn_ids != null && (!Array.isArray(value.evidence_turn_ids) || value.evidence_turn_ids.some((id) => typeof id !== "string" || !id.trim()))) {
     throw new ValidationError(`audit findings[${index}].evidence_turn_ids is invalid.`);
   }
@@ -170,7 +191,7 @@ export function createCandidateAuditEvidence({
   const isExternallySupplied = externalProvenance != null || auditorContextIdStatus === "unavailable";
   const resolvedCompletedAtStatus = completedAtStatus ?? (completedAt == null && isExternallySupplied ? "unavailable" : "known");
   const resolvedCompletedAt = resolvedCompletedAtStatus === "known" ? (completedAt ?? recordedAt) : null;
-  const normalizedFindings = structuredClone(findings).map((finding) => ({ unresolved: true, ...finding }));
+  const normalizedFindings = structuredClone(findings).map((finding) => normalizeRecordOnlyFinding({ unresolved: true, ...finding }));
   const independent = auditorContext.kind === "independent";
   const hasBlockingFinding = normalizedFindings.some(isSubstantiveAuditFinding);
   const evidence = {

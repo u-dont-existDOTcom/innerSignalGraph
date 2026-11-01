@@ -28,6 +28,7 @@ import {
   createEmptyCaseState,
   diffCaseStates,
   mergeRuntimeSnapshotIntoCaseState,
+  caseStateForClient,
   projectCaseStateForInspection,
   validateCaseState
 } from "../case-state/longitudinal-state.mjs";
@@ -321,6 +322,9 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
           privateCaseStorage: { available: Boolean(privateCaseSource), plaintextFallback: false, automaticOrchestration: Boolean(automaticPrivateTherapy) },
+          // Whether this runtime writes the fixed fallback message (INNER_SIGNAL_OWNER_FALLBACK). It names the state and never a setting's value,
+          // so a deploy can check it before and after the owner turns it on. Reading a saved fallback does not depend on it.
+          ownerFallback: config.ownerFallbackEnabled === true ? "on" : "off",
           endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
@@ -359,7 +363,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
             interventionContract: metadata.interventionContract ?? null,
             responseContract: metadata.responseContract ?? null,
             processingMs: metadata.processingMs ?? null,
-            durableCaseState: result.durableCaseState,
+            durableCaseState: caseStateForClient(result.durableCaseState),
             caseState: projectCaseStateForInspection(result.durableCaseState),
             caseStateDiff: result.caseStateDiff,
             privateCaseStorage: "encrypted",
@@ -434,7 +438,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         }
         return send(res, 200, {
           ...result,
-          durableCaseState: nextCaseState,
+          durableCaseState: caseStateForClient(nextCaseState),
           caseState: projectCaseStateForInspection(nextCaseState),
           caseStateDiff,
           privateCaseStorage: privateCaseStore ? "encrypted" : "session_only"
@@ -446,7 +450,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         const record = await loadPrivateRecord(caseId, requestAuthContext(req));
         return send(res, 200, {
           caseId,
-          durableCaseState: record.case_state,
+          durableCaseState: caseStateForClient(record.case_state),
           caseState: projectCaseStateForInspection(record.case_state),
           caseStateDiff: record.last_state_diff,
           trackerWindow: summarizeTrackerWindow(record.tracker_entries),
