@@ -25,15 +25,22 @@ import { CHARS_PER_TOKEN, MANIFEST_SCHEMA, PLAN_CHARS, STAGE1, callId, packetId 
 //  - the first usage-limit error stops the run, and no call is retried: a call that failed, timed out or was cut off is recorded and left alone;
 //  - three failures in a row stop the run; the first live call must name the requested model among the models that answered;
 //  - a live run needs --live and INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1, refuses API mode, and checks the Claude CLI's flags and version first;
-//  - every sealed byte and every prompt is checked against its SHA-256 before the first call.
+//  - every sealed byte and every prompt is checked against its SHA-256 before the first call;
+//  - every call is sealed, whatever flags the CLI lists: the provider's sealed mode decides what the CLI must offer, and a CLI it refuses stops the
+//    run before any call, with nothing sent, counted or kept;
+//  - a receipts folder keeps the mode, model, effort, provider and sealed folder of its first invocation (run.json); a run that asks for anything
+//    else is refused before any call. The Claude CLI version is not one of them: each invocation logs its own, and the scorer lists them all.
 export const HARD_CAP = 144;
 export const OPT_IN_ENV = "INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI";
+export const ISOLATION_UNAVAILABLE = "PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE";
+export const PROVIDER_FIX_BRANCH = "fix/claude-cli-sealed-without-max-turns-20261101";
 export const CONSECUTIVE_FAILURES_STOP = 3;
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 // What the Claude CLI says when a subscription limit is reached, in the forms seen so far. It errs towards stopping: a message that merely
 // looks like a limit ends the run, and the run can be repeated once the cause is understood.
 const USAGE_LIMIT = /usage limit|limit reached|hit your (?:\w+ )?limit|reached your .{0,40}limit|(?:5|five)[- ]hour limit|weekly limit|rate[_ -]?limit|too many requests|\b429\b|credit balance is too low|out of (?:extra )?usage/iu;
 const STAGE = "private_candidate_audit";
+const RECEIPT_FILE = /^(.+)\.a(\d+)\.(started|result)\.json$/u;
 const json = (value) => `${JSON.stringify(value, null, 1)}\n`;
 const exists = (file) => fs.stat(file).then(() => true, () => false);
 
@@ -103,7 +110,7 @@ async function readReceipts(dir) {
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   const history = new Map();
   for (const name of (await fs.readdir(dir)).sort()) {
-    const match = /^(.+)\.a(\d+)\.(started|result)\.json$/u.exec(name);
+    const match = RECEIPT_FILE.exec(name);
     if (!match) continue;
     const [, call, attempt, kind] = match;
     const record = history.get(call) ?? { attempts: new Map() };
@@ -139,6 +146,29 @@ async function settle(dir, history) {
 
 const finished = (record) => record != null && [...record.attempts.values()].some((slot) => slot.result.outcome !== "usage_limit");
 const counted = (history) => [...history.values()].reduce((sum, record) => sum + [...record.attempts.values()].filter((slot) => slot.result?.outcome !== "usage_limit").length, 0);
+
+// A receipts folder keeps the settings of its first invocation, in the run.json that invocation wrote, and a later run may not change them:
+// the scorer labels the whole folder alike, so receipts made under another mode, model, effort, provider or sealed folder would be mislabelled
+// (a mock run followed by a live one would skip the scripted calls and mix scripted findings with real answers). The Claude CLI version is
+// not among them. This runs before anything in the folder is read for reuse or written, and before the first call.
+const BOUND_SETTINGS = Object.freeze([["mode", "mode"], ["requested_model", "model"], ["effort", "effort"], ["provider", "provider"], ["sealed_manifest_sha256", "sealed folder"]]);
+const shown = (value) => (value === undefined ? "not recorded" : /^[0-9a-f]{64}$/u.test(String(value)) ? String(value).slice(0, 12) : JSON.stringify(value));
+
+async function requireSameSettings({ outDir, receiptsDir, request }) {
+  const text = await fs.readFile(path.join(outDir, "run.json"), "utf8").catch((error) => { if (error?.code === "ENOENT") return null; throw error; });
+  if (text === null) {
+    if ((await fs.readdir(receiptsDir)).some((name) => RECEIPT_FILE.test(name))) throw new Error("This receipts folder holds receipts but no run.json, so nothing says which mode, model and effort made them. No call was made. Use a new folder.");
+    return;
+  }
+  let first;
+  try { first = JSON.parse(text); } catch { throw new Error("The run.json in this receipts folder cannot be read, so the settings that made its receipts are unknown. No call was made. Use a new folder."); }
+  const differences = BOUND_SETTINGS.filter(([key]) => first?.[key] !== request[key])
+    .map(([key, label]) => (first?.[key] === undefined ? `${label}: not recorded, asked for ${shown(request[key])}` : `${label}: started with ${shown(first[key])}, asked for ${shown(request[key])}`));
+  if (differences.length) {
+    const earlier = first?.provider === undefined ? " This folder was started by an earlier version of the driver, which did not record the provider." : "";
+    throw new Error(`This receipts folder was started with other settings (${differences.join("; ")}). Receipts made under different settings are not mixed. No call was made. Use a new folder.${earlier}`);
+  }
+}
 
 // ---- the auditor -------------------------------------------------------------------------------------------------------------------------
 
@@ -199,8 +229,9 @@ export class MockAuditor {
 }
 
 async function preflightLive(auditor, config) {
-  // --max-turns is not required: the provider passes it when the CLI lists it, and every call already runs with `--tools ""`, so a
-  // print-mode call has no tool turns to limit. Claude Code 2.1.312 and 2.1.316 do not list it.
+  // --max-turns is not checked here. Whether a sealed call needs it is the provider's decision, not this file's: a provider that still
+  // requires it refuses the first call before it starts anything (see isolationStop), and one that does not passes it only when the CLI
+  // lists it. Claude Code 2.1.312 and 2.1.316 do not list it.
   const needed = ["print", "outputFormat", "jsonSchema", "model", "effort", "tools", "noSessionPersistence", "permissionMode", "noChrome", "safeMode", "strictMcpConfig"];
   const flags = (await auditor.capabilities())?.flags ?? {};
   const missing = needed.filter((name) => !flags[name]);
@@ -209,12 +240,24 @@ async function preflightLive(auditor, config) {
   const systemPromptTransport = flags.systemPromptFile ? "file" : flags.systemPrompt ? "argument" : "stdin";
   if (systemPromptTransport === "argument" && process.platform === "win32") throw new Error("This CLI has no --system-prompt-file, and Windows cannot pass the 91 KB system prompt as an argument. No call was made.");
   const version = await runSubprocess({ command: config.claudeCommand, args: ["--version"], timeoutMs: 30000, label: "Claude CLI version check" });
-  return { claude_command: config.claudeCommand, claude_version: version.stdout.trim(), flags_checked: needed, max_turns_flag: flags.maxTurns ? "passed" : "not listed by this CLI (no tool turns with --tools \"\")", system_prompt_transport: systemPromptTransport, request_timeout_ms: config.requestTimeoutMs, isolate_config: config.cliIsolateConfig, platform: process.platform };
+  return { claude_command: config.claudeCommand, claude_version: version.stdout.trim(), flags_checked: needed, max_turns_flag: flags.maxTurns ? "listed" : `not listed: if this checkout's provider still requires it for sealed calls, the first call is refused before anything is sent (${ISOLATION_UNAVAILABLE})`, system_prompt_transport: systemPromptTransport, request_timeout_ms: config.requestTimeoutMs, isolate_config: config.cliIsolateConfig, platform: process.platform };
 }
 
 const textOf = (error) => `${error?.message ?? ""} ${JSON.stringify(error?.details ?? {})}`;
 const sum = (...values) => values.reduce((total, value) => total + (Number.isFinite(value) ? value : 0), 0);
 const tokensIn = (usage) => sum(usage?.input_tokens, usage?.cache_creation_input_tokens, usage?.cache_read_input_tokens);
+
+// The provider refuses a sealed call whose CLI lacks a flag its sealed mode requires, and it does so before it starts any subprocess, so no
+// model is called. That is a stop, not a failed call: it is not retried, counted or kept as a receipt, and the run ends with a plain message.
+const CLI_FLAG_NAMES = Object.freeze({ tools: "--tools", maxTurns: "--max-turns", noSessionPersistence: "--no-session-persistence", permissionMode: "--permission-mode", noChrome: "--no-chrome", safeMode: "--safe-mode", strictMcpConfig: "--strict-mcp-config" });
+const isIsolationRefusal = (error) => error?.code === ISOLATION_UNAVAILABLE;
+
+function isolationStop(refusal) {
+  const missing = (refusal.details?.missingIsolationFlags ?? []).map((name) => CLI_FLAG_NAMES[name] ?? name);
+  const lacks = missing.length ? `does not list ${missing.join(", ")}, which this checkout's provider still requires for sealed calls` : "cannot give what this checkout's provider requires for sealed calls";
+  const fix = missing.includes("--max-turns") ? ` The provider change on branch ${PROVIDER_FIX_BRANCH} (its own pull request) has to be merged first, or merged locally for this run.` : "";
+  return new ProviderError(`The installed Claude CLI ${lacks} (${ISOLATION_UNAVAILABLE}). The provider refused before it started anything, so no call was made, nothing was counted and no receipt was kept.${fix}`, { code: ISOLATION_UNAVAILABLE, cause: refusal, details: refusal.details });
+}
 
 // One call: send, classify, and (when the answer is usable) let the runtime's own function decide block or pass.
 async function execute({ auditor, item, call, mode, requestedModel }) {
@@ -222,13 +265,11 @@ async function execute({ auditor, item, call, mode, requestedModel }) {
   const { entry, packet, prompt } = item;
   let raw;
   try {
-    // The provider's sealed mode also demands --max-turns, which Claude Code 2.1.312 and 2.1.316 do not list. When it is missing, the call
-    // goes out unsealed but with the same isolation flags (--tools "", --no-session-persistence, --permission-mode dontAsk, --no-chrome,
-    // and, through isolateConfig, --safe-mode and --strict-mcp-config), which preflightLive has already checked; only --max-turns is left out.
-    const flags = typeof auditor.capabilities === "function" ? (await auditor.capabilities())?.flags ?? null : null;
-    const sealed = !flags || Boolean(flags.maxTurns);
-    raw = await auditor.generate({ ...prompt, outputSchema: privateRuntimeAuditResultSchema, metadata: { stage: STAGE, fixtureKey: STAGE, attemptContextId: call, freshContext: true }, sealed });
+    // Every call is sealed. What the installed CLI must offer for that is the provider's sealed mode to decide, and what the CLI lists never
+    // switches it off here: a sealed call runs in the provider's private temporary folder with its allowlisted environment.
+    raw = await auditor.generate({ ...prompt, outputSchema: privateRuntimeAuditResultSchema, metadata: { stage: STAGE, fixtureKey: STAGE, attemptContextId: call, freshContext: true }, sealed: true });
   } catch (error) {
+    if (isIsolationRefusal(error)) return { outcome: "refused_before_call", error };
     return { outcome: USAGE_LIMIT.test(textOf(error)) ? "usage_limit" : "error", error: { name: error?.name, code: error?.code ?? null, message: String(error?.message).slice(0, 400), details: JSON.stringify(error?.details ?? {}).slice(0, 2500) }, ms: Date.now() - started };
   }
   const base = { ms: Date.now() - started, provider: auditor.id, requested_model: requestedModel, response_id: raw.responseId ?? raw.requestId ?? null, usage: raw.usage ?? null, model_usage: raw.modelUsage ?? null, raw_text: raw.text, stderr_tail: String(raw.stderr ?? "").slice(-500) };
@@ -287,27 +328,30 @@ export async function runStage1Audit({ sealedDir, outDir, mode, limit = null, mo
   }
 
   let auditor = provider;
-  let preflight = null;
+  let config = null;
   if (mode === "live") {
-    const config = loadConfig({ mode: "cli", anthropicModel: model, claudeEffort: effort }, { providers: ["anthropic"] });
+    config = loadConfig({ mode: "cli", anthropicModel: model, claudeEffort: effort }, { providers: ["anthropic"] });
     auditor = createProviders(config, { providers: ["anthropic"] }).anthropic;
-    preflight = await preflightLive(auditor, config);
   } else {
     auditor ??= new MockAuditor({ sealed, faults });
   }
+  // The folder's first run.json is compared with this request before the Claude CLI is asked anything and before any receipt is read or settled.
+  await requireSameSettings({ outDir, receiptsDir, request: { mode, requested_model: model, effort, provider: auditor.id, sealed_manifest_sha256: sealed.manifestSha256 } });
+  const preflight = mode === "live" ? await preflightLive(auditor, config) : null;
 
   const history = await readReceipts(receiptsDir);
   const ambiguousSettled = await settle(receiptsDir, history);
   const effectiveLimit = Math.min(limit ?? hardCap, hardCap);
   const pending = schedule.filter((item) => !finished(history.get(item.call)));
   const invocation = {
-    started_at: new Date().toISOString(), mode, requested_model: model, effort, limit, effective_limit: effectiveLimit, hard_cap: hardCap, concurrency,
+    started_at: new Date().toISOString(), mode, requested_model: model, effort, provider: auditor.id, limit, effective_limit: effectiveLimit, hard_cap: hardCap, concurrency,
     sealed_manifest_sha256: sealed.manifestSha256, node: process.version, repository_head: (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim(); } catch { return null; } })(),
     preflight, counted_before: counted(history), finished_before: schedule.length - pending.length, ambiguous_settled_now: ambiguousSettled
   };
-  if (!(await exists(path.join(outDir, "run.json")))) await fs.writeFile(path.join(outDir, "run.json"), json({ schema: "longitudinal-risk-stage1-run-v1", ...invocation }));
+  // run.json is written once, by the folder's first invocation, and left as it was written: the settings the folder is tied to.
+  if (!(await exists(path.join(outDir, "run.json")))) await fs.writeFile(path.join(outDir, "run.json"), json({ schema: "longitudinal-risk-stage1-run-v1", ...invocation }), { flag: "wx" });
 
-  const state = { counted: counted(history), next: 0, stop: null, failuresInARow: 0 };
+  const state = { counted: counted(history), next: 0, stop: null, failuresInARow: 0, refusal: null };
   const tally = { ok: 0, usage_limit: 0, error: 0, unusable: 0, blocked: 0, passed: 0, ms: 0, input_tokens: 0, output_tokens: 0 };
   async function attempt(item) {
     const attemptNumber = (history.get(item.call)?.attempts.size ?? 0) + 1;
@@ -316,6 +360,12 @@ export async function runStage1Audit({ sealedDir, outDir, mode, limit = null, mo
     const started = { call: item.call, packet: item.packet, sample: item.sample, attempt: attemptNumber, mode, requested_model: model, effort, system_sha256: sealed.manifest.system_prompt.sha256, user_sha256: entry.entry.user_sha256, started_at: new Date().toISOString() };
     await fs.writeFile(path.join(receiptsDir, `${base}.started.json`), json(started), { flag: "wx" });
     const outcome = await execute({ auditor, item: entry, call: item.call, mode, requestedModel: model });
+    if (outcome.outcome === "refused_before_call") {
+      // No subprocess was started, so no call happened. The started file goes: left behind, the next run would settle it as a call that may
+      // have been billed, count it, and never repeat it.
+      await fs.rm(path.join(receiptsDir, `${base}.started.json`), { force: true });
+      return { call: item.call, ...outcome };
+    }
     const result = { ...started, finished_at: new Date().toISOString(), ...outcome };
     await writeResult(receiptsDir, base, result);
     await fs.appendFile(path.join(outDir, "calls.jsonl"), `${JSON.stringify({ call: item.call, attempt: attemptNumber, outcome: result.outcome, blocked: result.blocked ?? null, codes: (result.findings ?? []).map((finding) => finding.code), ms: result.ms })}\n`);
@@ -330,6 +380,7 @@ export async function runStage1Audit({ sealedDir, outDir, mode, limit = null, mo
       state.next += 1;
       state.counted += 1;
       const result = await attempt(item);
+      if (result.outcome === "refused_before_call") { state.counted -= 1; state.refusal ??= result.error; state.stop ??= "isolation_unavailable"; return; }
       tally[result.outcome] = (tally[result.outcome] ?? 0) + 1;
       tally.ms += result.ms ?? 0;
       tally.input_tokens += tokensIn(result.usage);
@@ -343,6 +394,8 @@ export async function runStage1Audit({ sealedDir, outDir, mode, limit = null, mo
     }
   }
   await Promise.all(Array.from({ length: concurrency }, worker));
+  // The provider decides from the same flags for every call, so the first call is refused or none is: nothing has been sent, counted or kept.
+  if (state.refusal) throw isolationStop(state.refusal);
 
   const stopReason = state.stop ?? (state.next >= pending.length ? "completed" : "stopped");
   const after = await readReceipts(receiptsDir);

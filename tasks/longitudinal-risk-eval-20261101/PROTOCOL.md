@@ -51,6 +51,8 @@ Each answer is compared with the expectation sealed with its packet: blocking (r
 
 Results are reported per decision turn, arm and seed and per arc and arm, never pooled. Three samples are a shakedown, not a rate. The effective sample is the trajectory, not the call.
 
+One report labels the whole receipts folder with one mode, model and effort. The scorer refuses a folder whose `run.json`, invocations log or call receipts disagree on them (the driver no longer resumes a folder under other settings, but an older folder can hold such a mix), and the report lists every Claude CLI version in the invocations log.
+
 ## Commands
 
 All commands start `npm run eval:longitudinal-risk --` and write outside the repository.
@@ -59,7 +61,7 @@ All commands start `npm run eval:longitudinal-risk --` and write outside the rep
 stage0 --out DIR                         # about 25 minutes on 2 CPUs; no model; writes the per-turn data, score.json and report.txt
 stage1-seal --from STAGE0_DIR --out SEALED_DIR     # 48 packets: bytes, prompts and SHA-256; never rewrites a sealed folder
 stage1-sizes --sealed SEALED_DIR                    # sizes recomputed from the sealed bytes, beside the plan's
-stage1-selfcheck --sealed SEALED_DIR [--work DIR]   # the driver's guards, including the live path against a stand-in `claude` executable (no model); its throwaway files go into a private temporary folder (mkdtemp, mode 0700) that is removed afterwards, or into the new or empty --work folder, which is kept
+stage1-selfcheck --sealed SEALED_DIR [--work DIR]   # the driver's guards, including the live path against a stand-in `claude` executable (no model): every live call sealed whatever flags the CLI lists, and a receipts folder kept to its first settings; its throwaway files go into a private temporary folder (mkdtemp, mode 0700) that is removed afterwards, or into the new or empty --work folder, which is kept
 stage1-audit --sealed SEALED_DIR --out RECEIPTS_DIR --mock           # the whole pipeline with no model
 stage1-score --run RECEIPTS_DIR
 ```
@@ -70,7 +72,9 @@ Live run (the owner's laptop, the Claude subscription CLI, model `claude-opus-5-
 INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1 npm run eval:longitudinal-risk -- stage1-audit --sealed SEALED_DIR --out RECEIPTS_DIR --live --limit 12
 ```
 
-It needs this branch checked out at the PR head (Node 24, `npm ci`; a checkout that builds a different prompt from a sealed packet refuses to run), the sealed folder copied beside it (outside the checkout), a `claude` CLI signed in to the subscription meant to pay, and a receipts folder outside the checkout. The preflight reads `claude --help` before the first call and refuses a CLI that does not list a flag the sealed provider needs (for example `--max-turns`); the Claude Code 2.1.316 used to build this does not list it. Measure the first 12 calls (`stage1-score` prints tokens a call and the projection for 144) before going on with `--limit 48` or no limit.
+It needs this branch checked out at the PR head (Node 24, `npm ci`; a checkout that builds a different prompt from a sealed packet refuses to run), the sealed folder copied beside it (outside the checkout), a `claude` CLI signed in to the subscription meant to pay, and a new receipts folder outside the checkout (see Guards for reusing one). Every call is sealed: the driver always asks the provider for its sealed mode, whatever flags the CLI lists, so each `claude -p` runs in the provider's private temporary folder with its allowlisted environment, with `--tools ""`, `--safe-mode` and `--strict-mcp-config`. The preflight reads `claude --help` before the first call and refuses a CLI that does not list a flag it checks; `--max-turns` is not one of them, because what a sealed call needs is the provider's decision. The provider in `main` still requires `--max-turns` for sealed calls, and Claude Code 2.1.312 and 2.1.316 do not list it, so with them the provider refuses the first call before it starts anything (`PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE`). The driver treats that as a clean stop: no call is made, nothing is counted or kept, and nothing is retried. Its message says the installed CLI does not list `--max-turns`, which this checkout's provider still requires for sealed calls, so the provider change on branch `fix/claude-cli-sealed-without-max-turns-20261101` (its own pull request) has to be merged first, or merged locally for the run. Measure the first 12 calls (`stage1-score` prints tokens a call and the projection for 144) before going on with `--limit 48` or no limit.
+
+What the 1 Nov live run actually did: Claude Code 2.1.312 does not list `--max-turns`, so the driver as of commit `45014900` sent the calls unsealed. Each `claude -p` ran in the clone's folder with the full environment, not in the provider's private temporary folder with its allowlisted environment. These were still on: `--tools ""`, `--safe-mode` (which starts without CLAUDE.md, skills, plugins, hooks or MCP servers), `--strict-mcp-config`, `--no-session-persistence`, `--permission-mode dontAsk` and `--no-chrome`; the preflight recorded `isolate_config` as true. Every answer's model was confirmed as `claude-opus-5-5`. The next live run is sealed and needs the provider change. Its receipts go in a new folder: the driver refuses to resume the 1 Nov folder, which predates the settings it now records.
 
 ## Guards
 
@@ -80,6 +84,8 @@ It needs this branch checked out at the PR head (Node 24, `npm ci`; a checkout t
 - Three failures in a row stop the run. After any live answer the requested model must be among the models the CLI reports; otherwise the run stops (the first live call settles it).
 - A live run needs `--live` and `INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1`, refuses API mode, and checks the CLI's flags and version before the first call. `--concurrency` is 1 to 3 and defaults to 1.
 - Every sealed packet and prompt is checked against its SHA-256 before the first call, and a receipts folder is tied to the sealed folder it started with. A checkout that builds a different prompt from a sealed packet refuses to run.
+- A receipts folder is also tied to the mode, model, effort and provider of its first invocation, as that invocation wrote them to `run.json`, which is left as it was written. A run that asks for others (a live run after a mock one, another model, another effort) is refused before any call, and the folder is left as it was. So is a folder that holds receipts but no readable `run.json`, or whose `run.json` does not record the provider (an older folder). A new Claude CLI version is not a reason to refuse: each live invocation logs its own, and the score report lists them all.
+- Every call is sealed. A CLI the provider's sealed mode refuses stops the run before any call (see the live run above); the refused call is not counted, not retried and leaves no receipt.
 - Receipts are written outside Git, in folders made with mode 0700: a `.started` file before each call and a `.result` file after it (written first to a temporary name nobody can guess, created exclusively, then renamed), with the model's raw answer, the verdict and findings, the tokens and the models that answered. Nothing is created at a name chosen in advance in a shared directory.
 
 ## Limits
