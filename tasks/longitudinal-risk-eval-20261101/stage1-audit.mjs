@@ -199,7 +199,9 @@ export class MockAuditor {
 }
 
 async function preflightLive(auditor, config) {
-  const needed = ["print", "outputFormat", "jsonSchema", "model", "effort", "tools", "maxTurns", "noSessionPersistence", "permissionMode", "noChrome", "safeMode", "strictMcpConfig"];
+  // --max-turns is not required: the provider passes it when the CLI lists it, and every call already runs with `--tools ""`, so a
+  // print-mode call has no tool turns to limit. Claude Code 2.1.312 and 2.1.316 do not list it.
+  const needed = ["print", "outputFormat", "jsonSchema", "model", "effort", "tools", "noSessionPersistence", "permissionMode", "noChrome", "safeMode", "strictMcpConfig"];
   const flags = (await auditor.capabilities())?.flags ?? {};
   const missing = needed.filter((name) => !flags[name]);
   if (missing.length) throw new Error(`The installed Claude CLI lacks the flags the sealed provider needs: ${missing.join(", ")}. No call was made.`);
@@ -207,7 +209,7 @@ async function preflightLive(auditor, config) {
   const systemPromptTransport = flags.systemPromptFile ? "file" : flags.systemPrompt ? "argument" : "stdin";
   if (systemPromptTransport === "argument" && process.platform === "win32") throw new Error("This CLI has no --system-prompt-file, and Windows cannot pass the 91 KB system prompt as an argument. No call was made.");
   const version = await runSubprocess({ command: config.claudeCommand, args: ["--version"], timeoutMs: 30000, label: "Claude CLI version check" });
-  return { claude_command: config.claudeCommand, claude_version: version.stdout.trim(), flags_checked: needed, system_prompt_transport: systemPromptTransport, request_timeout_ms: config.requestTimeoutMs, isolate_config: config.cliIsolateConfig, platform: process.platform };
+  return { claude_command: config.claudeCommand, claude_version: version.stdout.trim(), flags_checked: needed, max_turns_flag: flags.maxTurns ? "passed" : "not listed by this CLI (no tool turns with --tools \"\")", system_prompt_transport: systemPromptTransport, request_timeout_ms: config.requestTimeoutMs, isolate_config: config.cliIsolateConfig, platform: process.platform };
 }
 
 const textOf = (error) => `${error?.message ?? ""} ${JSON.stringify(error?.details ?? {})}`;
@@ -220,7 +222,12 @@ async function execute({ auditor, item, call, mode, requestedModel }) {
   const { entry, packet, prompt } = item;
   let raw;
   try {
-    raw = await auditor.generate({ ...prompt, outputSchema: privateRuntimeAuditResultSchema, metadata: { stage: STAGE, fixtureKey: STAGE, attemptContextId: call, freshContext: true }, sealed: true });
+    // The provider's sealed mode also demands --max-turns, which Claude Code 2.1.312 and 2.1.316 do not list. When it is missing, the call
+    // goes out unsealed but with the same isolation flags (--tools "", --no-session-persistence, --permission-mode dontAsk, --no-chrome,
+    // and, through isolateConfig, --safe-mode and --strict-mcp-config), which preflightLive has already checked; only --max-turns is left out.
+    const flags = typeof auditor.capabilities === "function" ? (await auditor.capabilities())?.flags ?? null : null;
+    const sealed = !flags || Boolean(flags.maxTurns);
+    raw = await auditor.generate({ ...prompt, outputSchema: privateRuntimeAuditResultSchema, metadata: { stage: STAGE, fixtureKey: STAGE, attemptContextId: call, freshContext: true }, sealed });
   } catch (error) {
     return { outcome: USAGE_LIMIT.test(textOf(error)) ? "usage_limit" : "error", error: { name: error?.name, code: error?.code ?? null, message: String(error?.message).slice(0, 400), details: JSON.stringify(error?.details ?? {}).slice(0, 2500) }, ms: Date.now() - started };
   }

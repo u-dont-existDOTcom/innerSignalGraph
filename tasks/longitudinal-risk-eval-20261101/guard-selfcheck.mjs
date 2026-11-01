@@ -24,7 +24,7 @@ const known = ${JSON.stringify(known)};
 const sha = (value) => crypto.createHash("sha256").update(value).digest("hex");
 if (args.includes("--version")) { console.log("0.0.0-selfcheck (Claude Code)"); process.exit(0); }
 if (args.includes("--help")) {
-  const flags = ["-p, --print", "--model <model>", "--effort <level>", "--output-format <format>", "--json-schema <schema>", "--tools <tools...>", "--no-session-persistence", "--permission-mode <mode>", "--no-chrome", "--safe-mode", "--strict-mcp-config", "--system-prompt-file <file>", "--system-prompt <prompt>"].concat(plan.help === "no-max-turns" ? [] : ["--max-turns <turns>"]);
+  const flags = ["-p, --print", "--model <model>", "--effort <level>", "--output-format <format>", "--json-schema <schema>", "--tools <tools...>", "--no-session-persistence", "--permission-mode <mode>", "--no-chrome", "--safe-mode", "--strict-mcp-config", "--system-prompt-file <file>", "--system-prompt <prompt>"].concat(plan.help === "no-max-turns" ? [] : ["--max-turns <turns>"]).filter((flag) => !(plan.help === "no-tools" && flag.startsWith("--tools ")));
   console.log("Options:\\n" + flags.map((flag) => "  " + flag).join("\\n"));
   process.exit(0);
 }
@@ -168,8 +168,10 @@ async function checkGuards({ sealedDir, workDir }) {
   check("a usage-limit error from the CLI stops a live run at once", liveRun.summary?.stop_reason === "usage_limit" && liveRun.log.length === 3 && liveRun.summary.counted_total === 2, liveRun.error ?? liveRun.summary);
   liveRun = await live("model", { help: "full", wrongModelAt: 1 }, { limit: 12 });
   check("an answer from another model than the requested one stops a live run after that call", liveRun.summary?.stop_reason === "model_not_confirmed" && liveRun.log.length === 1, liveRun.error ?? liveRun.summary);
-  liveRun = await live("flags", { help: "no-max-turns" }, { limit: 12 });
-  check("a CLI without a flag the sealed provider needs is refused before any call", String(liveRun.error).includes("maxTurns") && liveRun.log.length === 0, liveRun.error);
+  liveRun = await live("flags", { help: "no-tools" }, { limit: 12 });
+  check("a CLI without a flag the sealed provider needs is refused before any call", String(liveRun.error).includes("tools") && liveRun.log.length === 0, liveRun.error);
+  liveRun = await live("no-max-turns", { help: "no-max-turns" }, { limit: 1 });
+  check("a CLI that does not list --max-turns still runs, with no tools and without that flag", liveRun.summary?.started_now === 1 && liveRun.log.length === 1 && !flagsOf(liveRun.log[0]).includes("--max-turns") && flagsOf(liveRun.log[0]).includes("--tools "), liveRun.error ?? { summary: liveRun.summary, log0: liveRun.log[0] ?? null });
 
 
   // the whole run and the scorer, against the four planted misses
