@@ -2,6 +2,13 @@
 
 Updated: 2026-11-01
 
+## Sealed Claude CLI calls without `--max-turns` — 1 November 2026
+
+- **Why:** `src/providers/claude-cli.mjs` refused sealed (packet-only private) inference unless the installed CLI's help listed `--max-turns`. Claude Code 2.1.312 doesn't list it (the longitudinal-risk evaluation's live preflight on 1 Nov recorded it as not listed), so every sealed call on the CLI route (config mode `cli`) failed with `PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE`.
+- **Change:** `maxTurns` is no longer a required isolation flag, and `--max-turns` is still passed when the CLI lists it. Every other required flag stays (`tools`, `noSessionPersistence`, `permissionMode`, `noChrome`, `safeMode`, `strictMcpConfig`), and sealed calls keep their private temporary folder and allowlisted environment. With `--tools ""` there are no tool turns for the cap to limit.
+- **Tests:** three in `tests/cli-providers.test.mjs`, with two new fake-CLI controls (`--fake-help-lacks`, `--fake-args-file`).
+- **Next:** a pull request for the owner's merge. The evaluation's stage 1 driver (pull request 220) now always seals its calls, so its next live run needs this change.
+
 ## Self-directed risk visible to the reply check, long-conversation stop, approved fallback on four routes — 1 November 2026
 
 - **Owner outcome:** owner question 53, answer A (branch `feat/longitudinal-risk-safeguards-20261101`, draft pull request onto `main`, not merged), then questions 54 and 55, answer A each (1 Nov 2026, 12:00 UTC; the fourth commit). After the case moves to another route the reply check can no longer see the turns where the person spoke about their own life; a long conversation on one route stopped as `THERAPY_RUNTIME_UNAVAILABLE`; the risk routes ended in an unchecked stored question or in no reply at all.
