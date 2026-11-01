@@ -209,7 +209,9 @@ test("a stored question stays byte-identical, and the fallback is created only a
 
 // ---- produceDiscriminator: the decision, row by row ------------------------------------------------------------------------
 
-function discriminatorRuntime({ activeStep, route = activeStep, nextQuestion, findings = [], extra = {} }) {
+// `ownerFallback` is the setting (INNER_SIGNAL_OWNER_FALLBACK as loadConfig reads it into config). The rows below describe the setting on, which is
+// what they test; the rows for the setting off, and for a config that does not carry it, are in owner-fallback-setting.test.mjs.
+function discriminatorRuntime({ activeStep, route = activeStep, nextQuestion, findings = [], extra = {}, ownerFallback = true }) {
   const source = {
     async loadPrivateRuntimeCase() {
       return {
@@ -218,7 +220,7 @@ function discriminatorRuntime({ activeStep, route = activeStep, nextQuestion, fi
       };
     }
   };
-  const runtime = createPrivateTherapyModelRuntime({ privateCaseSource: source, providers: {}, config: {} });
+  const runtime = createPrivateTherapyModelRuntime({ privateCaseSource: source, providers: {}, config: { ownerFallbackEnabled: ownerFallback } });
   return () => runtime.produceDiscriminator({ caseId: "synthetic-case", runtimeTurn: { id: "runtime-turn-1", current_candidate_id: "candidate-1" }, authContext: null, attemptContextId: "attempt-1" });
 }
 const QUESTION = "Which part of this stays unsettled for you?";
@@ -298,7 +300,7 @@ test("an unresolved role or belief finding is checked before the fallback, and c
 // ---- Through the whole audit loop ------------------------------------------------------------------------------------------
 
 test("safety-orientation turn whose candidate cannot be approved and has no question: the fallback is delivered, as its own kind", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent"], auditFindings: () => [BLOCKING_FINDING] });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent"], auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
   const result = await runtime.run(1);
   assert.equal(result.deliveryKind, OWNER_FALLBACK_KIND);
   assert.equal(result.answer, OWNER_FALLBACK_MESSAGE);
@@ -325,7 +327,7 @@ test("safety-orientation turn whose candidate cannot be approved and has no ques
 });
 
 test("self-death inquiry turn after the second failed repair: the fallback replaces the unaudited stored question", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["ideation"], auditFindings: () => [BLOCKING_FINDING] });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["ideation"], auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
   const result = await runtime.run(1);
   assert.equal(result.deliveryKind, OWNER_FALLBACK_KIND);
   assert.equal(result.answer, OWNER_FALLBACK_MESSAGE);
@@ -340,7 +342,7 @@ test("self-death inquiry turn after the second failed repair: the fallback repla
 });
 
 test("the fallback never appears for a state flag alone: approved replies on both routes stay candidates", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent", "intent", "ideation", "imminent"] });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent", "intent", "ideation", "imminent"], ownerFallback: true });
   const routes = [];
   for (let number = 1; number <= 4; number += 1) {
     const result = await runtime.run(number);
@@ -356,7 +358,8 @@ test("the fallback never appears for a state flag alone: approved replies on bot
 test("a calm turn whose candidate fails twice still gets today's stored question, even while a risk record is held", async (t) => {
   const runtime = await openScriptedRiskRuntime(t, {
     readings: ["ideation", "absent"],
-    auditFindings: ({ turn }) => (turn === 2 ? [BLOCKING_FINDING] : [])
+    auditFindings: ({ turn }) => (turn === 2 ? [BLOCKING_FINDING] : []),
+    ownerFallback: true
   });
   assert.equal((await runtime.run(1)).deliveryKind, "candidate");
   const result = await runtime.run(2);
@@ -370,7 +373,7 @@ test("a calm turn whose candidate fails twice still gets today's stored question
 });
 
 test("an unresolved role or belief finding on the inquiry route still ends the turn unavailable, with nothing delivered", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["ideation"], auditFindings: () => [ROLE_BELIEF_FINDING] });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["ideation"], auditFindings: () => [ROLE_BELIEF_FINDING], ownerFallback: true });
   await assert.rejects(() => runtime.run(1), unavailable("THERAPY_RUNTIME_UNAVAILABLE"));
   const record = await runtime.load();
   assert.equal(record.runtime_turns[0].state, "DISCRIMINATING_QUESTION_REQUIRED");
@@ -379,7 +382,7 @@ test("an unresolved role or belief finding on the inquiry route still ends the t
 });
 
 test("an operational failure of the audit on the inquiry route is not turned into the fallback", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["ideation"], auditFails: () => true });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["ideation"], auditFails: () => true, ownerFallback: true });
   await assert.rejects(() => runtime.run(1), unavailable("THERAPY_RUNTIME_UNAVAILABLE"));
   const record = await runtime.load();
   assert.notEqual(record.runtime_turns[0].state, "DELIVERED");
@@ -389,14 +392,14 @@ test("an operational failure of the audit on the inquiry route is not turned int
 
 test("the precious-opportunity inquiry route and the calm route are untouched by the fallback", async (t) => {
   assert.ok(SUICIDE_FAMILY_ROUTE_IDS.includes(PRECIOUS) && SUICIDE_FAMILY_ROUTE_IDS.includes(ADULT_SEAT) && SAFETY_ORIENTATION_ROUTE_ID === SAFETY);
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["absent"], auditFindings: () => [BLOCKING_FINDING] });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["absent"], auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
   const result = await runtime.run(1);
   assert.equal(result.deliveryKind, "discriminator");
   assert.notEqual(result.answer, OWNER_FALLBACK_MESSAGE);
 });
 
 test("a delivery whose kind disagrees with its discriminator kind, or whose kind is unknown, is rejected on read", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent"], auditFindings: () => [BLOCKING_FINDING] });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent"], auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
   const { runtimeTurn } = await runtime.run(1);
   assert.doesNotThrow(() => validatePrivateRuntimeTurn(structuredClone(runtimeTurn)));
   const mismatched = structuredClone(runtimeTurn);
@@ -627,7 +630,7 @@ test("the turn stays in the audit packet for ten planned turns after the lowerin
 
 test("the adult-seat route is counted by the digest but its stored question is still what is delivered after two failed repairs (owner question 55)", async (t) => {
   const readings = [{ state: "ideation", variables: { inner_adult_access: "low", witness_capacity: "absent" } }];
-  const runtime = await openScriptedRiskRuntime(t, { readings, auditFindings: () => [BLOCKING_FINDING] });
+  const runtime = await openScriptedRiskRuntime(t, { readings, auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
   const result = await runtime.run(1);
   const stored = await runtime.load();
   assert.equal(stored.case_state.current_episode.active_step, ADULT_SEAT, "the planner routed this reading to the adult-seat route");

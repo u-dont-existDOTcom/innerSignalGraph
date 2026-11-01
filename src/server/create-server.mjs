@@ -322,6 +322,9 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
           privateCaseStorage: { available: Boolean(privateCaseSource), plaintextFallback: false, automaticOrchestration: Boolean(automaticPrivateTherapy) },
+          // Whether this runtime writes the fixed fallback message (INNER_SIGNAL_OWNER_FALLBACK). It names the state and never a setting's value,
+          // so a deploy can check it before and after the owner turns it on. Reading a saved fallback does not depend on it.
+          ownerFallback: config.ownerFallbackEnabled === true ? "on" : "off",
           endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }

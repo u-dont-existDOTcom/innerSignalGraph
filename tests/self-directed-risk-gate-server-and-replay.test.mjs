@@ -144,7 +144,7 @@ test("the private respond route, the legacy respond route and the case-state rou
 // ---- A replayed owner_fallback delivery ---------------------------------------------------------------------------------------
 
 test("a replayed owner_fallback delivery succeeds and changes nothing, and a different assistant turn is refused", async (t) => {
-  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent"], auditFindings: () => [BLOCKING_FINDING] });
+  const runtime = await openScriptedRiskRuntime(t, { readings: ["imminent"], auditFindings: () => [BLOCKING_FINDING], ownerFallback: true });
   const first = await runtime.run(1);
   assert.equal(first.deliveryKind, OWNER_FALLBACK_KIND);
   const before = await runtime.load();

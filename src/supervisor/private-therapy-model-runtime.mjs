@@ -124,6 +124,10 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
   if (!privateCaseSource || !providers || !config) throw new ValidationError("Private therapy model runtime requires case source, providers, and config.");
   const auditProvider = providers.privateAuditor ?? providers.anthropic;
   const repairProvider = providers.privateRepairer ?? providers.renderer ?? providers.anthropic;
+  // The fixed fallback message is written only when INNER_SIGNAL_OWNER_FALLBACK is on (loadConfig reads it into config; off by default,
+  // and off for any config that does not carry it). Reading a saved fallback never depends on this: the validators and the store accept
+  // owner_fallback whatever the setting. Fixed at construction, so one runtime behaves the same way for its whole life.
+  const ownerFallbackEnabled = config.ownerFallbackEnabled === true;
 
   return Object.freeze({
     // `inboundAlreadyRecorded` is for a caller whose inbound client message is already the newest stored user turn, as it is when a
@@ -253,18 +257,22 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       const question = compatibility.gate !== "NOT_BLOCKED" && childContactViolations(currentQuestion).length
         ? restrictedCompatibilityFallback(compatibility).next_question
         : currentQuestion;
-      // The owner-approved fallback replaces an unaudited question or an empty result on exactly two routes, and only here, after
-      // the audit loop has ended without a reply that can be sent. It is chosen by the turn's route and this terminal state, never by
-      // suicidal_state or any other variable, so a calm turn, an approved candidate and every other route are unaffected.
-      const route = record.case_state.current_episode?.active_step ?? record.case_state.current_episode?.route ?? null;
-      const questionCanBeSent = typeof question === "string" && question.trim() && isDeliverableDiscriminatorQuestion(question.trim());
-      if (route === OWNER_FALLBACK_SELF_DEATH_INQUIRY_ROUTE_ID || (route === OWNER_FALLBACK_SAFETY_ROUTE_ID && !questionCanBeSent)) {
-        return {
-          kind: OWNER_FALLBACK_KIND,
-          exactText: OWNER_FALLBACK_MESSAGE,
-          contextId: `context:${hash(`deterministic-owner-fallback:${attemptContextId}:${runtimeTurn.id}`)}`,
-          providerReceipt: { provider: "deterministic-owner-fallback", model: null, response_id: attemptContextId, isolation: { packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false } }
-        };
+      // The fixed fallback replaces an unaudited question or an empty result on exactly two routes, and only here, after the audit loop
+      // has ended without a reply that can be sent. It is chosen by the turn's route and this terminal state, never by suicidal_state
+      // or any other variable, so a calm turn, an approved candidate and every other route are unaffected. With the setting off this
+      // block is skipped and the code below is what it was before the fallback existed: the stored question is sent, and no question
+      // ends the turn as PRIVATE_DISCRIMINATOR_UNAVAILABLE.
+      if (ownerFallbackEnabled) {
+        const route = record.case_state.current_episode?.active_step ?? record.case_state.current_episode?.route ?? null;
+        const questionCanBeSent = typeof question === "string" && question.trim() && isDeliverableDiscriminatorQuestion(question.trim());
+        if (route === OWNER_FALLBACK_SELF_DEATH_INQUIRY_ROUTE_ID || (route === OWNER_FALLBACK_SAFETY_ROUTE_ID && !questionCanBeSent)) {
+          return {
+            kind: OWNER_FALLBACK_KIND,
+            exactText: OWNER_FALLBACK_MESSAGE,
+            contextId: `context:${hash(`deterministic-owner-fallback:${attemptContextId}:${runtimeTurn.id}`)}`,
+            providerReceipt: { provider: "deterministic-owner-fallback", model: null, response_id: attemptContextId, isolation: { packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false } }
+          };
+        }
       }
       if (typeof question !== "string" || !question.trim()) {
         throw new ValidationError("The current episode has no authorized discriminating question; delivery remains blocked.", { code: "PRIVATE_DISCRIMINATOR_UNAVAILABLE" });

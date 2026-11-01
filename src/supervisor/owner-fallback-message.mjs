@@ -5,6 +5,11 @@
 // be sent: on the safety-orientation route when the candidate cannot be approved and no authorized question exists to send, and
 // on the self-death inquiry route after the second failed repair, in place of the unaudited stored question. It is never produced
 // from a state flag alone, and it never replaces an approved candidate.
+//
+// It is written only while INNER_SIGNAL_OWNER_FALLBACK is on (src/core/config.mjs; off by default, and /health reports the state).
+// The sequence is: deploy with the setting off and verify, then switch it on, with the owner's yes, once the owner has approved the
+// wording. Reading a saved fallback never depends on the setting: the validators and the store accept it either way, so turning
+// the setting off later cannot make a case that already holds one unreadable.
 export const OWNER_FALLBACK_MESSAGE = "I couldn’t finish a reply I’m confident in just now, so I’m not sending one. If you’re in danger right now, please reach someone who can be with you: a person you trust, or emergency services where you are. When you’re ready, you can write again here.";
 
 // Recorded on the runtime turn's discriminator and delivery so this message never looks like an approved candidate or a question.

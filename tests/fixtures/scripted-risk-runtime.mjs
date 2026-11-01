@@ -35,6 +35,8 @@ export function syntheticMessage(number) {
  * @param options.auditFails ({ turn, auditNumber }) => true to make the audit provider itself fail.
  * @param options.onAuditPacket ({ turn, auditNumber, packet }) => void, called with the packet the auditor received.
  * @param options.onPrompt ({ stage, turn, input }) => void, called for every provider call.
+ * @param options.ownerFallback true to turn the fixed fallback message on (INNER_SIGNAL_OWNER_FALLBACK). Off by default, as it is in production,
+ *   and set explicitly in the config so that the environment of whoever runs the tests never decides it.
  */
 export async function openScriptedRiskRuntime(t, {
   caseId = "synthetic-risk-runtime",
@@ -44,7 +46,8 @@ export async function openScriptedRiskRuntime(t, {
   auditFindings = () => [],
   auditFails = () => false,
   onAuditPacket = () => {},
-  onPrompt = () => {}
+  onPrompt = () => {},
+  ownerFallback = false
 } = {}) {
   if (![1, 6].includes(itemsPerTurn)) throw new Error("itemsPerTurn must be 1 or 6.");
   if (!Number.isSafeInteger(maximumTurns) || maximumTurns < 1 || maximumTurns > MAXIMUM_TURNS) throw new Error("maximumTurns is out of range.");
@@ -59,7 +62,7 @@ export async function openScriptedRiskRuntime(t, {
     store.close();
     await fs.rm(rootDir, { recursive: true, force: true });
   });
-  const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false });
+  const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, ownerFallbackEnabled: ownerFallback === true });
   const scenario = {
     id: "synthetic-risk-runtime",
     synthetic: true,
@@ -118,6 +121,20 @@ export async function openScriptedRiskRuntime(t, {
 
   const modelRuntime = createPrivateTherapyModelRuntime({ privateCaseSource: store, providers, config });
   const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime, maximumInvocationAttempts: 1 });
+  // Runs the nth user turn through the given controller.
+  function runThrough(through, number) {
+    currentMessage = syntheticMessage(number);
+    const id = `risk-${number}`;
+    return through.run({
+      caseId,
+      runtimeTurnId: `runtime-${id}`,
+      exchangeId: id,
+      userTurnId: `${id}-user`,
+      assistantTurnId: `${id}-assistant`,
+      userMessage: currentMessage,
+      userInput: { processingMode: "fast" }
+    });
+  }
   return {
     caseId,
     rootDir,
@@ -128,18 +145,13 @@ export async function openScriptedRiskRuntime(t, {
     counts,
     modelRuntime,
     // Runs the nth user turn through the whole audit loop and returns the controller's result, or throws what it throws.
-    async run(number) {
-      currentMessage = syntheticMessage(number);
-      const id = `risk-${number}`;
-      return controller.run({
-        caseId,
-        runtimeTurnId: `runtime-${id}`,
-        exchangeId: id,
-        userTurnId: `${id}-user`,
-        assistantTurnId: `${id}-assistant`,
-        userMessage: currentMessage,
-        userInput: { processingMode: "fast" }
-      });
+    run: (number) => runThrough(controller, number),
+    // A second model runtime and controller over the same store and the same scripted providers, with the setting chosen here. For a test
+    // that opens a case again under the other setting: the case, its saved turns and the providers' turn count carry over.
+    reopen({ ownerFallback: enabled = false } = {}) {
+      const reopenedRuntime = createPrivateTherapyModelRuntime({ privateCaseSource: store, providers, config: { ...config, ownerFallbackEnabled: enabled === true } });
+      const reopenedController = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: reopenedRuntime, maximumInvocationAttempts: 1 });
+      return { modelRuntime: reopenedRuntime, controller: reopenedController, run: (number) => runThrough(reopenedController, number) };
     },
     load: () => store.load(caseId)
   };

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
+import { readOnOffSetting } from "./on-off-setting.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -11,6 +12,16 @@ function booleanEnv(name, fallback = false) {
   if (["1", "true", "yes", "on"].includes(value.toLowerCase())) return true;
   if (["0", "false", "no", "off"].includes(value.toLowerCase())) return false;
   throw new RuntimeError(`${name} must be true or false.`, { code: "BAD_CONFIG" });
+}
+
+// The fixed fallback message for the two risk routes (see src/supervisor/owner-fallback-message.mjs). Off unless this is turned on, and
+// read exactly as INNER_SIGNAL_MCP_SUPERVISOR_DRAFTS is: absent or blank is off, and a value that is not true or false stops startup.
+export const OWNER_FALLBACK_SETTING = "INNER_SIGNAL_OWNER_FALLBACK";
+
+function ownerFallbackEnabled() {
+  const reading = readOnOffSetting(process.env[OWNER_FALLBACK_SETTING]);
+  if (reading === null) throw new RuntimeError(`${OWNER_FALLBACK_SETTING} must be true or false.`, { code: "BAD_CONFIG" });
+  return reading;
 }
 
 function integerEnv(name, fallback, { min = 1, max = Number.MAX_SAFE_INTEGER } = {}) {
@@ -68,6 +79,7 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     ledgerDir: path.resolve(projectRoot, process.env.LEDGER_DIR ?? "./ledgers"),
     requestTimeoutMs: integerEnv("REQUEST_TIMEOUT_MS", 900000, { min: 1000, max: 3600000 }),
     privateRuntimeInvocationAttempts: integerEnv("PRIVATE_RUNTIME_INVOCATION_ATTEMPTS", 2, { min: 1, max: 3 }),
+    ownerFallbackEnabled: ownerFallbackEnabled(),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),
     guidePacketHeartbeatMs: integerEnv("GUIDE_PACKET_HEARTBEAT_MS", 5000, { min: 250, max: 60000 }),
     guidePacketStaleMs: integerEnv("GUIDE_PACKET_STALE_MS", 30000, { min: 1000, max: 3600000 }),

@@ -1,3 +1,4 @@
+import { readOnOffSetting } from "../core/on-off-setting.mjs";
 import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
 import { createSupervisorReviewRunner } from "../supervisor/private-supervisor-review-runner.mjs";
 import { createSupervisorReplyTools } from "./supervisor-reply-tools.mjs";
@@ -30,12 +31,9 @@ const DEFAULT_INVOCATION_ATTEMPTS = 2;
 const hasKey = (value) => typeof value === "string" && value.trim() !== "";
 
 export function supervisorRepliesEnabled(environment = process.env) {
-  const raw = environment[SUPERVISOR_REPLY_SETTING];
-  if (raw == null || raw.trim() === "") return false;
-  const word = raw.trim().toLowerCase();
-  if (["1", "true", "yes", "on"].includes(word)) return true;
-  if (["0", "false", "no", "off"].includes(word)) return false;
-  throw new Error(`${SUPERVISOR_REPLY_SETTING} must be true or false.`);
+  const reading = readOnOffSetting(environment[SUPERVISOR_REPLY_SETTING]);
+  if (reading === null) throw new Error(`${SUPERVISOR_REPLY_SETTING} must be true or false.`);
+  return reading;
 }
 
 // The review runtime built from configuration, or null with a fixed-word reason (never a setting's value or a key). `backendDrafts`
