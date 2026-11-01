@@ -7,19 +7,19 @@ source_id: IC.SHAME_APPRAISAL
 guide_id: inner-child-guide
 heading: "Shame: Social Judgment, Responsibility, and Repair"
 source_role: primary-framework
-source_hash: 9a7929664ee14184e68052fe27092e342ae7092134f825c14bf16dd6514b7dc7
+source_hash: 0ad32952057b1fbf4c8407bef8035475c9629ad4be7545adee76652ba7774ab2
 section_hash: a48b71aab8e3e217bb86f16ad2a2b75ec4aee19163b0227d4ec4028a5d2b4594
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.SHAME_APPRAISAL
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # Shame: Social Judgment, Responsibility, and Repair
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-31-r9.txt`
+Authority path: `guides/inner-child-guide-2026-10-31-r10.txt`
 
 Locator: Lines 181–190
 

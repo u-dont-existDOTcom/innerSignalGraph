@@ -20,8 +20,8 @@ source_refs:
 regression_refs:
   - G152
 base_record_sha256: bfa7ffac2a3ad49efbaaef3cc6ff1f709c5d2d6e582f374b523a92ac4e6d34b6
-base_graph_sha256: e5f728eda7192aeef14be8ffa682074c2107b709baa8063dd90231f41bf51dec
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # Approach forgiveness without bypassing accountability

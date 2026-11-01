@@ -7,7 +7,7 @@ source_id: IC.BORROW_ONE_FUNCTION
 guide_id: inner-child-guide
 heading: Borrow One Function at a Time
 source_role: primary-framework
-source_hash: 9a7929664ee14184e68052fe27092e342ae7092134f825c14bf16dd6514b7dc7
+source_hash: 0ad32952057b1fbf4c8407bef8035475c9629ad4be7545adee76652ba7774ab2
 section_hash: 217c684da24ba0467372937cf8b7b386c3d1163985425cb1b9327f5e357fc2a3
 locator_kind: text-lines
 cited_by_node_ids:
@@ -19,14 +19,14 @@ cited_by_node_ids:
   - IC.MUSIC_EMOTIONAL_ACCESS
   - IC.SUICIDAL_ADULT_SEAT
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: d084c191c14ed705aaf8e78c45615844ff3ae4fc0b381e9f9163c1aa67374e29
+projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
 ---
 
 # Borrow One Function at a Time
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-31-r9.txt`
+Authority path: `guides/inner-child-guide-2026-10-31-r10.txt`
 
 Locator: Lines 221–236
 

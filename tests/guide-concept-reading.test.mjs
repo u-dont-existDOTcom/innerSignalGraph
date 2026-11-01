@@ -15,7 +15,7 @@ test("active guide shame index resolves to exact evidence across sections and ma
  const receipt=JSON.parse(p.stdout);
  assert.equal(receipt.ok,true);
  assert.equal(receipt.conceptsChecked,11);
- assert.equal(receipt.source.path,"inner-child-guide-2026-10-31-r9.txt");
+ assert.equal(receipt.source.path,"inner-child-guide-2026-10-31-r10.txt");
  assert.ok(receipt.concepts.some(x=>x.id==="rejection-is-real"));
  assert.ok(receipt.concepts.some(x=>x.id==="imagery-related-not-identical"&&x.status==="related-not-equivalent"));
 });
