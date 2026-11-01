@@ -6,8 +6,10 @@ import { ValidationError } from "../core/errors.mjs";
 // (variables.suicidal_state and variables.suicidal_ideation_context); no model field or call was added for it.
 //
 // What it is not: it changes no routing, no reasoning tier and no reply text. Owner decision D1 (2026-09-26) stands: the
-// state alone neither selects a safety tier nor appends a crisis script. Nothing here feeds the planner, and the writing and
-// extraction prompts never show this record (see promptCaseState); only the reply check reads it, inside the audit packet.
+// state alone neither selects a safety tier nor appends a crisis script. Nothing here feeds the planner. The extraction and
+// writing prompts get neither the record (promptCaseState strips it) nor the retrieval request for the older turn it points to
+// (buildDurableCaseContext leaves that request out unless it is built for the reply check). The reply check reads the record in
+// the digest of its audit packet and receives that older turn in the audit packet and the repair packet.
 export const SELF_DIRECTED_RISK_VERSION = 1;
 export const SELF_DIRECTED_RISK_LEVELS = Object.freeze(["absent", "ideation", "intent", "imminent"]);
 export const SELF_DIRECTED_RISK_CONTEXTS = Object.freeze(["pain_episode", "other_or_unclear", "not_in_play", "unknown"]);
@@ -19,9 +21,18 @@ export const SELF_DIRECTED_RISK_OBSERVATION_LIMIT = 16;
 // The extractor has no separate "explicit denial" value: a turn that does not mention the subject can also read `absent`.
 // So one calm turn never lowers the record, and two do; the sentence in the audit text asks the reply check to weigh that.
 export const SELF_DIRECTED_RISK_LOWERING_READINGS = 2;
+// Once the level has been lowered to absent, the reply check keeps receiving the exact turn of the highest earlier reading for this
+// many planned turns after the lowering turn (and on the lowering turn itself), then stops. Ten is a short stretch of ordinary work on
+// a new topic: long enough for the check to see what was said while quiet turns may still be reading absent, short enough that old
+// text does not ride along in every packet of a case that has settled.
+export const SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS = 10;
+// How the retrieval request for the turn above is named in targeted_retrieval_requests and targeted_older_evidence.
+export const SELF_DIRECTED_RISK_RETRIEVAL_REASON = "current-self-directed-risk-record";
+export const SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID = "self_directed_risk.current";
 
 const RANK = Object.freeze({ absent: 0, ideation: 1, intent: 2, imminent: 3 });
 const isRecord = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
 const fail = (message) => { throw new ValidationError(message); };
 
 function checkText(value, name, maximum) {
@@ -43,9 +54,10 @@ function readingOf(variables) {
 }
 
 const event = (change, level, reading, context, turnId, at) => ({ change, level, reading, context, assessed_turn_id: turnId, assessed_at: at });
-const appendHistory = (history, entry) => (entry ? [...history, entry] : [...history]).slice(-SELF_DIRECTED_RISK_HISTORY_LIMIT);
 
-export function updateSelfDirectedRiskState(previous, variables, { turnId, recordedAt, observationIds = [] } = {}) {
+// `plannedTurns` is the number of planned turns the case has once this turn is merged (the length of its intervention_history). It is
+// kept only when the level goes to absent, to count the turns since the lowering for the retrieval window above.
+export function updateSelfDirectedRiskState(previous, variables, { turnId, recordedAt, observationIds = [], plannedTurns = null } = {}) {
   const { state, context } = readingOf(variables);
   const prior = previous?.current ?? null;
   // A case with no self-directed language never gets the record, so every such case stays byte-identical to before.
@@ -54,6 +66,21 @@ export function updateSelfDirectedRiskState(previous, variables, { turnId, recor
   checkText(recordedAt, "self-directed risk recordedAt", 80);
   const observed = [...new Set(observationIds.filter((id) => typeof id === "string" && id.trim()))].slice(0, SELF_DIRECTED_RISK_OBSERVATION_LIMIT);
   const history = previous?.history ?? [];
+  // The history keeps only its latest SELF_DIRECTED_RISK_HISTORY_LIMIT events. The readings above absent that fall off its front are
+  // counted, so the digest can say its counts of earlier risk turns are a lower bound instead of presenting them as the whole case.
+  let dropped = previous?.risk_readings_dropped_from_history ?? 0;
+  const appendHistory = (entry) => {
+    const all = entry ? [...history, entry] : [...history];
+    const cut = Math.max(0, all.length - SELF_DIRECTED_RISK_HISTORY_LIMIT);
+    dropped += all.slice(0, cut).filter((item) => item.reading !== "absent").length;
+    return all.slice(cut);
+  };
+  const result = (nextCurrent, nextHistory = [...history]) => ({
+    version: SELF_DIRECTED_RISK_VERSION,
+    current: nextCurrent,
+    history: nextHistory,
+    ...(dropped > 0 ? { risk_readings_dropped_from_history: dropped } : {})
+  });
   // `denied` only says the latest reading was the extractor's `absent`. The extraction has no separate explicit-denial value, so it
   // is not evidence that the person denied anything; the reply check is told so in the digest and in its audit text.
   const current = (fields) => ({
@@ -65,60 +92,51 @@ export function updateSelfDirectedRiskState(previous, variables, { turnId, recor
     latest_turn_id: turnId,
     denied: fields.denied ?? false,
     unknown: fields.unknown ?? false,
-    lowering_readings: fields.lowering_readings ?? []
+    lowering_readings: fields.lowering_readings ?? [],
+    ...(fields.lowered_at_planned_turn != null ? { lowered_at_planned_turn: fields.lowered_at_planned_turn } : {})
   });
   const raised = (level) => current({ level, context, assessed_turn_id: turnId, assessed_at: recordedAt, observation_ids: observed });
 
-  if (!prior) {
-    return { version: SELF_DIRECTED_RISK_VERSION, current: raised(state), history: appendHistory(history, event("raised", state, state, context, turnId, recordedAt)) };
-  }
+  if (!prior) return result(raised(state), appendHistory(event("raised", state, state, context, turnId, recordedAt)));
 
   // Nothing was learned this turn: keep the level, remember that the latest reading was unknown, and start any run of lower readings again.
-  if (state == null) {
-    return { version: SELF_DIRECTED_RISK_VERSION, current: { ...structuredClone(prior), latest_turn_id: turnId, denied: false, unknown: true, lowering_readings: [] }, history: [...history] };
-  }
+  if (state == null) return result({ ...structuredClone(prior), latest_turn_id: turnId, denied: false, unknown: true, lowering_readings: [] });
 
   const held = prior.level;
-  if (state !== "absent" && RANK[state] > RANK[held]) {
-    return { version: SELF_DIRECTED_RISK_VERSION, current: raised(state), history: appendHistory(history, event("raised", state, state, context, turnId, recordedAt)) };
-  }
+  if (state !== "absent" && RANK[state] > RANK[held]) return result(raised(state), appendHistory(event("raised", state, state, context, turnId, recordedAt)));
   if (state !== "absent" && state === held) {
-    // The same level again. The turn that established it stays the one to retrieve; only the latest-reading marks move.
-    return {
-      version: SELF_DIRECTED_RISK_VERSION,
-      current: { ...structuredClone(prior), context: context === "unknown" ? prior.context : context, latest_turn_id: turnId, denied: false, unknown: false, lowering_readings: [] },
-      history: appendHistory(history, event("held", held, state, context, turnId, recordedAt))
-    };
+    // The same level again. The turn that established it stays the one the lowering rule anchors on; only the latest-reading marks move.
+    return result(
+      { ...structuredClone(prior), context: context === "unknown" ? prior.context : context, latest_turn_id: turnId, denied: false, unknown: false, lowering_readings: [] },
+      appendHistory(event("held", held, state, context, turnId, recordedAt))
+    );
   }
-  if (held === "absent") {
-    // Already at absent and absent again.
-    return { version: SELF_DIRECTED_RISK_VERSION, current: { ...structuredClone(prior), latest_turn_id: turnId, denied: true, unknown: false, lowering_readings: [] }, history: [...history] };
-  }
+  // Already at absent and absent again.
+  if (held === "absent") return result({ ...structuredClone(prior), latest_turn_id: turnId, denied: true, unknown: false, lowering_readings: [] });
 
   // A fresh reading below the held level. It counts toward lowering only together with the readings just before it.
   const reading = { turn_id: turnId, at: recordedAt, state, context, observation_ids: state === "absent" ? [] : observed };
   const run = [...prior.lowering_readings, reading];
   if (run.length < SELF_DIRECTED_RISK_LOWERING_READINGS) {
-    return {
-      version: SELF_DIRECTED_RISK_VERSION,
-      current: { ...structuredClone(prior), latest_turn_id: turnId, denied: state === "absent", unknown: false, lowering_readings: run },
-      history: state === "absent" ? [...history] : appendHistory(history, event("held", held, state, context, turnId, recordedAt))
-    };
+    return result(
+      { ...structuredClone(prior), latest_turn_id: turnId, denied: state === "absent", unknown: false, lowering_readings: run },
+      state === "absent" ? [...history] : appendHistory(event("held", held, state, context, turnId, recordedAt))
+    );
   }
   // Enough fresh readings in a row: lower to the highest of them (the latest if equal), anchored on the turn that reading came from.
   const chosen = run.reduce((best, item) => (RANK[item.state] >= RANK[best.state] ? item : best), run[0]);
-  return {
-    version: SELF_DIRECTED_RISK_VERSION,
-    current: current({
+  return result(
+    current({
       level: chosen.state,
       context: chosen.context,
       assessed_turn_id: chosen.turn_id,
       assessed_at: chosen.at,
       observation_ids: chosen.observation_ids,
-      denied: state === "absent"
+      denied: state === "absent",
+      lowered_at_planned_turn: chosen.state === "absent" && Number.isSafeInteger(plannedTurns) && plannedTurns >= 0 ? plannedTurns : null
     }),
-    history: appendHistory(history, event("lowered", chosen.state, state, context, turnId, recordedAt))
-  };
+    appendHistory(event("lowered", chosen.state, state, context, turnId, recordedAt))
+  );
 }
 
 export function validateSelfDirectedRiskState(value) {
@@ -134,6 +152,8 @@ export function validateSelfDirectedRiskState(value) {
   checkIds(current.observation_ids, "caseState.self_directed_risk.current.observation_ids");
   if (typeof current.denied !== "boolean" || typeof current.unknown !== "boolean" || (current.denied && current.unknown)) fail("caseState.self_directed_risk.current flags are invalid.");
   if (!Array.isArray(current.lowering_readings) || current.lowering_readings.length > SELF_DIRECTED_RISK_LOWERING_READINGS) fail("caseState.self_directed_risk.current.lowering_readings is invalid.");
+  if (Object.hasOwn(current, "lowered_at_planned_turn") && !isCount(current.lowered_at_planned_turn)) fail("caseState.self_directed_risk.current.lowered_at_planned_turn is invalid.");
+  if (Object.hasOwn(value, "risk_readings_dropped_from_history") && !isCount(value.risk_readings_dropped_from_history)) fail("caseState.self_directed_risk.risk_readings_dropped_from_history is invalid.");
   current.lowering_readings.forEach((item, index) => {
     const name = `caseState.self_directed_risk.current.lowering_readings[${index}]`;
     if (!isRecord(item) || !SELF_DIRECTED_RISK_LEVELS.includes(item.state) || !SELF_DIRECTED_RISK_CONTEXTS.includes(item.context)) fail(`${name} is invalid.`);
@@ -151,8 +171,27 @@ export function validateSelfDirectedRiskState(value) {
   return value;
 }
 
-// Held at ideation or above, with the turn that established it. The retrieval branch and the decision-relevant projection read this.
-export function activeSelfDirectedRisk(state) {
-  const current = state?.self_directed_risk?.current;
-  return current && current.level !== "absent" ? current : null;
+// The highest reading above absent that is still in the record's history, the latest one when several are equal. This is the turn
+// the person said the most, so it is the one the reply check should be able to read exactly, not whichever lower reading came last.
+export function highestSelfDirectedRiskReading(record) {
+  let best = null;
+  for (const entry of Array.isArray(record?.history) ? record.history : []) {
+    if (entry?.reading && entry.reading !== "absent" && (best === null || RANK[entry.reading] >= RANK[best.reading])) best = entry;
+  }
+  return best;
+}
+
+// The turn whose exact text the reply check should receive for this case state, or null. While the level is above absent it is the
+// turn of the highest reading still in the history, so lowering intent to ideation does not take the intent statement out of the
+// packet. After a lowering to absent it is the same turn, on the lowering turn and for SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS
+// planned turns after it, then null. A record with no marker for the lowering (nothing written by this build) retrieves nothing.
+export function selfDirectedRiskRetrievalTurn(state) {
+  const record = state?.self_directed_risk;
+  const current = record?.current;
+  if (!current) return null;
+  const turnId = highestSelfDirectedRiskReading(record)?.assessed_turn_id ?? (current.level === "absent" ? null : current.assessed_turn_id);
+  if (!turnId) return null;
+  if (current.level !== "absent") return turnId;
+  const planned = Array.isArray(state.intervention_history) ? state.intervention_history.length : 0;
+  return isCount(current.lowered_at_planned_turn) && planned - current.lowered_at_planned_turn <= SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS ? turnId : null;
 }

@@ -30,6 +30,9 @@ CURRENT MESSAGE TIME: ${now}`;
 // The self-directed-risk record is never part of that view. It is written by the runtime for the reply check, which receives it
 // in the trajectory digest of its own packet; the extraction, writing and repair prompts must not read it back, or the level
 // the extractor reported last turn would shape what it reports this turn (owner decision D1: the state alone drives nothing).
+// The same holds for the older turn the record points to: buildDurableCaseContext adds that retrieval request only for the audit
+// packet and the repair packet, so the extraction and writing prompts built from it below never carry it. The repair packet shows
+// that older turn (it is a reply-check packet) but not the record.
 export function promptCaseState(state) {
   if (state == null || typeof state !== "object") return state;
   const view = Object.hasOwn(state, "self_directed_risk") ? Object.fromEntries(Object.entries(state).filter(([key]) => key !== "self_directed_risk")) : state;

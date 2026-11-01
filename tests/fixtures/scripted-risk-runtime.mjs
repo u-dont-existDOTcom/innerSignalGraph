@@ -14,10 +14,13 @@ import { makeScriptedProviders } from "../../tasks/role-belief-integrity-2026091
 const TURNS_PER_PHASE = 10;
 const MAXIMUM_TURNS = 100;
 
-// "ideation" or { state: "ideation", context: "pain_episode" }.
+// "ideation", { state: "ideation", context: "pain_episode" }, or with other extraction variables for that turn:
+// { state: "ideation", variables: { inner_adult_access: "low" } }.
 function normalizeReading(reading) {
-  if (reading == null) return { state: "absent", context: null };
-  return typeof reading === "string" ? { state: reading, context: null } : { state: reading.state, context: reading.context ?? null };
+  if (reading == null) return { state: "absent", context: null, variables: null };
+  return typeof reading === "string"
+    ? { state: reading, context: null, variables: null }
+    : { state: reading.state, context: reading.context ?? null, variables: reading.variables ?? null };
 }
 
 export function syntheticMessage(number) {
@@ -26,7 +29,7 @@ export function syntheticMessage(number) {
 
 /**
  * @param t node:test context, used to close the store and delete the temporary folder.
- * @param options.readings the extraction's suicidal_state for each turn (string or { state, context }); later turns read "absent".
+ * @param options.readings the extraction's suicidal_state for each turn (string or { state, context, variables }); later turns read "absent".
  * @param options.itemsPerTurn 1, or 6 for four observations and two hypotheses (the busiest ordinary extraction).
  * @param options.auditFindings ({ turn, auditNumber, packet }) => findings for that audit; audit numbers restart at 1 on each turn.
  * @param options.auditFails ({ turn, auditNumber }) => true to make the audit provider itself fail.
@@ -83,6 +86,7 @@ export async function openScriptedRiskRuntime(t, {
         const value = JSON.parse(raw.text);
         value.variables.suicidal_state = reading.state;
         if (reading.context) value.variables.suicidal_ideation_context = reading.context;
+        if (reading.variables) Object.assign(value.variables, reading.variables);
         if (itemsPerTurn === 6) {
           value.direct_observations = Array.from({ length: 4 }, (_unused, index) => ({
             id: `O${index + 1}`,
@@ -116,7 +120,11 @@ export async function openScriptedRiskRuntime(t, {
   const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime, maximumInvocationAttempts: 1 });
   return {
     caseId,
+    rootDir,
     store,
+    config,
+    providers,
+    controller,
     counts,
     modelRuntime,
     // Runs the nth user turn through the whole audit loop and returns the controller's result, or throws what it throws.

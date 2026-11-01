@@ -1,5 +1,6 @@
 import { RuntimeError } from "../core/errors.mjs";
 import { journalContinuityUnsupported } from "../case-state/journal-continuity.mjs";
+import { SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID } from "../case-state/self-directed-risk.mjs";
 import { validateHistoricalDeliveryCheckpoint } from "./private-case-communication.mjs";
 
 export class CaseNotContinuationSafeError extends RuntimeError {
@@ -35,7 +36,10 @@ export function assessContinuationSafety(context) {
       failures.push("sent candidate is missing exact transcript-bound delivery evidence");
     }
   } else if (candidate && candidate.status === "superseded") failures.push("candidate response is not the current unsent candidate");
-  const olderTurnAvailable = (context?.targeted_older_evidence ?? []).some((entry) => entry?.turn?.text);
+  // The self-directed-risk record asks for an older turn only so the reply check can read it. It is not provenance for the case, so an
+  // entry that exists for that reason alone never stands in for the older raw evidence this check requires.
+  const onlyForRiskRecord = (entry) => Array.isArray(entry?.item_ids) && entry.item_ids.length > 0 && entry.item_ids.every((id) => id === SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID);
+  const olderTurnAvailable = (context?.targeted_older_evidence ?? []).some((entry) => entry?.turn?.text && !onlyForRiskRecord(entry));
   const olderSourceAvailable = (context?.source_artifact_refs ?? []).length > 0;
   if (!olderTurnAvailable && !olderSourceAvailable) failures.push("targeted older raw evidence has no retrievable private provenance source");
   if (context?.journal_continuity && journalContinuityUnsupported(context.journal_continuity)) {

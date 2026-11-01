@@ -12,10 +12,15 @@ import {
 } from "../src/case-state/longitudinal-state.mjs";
 import {
   SELF_DIRECTED_RISK_HISTORY_LIMIT,
+  SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS,
   SELF_DIRECTED_RISK_LOWERING_READINGS,
+  SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID,
+  SELF_DIRECTED_RISK_RETRIEVAL_REASON,
+  highestSelfDirectedRiskReading,
+  selfDirectedRiskRetrievalTurn,
   validateSelfDirectedRiskState
 } from "../src/case-state/self-directed-risk.mjs";
-import { buildDurableCaseContext, decisionRelevantProjection } from "../src/case-state/context-window.mjs";
+import { buildDurableCaseContext, decisionRelevantProjection, targetedRetrievalRequests } from "../src/case-state/context-window.mjs";
 import { SAFETY_ORIENTATION_ROUTE_ID, SUICIDE_FAMILY_ROUTE_IDS, buildTrajectoryDigest, routeOfHistoryItem } from "../src/case-state/trajectory-digest.mjs";
 import { durableCaseContextBlock, promptCaseState } from "../src/prompts/common.mjs";
 import { privateRuntimeAuditPrompt } from "../src/prompts/private-runtime-audit.mjs";
@@ -30,6 +35,7 @@ import { classifyTherapyTier } from "../src/orchestrator/run-tiered-pipeline.mjs
 // suicidal_state value for a turn, and the user messages are placeholders.
 const CALM = "IC.CREDIBILITY_REPAIR";
 const INQUIRY = "IC.SUICIDAL_SELF_DEATH_INQUIRY";
+const ADULT_SEAT = "IC.SUICIDAL_ADULT_SEAT";
 const SAFETY = "IC.SAFETY_ORIENTATION";
 const at = (number) => `2026-11-01T${String(Math.floor(number / 60)).padStart(2, "0")}:${String(number % 60).padStart(2, "0")}:00.000Z`;
 const contract = (route) => ({ primaryJob: { id: route, title: `Synthetic route ${route}` }, nextQuestion: "", selectedNodes: [], variables: {} });
@@ -60,9 +66,9 @@ function runCase(turns, { pending = true } = {}) {
   return { caseState, transcript, states };
 }
 
-// What the store's loadCaseContext hands the audit input builder, built from the same pure functions.
+// What the store's loadCaseContext hands the audit input builder (it asks for the reply-check evidence), built from the same pure functions.
 function auditContext({ caseState, transcript }) {
-  const durable = buildDurableCaseContext({ caseId: caseState.case_id, caseState, transcriptEntries: transcript });
+  const durable = buildDurableCaseContext({ caseId: caseState.case_id, caseState, transcriptEntries: transcript, forReplyCheck: true });
   return {
     case_state: caseState,
     recent_verbatim: durable.recent_verbatim_window,
@@ -73,6 +79,13 @@ function auditContext({ caseState, transcript }) {
 }
 
 const levelsOf = (states) => states.map((state) => state.self_directed_risk?.current?.level ?? null);
+const turnNumberOf = (entry) => Number(entry.id.match(/^T(\d+)-/u)[1]);
+// The reply-check context as it stood while turn `number` was audited: its state after that turn's merge, its user turn still unanswered.
+function replyCheckContextAt(built, number, { forReplyCheck = true } = {}) {
+  const transcript = built.transcript.filter((entry) => turnNumberOf(entry) < number || (entry.role === "user" && turnNumberOf(entry) === number));
+  return buildDurableCaseContext({ caseId: "synthetic-risk-case", caseState: built.states[number - 1], transcriptEntries: transcript, forReplyCheck });
+}
+const recordRequest = (context) => context.targeted_retrieval_requests.find((item) => item.item_id === SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID) ?? null;
 const calmFive = Array.from({ length: 5 }, () => reading("absent"));
 
 test("a case with no reading above absent never carries the record, so such cases are unchanged", () => {
@@ -107,26 +120,94 @@ test("the record persists across a route change and keeps the turn that establis
   assert.deepEqual(caseState.self_directed_risk.history.map((entry) => [entry.change, entry.assessed_turn_id]), [["raised", "T6-user"], ["held", "T7-user"]]);
 });
 
-test("its assessed turn enters targeted_older_evidence when the verbatim window no longer holds it, and only then", () => {
+test("for the reply check, the turn of the record's highest reading enters targeted_older_evidence when the window no longer holds it, and only then", () => {
   const turns = [...calmFive, reading("ideation", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), reading("absent"), reading("unknown")];
   const built = runCase(turns);
-  const outside = buildDurableCaseContext({ caseState: built.caseState, transcriptEntries: built.transcript });
+  const outside = buildDurableCaseContext({ caseState: built.caseState, transcriptEntries: built.transcript, forReplyCheck: true });
   assert.deepEqual(outside.recent_verbatim_window.turns.map((turn) => turn.id), ["T8-user", "T8-assistant", "T9-user"]);
-  const request = outside.targeted_retrieval_requests.find((item) => item.item_id === "self_directed_risk.current");
-  assert.deepEqual(request, { reason: "current-self-directed-risk-record", turn_id: "T6-user", item_id: "self_directed_risk.current" });
-  const evidence = outside.targeted_older_evidence.find((item) => item.turn_id === "T6-user");
-  assert.deepEqual(evidence.item_ids, ["self_directed_risk.current"]);
-  assert.equal(evidence.turn.text, "Synthetic user message 6.");
+  assert.deepEqual(recordRequest(outside), { reason: SELF_DIRECTED_RISK_RETRIEVAL_REASON, turn_id: "T7-user", item_id: SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID }, "the latest turn at the highest reading; the record's own anchor stays on turn 6");
+  assert.equal(SELF_DIRECTED_RISK_RETRIEVAL_REASON, "current-self-directed-risk-record");
+  assert.equal(built.caseState.self_directed_risk.current.assessed_turn_id, "T6-user");
+  const evidence = outside.targeted_older_evidence.find((item) => item.turn_id === "T7-user");
+  assert.deepEqual(evidence.item_ids, [SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID]);
+  assert.deepEqual(evidence.reasons, [SELF_DIRECTED_RISK_RETRIEVAL_REASON]);
+  assert.equal(evidence.turn.text, "Synthetic user message 7.");
   assert.equal(JSON.stringify(outside.targeted_retrieval_requests).includes("ideation"), false, "the label names no level");
 
   const inside = runCase([...calmFive, reading("ideation", { route: INQUIRY }), reading("ideation", { route: INQUIRY })]);
-  const insideContext = buildDurableCaseContext({ caseState: inside.caseState, transcriptEntries: inside.transcript });
-  assert.equal(insideContext.targeted_retrieval_requests.some((item) => item.item_id === "self_directed_risk.current"), false, "the turn is already in the window");
+  const insideContext = buildDurableCaseContext({ caseState: inside.caseState, transcriptEntries: inside.transcript, forReplyCheck: true });
+  assert.equal(recordRequest(insideContext), null, "the turn is already in the window");
+});
 
-  const lowered = runCase([...turns, reading("absent"), reading("absent")]);
-  assert.equal(lowered.caseState.self_directed_risk.current.level, "absent");
-  const loweredContext = buildDurableCaseContext({ caseState: lowered.caseState, transcriptEntries: lowered.transcript });
-  assert.equal(loweredContext.targeted_retrieval_requests.some((item) => item.item_id === "self_directed_risk.current"), false, "an absent level retrieves nothing");
+test("only the reply check gets that request: a context built the way the producers' is carries neither the request nor the turn", () => {
+  const built = runCase([...calmFive, reading("ideation", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), reading("absent"), reading("unknown")]);
+  const args = { caseState: built.caseState, transcriptEntries: built.transcript };
+  for (const producers of [buildDurableCaseContext(args), buildDurableCaseContext({ ...args, forReplyCheck: false })]) {
+    assert.equal(recordRequest(producers), null);
+    assert.deepEqual(producers.targeted_older_evidence, []);
+    assert.equal(JSON.stringify(producers).includes(SELF_DIRECTED_RISK_RETRIEVAL_REASON), false);
+  }
+  assert.equal(targetedRetrievalRequests(built.caseState, []).some((item) => item.item_id === SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID), false);
+  assert.equal(targetedRetrievalRequests(built.caseState, [], { forReplyCheck: true }).some((item) => item.item_id === SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID), true);
+  assert.equal(recordRequest(buildDurableCaseContext({ ...args, forReplyCheck: true })).turn_id, "T7-user");
+});
+
+test("a lowering from intent to ideation keeps the turn of the intent reading in the packet, not the later ideation turn", () => {
+  // Turns 2 to 4 stay on one route, so turn 2 is still in the verbatim window then; the route changes at turn 5.
+  const built = runCase([reading("absent"), reading("intent", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), reading("absent"), reading("absent")]);
+  const record = built.states[3].self_directed_risk;
+  assert.deepEqual([record.current.level, record.current.assessed_turn_id], ["ideation", "T4-user"], "the level-lowering rule is unchanged: two fresh ideation readings lowered intent to ideation");
+  assert.deepEqual(highestSelfDirectedRiskReading(record), record.history[0]);
+  assert.equal(highestSelfDirectedRiskReading(record).assessed_turn_id, "T2-user");
+  assert.equal(recordRequest(replyCheckContextAt(built, 4)), null, "turn 2 is still in the window while the route is unchanged");
+  assert.equal(levelsOf(built.states)[4], "ideation", "turn 5: one quiet reading does not lower it");
+  for (const number of [5, 6]) {
+    const context = replyCheckContextAt(built, number);
+    assert.deepEqual(context.recent_verbatim_window.turns.map((turn) => turn.id).includes("T2-user"), false);
+    assert.equal(recordRequest(context)?.turn_id, "T2-user", `turn ${number}: the exact intent statement, not the ideation turn 3 or 4`);
+    assert.equal(context.targeted_older_evidence.find((item) => item.turn_id === "T2-user").turn.text, "Synthetic user message 2.");
+  }
+  assert.equal(built.states[5].self_directed_risk.current.level, "absent", "turn 6 is the second quiet reading, which lowers it to absent");
+});
+
+test("an equal highest reading goes to the latest turn, and a re-raise after a lowering to absent moves the turn to the new reading", () => {
+  const built = runCase([reading("ideation", { route: INQUIRY }), reading("absent"), reading("absent"), reading("absent"), reading("ideation", { route: INQUIRY }), reading("absent")]);
+  assert.deepEqual(levelsOf(built.states), ["ideation", "ideation", "absent", "absent", "ideation", "ideation"]);
+  assert.equal(selfDirectedRiskRetrievalTurn(built.states[1]), "T1-user");
+  assert.equal(selfDirectedRiskRetrievalTurn(built.states[4]), "T5-user", "the earlier ideation turn is no longer the one to retrieve once the person says it again");
+  assert.equal(highestSelfDirectedRiskReading(built.states[4].self_directed_risk).assessed_turn_id, "T5-user");
+});
+
+test("after a lowering to absent the reply check keeps the turn for ten planned turns, the lowering turn included, then stops", () => {
+  assert.equal(SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS, 10);
+  // Turn 2 is the reading; turns 3 and 4 are two quiet turns, so the level goes to absent while turn 4 is merged.
+  const built = runCase([reading("absent"), reading("ideation", { route: INQUIRY }), ...Array.from({ length: 16 }, () => reading("absent"))]);
+  const loweredAt = levelsOf(built.states).indexOf("absent") + 1;
+  assert.equal(loweredAt, 4);
+  assert.equal(built.states[loweredAt - 1].self_directed_risk.current.lowered_at_planned_turn, 4, "the record notes how many planned turns the case had when it went to absent");
+  const holds = built.states.map((_state, index) => recordRequest(replyCheckContextAt(built, index + 1))?.turn_id ?? null);
+  assert.deepEqual(holds.slice(0, 3), [null, null, "T2-user"], "turn 1 has no record; turn 3 holds the reading at ideation");
+  for (let number = 3; number <= loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS; number += 1) assert.equal(holds[number - 1], "T2-user", `turn ${number}`);
+  assert.equal(loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS, 14);
+  for (let number = loweredAt + SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS + 1; number <= 18; number += 1) assert.equal(holds[number - 1], null, `turn ${number} is past the window`);
+  // The producers' context never carries it, inside the window or out.
+  for (let number = 1; number <= 18; number += 1) assert.equal(recordRequest(replyCheckContextAt(built, number, { forReplyCheck: false })), null);
+});
+
+test("the retrieval turn is null without a record, without the lowering marker at absent, and past the window", () => {
+  assert.equal(selfDirectedRiskRetrievalTurn(null), null);
+  assert.equal(selfDirectedRiskRetrievalTurn({}), null);
+  const built = runCase([reading("ideation"), reading("absent"), reading("absent")], { pending: false });
+  const lowered = built.caseState;
+  assert.equal(selfDirectedRiskRetrievalTurn(lowered), "T1-user");
+  const withoutMarker = structuredClone(lowered);
+  delete withoutMarker.self_directed_risk.current.lowered_at_planned_turn;
+  assert.equal(selfDirectedRiskRetrievalTurn(withoutMarker), null, "a record at absent with no marker retrieves nothing");
+  const later = structuredClone(lowered);
+  later.intervention_history = [...later.intervention_history, ...Array.from({ length: SELF_DIRECTED_RISK_KEEP_AFTER_LOWERING_TURNS }, (_unused, index) => ({ ...lowered.intervention_history[0], id: `extra-${index}` }))];
+  assert.equal(selfDirectedRiskRetrievalTurn(later), "T1-user", "ten planned turns after the lowering is still inside the window");
+  later.intervention_history.push({ ...lowered.intervention_history[0], id: "extra-last" });
+  assert.equal(selfDirectedRiskRetrievalTurn(later), null, "the eleventh is past it");
 });
 
 test("the decision-relevant projection carries the record", () => {
@@ -191,8 +272,18 @@ test("a malformed record is rejected by case-state validation", () => {
     mutate((record) => { record.current.lowering_readings = [1, 2, 3].map((number) => ({ turn_id: `T${number}`, at: at(number), state: "absent", context: "unknown", observation_ids: [] })); }),
     mutate((record) => { record.history = Array.from({ length: SELF_DIRECTED_RISK_HISTORY_LIMIT + 1 }, () => structuredClone(record.history[0])); }),
     mutate((record) => { record.history[0].change = "deleted"; }),
-    mutate((record) => { record.version = 2; })
+    mutate((record) => { record.version = 2; }),
+    mutate((record) => { record.risk_readings_dropped_from_history = -1; }),
+    mutate((record) => { record.risk_readings_dropped_from_history = 1.5; }),
+    mutate((record) => { record.risk_readings_dropped_from_history = "5"; }),
+    mutate((record) => { record.current.lowered_at_planned_turn = -1; }),
+    mutate((record) => { record.current.lowered_at_planned_turn = "4"; })
   ]) assert.throws(() => validateCaseState(bad), /self_directed_risk/u);
+  for (const good of [
+    mutate((record) => { record.risk_readings_dropped_from_history = 0; }),
+    mutate((record) => { record.risk_readings_dropped_from_history = 12; }),
+    mutate((record) => { record.current.lowered_at_planned_turn = 0; })
+  ]) assert.doesNotThrow(() => validateCaseState(good));
   assert.doesNotThrow(() => validateCaseState({ ...caseState, self_directed_risk: null }));
   assert.equal(caseState.schema_version, 1, "an optional section, so the case-state schema version is unchanged");
 });
@@ -231,15 +322,29 @@ test("the record stays out of the inspection projection, producer prompts and cl
   assert.equal(caseStateForClient(null), null);
 });
 
-test("the producers' prompts are byte-identical with and without the record", () => {
-  const { caseState, transcript } = runCase([reading("absent"), reading("ideation")], { pending: false });
-  const withoutRecord = structuredClone(caseState);
-  delete withoutRecord.self_directed_risk;
-  const contextFor = (state) => {
-    const durable = buildDurableCaseContext({ caseState: state, transcriptEntries: transcript });
-    return { durableCaseState: durable.case_state, currentTherapeuticEpisode: durable.current_episode, targetedRetrievalRequests: durable.targeted_retrieval_requests, targetedOlderEvidence: durable.targeted_older_evidence };
-  };
-  assert.equal(durableCaseContextBlock(contextFor(caseState)), durableCaseContextBlock(contextFor(withoutRecord)));
+test("the producers' prompts are byte-identical with and without the record, in the window and after a route change", () => {
+  // The second case is the one that matters: the record's turn is outside the window there, so a retrieval request would show.
+  const cases = [
+    runCase([reading("absent"), reading("ideation")], { pending: false }),
+    runCase([...calmFive, reading("ideation", { route: INQUIRY }), reading("ideation", { route: INQUIRY }), reading("absent"), reading("unknown")])
+  ];
+  for (const { caseState, transcript } of cases) {
+    const withoutRecord = structuredClone(caseState);
+    delete withoutRecord.self_directed_risk;
+    const contextFor = (state) => {
+      const durable = buildDurableCaseContext({ caseState: state, transcriptEntries: transcript });
+      return { durableCaseState: durable.case_state, currentTherapeuticEpisode: durable.current_episode, targetedRetrievalRequests: durable.targeted_retrieval_requests, targetedOlderEvidence: durable.targeted_older_evidence };
+    };
+    const block = durableCaseContextBlock(contextFor(caseState));
+    assert.equal(block, durableCaseContextBlock(contextFor(withoutRecord)));
+    assert.equal(block.includes(SELF_DIRECTED_RISK_RETRIEVAL_REASON), false);
+    assert.equal(block.includes(SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID), false);
+  }
+  // Built for the reply check, the same state does show the request, so the equality above is not vacuous.
+  const { caseState, transcript } = cases[1];
+  const durable = buildDurableCaseContext({ caseState, transcriptEntries: transcript, forReplyCheck: true });
+  const shown = durableCaseContextBlock({ durableCaseState: durable.case_state, currentTherapeuticEpisode: durable.current_episode, targetedRetrievalRequests: durable.targeted_retrieval_requests, targetedOlderEvidence: durable.targeted_older_evidence });
+  assert.equal(shown.includes(SELF_DIRECTED_RISK_RETRIEVAL_REASON), true);
 });
 
 test("the trajectory digest after a route change reports the earlier turns the verbatim window no longer holds", () => {
@@ -257,8 +362,10 @@ test("the trajectory digest after a route change reports the earlier turns the v
   });
   assert.equal(digest.suicide_family.earlier_user_turns_outside_verbatim_window, 2);
   assert.deepEqual(digest.suicide_family.turn_numbers, [6, 7]);
-  assert.equal(digest.suicide_family.with_exact_text_in_targeted_older_evidence, 1, "only the turn the record points to is retrieved");
+  assert.equal(digest.suicide_family.with_exact_text_in_targeted_older_evidence, 1, "only the turn of the record's highest reading is retrieved");
   assert.equal(digest.suicide_family.without_exact_text_in_this_packet, 1);
+  assert.deepEqual([digest.suicide_family.risk_readings_dropped_from_record_history, digest.suicide_family.counts_are_a_lower_bound], [0, false], "nothing has left the record's history");
+  assert.deepEqual(digest.self_directed_risk.highest_reading_in_history, { reading: "ideation", turn_id: "T7-user", turn_number: 7 });
   assert.equal(digest.self_directed_risk.level, "ideation");
   assert.equal(digest.self_directed_risk.assessed_turn_number, 6);
   assert.equal(digest.self_directed_risk.latest_reading_unknown, true);
@@ -282,11 +389,60 @@ test("the safety-orientation route counts as self-directed risk only where the r
   const digest = buildTrajectoryDigest(auditContext(runCase(turns)));
   assert.equal(digest.suicide_family.earlier_user_turns_outside_verbatim_window, 1);
   assert.deepEqual(digest.suicide_family.turn_numbers, [2]);
-  assert.equal(digest.suicide_family.safety_orientation_turns_without_a_risk_reading, 2, "turns 3 and 4 chose the same route with no reading above absent");
-  assert.ok(digest.suicide_family.counted.includes("IC.SUICIDAL_SELF_DEATH_INQUIRY"));
-  assert.ok(digest.suicide_family.counted.includes("IC.PRECIOUS_HUMAN_OPPORTUNITY"));
-  assert.deepEqual([...SUICIDE_FAMILY_ROUTE_IDS], ["IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY"]);
+  assert.equal(digest.suicide_family.safety_orientation_turns_without_a_risk_reading_still_in_the_records_history, 2, "turns 3 and 4 chose the same route with no reading above absent in the record's history");
+  assert.equal(Object.hasOwn(digest.suicide_family, "safety_orientation_turns_without_a_risk_reading"), false, "the old, unqualified name is gone");
+  for (const route of SUICIDE_FAMILY_ROUTE_IDS) assert.ok(digest.suicide_family.counted.includes(route), route);
+  assert.deepEqual([...SUICIDE_FAMILY_ROUTE_IDS], ["IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY", "IC.SUICIDAL_ADULT_SEAT"]);
   assert.equal(SAFETY_ORIENTATION_ROUTE_ID, SAFETY);
+});
+
+test("the adult-seat route is counted as a suicide-family route from the route history, past the record's 20-entry history", () => {
+  const turns = [reading("absent"), ...Array.from({ length: 25 }, () => reading("ideation", { route: ADULT_SEAT })), reading("absent")];
+  const digest = buildTrajectoryDigest(auditContext(runCase(turns)));
+  assert.ok(digest.suicide_family.counted.includes(ADULT_SEAT));
+  assert.equal(digest.suicide_family.earlier_user_turns_outside_verbatim_window, 25, "all 25, not the 20 the record's history still holds");
+  assert.deepEqual(digest.suicide_family.turn_numbers, Array.from({ length: 20 }, (_unused, index) => index + 7), "the listing is bounded to the latest 20");
+  assert.equal(digest.suicide_family.risk_readings_dropped_from_record_history, 5);
+  assert.equal(digest.suicide_family.counts_are_a_lower_bound, true, "flagged whenever any reading left the history, even where the route count is exact");
+  assert.equal(digest.suicide_family.safety_orientation_turns_without_a_risk_reading_still_in_the_records_history, 0);
+});
+
+test("25 readings followed by a calm turn: the record counts what left its history and the digest says its counts are a lower bound", () => {
+  const turns = [...Array.from({ length: 25 }, () => reading("imminent", { route: SAFETY })), reading("absent")];
+  const built = runCase(turns);
+  const record = built.caseState.self_directed_risk;
+  assert.equal(record.history.length, SELF_DIRECTED_RISK_HISTORY_LIMIT);
+  assert.equal(record.risk_readings_dropped_from_history, 5, "25 events, 20 kept: five readings above absent left the history");
+  assert.equal(record.current.assessed_turn_id, "T1-user", "the record still points at the first reading, which is no longer in its history");
+  validateCaseState(built.caseState);
+
+  const digest = buildTrajectoryDigest(auditContext(built));
+  assert.equal(digest.whole_case.user_turn_count, 26);
+  assert.equal(digest.suicide_family.risk_readings_dropped_from_record_history, 5);
+  assert.equal(digest.suicide_family.counts_are_a_lower_bound, true);
+  assert.equal(digest.suicide_family.earlier_user_turns_outside_verbatim_window, 21, "the 20 turns in the history and the turn the record currently holds");
+  assert.deepEqual(digest.suicide_family.turn_numbers, Array.from({ length: 20 }, (_unused, index) => index + 6), "the listing is the latest 20 of the 21, so turn 1 is counted but not listed");
+  assert.equal(digest.suicide_family.safety_orientation_turns_without_a_risk_reading_still_in_the_records_history, 4, "turns 2 to 5 had a reading too, but it is no longer in the record's history; the name says so and the flag says the count is low");
+  assert.equal(digest.self_directed_risk.history.length, SELF_DIRECTED_RISK_HISTORY_LIMIT);
+
+  // Nothing dropped, nothing flagged; and a record that has not rolled over does not carry the field at all.
+  const short = runCase([reading("imminent", { route: SAFETY }), reading("absent")]);
+  assert.equal(Object.hasOwn(short.caseState.self_directed_risk, "risk_readings_dropped_from_history"), false);
+  const shortDigest = buildTrajectoryDigest(auditContext(short));
+  assert.deepEqual([shortDigest.suicide_family.risk_readings_dropped_from_record_history, shortDigest.suicide_family.counts_are_a_lower_bound], [0, false]);
+});
+
+test("only readings above absent are counted when they leave the history", () => {
+  // Events: turn 1 raised (ideation), turn 3 lowered (reads absent), turn 4 raised again, turns 5 to 24 held. 23 events, 20 kept.
+  const built = runCase([reading("ideation"), reading("absent"), reading("absent"), ...Array.from({ length: 21 }, () => reading("ideation"))]);
+  const record = built.caseState.self_directed_risk;
+  assert.equal(record.history.length, SELF_DIRECTED_RISK_HISTORY_LIMIT);
+  assert.deepEqual(record.history.map((entry) => entry.change), Array.from({ length: 20 }, () => "held"), "the three oldest events, raised, lowered and raised, left the front");
+  assert.equal(record.risk_readings_dropped_from_history, 2, "the two ideation readings count; the lowering event read absent and does not");
+  validateCaseState(built.caseState);
+  // The count carries across later turns that add no event.
+  const later = runCase([reading("ideation"), reading("absent"), reading("absent"), ...Array.from({ length: 21 }, () => reading("ideation")), reading("unknown")]);
+  assert.equal(later.caseState.self_directed_risk.risk_readings_dropped_from_history, 2);
 });
 
 test("the digest tolerates partial context, is deterministic and keeps the route sequence bounded", () => {

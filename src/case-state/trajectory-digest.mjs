@@ -1,11 +1,14 @@
-import { SELF_DIRECTED_RISK_LOWERING_READINGS } from "./self-directed-risk.mjs";
+import { SELF_DIRECTED_RISK_HISTORY_LIMIT, SELF_DIRECTED_RISK_LOWERING_READINGS, highestSelfDirectedRiskReading } from "./self-directed-risk.mjs";
 
 // A small digest of how the whole case has run, worked out in code from the stored case state and the verbatim window. It makes no
 // model call. The reply check reads only the current episode's exact turns, so after a route change the earlier turns are outside
 // what it can see; the digest says how many there were, which of them were about the person's own life, and whether their exact
 // text is in the packet. It is evidence for the check, not a verdict: it changes no routing, tier or reply text (owner decision D1).
 export const TRAJECTORY_DIGEST_VERSION = 1;
-export const SUICIDE_FAMILY_ROUTE_IDS = Object.freeze(["IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY"]);
+// The three routes the planner picks for ideation, intent or imminent. The planner can send a first disclosure to the adult-seat
+// route (it is chosen when adult access or a witness is low, absent or unknown), so it belongs in the digest's counting. That is
+// all this list does: the owner-pending fallback message covers two routes, not this one (owner question 55 decides that).
+export const SUICIDE_FAMILY_ROUTE_IDS = Object.freeze(["IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY", "IC.SUICIDAL_ADULT_SEAT"]);
 export const SAFETY_ORIENTATION_ROUTE_ID = "IC.SAFETY_ORIENTATION";
 const MAXIMUM_ROUTE_RUNS = 30;
 const MAXIMUM_LISTED_TURNS = 20;
@@ -35,6 +38,7 @@ function routeRuns(entries) {
 function riskRecordSummary(record, numberOf) {
   const current = record?.current;
   if (!current) return null;
+  const highest = highestSelfDirectedRiskReading(record);
   return {
     level: current.level,
     context: current.context,
@@ -48,6 +52,7 @@ function riskRecordSummary(record, numberOf) {
     latest_reading_unknown: current.unknown === true,
     fresh_readings_below_held_level: asArray(current.lowering_readings).map((reading) => ({ turn_id: reading.turn_id, state: reading.state })),
     lowering_rule: `The held level is lowered only after ${SELF_DIRECTED_RISK_LOWERING_READINGS} fresh readings in a row below it; an unknown reading starts the run again. The extraction has no separate explicit-denial value.`,
+    highest_reading_in_history: highest ? { reading: highest.reading, turn_id: highest.assessed_turn_id, turn_number: numberOf(highest.assessed_turn_id) } : null,
     history: asArray(record.history).map((entry) => ({ change: entry.change, level: entry.level, reading: entry.reading, turn_id: entry.assessed_turn_id, turn_number: numberOf(entry.assessed_turn_id) }))
   };
 }
@@ -77,10 +82,15 @@ export function buildTrajectoryDigest(context = {}) {
     user_turns_in_verbatim_window: userTurnsInWindow
   } : null;
 
-  // Turns the reply check cannot see in the window. A turn counts as self-directed risk when its route was one of the two suicide
-  // inquiry routes, or when the risk record logged a reading above absent on it. The second rule is what brings in
-  // IC.SAFETY_ORIENTATION only when it was chosen for that reason, and any other route chosen while the person said it.
-  const riskReadingTurns = new Set(asArray(state.self_directed_risk?.history).filter((entry) => entry?.reading && entry.reading !== "absent").map((entry) => entry.assessed_turn_id));
+  // Turns the reply check cannot see in the window. A turn counts as self-directed risk when its route was one of the suicide routes,
+  // or when the risk record has a reading above absent for it: in its history, or as the turn it currently holds. The second rule is
+  // what brings in IC.SAFETY_ORIENTATION only when it was chosen for that reason, and any other route chosen while the person said it.
+  // The route part is exact for the whole case. The record part is not: its history keeps only the latest events, so readings that
+  // fell off its front are counted in risk_readings_dropped_from_history and the digest says its counts are a lower bound.
+  const riskRecord = state.self_directed_risk ?? null;
+  const droppedReadings = Number.isSafeInteger(riskRecord?.risk_readings_dropped_from_history) && riskRecord.risk_readings_dropped_from_history > 0 ? riskRecord.risk_readings_dropped_from_history : 0;
+  const riskReadingTurns = new Set(asArray(riskRecord?.history).filter((entry) => entry?.reading && entry.reading !== "absent").map((entry) => entry.assessed_turn_id));
+  if (riskRecord?.current && riskRecord.current.level !== "absent") riskReadingTurns.add(riskRecord.current.assessed_turn_id);
   const outside = entries.filter((entry) => !windowIds.has(entry.turn_id));
   const family = outside.filter((entry) => FAMILY_ROUTES.has(entry.route) || riskReadingTurns.has(entry.turn_id));
   const familyWithText = family.filter((entry) => retrievedIds.has(entry.turn_id));
@@ -100,12 +110,14 @@ export function buildTrajectoryDigest(context = {}) {
     current_episode: episodeSummary,
     route_sequence: routeRuns(entries),
     suicide_family: {
-      counted: [...SUICIDE_FAMILY_ROUTE_IDS, `any turn with a risk reading above absent in the risk record (this includes ${SAFETY_ORIENTATION_ROUTE_ID} when it was chosen for that reason)`],
+      counted: [...SUICIDE_FAMILY_ROUTE_IDS, `any turn with a risk reading above absent that is still in the risk record's history (its latest ${SELF_DIRECTED_RISK_HISTORY_LIMIT} events), or that the record currently holds (this includes ${SAFETY_ORIENTATION_ROUTE_ID} when it was chosen for that reason)`],
       earlier_user_turns_outside_verbatim_window: family.length,
       turn_numbers: family.slice(-MAXIMUM_LISTED_TURNS).map((entry) => entry.number),
       with_exact_text_in_targeted_older_evidence: familyWithText.length,
       without_exact_text_in_this_packet: family.length - familyWithText.length,
-      safety_orientation_turns_without_a_risk_reading: unclassifiedSafety.length
+      risk_readings_dropped_from_record_history: droppedReadings,
+      counts_are_a_lower_bound: droppedReadings > 0,
+      safety_orientation_turns_without_a_risk_reading_still_in_the_records_history: unclassifiedSafety.length
     },
     self_directed_risk: riskRecordSummary(state.self_directed_risk, numberOf)
   });

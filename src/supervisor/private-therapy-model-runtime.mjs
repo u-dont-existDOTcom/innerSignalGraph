@@ -202,6 +202,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         candidateId: candidate.id,
         requireContinuationSafe: true,
         requireAuditScope: true,
+        forReplyCheck: true,
         episodePolicy: { requireCompleteEpisode: true }
       });
       const failedAudit = candidate.audit_history.at(-1);

@@ -444,10 +444,12 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
     : null;
   // Derived only from fields the extraction already returns. The record is created by the first reading of ideation or worse, and
   // from then on is kept, raised or lowered by the rule in self-directed-risk.mjs; it stays out of projectCaseStateForInspection.
+  // plannedTurns is the case's count of planned turns once this one is merged, which is how the record times its retrieval window.
   const selfDirectedRisk = updateSelfDirectedRiskState(previous.self_directed_risk ?? null, snapshot?.variables ?? null, {
     turnId,
     recordedAt,
-    observationIds: items.filter((item) => item.domain === "runtime_observation").map((item) => item.id)
+    observationIds: items.filter((item) => item.domain === "runtime_observation").map((item) => item.id),
+    plannedTurns: (previous.intervention_history?.length ?? 0) + interventionHistory.length
   });
   const extractedSupportMode = snapshot?.variables?.support_mode_preference;
   const supportModePreference = SUPPORT_MODE_PREFERENCES.includes(extractedSupportMode) && extractedSupportMode != "unknown"

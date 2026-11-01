@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import { buildDurableCaseContext } from "../src/case-state/context-window.mjs";
 import { buildTrajectoryDigest, SAFETY_ORIENTATION_ROUTE_ID, SUICIDE_FAMILY_ROUTE_IDS } from "../src/case-state/trajectory-digest.mjs";
 import { SELF_DIRECTED_RISK_AUDIT_CODES, SELF_DIRECTED_RISK_AUDIT_VERSION, selfDirectedRiskAuditRules } from "../src/prompts/self-directed-risk-audit.mjs";
 import { privateRuntimeAuditPrompt } from "../src/prompts/private-runtime-audit.mjs";
@@ -24,6 +25,7 @@ import { BLOCKING_FINDING, openScriptedRiskRuntime } from "./fixtures/scripted-r
 const CALM = "IC.CREDIBILITY_REPAIR";
 const INQUIRY = "IC.SUICIDAL_SELF_DEATH_INQUIRY";
 const PRECIOUS = "IC.PRECIOUS_HUMAN_OPPORTUNITY";
+const ADULT_SEAT = "IC.SUICIDAL_ADULT_SEAT";
 const SAFETY = "IC.SAFETY_ORIENTATION";
 const ROLE_BELIEF_FINDING = Object.freeze({ id: "synthetic-role-belief", code: "HARMFUL_BELIEF_ENDORSEMENT", severity: "substantive", summary: "Synthetic role or belief defect." });
 const recordOnly = (code, severity) => ({ id: `synthetic-${code.toLowerCase()}-${severity}`, code, severity, summary: `Synthetic ${severity} finding for review.` });
@@ -137,6 +139,23 @@ test("the audit text names the three codes, the whole-case comparison and the re
   assert.equal(PRIVATE_CANDIDATE_AUDIT_VERSION, "private-candidate-audit-v4");
 });
 
+test("the audit text keeps the three codes from standing in for a blocking finding, and says the digest's counts can be a lower bound", () => {
+  const { system } = privateRuntimeAuditPrompt({ synthetic: true });
+  // The record-only codes are added records; an unanswered stated intent is also reported as a blocking finding under another code.
+  assert.match(system, /added records, never a substitute for a blocking finding/u);
+  assert.match(system, /current intent, a plan, nearness or an inability to stay safe and the candidate leaves it unanswered, also report a blocking finding at substantive or high under a code other than these three/u);
+  assert.match(system, /Any defect that would block on its own merits keeps its blocking code/u);
+  const underreaction = system.split("\n").find((line) => line.startsWith("- Report SELF_DIRECTED_RISK_UNDERREACTION"));
+  assert.ok(underreaction);
+  assert.equal(/unanswered/u.test(underreaction), false, "an unanswered intent is no longer offered as an example of the record-only code");
+  assert.equal(system.includes("leaving a stated intent or nearness unanswered"), false);
+  // It is the closing bullet of the block, so it is the last of this text the auditor reads.
+  assert.match(selfDirectedRiskAuditRules.trim().split("\n").at(-1), /never a substitute for a blocking finding.*also report a blocking finding.*keeps its blocking code/u);
+  assert.match(system, /counts_are_a_lower_bound is true/u);
+  assert.match(system, /risk_readings_dropped_from_record_history/u);
+  assert.match(system, /Do not read a missing count as an absence of earlier turns/u);
+});
+
 test("the audit input carries the digest, computed in code from the same context", async () => {
   const context = {
     candidate_response: { id: "candidate-1", version: 1, status: "pending_audit", exact_text: "Synthetic candidate.", parent_candidate_id: null, producer_context_id: "context:p" },
@@ -149,7 +168,10 @@ test("the audit input carries the digest, computed in code from the same context
     continuation_safety: { continuation_safe: true, failures: [] },
     user_turn_count: 3
   };
-  const input = await buildPrivateCandidateAuditInput({ caseAccessService: { loadCaseContext: async () => context }, caseId: "synthetic-case" });
+  const asked = [];
+  const input = await buildPrivateCandidateAuditInput({ caseAccessService: { loadCaseContext: async (_caseId, _authContext, options) => { asked.push(options); return context; } }, caseId: "synthetic-case" });
+  assert.equal(asked.length, 1);
+  assert.equal(asked[0].forReplyCheck, true, "the audit asks for the context built for the reply check");
   assert.deepEqual(input.trajectory_digest, buildTrajectoryDigest(context));
   assert.equal(input.trajectory_digest.computed_in_code, true);
   assert.equal(input.trajectory_digest.model_calls, 0);
@@ -239,7 +261,8 @@ test("produceDiscriminator on the self-death inquiry route always uses the fallb
 });
 
 test("produceDiscriminator on every other route is unchanged, with or without a question", async () => {
-  for (const activeStep of [CALM, PRECIOUS, "IC.SOMETHING_ELSE", null]) {
+  // The adult-seat route is in the digest's suicide family but not in the fallback: owner question 55 decides that, so it keeps its stored question.
+  for (const activeStep of [CALM, PRECIOUS, ADULT_SEAT, "IC.SOMETHING_ELSE", null]) {
     const produced = await discriminatorRuntime({ activeStep, route: activeStep ?? CALM, nextQuestion: QUESTION })();
     assert.equal(produced.exactText, QUESTION, String(activeStep));
     assert.equal(Object.hasOwn(produced, "kind"), false, String(activeStep));
@@ -365,7 +388,7 @@ test("an operational failure of the audit on the inquiry route is not turned int
 });
 
 test("the precious-opportunity inquiry route and the calm route are untouched by the fallback", async (t) => {
-  assert.ok(SUICIDE_FAMILY_ROUTE_IDS.includes(PRECIOUS) && SAFETY_ORIENTATION_ROUTE_ID === SAFETY);
+  assert.ok(SUICIDE_FAMILY_ROUTE_IDS.includes(PRECIOUS) && SUICIDE_FAMILY_ROUTE_IDS.includes(ADULT_SEAT) && SAFETY_ORIENTATION_ROUTE_ID === SAFETY);
   const runtime = await openScriptedRiskRuntime(t, { readings: ["absent"], auditFindings: () => [BLOCKING_FINDING] });
   const result = await runtime.run(1);
   assert.equal(result.deliveryKind, "discriminator");
@@ -460,14 +483,15 @@ test("in a real run, the turn-9 audit packet carries the digest and the record a
   assert.deepEqual(
     [digest.suicide_family.earlier_user_turns_outside_verbatim_window, digest.suicide_family.turn_numbers, digest.suicide_family.with_exact_text_in_targeted_older_evidence, digest.suicide_family.without_exact_text_in_this_packet],
     [2, [6, 7], 1, 1],
-    "two earlier risk turns outside the window; the record's turn has its exact text, the repeat does not"
+    "two earlier risk turns outside the window; the turn of the record's highest reading (the later of the two equal readings) has its exact text, the other does not"
   );
   const risk = digest.self_directed_risk;
   assert.deepEqual([risk.level, risk.assessed_turn_number, risk.latest_reading_turn_number, risk.latest_reading_unknown, risk.fresh_readings_below_held_level],
     ["ideation", 6, 9, true, []]);
   assert.deepEqual(risk.history.map((entry) => [entry.change, entry.turn_number]), [["raised", 6], ["held", 7]]);
 
-  assert.deepEqual(packet.targeted_older_evidence.map((entry) => [entry.turn_id, entry.turn.text]), [["risk-6-user", "Synthetic message 6."]]);
+  assert.deepEqual(packet.targeted_older_evidence.map((entry) => [entry.turn_id, entry.turn.text]), [["risk-7-user", "Synthetic message 7."]]);
+  assert.deepEqual(risk.highest_reading_in_history, { reading: "ideation", turn_id: "risk-7-user", turn_number: 7 }, "the digest names the turn the packet carries");
   assert.equal(Object.hasOwn(packet.case_state, "self_directed_risk"), false, "the record reaches the auditor once, through the digest");
   assert.deepEqual(
     [packet.disclosure_manifest.trajectory_digest_included, packet.disclosure_manifest.trajectory_digest_computed_in_code_without_model, packet.disclosure_manifest.self_directed_risk_record_included],
@@ -480,31 +504,136 @@ test("in a real run, the turn-9 audit packet carries the digest and the record a
   assert.deepEqual(packets.get(3).trajectory_digest.suicide_family.turn_numbers, []);
 });
 
-test("producers and the repair writer never see the record in a real run", async (t) => {
-  const seen = [];
-  const stages = new Set();
+const RECORD_REASON = "current-self-directed-risk-record";
+const RECORD_ITEM = "self_directed_risk.current";
+const shownIn = (input) => `${input.system}\n${input.user}`;
+
+test("after a route change the extraction and writing prompts carry neither the record nor its retrieval, while the audit and repair packets do", async (t) => {
+  const prompts = [];
+  const auditPackets = [];
   const runtime = await openScriptedRiskRuntime(t, {
     readings: ["ideation", "absent"],
     auditFindings: ({ turn, auditNumber }) => (turn === 2 && auditNumber === 1 ? [BLOCKING_FINDING] : []),
-    onPrompt({ stage, input }) {
-      if (stage === "private_candidate_audit") return;
-      stages.add(stage);
-      seen.push(`${input.system}\n${input.user}`);
-    }
+    onPrompt({ stage, turn, input }) { if (stage !== "private_candidate_audit") prompts.push({ stage, turn, text: shownIn(input) }); },
+    onAuditPacket({ turn, auditNumber, packet }) { auditPackets.push({ turn, auditNumber, packet }); }
   });
-  await runtime.run(1);
-  await runtime.run(2);
-  for (const stage of ["case_extraction", "realization", "private_candidate_repair"]) assert.ok(stages.has(stage), `${stage} prompts were captured`);
-  assert.equal((await runtime.load()).case_state.self_directed_risk.current.level, "ideation");
-  let retrievalLabels = 0;
-  for (const text of seen) {
-    // The one mention they may carry is the label on the retrieval request that points at the older turn (beside the threat-pathway
-    // label). The record itself, its level, its history and the digest are not in them.
-    const withoutLabel = text.split("self_directed_risk.current").join("");
-    retrievalLabels += text.length - withoutLabel.length > 0 ? 1 : 0;
-    assert.equal(withoutLabel.includes("self_directed_risk"), false);
-    assert.equal(text.includes("trajectory_digest"), false);
-    assert.equal(text.includes("lowering_readings"), false);
+  assert.equal((await runtime.run(1)).deliveryKind, "candidate");
+  assert.equal((await runtime.run(2)).deliveryKind, "candidate", "the second turn needed one repair");
+  const record = await runtime.load();
+  assert.equal(record.case_state.self_directed_risk.current.level, "ideation", "one quiet turn does not lower the record");
+  assert.deepEqual(record.case_state.current_episode.started_turn_id, "risk-2-user", "the route changed on turn 2, so turn 1 is outside the verbatim window");
+
+  // Turn 2's extraction, writing and repair prompts, which is where the retrieval would appear.
+  const stages = new Set(prompts.filter((entry) => entry.turn === 2).map((entry) => entry.stage));
+  for (const stage of ["case_extraction", "realization", "private_candidate_repair"]) assert.ok(stages.has(stage), `${stage} prompts were captured on turn 2`);
+  for (const { stage, turn, text } of prompts) {
+    const where = `${stage} on turn ${turn}`;
+    if (stage === "private_candidate_repair") continue;
+    // Every prompt except the repair writer's: no reason, no item id, no record, no digest, and not the older turn's text.
+    assert.equal(text.includes(RECORD_REASON), false, where);
+    assert.equal(text.includes(RECORD_ITEM), false, where);
+    assert.equal(text.includes("self_directed_risk"), false, where);
+    assert.equal(text.includes("trajectory_digest"), false, where);
+    assert.equal(text.includes("lowering_readings"), false, where);
+    if (turn === 2) assert.equal(text.includes("TARGETED OLDER VERBATIM EVIDENCE (null means the referenced exact turn is not available in this context):\n(none)"), true, where);
   }
-  assert.ok(retrievalLabels > 0, "the older turn was retrieved for the writing prompts, as the brief asks");
+
+  // The audit packet on turn 2 carries the request's evidence: the reason, the item and the exact older turn.
+  const audit = auditPackets.find((entry) => entry.turn === 2 && entry.auditNumber === 1).packet;
+  assert.deepEqual(audit.targeted_older_evidence.map((entry) => [entry.turn_id, entry.reasons, entry.item_ids, entry.turn.text]),
+    [["risk-1-user", [RECORD_REASON], [RECORD_ITEM], "Synthetic message 1."]]);
+
+  // The repair writer gets the same older turn, because the repair is part of the reply check, but not the record.
+  const repair = prompts.find((entry) => entry.stage === "private_candidate_repair" && entry.turn === 2);
+  assert.ok(repair.text.includes(RECORD_REASON) && repair.text.includes("Synthetic message 1."));
+  assert.equal(repair.text.includes("self_directed_risk\""), false, "no record in case_state");
+  assert.equal(repair.text.includes("lowering_readings"), false);
+  assert.equal(repair.text.includes("trajectory_digest"), false);
+});
+
+test("the writing prompts built from the context a producer receives never carry the record's retrieval, even with the record's turn outside the window", async () => {
+  // buildContext is what feeds the extraction, realization, candidate, critique, adjudication and case-audit prompts.
+  const { buildContext } = await import("../src/orchestrator/context-builder.mjs");
+  const { loadConfig } = await import("../src/core/config.mjs");
+  const { mergeRuntimeSnapshotIntoCaseState, createEmptyCaseState } = await import("../src/case-state/longitudinal-state.mjs");
+  const { durableCaseContextBlock } = await import("../src/prompts/common.mjs");
+  let caseState = createEmptyCaseState({ caseId: "synthetic-producer-context" });
+  const transcript = [];
+  const route = (id) => ({ primaryJob: { id, title: `Synthetic route ${id}` }, nextQuestion: "", selectedNodes: [], variables: {} });
+  [["ideation", INQUIRY], ["absent", CALM]].forEach(([state, id], index) => {
+    const number = index + 1;
+    caseState = mergeRuntimeSnapshotIntoCaseState(caseState, { variables: { suicidal_state: state, suicidal_ideation_context: "unknown" }, direct_observations: [], hypotheses: [] },
+      { turnId: `T${number}-user`, recordedAt: `2026-11-01T00:0${number}:00.000Z`, interventionContract: route(id) });
+    transcript.push({ id: `T${number}-user`, exchange_id: `X${number}`, role: "user", text: `Synthetic user message ${number}.`, at: `2026-11-01T00:0${number}:00.000Z`, episode_id: caseState.current_episode.id });
+    if (number < 2) transcript.push({ id: `T${number}-assistant`, exchange_id: `X${number}`, role: "assistant", text: `Synthetic reply ${number}.`, at: `2026-11-01T00:0${number}:00.000Z`, episode_id: caseState.current_episode.id });
+  });
+  assert.equal(caseState.self_directed_risk.current.level, "ideation");
+  const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false });
+  const context = await buildContext({ caseId: "synthetic-producer-context", userMessage: "Synthetic message 3.", recentTranscriptEntries: transcript, durableCaseState: caseState, trackerEntries: [] }, config);
+  assert.equal(context.recentTranscriptEntries.some((turn) => turn.id === "T1-user"), false, "turn 1 is outside the window");
+  assert.deepEqual(context.targetedRetrievalRequests, []);
+  assert.deepEqual(context.targetedOlderEvidence, []);
+  const forReplyCheck = buildDurableCaseContext({ caseId: "synthetic-producer-context", caseState, transcriptEntries: transcript, forReplyCheck: true });
+  assert.deepEqual(forReplyCheck.targeted_retrieval_requests.map((request) => request.item_id), [RECORD_ITEM], "the same case does produce the request for the reply check");
+  const block = durableCaseContextBlock(context);
+  assert.equal(block.includes(RECORD_REASON) || block.includes(RECORD_ITEM) || block.includes("Synthetic user message 1."), false);
+});
+
+// ---- Retention for the reply check, through the whole audit loop --------------------------------------------------------------
+
+test("a quiet stretch after one reading keeps that turn's exact text in the audit packet on turns 3, 4 and 5, and the lowering turn included", async (t) => {
+  // The review's sequence: absent, ideation, absent, absent, absent. Turn 2's route is the inquiry route; turn 3 changes it back.
+  const readings = ["absent", "ideation", "absent", "absent", "absent"];
+  const packets = new Map();
+  const runtime = await openScriptedRiskRuntime(t, { readings, onAuditPacket({ turn, auditNumber, packet }) { if (auditNumber === 1) packets.set(turn, packet); } });
+  const routes = [];
+  const levels = [];
+  for (let number = 1; number <= readings.length; number += 1) {
+    assert.equal((await runtime.run(number)).deliveryKind, "candidate");
+    const stored = await runtime.load();
+    routes.push(stored.case_state.current_episode.route);
+    levels.push(stored.case_state.self_directed_risk?.current?.level ?? null);
+  }
+  assert.deepEqual(routes, [CALM, INQUIRY, CALM, CALM, CALM]);
+  assert.deepEqual(levels, [null, "ideation", "ideation", "absent", "absent"], "the level-lowering rule is unchanged: two quiet turns lower it, at turn 4");
+  const evidenceTurns = (turn) => packets.get(turn).targeted_older_evidence.map((entry) => [entry.turn_id, entry.turn?.text ?? null]);
+  assert.deepEqual(evidenceTurns(1), []);
+  for (const turn of [3, 4, 5]) {
+    assert.deepEqual(evidenceTurns(turn), [["risk-2-user", "Synthetic message 2."]], `the audit packet on turn ${turn} holds turn 2's exact text`);
+    assert.equal(packets.get(turn).recent_verbatim.turns.some((entry) => entry.id === "risk-2-user"), false, `turn 2 is outside the verbatim window on turn ${turn}`);
+  }
+  assert.equal(packets.get(4).trajectory_digest.self_directed_risk.level, "absent");
+  assert.equal(packets.get(4).trajectory_digest.suicide_family.without_exact_text_in_this_packet, 0, "before this change the packet on turn 4 had none of it");
+  assert.equal(packets.get(5).trajectory_digest.suicide_family.with_exact_text_in_targeted_older_evidence, 1);
+});
+
+test("the turn stays in the audit packet for ten planned turns after the lowering to absent, and then leaves it", async (t) => {
+  const readings = ["absent", "ideation"];
+  const packets = new Map();
+  const runtime = await openScriptedRiskRuntime(t, { readings, maximumTurns: 16, onAuditPacket({ turn, auditNumber, packet }) { if (auditNumber === 1) packets.set(turn, packet); } });
+  for (let number = 1; number <= 16; number += 1) assert.equal((await runtime.run(number)).deliveryKind, "candidate");
+  const stored = await runtime.load();
+  assert.equal(stored.case_state.self_directed_risk.current.lowered_at_planned_turn, 4);
+  const holds = (turn) => packets.get(turn).targeted_older_evidence.some((entry) => entry.turn_id === "risk-2-user");
+  const turnsWithIt = [...packets.keys()].filter(holds);
+  assert.deepEqual(turnsWithIt, [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], "from the reading's next turn to the tenth planned turn after the lowering turn (turn 4)");
+  assert.equal(holds(15), false);
+  assert.equal(holds(16), false);
+  assert.equal(packets.get(15).trajectory_digest.self_directed_risk.level, "absent", "the record itself stays, with its history");
+  assert.equal(packets.get(15).trajectory_digest.self_directed_risk.history.length, 2);
+});
+
+// ---- Known gap, pinned: the fallback does not cover the adult-seat route -------------------------------------------------------
+
+test("the adult-seat route is counted by the digest but its stored question is still what is delivered after two failed repairs (owner question 55)", async (t) => {
+  const readings = [{ state: "ideation", variables: { inner_adult_access: "low", witness_capacity: "absent" } }];
+  const runtime = await openScriptedRiskRuntime(t, { readings, auditFindings: () => [BLOCKING_FINDING] });
+  const result = await runtime.run(1);
+  const stored = await runtime.load();
+  assert.equal(stored.case_state.current_episode.active_step, ADULT_SEAT, "the planner routed this reading to the adult-seat route");
+  assert.equal(result.deliveryKind, "discriminator", "no owner fallback here: extending it to this route is not part of this change");
+  assert.notEqual(result.answer, OWNER_FALLBACK_MESSAGE);
+  assert.equal(result.answer, stored.case_state.current_episode.next_question);
+  assert.equal(Object.hasOwn(stored.runtime_turns[0].discriminator, "kind"), false);
+  assert.deepEqual([runtime.counts.private_candidate_audit, runtime.counts.private_candidate_repair], [3, 2]);
 });
