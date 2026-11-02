@@ -1,6 +1,10 @@
 # Self-directed risk safeguards
 
-Written 1 November 2026 against `main` at `92a3dccb` (pull request 219 merged). Each safeguard below is marked **[merged]** (in `main` at that commit) or **[not merged]** (in an open pull request). Line numbers in this page refer to `92a3dccb`.
+Written 1 and 2 November 2026. Pull request 219 is merged as `92a3dccb` and pull request 224 as `54c2857d`; the evaluation (pull request 220) and the sealed Claude CLI fix (pull request 223) are merged together with this page. Line numbers in this page refer to `92a3dccb` unless a section says otherwise.
+
+## Where these rules can be enforced
+
+Only in InnerSignal's own web app. There, InnerSignal writes each reply, a separate check reviews it with the safeguards below, and the person sees only a reply that passed, or the fixed fallback message. Inside ChatGPT or Claude, InnerSignal is a plugin (a connector). The chat app writes the reply and decides what the person sees. A plugin can give the chat InnerSignal's rules and offer tools, and the chat may follow them, but nothing a plugin does can stop the chat from writing or showing a reply that breaks them. So no rule can be truly enforced through a plugin, these safeguards included. The connector's optional draft-review tools (section 4.2) can check a draft the chat chooses to send, and still cannot make the chat send it or show only the approved text.
 
 If you are in danger now, contact your local emergency services or a crisis line. This page describes software and is not a crisis resource.
 
@@ -32,8 +36,8 @@ Before pull request 219, three things in the code worked against this (pull requ
 | Fixed fallback message | Replaces an unchecked stored question on four routes | merged (PR 219), off by default | `src/supervisor/owner-fallback-message.mjs`, `src/supervisor/private-therapy-model-runtime.mjs` |
 | Fallback switch | `INNER_SIGNAL_OWNER_FALLBACK`, off by default | merged (PR 219) | `src/core/config.mjs`, `src/core/on-off-setting.mjs` |
 | Long-conversation fix | Bounds the episode's id list so the merge no longer throws | merged (PR 219) | `src/case-state/longitudinal-state.mjs` |
-| First statement kept in view | Adds the first statement and the first turn at the highest level to the packet | not merged (PR 224, open draft) | `src/case-state/self-directed-risk.mjs` |
-| Sealed CLI route on current Claude Code versions | Lets the isolated reply-check call run through the Claude command-line tool when it no longer lists `--max-turns` | not merged (PR 223, open draft) | `src/providers/claude-cli.mjs` |
+| First statement kept in view | Adds the first statement and the first turn at the highest level to the packet | merged (PR 224) | `src/case-state/self-directed-risk.mjs` |
+| Sealed CLI route on current Claude Code versions | Lets the isolated reply-check call run through the Claude command-line tool when it no longer lists `--max-turns` | merged with this page (PR 223) | `src/providers/claude-cli.mjs` |
 
 ### 2.1 The record [merged]
 
@@ -50,7 +54,7 @@ The record is an optional `self_directed_risk` section of the case state. It has
 - **Where the record goes.** It reaches the reply check through the digest. It is removed from the extraction, writing and repair prompts (`promptCaseState`, `src/prompts/common.mjs`, line 36), so a reading cannot come back to the extractor as the person's words. It is not in the inspection projection, and the case state that a response hands back to the client leaves it out (`caseStateForClient`, called in `src/server/create-server.mjs`). The older turn it points to does not count as older raw evidence for the continuation-safety gate (`assessContinuationSafety`, `src/storage/private-case-continuity.mjs`), so the record cannot clear `CASE_NOT_CONTINUATION_SAFE`.
 - **No backfill.** Ideation stated before the upgrade creates no record. Only the digest's route counts cover it.
 
-### 2.2 What the separate reply check receives [merged; extended by PR 224, not merged]
+### 2.2 What the separate reply check receives [merged; extended by PR 224, merged]
 
 The reply check is a separate model call, made with a fresh context, that sees only a packet. It has no tools and no filesystem. The code calls it the audit. `auditCandidate` in `src/supervisor/private-therapy-model-runtime.mjs` (line 192) builds the packet with `buildPrivateCandidateAuditInput` (`src/supervisor/private-candidate-audit.mjs`) and seals it with `sealAuditPacket` (line 67). The turn controller throws if the auditing context is the one that produced the reply (`src/supervisor/private-therapy-turn-controller.mjs`, line 265).
 
@@ -68,7 +72,7 @@ The packet holds the exact reply under review, the case state, the exact turns o
 
 The request is made only for the audit packet and the repair packet (the `forReplyCheck` option of `buildDurableCaseContext` in `src/case-state/context-window.mjs`). The extraction and writing prompts are built without it. The repair packet shows that older turn but not the record, and findings that are record-only do not reach the repair writer.
 
-**Open change, not merged (PR 224).** The branch `fix/first-risk-statement-visible-20261101` adds an optional `first_reading` to the record. It is set once, when the record is created, and kept outside the 20-event history. The reply check then gets up to three older turns, without duplicates: the highest reading's turn (unchanged, with its 10-turn window after a lowering), the first turn at that same level (same window), and the turn of the first reading above `absent`, which is kept for the rest of the case. A record written without the field still validates, and its first reading is taken from the front of its history while no reading above `absent` has left it. If it has, the first reading stays unknown and nothing is invented. Known limit from the pull request: in a very long case the earliest entry at the highest level that is still in the 20-event history can be a later turn than the first turn that was ever at that level. The first statement stays through `first_reading`.
+**Extended by PR 224 (merged 2 November 2026 as `54c2857d`).** It adds an optional `first_reading` to the record. It is set once, when the record is created, and kept outside the 20-event history. The reply check then gets up to three older turns, without duplicates: the highest reading's turn (unchanged, with its 10-turn window after a lowering), the first turn at that same level (same window), and the turn of the first reading above `absent`, which is kept for the rest of the case. A record written without the field still validates, and its first reading is taken from the front of its history while no reading above `absent` has left it. If it has, the first reading stays unknown and nothing is invented. Known limit from the pull request: in a very long case the earliest entry at the highest level that is still in the 20-event history can be a later turn than the first turn that was ever at that level. The first statement stays through `first_reading`.
 
 ### 2.3 What the check blocks, and what it only records [merged]
 
@@ -120,9 +124,9 @@ With the switch on, one fixed message is delivered by code instead, in these cas
 
 `current_episode.source_item_ids` now keeps the most recent 100 ids instead of growing (`src/case-state/longitudinal-state.mjs`, `.slice(-CASE_STATE_LIMITS.episode_list)` at line 421). Before, the merge threw at the 17th turn at six items a turn and the turn ended as `THERAPY_RUNTIME_UNAVAILABLE`. The case-level limit of 500 items (`CASE_STATE_LIMITS.items`, line 25) is untouched. At six items a turn it now stops a case at the 84th turn. `intervention_history` has the same limit and would stop a case at its 501st turn. Raising either limit is an owner decision.
 
-### 2.8 Other open change [not merged]
+### 2.8 Sealed Claude CLI calls [merged with this page]
 
-**Sealed Claude CLI route (PR 223, branch `fix/claude-cli-sealed-without-max-turns-20261101`).** This pull request does not change what the reply check looks at. It changes whether the isolated call can run through the Claude command-line tool. The provider required that tool to list `--max-turns` before it would make a sealed call. Claude Code 2.1.312 and 2.1.316 do not list it, so every sealed call on the CLI route failed with `PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE`. PR 223 removes `maxTurns` from the required isolation flags in `src/providers/claude-cli.mjs`. The flags `tools`, `noSessionPersistence`, `permissionMode`, `noChrome`, `safeMode` and `strictMcpConfig` stay required, and `--max-turns` is still passed when the tool lists it. The pull request says the claim about 2.1.312 and 2.1.316 comes from the evaluation branch and was not checked against a real binary. The isolated rerun of the stage 1 evaluation waits on this change.
+**Sealed Claude CLI route (PR 223, branch `fix/claude-cli-sealed-without-max-turns-20261101`).** This pull request does not change what the reply check looks at. It changes whether the isolated call can run through the Claude command-line tool. The provider required that tool to list `--max-turns` before it would make a sealed call. Claude Code 2.1.312 and 2.1.316 do not list it, so every sealed call on the CLI route failed with `PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE`. PR 223 removes `maxTurns` from the required isolation flags in `src/providers/claude-cli.mjs`. The flags `tools`, `noSessionPersistence`, `permissionMode`, `noChrome`, `safeMode` and `strictMcpConfig` stay required, and `--max-turns` is still passed when the tool lists it. The isolated rerun of the stage 1 evaluation (section 3.2) ran with this change, and its preflight recorded that Claude Code 2.1.312 does not list `--max-turns`.
 
 ## 3. How it was tested
 
@@ -132,9 +136,9 @@ Pull request 219 added 116 tests: the record and digest (37), the audit codes an
 
 These tests use scripted stand-ins for the models and numbered placeholder text. They show that the code paths behave as described. They do not show how a real model reports these findings.
 
-### 3.2 The evaluation (pull request 220, not merged)
+### 3.2 The evaluation (pull request 220, merged with this page)
 
-Branch `task/longitudinal-risk-eval-stage0-20261101`, files under `tasks/longitudinal-risk-eval-20261101/`, protocol in `PROTOCOL.md`. It is exploratory and never a release gate: nothing in it runs in `npm test`, `npm run verify` or CI. Codex's review of the final commit found no major issues, and the pull request waits for the owner's merge.
+Branch `task/longitudinal-risk-eval-stage0-20261101`, files under `tasks/longitudinal-risk-eval-20261101/`, protocol in `PROTOCOL.md`. It is exploratory and never a release gate: nothing in it runs in `npm test`, `npm run verify` or CI. Codex's review of its final commit found no major issues.
 
 **Made-up conversations.** Everything is synthetic and abstract. The fixtures contain no self-harm method, means, location, timing or lethality, and no client, case or journal material. A tripwire list (`FORBIDDEN_CONTENT` in `corpus.mjs`) catches later edits that add such content, and it is not a classifier. "Indirect logistical" turns are administrative or practical topics of ambiguous purpose, and nothing else. Eight arcs, 15 arms:
 
@@ -192,7 +196,7 @@ A failure is a finding about the code, reported with arc, turn, layer and `file:
   - FAIL, layer 3, `context_not_visible` (2 rows): earlier context turns are in neither the packet nor the digest. A1 turns 3 to 10 when turn 11 is audited, and A3 trajectory turns 1 to 4.
   - INFO, `held_outside_fallback_routes` (9 rows): with the switch on, a persistent block or a role-belief finding on a route outside the four leaves the turn unfinished.
   - INFO, `known_limit_item_cap` (1 row): the 500-item limit.
-- **After PR 224 (not merged).** A no-model re-run with that branch merged locally gave 2 FAIL findings instead of 7. The five `risk_text_not_visible` rows cleared, and the two `context_not_visible` rows are unchanged. Digest checks, probes, delivery, caps and immediate protection all still passed (PR 224 description).
+- **After PR 224 (merged 2 November 2026).** A no-model re-run with that branch merged locally gave 2 FAIL findings instead of 7. The five `risk_text_not_visible` rows cleared, and the two `context_not_visible` rows are unchanged. Digest checks, probes, delivery, caps and immediate protection all still passed (PR 224 description).
 
 **Stage 1: a real model judging saved moments.** The checking model is the only model in the loop, and the replies it judges are written in advance.
 
