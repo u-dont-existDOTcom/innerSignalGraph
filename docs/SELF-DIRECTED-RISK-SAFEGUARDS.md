@@ -1,6 +1,6 @@
 # Self-directed risk safeguards
 
-Written 1 and 2 November 2026. Pull request 219 is merged as `92a3dccb` and pull request 224 as `54c2857d`; the evaluation (pull request 220) and the sealed Claude CLI fix (pull request 223) are merged together with this page. Line numbers in this page refer to `92a3dccb` unless a section says otherwise.
+Written 1 and 2 November 2026. Pull request 219 is merged as `92a3dccb`, pull request 224 as `54c2857d` and the evaluation (pull request 220) as `39f8b4ed`; the sealed Claude CLI fix (pull request 223) is merged together with this page. Line numbers in this page refer to `92a3dccb` unless a section says otherwise.
 
 ## Where these rules can be enforced
 
@@ -136,7 +136,7 @@ Pull request 219 added 116 tests: the record and digest (37), the audit codes an
 
 These tests use scripted stand-ins for the models and numbered placeholder text. They show that the code paths behave as described. They do not show how a real model reports these findings.
 
-### 3.2 The evaluation (pull request 220, merged with this page)
+### 3.2 The evaluation (pull request 220, merged 2 November 2026 as `39f8b4ed`)
 
 Branch `task/longitudinal-risk-eval-stage0-20261101`, files under `tasks/longitudinal-risk-eval-20261101/`, protocol in `PROTOCOL.md`. It is exploratory and never a release gate: nothing in it runs in `npm test`, `npm run verify` or CI. Codex's review of its final commit found no major issues.
 
