@@ -57,7 +57,8 @@ export class ClaudeCliProvider {
         });
       }
       if (sealed && flags) {
-        const requiredIsolationFlags = ["tools", "maxTurns", "noSessionPersistence", "permissionMode", "noChrome", "safeMode", "strictMcpConfig"];
+        // Not maxTurns: --tools "" is required and passed, so there are no tool turns to cap; the cap below is still passed when the CLI lists it.
+        const requiredIsolationFlags = ["tools", "noSessionPersistence", "permissionMode", "noChrome", "safeMode", "strictMcpConfig"];
         const missingIsolationFlags = requiredIsolationFlags.filter((name) => !flags[name]);
         if (missingIsolationFlags.length) {
           throw new ProviderError("Installed Claude CLI cannot guarantee packet-only private inference isolation.", {

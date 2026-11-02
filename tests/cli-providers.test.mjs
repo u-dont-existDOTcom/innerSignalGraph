@@ -157,6 +157,59 @@ test("sealed Claude CLI inference enforces isolation even when ordinary config i
   assert.deepEqual(JSON.parse(result.text), { ok: true });
 });
 
+// A sealed call against the fake CLI, whose help can leave flags out. The call's arguments come back through the fake's own arguments,
+// because a sealed call's environment is allowlisted and carries no FAKE_CLAUDE_ARGS_FILE.
+const fakeSealedProvider = (argsFile, { lacks = [], ...options } = {}) => new ClaudeCliProvider({
+  command: process.execPath,
+  baseArgs: [path.join(here, "fixtures/fake-claude-cli.mjs"), "--fake-require-sealed", `--fake-args-file=${argsFile}`, ...lacks.map((flag) => `--fake-help-lacks=${flag}`)],
+  model: "fake-claude",
+  timeoutMs: 10000,
+  ...options
+});
+const sealedCallArgs = async (t, options) => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-claude-sealed-"));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const argsFile = path.join(dir, "args.json");
+  const result = await fakeSealedProvider(argsFile, options).generate({ ...prompt, sealed: true });
+  assert.deepEqual(JSON.parse(result.text), { ok: true });
+  return JSON.parse(await fsp.readFile(argsFile, "utf8"));
+};
+const valueAfter = (args, flag) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
+
+test("sealed Claude CLI inference runs on a CLI that does not list --max-turns, with no tools and without that flag", async (t) => {
+  // Claude Code 2.1.312 and 2.1.316 do not list --max-turns. --tools "" is required and passed, so a print-mode call has no tool turns to cap.
+  for (const options of [{}, { maxTurns: 3 }, { maxTurns: null }]) {
+    const args = await sealedCallArgs(t, { lacks: ["--max-turns"], ...options });
+    assert.ok(!args.includes("--max-turns"), args.join(" "));
+    assert.equal(valueAfter(args, "--tools"), "", "no tools");
+    assert.equal(valueAfter(args, "--permission-mode"), "dontAsk");
+    for (const kept of ["--no-session-persistence", "--no-chrome", "--safe-mode", "--strict-mcp-config"]) assert.ok(args.includes(kept), kept);
+  }
+});
+
+test("sealed Claude CLI inference is still refused, before any call, when the CLI lacks any other isolation flag", async (t) => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-claude-refused-"));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const isolationFlags = { tools: "--tools", noSessionPersistence: "--no-session-persistence", permissionMode: "--permission-mode", noChrome: "--no-chrome", safeMode: "--safe-mode", strictMcpConfig: "--strict-mcp-config" };
+  for (const [name, flag] of Object.entries(isolationFlags)) {
+    for (const lacks of [[flag], [flag, "--max-turns"]]) {
+      const argsFile = path.join(dir, `${name}-${lacks.length}.json`);
+      await assert.rejects(fakeSealedProvider(argsFile, { lacks }).generate({ ...prompt, sealed: true }), (error) => {
+        assert.equal(error.code, "PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE");
+        assert.deepEqual(error.details.missingIsolationFlags, [name], "--max-turns is not among the required flags");
+        return true;
+      });
+      await assert.rejects(fsp.access(argsFile), { code: "ENOENT" }, "the CLI was not called");
+    }
+  }
+});
+
+test("sealed Claude CLI inference still passes --max-turns when the CLI lists it", async (t) => {
+  assert.equal(valueAfter(await sealedCallArgs(t), "--max-turns"), "1");
+  assert.equal(valueAfter(await sealedCallArgs(t, { maxTurns: null }), "--max-turns"), "1", "sealed inference always caps");
+  assert.equal(valueAfter(await sealedCallArgs(t, { maxTurns: 3 }), "--max-turns"), "3");
+});
+
 test("Codex CLI provider omits optional flags unsupported by the installed CLI", async () => {
   const provider = new CodexCliProvider({
     command: process.execPath,
