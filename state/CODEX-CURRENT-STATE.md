@@ -13,6 +13,13 @@ Updated: 2026-11-01
 - **Not done / next:** the two `context_not_visible` stage 0 findings (arc A1 turns 3 to 10, arc A3 turns 1 to 4), which are earlier context turns, not risk readings, and stay a separate gap; a stage 1 run with the live checker on the changed packets (nothing here calls a model).
 - **Verification:** with the text of the commit that holds this entry, the two risk test files (93 tests) and the eleven tests that read this file pass, and the repository audit reports no error, only the known hosted-permissions warning. The totals of `npm run verify` and the stage 0 and sealing re-runs for that commit are in the pull request description. Rollback check with the previous `main` build's validator, run on the first commit of this branch (the record format has not changed since: no new stored field): it accepts a record that carries `first_reading`, its merge drops the field, and this build recovers the first reading from the history afterwards.
 
+## Sealed Claude CLI calls without `--max-turns` — 1 November 2026
+
+- **Why:** `src/providers/claude-cli.mjs` refused sealed (packet-only private) inference unless the installed CLI's help listed `--max-turns`. Claude Code 2.1.312 doesn't list it (the longitudinal-risk evaluation's live preflight on 1 Nov recorded it as not listed), so every sealed call on the CLI route (config mode `cli`) failed with `PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE`.
+- **Change:** `maxTurns` is no longer a required isolation flag, and `--max-turns` is still passed when the CLI lists it. Every other required flag stays (`tools`, `noSessionPersistence`, `permissionMode`, `noChrome`, `safeMode`, `strictMcpConfig`), and sealed calls keep their private temporary folder and allowlisted environment. With `--tools ""` there are no tool turns for the cap to limit.
+- **Tests:** three in `tests/cli-providers.test.mjs`, with two new fake-CLI controls (`--fake-help-lacks`, `--fake-args-file`).
+- **Next:** a pull request for the owner's merge. The evaluation's stage 1 driver (pull request 220) now always seals its calls, so its next live run needs this change.
+
 ## Self-directed risk visible to the reply check, long-conversation stop, approved fallback on four routes — 1 November 2026
 
 - **Owner outcome:** owner question 53, answer A (branch `feat/longitudinal-risk-safeguards-20261101`, draft pull request onto `main`, not merged), then questions 54 and 55, answer A each (1 Nov 2026, 12:00 UTC; the fourth commit). After the case moves to another route the reply check can no longer see the turns where the person spoke about their own life; a long conversation on one route stopped as `THERAPY_RUNTIME_UNAVAILABLE`; the risk routes ended in an unchecked stored question or in no reply at all.
