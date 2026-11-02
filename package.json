@@ -60,6 +60,7 @@
     "web:smoke": "node -e \"import('./src/core/config.mjs').then(async ({loadConfig})=>{const {createProviders}=await import('./src/providers/factory.mjs');const {runWebClientSmoke}=await import('./src/autopilot/web-smoke.mjs');const c=loadConfig({mode:'mock'});console.log(JSON.stringify(await runWebClientSmoke({config:c,providers:createProviders(c)}),null,2));})\"",
     "benchmark:therapy-latency": "node scripts/benchmark-therapy-latency.mjs",
     "eval:protocol-application": "node src/cli/eval-protocol-application.mjs",
+    "eval:longitudinal-risk": "node tasks/longitudinal-risk-eval-20261101/cli.mjs",
     "verify:local-release": "node scripts/verify-local-release.mjs",
     "graph:compile": "node src/cli/compile-guide-graphs.mjs",
     "graph:test": "node src/cli/run-graph-regressions.mjs",
