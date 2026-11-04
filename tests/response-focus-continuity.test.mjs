@@ -8,6 +8,22 @@ import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 
 const read = (file) => fs.readFileSync(new URL(file, import.meta.url), "utf8");
 const json = (file) => JSON.parse(read(file));
+
+// The humanization queue was cleared on 2026-11-04 (queue version 2026-11-04-r21, EMPTY): an entry is consumed when the queue no longer
+// holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
+const assertEntriesConsumed = (expected) => {
+  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  assert.match(queue, /^Status: \*\*EMPTY\*\*$/mu);
+  assert.match(queue, /^Queue version: 2026-11-04-r21$/mu);
+  const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
+  for (const [id, fate, status] of expected) {
+    assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
+    const records = obligations.filter((record) => record.id === id);
+    assert.equal(records.length, 1, `${id} has one obligation record`);
+    assert.equal(records[0].fate, fate, `${id} fate`);
+    assert.equal(records[0].status, status, `${id} status`);
+  }
+};
 const name = "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025";
 const flags = [
   "UNSENT_ADVICE_AS_DELIVERED", "DELIVERED_ADVICE_AS_NEW", "SPLIT_FOCUS_RETURN",
@@ -59,11 +75,8 @@ test("delivery, functional coping and focus nuance reach compiled guide sources 
 });
 
 test("guide handoff tracks new reader-facing meaning without rewriting owner-authored prose", () => {
-  const pending = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
   const lessons = read("../THERAPY-LESSONS");
-  assert.match(pending,/PGQ-041 — Make existing partial regulation usable outside the exercise/);
-  assert.match(pending,/PGQ-042 — Protect from relapse by understanding the need/);
-  assert.match(pending,/practice-to-life/i);
+  assertEntriesConsumed([["PGQ-041","core point in","SYNCED"],["PGQ-042","core point in","SYNCED"]]);
   assert.match(lessons,/inclusive group in translation/);
   assert.match(lessons,/Development candidate, not live/);
 });

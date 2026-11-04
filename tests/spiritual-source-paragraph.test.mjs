@@ -14,6 +14,22 @@ import { withoutIssue215, QUESTION_51_R9_SHA256, CURRENT_R9_SHA256 } from "./fix
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
 const count = (text, part) => text.split(part).length - 1;
+
+// The humanization queue was cleared on 2026-11-04 (queue version 2026-11-04-r21, EMPTY): an entry is consumed when the queue no longer
+// holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
+const assertEntriesConsumed = (expected) => {
+  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  assert.match(queue, /^Status: \*\*EMPTY\*\*$/mu);
+  assert.match(queue, /^Queue version: 2026-11-04-r21$/mu);
+  const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
+  for (const [id, fate, status] of expected) {
+    assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
+    const records = obligations.filter((record) => record.id === id);
+    assert.equal(records.length, 1, `${id} has one obligation record`);
+    assert.equal(records[0].fate, fate, `${id} fate`);
+    assert.equal(records[0].status, status, `${id} status`);
+  }
+};
 const sha256 = (text) => crypto.createHash("sha256").update(text).digest("hex");
 
 // The paragraph exactly as the owner's question 52 gave it, with the typographic apostrophes the rest of the guide uses.
@@ -249,68 +265,22 @@ test("the real planner puts the line in front of the model where IC.BORROW_LOVE 
   assert.equal(unsafe.selectedNodes[0].recommendations.includes(NODE_LINE), false, "the line is not on the safety node");
 });
 
-test("the humanized-guide queue carries PGQ-055 in the existing format, keeps every earlier entry, and says the humanized guide is reviewed in its own lane", () => {
-  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^Status: \*\*PENDING\*\*$/mu);
-  assert.match(queue, /^Queue version: 2026-10-31-r20$/mu);
-  const entry = (id) => {
-    const start = queue.indexOf(`\n### ${id} — `);
-    assert.ok(start >= 0, `${id} is queued`);
-    const ends = ["\n### ", "\n## "].map((marker) => queue.indexOf(marker, start + 5)).filter((position) => position !== -1);
-    return queue.slice(start + 1, ends.length ? Math.min(...ends) : undefined);
-  };
-  assert.match(queue, /^## Pending bundle O — a deeper spiritual level, and what it is not \(owner question 52\)$/mu);
-  assert.ok(queue.indexOf("## Pending bundle O — ") > queue.indexOf("## Pending bundle N — "), "after the earlier bundles");
-  assert.match(queue, /^### PGQ-055 — A deeper spiritual level can bring release, love and reassurance, but it is not a source of facts about ordinary life and does not replace discernment$/mu);
-  assert.equal(count(queue, "\n### PGQ-055 — "), 1);
-  const text = entry("PGQ-055");
-  const lines = text.split("\n");
-  for (const field of ["Caused by", "Teaching point", "Reader need", "Already covered", "Where"]) assert.equal(lines.filter((line) => line.startsWith(`${field}: `)).length, 1, field);
-  assert.equal(lines.find((line) => line.startsWith("Teaching point: ")), `Teaching point: ${PARAGRAPH}`, "the teaching point is the paragraph, word for word");
+test("PGQ-055 is consumed from the humanized-guide queue, and the AI guide's lines it was anchored to are still where they were", () => {
+  assertEntriesConsumed([["PGQ-055", "in", "SYNCED"], ["PGQ-050", "core point in", "SYNCED"]]);
 
-  const caused = lines.find((line) => line.startsWith("Caused by: "));
-  for (const part of ["Owner answer 52a of 31 Oct 2026, 23:29 UTC", "owner question 52", "“52a that's for the AI guide, humanized guide still want to review in its own lane”",
-    "31 Oct 2026, 15:11 UTC", "issue 215", "comment 6546274735, item 2", "summarized there in the lane's own words", R10_FILE, SECTION, "This is the feast problem.", NODE,
-    "The owner's merge of the pull request that carries r10 is the final approval"]) {
-    assert.ok(caused.includes(part), `Caused by: ${part}`);
-  }
-  // The owner's instruction, in his words, and the limit of the entry.
-  const where = lines.find((line) => line.startsWith("Where: "));
-  assert.match(where, /^Where: Humanized public guide only, not the AI guide, and only where the owner chooses to place it\./u);
-  assert.ok(where.includes("“humanized guide still want to review in its own lane”"));
-  assert.match(where, /a pending queue entry is not publication authority\.$/u);
-  assert.doesNotMatch(text, /\r/u);
-  assert.ok(!lines.some((line, index) => index > 0 && line.startsWith("#")), "nothing in the entry reads as a new heading");
-
-  // "Already covered" gives honest anchors: each quoted sentence is on the r10 line the entry names, in the section the entry names.
+  // The AI guide's own anchors: each quoted sentence is on the r10 line, in the section, under the heading it was anchored to.
   const r10Lines = read(`../guides/${R10_FILE}`).split("\n");
-  const covered = lines.find((line) => line.startsWith("Already covered: "));
   const at = (label, sectionId, lineNumber, quote) => {
-    assert.ok(covered.includes(label) && covered.includes(`r10 line ${lineNumber}`), label);
     assert.ok(r10Lines[lineNumber - 1].includes(quote), `${label} is on r10 line ${lineNumber}`);
     const section = sourceMap.sections.find((candidate) => candidate.id === sectionId);
     assert.ok(section.lineStart <= lineNumber && lineNumber <= section.lineEnd, `${label} is in ${sectionId}`);
   };
-  at("“Borrow Hindsight” (IC.GUIDE_LATER", "IC.GUIDE_LATER", 663, "a fallible perspective to borrow, not proof that a perfect Higher Self is waiting underneath everything");
-  at("“How This Relates to IFS” (IC.IFS", "IC.IFS", 1019, "no use for another neo-Advaita, spiritual-bypassing claim that a perfect Higher Self is already waiting underneath everything");
-  at("“Start With Whatever Showed Up” (IC.START_WHATEVER", "IC.START_WHATEVER", 467, "A voice, intuition, or presence can offer information without taking the steering wheel");
+  at("Borrow Hindsight", "IC.GUIDE_LATER", 663, "a fallible perspective to borrow, not proof that a perfect Higher Self is waiting underneath everything");
+  at("How This Relates to IFS", "IC.IFS", 1019, "no use for another neo-Advaita, spiritual-bypassing claim that a perfect Higher Self is already waiting underneath everything");
+  at("Start With Whatever Showed Up", "IC.START_WHATEVER", 467, "A voice, intuition, or presence can offer information without taking the steering wheel");
   assert.equal(r10Lines[660], "Borrow Hindsight");
   assert.equal(r10Lines[1010], "How This Relates to IFS");
   assert.equal(r10Lines[450], "Start With Whatever Showed Up");
-  assert.ok(covered.includes("None of them says that there may be a deeper spiritual level"), "and it says what none of them covers");
-
-  // PGQ-050 is kept, and its line anchors follow the guide it names (r10 puts two lines before them).
-  const schema = entry("PGQ-050");
-  assert.match(schema, /\(IC\.RELATED_CLINICAL_WORK, r10, lines 1029–1046\)/u);
-  assert.match(schema, /changes nothing in the AI guide \(`inner-child-guide-2026-10-31-r10\.txt`\)/u);
-  assert.doesNotMatch(schema, /\b(?:r8|r9)\b/u, "no stale anchor remains in the entry");
-  // Every entry that was there before is still there, exactly once.
-  const before = [...Array.from({ length: 43 }, (_, index) => `PGQ-${String(index + 1).padStart(3, "0")}`), ...["047", "048", "049", "050", "051", "052", "053", "054"].map((id) => `PGQ-${id}`)];
-  for (const id of before) assert.equal(count(queue, `\n### ${id} — `), 1, id);
-  // Nothing was consumed, so the sync file is as it was: the inner-child public edition is still a planned, separate one.
-  const sync = json("../authoring/public-guide-sync.json");
-  assert.equal(sync.version, "public-guide-sync-v2-2026-09-16");
-  assert.equal(sync.guides.find((guide) => guide.id === "inner-child").status, "PLANNED_SEPARATE_HUMANIZED");
 });
 
 test("the lesson and the state section record the change and what is not done", () => {

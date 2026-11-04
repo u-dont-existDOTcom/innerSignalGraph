@@ -24,6 +24,22 @@ import { loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
 const count = (text, part) => text.split(part).length - 1;
+
+// The humanization queue was cleared on 2026-11-04 (queue version 2026-11-04-r21, EMPTY): an entry is consumed when the queue no longer
+// holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
+const assertEntriesConsumed = (expected) => {
+  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  assert.match(queue, /^Status: \*\*EMPTY\*\*$/mu);
+  assert.match(queue, /^Queue version: 2026-11-04-r21$/mu);
+  const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
+  for (const [id, fate, status] of expected) {
+    assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
+    const records = obligations.filter((record) => record.id === id);
+    assert.equal(records.length, 1, `${id} has one obligation record`);
+    assert.equal(records[0].fate, fate, `${id} fate`);
+    assert.equal(records[0].status, status, `${id} status`);
+  }
+};
 const IDENTITY = "IC.IDENTITY_FORMATION";
 const PROTECTOR = "IC.PROTECTOR_ACTION";
 const LATER = "IC.GUIDE_LATER";
@@ -325,7 +341,7 @@ test("five synthetic scenes cover the performed self, permissive self-care, the 
   assert.match(exit, /do not ask her to justify the leaving/u);
 });
 
-test("the lesson, the state section and the public-guide queue carry the change", () => {
+test("the lesson, the state section and the consumed public-guide queue entry carry the change", () => {
   const lessons = read("../THERAPY-LESSONS");
   assert.match(lessons, /\n## 2026-10-31 — Treat the performed self as a survival skill, not a fake part, and keep care from turning permissive or forced\n/u);
   const lesson = lessons.slice(lessons.indexOf("## 2026-10-31 — Treat the performed self"));
@@ -341,6 +357,5 @@ test("the lesson, the state section and the public-guide queue carry the change"
   for (const part of [IDENTITY_PLAY, LATER, IDENTITY, PROTECTOR, "RESPONSE-FIDELITY.md", "PGQ-050", "no new owner amendment", "2026-10-31-r17"]) {
     assert.ok(section.includes(part), part);
   }
-  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^### PGQ-050 — How this guide differs from schema therapy$/mu);
+  assertEntriesConsumed([["PGQ-050", "core point in", "SYNCED"]]);
 });
