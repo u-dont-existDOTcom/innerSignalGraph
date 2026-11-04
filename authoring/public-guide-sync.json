@@ -6,7 +6,446 @@
       "id": "inner-child",
       "publicUrl": "https://innerchild.u-dont-exist.com",
       "status": "PLANNED_SEPARATE_HUMANIZED",
-      "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics."
+      "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics.",
+      "humanizedDraft": {
+        "repository": "u-dont-existDOTcom/joel-articles",
+        "branch": "handoff/claude-dangerous-adult-20260924-1631",
+        "commit": "9e639bf198df3fd52d130f7a11cab922d156290c",
+        "path": "articles/inner-child-therapy/HUMANIZED-ARTICLE-SO-FAR.md",
+        "sha256": "100c3c7685ef0c34d4230da912309ffd9542d9b4d2c047666d2f9c1012c4dae7",
+        "published": false,
+        "notes": "The owner's humanized edition, reorganized and edited by him on 2026-11-03. Publishing or replacing it still passes the publication gate in docs/PUBLIC-GUIDE-HUMANIZATION.md."
+      },
+      "queueConsumption": {
+        "queueVersion": "2026-10-31-r20",
+        "queueFileCommit": "cb2008ce6",
+        "consumedOn": "2026-11-04",
+        "resetTo": "2026-11-04-r21 (EMPTY)",
+        "ownerWords": [
+          [
+            "2026-11-04 00:56 UTC",
+            "make sure you check the lane bc you were sent some things to put into the guide, but i think i already put them in if they were important points"
+          ],
+          [
+            "2026-11-04 10:02 UTC",
+            "make sure you clear the humanization queue"
+          ],
+          [
+            "2026-11-04 12:02 UTC",
+            "no (asked whether the extra of PGQ-009 and PGQ-016, which went in an edit of his inside a paragraph, should go back; it stays out)"
+          ],
+          [
+            "2026-11-04 12:37 UTC",
+            "clear the humanization queue, as filed for your lane in https://github.com/u-dont-existDOTcom/universal-dev-architecture/pull/467"
+          ]
+        ],
+        "record": {
+          "path": "articles/inner-child-therapy/experiments/t120-queue/QUEUE-CLEARED.md",
+          "commit": "9e639bf198df3fd52d130f7a11cab922d156290c",
+          "sha256": "8806d43a1e6150e71f32d41ee1d758677adb08fea9964b035e80519952b7df3b",
+          "json": "articles/inner-child-therapy/experiments/t120-queue/QUEUE-CLEARED.json",
+          "jsonSha256": "27437db6b3458e7908a78908a782cc18deb5bcb744772004c0586b3225015abc"
+        },
+        "checks": "Read against the queue on 2026-11-04: the record holds the same 52 IDs as the queue, once each; every quoted passage is in the guide word for word, and every heading it names is a heading of the guide.",
+        "legalReview": "PGQ-039 and PGQ-048 asked for a legal review of explicit jurisdictional statements before public placement. The guide's passage on it (\"Before You Tell the Hardest Stuff\") is the owner's own wording and makes only general, hedged statements (some professionals can be required to report certain things, which depends on where you live; a company can be made to hand over what is on its servers) and no jurisdiction-specific one, and the accidental-exposure sentence of PGQ-048 is not in the guide. So nothing in it needs that review now; a later jurisdiction-specific statement would.",
+        "counts": {
+          "entries": 52,
+          "in": 26,
+          "corePointIn": 25,
+          "leftOut": 1
+        },
+        "obligations": [
+          {
+            "id": "PGQ-001",
+            "title": "Experience is not its own interpretation",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Practicing With Your Little One > What to Make of a Passing Feeling"
+          },
+          {
+            "id": "PGQ-002",
+            "title": "Social practice should be reciprocal, not a performance test",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > First Social Connections, Done Right"
+          },
+          {
+            "id": "PGQ-003",
+            "title": "Honesty is graded by earned trust",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > Opening Up Honestly to the Right People at the Right Pace"
+          },
+          {
+            "id": "PGQ-004",
+            "title": "Anxiety can protect without becoming an oracle",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Practicing With Your Little One > Journal With Each Hand > If it's anxiety",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: That a part's no, or even hesitation, about sex, going deeper or an altered state is a stop and not a prediction to test; only touch is left (\"if you don't want to be touched, say no now\", under What to Make of a Passing Feeling). The subsection that said it is his cut X8 (Hear the Guard First's \"If it says no, I'd listen\" went with X1 too)."
+          },
+          {
+            "id": "PGQ-005",
+            "title": "Match outcome claims to duration",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "When the Practice Gets Difficult > How Would You Know It's Helping?",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: The rule itself: a few hours of relief with the old feeling back later is relief, not a fix or proof of what worked, tracked lightly (jot what changed and how long it lasted, drop it if it feeds OCD patterns); that was If the relief doesn't last, his cut X10. The guide keeps only that calm is initial progress and, for pain, that a treatment that helps doesn't explain the cause."
+          },
+          {
+            "id": "PGQ-006",
+            "title": "Psychoactive adverse history changes planning",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Altered States and Intensive Practice > When Escape Leaves Reality Behind > If a past trip went badly"
+          },
+          {
+            "id": "PGQ-007",
+            "title": "A healthy mind is not a perfectly clean mind",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > The Inner Guide: Becoming Your Own Shepherd > A Healthy Mind Is Not a Perfect Mind"
+          },
+          {
+            "id": "PGQ-008",
+            "title": "Missing can become an optional cue for love",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > When One Life Has Ended and the Next Hasn't Begun > Missing Someone"
+          },
+          {
+            "id": "PGQ-009",
+            "title": "Concentrated borrowed adulthood can be distributed",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: The inventory of what that one person carries: which jobs can become yours, which can go to friends, community, services, routines or tools, and which belong in the relationship, and the difference between missing them and practical collapse without them. His reorganization cut the sentence that carried the spreading (\"Other jobs can go to friends or community, outsource to the tools or pros, whatever works.\"); it isn't on the keep-as-is list."
+          },
+          {
+            "id": "PGQ-010",
+            "title": "Speak toward what is being built",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Speaking Up and Handling Conflict > Speak Toward What You Are Building"
+          },
+          {
+            "id": "PGQ-011",
+            "title": "Clarify support mode only when genuinely ambiguous",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > Ask What Kind of Company They Want"
+          },
+          {
+            "id": "PGQ-012",
+            "title": "Make the opening map explicitly leave the exercise",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Understanding Reparenting > Five Stages of Reparenting"
+          },
+          {
+            "id": "PGQ-013",
+            "title": "Add the transfer mismatch under “When to Change the Strategy”",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "When the Practice Gets Difficult > How Would You Know It's Helping?",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: The mismatch under When to Change the Strategy: a session can go well while life stays the same, which points to a missing transfer step rather than a failed or too-shallow meditation (notice what the adult did in there, do a small piece of it out here), with its limits (no homework after every session; weak carryover isn't proof it was fake). Its last trace there, \"integrating the benefits into regular life (like texting a friend...)\", was in X10."
+          },
+          {
+            "id": "PGQ-014",
+            "title": "Some real problems are blocked, not actionable yet",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > The Inner Guide: Becoming Your Own Shepherd > A Healthy Mind Is Not a Perfect Mind"
+          },
+          {
+            "id": "PGQ-015",
+            "title": "Remember a stated support mode and avoid stale advice",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > Ask What Kind of Company They Want",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Remembering the kind of support someone asked for until they change it, not guessing it from gender or another stereotype, and the stale-advice rule (advice already given, with nothing new changing it, gets a brief mention, not a re-run). He removed that paragraph in turn 106 (\"it seemed extra\"), before the keep-as-is list existed."
+          },
+          {
+            "id": "PGQ-016",
+            "title": "Memory support is not the same as reflective journaling",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Practicing With Your Little One > Journal With Each Hand",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: What the record can be (a dated note of what happened or what helped, a reminder, a next step, a voice note) and that a memory aid doesn't have to explain your life; those sentences went in his reorganization and aren't on the keep-as-is list."
+          },
+          {
+            "id": "PGQ-017",
+            "title": "One blocked problem should not block the whole life",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > The Inner Guide: Becoming Your Own Shepherd > A Healthy Mind Is Not a Perfect Mind",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Choosing the current focus by goal, impact, urgency, leverage and what can move now (the guide has only \"the next sane step that fits your values\"), and the overwhelm rule: one short organizing statement, one prioritized next step, and only a question whose answer would change it."
+          },
+          {
+            "id": "PGQ-018",
+            "title": "Gentler depth without technique-hopping",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep"
+          },
+          {
+            "id": "PGQ-019",
+            "title": "Come outward before re-entering",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep"
+          },
+          {
+            "id": "PGQ-020",
+            "title": "A paused practice has a remembered starting point",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: The guide has the written reason and progress and a later return once the reason has changed, but never says to resume from that recorded level or gentler (not at full depth)."
+          },
+          {
+            "id": "PGQ-021",
+            "title": "Difficulty and harm differ",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep > When Therapy Stirs Things Up",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Says a stormy session can be fine and that you should check willingness and the next days, but never says a pleasant or calming session is not automatically safe or sufficient."
+          },
+          {
+            "id": "PGQ-022",
+            "title": "Look at recovery over the next days",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep > When Therapy Stirs Things Up"
+          },
+          {
+            "id": "PGQ-023",
+            "title": "Adapt before escalating",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep > When Therapy Stirs Things Up",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: The unclear-effect step (simpler session, one change) is there, but not the deteriorating-functioning case: reduce several demands at once and seek appropriate support (the guide only says change course sooner if it is making things worse)."
+          },
+          {
+            "id": "PGQ-024",
+            "title": "Dreams are present experience, not reconstructed facts",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep > When Therapy Stirs Things Up"
+          },
+          {
+            "id": "PGQ-025",
+            "title": "Reach toward real human connection",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Safety and Readiness > Dip Your Toes In Before You Go Deep"
+          },
+          {
+            "id": "PGQ-026",
+            "title": "More than one safe place to belong",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > People? Where Are the People?"
+          },
+          {
+            "id": "PGQ-027",
+            "title": "Short relief must not perpetuate severe pain",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "When the Practice Gets Difficult > Physical Pain Makes It Harder",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Names the harmful quick fix and says crisis-time diagnostics may bring treatment, but never ties these together as the alternative to repeating the known-worse self-medication, nor says to contact urgent medical services for relief during the episode."
+          },
+          {
+            "id": "PGQ-028",
+            "title": "Support is not a shortcut to romantic intimacy",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > Dating While You Heal"
+          },
+          {
+            "id": "PGQ-029",
+            "title": "A chronic pain pathway, not daily emergency calls",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "When the Practice Gets Difficult > Physical Pain Makes It Harder"
+          },
+          {
+            "id": "PGQ-030",
+            "title": "Protective medical agency after coercive or harmful care",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Speaking Up and Handling Conflict > Being Your Own Advocate With Doctors",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has the chosen advocate and not defaulting to a disrespectful relative, but not that past harmful or coercive treatment changes whom to approach and what to disclose, nor the warning against returning to the same psychiatric pathway or presenting pain-triggered passing thoughts as a plan or bargaining chip."
+          },
+          {
+            "id": "PGQ-031",
+            "title": "Gratitude is essential ongoing cultivation; the child is not required to perform it",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > The Nurturer > Ask God for a Loan > Your Loan is PRE-APPROVED!"
+          },
+          {
+            "id": "PGQ-032",
+            "title": "A drug peak that changes nothing",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Altered States and Intensive Practice > What to Do With a Peak"
+          },
+          {
+            "id": "PGQ-033",
+            "title": "\"If only I had X\"",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > The Nurturer > Ask God for a Loan > Your Loan is PRE-APPROVED! > Mo' Money, Mo' Problems",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Names conditional gratitude and the endless loop of wanting, but does not offer the question to ask someone who postpones gratitude (what would you need before you could feel it, and does that list ever end)."
+          },
+          {
+            "id": "PGQ-034",
+            "title": "Bringing gratitude in without pushing it",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > The Nurturer > Ask God for a Loan > Your Loan is PRE-APPROVED!",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Only the not-pushing and the toxic-positivity disclaimer are there. Missing: coming back to it later when resisted, example small questions (smallest part of a better life, moment-by-moment peace, grateful for a past partner), that ignoring every positive is also toxic, and working a contradiction like 'I love everyone, I hate my dad' from the love side."
+          },
+          {
+            "id": "PGQ-035",
+            "title": "Gratitude in a calm altered state",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > The Nurturer > Ask God for a Loan > Your Loan is PRE-APPROVED!",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Only a personal anecdote of gratitude turning a bad trip. Missing: that gratitude in a calm altered state is practiced as sober, and the conditions: settle first while overwhelmed, safety and care first with impaired capacity or a medical concern."
+          },
+          {
+            "id": "PGQ-036",
+            "title": "Hypnosis isn't ruled out by grief or an altered state",
+            "fate": "left out",
+            "status": "NOT_PUBLIC",
+            "notes": "Deliberately left out of the public guide: Nothing on hypnosis during fresh grief or an altered state; the guide only says gentle meditation or self-hypnosis calms the nervous system and is not for all-day coping. Missing: fit depends on kind, grief level and purpose; hypnosis to reach numb feelings can help, to escape is less useful; deep inner-child work waits until grief is less raw."
+          },
+          {
+            "id": "PGQ-037",
+            "title": "Reparenting is not an exercise",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Understanding Reparenting > Five Stages of Reparenting"
+          },
+          {
+            "id": "PGQ-038",
+            "title": "Keeping yourself safe is part of the work, not a separate track",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > Protecting and Building Trust With Your Little One"
+          },
+          {
+            "id": "PGQ-039",
+            "title": "Before sharing something legally or personally sensitive",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > Opening Up Honestly to the Right People at the Right Pace > Before You Tell the Hardest Stuff",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Missing: asking what gets documented and who can access records; legal privilege versus professional confidentiality; seeking qualified legal advice for legal exposure; AI chats and apps as a retained medium. The guide also says it wouldn't bother asking, and suggests recasting as a dream narrative."
+          },
+          {
+            "id": "PGQ-040",
+            "title": "Ask what help could actually change, and what a practice actually did",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "When the Practice Gets Difficult > How Would You Know It's Helping?",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has asking what a practice is for and whether it helps, and caution about dreams and vivid memories elsewhere. Missing: tying a further non-urgent referral to a specific benefit or different expertise, learning how a practice that helped affected the person and its drawbacks, reading a relapse after long improvement as changed conditions rather than shame, and that a coach's personal support is not proof a product works."
+          },
+          {
+            "id": "PGQ-041",
+            "title": "Make existing partial regulation usable outside the exercise",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "When the Practice Gets Difficult > How Would You Know It's Helping?",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has carry-over to daily life as the test and that calmer feelings alone are only initial progress. Missing: that a small bodily release doesn't prove the whole anxiety state is gone; noticing specific effect, effect of continuing and how long benefit lasts; keeping a tiny list of already-tested accessible supports when overwhelmed."
+          },
+          {
+            "id": "PGQ-042",
+            "title": "Protect from relapse by understanding the need, not repeating how to stop",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Discovering and Healing Old Patterns > How Distrust Reproduces",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has asking what a coping pattern is protecting you from. Missing: the distinction between being able to stop and avoiding resuming under distress, finding already-known non-harmful experiences that meet part of the need, and a low-friction step that reduces real-world access (without promises or coercive relocation)."
+          },
+          {
+            "id": "PGQ-043",
+            "title": "Notice feelings, choose actions without self-condemnation",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Practicing With Your Little One > What to Make of a Passing Feeling",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has feelings not defining you and unwanted thoughts not making you bad (funeral jingle). Missing: deciding not to act on a feeling when it conflicts with consent, safety, vulnerability or a trusted boundary and calling that mature self-protection, separating feelings, intentions, actions and risks, and not inferring the origin of an attraction from unverified memories or promising a cure."
+          },
+          {
+            "id": "PGQ-047",
+            "title": "Shame appraisal, realistic repair and selective belonging",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Discovering and Healing Old Patterns > How to Forgive Without Forgetting > Forgiving Yourself",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Responsibility, repair, ashamed-of-being-ashamed, shame as a signal versus intrusive-thought shame, pressured forgiveness, belonging bargains and breaks from groups are scattered across sections. Not stated: that actual or feared social rejection is a separate question from whether you were morally wrong, and the instruction not to prescribe disclosure to unpredictable or hostile audiences or to split blame numerically."
+          },
+          {
+            "id": "PGQ-048",
+            "title": "Choosing whom to tell, and where an AI helper stops",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Finding People and Building Trust > Opening Up Honestly to the Right People at the Right Pace",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has earned trust through smaller truths and asking what a professional must report. Missing: choosing the listener by ease with difficult subjects rather than closeness, opening with the general kind of thing and asking if they are open to more, seeking a therapist experienced in early sexual trauma without needing certainty, not saving or sharing illegal material seen by accident, and that an AI helper has limits and should say so."
+          },
+          {
+            "id": "PGQ-049",
+            "title": "Go back over what each person said and did before judging a reaction",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Speaking Up and Handling Conflict > Write It. Don't Send It Yet.",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has weighing your own contribution to a reaction and not judging by one fight. Missing: the step of going back over what each person actually said and did, in order, before deciding what the reaction means."
+          },
+          {
+            "id": "PGQ-050",
+            "title": "How this guide differs from schema therapy",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Conclusion and Appendix > Appendix > Schema Therapy",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: Has the kept ideas, the questionnaire and 18 schemas/modes, history assumed from labels, borrowed adulthood and a note on a more combative stance. Missing: that here you describe parts in your own words and your history is what you tell; that any helper hands reparenting back; that no part is fought or expelled and a harsh critic's contempt need not be obeyed; and the statement that schema-therapy research does not show this guide works."
+          },
+          {
+            "id": "PGQ-051",
+            "title": "After a painful disagreement, ask what you aimed for, what you expected and how you judge it now",
+            "fate": "core point in",
+            "status": "SYNCED",
+            "publicHeading": "Bringing Reparenting Into Real Life > Speaking Up and Handling Conflict > Write It. Don't Send It Yet.",
+            "notes": "Core point in the owner's words; the rest is left out by his choice: The aim question is asked before sending. Missing: the retrospective look at what you aimed for, what response you expected and how you now judge what you said and what followed, and that standing by a conviction, wishing you had expressed it differently and accepting a foreseen consequence can all be true."
+          },
+          {
+            "id": "PGQ-052",
+            "title": "A critical voice is not automatically a protector, and you can reject the insult without first settling what it is",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > Protecting and Building Trust With Your Little One > Protecting from the Parent You Inherited"
+          },
+          {
+            "id": "PGQ-053",
+            "title": "Proactive protection includes a self-critical strategy that is trying to prevent a feared outcome, not every inner critic",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Building Your Inner Adult > Protecting and Building Trust With Your Little One > Protecting from the Parent You Inherited"
+          },
+          {
+            "id": "PGQ-054",
+            "title": "If anger is hard to put into words, try drawing or scribbling it",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Practicing With Your Little One > Journal With Each Hand"
+          },
+          {
+            "id": "PGQ-055",
+            "title": "A deeper spiritual level can bring release, love and reassurance, but is not a source of facts about ordinary life and does not replace discernment",
+            "fate": "in",
+            "status": "SYNCED",
+            "publicHeading": "Conclusion and Appendix > Appendix > Internal Family Systems (IFS)"
+          }
+        ]
+      }
     },
     {
       "id": "somatic",

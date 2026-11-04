@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-11-01
+Updated: 2026-11-04
+
+## Humanization queue cleared — 4 November 2026
+
+- **Owner outcome:** "make sure you clear the humanization queue" (2026-11-04 10:02 UTC), filed for this lane as `suggested-fixes/innerSignalGraph/2026-11-04-clear-the-inner-child-humanization-queue.md` in universal-dev-architecture PR #467 (open), and asked of this lane on 2026-11-04 at 12:37 UTC.
+- **Change:** `authoring/PENDING-PUBLIC-GUIDE-CHANGES.md` is reset to its EMPTY sentinel (queue version 2026-11-04-r21) with a short "Last reset" note; the 52 entries of 2026-10-31-r20 stay in its history. `authoring/public-guide-sync.json` gives `inner-child` a `humanizedDraft` (the owner's guide in `u-dont-existDOTcom/joel-articles`, with commit and SHA-256, not published) and a `queueConsumption` record: the owner's words, the humanized lane's record with its hashes, the checks, the legal-review judgment for PGQ-039 and PGQ-048, the counts (26 in, 25 core point in, 1 left out) and every entry's fate, heading and what was left out. The inbox receipt and the ledger entry record the item as ADOPTED.
+- **Checked:** the record holds the same 52 IDs as the queue, once each; every passage it quotes is in the guide word for word; every heading it names is in the guide. Tests that asserted queued entries now assert that the queue is EMPTY and that the sync record holds those entries; their assertions about the AI guide, map and rules are unchanged.
+- **Unchanged:** the AI guide, map, owner amendments, routes, rules and served protocol. A consumed entry stays in force there; the public guide is a downstream reader surface, and publishing it still passes the publication gate.
+- **Next:** the owner's merge. A later reader-relevant change sets the queue back to PENDING in the same reviewed change.
 
 ## First self-directed risk statement kept visible to the reply check — 1 November 2026
 
