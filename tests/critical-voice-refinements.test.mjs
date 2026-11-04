@@ -32,6 +32,22 @@ import {
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
 const count = (text, part) => text.split(part).length - 1;
+
+// The humanization queue was cleared on 2026-11-04 (queue version 2026-11-04-r21, EMPTY): an entry is consumed when the queue no longer
+// holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
+const assertEntriesConsumed = (expected) => {
+  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  assert.match(queue, /^Status: \*\*EMPTY\*\*$/mu);
+  assert.match(queue, /^Queue version: 2026-11-04-r21$/mu);
+  const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
+  for (const [id, fate, status] of expected) {
+    assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
+    const records = obligations.filter((record) => record.id === id);
+    assert.equal(records.length, 1, `${id} has one obligation record`);
+    assert.equal(records[0].fate, fate, `${id} fate`);
+    assert.equal(records[0].status, status, `${id} status`);
+  }
+};
 const sha256 = (text) => crypto.createHash("sha256").update(text).digest("hex");
 // The plain form of a text, so that a node's straight quotes and the guide's typographic ones compare equal.
 const plain = (text) => text.replaceAll("’", "'").replaceAll("“", "\"").replaceAll("”", "\"").replace(/\s+/gu, " ").toLowerCase();
@@ -546,49 +562,44 @@ test("four synthetic scenes cover a degrading voice, useful content kept, an inh
   assert.match(drawing, /do not tell him that holding anger in makes people ill/u);
 });
 
-test("the humanized-guide queue carries PGQ-052 to PGQ-054, keeps every earlier entry, and the public-guide sync file is unchanged", () => {
-  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^Status: \*\*PENDING\*\*$/mu);
-  assert.match(queue, /^Queue version: 2026-10-31-r20$/mu);
-  const entry = (id) => {
-    const start = queue.indexOf(`\n### ${id} — `);
-    assert.ok(start >= 0, `${id} is queued`);
-    const ends = ["\n### ", "\n## "].map((marker) => queue.indexOf(marker, start + 5)).filter((position) => position !== -1);
-    return queue.slice(start + 1, ends.length ? Math.min(...ends) : undefined);
-  };
-  for (const id of ["PGQ-052", "PGQ-053", "PGQ-054"]) {
-    const lines = entry(id).split("\n");
-    for (const field of ["Caused by", "Teaching point", "Reader need", "Already covered", "Where"]) assert.equal(lines.filter((line) => line.startsWith(`${field}: `)).length, 1, `${id} ${field}`);
-    assert.match(entry(id), /not publication authority/u, id);
-    assert.match(entry(id), /issue 215/u, id);
-  }
-  assert.match(queue, /^## Pending bundle N — a critical voice, the guard distinction and an optional anger practice \(issue 215\)$/mu);
-  assert.ok(queue.indexOf("## Pending bundle N — ") > queue.indexOf("## Pending bundle M — "), "after the earlier bundles");
-  assert.match(queue, /^### PGQ-052 — A critical voice is not automatically a protector, and you can reject the insult without first settling what it is$/mu);
-  assert.match(queue, /^### PGQ-053 — Proactive protection includes a self-critical strategy that is trying to prevent a feared outcome, not every inner critic$/mu);
-  assert.match(queue, /^### PGQ-054 — If anger is hard to put into words, try drawing or scribbling it$/mu);
-  assert.equal(entry("PGQ-052").split("\n").find((line) => line.startsWith("Teaching point: ")), `Teaching point: ${CRITICAL_VOICE}`);
-  assert.equal(entry("PGQ-054").split("\n").find((line) => line.startsWith("Teaching point: ")), `Teaching point: ${DRAWING}`);
-  assert.ok(entry("PGQ-053").includes(GUARD_NEW), "PGQ-053 quotes the qualified sentence");
-  assert.ok(entry("PGQ-052").includes("inner-child-guide-2026-10-31-r9.txt"));
-  for (const id of ["PGQ-052", "PGQ-053", "PGQ-054"]) assert.ok(entry(id).includes("AI guide r9"), `${id} names the guide it comes from`);
-  assert.match(entry("PGQ-052"), /PGQ-050/u);
-  assert.match(entry("PGQ-052"), /PGQ-047/u);
-  // The paragraph was revised in place after the owner's follow-up correction, and the entry says so and gives the comment.
-  assert.ok(entry("PGQ-052").includes("revised in place after the owner's follow-up correction of 31 October 2026, 15:11 UTC, recorded on issue 215 (https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/215#issuecomment-6546274735)"));
-  assert.match(entry("PGQ-052"), /compassion, curiosity and understanding together with firm limits/u);
-  assert.match(entry("PGQ-052").split("\n").find((line) => line.startsWith("Reader need: ")), /they can meet it with compassion, curiosity and understanding while giving it firm limits/u, "Reader need names the stance");
-  assert.doesNotMatch(entry("PGQ-052"), /the three points together/u, "the Where field no longer counts three points");
-  assert.match(entry("PGQ-054"), /makes no claim that a drawing reveals a hidden memory, that release is the aim, that a drawing can be read as a diagnosis/u);
+test("PGQ-052 to PGQ-054 are consumed from the humanized-guide queue, and the other three public guides are as they were on main", () => {
+  assertEntriesConsumed([["PGQ-052", "in", "SYNCED"], ["PGQ-053", "in", "SYNCED"], ["PGQ-054", "in", "SYNCED"]]);
+  // The AI guide still carries the qualified guard sentence that PGQ-053 asked the public guide to reflect.
+  assert.ok(read("../guides/inner-child-guide-2026-10-31-r9.txt").includes(GUARD_NEW), "r9 carries the qualified guard sentence");
 
-  // Every entry that was there before is still there, exactly once.
-  const before = [...Array.from({ length: 43 }, (_, index) => `PGQ-${String(index + 1).padStart(3, "0")}`), "PGQ-047", "PGQ-048", "PGQ-049", "PGQ-050", "PGQ-051"];
-  for (const id of before) assert.equal(count(queue, `\n### ${id} — `), 1, id);
-
-  // The inner-child public edition is still a planned, separate one and no queue entry was consumed, so the sync file did not change.
+  // The somatic, altered-states and hypnosis entries are exactly as on main (ca535c0e9).
   const sync = json("../authoring/public-guide-sync.json");
   assert.equal(sync.version, "public-guide-sync-v2-2026-09-16");
-  assert.equal(sync.guides.find((guide) => guide.id === "inner-child").status, "PLANNED_SEPARATE_HUMANIZED");
+  const others = sync.guides.filter((guide) => guide.id !== "inner-child");
+  assert.deepEqual(others, [
+    {
+      id: "somatic",
+      publicUrl: "https://somatic.u-dont-exist.com",
+      status: "HUMANIZED_PUBLIC",
+      sourceUploadSha256: "ce1a14d3df8552ad444bcf0ee71fba3b3b56058397acf5ebd0e139af332041a0",
+      notes: "Owner states the current somatic guide is already humanized; map/source changes remain explicit upstream work."
+    },
+    {
+      id: "altered-states",
+      publicUrl: "https://badtrips.u-dont-exist.com",
+      status: "PLANNED_SEPARATE_HUMANIZED",
+      sourceUploadSha256: "eda2ddf25b22c1bc8d9e2869661db59d893552f248bdfddf1b5c02bedd951d5c",
+      notes: "Humanization may change prose, examples, and ordering; medical/experimental field material does not automatically become runtime policy."
+    },
+    {
+      id: "hypnosis",
+      publicUrl: "https://hypnosis.u-dont-exist.com",
+      status: "PLANNED_SEPARATE_HUMANIZED",
+      notes: "Track as an independent public derivative; changes to therapy semantics return upstream before runtime changes."
+    }
+  ]);
+
+  // The inner-child record is still a planned, separate edition, and its queue consumption covers PGQ-052 to PGQ-054.
+  const innerChild = sync.guides.find((guide) => guide.id === "inner-child");
+  assert.equal(innerChild.status, "PLANNED_SEPARATE_HUMANIZED");
+  assert.ok(innerChild.queueConsumption, "inner-child has a queueConsumption");
+  const covered = new Set(innerChild.queueConsumption.obligations.map((record) => record.id));
+  for (const id of ["PGQ-052", "PGQ-053", "PGQ-054"]) assert.ok(covered.has(id), `${id} is covered by the queue consumption`);
 });
 
 test("the lesson and the state section name issue 215, the changes and what is not done", () => {
