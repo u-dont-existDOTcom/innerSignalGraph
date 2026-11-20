@@ -44,7 +44,7 @@ regression_refs:
   - G139
 base_record_sha256: 5391b311212cd58f0de857a84d00f665a8aae24a7cf01c4330b6f646557b2e8a
 base_graph_sha256: 41dbf0e44fd2ebc7bb452db405c70d727d9392795729e3cf406a233fc543882f
-projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
+projection_input_sha256: 9de0d498e06b99b8aec614c7319ef3255bbfc3be0eb9ca0eeb269a0804eae4e8
 ---
 
 # Hear the protective response without automatically obeying it

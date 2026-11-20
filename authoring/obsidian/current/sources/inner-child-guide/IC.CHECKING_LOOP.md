@@ -11,7 +11,7 @@ source_hash: 6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f
 section_hash: 6187808a6533e655dee02cabc77dbfcd2100131fc36eb9234881b6fdd4aed2f6
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
+projection_input_sha256: 9de0d498e06b99b8aec614c7319ef3255bbfc3be0eb9ca0eeb269a0804eae4e8
 ---
 
 # When More Processing Becomes the Hook

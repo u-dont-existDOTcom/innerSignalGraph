@@ -11,7 +11,7 @@ source_hash: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
 section_hash: 59a34896e1aa71b22ed6348b516463466b98e11b8632e87d29f4eae93b889874
 locator_kind: amendment-record
 cited_by_node_ids: []
-projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
+projection_input_sha256: 9de0d498e06b99b8aec614c7319ef3255bbfc3be0eb9ca0eeb269a0804eae4e8
 ---
 
 # AMEND.CROSS.KNOWN_VERSUS_NEW_SYNTHESIS_20261017
