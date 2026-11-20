@@ -16,9 +16,9 @@ A humanizer continuing the Inner Child public guide must reconcile every entry b
 - A later approved map/source/rule change that affects reader-facing meaning must change the sentinel back to `PENDING` and append the new obligation in the same reviewed change.
 - Runtime-only mechanics do not belong here.
 
-## Pending: the owner's decisions of 20 November 2026 (PGQ-056 to PGQ-086)
+## Pending: the owner's decisions of 20 November 2026 (PGQ-056 to PGQ-087)
 
-Guide r11 (`guides/inner-child-guide-2026-11-20-r11.txt`) appends 28 passages quoted word for word from the owner's live public guide (https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided, as updated 2026-11-20T01:19:09Z), which he adopted for InnerSignal in his answers to questions 368 to 378 at 01:18 UTC on 20 November 2026 ("368a 369c 370a 371b 372b  373a 374 defaults 375 1a2a3c4b  376a 377 1a2a 378a"). These obligations started in the public guide and moved upstream with his approval, so the live guide already carries each of PGQ-056 to PGQ-083 in his own words. PGQ-084 to PGQ-086 are reader-relevant points of the same change that are not r11 passages (his notes, and the October review redone), which the live guide carries only in part.
+Guide r11 (`guides/inner-child-guide-2026-11-20-r11.txt`) appends 28 passages quoted word for word from the owner's live public guide (https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided, as updated 2026-11-20T01:19:09Z), which he adopted for InnerSignal in his answers to questions 368 to 378 at 01:18 UTC on 20 November 2026 ("368a 369c 370a 371b 372b  373a 374 defaults 375 1a2a3c4b  376a 377 1a2a 378a"). These obligations started in the public guide and moved upstream with his approval, so the live guide already carries each of PGQ-056 to PGQ-083 in his own words. PGQ-084 to PGQ-087 are reader-relevant points of the same change that are not r11 passages (his notes, a card 376 point placed in the map, and the October review redone), which the live guide carries only in part.
 
 The humanized draft registered in `authoring/public-guide-sync.json` (`humanizedDraft`, 3 November 2026) predates his live edits of 18 to 20 November. Consume an entry once that draft carries its point, or once the live guide is registered as the derivative; for the r11 entries that needs no new prose. Each entry's provenance is also recorded in `authoring/public-guide-sync.json` under `inner-child` → `ownerDecisions20261120`.
 
@@ -234,7 +234,14 @@ Reader need: Readers meeting an inner "nope" need a way between automatic obedie
 Already covered: Partly: the live guide's “If you'd rather stop” says to hear the "nope" out first; the agreement and the override condition come from his note of 20 Nov.
 Where: The public guide's “If you'd rather stop”, or wherever it meets protective parts; the humanizer chooses.
 
-### PGQ-086 — The October map-intake distinctions, redone on 20 Nov
+### PGQ-086 — Less need for therapy, and more play, are signs of success
+Caused by: His answer 376a of 20 Nov 2026 at 01:18 UTC (every item of card 376, which brings in newer parts of his guide); owner amendment AMEND.IC.NEWER_GUIDE_PARTS_20261120 (r22), carried by IC.PRACTICE_TO_LIFE_TRANSFER (a success signal, and a Keep in mind line so chats receive it). Not an r11 passage.
+Teaching point: Needing therapy less, and playing more, are signs that reparenting is working.
+Reader need: Readers need to recognize progress as needing less help and having more play, rather than as ever more intense work.
+Already covered: Partly: the live guide makes the work more playful ("pl/ork", play plus work); the success-sign wording is card 376's.
+Where: Where the public guide talks about progress, or carrying the work into ordinary life; the humanizer chooses.
+
+### PGQ-087 — The October map-intake distinctions, redone on 20 Nov
 Caused by: Five of the six October amendments (owner-approved 22 Oct 2026 on the October semantic-review draft) redone on 20 Nov 2026 under his answer 378a (01:18 UTC): AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022, AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022, AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022, AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022 and AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022; the sixth, AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022, is app behavior. Not an r11 passage.
 Teaching point: (1) The Adult Protector is a chosen caring function of the one inner adult, distinct from learned guards and inherited critic scripts; (2) a learned pattern runs expectation, habitual response, consequence and self-treatment, and both the habit and a really rejecting environment are checked; (3) care becoming automatic, with less self-monitoring, is a possible sign of integration, not a required stage; (4) gratitude is for present good, without comparison with other people's deprivation; (5) compassion does not require staying miserable.
 Reader need: Readers need these distinctions where the guide meets protectors, habits, progress, gratitude and loyalty to others' suffering.

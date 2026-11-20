@@ -197,6 +197,7 @@ Each box lists: Do (its advice), Keep in mind (distinctions to keep), Avoid and 
 - Keep in mind: One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.
 - Keep in mind: Transfer work is triggered by a supported mismatch, not imposed as homework after every practice.
 - Keep in mind: Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress.
+- Keep in mind: Less need for therapy, and more play, are signs of success.
 - Avoid: Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.
 - Avoid: Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.
 - Avoid: Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.

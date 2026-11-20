@@ -12,7 +12,7 @@ section_hash: b91a238f9e8f44abda5928e11951436deb9d1bee074f88197cdde4e892deefbf
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.GOODWILL_BRIDGE
-projection_input_sha256: 9de0d498e06b99b8aec614c7319ef3255bbfc3be0eb9ca0eeb269a0804eae4e8
+projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
 ---
 
 # AMEND.IC.WISDOM_GOODWILL_BRIDGE

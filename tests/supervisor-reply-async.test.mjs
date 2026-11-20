@@ -40,12 +40,18 @@ test("a long review is answered 'reviewing' within the budget, then finishes in 
   assert.equal(reviewing.status, "reviewing");
   assert.equal(reviewing.exportable, false);
   assert.equal(reviewing.idempotency_key, "key-slow");
-  assert.equal(reviewing.artifact.status, "pending_audit");
-  assert.equal(reviewing.artifact.approved, false);
   assert.match(reviewing.notice, /Nothing is approved yet/u);
+  // The answer shows the draft once it is stored, which on a loaded machine can be after the 40 ms; the stored draft is read once
+  // the review has reached its audit.
+  await until(() => env.provider.counts.audit === 1, "the review to reach its audit", 30_000);
+  const stored = await env.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-slow" });
+  assert.equal(stored.status, "reviewing");
+  assert.equal(stored.exportable, false);
+  assert.equal(stored.artifact.status, "pending_audit");
+  assert.equal(stored.artifact.approved, false);
 
   // While it runs: nothing is approved, nothing can be exported, and asking again joins the review instead of starting another.
-  const artifactId = reviewing.artifact.artifact_id;
+  const artifactId = stored.artifact.artifact_id;
   assert.equal((await env.refused("export_approved_reply", { case_id: CASE_ID, artifact_id: artifactId })).code, "SUPERVISOR_ARTIFACT_NOT_APPROVED");
   const record = await env.reload();
   assert.equal(record.candidate_responses[0].status, "pending_audit");
@@ -244,8 +250,10 @@ test("revoking access while a review runs lets the review finish but releases no
   const gates = { 1: deferred() };
   const env = await makeReplyEnvironment(t, { runnerOptions: FAST, hooks: gated(gates) });
   t.after(() => gates[1].resolve());
-  const reviewing = await env.submit({ text: "Synthetic outside reply.", idempotency_key: "key-revoked" });
+  assert.equal((await env.submit({ text: "Synthetic outside reply.", idempotency_key: "key-revoked" })).status, "reviewing");
   await until(() => env.provider.counts.audit === 1, "the review to reach its audit", 30_000);
+  const reviewing = await env.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-revoked" });
+  assert.equal(reviewing.status, "reviewing");
   env.revoked.add("token-reply-only");
   gates[1].resolve();
   await env.runner.idle();

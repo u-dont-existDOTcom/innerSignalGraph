@@ -447,7 +447,7 @@
         ]
       },
       "ownerDecisions20261120": {
-        "what": "Provenance of the queue bundle PGQ-056 to PGQ-086 (queue version 2026-11-20-r22). Guide r11 quotes 28 passages of the owner's live public guide word for word for his answers to questions 368 to 378; PGQ-084 to PGQ-086 are reader-relevant points of the same change that are not r11 passages.",
+        "what": "Provenance of the queue bundle PGQ-056 to PGQ-087 (queue version 2026-11-20-r22). Guide r11 quotes 28 passages of the owner's live public guide word for word for his answers to questions 368 to 378; PGQ-084 to PGQ-087 are reader-relevant points of the same change that are not r11 passages.",
         "direction": "Public guide to canonical source, approved by the owner: the r11 passages were public-guide text that no canonical source carried (proposed upstream in effect) until his answers adopted them. Nothing in the public guide changed.",
         "liveGuide": {
           "url": "https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided",
@@ -995,6 +995,20 @@
           },
           {
             "id": "PGQ-086",
+            "title": "Less need for therapy, and more play, are signs of success",
+            "source": "card 376 (376a), placed in the map",
+            "liveHeading": null,
+            "r11Lines": null,
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-087",
             "title": "The October map-intake distinctions, redone on 20 Nov",
             "source": "the owner-approved October review (22 Oct 2026), redone under 378a",
             "liveHeading": null,

@@ -8,6 +8,8 @@ export const INNER_CHILD_BOX_GUIDANCE_PATH = "docs/INNER-CHILD-BOX-GUIDANCE.md";
 export const SERVED_REFERENCES_DIR = "plugins/inner-signal-therapy/skills/inner-signal-therapy/references";
 export const SERVED_INNER_CHILD_MAP_PATH = `${SERVED_REFERENCES_DIR}/INNER-CHILD-THERAPY-MAP.md`;
 export const SERVED_INNER_CHILD_BOX_GUIDANCE_PATH = `${SERVED_REFERENCES_DIR}/INNER-CHILD-BOX-GUIDANCE.md`;
+// Every file buildMapFiles writes, so a caller that must undo a failed write (reconciliation) restores all of them.
+export const MAP_FILE_PATHS = Object.freeze([INNER_CHILD_MAP_PATH, INNER_CHILD_BOX_GUIDANCE_PATH, SERVED_INNER_CHILD_MAP_PATH, SERVED_INNER_CHILD_BOX_GUIDANCE_PATH]);
 
 // The docs/ files are the reviewed audit copies; the plugin's served references are byte-equal copies, written and
 // checked by the same command so a chat never receives a map or box guidance that differs from the graph.

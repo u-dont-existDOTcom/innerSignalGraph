@@ -144,8 +144,8 @@ test("the 20 Nov 2026 entries record where each r11 passage came from, and pass 
   ]);
   assert.match(queue, /^Status: \*\*PENDING\*\*$/m);
   assert.match(queue, /^Queue version: 2026-11-20-r22$/m);
-  const expected = Array.from({ length: 31 }, (_, index) => `PGQ-${String(56 + index).padStart(3, "0")}`);
-  assert.deepEqual([...queue.matchAll(/^### (PGQ-\d+) — /gm)].map((match) => match[1]), expected, "PGQ-056 to PGQ-086, once each, in order");
+  const expected = Array.from({ length: 32 }, (_, index) => `PGQ-${String(56 + index).padStart(3, "0")}`);
+  assert.deepEqual([...queue.matchAll(/^### (PGQ-\d+) — /gm)].map((match) => match[1]), expected, "PGQ-056 to PGQ-087, once each, in order");
 
   const bundle = record.ownerDecisions20261120;
   assert.deepEqual(bundle.obligations.map((entry) => entry.id), expected, "one provenance record per queued entry");

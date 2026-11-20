@@ -29,7 +29,7 @@ regression_refs:
   - G135
 base_record_sha256: 12c15151dcc2d07a65b50faef95b704610cde60f0c3670f6f1d4111d4b29a68c
 base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
-projection_input_sha256: 9de0d498e06b99b8aec614c7319ef3255bbfc3be0eb9ca0eeb269a0804eae4e8
+projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
 ---
 
 # Integrate altered-state aftermath from facts toward meaning and small life changes

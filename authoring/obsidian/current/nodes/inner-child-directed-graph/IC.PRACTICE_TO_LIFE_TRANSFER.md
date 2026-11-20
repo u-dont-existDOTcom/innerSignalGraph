@@ -28,9 +28,9 @@ regression_refs:
   - G089
   - G090
   - G091
-base_record_sha256: b1f1eee488570ca355504834cf36632be8786fea1ba941e97cfab8214789995c
-base_graph_sha256: 41dbf0e44fd2ebc7bb452db405c70d727d9392795729e3cf406a233fc543882f
-projection_input_sha256: 9de0d498e06b99b8aec614c7319ef3255bbfc3be0eb9ca0eeb269a0804eae4e8
+base_record_sha256: 2fe11ff96335231c411a95d5ad73e9c7fc8fcd4fa3e7001ed459adba32b94f64
+base_graph_sha256: 7f401520a572665d79bdfae5a61af5c6d31cc60dc11f8f429832f544d0460f7b
+projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
 ---
 
 # Carry a working inner adult into ordinary life
@@ -101,7 +101,8 @@ projection_input_sha256: 9de0d498e06b99b8aec614c7319ef3255bbfc3be0eb9ca0eeb269a0
       "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
       "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
       "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice.",
-      "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress."
+      "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress.",
+      "Less need for therapy, and more play, are signs of success."
     ]
   },
   "recommendations": [
