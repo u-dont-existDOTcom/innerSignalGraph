@@ -24,6 +24,10 @@ const SENTINEL = "SYNTHETIC_CLAUDE_PRIVATE_SENTINEL_DO_NOT_LOG";
 // slow start was enough to cut a call off, and the attempt ended as an error before the preflight check.
 const SLOW_PREFLIGHT_TIMEOUT_MS = 7_000;
 const SLOW_PREFLIGHT_HOST_CALL_MS = 2_400;
+// A run these tests expect to be answered gets room to finish: the run timeout also bounds the fake Claude run and each host
+// call, and each starts Node processes from the worktree. Under the full suite one start can take seconds, and with 2.5 s
+// "Claude large_user_line is admitted", "Claude reply_limit_words is admitted" and init_exit_release_failure have each failed so.
+const ANSWERED_RUN_TIMEOUT_MS = 15_000;
 const ANSWER = { schema_version: "1.0", source_only_first_pass: true, reference_items: [], questions: [], unassessed_unit_ids: [] };
 const GRANT = { grant_id: "grant:synthetic", principal_id: "synthetic-operator", purpose: "organize_search",
   allowed_roles: ["reference_reader"], revoked: false, expires_at: null };
@@ -37,7 +41,7 @@ function call(operationKey) {
       adjacent_context: { by_unit: [] }, visual_context: [], neutral_reading_instructions: [] } };
 }
 
-async function fixture(t, scenario = "ok", { workName = "work", effort = "max" } = {}) {
+async function fixture(t, scenario = "ok", { workName = "work", effort = "max", timeoutMs = scenario === "slow_preflight" ? SLOW_PREFLIGHT_TIMEOUT_MS : 2500 } = {}) {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-claude-test-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const host = path.join(base, "host"), laptop = path.join(base, "laptop");
@@ -308,7 +312,7 @@ else {
     HOME: laptop, LANG: "C" };
   const args = ["--agent", "claude", "--remote", "synthetic-host", "--remote-checkout", checkout,
     "--remote-config", config, "--remote-node", process.execPath, "--work-dir", workDir, "--ssh-bin", ssh, "--claude-bin", claude,
-    "--log", log, "--once", "--max-items", "1", "--poll-ms", "10", "--timeout-ms", scenario === "slow_preflight" ? String(SLOW_PREFLIGHT_TIMEOUT_MS) : "2500"];
+    "--log", log, "--once", "--max-items", "1", "--poll-ms", "10", "--timeout-ms", String(timeoutMs)];
   return { base, host, laptop, root, workDir, secret, secretFile, config, trace, sshTrace, log, exchange, port, environment, args };
 }
 
@@ -461,7 +465,7 @@ test("remote fake Claude answers hardest work; host keeps secret, laptop output 
 
 for (const scenario of ["reply_limit_words", "helper_zero", "ui_invalidate", "large_user_line"]) {
   test(`Claude ${scenario} is admitted`, async (t) => {
-    const f = await fixture(t, scenario);
+    const f = await fixture(t, scenario, { timeoutMs: ANSWERED_RUN_TIMEOUT_MS });
     const operationKey = `job:synthetic-${scenario}`;
     await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
     await runJournalClaudeWorker(f.args, { environment: f.environment });
@@ -472,7 +476,7 @@ for (const scenario of ["reply_limit_words", "helper_zero", "ui_invalidate", "la
 
 for (const scenario of ["ssh_prestart_retry", "init_exit_release_failure"]) {
   test(`${scenario} retries before a model attempt`, async (t) => {
-    const f = await fixture(t, scenario);
+    const f = await fixture(t, scenario, { timeoutMs: ANSWERED_RUN_TIMEOUT_MS });
     const operationKey = `job:synthetic-${scenario}`;
     await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
     await runJournalClaudeWorker(f.args, { environment: f.environment });
