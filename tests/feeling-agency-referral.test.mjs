@@ -12,8 +12,9 @@ const json=(p)=>JSON.parse(read(p));
 // holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
 const assertEntriesConsumed = (expected) => {
   const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^Status: \*\*EMPTY\*\*$/mu);
-  assert.match(queue, /^Queue version: 2026-11-04-r21$/mu);
+  // Reset to EMPTY at 2026-11-04-r21; what is queued since (PGQ-056 on, 20 Nov 2026) is new, never an entry consumed then.
+  assert.equal(json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.resetTo, "2026-11-04-r21 (EMPTY)");
+  assert.doesNotMatch(queue, /^### PGQ-0(?:0[1-9]|[1-4]\d|5[0-5]) — /mu, "no entry consumed on 2026-11-04 is queued again");
   const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
   for (const [id, fate, status] of expected) {
     assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
