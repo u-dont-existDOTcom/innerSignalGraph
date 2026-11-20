@@ -11,7 +11,7 @@ source_hash: 6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f
 section_hash: a397b837ebfa3e77e2ad67a005e942ed70dafa61c2ea9e69fa7dfff3434a72d1
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # The Chicken-and-Egg Problem

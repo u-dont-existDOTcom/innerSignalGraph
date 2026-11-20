@@ -12,7 +12,7 @@ section_hash: 46630cb3c1f337fd199384a9abf203c622f0bff4e63d68fa281bb916cc676ad4
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.SUICIDAL_ADULT_SEAT
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # AMEND.IC.SUICIDAL_ADULT_SEAT

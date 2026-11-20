@@ -28,9 +28,9 @@ regression_refs:
   - G001
   - G012
   - G047
-base_record_sha256: a5a066cd3e4ffee1e0b074a8ef42383c0400cc3e0c90e975f6caf3dbb2539fd1
-base_graph_sha256: c734f20b8421e0661f8fc1d7f1d5cd90b736965eb6bebcff5b521446d4e9f9a6
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+base_record_sha256: e35e162f9d0e40b6bff1d061648ce46facf8b643fd80ab430c16023421becbc4
+base_graph_sha256: ba026ba7a10c646e8eb5c80ba1e52e0ec9f77b76ef80c204944a6855fe6d0faf
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # Repair credibility through non-defensive follow-through
@@ -77,7 +77,7 @@ projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53
       "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
       "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable.",
       "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse.",
-      "Useful intentions or daily reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working."
+      "Useful intentions or self-reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working."
     ]
   },
   "recommendations": [

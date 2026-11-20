@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.SAFETY_ORIENTATION
   - IC.SCAFFOLDED_CHALLENGE
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # Regulation May Come Before Dialogue

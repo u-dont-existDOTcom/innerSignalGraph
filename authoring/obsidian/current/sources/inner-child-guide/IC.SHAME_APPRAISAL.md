@@ -12,7 +12,7 @@ section_hash: a48b71aab8e3e217bb86f16ad2a2b75ec4aee19163b0227d4ec4028a5d2b4594
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.SHAME_APPRAISAL
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # Shame: Social Judgment, Responsibility, and Repair

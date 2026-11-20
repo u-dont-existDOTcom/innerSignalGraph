@@ -27,9 +27,9 @@ source_refs:
   - AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
   - AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022
 regression_refs: []
-base_record_sha256: 4a0b1982a859a1df8c6e20fee212f596f80a182f4eb02d2578844bfd704dde89
-base_graph_sha256: c734f20b8421e0661f8fc1d7f1d5cd90b736965eb6bebcff5b521446d4e9f9a6
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+base_record_sha256: 48316af51f0cd9a6627597103969c89905b9866b586aedd2cf781e644a52e0e5
+base_graph_sha256: ba026ba7a10c646e8eb5c80ba1e52e0ec9f77b76ef80c204944a6855fe6d0faf
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # Move from receiving care to doing five percent
@@ -93,15 +93,15 @@ projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53
     "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise.",
     "Carry the borrowed function into one ordinary-life act that the person initiates, then review what it actually contributed rather than treating completion alone as success.",
     "Keep outside support available when useful while returning authorship, judgment, disagreement, and revision to the person.",
-    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time.",
-    "Treat the growing ability to give the vulnerable self real nurturing, protection and guidance as a central outcome of reparenting. Assess actual caring behavior in life without demanding automaticity, constant happiness, total self-sufficiency or flawless consistency."
+    "Treat the growing ability to give the vulnerable self real nurturing, protection and guidance as a central outcome of reparenting. Assess actual caring behavior in life without demanding automaticity, constant happiness, total self-sufficiency or flawless consistency.",
+    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
   ],
   "successSignals": [
     "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission.",
     "The person can initiate a small caring/protective act and evaluate whether it helped without handing the helper permanent authority.",
-    "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack.",
     "With repeated real-world use, some caring, protective and guiding responses become more automatic and require less compulsive monitoring, without losing the ability to reflect, change course or ask for help.",
-    "Repeated, credible care for the younger self through ordinary choices is central outcome evidence even when it still requires conscious effort or suitable outside support."
+    "Repeated, credible care for the younger self through ordinary choices is central outcome evidence even when it still requires conscious effort or suitable outside support.",
+    "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack."
   ]
 }
 ```

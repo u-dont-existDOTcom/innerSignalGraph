@@ -225,7 +225,7 @@ Each box lists: Do (its advice), Keep in mind (distinctions to keep), Avoid and 
 - Keep in mind: Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.
 - Keep in mind: Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable.
 - Keep in mind: A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse.
-- Keep in mind: Useful intentions or daily reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working.
+- Keep in mind: Useful intentions or self-reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working.
 - Avoid: Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed.
 - Avoid: Do not call a temporary ceasefire or simple non-retaliation completed nurture, and do not demand trust as payment for it.
 - Avoid: Do not turn a lapse or repeated pattern into a verdict about intrinsic worth. Review may still conclude that a particular commitment currently exceeds capacity or requires stronger limits, support, or a different plan.
@@ -644,8 +644,8 @@ Each box lists: Do (its advice), Keep in mind (distinctions to keep), Avoid and 
 - Do: Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise.
 - Do: Carry the borrowed function into one ordinary-life act that the person initiates, then review what it actually contributed rather than treating completion alone as success.
 - Do: Keep outside support available when useful while returning authorship, judgment, disagreement, and revision to the person.
-- Do: After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time.
 - Do: Treat the growing ability to give the vulnerable self real nurturing, protection and guidance as a central outcome of reparenting. Assess actual caring behavior in life without demanding automaticity, constant happiness, total self-sufficiency or flawless consistency.
+- Do: After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time.
 - Keep in mind: The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question.
 - Keep in mind: Receiving support is not the endpoint: the sequence is receive care, observe care, participate in care, initiate a small part, and internalize what proves usable.
 - Keep in mind: The adult function can become real through ordinary action before it feels like a stable identity.

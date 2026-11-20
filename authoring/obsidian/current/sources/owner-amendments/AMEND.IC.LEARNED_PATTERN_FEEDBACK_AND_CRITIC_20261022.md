@@ -12,7 +12,7 @@ section_hash: d4f03d427e3fc7c9ea92dd66a19ad54d1411d1c32007aac378a0cef5b9ce8aa7
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022

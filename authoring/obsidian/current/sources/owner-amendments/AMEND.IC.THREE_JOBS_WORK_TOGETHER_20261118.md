@@ -12,7 +12,7 @@ section_hash: 5f43fe7e646d413acfc74cb2ecc68b714860efcbdba9da7c7d2a79c0b036ab53
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.PROTECTOR_ACTION
-projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
 ---
 
 # AMEND.IC.THREE_JOBS_WORK_TOGETHER_20261118

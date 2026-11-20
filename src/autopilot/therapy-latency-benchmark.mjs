@@ -29,12 +29,14 @@ export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
   // seriously anything useful in the message and, if it is willing, see whether it would make its point without the
   // contempt, as revised after the owner's follow-up and again in the review of it) reaches the mock reviewed tier's plan,
   // so its hash changes; the fast tier and provider/planning shape remain fixed.
-  revision: "critical-voice-refinements-2026-10-31-r15",
+  // 2026-11-20: the owner's answers to cards 368 to 378 add and replace lines on boxes the mock reviewed tier selects, so its hash
+  // changes again; the fast tier and provider/planning shape remain fixed.
+  revision: "owner-decisions-20261120-r16",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "c160c2b590e1cde813dcf3820192140271313e78138549dc06b42cf32eb2e8ec"
+    semanticHash: "70d690ca248f0ff9b59d97fdd43ab8071ef05a2270cc871209ad702cda71de2a"
   })
 });
 
