@@ -26,6 +26,9 @@ source_refs:
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
   - AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
   - AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031
+  - AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022
+  - AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G013
   - G014
@@ -37,9 +40,9 @@ regression_refs:
   - G142
   - G143
   - G144
-base_record_sha256: 360a49e1e82404f6b3b6f2abfd7b5ea1d75de22d3e0ef19be66a45e694d0129d
-base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: e1c1c045f3bb3f9d52a27f394a6f4d9fe1faecb3937627b493fe57b491a3fa64
+base_graph_sha256: 05474718801d36a590e0228b2d7a4f8418212bd1bdda0a033025743869e1e2e5
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -107,7 +110,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
     "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
     "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships.",
-    "Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement: a person can stand by a position, regret the wording and grieve the loss at once. Once the sequence is known, do not keep asking for incident detail unless the missing detail would change the next step or safety."
+    "Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement: a person can stand by a position, regret the wording and grieve the loss at once. Once the sequence is known, do not keep asking for incident detail unless the missing detail would change the next step or safety.",
+    "Do not call every negative reaction jealousy, dismiss real hurt or duties, or suggest that protecting the person’s happiness requires ending relationships indiscriminately."
   ],
   "defaultQuestion": "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?",
   "effects": {
@@ -128,7 +132,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
       "Acceptance, attachment relief, attraction, romantic love, compatibility and trust are separable observations that should not be collapsed into one another.",
       "Support and mutual co-regulation are healthy relational functions; the restriction targets using another person as a certainty test, reassurance machine or diagnostic instrument.",
       "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability.",
-      "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy."
+      "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy.",
+      "In sensitive disclosure, privacy and graded trust remain legitimate: the person may begin with general information, or tell a hard thing at first as a dream narrative and see how the listener handles it. That never covers a danger that's happening now, which is not held back from people who can help; do not promise blanket secrecy or withhold protective help."
     ]
   },
   "questionPolicy": {
@@ -151,7 +156,10 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Treat the relief of being accepted or not judged as important relational information without automatically calling it romantic love, compatibility or earned trust.",
     "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure.",
     "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection.",
-    "For shame involving social rejection, test the actual evidence and the consequences of disclosure. Correctly predicted rejection may reflect an unfair audience, not wrongdoing; do not advise disclosure to an untested or hostile person by default."
+    "For shame involving social rejection, test the actual evidence and the consequences of disclosure. Correctly predicted rejection may reflect an unfair audience, not wrongdoing; do not advise disclosure to an untested or hostile person by default.",
+    "When a person’s greater happiness or independence changes a relationship, acknowledge that another person may actually resent or withdraw from the change. Observe specific conduct, limits and willingness to repair before deciding whether to invest, grieve or step back; do not promise approval from everyone.",
+    "Distrust can become a self-fulfilling prophecy: if nobody hears that the person is struggling, nobody offers help, and that can look like proof nobody cares. Keeping quiet may once have been the smartest choice; with people who are safely available now, it can keep help away.",
+    "Before calling someone out, the person can name their own part of the same problem first (the log in their own eye)."
   ],
   "successSignals": [
     "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
@@ -182,3 +190,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028]]
 
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031]]
+
+[[current/governance/amendments/AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022]]
+
+[[current/governance/amendments/AMEND.CROSS.STRICTER_THAN_GUIDE_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

@@ -29,6 +29,8 @@ import {
 // four existing nodes and adds none. Every example is synthetic. These static tests show where the lines are written, bound, compiled,
 // planned, served and mirrored; they do not show that a model follows them.
 
+// Answers of 20 Nov 2026, and the October 2026 changes redone with them, add source references to some nodes; these checks pin the earlier ones.
+const withoutLaterRefs = (refs) => refs.filter((ref) => !/_202611(18|20)$|_20261022$/u.test(ref) && ref !== "IC.LIVE_GUIDE_DECISIONS_20261120");
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
 const count = (text, part) => text.split(part).length - 1;
@@ -88,12 +90,12 @@ const GUARD_RECOMMENDATIONS_BEFORE = [
 ];
 const GUARD_AVOID_BEFORE = [
   "Do not classify the voice more confidently than the transcript supports or push past it.",
-  "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex."
+  "Do not equate listening to a protective alarm with obeying it. A protective part's no to going deeper, to an altered state or to sex is neither obeyed nor overridden automatically: hear the part out and look for an agreement every part can accept. An override fits only when the person already understands the no as an old, unhelpful pattern (the owner's example: a part that told him not to talk to strangers); it is not one size fits all. InnerSignal never pushes an override, including through prediction-testing: the person decides."/* replaced by answer 372b, item 13, 20 Nov 2026 */ + ""
 ];
 const GUARD_FORBIDDEN = [
   "Do not definitively label a cynical voice as a guard.",
   "Do not claim that anxiety or another protective alarm proves the feared conclusion is true.",
-  "Do not claim that testing a protective prediction authorizes overriding a protector's no to deeper or altered-state work, or hesitation about touch or sex."
+  "Do not claim that testing a protective prediction, or InnerSignal's own reading, authorizes overriding a protector's no to deeper or altered-state work, or hesitation about touch or sex; only the person can decide that a no is an old pattern to override."
 ];
 const GUARD_NUANCE = [
   "The contempt may be child, protector, adult evaluator, or blend.",
@@ -137,7 +139,8 @@ const candidateGraph = json("../guide-graphs/candidates/inner-child.graph.json")
 const candidate = (id) => candidateGraph.nodes.find((node) => node.id === id);
 const nodeIn = (graphs, id) => graphs.flatMap((graph) => graph.nodes).find((node) => node.id === id);
 const sourceMap = json("../guide-graphs/source-maps/inner-child-guide.json");
-const guideText = read(`../guides/${sourceMap.file}`);
+// r11 (owner answers of 20 Nov 2026) appends its passages after r10, so r10's lines and line numbers are unchanged inside r11.
+const guideText = read("../guides/inner-child-guide-2026-10-31-r10.txt");
 const guideLines = guideText.split("\n");
 function guideSection(id) {
   const section = sourceMap.sections.find((candidateSection) => candidateSection.id === id);
@@ -217,8 +220,8 @@ test("the guide carries the issue's approved wording for the qualified example a
   // (the file read above) and r9 is kept in the manifest's history with its digest.
   const manifest = json("../guides/manifest.json");
   const active = manifest.sources.find((source) => source.id === "inner-child-guide");
-  assert.equal(active.file, "inner-child-guide-2026-10-31-r10.txt");
-  assert.equal(sha256(guideText), active.sha256);
+  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
+  assert.ok(read(`../guides/${active.file}`).startsWith(guideText.replace(/\n*$/u, "")), "r11 (owner answers of 20 Nov 2026) keeps r10 as its first part");
   const r9Text = read("../guides/inner-child-guide-2026-10-31-r9.txt");
   assert.equal(sha256(r9Text), CURRENT_R9_SHA256);
   assert.ok(manifest.sourceHistory.some((entry) => entry.id === "inner-child-guide" && entry.file === "inner-child-guide-2026-10-31-r9.txt" && entry.sha256 === CURRENT_R9_SHA256), "r9 is in the history with its digest");
@@ -241,21 +244,21 @@ test("the guide carries the issue's approved wording for the qualified example a
 
 test("IC.CRITICISM_KERNEL, IC.MEET_GUARD and IC.PROTECTOR_ACTION each gain their lines once, bound to IC.INHERITED_PARENT, with their ends and gates unchanged", () => {
   const kernel = candidate(KERNEL);
-  assert.equal(kernel.recommendations.length, 5);
-  assert.equal(kernel.recommendations.at(-1), KERNEL_LINE, "last, after the audience-criticism lines");
+  assert.equal(kernel.recommendations.length, 6, "the owner's disciplinarian exercise (answer 376a, 20 Nov 2026) follows");
+  assert.equal(kernel.recommendations[4], KERNEL_LINE, "after the audience-criticism lines");
   assert.equal(count(JSON.stringify(kernel), KERNEL_LINE), 1);
   for (const [index, line] of KERNEL_COVERED) assert.equal(kernel.recommendations[index], line, `ALREADY COVERED: recommendation ${index}`);
   assert.deepEqual(kernel.successSignals, [KERNEL_SUCCESS]);
-  assert.deepEqual(kernel.sourceRefs, [SECTION, "AMEND.IC.WISDOM_CORE", "AMEND.IC.WISDOM_CRITICISM_KERNEL", "AMEND.IC.WISDOM_SOURCES", "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"]);
+  assert.deepEqual(withoutLaterRefs(kernel.sourceRefs), [SECTION, "AMEND.IC.WISDOM_CORE", "AMEND.IC.WISDOM_CRITICISM_KERNEL", "AMEND.IC.WISDOM_SOURCES", "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"]);
   assert.deepEqual(kernel.activation, KERNEL_ACTIVATION);
   assert.equal(kernel.defaultQuestion, "");
 
   const guard = candidate(GUARD);
-  assert.deepEqual(guard.recommendations, [...GUARD_RECOMMENDATIONS_BEFORE.slice(0, 2), GUARD_RECOMMENDATION, ...GUARD_RECOMMENDATIONS_BEFORE.slice(2)], "one recommendation, right after the one about what the part predicts");
+  assert.deepEqual(guard.recommendations.filter((line) => !line.startsWith("Distinguish a learned defensive guard from the chosen Adult Protector role")), [...GUARD_RECOMMENDATIONS_BEFORE.slice(0, 2), GUARD_RECOMMENDATION, ...GUARD_RECOMMENDATIONS_BEFORE.slice(2)], "one recommendation, right after the one about what the part predicts");
   assert.deepEqual(guard.avoid, [GUARD_AVOID_BEFORE[0], GUARD_AVOID, GUARD_AVOID_BEFORE[1]], "one avoid line, right after the one about classifying the voice");
   assert.deepEqual(guard.effects.forbiddenOverclaims, GUARD_FORBIDDEN, "ALREADY COVERED: a cynical voice is not definitively a guard");
-  assert.deepEqual(guard.effects.requiredNuance, GUARD_NUANCE, "ALREADY COVERED: the contempt may be child, protector, adult evaluator or blend");
-  assert.deepEqual(guard.sourceRefs, ["IC.START_WHATEVER", "IC.GUARDS", "IC.BOTTOM_UP_SEQUENCE", "IC.ESCAPE_URGE", SECTION,
+  assert.deepEqual(guard.effects.requiredNuance.filter((line) => !line.startsWith("Ordinary wishes, habits and critical thoughts are not automatically a guard")), GUARD_NUANCE, "ALREADY COVERED: the contempt may be child, protector, adult evaluator or blend");
+  assert.deepEqual(withoutLaterRefs(guard.sourceRefs), ["IC.START_WHATEVER", "IC.GUARDS", "IC.BOTTOM_UP_SEQUENCE", "IC.ESCAPE_URGE", SECTION,
     "AMEND.CROSS.LITERATURE_TASK_PROGRESS", "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION", "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"]);
   assert.deepEqual(guard.activation, GUARD_ACTIVATION);
   assert.deepEqual(guard.effects.deferralUnless, GUARD_DEFERRAL, "the protective-compatibility restriction on deeper dialogue is unchanged");
@@ -362,9 +365,9 @@ test("IC.SHAME_APPRAISAL already separates real responsibility from global self-
   for (const [index, line] of SHAME_COVERED.recommendations) assert.equal(shame.recommendations[index], line, `ALREADY COVERED: recommendation ${index}`);
   for (const [index, line] of SHAME_COVERED.avoid) assert.equal(shame.avoid[index], line, `ALREADY COVERED: avoid ${index}`);
   assert.deepEqual(shame.successSignals, [SHAME_COVERED.success]);
-  assert.equal(shame.recommendations.length, 7, "no recommendation was added");
+  assert.equal(shame.recommendations.length, 8, "one recommendation was added later, by answer 374 4a of 20 Nov 2026");
   assert.equal(shame.avoid.length, 4, "no avoid line was added");
-  assert.deepEqual(shame.sourceRefs, ["IC.SHAME_APPRAISAL", "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"]);
+  assert.deepEqual(withoutLaterRefs(shame.sourceRefs), ["IC.SHAME_APPRAISAL", "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"]);
   assert.deepEqual(shame.activation, SHAME_ACTIVATION);
   assert.equal(count(JSON.stringify(shame), "critical voice"), 0);
 
@@ -372,15 +375,15 @@ test("IC.SHAME_APPRAISAL already separates real responsibility from global self-
   const compiled = await compileGuideGraphs({ write: false });
   assert.equal(compiled.stats.nodeCount, 87);
   assert.equal(compiled.stats.edgeCount, 126);
-  assert.equal(compiled.stats.sourceSectionCount, 153);
-  assert.equal(compiled.stats.ownerAmendmentCount, 74);
+  assert.equal(compiled.stats.sourceSectionCount, 174);
+  assert.equal(compiled.stats.ownerAmendmentCount, 94);
   const ids = candidateGraph.nodes.map((node) => node.id);
   assert.deepEqual(ids.filter((id) => /CRITIC/u.test(id)), [KERNEL]);
   assert.deepEqual(ids.filter((id) => /INNER_BRAT|SPIRITUAL_CHILD|DRAWING|SCRIBBL/u.test(id)), []);
   assert.equal(new Set(ids).size, ids.length);
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-10-31-r21");
-  assert.equal(amendments.items.length, 74);
+  assert.equal(amendments.version, "owner-amendments-2026-11-20-r22");
+  assert.equal(amendments.items.length, 94);
   assert.equal(amendments.items.some((item) => /reject the insult|critical voice|self-critical strategy/iu.test(item.text)), false, "the guide text carries the behavior, so no amendment was added");
   const overlay = json("../authoring/overlays/inner-child.overlay.json");
   assert.ok(JSON.stringify(overlay).includes("OVERLAY.IC.DYNAMIC_PARTS_MODEL"), "the parts-flexibility overlay is still there");
@@ -430,7 +433,7 @@ test("the planner puts each line in front of the model where its node applies, a
   const keeping = scene("useful-content-kept-contempt-refused");
   const second = await planFor(keeping);
   assert.equal(second.primaryJob.id, KERNEL);
-  assert.equal(selectedNode(second, KERNEL).recommendations.at(-1), KERNEL_LINE);
+  assert.equal(selectedNode(second, KERNEL).recommendations[4], KERNEL_LINE);
   assert.ok(selectedNode(second, GUARD).recommendations.includes(GUARD_RECOMMENDATION));
   const shame = selectedNode(second, SHAME);
   for (const [index, line] of SHAME_COVERED.recommendations) assert.equal(shame.recommendations[index], line, `the plan carries the covered shame line ${index}`);
@@ -456,7 +459,7 @@ test("the planner puts each line in front of the model where its node applies, a
   // A person who declines the practice is not given it (the task, not the voice, selects it).
   const declined = planFromGraphs({ graphs, variables: { ...BASE_VARIABLES, ...keeping.planner.variables }, turnTask: { ...keeping.planner.turn_task, agreement: "declined" }, unknowns: [] });
   assert.equal(declined.selectedNodes.some((node) => node.id === KERNEL), false);
-  assert.equal(nodeIn(graphs, KERNEL).recommendations.at(-1), KERNEL_LINE, "the compiled node carries the line");
+  assert.equal(nodeIn(graphs, KERNEL).recommendations[4], KERNEL_LINE, "the compiled node carries the line");
 });
 
 test("the rule is one bullet right after the shame bullet, written to InnerSignal, mirrored byte for byte, served once, and carried by every role that carries the fidelity rules", () => {
@@ -488,8 +491,8 @@ test("the rule is one bullet right after the shame bullet, written to InnerSigna
     if (file.path !== FIDELITY) assert.equal(file.content.includes(RULE), false, `${file.path} does not carry the rule`);
   }
   // The plugin keeps its files: nothing was added for this change.
-  assert.equal(pluginFiles().length, 12, "the plugin keeps its 12 files");
-  assert.equal(protocol.files.filter((file) => file.path.startsWith("references/")).length, 9, "and its 9 references");
+  assert.equal(pluginFiles().length, 13, "the plugin keeps its 13 files (the box guidance was added on 20 Nov 2026)");
+  assert.equal(protocol.files.filter((file) => file.path.startsWith("references/")).length, 10, "and its 10 references (the box guidance was added on 20 Nov 2026)");
   // The copy of the map the plugin serves is the repository's, byte for byte, and was regenerated from the current authoring projection
   // (the map is a generated audit view that carries the projection hash, and the projected node files carry the new lines).
   const map = read("../docs/INNER-CHILD-THERAPY-MAP.md");

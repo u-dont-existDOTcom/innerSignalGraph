@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 00de1849ddf630e5cfe617b1f3fd4ce438ffa924cb50a1d147069f9a5f1cc37a
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: b3c66b97f5b6fb7333d20e77cabb76e1a2c1dbbbc755f07ec7e7705de174258f
+source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
 ---
 
 # AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
@@ -17,7 +17,7 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "approvedAt": "2026-10-28",
     "domain": "cross-guide",
@@ -25,6 +25,6 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "status": "owner-approved",
     "text": "When a person describes wanting acceptance, then a disagreement or confrontation, then rejection, recover the missing middle before interpreting it: what was first said and done, what the person said and did, what the other person said and did, the timing and any boundaries stated, and how the person read the result. When that sequence is missing, ask one specific, non-accusatory question about it, one whose plausible answers would change the next step (protective action, accountability or communication work, or developmental integration), before deciding who caused the rupture or whether an old developmental pattern explains it. Do not repeat a question the person has already answered. Keep observations, emotions, beliefs about motives and justifications apart: wanting love does not show that a confrontation was loving, and another person's discomfort does not show that they were coercive or were rejecting the person's beliefs. Genuine exclusion, a legitimate boundary in response to confrontational behavior, mixed escalation and an unknown chronology are all possible until the sequence says which fits. Anger is not hatred or current harmful intent. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions, and do not treat the more powerful or threatening party and the threatened party as equally responsible. Never force childhood imagery onto the account."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-20-r22"
 }
 ```

@@ -21,6 +21,8 @@ import { loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/
 // amendment. Every example is synthetic. These static tests show where the lines are written, bound, compiled, planned, served
 // and mirrored; they do not show that a model follows them.
 
+// Answers of 20 Nov 2026, and the October 2026 changes redone with them, add source references to some nodes; these checks pin the earlier ones.
+const withoutLaterRefs = (refs) => refs.filter((ref) => !/_202611(18|20)$|_20261022$/u.test(ref) && ref !== "IC.LIVE_GUIDE_DECISIONS_20261120");
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
 const count = (text, part) => text.split(part).length - 1;
@@ -51,13 +53,13 @@ const TRUE_SELF_AVOID = "Do not assume a fully formed true self is merely hidden
 const FAKE_PART_AVOID = "Do not set up the performed self as a “fake” part to erase; the aim is a more workable internal relationship, not a new division between the acceptable self and another self that must disappear.";
 const LARGE_ACTION_AVOID = "Do not choose an action so large that failure becomes new evidence of unreliability.";
 const ESCAPE_AVOID = "Do not mistake escape from anything difficult for self-love: without direction, reparenting can become permissive.";
-const PERMISSIVE_AVOID = "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not fall into the opposite trap either, forced adulthood (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.";
+const PERMISSIVE_AVOID = "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not fall into the opposite trap either, clamping down, forcing strict discipline on oneself (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.";
 const PURITY_AVOID_START = "Do not turn the Guide into mental-purity policing";
 const REVIEW_AVOID_START = "Do not make review punitive";
 // The two rules the served references and every response and review role carry, in one sentence each. The permissive-reparenting rule is
 // the owner's own wording and names reparenting, as the guide's warning does; it does not widen it to self-care or to any frame.
 const PERFORMED_SELF_RULE = "Where childhood was organized around avoiding pain and preserving attachment, the performed self may have become skilled at surviving while the less-practiced self stayed blurry; count late developmental pl/ork (play + work: enough safety for preference, curiosity and experimentation to grow) as part of recovery rather than only uncovering a hidden true self, and do not set the performed self up as a \"fake\" part to erase.";
-const PERMISSIVE_RULE = "Without direction, reparenting can become permissive, giving attention without development while candy, screens and escape from anything difficult can masquerade as self-love; the opposite trap is forced adulthood (perfect discipline, no visible needs, very little joy or closeness), where the next adult act may be asking for help, expressing a preference or letting a safe person see something imperfect, not tightening control again.";
+const PERMISSIVE_RULE = "Without direction, reparenting can become permissive, giving attention without development while candy, screens and escape from anything difficult can masquerade as self-love; the opposite trap is clamping down, forcing strict discipline on oneself (perfect discipline, no visible needs, very little joy or closeness), where the next adult act may be asking for help, expressing a preference or letting a safe person see something imperfect, not tightening control again.";
 
 const candidateGraph = json("../guide-graphs/candidates/inner-child.graph.json");
 const candidate = (id) => candidateGraph.nodes.find((node) => node.id === id);
@@ -120,13 +122,13 @@ test("IC.GUIDE_LATER names the permissive trap and its opposite, forced adulthoo
   assert.equal(node.avoid.filter((line) => /permissive/u.test(line)).length, 1, "stated once");
   // Always paired: the warning cannot be read without the trap on the other side.
   assert.match(node.avoid[4], /permissive/u);
-  assert.match(node.avoid[4], /forced adulthood \(perfect discipline, no visible needs, and very little joy or closeness\)/u);
+  assert.match(node.avoid[4], /clamping down, forcing strict discipline on oneself \(perfect discipline, no visible needs, and very little joy or closeness\)/u);
   assert.match(node.avoid[4], /asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again/u);
   assert.doesNotMatch(node.avoid[4], /\byou(?:r|rs|rself)?\b/iu);
   // The guide section was already a source, the gate is unchanged, and the recommendations are as they were.
   assert.ok(node.sourceRefs.includes(LATER));
   assert.equal(node.sourceRefs.filter((ref) => ref === LATER).length, 1);
-  assert.equal(node.recommendations.length, 4);
+  assert.equal(node.recommendations.length, 7, "three lines were added on 20 Nov 2026: the October limit line redone, divine love and gratitude, treats at set times");
   assert.match(node.recommendations[3], /^Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations/u);
   assert.deepEqual(node.activation.all.map((condition) => condition.field), ["inner_adult_access", "coherent_child_state", "orientation"]);
 });
@@ -146,7 +148,7 @@ test("IC.PROTECTOR_ACTION carries one early line after its action-size line, bou
   // Bound to the Guide section that carries the warning; the earlier eight references are unchanged and in order. Issue 215 later
   // added one guide section right after it (IC.INHERITED_PARENT, for the critical-voice recommendation); the amendments stay behind.
   assert.equal(node.sourceRefs.filter((ref) => ref === LATER).length, 1);
-  assert.deepEqual(node.sourceRefs.filter((ref) => ref !== LATER && ref !== "IC.INHERITED_PARENT"), [
+  assert.deepEqual(withoutLaterRefs(node.sourceRefs).filter((ref) => ref !== LATER && ref !== "IC.INHERITED_PARENT"), [
     "IC.PROTECTOR_VISIBLE", "IC.ADULT_APPRENTICE", "AMEND.CROSS.LITERATURE_ACTION_REVIEW", "AMEND.IC.WISDOM_CORE",
     "AMEND.IC.NONPUNITIVE_REVIEW", "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
     "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025", "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026"
@@ -180,7 +182,7 @@ test("the wording stays inside the owner's words in the guide sections it is bou
     assert.ok(later.includes(piece), `the guide section says: ${piece}`);
   }
   for (const piece of [
-    "candy, screens, and escape from anything difficult can masquerade as self-love", "forced adulthood",
+    "candy, screens, and escape from anything difficult can masquerade as self-love", "clamping down",
     "perfect discipline, no visible needs, and very little joy or closeness",
     "asking for help, expressing a preference, or letting a safe person see something imperfect", "not tightening control again"
   ]) {
@@ -193,7 +195,7 @@ test("the wording stays inside the owner's words in the guide sections it is bou
   assert.ok(later.includes("escape from anything difficult can masquerade as self-love"), "the guide section says: escape from anything difficult can masquerade as self-love");
   // The sections are the ones the three nodes name, so the binding is to the guide and not to a new amendment.
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.items.some((item) => /PERFORMED|PERMISSIVE|FORCED_ADULT|IDENTITY_PLAY/u.test(item.id)), false, "no owner amendment for this change");
+  assert.equal(amendments.items.some((item) => (/PERFORMED|PERMISSIVE|FORCED_ADULT|IDENTITY_PLAY/u.test(item.id) && !item.id.endsWith("_20261120"))), false, "no owner amendment for this change");
 });
 
 test("the compiled bundle, the compiled inner-child graph and a fresh compile all carry the three nodes as the source writes them", async () => {
@@ -281,7 +283,7 @@ test("the two rules are adjacent bullets of the response-fidelity rules, mirrore
   const protocol = loadTherapyProtocol();
   assert.equal(protocol.files.find((file) => file.path === FIDELITY).content, reference);
   for (const file of protocol.files) {
-    if (file.path !== FIDELITY) assert.equal(file.content.includes("masquerade as self-love"), false, `${file.path} does not carry the rule`);
+    if (file.path !== FIDELITY && file.path !== "references/INNER-CHILD-BOX-GUIDANCE.md") assert.equal(file.content.includes("masquerade as self-love"), false, `${file.path} does not carry the rule`);
   }
 });
 

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 39a15435b08f8bfe0366536464a4318c07c8c49036bca3db2f5bce945535821b
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: cbeaa2189fb4015c75ff4d8c6db244fd1bc46fe1d35b33b8e3f85fa40a3c6813
+source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
 ---
 
 # AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
@@ -17,7 +17,7 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "approvedAt": "2026-10-11",
     "domain": "cross-guide",
@@ -25,6 +25,6 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "status": "owner-approved",
     "text": "When prior psychiatric or medical care was experienced as coercive or traumatic, weigh the real potential for iatrogenic harm and preserve choice of a trusted voluntary advocate, rather than treating psychiatric referral or indiscriminate disclosure as an automatic route to physical pain relief. Distinguish brief pain-triggered thoughts of escape from present suicidal intent or inability to remain safe. Never recommend suicidal disclosure as a tactic for analgesia, but do not coach falsely denying current suicidal intent, a suicide plan, inability to stay safe or imminent danger or claim disclosure or nondisclosure is universally safe. Maintain proportionate real-world protection when acute danger actually appears."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-20-r22"
 }
 ```

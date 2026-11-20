@@ -25,6 +25,9 @@ source_refs:
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
   - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
+  - AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
+  - AMEND.IC.THREE_JOBS_WORK_TOGETHER_20261118
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G003
   - G008
@@ -38,9 +41,9 @@ regression_refs:
   - G113
   - G114
   - G115
-base_record_sha256: aabb4531e2f597328da1cc287566e23a489a54e724ec864a08249b489ab821bd
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 6c95c9b44ec15c474ccd3513e250cf8029e0dc8d533bf045d9e8edfb47790f4d
+base_graph_sha256: c734f20b8421e0661f8fc1d7f1d5cd90b736965eb6bebcff5b521446d4e9f9a6
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
 ---
 
 # Make the Protector visible in ordinary life
@@ -87,7 +90,10 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "The Adult Protector is a chosen adult function, not a synonym for learned protective guards or the inherited critic; a warm limit may include both comfort and a firm no.",
+      "Safety (the Protector) usually comes first, then love, then guidance, but no job works alone: never hold love or guidance back until safety is \"done\". The step order stays."
+    ]
   },
   "recommendations": [
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
@@ -127,3 +133,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]
 
 [[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
+
+[[current/governance/amendments/AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022]]
+
+[[current/governance/amendments/AMEND.IC.THREE_JOBS_WORK_TOGETHER_20261118]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

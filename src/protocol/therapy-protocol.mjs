@@ -19,6 +19,7 @@ const DEFAULT_PLUGIN_ROOT = new URL("../../plugins/inner-signal-therapy/", impor
 export const THERAPY_PROTOCOL_FILES = Object.freeze([
   "references/PROTECTIVE-COMPATIBILITY.md",
   "references/INNER-CHILD-THERAPY-MAP.md",
+  "references/INNER-CHILD-BOX-GUIDANCE.md",
   "references/PHENOMENOLOGY-AND-REPRESENTATION.md",
   "references/PROTOCOL-STATE-PROVENANCE.md",
   "references/ROLE-BELIEF-INTEGRITY.md",

@@ -20,12 +20,16 @@ source_refs:
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+  - AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022
+  - AMEND.IC.HAPPIER_FRIENDS_THEIR_CHOICE_20261120
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G150
   - G153
-base_record_sha256: 72130b322164a13f1d3ace62427e0fd188165e7b8b18b84ae60a584af8f9d421
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: e64c437b5ee0bc72ec7d1e6a301575ccc0628b93c1380de36fff79e6e53ad6e1
+base_graph_sha256: c734f20b8421e0661f8fc1d7f1d5cd90b736965eb6bebcff5b521446d4e9f9a6
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
 ---
 
 # Untangle belonging from self-betrayal
@@ -54,7 +58,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
   "avoid": [
     "Do not equate differentiation with isolation or automatic permanent cutoff.",
     "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate.",
-    "Do not infer wrongdoing or a hidden event solely from an unchosen attraction, or treat self-acceptance as permission for harmful chosen conduct."
+    "Do not infer wrongdoing or a hidden event solely from an unchosen attraction, or treat self-acceptance as permission for harmful chosen conduct.",
+    "Do not assume that a distressed or unhappy person is incapable of caring for others, or that anyone who dislikes another person’s choices is jealous; distinguish behavior, motive, legitimate responsibility and social pressure."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -70,7 +75,12 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
     "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
     "A spontaneous attraction or feeling can be noticed without automatically following it. Choose whether an action would support reciprocal connection, consent, safety and trustworthy boundaries; neither repress the appearance of the feeling nor treat it as a command.",
-    "If repeated real rejection reflects unfair group norms, respect that evidence and help consider boundaries, reduced access, another community or leaving; no requirement to disclose repeatedly to the same group."
+    "If repeated real rejection reflects unfair group norms, respect that evidence and help consider boundaries, reduced access, another community or leaving; no requirement to disclose repeatedly to the same group.",
+    "Where a person feels disloyal for enjoying life while others suffer, distinguish actual responsibilities and compassion-in-action from a learned requirement to stay miserable as proof of belonging or care.",
+    "Explore whether cultivating the person’s own happiness or steadiness might enlarge what they can offer others; use the owner’s lived example as an invitation to inquire, not a rule that unhappy people cannot help.",
+    "Do not promise that everyone will welcome their growth. Some people may genuinely resent or withdraw when someone becomes happier; assess what has actually happened, acknowledge a possible real loss and support compassionate boundaries, reciprocal relationships and grief.",
+    "When friends or family pull away from a happier person, or try to drag them back into the old misery because \"misery loves company\", that is their choice, and being happy is ultimately more helpful for everyone. But don't assume everyone pulls away because the person is happier: they might also have become, for example, snobbier, or done something while unaware.",
+    "When being happy feels like abandoning someone (\"If I'm happy while someone I love is suffering, I'm abandoning them\"), the person can do their part for people who are suffering, which may sometimes just be modeling how to live, and skip the part where they have to be miserable too."
   ],
   "successSignals": [
     "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
@@ -90,3 +100,11 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
 
 [[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
+
+[[current/governance/amendments/AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022]]
+
+[[current/governance/amendments/AMEND.IC.HAPPIER_FRIENDS_THEIR_CHOICE_20261120]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

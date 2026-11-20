@@ -23,6 +23,7 @@ source_refs:
   - IC.BORROW_LOVE
   - IC.SPIRITUAL_LOAN
   - AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
+  - AMEND.IC.SCAFFOLDING_IS_READINESS_20261120
 regression_refs:
   - G004
   - G005
@@ -36,9 +37,9 @@ regression_refs:
   - G087
   - G088
   - G089
-base_record_sha256: 05bc189c5fc4093686eadbd62425b537fa844cc73b3d063ce66fa45af3cb9d26
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 9272e54388c266f4c8f103cbd4591f933615078176d445709e1f6c4961326a13
+base_graph_sha256: c734f20b8421e0661f8fc1d7f1d5cd90b736965eb6bebcff5b521446d4e9f9a6
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
 ---
 
 # Enter deeper child dialogue only when capacity is adequate
@@ -102,7 +103,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift.",
     "When the needed positive caring/protective function is known to be unavailable, use IC.BORROW_ONE_FUNCTION as adult-side preparation before deeper child-facing dialogue.",
     "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap.",
-    "When the adult function is already clearly usable in-session but ordinary-life transfer is still session-only, hand off to IC.PRACTICE_TO_LIFE_TRANSFER before repeating or deepening the child-facing exercise for more intensity."
+    "When the adult function is already clearly usable in-session but ordinary-life transfer is still session-only, hand off to IC.PRACTICE_TO_LIFE_TRANSFER before repeating or deepening the child-facing exercise for more intensity.",
+    "Readiness for deeper dialogue comes from scaffolding: smaller steps that went well. Staying present, stopping and recovering are practised on those smaller steps, never tested before starting and never by stopping someone midway through a deep step."
   ],
   "successSignals": [
     "The session increases capacity and functioning rather than compulsion or disorientation."
@@ -128,3 +130,5 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
 
 [[current/governance/amendments/AMEND.IC.PRACTICE_TO_LIFE_TRANSFER]]
+
+[[current/governance/amendments/AMEND.IC.SCAFFOLDING_IS_READINESS_20261120]]

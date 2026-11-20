@@ -1,0 +1,30 @@
+---
+authoring_contract: inner-signal-authoring-projection-v1
+entity_type: source-section
+projection_mode: current
+generated: true
+source_id: AMEND.IC.GENTLER_THAN_GUIDE_20261120
+guide_id: owner-amendments
+heading: AMEND.IC.GENTLER_THAN_GUIDE_20261120
+source_role: owner-approved-extension
+source_hash: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
+section_hash: 4d8679b89a79ba48e89af81f9e7ce0379c085bc1ff480f955fa1a3c4d8a5619b
+locator_kind: amendment-record
+cited_by_node_ids:
+  - IC.DEEP_LOVE_TO_CHILD
+  - IC.MEET_GUARD
+  - IC.SHAME_APPRAISAL
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
+---
+
+# AMEND.IC.GENTLER_THAN_GUIDE_20261120
+
+> [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
+
+Authority path: `guides/owner-amendments.json`
+
+Locator: Structured owner-amendment record
+
+```text
+Owner answer 374 defaults (1a 2a 3a 4a, 20 Nov 2026). 1a: a no to the inner-child idea stands; care continues in the person's own words, and if they wonder whether the no is a protective part, InnerSignal explores that with them. 2a: when the little one goes numb or calls BS on the love, his reading ("they might just need to see if you're actually humble enough, and grateful enough for them, to listen to their rejection, be patient") is offered as one possibility among others, beside hearing the guard first, never as blame. 3a: spirit attachments: love as the remedy, no cause stated. 4a: shame: opening up to someone trusted is one of the strongest ways through ("finding someone trusted that you can slowly open up to is a magic cure"), and relief doesn't depend on it; his new guide line (Inbox, 01:04 UTC): "and you should also be content to open up to your inner adult and/or a higher power if you can't open up to anyone else safely."
+```

@@ -21,13 +21,16 @@ source_refs:
   - IC.BORROW_LOVE
   - IC.BORROW_ONE_FUNCTION
   - AMEND.IC.NONPUNITIVE_REVIEW
+  - AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G001
   - G012
   - G047
-base_record_sha256: d4df4b74f39f7cc1abfbef90666db0614c24aee056c0ee5433fcb0fe79db089f
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: a5a066cd3e4ffee1e0b074a8ef42383c0400cc3e0c90e975f6caf3dbb2539fd1
+base_graph_sha256: c734f20b8421e0661f8fc1d7f1d5cd90b736965eb6bebcff5b521446d4e9f9a6
+projection_input_sha256: 116afae8491e94aaf85669b0481f08e7e8f6a1c0cfff9c701a78a53b4e35f971
 ---
 
 # Repair credibility through non-defensive follow-through
@@ -73,7 +76,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
       "A pre-existing adverse track record is different from having no track record yet.",
       "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
       "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable.",
-      "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse."
+      "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse.",
+      "Useful intentions or daily reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working."
     ]
   },
   "recommendations": [
@@ -84,7 +88,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
     "If positive nurture is the missing function, borrow or build that function rather than asking the younger state to open merely because hostility stopped.",
     "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both.",
-    "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible."
+    "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible.",
+    "When an old expectation, coping response, and later self-attack appear together, check the real sequence and whether the response helped maintain the expectation; preserve evidence that another person actually withheld care or acted unsafely.",
+    "When the adult voice feels fake, meditate first on why it feels fake before pushing on with persistence: asking to connect with a little one the adult doesn't believe is real can feel like gaslighting to the child."
   ],
   "successSignals": [
     "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
@@ -106,3 +112,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]
 
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
+
+[[current/governance/amendments/AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

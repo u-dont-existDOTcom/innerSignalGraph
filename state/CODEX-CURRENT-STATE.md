@@ -1,6 +1,17 @@
 # Inner Signal Codex current state
 
-Updated: 2026-11-04
+Updated: 2026-11-20
+
+## Owner decisions on cards 368 to 378 — 20 November 2026 (branch `claude/owner-decisions-20261120`, a draft pull request to `main`; not merged, not released, not installed)
+
+- **Owner outcome and authority:** answers typed on 20 Nov 2026 at 01:18:01 UTC (verified by the AskRigor main session in the owner's chat transcript): "368a 369c 370a 371b 372b  373a 374 defaults 375 1a2a3c4b  376a 377 1a2a 378a" (379 is not InnerSignal), refined by his Inbox notes of 00:19, 00:25, 00:59 and 01:04 UTC, plus the two points his reply of 18 Nov settled (the three jobs work together; a dream can be true, one hint among others).
+- **Records:** `guides/owner-amendments.json` r22: fourteen new owner-approved amendments in his words (two dated 18 Nov, twelve 20 Nov), and the six amendments of 22 Oct from the never-merged draft `task/guide-semantic-review-20261022`, redone; the disclosure one carries answer 369c instead of the October line on dreams.
+- **AI guide r11:** `guides/inner-child-guide-2026-11-20-r11.txt` is r10 unchanged plus one appended section, "Owner Decisions of 20 November 2026: Passages From the Live Guide" (`IC.LIVE_GUIDE_DECISIONS_20261120`), quoting word for word 28 passages of the live guide as updated 2026-11-20T01:19Z. The fasting passage is not among them (372b). r10 moves into the history; source layout v17, fidelity bindings and the shame concept index name r11.
+- **Map:** the October draft's 30 node lines redone (its two disclosure lines rewritten to 369c) and the new lines, each citing its amendment: scaffolding as the readiness check, the dream version as a first step, the protective part's no heard out (item 13), friends who pull away (item 8), forced adulthood as stage 1 and clamping down, the little one's numbness as one possibility, shame with the inner adult or a higher power, the memory re-do condition, identity over time, forgiveness never scheduled (`IC.FORGIVENESS_LATER` retitled and no longer gated on deep-work readiness; tier kept), the disciplinarian exercise, the seven manipulation moves, pain's emotional side, therapist finding, warmlines and the smaller additions. Node and edge counts are unchanged (87 and 126).
+- **Served to chats (378a):** `npm run authoring:maps` now also writes `docs/INNER-CHILD-BOX-GUIDANCE.md` and the plugin copies of it and of the map; the box guidance (every inner-child box's advice and cautions and all 24 cross-guide routes) is the tenth served reference, and the map names the three routes its arrows reach. `SKILL.md` and the references carry the decisions (twins kept byte-equal). The served protocol grows from about 97 KB to about 307 KB.
+- **Test chats:** eight cases the decisions touch, each run on the Claude plan through `claude -p` (Opus 5.5, never the API) against main's protocol, this branch without the box guidance, and this branch as served, graded blind by a second `claude -p` call: 19, 26 and 27 of 27 checks passed. No sign in these cases that the longer instructions are followed less closely; one reply per case and condition, so this is a small check, not proof.
+- **Not done:** the humanized-guide queue is unchanged (the decisions adopt the owner's own live text); the public-guide sync record is not updated; the private reply-server prompts (for example its "COMPLETE ready-to-send reply" rule) are unchanged; nothing was released to `stable` or redeployed.
+- **Next safe action:** the owner's release question, then independent review and merge. If another change merges first, re-run `npm run graph:compile`, `npm run authoring:project` and `npm run authoring:maps` rather than merging generated files by hand.
 
 ## Humanization queue cleared — 4 November 2026
 
