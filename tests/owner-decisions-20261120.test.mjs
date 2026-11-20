@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
-import { loadTherapyProtocol, THERAPY_PROTOCOL_FILES } from "../src/protocol/therapy-protocol.mjs";
+import { loadTherapyProtocol, SERVE_INNER_CHILD_BOX_GUIDANCE, THERAPY_PROTOCOL_FILES, therapyProtocolFiles } from "../src/protocol/therapy-protocol.mjs";
 
 // The owner's answers of 20 Nov 2026, 01:18 UTC, to questions 368 to 378 ("368a 369c 370a 371b 372b 373a 374 defaults 375
 // 1a2a3c4b 376a 377 1a2a 378a"), with his Inbox notes, plus the two points his reply of 18 Nov settled. These static tests show where
@@ -137,4 +137,45 @@ test("372b, 373a, 374, 375 and 376a reach the boxes", () => {
   assert.match(node("inner-child", "IC.INTUITION_TRUST_CALIBRATION").recommendations.join(" "), /D\.A\.R\.V\.O\./u);
   assert.match(node("cross-guide", "ROUTE.REFRACTORY_PAIN_NAVIGATION").avoid.join(" "), /"the pain isn't real"/u);
   assert.match(served("references/PROTECTIVE-COMPATIBILITY.md"), /their little one stays out of it/u);
+});
+
+// Fix round after Fable's check of the build (20 Nov 2026): his must-change items 1, 2, 3 and 5, and from his decision list
+// a served line for 374 1a and the AI disclosure (377 1a) kept from opening a reply.
+test("fix round: 375 4b, 373, 372 item 8, no bookkeeping, 374 1a and 377 1a as served", () => {
+  const boxes = served("references/INNER-CHILD-BOX-GUIDANCE.md");
+  assert.equal(allServed.includes("was planted"), false, "the 4c clause he passed over is not served");
+  assert.match(boxes, /Do not quickly validate a fleeting feeling as identity, and do not rule for the person whether a feeling is authentically theirs or pressed on them; the person sorts that over time\./u);
+  assert.equal(allServed.includes("always means stage 1"), false, "both are forced adulthood (his note)");
+  assert.match(skill, /Forced adulthood is stage 1; when a person forces it on themselves \(strict discipline, no visible needs, little joy\) call it "clamping down", the opposite trap to spoiling\./u);
+  assert.match(boxes, /when a person forces it on themselves \(strict discipline, no visible needs, little joy\), call it "clamping down", the opposite trap to spoiling/u);
+  assert.match(served("references/RESPONSE-FIDELITY.md"), /clamping down, forcing strict discipline on oneself \(perfect discipline, no visible needs, very little joy or closeness\): forced adulthood one forces on oneself, where/u);
+  assert.equal(allServed.includes("acknowledge a possible real loss"), false, "the half of item 8 he replaced");
+  assert.match(boxes, /Do not promise that everyone will welcome their growth; assess what has actually happened\./u);
+  assert.equal(/owner answer 369c/iu.test(allServed), false, "no bookkeeping inside chat instructions");
+  assert.match(served("references/PROTOCOL-STATE-PROVENANCE.md"), /After a decline, care, protection and guidance continue in the person's own words with no reparenting label\. If the person wonders whether the no comes from a protective part, explore that with them\./u);
+  for (const text of [skill, served("references/PHENOMENOLOGY-AND-REPRESENTATION.md"), boxes]) {
+    assert.match(text, /not as an opening warning \(not at the top of a reply or announced as "one thing up front": weave it in after answering what the person brought\)/u);
+  }
+});
+
+test("the cheaper option, prepared and not chosen: the protective-part rule in SKILL.md, and the box guidance one switch", () => {
+  assert.equal(SERVE_INNER_CHILD_BOX_GUIDANCE, true, "default as answered (378a): served");
+  assert.match(skill, /A protective part's no to going deeper, to an altered state or to sex is neither obeyed nor overridden automatically: hear the part out and look for an agreement every part can accept\./u);
+  assert.match(skill, /\(the owner's example: a part that told him not to talk to strangers\); it is not one size fits all\. InnerSignal never pushes an override, including through prediction-testing: the person decides\./u);
+  const off = loadTherapyProtocol({ boxGuidance: false });
+  const without = THERAPY_PROTOCOL_FILES.filter((file) => file !== "references/INNER-CHILD-BOX-GUIDANCE.md");
+  assert.deepEqual([...therapyProtocolFiles({ boxGuidance: false })], without);
+  assert.deepEqual(off.files.map((file) => file.path), without);
+  assert.notEqual(off.protocolSha256, protocol.protocolSha256);
+  assert.equal([off.instructions, ...off.files.map((file) => file.content)].some((text) => text.includes("INNER-CHILD-BOX-GUIDANCE")), false,
+    "nothing served points to the file that is not served");
+  assert.match(off.instructions, /^Read `references\/PROTECTIVE-COMPATIBILITY\.md`, `references\/INNER-CHILD-THERAPY-MAP\.md`, `references\/PHENOMENOLOGY-AND-REPRESENTATION\.md`, /mu);
+  assert.match(off.instructions, /^Use the boxes that fit this person and this moment, not all of them as a checklist\.$/mu);
+  assert.match(off.instructions, /A protective part's no to going deeper, to an altered state or to sex is neither obeyed nor overridden automatically/u);
+  const map = (loaded) => loaded.files.find((file) => file.path === "references/INNER-CHILD-THERAPY-MAP.md").content;
+  assert.match(map(off), /^The 3 cross-guide routes that these arrows reach are named in their own group\.$/mu);
+  for (const file of off.files.filter((entry) => entry.path !== "references/INNER-CHILD-THERAPY-MAP.md")) {
+    assert.equal(file.content, served(file.path), `${file.path} is served byte for byte in both settings`);
+  }
+  assert.equal(map(off), map(protocol).replace(" What is inside every box, and all the cross-guide routes, is in the box guidance file (INNER-CHILD-BOX-GUIDANCE.md).", ""));
 });

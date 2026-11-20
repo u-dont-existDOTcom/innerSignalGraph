@@ -49,8 +49,9 @@ const R9_VERSION = "owner-approved-conflict-appraisal-addition-2026-10-31-r9";
 // IC.BORROW_LOVE exactly as it stood before this change (nine recommendations), as a digest of its JSON.
 const BORROW_LOVE_BEFORE_SHA256 = "7fb68c7cf4e75619389136bbb3afdd5ff217c3b8a03abfda72a9e0faa113f744";
 // Every other node and every edge of the four candidate graphs (cross-guide, inner-child, inner-signal-hypnosis, somatic), as one digest, as they stood on main before this change.
-// Re-pinned on 20 Nov 2026, when the owner's answers to questions 368 to 378 changed other nodes (IC.BORROW_LOVE itself is unchanged).
-const OTHER_NODES_AND_EDGES_SHA256 = "e2e1d38bd26b548b1afba1bee40982dabb42ed1363e380911c8d17be022ece40";
+// Re-pinned on 20 Nov 2026, when the owner's answers to questions 368 to 378 changed other nodes (IC.BORROW_LOVE itself is unchanged), and again
+// the same day for the fix round after Fable's check (IC.DIFFERENTIATION, IC.GUIDE_LATER, ROUTE.INFLUENCE_INTERNAL, ROUTE.COMMUNITY_SUPPORT).
+const OTHER_NODES_AND_EDGES_SHA256 = "744b29c8dadeed223d0bc16297867a2cf89599bed5c50b3d5fd106841bca70ea";
 
 const manifest = json("../guides/manifest.json");
 const active = manifest.sources.find((source) => source.id === "inner-child-guide");
