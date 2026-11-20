@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.NEWER_GUIDE_PARTS_20261120
 status: owner-approved
 domain: inner-child
-base_record_sha256: 0d0e999d77ddfb58ad5b954f1b8f2d1927416ee4a50cc8aa8abef717f5ee59f4
-source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: d12a571912313b983ce9dd1b2c9f9cbbd641b7f404155ba77ef9e1bf9910119b
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.NEWER_GUIDE_PARTS_20261120
@@ -25,6 +25,6 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "status": "owner-approved",
     "text": "Owner answer 376a (20 Nov 2026): every item of card 376. Forgiveness belongs to the Nurturer's work on resentment, never on a schedule (\"The cure for resentment is forgiveness, but it can't be put on a schedule\"). Divine love and gratitude are the Guide's work, after enough Nurturer and Protector. The gratitude rules reach the chat: start small, never pushed on fresh grief, never by comparing with others. His new exercises by name: re-doing a memory with hindsight (with the condition of 375 3c) and answering the strict disciplinarian (comfort the little one first; firm or funny, never mean). The seven manipulation moves (gaslighting, D.A.R.V.O., guilt tripping, White Knight, triangulation, silent treatment, breadcrumbing) are patterns to watch over time, never a label from one incident. Pain can have an emotional side, offered after the medical checks, never as \"the pain isn't real\". Finding a therapist: a somatic therapist first if that resonates; IFS or Schema Therapy as licensed choices; questions to ask first, including how they would treat early sexual trauma if the person has it. Links to his shame, romance and lucid dreaming guides. Smaller additions: happiness that feels like abandoning someone; distrust as a self-fulfilling prophecy; naming your own fault first; treats at set times; less need for therapy, and play, as signs of success; when it feels fake, ask why first; loving-kindness for the adult with ill will, their little one kept out of it; unforced continuous breathing; warmlines."
   },
-  "version": "owner-amendments-2026-11-20-r22"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

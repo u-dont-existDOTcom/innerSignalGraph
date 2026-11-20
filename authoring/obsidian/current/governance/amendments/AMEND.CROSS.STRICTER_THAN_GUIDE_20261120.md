@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
 status: owner-approved
 domain: cross-guide
-base_record_sha256: f5cca5c9b0506979e9d848e21b5d87b9683f5af16848000039ab3dfcc6715abf
-source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: a5f5efbca2036bf7bcf06ce82ad7932a80a2c5a36664c0f0671de7d0e942f2b1
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
@@ -25,6 +25,6 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "status": "owner-approved",
     "text": "Owner answer 375 1a 2a 3c 4b (20 Nov 2026). 1a: after a psychotic-type reaction or lasting changes in perception, a professional assessment before trying that substance again, since feeling stable now isn't proof; never a blanket rule against all drugs. 2a: a relationship that keeps feeling unsafe: first what each person actually said and did, outward protection first, then inward; his guide now reads \"Look at what each of you actually said and did, and take steps to ensure your safety. Then turn inward.\" 3c: the memory re-do: the hindsight cast first, a memory you can handle for the first tries, then small steps (scaffolding). 4b: identity, his caution as he wrote it: \"\"I feel attracted\" or \"I feel ashamed\" is real as a feeling, but it doesn't settle who you are, or who you love. ... Give yourself time to see what patterns form more durably, and what feels authentically yours vs something planted or manipulated into being there from society, influencers, family, friends, religion\", because, his note, \"the bot's version seems like it might be too quickly validating some fleeting feeling as identity\". InnerSignal neither validates a passing feeling as identity nor waves a real attraction, orientation or gender identity away; the person sorts it over time."
   },
-  "version": "owner-amendments-2026-11-20-r22"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

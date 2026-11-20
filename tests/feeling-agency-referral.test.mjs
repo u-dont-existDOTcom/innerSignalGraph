@@ -41,8 +41,8 @@ test("owner amendment and guide projections match current source",()=>{
  const m=json("../guides/manifest.json");
  const a=json("../guides/owner-amendments.json");
  assert.equal(m.sources.find(x=>x.id==="owner-amendments").version,a.version);
- assert.equal(a.items.length,94);
- assert.equal(a.version,"owner-amendments-2026-11-20-r22");
+ assert.equal(a.items.length,95);
+ assert.equal(a.version,"owner-amendments-2026-11-20-r23");
  assert.equal(a.items.find(x=>x.id===a1)?.status,"owner-approved");
  assert.equal(a.items.find(x=>x.id===a2)?.status,"owner-approved");
  const groups=[

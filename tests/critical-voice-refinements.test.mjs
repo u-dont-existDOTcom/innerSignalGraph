@@ -245,7 +245,7 @@ test("the guide carries the issue's approved wording for the qualified example a
 
 test("IC.CRITICISM_KERNEL, IC.MEET_GUARD and IC.PROTECTOR_ACTION each gain their lines once, bound to IC.INHERITED_PARENT, with their ends and gates unchanged", () => {
   const kernel = candidate(KERNEL);
-  assert.equal(kernel.recommendations.length, 6, "the owner's disciplinarian exercise (answer 376a, 20 Nov 2026) follows");
+  assert.equal(kernel.recommendations.length, 7, "the owner's disciplinarian exercise (answer 376a, 20 Nov 2026) and his answer on guards (point 16, 20 Nov 2026) follow");
   assert.equal(kernel.recommendations[4], KERNEL_LINE, "after the audience-criticism lines");
   assert.equal(count(JSON.stringify(kernel), KERNEL_LINE), 1);
   for (const [index, line] of KERNEL_COVERED) assert.equal(kernel.recommendations[index], line, `ALREADY COVERED: recommendation ${index}`);
@@ -255,7 +255,7 @@ test("IC.CRITICISM_KERNEL, IC.MEET_GUARD and IC.PROTECTOR_ACTION each gain their
   assert.equal(kernel.defaultQuestion, "");
 
   const guard = candidate(GUARD);
-  assert.deepEqual(guard.recommendations.filter((line) => !line.startsWith("Distinguish a learned defensive guard from the chosen Adult Protector role")), [...GUARD_RECOMMENDATIONS_BEFORE.slice(0, 2), GUARD_RECOMMENDATION, ...GUARD_RECOMMENDATIONS_BEFORE.slice(2)], "one recommendation, right after the one about what the part predicts");
+  assert.deepEqual(guard.recommendations.filter((line) => !line.startsWith("Distinguish a learned defensive guard from the chosen Adult Protector role") && !line.startsWith("Any guard, whether it stays on duty")), [...GUARD_RECOMMENDATIONS_BEFORE.slice(0, 2), GUARD_RECOMMENDATION, ...GUARD_RECOMMENDATIONS_BEFORE.slice(2)], "one recommendation, right after the one about what the part predicts");
   assert.deepEqual(guard.avoid, [GUARD_AVOID_BEFORE[0], GUARD_AVOID, GUARD_AVOID_BEFORE[1]], "one avoid line, right after the one about classifying the voice");
   assert.deepEqual(guard.effects.forbiddenOverclaims, GUARD_FORBIDDEN, "ALREADY COVERED: a cynical voice is not definitively a guard");
   assert.deepEqual(guard.effects.requiredNuance.filter((line) => !line.startsWith("Ordinary wishes, habits and critical thoughts are not automatically a guard")), GUARD_NUANCE, "ALREADY COVERED: the contempt may be child, protector, adult evaluator or blend");
@@ -346,7 +346,7 @@ test("a critical voice is met with compassion, curiosity and understanding as we
   assert.equal(kernel.recommendations[4], KERNEL_LINE);
   assert.equal(count(JSON.stringify({ ...kernel, recommendations: kernel.recommendations.slice(0, 4) }), "compassion"), 0);
   // The existing protective-compatibility restriction and the gates are exactly as before (the node-line test above pins them node by node).
-  assert.equal(candidate(GUARD).recommendations.filter((line) => /compassion/iu.test(line)).length, 1);
+  assert.equal(candidate(GUARD).recommendations.filter((line) => /compassion/iu.test(line)).length, 2, "and the owner's Mr. Rogers reframing trick (point 16, 20 Nov 2026) sends the voice on with compassion");
   assert.deepEqual(candidate(PROTECTOR).recommendations.flatMap((line, index) => (/compassion/iu.test(line) ? [index] : [])), [3, 5], "the new line (3) and the existing compassionate-protective-response line (5), nothing else");
   // Issue 215's "compassion, boundaries and accountability" for real conduct are carried by two things: the paragraph's compassion, its firm
   // limits and its "take seriously anything useful in the message", and the protector node's existing lines. The paragraph itself does not use
@@ -376,16 +376,16 @@ test("IC.SHAME_APPRAISAL already separates real responsibility from global self-
   const compiled = await compileGuideGraphs({ write: false });
   assert.equal(compiled.stats.nodeCount, 87);
   assert.equal(compiled.stats.edgeCount, 126);
-  assert.equal(compiled.stats.sourceSectionCount, 174);
-  assert.equal(compiled.stats.ownerAmendmentCount, 94);
+  assert.equal(compiled.stats.sourceSectionCount, 175); // the point-16 amendment of 20 Nov 2026 adds one
+  assert.equal(compiled.stats.ownerAmendmentCount, 95);
   const ids = candidateGraph.nodes.map((node) => node.id);
   assert.deepEqual(ids.filter((id) => /CRITIC/u.test(id)), [KERNEL]);
   assert.deepEqual(ids.filter((id) => /INNER_BRAT|SPIRITUAL_CHILD|DRAWING|SCRIBBL/u.test(id)), []);
   assert.equal(new Set(ids).size, ids.length);
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-11-20-r22");
-  assert.equal(amendments.items.length, 94);
-  assert.equal(amendments.items.some((item) => /reject the insult|critical voice|self-critical strategy/iu.test(item.text)), false, "the guide text carries the behavior, so no amendment was added");
+  assert.equal(amendments.version, "owner-amendments-2026-11-20-r23");
+  assert.equal(amendments.items.length, 95);
+  assert.equal(amendments.items.some((item) => item.id !== "AMEND.IC.GUARDS_USUALLY_A_MIX_20261120" && /reject the insult|critical voice|self-critical strategy/iu.test(item.text)), false, "the guide text carries the behavior, so no amendment was added (the owner's later answer on guards, point 16 of 20 Nov 2026, is its own amendment)");
   const overlay = json("../authoring/overlays/inner-child.overlay.json");
   assert.ok(JSON.stringify(overlay).includes("OVERLAY.IC.DYNAMIC_PARTS_MODEL"), "the parts-flexibility overlay is still there");
   assert.equal(count(JSON.stringify(overlay), "critical voice"), 0);

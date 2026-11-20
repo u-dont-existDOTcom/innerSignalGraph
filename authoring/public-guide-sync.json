@@ -1024,6 +1024,20 @@
               "AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022"
             ],
             "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-088",
+            "title": "Guards and critical voices are usually a mix",
+            "source": "the owner's answer to point 16 (Inbox, 20 Nov 2026, 22:27 UTC)",
+            "liveHeading": null,
+            "r11Lines": null,
+            "decisions": [
+              "point 16 (Inbox, 20 Nov 2026, 22:27 UTC)"
+            ],
+            "amendments": [
+              "AMEND.IC.GUARDS_USUALLY_A_MIX_20261120"
+            ],
+            "queue": "PENDING"
           }
         ]
       }

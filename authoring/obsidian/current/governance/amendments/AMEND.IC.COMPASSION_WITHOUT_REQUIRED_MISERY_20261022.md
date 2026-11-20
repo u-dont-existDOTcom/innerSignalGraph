@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022
 status: owner-approved
 domain: inner-child
-base_record_sha256: cfaff4b046499050c8a6b61a4c9a274611a45136dad2e9d163d6d6fe68b95eed
-source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: 690598b266c638c5e093c816899cc1d2612ea6aac50c5f066c91868a5fd852b0
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022
@@ -25,6 +25,6 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "status": "owner-approved",
     "text": "Suffering with others may become a belonging rule: a person fears that being happy while others suffer would be selfish or disloyal. Distinguish concrete moral responsibility and compassionate action from a rule requiring oneself to stay miserable. Explore as an individual possibility, not a universal cause, and never discount real social suffering or duties. The owner experienced that cultivating happiness himself made him better able to help others become happy; this need not be true of everyone and never means unhappy people cannot help. Friends or family may genuinely resent, discourage or reject a person's greater happiness. Consider observed conduct, actual duties, boundaries and possible losses without assuming envy or treating another person's discomfort as proof of wrongdoing."
   },
-  "version": "owner-amendments-2026-11-20-r22"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

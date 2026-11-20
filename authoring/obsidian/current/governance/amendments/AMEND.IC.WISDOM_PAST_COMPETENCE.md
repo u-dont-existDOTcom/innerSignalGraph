@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_PAST_COMPETENCE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 96de65b3392edfe6de2c87ce152c2d3c48daeff60d752d0a350c9433ca2efb69
-source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: 7e3a020a87bad0bed7229095273870aad7c27038da7c65ad85896698faa534ad
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.WISDOM_PAST_COMPETENCE
@@ -24,6 +24,6 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "status": "owner-approved",
     "text": "Invite a real occasion of meeting difficulty in a way the person respects. Retrieve the actual action and enabling conditions, and one part available now. The past occasion need not be more difficult. Do not invent a memory, pressure recall, or use prior competence to deny current exhaustion, illness, resource limits or need for help. A small specific success can be enough. Optional anchors may be identified during clearer moments using existing private continuity; no new memory store is implied. Past capacity is evidence to draw upon, not a guarantee or a demand."
   },
-  "version": "owner-amendments-2026-11-20-r22"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```
