@@ -29,9 +29,9 @@ source_refs:
   - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G010
-base_record_sha256: 3f6fa19550c1ba477e9810631af985447f6f90a65f1cdbea13fd17aa094905ed
-base_graph_sha256: ba026ba7a10c646e8eb5c80ba1e52e0ec9f77b76ef80c204944a6855fe6d0faf
-projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
+base_record_sha256: 5a6a5709def3d5e099d4c0a061edef9bdeb15cd4f4c7780c91d68241bc7751f0
+base_graph_sha256: 41dbf0e44fd2ebc7bb452db405c70d727d9392795729e3cf406a233fc543882f
+projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
 ---
 
 # Bring in direction without demanding mental perfection
@@ -97,7 +97,7 @@ projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8
       "An external guide may contribute real wisdom while remaining trustworthy only in a limited domain. The internal Guide keeps authority corrigible by evidence and does not outsource true/false judgment to charisma, intuition, or specialness.",
       "Mental health and mature guidance concern the relationship to mental events and the ability to choose skillful action; involuntary occurrence alone is not endorsement or identity.",
       "Occurrence-versus-endorsement distinctions do not suspend current-intent, planning, consent or safety routing; reported intention and behavior still matter.",
-      "\"Forced adulthood\" is the owner's stage 1 of reparenting: the child-state forced to handle grown-up situations, even when it looks like having it all together. Forcing strict discipline on yourself is \"clamping down\", the opposite trap to spoiling. His five stages: forced adulthood; begin to borrow adulthood; practice being the adult; adult mode itself; adult and child in relationship. A person may start at any point, and it may change even from hour to hour."
+      "\"Forced adulthood\" is the owner's stage 1 of reparenting: the child-state forced to handle grown-up situations, even when it looks like having it all together; when a person forces it on themselves (strict discipline, no visible needs, little joy), call it \"clamping down\", the opposite trap to spoiling. His five stages: forced adulthood; begin to borrow adulthood; practice being the adult; adult mode itself; adult and child in relationship. A person may start at any point, and it may change even from hour to hour."
     ]
   },
   "recommendations": [

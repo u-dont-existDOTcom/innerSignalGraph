@@ -10,7 +10,7 @@ from_node_id: SOM.AQUATIC_BODYWORK
 to_node_id: SOM.MEANING_INTEGRATION
 relation: requires-aftercare-and-integration
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
+projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
 ---
 
 # SOM.AQUATIC_BODYWORK requires-aftercare-and-integration SOM.MEANING_INTEGRATION

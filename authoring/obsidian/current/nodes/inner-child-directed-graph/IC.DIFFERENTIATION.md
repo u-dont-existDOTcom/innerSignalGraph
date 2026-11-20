@@ -27,9 +27,9 @@ source_refs:
 regression_refs:
   - G150
   - G153
-base_record_sha256: e64c437b5ee0bc72ec7d1e6a301575ccc0628b93c1380de36fff79e6e53ad6e1
-base_graph_sha256: ba026ba7a10c646e8eb5c80ba1e52e0ec9f77b76ef80c204944a6855fe6d0faf
-projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
+base_record_sha256: 236c0f672b427d1913729420b1f8eebc525c8b53e795af0e277540f3dac80a78
+base_graph_sha256: 41dbf0e44fd2ebc7bb452db405c70d727d9392795729e3cf406a233fc543882f
+projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
 ---
 
 # Untangle belonging from self-betrayal
@@ -78,7 +78,7 @@ projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8
     "If repeated real rejection reflects unfair group norms, respect that evidence and help consider boundaries, reduced access, another community or leaving; no requirement to disclose repeatedly to the same group.",
     "Where a person feels disloyal for enjoying life while others suffer, distinguish actual responsibilities and compassion-in-action from a learned requirement to stay miserable as proof of belonging or care.",
     "Explore whether cultivating the person’s own happiness or steadiness might enlarge what they can offer others; use the owner’s lived example as an invitation to inquire, not a rule that unhappy people cannot help.",
-    "Do not promise that everyone will welcome their growth. Some people may genuinely resent or withdraw when someone becomes happier; assess what has actually happened, acknowledge a possible real loss and support compassionate boundaries, reciprocal relationships and grief.",
+    "Do not promise that everyone will welcome their growth; assess what has actually happened.",
     "When friends or family pull away from a happier person, or try to drag them back into the old misery because \"misery loves company\", that is their choice, and being happy is ultimately more helpful for everyone. But don't assume everyone pulls away because the person is happier: they might also have become, for example, snobbier, or done something while unaware.",
     "When being happy feels like abandoning someone (\"If I'm happy while someone I love is suffering, I'm abandoning them\"), the person can do their part for people who are suffering, which may sometimes just be modeling how to live, and skip the part where they have to be miserable too."
   ],

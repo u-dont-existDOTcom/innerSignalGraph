@@ -12,7 +12,7 @@ section_hash: 8f6aa77a6bb8031a7b3ae7d92219c2e35786a1fe2826cee61bce56999ea2bd8a
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DIFFERENTIATION
-projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
+projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
 ---
 
 # AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022

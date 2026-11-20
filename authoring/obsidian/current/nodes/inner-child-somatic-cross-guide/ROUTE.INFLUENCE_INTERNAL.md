@@ -33,9 +33,9 @@ regression_refs:
   - G049
   - G054
   - G055
-base_record_sha256: f6f30a935670c08adf0dcd631754b63c64a98f0ec65f0d96be3432f5ff0f5804
-base_graph_sha256: 05474718801d36a590e0228b2d7a4f8418212bd1bdda0a033025743869e1e2e5
-projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8767edc5ea
+base_record_sha256: 75e8b78b0e3c82387b6f72f5130be33e6b4954e9f3025169dfce4a641c5a9294
+base_graph_sha256: 5351dbc4cbd1e1bfff5436f7bc321089a1f196971c0dd4590ae46630ffa1167c
+projection_input_sha256: 439821153203668fa2e716b0247c6b73c7c6f075d3b5889d95c9995c95c7c2a3
 ---
 
 # Separate inner experience from interpretation before routing
@@ -62,7 +62,7 @@ projection_input_sha256: 1b12f4ac0b2f469b6b3f38897dc87b565dc2ed5e9cb688da7323ef8
     "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
     "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values.",
     "Do not treat taboo content, a dream, a fantasy or a past accidental exposure as evidence of intent or current risk, or as a reason to send journal or conversation material for outside review.",
-    "Do not quickly validate a fleeting feeling as identity, and never suggest that a person's attraction, orientation or gender identity was planted."
+    "Do not quickly validate a fleeting feeling as identity, and do not rule for the person whether a feeling is authentically theirs or pressed on them; the person sorts that over time."
   ],
   "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
   "effects": {
