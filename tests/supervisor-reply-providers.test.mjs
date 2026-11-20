@@ -89,7 +89,9 @@ async function hostedConnector(t, settings, { verdicts } = {}) {
   const tools = await createSupervisorReplyConnector({
     access: env.access,
     environment: process.env,
-    runnerOptions: { budgetMs: 5_000, cooldownMs: 0 },
+    // These calls must come back with the review's outcome (an audit, a repair and a second audit, through local model-service
+    // stubs and the encrypted store), which took over 5 s under the full suite's load; they wait for it.
+    runnerOptions: { budgetMs: 30_000, cooldownMs: 0 },
     log: (event) => events.push(event),
     createProvidersFn: (config, options) => {
       const providers = createProviders(config, options);
