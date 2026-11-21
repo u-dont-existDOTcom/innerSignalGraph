@@ -1,5 +1,9 @@
 # Inner Signal Codex current state
 
+## Therapy skill stable release and delivery follow-up — 21 November 2026
+
+Therapy skill 0.2.5 was released on `stable` at `a7550955` (kit: `InnerSignal_0.2.5_activate.sh`) and has been live since 21 Nov 2026 04:05 UTC (lane handoff, 21 Nov 2026); see the [release evidence record](../docs/releases/2026-11-21-therapy-skill-0.2.5.md). Post-release checks found that ChatGPT keeps only the head and tail of the one large protocol result. The split-delivery fix, pull request 232, is built and parked by the owner's answer i61b on 21 Nov 2026 17:32 UTC, which puts an InnerSignal runner first (lane handoff, 21 Nov 2026).
+
 Updated: 2026-11-21
 
 ## Crisis rules from the t135 handoff, and the owner's answer on guards — 21 November 2026 (branch `claude/crisis-rules-guards-20261121`, on top of PR 229; not merged, not released, not installed)
