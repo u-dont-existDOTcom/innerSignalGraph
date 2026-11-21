@@ -325,9 +325,10 @@ ones again before it keeps anything, so no caller can keep a plan they don't all
   earlier conversation exists, kept plan or not, the page shows "Pick up where we left off?" with Yes and Start fresh above the
   message box. The answer goes with the next message as `resumeConfirmed` (only exactly true is a Yes; an unanswered question
   sends nothing) and is stored with the new conversation's first turn, for the whole conversation. Only Yes, with a plan kept in an
-  earlier conversation that isn't deleted or past 30 days, puts `kept_plan` (its lines and the day it was kept) in the writer's and
-  the crisis checker's packets (the whole checker's in its arm), with the runner-only rule in their prompts, exactly: "A kept plan is
-  a reason to ask one question about the message, never a sign of risk now, never a reason for numbers or safety questions." No
+  earlier conversation that isn't deleted or past 30 days (checked again as each call starts, a retry included), puts `kept_plan`
+  (its lines and the day it was kept) in the writer's and the crisis checker's packets (the whole checker's in its arm), with the
+  runner-only rule in their prompts, exactly: "A kept plan is a reason to ask one question about the message, never a sign of risk
+  now, never a reason for numbers or safety questions." No
   other worker gets either. A plan is also left out while any stored reading says `may_be_under_18` or `home_unsafe` (one step
   beyond "never offered or kept"). Start fresh changes only this: earlier turns are still given as background, as before. The page
   learns when to ask from its reconcile (`resume`: whether the case has a conversation and whether the next message opens a new

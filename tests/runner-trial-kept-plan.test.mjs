@@ -411,6 +411,40 @@ test("30 days after it was kept, the next load deletes the plan (lines removed, 
   assert.equal((await other.store.load(CASE_ID)).runner_kept_plans[0].deletion_reason, "expired");
 });
 
+test("every call checks the 30 days again: a retry that starts after them gets neither the plan nor the rule (the writer, the repair writer, the crisis checker)", async (t) => {
+  for (const role of ["W", "W-repair", "C1"]) {
+    const base = keptPlanScript();
+    let runner = null;
+    let crossAt = null;
+    // The first call of `role` that holds the plan takes so long that the plan's 30 days pass, then times out; the retry follows.
+    const crossOnce = (answer) => (count, request) => {
+      if (crossAt != null && packetOf(request).kept_plan) {
+        runner.clock.now = crossAt;
+        crossAt = null;
+        throw Object.assign(new Error("synthetic"), { code: "TIMEOUT" });
+      }
+      return answer(count, request);
+    };
+    const failing = { findings: [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] };
+    runner = await makeRunner(t, {
+      ...base,
+      [role]: crossOnce(base[role]),
+      // A message marked [repair] has its first draft stopped, so the repair writer runs.
+      C2: (count, request) => (latest(request).includes("[repair]") && !packetOf(request).candidate_reply.startsWith("Synthetic repaired") ? failing : base.C2(count, request))
+    });
+    await reachPlan(runner);
+    await runner.send("[keep] Synthetic: keep it.");
+    const keptAt = Date.parse((await runner.store.load(CASE_ID)).runner_kept_plans[0].kept_at);
+    runner.clock.now = keptAt + THIRTY_DAYS - 2_000;
+    crossAt = keptAt + THIRTY_DAYS + 1_000;
+    const start = runner.calls.length;
+    const answer = await runner.send(`Synthetic: back again${role === "W-repair" ? " [repair]" : ""}.`, { newConversation: true, resumeConfirmed: true });
+    assert.equal(answer.deliveryKind, "candidate", `${role}: the turn is answered`);
+    const attempts = runner.calls.slice(start).filter((call) => call.role === role).map((call) => [Boolean(packetOf(call.request).kept_plan), call.request.system.includes(KEPT_PLAN_RULE)]);
+    assert.deepEqual(attempts, [[true, true], [false, false]], `${role}: the first attempt, a second before the 30 days, had both; the retry after them has neither`);
+  }
+});
+
 test("a plan kept while the switch was on is still deleted at its 30 days after the switch is turned off: the page's load deletes it, and its reconcile answers as before", async (t) => {
   const runner = await makeRunner(t, keptPlanScript());
   await reachPlan(runner);

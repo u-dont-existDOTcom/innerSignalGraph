@@ -23,6 +23,7 @@ import {
   hasExpiredKeptPlan,
   keepPlanBasis,
   keepPlanYesConfirmed,
+  keptPlanExpired,
   keptPlanNeverAllowed,
   offeredToKeepPlan,
   planReachedOn
@@ -137,14 +138,17 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
 
   // One worker call, with one retry when it timed out or answered in the wrong shape and the turn's time allows; never for a
   // plan limit, a lapsed sign-in or a refusal. The crisis reader asks for one attempt only (design, section 4: R1 has 30 s and
-  // no retry, so a slow reading can't hold up the writer twice). Returns { value, receipts }.
-  async function callWorker(role, { kind, runtimeTurn, system, user, schema, validate = (value) => value, attempts = 2 }) {
+  // no retry, so a slow reading can't hold up the writer twice). Returns { value, receipts }. `requestFor`, when given, builds the
+  // request ({ system, user, schema }) again for every attempt, so a retry is given only what still holds when it starts (the kept
+  // plan's 30 days are checked again); otherwise every attempt sends the request given.
+  async function callWorker(role, { kind, runtimeTurn, system, user, schema, requestFor = null, validate = (value) => value, attempts = 2 }) {
     const receipts = [];
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       const timeoutMs = limitFor(runtimeTurn, kind, role);
       const started = now();
+      const request = requestFor ? requestFor() : { system, user, schema };
       try {
-        const result = await workerFor(role).call({ system, user, schema, timeoutMs, stage: role });
+        const result = await workerFor(role).call({ system: request.system, user: request.user, schema: request.schema, timeoutMs, stage: role });
         receipts.push({ ...result.receipt, role, attempt });
         return { value: validate(result.value), receipts };
       } catch (error) {
@@ -348,7 +352,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     if (keptPlanNeverAllowed(record)) return null;
     const plan = currentKeptPlan(record, now());
     if (!plan || plan.conversation_id === conversationId) return null;
-    return { lines: [...plan.lines], kept_on: plan.kept_at.slice(0, 10) };
+    return plan;
   }
 
   // Whether the writer may offer to keep the plan in this turn's reply: once per conversation, in a crisis conversation whose plan
@@ -366,13 +370,30 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   // What this turn's packets hold of the kept plan, from the stored records alone, so a repair and the checks see what the writer saw.
   function keptPlanContextOf(record, runtimeTurn, conversationId) {
     const basis = keepPlanBasis(record, runtimeTurn);
+    const plan = keptPlanForPackets(record, conversationId);
     return Object.freeze({
       mayOffer: runtimeTurn.runner_reading?.readers?.kept_plan_offer?.may_offer === true,
       keepAsked: basis.allowed,
       previousOffered: offeredToKeepPlan(earlierTurnsInConversation(record, runtimeTurn).at(-1) ?? null),
       deletedOnRequest: Boolean(runtimeTurn.kept_plan_deleted_at),
-      plan: keptPlanForPackets(record, conversationId)
+      // What the packets show of it (its lines and the day), and when it was kept, so each call checks its 30 days again.
+      plan: plan ? Object.freeze({ lines: [...plan.lines], kept_on: plan.kept_at.slice(0, 10) }) : null,
+      planKeptAt: plan?.kept_at ?? null
     });
+  }
+
+  // The kept plan as it stands when a call starts: past its 30 days, a call (a retry included) gets neither the plan nor the rule.
+  const keptPlanAsOfNow = (keptPlan) => (keptPlan?.plan && keptPlanExpired({ kept_at: keptPlan.planKeptAt, deleted_at: null }, now())
+    ? Object.freeze({ ...keptPlan, plan: null, planKeptAt: null })
+    : keptPlan);
+
+  // The level reader's kept-plan part of its request, as it stands when the call starts.
+  function levelReaderKeptPlanPart(keptPlan) {
+    const current = keptPlanAsOfNow(keptPlan);
+    return {
+      packet: { ...(current.plan ? { kept_plan: current.plan } : {}), ...(current.previousOffered ? { kept_plan_offer: { offered_in_previous_reply: true } } : {}) },
+      extra: levelCheckerKeptPlanNote({ rule: current.plan ? KEPT_PLAN_RULE : null })
+    };
   }
 
   function writerKeptPlanPacket(keptPlan) {
@@ -466,8 +487,11 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const { caseState, stateDiff } = stateAfterReadings(fresh.case_state, runtimeTurn, readers);
       emit(caseId, runtimeTurn.id, { type: "status", step: "writing" });
       const rules = writerRules(readers.boxes?.boxes ?? null);
-      const prompt = keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, provisional, keptPlan }) }), keptPlan);
-      const written = await callWorker("W", { kind: "writer", runtimeTurn, ...prompt, validate: (value) => validateWriter(value, keptPlan) });
+      const writerRequest = () => {
+        const current = keptPlanAsOfNow(keptPlan);
+        return keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, provisional, keptPlan: current }) }), current);
+      };
+      const written = await callWorker("W", { kind: "writer", runtimeTurn, requestFor: writerRequest, validate: (value) => validateWriter(value, keptPlan) });
       // The person asked to keep the plan: kept now, unless the reply before offered it, when the crisis checker confirms the yes first.
       if (keptPlan?.keepAsked && !keptPlan.previousOffered) await tryKeepPlan(caseId, runtimeTurn.id, written.value.keptPlan.lines, authContext);
       return {
@@ -530,11 +554,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // With the kept plan on, the level reader also gets this conversation's kept plan (when the person chose Yes) with the
       // runner-only rule, and, after a reply that offered to keep the plan, the offer, to confirm whether the person's yes is about it.
       const keptPlan = keptPlanEnabled ? keptPlanContextOf(record, runtimeTurn, conversationId) : null;
-      const levelReaderKeptPlan = keptPlan ? {
-        packet: { ...(keptPlan.plan ? { kept_plan: keptPlan.plan } : {}), ...(keptPlan.previousOffered ? { kept_plan_offer: { offered_in_previous_reply: true } } : {}) },
-        extra: levelCheckerKeptPlanNote({ rule: keptPlan.plan ? KEPT_PLAN_RULE : null }),
-        schema: LEVEL_CHECKER_KEPT_PLAN_SCHEMA
-      } : { packet: {}, extra: "", schema: CHECKER_SCHEMA };
+      const levelReaderKeptPlan = keptPlan
+        ? { keptPlanPart: () => levelReaderKeptPlanPart(keptPlan), schema: LEVEL_CHECKER_KEPT_PLAN_SCHEMA }
+        : { keptPlanPart: null, schema: CHECKER_SCHEMA };
       // The level reader's reading (C1's, or the whole checker's) is stored and acted on the moment it arrives, while the other
       // checkers may still be reading: the closing and later turns see it even when another checker gives no reading, and someone
       // who has acted gets the emergency line at once (design, section 4), not after the slowest checker. With the kept plan on, its
@@ -549,9 +571,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       };
       const plan = [];
       if (config.checkerMode === "whole") {
-        plan.push({ checker: CHECKERS.whole, rules: wholeRules(parts), packet: { ...base, ...repairPart, ...weigh, stored_risk_record: risk, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []), child_contact_gate: gateView, child_contact_pattern_hits: patternHits, ...levelReaderKeptPlan.packet }, extra: `${selfDirectedRiskAuditRules}${levelReaderKeptPlan.extra}`, schema: levelReaderKeptPlan.schema });
+        plan.push({ checker: CHECKERS.whole, rules: wholeRules(parts), packet: { ...base, ...repairPart, ...weigh, stored_risk_record: risk, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []), child_contact_gate: gateView, child_contact_pattern_hits: patternHits }, extra: selfDirectedRiskAuditRules, ...levelReaderKeptPlan });
       } else {
-        plan.push({ checker: CHECKERS.crisis, rules: rulesFrom([parts.crisis], ["the crisis, chronic pain and harm-reduction sections of SKILL.md"]), packet: { ...base, ...weigh, stored_risk_record: risk, ...levelReaderKeptPlan.packet }, extra: `${selfDirectedRiskAuditRules}${levelReaderKeptPlan.extra}`, schema: levelReaderKeptPlan.schema });
+        plan.push({ checker: CHECKERS.crisis, rules: rulesFrom([parts.crisis], ["the crisis, chronic pain and harm-reduction sections of SKILL.md"]), packet: { ...base, ...weigh, stored_risk_record: risk }, extra: selfDirectedRiskAuditRules, ...levelReaderKeptPlan });
         plan.push({ checker: CHECKERS.skill, rules: rulesFrom([parts.skill, parts.references["RESPONSE-FIDELITY"], parts.references["FOCUS-DISCIPLINE"], parts.references["LONGITUDINAL-SYNTHESIS"], parts.references["GUIDE-REFERRALS"]], ["SKILL.md", "RESPONSE-FIDELITY", "FOCUS-DISCIPLINE", "LONGITUDINAL-SYNTHESIS", "GUIDE-REFERRALS"]), packet: { ...base, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []) } });
         const boxSections = [parts.map, parts.boxIndex, parts.references["PROTECTIVE-COMPATIBILITY"], parts.references["PROTOCOL-STATE-PROVENANCE"], ...(boxesInPlay.length ? [parts.boxPreamble, ...boxesInPlay.map((id) => parts.boxes[id])] : []), ...(crisisSoFar ? [parts.crisis] : [])];
         plan.push({ checker: CHECKERS.boxes, rules: rulesFrom(boxSections, boxSections.map((section) => section.label)), packet: { ...base, boxes_in_play: boxesInPlay, child_contact_gate: gateView, child_contact_pattern_hits: patternHits } });
@@ -559,9 +581,14 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         if (repaired) plan.push({ checker: CHECKERS.repair, rules: rulesFrom([parts.skill], ["SKILL.md"]), packet: { ...base, ...repairPart } });
       }
       // Every checker runs to its end: one that gives no reading can't take away another's (design, section 4).
-      const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "", schema = CHECKER_SCHEMA }) => {
-        const prompt = checkerPrompt({ checker, rules, packet, extraRules: extra });
-        const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, ...prompt, schema })) };
+      // Each checker's request is built for every attempt: the level reader's kept-plan part (with the kept plan on) is what holds
+      // when that attempt starts; every other part is the same each time.
+      const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "", schema = CHECKER_SCHEMA, keptPlanPart = null }) => {
+        const requestFor = () => {
+          const kept = keptPlanPart ? keptPlanPart() : { packet: {}, extra: "" };
+          return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}` }), schema };
+        };
+        const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, requestFor })) };
         return LEVEL_READERS.includes(checker.id) ? actOnLevel(result) : result;
       }));
       const results = settled.filter((entry) => entry.status === "fulfilled").map((entry) => entry.value);
@@ -620,9 +647,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const blocking = (failedAudit?.findings ?? []).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding));
       const rules = writerRules(readers.boxes?.boxes ?? null, missedBoxesOf(runtimeTurn));
       const keptPlan = keptPlanEnabled ? keptPlanContextOf(record, runtimeTurn, runtimeTurn.runner_reading.conversation_id) : null;
-      const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan }), previous_candidate: candidate.exact_text, findings: blocking };
-      const prompt = keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), keptPlan);
-      const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, ...prompt, validate: (value) => validateWriter(value, keptPlan) });
+      const repairRequest = () => {
+        const current = keptPlanAsOfNow(keptPlan);
+        const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }), previous_candidate: candidate.exact_text, findings: blocking };
+        return keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current);
+      };
+      const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, requestFor: repairRequest, validate: (value) => validateWriter(value, keptPlan) });
       // A repair that changes nothing can't fix what the checks found: the turn ends as a failed check (the store would refuse
       // the same bytes as a new version, which would otherwise read as a failed model call).
       if (written.value.reply === candidate.exact_text) throw new RuntimeError("The repair returned the same reply.", { code: "REPAIR_UNCHANGED" });
