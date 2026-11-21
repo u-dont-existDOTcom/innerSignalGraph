@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
 import { readOnOffSetting } from "./on-off-setting.mjs";
+import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -80,6 +81,11 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     requestTimeoutMs: integerEnv("REQUEST_TIMEOUT_MS", 900000, { min: 1000, max: 3600000 }),
     privateRuntimeInvocationAttempts: integerEnv("PRIVATE_RUNTIME_INVOCATION_ATTEMPTS", 2, { min: 1, max: 3 }),
     ownerFallbackEnabled: ownerFallbackEnabled(),
+    // The runner trial (src/runner-trial/settings.mjs): off unless switched on. The two paths are passed on as given and checked
+    // only when the trial is built, so they matter only while it is on.
+    runnerTrialEnabled: readRunnerTrialSwitch(process.env[RUNNER_TRIAL_SETTING]),
+    runnerTrialSettingsPath: nonBlankEnv(RUNNER_TRIAL_SETTINGS_FILE, null),
+    runnerClaudeConfigDir: nonBlankEnv(RUNNER_CLAUDE_CONFIG_DIR, null),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),
     guidePacketHeartbeatMs: integerEnv("GUIDE_PACKET_HEARTBEAT_MS", 5000, { min: 250, max: 60000 }),
     guidePacketStaleMs: integerEnv("GUIDE_PACKET_STALE_MS", 30000, { min: 1000, max: 3600000 }),

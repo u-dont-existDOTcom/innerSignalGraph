@@ -154,3 +154,13 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 .supervisor-text { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.5; margin:.25rem 0; font:inherit; }
 .supervisor-output { display:grid; gap:.4rem; margin-top:.4rem; }
 #supervisor-status[data-tone="error"] { color:var(--danger); font-weight:700; }
+
+/* Runner trial (shown only while /health says runnerTrial is on) */
+.runner-trial-banner { margin: 0 0 .75rem; padding: .45rem .75rem; border: 1px solid var(--accent); border-radius: .65rem; font-weight: 800; letter-spacing: .04em; color: var(--accent-strong); }
+.runner-emergency-line { margin: 0; padding: .65rem .85rem; border-left: 4px solid var(--danger); border-radius: .5rem; background: color-mix(in srgb, var(--danger) 10%, transparent); font-weight: 700; }
+.runner-emergency { margin: .65rem 0; padding: .75rem 1rem; max-width: 88%; border: 2px solid var(--danger); border-radius: .85rem; background: color-mix(in srgb, var(--danger) 12%, var(--surface)); font-weight: 700; line-height: 1.55; }
+.runner-thinking, .runner-closing-reason { margin: -.35rem 0 .65rem; font-size: .86rem; color: var(--muted); }
+.runner-thinking { font-style: italic; }
+.runner-divider { margin: 1rem 0; padding-top: .5rem; border-top: 1px solid var(--line); text-align: center; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.runner-progress { margin: .25rem 0 0; }
+#runner-new-conversation.selected { outline: 2px solid var(--accent-strong); }

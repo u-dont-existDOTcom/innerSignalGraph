@@ -9,6 +9,7 @@ import { runCaseFormulation } from "../case-formulation/run.mjs";
 import { runHypnosisCompilerPipeline } from "../orchestrator/run-hypnosis-compiler.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
+import { RuntimeError } from "../core/errors.mjs";
 import { buildDiagnosticBundle } from "../export/diagnostic-bundle.mjs";
 import { recordDevelopmentFeedback } from "../dev/feedback-store.mjs";
 import { recordAutomaticDevelopmentIncident } from "../dev/incidents.mjs";
@@ -36,6 +37,7 @@ import { summarizeTrackerWindow } from "../case-state/tracker.mjs";
 import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-model-runtime.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
+import { createRunnerTrialController, isRunnerEventHub, runnerEventLine } from "../runner-trial/trial-controller.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -255,6 +257,85 @@ function assertOwnerChannelRequest(req) {
   if (site !== undefined && !["same-origin", "none"].includes(site)) throw refused();
 }
 
+// What an error answers: its status and a body with a safe message. A private failure's message is fixed words, never case content.
+function failureResponse(error) {
+  const code = error?.code ?? "UNEXPECTED_ERROR";
+  const status = SUPERVISOR_STATUS[code]
+    ?? (code === "VALIDATION_ERROR" ? 400
+      : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
+        : code === "PRIVATE_CASE_NOT_FOUND" ? 404
+        : ["THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_CASE_KEY_UNAVAILABLE"].includes(code) ? 503
+          : 500);
+  const privateFailure = /^(?:PRIVATE_|THERAPY_RUNTIME_|PROVIDER_)/u.test(code);
+  // The reasons a supervisor draft was refused are fixed words, never case content, so they are safe to return.
+  const reasons = Object.hasOwn(SUPERVISOR_STATUS, code) && Array.isArray(error?.details?.reasons)
+    && error.details.reasons.every((reason) => typeof reason === "string" && /^[a-z_]{1,60}$/u.test(reason))
+    ? { reasons: error.details.reasons }
+    : {};
+  return {
+    status,
+    body: {
+      error: privateFailure ? "InnerSignal could not safely complete this request." : error?.message,
+      code,
+      ...reasons
+    }
+  };
+}
+
+// The answer to one private therapy turn, as JSON or as the stream's final line. A turn the runner trial closed without a reply
+// also carries its closing: the kind (the notice or the owner's fixed message) and the reason, in fixed words.
+function therapyAnswer(result) {
+  const metadata = result.runtimeMetadata ?? {};
+  return {
+    answer: result.answer,
+    mode: metadata.mode ?? "private-runtime",
+    processingTier: metadata.processingTier ?? metadata.mode ?? "private-runtime",
+    routingReason: metadata.routingReason ?? "automatic exact-version audit lifecycle",
+    graphBundleVersion: metadata.graphBundleVersion ?? null,
+    caseFormulation: metadata.caseFormulation ?? null,
+    interventionContract: metadata.interventionContract ?? null,
+    responseContract: metadata.responseContract ?? null,
+    processingMs: metadata.processingMs ?? null,
+    durableCaseState: caseStateForClient(result.durableCaseState),
+    caseState: projectCaseStateForInspection(result.durableCaseState),
+    caseStateDiff: result.caseStateDiff,
+    privateCaseStorage: "encrypted",
+    orchestration: {
+      state: result.runtimeTurn.state,
+      deliveryKind: result.deliveryKind,
+      repairCycle: result.runtimeTurn.repair_cycle,
+      lifecycleOwner: "server"
+    },
+    ...(result.closing ? { closing: { kind: result.closing.kind, reason_code: result.closing.reason_code } } : {})
+  };
+}
+
+const acceptsNdjson = (req) => /(?:^|,)\s*application\/x-ndjson\s*(?:[;,]|$)/iu.test(String(req.headers.accept ?? ""));
+
+// The runner trial's page asks for newline-delimited JSON: one line per event of this request's turn as it happens (status,
+// provisional, emergency_line, closed), then one final line with the same fields as the JSON answer, or an error line. Nothing
+// is logged, and the subscription ends with the request.
+async function streamRunnerTurn(res, { events, runtimeTurnId, run }) {
+  res.writeHead(200, securityHeaders({ "content-type": "application/x-ndjson" }));
+  const write = (line) => {
+    if (res.writableEnded || res.destroyed) return;
+    try { res.write(`${JSON.stringify(line)}\n`); } catch { /* a page that went away never stops the turn */ }
+  };
+  const unsubscribe = events.subscribe(runtimeTurnId, (event) => {
+    const line = runnerEventLine(event);
+    if (line) write(line);
+  });
+  try {
+    write({ type: "final", ...therapyAnswer(await run()) });
+  } catch (error) {
+    const { body } = failureResponse(error);
+    write({ type: "error", error: body.error, code: body.code });
+  } finally {
+    unsubscribe();
+    if (!res.writableEnded) res.end();
+  }
+}
+
 async function readSupervisorBody(req) {
   if (!/^application\/json(?:\s*;|$)/iu.test(String(req.headers["content-type"] ?? ""))) {
     throw supervisorError("SUPERVISOR_UNSUPPORTED_MEDIA_TYPE", "Supervisor requests must be sent as application/json.");
@@ -266,15 +347,28 @@ async function readSupervisorBody(req) {
   return input;
 }
 
-export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null, privateSupervisorService = null }) {
+export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null, privateSupervisorService = null, runnerTrialEvents = null }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
-  const automaticPrivateTherapy = privateTherapyController ?? (privateCaseSource
+  // The runner trial (INNER_SIGNAL_RUNNER_TRIAL): its controller and the hub that carries its events to the page. A caller that
+  // brings its own controller (the loopback launcher, which shares one between its listeners, or a test) brings the hub too.
+  // With the switch off, everything below is as it was, and a hub passed in is ignored.
+  let runnerTrial = null;
+  if (config.runnerTrialEnabled === true) {
+    if (privateTherapyController) {
+      if (!isRunnerEventHub(runnerTrialEvents)) throw new RuntimeError("A runner trial controller needs its event hub.", { code: "BAD_CONFIG" });
+      runnerTrial = { controller: privateTherapyController, events: runnerTrialEvents };
+    } else {
+      runnerTrial = createRunnerTrialController({ privateCaseSource, config });
+    }
+  }
+  const automaticPrivateTherapy = runnerTrial?.controller ?? privateTherapyController ?? (privateCaseSource
     ? createPrivateTherapyTurnController({
         privateCaseSource,
         modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
         maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
       })
     : null);
+  const runnerEvents = runnerTrial?.events ?? null;
   // Built on first use, so a server that never serves a supervisor request never builds a second model runtime.
   let supervisorDrafts = privateSupervisorService;
   const supervisorDraftService = () => {
@@ -325,6 +419,9 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // Whether this runtime writes the fixed fallback message (INNER_SIGNAL_OWNER_FALLBACK). It names the state and never a setting's value,
           // so a deploy can check it before and after the owner turns it on. Reading a saved fallback does not depend on it.
           ownerFallback: config.ownerFallbackEnabled === true ? "on" : "off",
+          // Whether therapy turns run through the runner trial. It is on exactly when INNER_SIGNAL_RUNNER_TRIAL is on: with the switch
+          // on, a server that can't build the trial doesn't start. The page shows the trial's banner, line and stream from it.
+          runnerTrial: runnerEvents ? "on" : "off",
           endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
@@ -342,38 +439,19 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         const assistantTurnId = safeEntryId(input.assistantTurnId, `${exchangeId}-assistant`);
         if (automaticPrivateTherapy) {
           const runtimeTurnId = safeEntryId(input.runtimeTurnId, `runtime:${exchangeId}`);
-          const result = await automaticPrivateTherapy.run({
+          const run = () => automaticPrivateTherapy.run({
             caseId,
             runtimeTurnId,
             exchangeId,
             userTurnId,
             assistantTurnId,
             userMessage: input.userMessage,
-            userInput: input,
+            // The trial starts a new conversation only on exactly true (the page's "New conversation" button).
+            userInput: runnerEvents ? { ...input, newConversation: input.newConversation === true } : input,
             authContext: requestAuthContext(req)
           });
-          const metadata = result.runtimeMetadata ?? {};
-          return send(res, 200, {
-            answer: result.answer,
-            mode: metadata.mode ?? "private-runtime",
-            processingTier: metadata.processingTier ?? metadata.mode ?? "private-runtime",
-            routingReason: metadata.routingReason ?? "automatic exact-version audit lifecycle",
-            graphBundleVersion: metadata.graphBundleVersion ?? null,
-            caseFormulation: metadata.caseFormulation ?? null,
-            interventionContract: metadata.interventionContract ?? null,
-            responseContract: metadata.responseContract ?? null,
-            processingMs: metadata.processingMs ?? null,
-            durableCaseState: caseStateForClient(result.durableCaseState),
-            caseState: projectCaseStateForInspection(result.durableCaseState),
-            caseStateDiff: result.caseStateDiff,
-            privateCaseStorage: "encrypted",
-            orchestration: {
-              state: result.runtimeTurn.state,
-              deliveryKind: result.deliveryKind,
-              repairCycle: result.runtimeTurn.repair_cycle,
-              lifecycleOwner: "server"
-            }
-          });
+          if (runnerEvents && acceptsNdjson(req)) return await streamRunnerTurn(res, { events: runnerEvents, runtimeTurnId, run });
+          return send(res, 200, therapyAnswer(await run()));
         }
         if (config.mode !== "mock") {
           return send(res, 503, { error: "Encrypted automatic therapy orchestration is not configured.", code: "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE" });
@@ -656,24 +734,13 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       }
       return send(res, 404, { error: "Not found" });
     } catch (error) {
-      const code = error.code ?? "UNEXPECTED_ERROR";
-      const status = SUPERVISOR_STATUS[code]
-        ?? (code === "VALIDATION_ERROR" ? 400
-          : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
-            : code === "PRIVATE_CASE_NOT_FOUND" ? 404
-            : ["THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_CASE_KEY_UNAVAILABLE"].includes(code) ? 503
-              : 500);
-      const privateFailure = /^(?:PRIVATE_|THERAPY_RUNTIME_|PROVIDER_)/u.test(code);
-      // The reasons a supervisor draft was refused are fixed words, never case content, so they are safe to return.
-      const reasons = Object.hasOwn(SUPERVISOR_STATUS, code) && Array.isArray(error.details?.reasons)
-        && error.details.reasons.every((reason) => typeof reason === "string" && /^[a-z_]{1,60}$/u.test(reason))
-        ? { reasons: error.details.reasons }
-        : {};
-      return send(res, status, {
-        error: privateFailure ? "InnerSignal could not safely complete this request." : error.message,
-        code,
-        ...reasons
-      });
+      const { status, body } = failureResponse(error);
+      // A stream that already began has said everything it can in its own error line.
+      if (res.headersSent) {
+        if (!res.writableEnded) res.end();
+        return;
+      }
+      return send(res, status, body);
     }
   });
 }

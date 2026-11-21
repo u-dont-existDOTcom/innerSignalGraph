@@ -17,6 +17,162 @@ const speechPlayback = createSpeechPlaybackController({
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+// ---- Runner trial (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 4, 7 and 8) ----------------------------
+// Everything below is used only while /health says runnerTrial is on. Model and person text is always set with textContent.
+// runner-trial-page:start
+// The trial's fixed words, copied from src/runner-trial/notices.mjs because the browser can't import server modules.
+// tests/runner-trial-server.test.mjs checks that they are byte-identical to the server's.
+const EMERGENCY_LINE = "In danger right now? Call your local emergency number: 112 in the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK.";
+const PROVISIONAL_PREFIX = "Provisional urgent response: ";
+const THINKING_LINE = "Thinking more about the full response...";
+const CLOSING_REASONS = Object.freeze({
+  checks_failed: "No reply passed its checks.",
+  plan_limit: "The model plan's limit is reached.",
+  sign_in_needed: "A model sign-in needs renewing.",
+  timeout: "It took too long.",
+  refused: "A model declined to answer.",
+  provider_failed: "A model call failed.",
+  interrupted: "The app stopped before the reply was finished."
+});
+const RUNNER_PROGRESS_LABEL = "Writing and checking a reply…";
+const RUNNER_ONLY_KINDS = Object.freeze(["provisional", "emergency_line", "divider"]);
+
+// Reads the trial's newline-delimited JSON answer. Every line before the last is an event of the turn and goes to onEvent; the
+// last is the reply ("final", returned) or why there is none ("error", thrown). A line split across chunks is joined first, and a
+// line that isn't JSON is skipped.
+async function readRunnerStream(response, onEvent) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let last = null;
+  const take = (line) => {
+    if (!line.trim()) return;
+    let event;
+    try { event = JSON.parse(line); } catch { return; }
+    if (!event || typeof event !== "object") return;
+    if (event.type === "final" || event.type === "error") last = event;
+    else onEvent(event);
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (value) buffer += decoder.decode(value, { stream: true });
+    if (done) buffer += decoder.decode();
+    let newline = buffer.indexOf("\n");
+    while (newline >= 0) {
+      take(buffer.slice(0, newline));
+      buffer = buffer.slice(newline + 1);
+      newline = buffer.indexOf("\n");
+    }
+    if (done) break;
+  }
+  take(buffer);
+  if (last?.type === "final") return last;
+  throw new Error(last?.type === "error" && last.error ? last.error : "The reply stream ended before the reply.");
+}
+
+// The conversation item an event of the turn adds, or null: the provisional reply, headed with its prefix and followed by the
+// thinking line until the full reply comes, or the emergency line, highlighted.
+function runnerEventEntry(event, exchangeId, at = new Date().toISOString()) {
+  if (event?.type === "provisional" && typeof event.text === "string") {
+    return { role: "assistant", kind: "provisional", exchangeId, content: PROVISIONAL_PREFIX + event.text, thinking: true, at };
+  }
+  if (event?.type === "emergency_line") return { role: "notice", kind: "emergency_line", exchangeId, content: EMERGENCY_LINE, at };
+  return null;
+}
+
+// Why a turn closed without a reply, in plain words, shown outside the reply.
+function runnerClosingReason(closing) {
+  return closing && typeof closing.reason_code === "string" && Object.hasOwn(CLOSING_REASONS, closing.reason_code) ? CLOSING_REASONS[closing.reason_code] : "";
+}
+
+function runnerProgressText(step, startedAt, now = Date.now()) {
+  const seconds = Math.max(0, Math.floor((now - startedAt) / 1000));
+  return `${RUNNER_PROGRESS_LABEL} ${typeof step === "string" && step ? `${step} · ` : ""}${seconds} s`;
+}
+// runner-trial-page:end
+
+const runnerTrial = { on: false, newConversation: false };
+let healthChecked = Promise.resolve();
+
+function syncRunnerNewConversation() {
+  const button = $("#runner-new-conversation");
+  button.setAttribute("aria-pressed", runnerTrial.newConversation ? "true" : "false");
+  button.classList.toggle("selected", runnerTrial.newConversation);
+}
+
+function applyRunnerTrial(on) {
+  runnerTrial.on = on;
+  $("#runner-trial-banner").hidden = !on;
+  const line = $("#runner-emergency-line");
+  line.textContent = on ? EMERGENCY_LINE : "";
+  line.hidden = !on;
+  $("#runner-new-conversation").hidden = !on;
+  if (!on) runnerTrial.newConversation = false;
+  syncRunnerNewConversation();
+}
+
+// One trial turn on the page: the indicator with the step and the seconds so far, and the items its events add.
+function beginRunnerTurn(exchangeId) {
+  const newConversation = runnerTrial.newConversation;
+  runnerTrial.newConversation = false;
+  syncRunnerNewConversation();
+  const progress = $("#runner-progress");
+  const startedAt = Date.now();
+  let step = "";
+  const showProgress = () => { progress.textContent = runnerProgressText(step, startedAt); };
+  progress.hidden = false;
+  showProgress();
+  const timer = setInterval(showProgress, 1000);
+  const added = [];
+  let finished = false;
+  return {
+    newConversation,
+    onEvent(event) {
+      if (finished) return;
+      if (event?.type === "status") {
+        if (typeof event.step === "string") step = event.step;
+        showProgress();
+        return;
+      }
+      const entry = runnerEventEntry(event, exchangeId);
+      if (!entry) return;
+      added.push(entry);
+      state.therapy.push(entry);
+      renderTherapy();
+    },
+    finish() {
+      if (finished) return;
+      finished = true;
+      clearInterval(timer);
+      progress.hidden = true;
+      progress.textContent = "";
+      for (const entry of added) entry.thinking = false;
+      renderTherapy();
+    }
+  };
+}
+
+async function postRunnerTurn(body, turn) {
+  const response = await fetch("/v1/therapy/respond", {
+    method: "POST",
+    headers: { "content-type": "application/json", "accept": "application/x-ndjson" },
+    body: JSON.stringify(body)
+  });
+  if (response.ok && response.body && (response.headers.get("content-type") || "").includes("application/x-ndjson")) {
+    return readRunnerStream(response, (event) => turn.onEvent(event));
+  }
+  const payload = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+  if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
+  return payload;
+}
+
+function runnerLine(className, words) {
+  const line = document.createElement("p");
+  line.className = className;
+  line.textContent = words;
+  return line;
+}
+
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -164,6 +320,17 @@ function renderTherapy() {
     return;
   }
   for (const entry of state.therapy) {
+    // Runner trial items: the emergency line put into the conversation, and where a new conversation began.
+    if (entry.kind === "emergency_line") {
+      const item = runnerLine("runner-emergency", entry.content);
+      item.setAttribute("role", "note");
+      root.append(item);
+      continue;
+    }
+    if (entry.kind === "divider") {
+      root.append(runnerLine("runner-divider", entry.content));
+      continue;
+    }
     const block = document.createElement("div");
     block.className = `message ${entry.role === "user" ? "user" : "assistant"}`;
     const role = document.createElement("span");
@@ -172,9 +339,9 @@ function renderTherapy() {
     const body = document.createElement("div");
     body.textContent = entry.content;
     block.append(role, body);
-    if (entry.role === "assistant") {
+    if (entry.role === "assistant" && entry.kind !== "provisional") {
       appendPlanTrace(block, entry.plan);
-      if (entry.processingTier) {
+      if (entry.processingTier && entry.kind !== "closing") {
         const tier = document.createElement("span");
         tier.className = "processing-tier";
         const timing = Number.isFinite(entry.processingMs) ? ` · ${(entry.processingMs / 1000).toFixed(1)}s` : "";
@@ -184,12 +351,15 @@ function renderTherapy() {
       appendFeedbackControls(block, entry);
     }
     root.append(block);
+    // Outside the reply: the thinking line under a provisional reply until the full one comes, and a closed turn's reason.
+    if (entry.kind === "provisional" && entry.thinking) root.append(runnerLine("runner-thinking", THINKING_LINE));
+    if (entry.kind === "closing" && entry.closingReason) root.append(runnerLine("runner-closing-reason", entry.closingReason));
   }
   root.scrollTop = root.scrollHeight;
 }
 
 function recentTranscript() {
-  return state.therapy.slice(-10).map((item) => `${item.role.toUpperCase()}: ${item.content}`).join("\n\n");
+  return state.therapy.filter((item) => !RUNNER_ONLY_KINDS.includes(item.kind)).slice(-10).map((item) => `${item.role.toUpperCase()}: ${item.content}`).join("\n\n");
 }
 
 function structuredTranscript() {
@@ -664,6 +834,7 @@ async function checkHealth() {
     }
     badge.className = "status ok";
     badge.textContent = `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
+    applyRunnerTrial(health.runnerTrial === "on");
     state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
     if (health.privateCaseStorage?.available) {
       try {
@@ -688,6 +859,8 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const message = $("#therapy-message").value.trim();
   if (!message) return;
+  // The page knows whether the runner trial is on before it sends anything, so its line and stream are there from the first message.
+  await healthChecked;
   const button = $("#therapy-send");
   const priorTranscript = recentTranscript();
   const priorTranscriptEntries = structuredTranscript();
@@ -699,8 +872,9 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   renderTherapy();
   $("#therapy-message").value = "";
   setBusy(button, true, "Reasoning…");
+  const runnerTurn = runnerTrial.on ? beginRunnerTurn(exchangeId) : null;
   try {
-    const result = await postJson("/v1/therapy/respond", {
+    const request = {
       userMessage: message,
       caseId: state.caseId,
       exchangeId,
@@ -714,8 +888,11 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       processingMode: $("#therapy-processing-mode")?.value || "auto",
       priorCaseSnapshot: state.caseSnapshot,
       priorInterventionContract: state.interventionContract,
-      priorProcessingTier: state.priorProcessingTier
-    });
+      priorProcessingTier: state.priorProcessingTier,
+      ...(runnerTurn?.newConversation ? { newConversation: true } : {})
+    };
+    const result = runnerTurn ? await postRunnerTurn(request, runnerTurn) : await postJson("/v1/therapy/respond", request);
+    runnerTurn?.finish();
     const answer = text(result.answer) || text(result.decision_summary) || "The runtime returned no answer text.";
     state.caseSnapshot = result.caseFormulation && typeof result.caseFormulation === "object" ? result.caseFormulation : state.caseSnapshot;
     state.interventionContract = result.interventionContract && typeof result.interventionContract === "object" ? result.interventionContract : state.interventionContract;
@@ -736,18 +913,31 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       processingTier: result.processingTier || result.mode || "unknown",
       routingReason: result.routingReason || "",
       processingMs: Number(result.processingMs) || null,
-      responseContract: result.responseContract || null
+      responseContract: result.responseContract || null,
+      // A runner-trial turn closed without a reply: its notice is the reply, and the reason shows outside it.
+      ...(result.closing ? { kind: "closing", closingReason: runnerClosingReason(result.closing) } : {})
     });
     saveState();
     renderTherapy();
     renderCaseState("diff");
   } catch (error) {
+    runnerTurn?.finish();
     state.therapy.push({ role: "assistant", content: `Runtime error: ${error.message}`, at: new Date().toISOString(), error: true });
     saveState();
     renderTherapy();
   } finally {
     setBusy(button, false);
   }
+});
+
+// The runner trial's "New conversation": the next message starts a new conversation on the server, which lifts the crisis
+// rules' "in this conversation" limits; the risk record and the protection gate carry over.
+$("#runner-new-conversation").addEventListener("click", () => {
+  if (!runnerTrial.on || runnerTrial.newConversation) return;
+  runnerTrial.newConversation = true;
+  state.therapy.push({ role: "notice", kind: "divider", content: "New conversation", at: new Date().toISOString() });
+  renderTherapy();
+  syncRunnerNewConversation();
 });
 
 $("#clear-therapy").addEventListener("click", () => {
@@ -996,7 +1186,7 @@ renderDataSummary();
 renderCaseState();
 saveState();
 syncSpeechPlaybackControls();
-checkHealth();
+healthChecked = checkHealth();
 refreshDevelopmentStatus();
 refreshGuidePacketStatus().catch(() => {});
 setInterval(refreshDevelopmentStatus, 5000);

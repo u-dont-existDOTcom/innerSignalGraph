@@ -438,6 +438,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null }), previous_candidate: candidate.exact_text, findings: blocking };
       const prompt = writerPrompt({ rules, packet, repair: true });
       const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, ...prompt, schema: WRITER_SCHEMA, validate: validateWriter });
+      // A repair that changes nothing can't fix what the checks found: the turn ends as a failed check (the store would refuse
+      // the same bytes as a new version, which would otherwise read as a failed model call).
+      if (written.value.reply === candidate.exact_text) throw new RuntimeError("The repair returned the same reply.", { code: "REPAIR_UNCHANGED" });
       return {
         exactText: written.value.reply,
         contextId: contextIdOf(written.receipts.filter((receipt) => receipt.session_id)),
@@ -456,7 +459,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
 
     closingReason(error) {
       const code = error?.details?.last_error_code ?? error?.code;
-      return { PLAN_LIMIT: "plan_limit", SIGN_IN_NEEDED: "sign_in_needed", TIMEOUT: "timeout", REFUSED: "refused" }[code] ?? "provider_failed";
+      return { PLAN_LIMIT: "plan_limit", SIGN_IN_NEEDED: "sign_in_needed", TIMEOUT: "timeout", REFUSED: "refused", REPAIR_UNCHANGED: "checks_failed" }[code] ?? "provider_failed";
     },
 
     closeTurn,

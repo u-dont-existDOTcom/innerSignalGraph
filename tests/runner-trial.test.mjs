@@ -252,3 +252,16 @@ test("the turn's deadline ends a slow turn with the notice, and no repair starts
   assert.equal(result.answer, RUNNER_UNAVAILABLE_NOTICE);
   assert.equal(result.closing.reason_code, "timeout");
 });
+
+test("a repair that returns the same reply ends the turn as a failed check, so a crisis conversation gets the owner's fixed message when it is on", async (t) => {
+  const failing = () => ({ findings: [{ code: "CRISIS_FIRST_REPLY_SHAPE", severity: "high", summary: "missing", evidence_turn_ids: [] }], level: "wants_to_die", repair_induced_checks: [], missed_boxes: [] });
+  const runner = await makeRunner(t, baseScript({
+    R1: () => ({ ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "wants to die" }),
+    W: () => ({ reply: "The same synthetic reply.", answered_level: "wants_to_die", quotes: [] }),
+    "W-repair": () => ({ reply: "The same synthetic reply.", answered_level: "wants_to_die", quotes: [] }),
+    C1: failing
+  }), { ownerFallbackEnabled: true });
+  const closed = await runner.send("I want to die.");
+  assert.equal(closed.closing.reason_code, "checks_failed");
+  assert.equal(closed.answer, OWNER_FALLBACK_MESSAGE);
+});
