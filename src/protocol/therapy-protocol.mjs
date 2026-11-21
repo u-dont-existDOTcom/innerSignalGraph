@@ -450,7 +450,7 @@ export function therapyProtocolDelivery(protocol) {
   // Every part fits in an answer beside the longest lines one can carry: 40 of the longest part names still to load, more
   // beyond them, and five unknown names at their longest. So any request naming a part gets at least that part.
   const longestNames = [...all].sort((a, b) => b.name.length - a.name.length).slice(0, MAX_LISTED_PARTS).map((part) => part.name);
-  const longestUnknown = Array.from({ length: MAX_ECHOED_UNKNOWN }, () => "x".repeat(200));
+  const longestUnknown = Array.from({ length: MAX_ECHOED_UNKNOWN }, (_, index) => `${"\u0000".repeat(199)}${index}`);
   for (const part of all) {
     if (bytesOf(renderPartsAnswer(delivery, [part], longestNames, longestUnknown, 1)) > PROTOCOL_ANSWER_MAX_BYTES) {
       throw new TherapyProtocolUnavailableError(`The part ${part.name} doesn't fit in one answer.`);
@@ -515,7 +515,7 @@ function renderPartsAnswer(delivery, parts, stillToLoad, unknown, beyond = 0) {
     lines.push(`And ${stillToLoad.length - Math.min(stillToLoad.length, MAX_LISTED_PARTS) + beyond} more parts after those: ask for them by name once you have loaded these (a part's name and number are in its BEGIN line).`);
   }
   if (unknown.length > 0) {
-    const shown = unknown.slice(0, MAX_ECHOED_UNKNOWN).map((name) => (name.length > 60 ? `${name.slice(0, 60)}…` : name));
+    const shown = unknown.slice(0, MAX_ECHOED_UNKNOWN).map(echoedName);
     lines.push(`Not part names of this protocol: ${nameList(shown)}${unknown.length > shown.length ? ` and ${unknown.length - shown.length} more` : ""}. The names are the groups ${nameList(delivery.groupNames ?? [])}, the paths the rules name, \`${BOX_LIST_PART}\`, and each box's name from the box list.`);
   }
   lines.push("", ...parts.map(block));
@@ -523,6 +523,13 @@ function renderPartsAnswer(delivery, parts, stillToLoad, unknown, beyond = 0) {
 }
 
 const WRAPPERS = /^[\s"'`[\]()]+|[\s"'`[\]()]+$/gu;
+
+// An unknown name as an answer echoes it: plain letters, digits and `._/ -` kept, anything else shown as `?`, cut at 60
+// characters, so its echo can never crowd the parts out of an answer.
+function echoedName(name) {
+  const plain = name.replace(/[^A-Za-z0-9._/ -]/gu, "?");
+  return plain.length > 60 ? `${plain.slice(0, 60)}…` : plain;
+}
 
 // A requested name as the parts it stands for, or null. Exact names and aliases first (a group, a whole file, a
 // reference's file name, a box ID without `box/`, the rules), then the same ignoring case, quotes, brackets, a leading

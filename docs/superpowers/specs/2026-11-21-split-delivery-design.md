@@ -169,3 +169,10 @@ once; ChatGPT makes them one after another. Each later box costs one call of 1,0
 4. The evaluation test checked headings, not bodies: it now reads every block by its byte count and checks each part
    exactly once.
 5. The evaluation page described only the groups: it now says the model gets every part (14 calls for 0.2.5's files).
+
+**Codex's review of `90f0613ec`** (two findings):
+1. Unknown names with characters JSON escapes at length (a made-up name of NUL characters) could crowd every part out of
+   an answer: an echoed name now keeps only letters, digits and `._/ -` (anything else shows as `?`) and is cut at 60
+   characters, and the load-time check measures that worst case. A regression test fails without the fix.
+2. The rewrite had dropped the check that the box list names every box: restored, with the map's boxes and the first
+   answer's example box.

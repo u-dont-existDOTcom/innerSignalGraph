@@ -237,6 +237,32 @@ test("the first answer fits with its group list and a changed-protocol note, wha
   }
 });
 
+test("the box list names every box once, and every box the map shows", () => {
+  const list = delivery.boxList.map((part) => part.content).join("");
+  const listed = [...list.matchAll(/^- `(box\/[^`]+)`: /gmu)].map((match) => match[1]);
+  assert.deepEqual(listed, delivery.boxes.map((part) => part.name), "every box, once, in the file's order");
+  const box = protocol.files.find((file) => file.path === BOX_FILE);
+  for (const [, id] of box.content.matchAll(/^### ([A-Z]+\.[A-Z0-9_]+): /gmu)) assert.ok(listed.includes(`${BOX_PART_PREFIX}${id}`), id);
+  const map = protocol.files.find((file) => file.path === "references/INNER-CHILD-THERAPY-MAP.md").content;
+  for (const [, id] of map.matchAll(/\["((?:IC|ROUTE)\.[A-Z0-9_]+)<br\/>/gu)) assert.ok(listed.includes(`${BOX_PART_PREFIX}${id}`), id);
+  assert.match(list, /Do not mention boxes, their IDs or the map to the person\./u);
+  const example = /for example `(box\/[^`]+)`/u.exec(therapyProtocolAnswer(protocol, {}).text)[1];
+  assert.ok(delivery.byName.has(example), "the first answer's example box is a real one");
+});
+
+test("unknown names are echoed plainly and briefly, so a request naming real parts always gets one", () => {
+  const ids = [...SAFETY_BOX_IDS];
+  const big = `### IC.BIG: Big\n\n${Array.from({ length: 900 }, () => `- Do: ${"d".repeat(1000)}\n\n`).join("")}`;
+  const made = syntheticProtocol("Rules.\n", [{ path: BOX_FILE, content: syntheticBoxFile(ids).replace("## Cross-guide routes", `${big}## Cross-guide routes`) }]);
+  const pieces = therapyProtocolDelivery(made).aliases.get("box/IC.BIG");
+  const strange = Array.from({ length: 5 }, (_, index) => `${"\u0000".repeat(59)}${index}`);
+  const answer = therapyProtocolAnswer(made, { parts: [...pieces.slice(0, 35), ...strange] });
+  assert.ok(answer.included.length > 0, "at least one part");
+  assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES);
+  assert.doesNotMatch(answer.text, /\\u0000/u);
+  assert.match(answer.text, /Not part names of this protocol: \["\?{59}0"/u);
+});
+
 test("names resolve leniently, unknown ones are reported plainly, and the rest waits for the next call", () => {
   const cases = new Map([
     ["1", [...delivery.groups[0]]],
