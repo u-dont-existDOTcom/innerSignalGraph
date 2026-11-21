@@ -4,7 +4,8 @@ Written 21 Nov 2026 for the owner's answers to question i62 (chat, 18:20:12 UTC)
 (`/home/joel/askrigor-releases/20261121-innersignal-runner-note/trial-session-brief.md`). Branch
 `claude/runner-trial-20261121`, from `origin/main`. Revised after Fable's red team of the first draft
 (`/home/joel/askrigor-releases/20261121-innersignal-runner-note/fable-redteam-design-20261121.md`: seven blocking, eight
-should-fix and nine minor findings, all answered here; the answer to each is at the end).
+should-fix and nine minor findings) and again after its fix-check of the revision (`fable-fixcheck-design-20261121.md`
+beside it: 19 fixed, 5 partly, four new blocking and six should-fix items). The answer to each is in the appendix.
 
 ## What the owner decided
 
@@ -41,18 +42,23 @@ switch `INNER_SIGNAL_OWNER_FALLBACK` (off by default); the journal slot (`journa
 as today.
 
 **Changed**, and listed because the first draft wrongly called them unchanged:
-- `src/supervisor/private-therapy-turn-controller.mjs`: built with `maximumInvocationAttempts: 1` on the trial path (the
-  runtime does its own retries per worker, never for a plan limit, a lapsed sign-in or a refusal); a discriminator's kind is
-  passed through for every kind, not only the owner fallback (today `:345`); a turn deadline is passed into the runtime;
-  before a new message and when the server starts, an unfinished turn is closed (below).
-- `src/supervisor/private-runtime-turn-lifecycle.mjs`: a discriminator kind `runner_unavailable` whose text must be the
-  fixed notice; a terminal state `UNANSWERED`, reachable from every unfinished state except `APPROVED`, holding the
-  notice, a reason code and the time; a `runner_reading` record and a `provisional` record on the runtime turn.
-- `src/storage/private-case-store.mjs`: `recordRunnerReading` (stores the readers' results once per turn, before anything
-  is shown, and returns the stored one on a rerun); `recordRunnerProvisional`; `closeRuntimeTurnUnanswered`, which in one
-  mutation appends the person's turn if it isn't in the transcript yet, applies the stored reading to the risk record, and
-  appends the notice as the exchange's assistant turn; delivery of the new discriminator kind; the busy check treats
-  `UNANSWERED` as finished.
+- `src/supervisor/private-therapy-turn-controller.mjs`, on the trial path only: built with `maximumInvocationAttempts: 1`
+  (the runtime does its own retries per worker, never for a plan limit, a lapsed sign-in or a refusal); a turn deadline
+  passed into the runtime; a branch for `UNANSWERED` that returns the stored closing on a replay (as a delivered turn
+  replays); inside the per-case queue (`run`, `runTails`), before a new message, an unfinished turn of that case is closed;
+  when the server starts, every unfinished turn is closed, except an `APPROVED` one, which is delivered; when an audit fails
+  and no repair fits in the time left, or at `DISCRIMINATING_QUESTION_REQUIRED`, the turn is closed as `UNANSWERED` instead
+  of producing a discriminator; an operational failure closes it the same way.
+- `src/supervisor/private-runtime-turn-lifecycle.mjs`: a terminal state `UNANSWERED`, reachable from every unfinished state
+  except `APPROVED`, whose closing holds its kind (`runner_unavailable`, the fixed notice, or `owner_fallback`, his fixed
+  message, only after failed checks), a reason code, the exact text and the time; a `runner_reading` record and a
+  `provisional` record on the runtime turn.
+- `src/storage/private-case-store.mjs`: `recordRunnerReading` (stores the readers' results once per turn, before anything is
+  shown, and returns the stored one on a rerun); `recordRunnerProvisional` and `recordRunnerEmergencyLine` (once each per
+  turn); `closeRuntimeTurnUnanswered`, which in one mutation appends the person's turn if it isn't in the transcript yet,
+  applies the stored readings (R1's to the risk record, R3's to the compatibility record), supersedes an active draft, and
+  appends the notice or the fixed message as the exchange's assistant turn; the busy check treats `UNANSWERED` as finished;
+  the record check binds a closing to its exact assistant turn.
 - A build without these can't open a case that holds one, so the trial keeps its own vault (section 11).
 
 **Dropped** on the trial path (the old path keeps them): the tier choice, the extraction before writing, the graph
@@ -114,10 +120,10 @@ person's message
 
 | Worker | Gets | Returns (schema-checked) |
 |---|---|---|
-| R1 crisis reader | `crisis`; this conversation's exact turns, the provisional replies shown in it in their places; never the stored risk record or earlier conversations (owner decision D1; `src/case-state/context-window.mjs:104-109`) | `level` (`acted_or_about_to`, `wants_to_die`, `thoughts_no_intent`, `none`, `unclear`); `wish_or_intent` (`wish` or `intent`, for `wants_to_die`); `pain_linked`; `someone_else_in_danger` (the person is a danger to someone else) and `asking_about_someone_else`; `may_be_under_18`; `home_unsafe`; a one-sentence reason; for `acted_or_about_to`, `provisional_reply` |
+| R1 crisis reader | `crisis`; this conversation's exact turns, the provisional replies shown in it in their places; never the stored risk record or earlier conversations (owner decision D1; `src/case-state/context-window.mjs:104-109`) | `level` (`acted_or_about_to`, `wants_to_die`, `thoughts_no_intent`, `none`, `unclear`); `wish_or_intent` (`wish` or `intent`, for `wants_to_die`); `pain_linked`; `danger_to_others` (they may hurt someone else); `in_danger_from_someone` (someone is endangering them now); `asking_about_someone_else`; `may_be_under_18`; `home_unsafe`; a one-sentence reason; for `acted_or_about_to`, `provisional_reply` |
 | R2 box picker | `map`, `box-preamble`, `box-index`; this conversation | up to 6 box IDs (unknown IDs dropped by program) |
-| R3 protection reader | `ref:PROTECTIVE-COMPATIBILITY`; this conversation; the case's current gate (a stored restriction is its business: it survives until reviewed) | `compatibility_assessment` in the existing schema (`compatibilityAssessmentSchema`) or null |
-| W writer | focused or whole rules; the runner preface; this conversation with its provisional replies; up to 20 turns of earlier conversations labeled background; the journal packet when wired; a confirmed kept plan; this turn's provisional reply when one was shown | `reply`; `answered_level`; `quotes` (each quote of the person or the journal, with its source id) |
+| R3 protection reader | `ref:PROTECTIVE-COMPATIBILITY`; this conversation; the case's current gate (a stored restriction is its business: it survives until reviewed) | `compatibility_assessment` in the existing schema (`compatibilityAssessmentSchema`) or null; its evidence IDs are this conversation's turn IDs, and the trial validates it with `validateCompatibilityAssessment` against those IDs (the extraction's observation IDs no longer exist) |
+| W writer | focused or whole rules; the runner preface; this conversation with its provisional replies and highlighted lines; up to 20 turns of earlier conversations labeled background; the journal packet when wired; a confirmed kept plan; this turn's provisional reply when one was shown; R1's reading, labeled as one reader's reading of the latest message; the child-contact gate and its route when it is HOLD or BLOCKED | `reply`; `answered_level`; `quotes` (each quote of the person or the journal, with its source id) |
 | C1 | `crisis`; this conversation; the stored risk record's digest and older risk turns (as today's audit packet); the draft; the provisional | findings and its own `level` |
 | C2, C3, C4 | their parts; this conversation and the same background as the writer; the draft; the provisional; C2 also the quoted spans the writer didn't declare (section 5) | findings |
 | C5 | the previous draft, the repaired draft, the findings that caused the repair, the eleven checks | findings, and the eleven checks in their exact order |
@@ -154,10 +160,13 @@ writer and one whole checker at a lower effort.
 - **Shown** when it passes its exact checks (section 5, the provisional row), as `Provisional urgent response: ` followed by
   the text; the page then shows `Thinking more about the full response...` while the writer and checkers work. No second
   model reads it first: the owner chose that in point 3, and its exact checks are the only checks that hold.
-- **If it doesn't pass, or R1 fails or runs past its limit** while reading `acted_or_about_to`, or the turn later fails: the
-  page puts the always-visible line, in his approved words, into the conversation as a highlighted notice: "In danger right
-  now? Call your local emergency number: 112 in the EU (and from mobiles in many other countries), 911 in the US and Canada,
-  999 in the UK." No model writes it and no new wording is needed.
+- **If it doesn't pass**, or the turn later ends without a reply after a crisis reading (R1's, or C1's on the draft), or R1
+  gives no reading in a conversation that is already a crisis conversation: the page puts the always-visible line, in his
+  approved words, into the conversation as a highlighted notice: "In danger right now? Call your local emergency number: 112
+  in the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK." No model writes it and no
+  new wording is needed. When it showed is stored in the runtime record (not the transcript), and later packets show it in
+  its place, like the provisional. When C1's reading is the turn's first crisis reading and no provisional was shown, the
+  line shows as soon as C1's reading arrives.
 - **The full reply** follows it in the same turn: the writer gets the provisional and continues the first step (the next
   smallest thing, staying with them) rather than repeating it; C1 checks the provisional and the full reply together as the
   first reply the person sees (at most one question about now across both; nothing that contradicts the provisional).
@@ -172,12 +181,13 @@ fullwidth and the other common decimal digits), so the number checks work whatev
 
 | Check | When | Exact rule | Effect |
 |---|---|---|---|
-| Emergency number present | C1 reads `acted_or_about_to` | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number. It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step) | blocks |
+| Emergency number present | the first turn of this conversation that C1 reads `acted_or_about_to`, over the provisional and the full reply together (on later turns C1 judges "come back to it") | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number. It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step). France's 15 alone doesn't pass (a reply naming only "le 15" is repaired to add 112), and 111 and 119 mean other services in some countries | blocks |
+| Provisional: a number | the provisional | at least one number from that list, as a whole number | not shown |
 | Provisional: numbers known | the provisional | every phone-like digit run is on that list (catches an invented number) | not shown |
 | Provisional: shape | the provisional | at most 900 characters; at most one question mark (`?`, `？`, `؟`); no list line, heading or bold; no link other than the three of the crisis section | not shown |
 | Owner's guide links | a crisis conversation | no link to the owner's sites (`u-dont-exist.com` and its subdomains, `ibogaqueen.substack.com`) other than the Hearthwork and therapist links the crisis section names; other sites (a poison centre, a health service) are left to C1 | blocks |
 | "detox" | a crisis conversation | no word containing "detox" in Latin letters; other spellings and languages are C1's (`CRISIS_NEVER_LIST`) | blocks |
-| First crisis reply shape | the first turn of this conversation read `acted_or_about_to` or `wants_to_die` (by R1 or C1), whenever it comes | no list line, heading, or bold or double-underscore emphasis | blocks |
+| First crisis reply shape | the first turn of this conversation that C1 reads `acted_or_about_to` or `wants_to_die`, or whose provisional was shown, whenever it comes | no list line, heading, or bold or double-underscore emphasis | blocks |
 | Declared quotes | always | each declared quote is in the reply and in its source turn or journal entry, word for word after folding whitespace | blocks |
 | Undeclared quoted spans | always | quoted spans (any quotation marks) the writer didn't declare are listed for C2, who judges whether any is presented as the person's words | to C2 |
 | Child-contact gate | the gate (from R3 and the stored state) is HOLD or BLOCKED | `childContactViolations` (English and French patterns; C3 covers other wording and languages) | blocks |
@@ -196,9 +206,10 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   as R1's `wish_or_intent` says, `thoughts_no_intent` → ideation (context `pain_episode` when `pain_linked`), `none` → absent,
   `unclear` or no reading → unknown; through the existing `updateSelfDirectedRiskState` and its lowering rule. The reading is
   stored before anything is shown and applied with the draft, or by the closing when no draft is made.
-- **The digest's turn numbers**: one intervention-history item per turn (the route named by program: `IC.SAFETY_ORIENTATION`
-  for `acted_or_about_to`, `IC.SUICIDAL_SELF_DEATH_INQUIRY` for `wants_to_die`, `RUNNER.CONVERSATION` otherwise), so the
-  digest's planned-turn count and the record's ten-turn window work as today.
+- **The digest's turn numbers**: one intervention-history item per turn, named for the reading rather than for a box no worker
+  chose (`RUNNER.ACTED_OR_ABOUT_TO`, `RUNNER.WANTS_TO_DIE`, `RUNNER.CONVERSATION`), so the digest's planned-turn count and the
+  record's ten-turn window work as today; the digest counts crisis turns through their risk readings
+  (`src/case-state/trajectory-digest.mjs:91-97`).
 - **Worker receipts**: provider, model, effort, start and end times, token use, rule parts and digests, isolation receipt;
   in the case file.
 - **What goes where**: each worker's packet goes to the company that runs it. R1 and C1 carry the crisis words; with GPT and
@@ -220,11 +231,14 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   stored gate).
 - **The notice**: "InnerSignal can't answer right now." (the words of his 4a). The page shows the reason beside it in plain
   words (the plan's limit is reached; the sign-in needs renewing; it took too long; a model declined to answer), outside
-  the reply. After failed checks it is the turn's discriminator of kind `runner_unavailable`; otherwise the turn closes as
-  `UNANSWERED` with the same text.
-- **His fixed message instead**: in a crisis conversation, after failed checks (two repairs, or fewer when the deadline
-  allowed fewer), while `INNER_SIGNAL_OWNER_FALLBACK` is on. It stays off until he has seen the results and said yes. "Getting
-  safe" means a conversation in which any turn was read `acted_or_about_to`; "wanting to die", one read `wants_to_die`.
+  the reply. It is the turn's closing (`UNANSWERED`, kind `runner_unavailable`) whatever the reason.
+- **His fixed message instead**: in a crisis conversation, after failed checks, while `INNER_SIGNAL_OWNER_FALLBACK` is on. It
+  stays off until he has seen the results and said yes. It is the turn's closing (`UNANSWERED`, kind `owner_fallback`, reason
+  `checks_failed`), not a discriminator, so it can follow two failed repairs or, when the deadline leaves no time for a second
+  repair, fewer: that moves his rule ("after the second failed repair"), and the start-using-it question says so. "Getting
+  safe" means a conversation in which any turn was read `acted_or_about_to`, `in_danger_from_someone`, `danger_to_others` or
+  `home_unsafe` (the safety-orientation route's "outside safety ... first"); "wanting to die", one read `wants_to_die`. The
+  question tells him these readings stand in for the four routes.
 - **Operational failures** give the notice, not the fixed message, as the 1 Nov page says ("not used for operational
   failures"). Whether every failure in a crisis conversation should show his message instead is a setting
   (`fixedMessageOn`), off, and a question in the start-using-it draft.
@@ -236,9 +250,11 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK."
 - **While waiting**: "Writing and checking a reply…" with the seconds so far and the step (reading, writing, checking,
   repairing); in a crisis turn, after the provisional, `Thinking more about the full response...`.
-- **Deadline**: one per turn (first value 240 s, set from the timed batch), passed into the runtime. Every call's limit is
-  the smaller of its own (R1 30 s, R2 and R3 40 s, writer 120 s, each checker 90 s) and the time left; a repair starts only
-  when a whole writer and checker round fits in what is left.
+- **Deadline**: one per turn (first value 300 s, set from the timed batch), passed into the runtime. Every call's limit is
+  the smaller of its own (R1, R2 and R3 30 s, writer 120 s, each checker 90 s) and the time left. A repair starts when the
+  time left is at least the measured round time: the time within which 9 of 10 writer-and-checker rounds finished in the
+  timed batch (first value, before measuring: 100 s). The per-call limits are caps for a stuck call, not a round's expected
+  length.
 - **Delivery**: `/v1/therapy/respond` streams newline-delimited JSON when the page asks (`accept: application/x-ndjson`): a
   `status` line per step, a `provisional` line, a `notice` line, the final line. A page that asks for JSON gets one answer.
 - **Restarts and reloads**: when the server starts, and before a new message, an unfinished turn is closed as `UNANSWERED`
@@ -271,8 +287,11 @@ fullwidth and the other common decimal digits), so the number checks work whatev
 - **GPT**: a sealed Codex mode (`src/runner-trial/sealed-codex.mjs`): an empty 0700 temporary folder as the working
   directory, `--ephemeral`, `--json`, `--sandbox read-only`, `--ask-for-approval never`, `--ignore-user-config`,
   `--ignore-rules`, the protocol-application eval's `CODEX_ISOLATION_CONFIG` (web search, apps, plugins, browser and
-  computer use, the shell and more turned off), instructions as developer instructions, the packet on stdin. It refuses to
-  run when the installed CLI lacks any of those flags. A call whose event stream shows any action, or isn't whole, is
+  computer use, the shell and more turned off), the rules and instructions in a 0600 file in that folder given as
+  `model_instructions_file` (it replaces Codex's own instructions: on 21 Nov a test call obeyed such a file and read 12,356
+  tokens; a command-line argument can't carry the rules, since Linux caps one at 131,072 bytes and the whole protocol is
+  317 KB), the packet on stdin. It refuses to run when the installed CLI lacks any of those flags. The same test showed why
+  every isolation setting matters: with apps and plugins left on, one call read 155,651 tokens of tools. A call whose event stream shows any action, or isn't whole, is
   refused; that is detected, not prevented, and the receipt says "no tools offered, any action refused". The timed batch
   starts with a probe asking a sealed worker to run a command and to search, and records that it couldn't.
 - **Per worker**: a trial settings file outside Git (`INNER_SIGNAL_RUNNER_TRIAL_SETTINGS`) names each worker's provider,
@@ -348,3 +367,19 @@ server or the ChatGPT and Claude connectors.
 | S7 what the extraction carried | section 1 |
 | S8 R1's fields | `crisis_route` and the two-scale reading removed; the record's level and the routes derived by program; "getting safe" defined |
 | Minor 1 to 9 | the anchor; box sizes; R2 picks boxes only; program checks run after C1; the delete button removes locator files; the server owns the 12-hour rule and the owner is told a new conversation lifts the limits; double underscores only; the eleven checks in order and one context id; case text never in `system` |
+
+Fix-check of the revision (`fable-fixcheck-design-20261121.md`):
+
+| Finding | Change |
+|---|---|
+| N1 a provisional with no number | "Provisional: a number" row in section 5 |
+| N2 repairs could never start | a repair starts when the measured round time (first value 100 s) fits; deadline first value 300 s; per-call limits are caps |
+| N3 the fixed message after fewer repairs | every ending without a reply, the fixed message included, is the turn's `UNANSWERED` closing; the question tells him it can follow fewer than two repairs |
+| N4 Codex rules on the command line | `model_instructions_file` in the 0700 temporary folder, tested |
+| N5 the number in every draft | the number check covers the first acted turn, provisional and full reply together; later turns are C1's |
+| N6 a crisis turn without R1's reading | the highlighted line's conditions spelled out; stored in the runtime record and shown to later packets |
+| N7 R3 and the validator | R3 cites this conversation's turn IDs; validated against them |
+| N8 the writer and the gate | the writer gets the gate and R1's reading |
+| N9 controller branches | `UNANSWERED` replay; closing inside the per-case queue; `APPROVED` delivered at startup; R3's assessment applied by the closing |
+| N10 "getting safe" | includes `in_danger_from_someone`, `danger_to_others` and `home_unsafe`; the question says so |
+| M1 to M5 | runner-only route names; 15, 111 and 119 said; the shape check keyed to C1 or a shown provisional; R3's call counted in plan use; the probe covers a schema-bound Codex answer |
