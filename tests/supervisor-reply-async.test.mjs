@@ -24,6 +24,11 @@ function gated(gates) {
   return { beforeAudit: async ({ index }) => { await gates[index]?.promise; } };
 }
 const FAST = { budgetMs: 40, cooldownMs: 0 };
+// A call that must come back with a review's outcome (approved, or refused because the model service failed) waits for it.
+// A review here is real work on the encrypted store: each step is sealed and written durably (a file fsync and a directory
+// fsync per write), about 30 to 70 ms per submission on an idle machine and far longer while the full suite loads the CPU
+// and the disk. FAST's 40 ms is for calls whose review a gate holds, which must answer "reviewing".
+const SETTLE = { budgetMs: 30_000, cooldownMs: 0 };
 
 test("a long review is answered 'reviewing' within the budget, then finishes in the background", async (t) => {
   const gates = { 1: deferred() };
@@ -35,12 +40,18 @@ test("a long review is answered 'reviewing' within the budget, then finishes in 
   assert.equal(reviewing.status, "reviewing");
   assert.equal(reviewing.exportable, false);
   assert.equal(reviewing.idempotency_key, "key-slow");
-  assert.equal(reviewing.artifact.status, "pending_audit");
-  assert.equal(reviewing.artifact.approved, false);
   assert.match(reviewing.notice, /Nothing is approved yet/u);
+  // The answer shows the draft once it is stored, which on a loaded machine can be after the 40 ms; the stored draft is read once
+  // the review has reached its audit.
+  await until(() => env.provider.counts.audit === 1, "the review to reach its audit", 30_000);
+  const stored = await env.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-slow" });
+  assert.equal(stored.status, "reviewing");
+  assert.equal(stored.exportable, false);
+  assert.equal(stored.artifact.status, "pending_audit");
+  assert.equal(stored.artifact.approved, false);
 
   // While it runs: nothing is approved, nothing can be exported, and asking again joins the review instead of starting another.
-  const artifactId = reviewing.artifact.artifact_id;
+  const artifactId = stored.artifact.artifact_id;
   assert.equal((await env.refused("export_approved_reply", { case_id: CASE_ID, artifact_id: artifactId })).code, "SUPERVISOR_ARTIFACT_NOT_APPROVED");
   const record = await env.reload();
   assert.equal(record.candidate_responses[0].status, "pending_audit");
@@ -83,11 +94,14 @@ test("a review interrupted by a restart is resumed by a status call from the ste
   const zombie = deferred();
   const first = await makeReplyEnvironment(t, { runnerOptions: FAST, hooks: { beforeAudit: async () => { await zombie.promise; } } });
   t.after(() => zombie.resolve());
-  const reviewing = await first.submit({ text: "Synthetic outside reply.", idempotency_key: "key-restart" });
+  assert.equal((await first.submit({ text: "Synthetic outside reply.", idempotency_key: "key-restart" })).status, "reviewing");
+  // The old process stops once its stored draft has reached the audit; that stored draft is what a status call answers with.
+  await until(() => first.provider.counts.audit === 1, "the first review to reach its audit", 30_000);
+  const reviewing = await first.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-restart" });
   assert.equal(reviewing.status, "reviewing");
 
   // A new process on the same storage, with a new connector, runner and reviewing model. The old one never finishes.
-  const second = await makeReplyEnvironment(t, { rootDir: first.rootDir, runnerOptions: FAST });
+  const second = await makeReplyEnvironment(t, { rootDir: first.rootDir, runnerOptions: SETTLE });
   const before = await second.reload();
   assert.equal(before.candidate_responses[0].status, "pending_audit");
   const resumed = await second.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-restart" });
@@ -113,7 +127,8 @@ test("after a restart the same submission resumes the review rather than startin
   const first = await makeReplyEnvironment(t, { runnerOptions: FAST, hooks: { beforeAudit: async () => { await zombie.promise; } } });
   t.after(() => zombie.resolve());
   assert.equal((await first.submit({ text: "Synthetic outside reply.", idempotency_key: "key-restart-2" })).status, "reviewing");
-  const second = await makeReplyEnvironment(t, { rootDir: first.rootDir, runnerOptions: FAST });
+  await until(() => first.provider.counts.audit === 1, "the first review to reach its audit", 30_000);
+  const second = await makeReplyEnvironment(t, { rootDir: first.rootDir, runnerOptions: SETTLE });
   const again = await second.submit({ text: "Synthetic outside reply.", idempotency_key: "key-restart-2" });
   assert.equal(again.status, "approved");
   assert.equal(again.replayed, true);
@@ -125,7 +140,7 @@ test("after a restart the same submission resumes the review rather than startin
 
 test("a review that failed on the model service is stored pending and a later status call finishes it", async (t) => {
   const outage = { down: true };
-  const env = await makeReplyEnvironment(t, { runnerOptions: FAST, hooks: { beforeAudit: async () => { if (outage.down) throw Object.assign(new Error("synthetic provider outage"), { code: "SYNTHETIC_OUTAGE" }); } } });
+  const env = await makeReplyEnvironment(t, { runnerOptions: SETTLE, hooks: { beforeAudit: async () => { if (outage.down) throw Object.assign(new Error("synthetic provider outage"), { code: "SYNTHETIC_OUTAGE" }); } } });
   const failed = await env.refused("submit_reply_draft", { case_id: CASE_ID, source: "external_draft", text: "Synthetic outside reply.", idempotency_key: "key-outage" });
   assert.equal(failed.code, "SUPERVISOR_REVIEW_UNAVAILABLE");
   const stored = await env.reload();
@@ -141,7 +156,7 @@ test("a review that failed on the model service is stored pending and a later st
 test("while the model service is failing the same draft is not tried again for the cooldown", async (t) => {
   const outage = { down: true };
   const env = await makeReplyEnvironment(t, {
-    runnerOptions: { budgetMs: 1_000, cooldownMs: 60_000 },
+    runnerOptions: { ...SETTLE, cooldownMs: 60_000 },
     hooks: { beforeAudit: async () => { if (outage.down) throw Object.assign(new Error("synthetic provider outage"), { code: "SYNTHETIC_OUTAGE" }); } }
   });
   const args = { case_id: CASE_ID, source: "external_draft", text: "Synthetic outside reply.", idempotency_key: "key-cooldown" };
@@ -165,6 +180,9 @@ test("two drafts for one case are reviewed one after another, in order, even tho
   const b = await env.submit({ text: "Synthetic reply B.", idempotency_key: "key-b" });
   assert.equal(a.status, "reviewing");
   assert.equal(b.status, "reviewing");
+  await until(() => env.provider.counts.audit === 1, "the first draft's review to reach its audit", 30_000);
+  const storedA = await env.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-a" });
+  assert.equal(storedA.status, "reviewing");
   await sleep(60);
   assert.equal(env.provider.counts.audit, 1, "the second draft's review has not begun");
   assert.deepEqual((await env.reload()).candidate_responses.map((candidate) => candidate.exact_text), ["Synthetic reply A."], "the second draft is not stored until its turn");
@@ -176,7 +194,7 @@ test("two drafts for one case are reviewed one after another, in order, even tho
   const statusB = await env.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-b" });
   assert.equal(statusB.status, "approved");
   assert.equal(statusB.exportable, true);
-  assert.equal((await env.refused("export_approved_reply", { case_id: CASE_ID, artifact_id: a.artifact.artifact_id })).code, "SUPERVISOR_ARTIFACT_STALE");
+  assert.equal((await env.refused("export_approved_reply", { case_id: CASE_ID, artifact_id: storedA.artifact.artifact_id })).code, "SUPERVISOR_ARTIFACT_STALE");
 });
 
 test("two cases are reviewed together up to the concurrency limit, and the rest wait", async (t) => {
@@ -193,6 +211,7 @@ test("two cases are reviewed together up to the concurrency limit, and the rest 
       await until(() => env.provider.counts.audit === 2, "both cases to be under review at once");
       assert.equal(env.provider.peak.audits, 2);
     } else {
+      await until(() => env.provider.counts.audit === 1, "the first case to be under review", 30_000);
       await sleep(60);
       assert.equal(env.provider.counts.audit, 1, "with room for one, the second case waits");
       assert.deepEqual(env.runner.stats(), { running: 1, waiting: 1, jobs: 2 });
@@ -211,14 +230,18 @@ test("two cases are reviewed together up to the concurrency limit, and the rest 
 
 test("past the queue limit a submission is told InnerSignal is busy and stores nothing", async (t) => {
   const gates = { 1: deferred() };
-  const env = await makeReplyEnvironment(t, { runnerOptions: { ...FAST, concurrency: 1, queueLimit: 0 }, hooks: gated(gates) });
+  const env = await makeReplyEnvironment(t, { runnerOptions: { ...SETTLE, concurrency: 1, queueLimit: 0 }, hooks: gated(gates) });
   t.after(() => gates[1].resolve());
-  assert.equal((await env.submit({ case_id: CASE_ID, text: "Synthetic reply.", idempotency_key: "key-busy-1" })).status, "reviewing");
+  // The first review is held at its audit: it holds the only turn, and nothing may wait for one.
+  const first = env.submit({ case_id: CASE_ID, text: "Synthetic reply.", idempotency_key: "key-busy-1" });
+  await until(() => env.provider.counts.audit === 1, "the first review to reach its audit", 30_000);
+  assert.deepEqual(env.runner.stats(), { running: 1, waiting: 0, jobs: 1 });
   const before = JSON.stringify(await env.reload(OTHER_CASE_ID));
   const busy = await env.refused("submit_reply_draft", { case_id: OTHER_CASE_ID, source: "external_draft", text: "Synthetic reply.", idempotency_key: "key-busy-2" });
   assert.equal(busy.code, "SUPERVISOR_REVIEW_BUSY");
   assert.equal(JSON.stringify(await env.reload(OTHER_CASE_ID)), before);
   gates[1].resolve();
+  assert.equal((await first).status, "approved");
   await env.runner.idle();
   assert.equal((await env.submit({ case_id: OTHER_CASE_ID, text: "Synthetic reply.", idempotency_key: "key-busy-2" })).status, "approved");
 });
@@ -227,7 +250,10 @@ test("revoking access while a review runs lets the review finish but releases no
   const gates = { 1: deferred() };
   const env = await makeReplyEnvironment(t, { runnerOptions: FAST, hooks: gated(gates) });
   t.after(() => gates[1].resolve());
-  const reviewing = await env.submit({ text: "Synthetic outside reply.", idempotency_key: "key-revoked" });
+  assert.equal((await env.submit({ text: "Synthetic outside reply.", idempotency_key: "key-revoked" })).status, "reviewing");
+  await until(() => env.provider.counts.audit === 1, "the review to reach its audit", 30_000);
+  const reviewing = await env.ok("get_reply_draft_status", { case_id: CASE_ID, idempotency_key: "key-revoked" });
+  assert.equal(reviewing.status, "reviewing");
   env.revoked.add("token-reply-only");
   gates[1].resolve();
   await env.runner.idle();

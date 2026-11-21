@@ -28,6 +28,17 @@ export function syntheticMessage(number) {
   return `Synthetic message ${number}.`;
 }
 
+// A clock that depends only on the user turn being run and on how many times it has been read during that turn, so a run is
+// reproducible byte for byte and a copy of the store that continues from turn N reads the same times the original did.
+function turnClock() {
+  const state = { turn: 0, ticks: 0 };
+  const base = Date.UTC(2026, 10, 1, 0, 0, 0);
+  return {
+    begin(turn) { state.turn = turn; state.ticks = 0; },
+    now() { state.ticks += 1; return new Date(base + state.turn * 3_600_000 + state.ticks * 1_000).toISOString(); }
+  };
+}
+
 /**
  * @param t node:test context, used to close the store and delete the temporary folder.
  * @param options.readings the extraction's suicidal_state for each turn (string or { state, context, variables }); later turns read "absent".
@@ -35,7 +46,15 @@ export function syntheticMessage(number) {
  * @param options.auditFindings ({ turn, auditNumber, packet }) => findings for that audit; audit numbers restart at 1 on each turn.
  * @param options.auditFails ({ turn, auditNumber }) => true to make the audit provider itself fail.
  * @param options.onAuditPacket ({ turn, auditNumber, packet }) => void, called with the packet the auditor received.
- * @param options.onPrompt ({ stage, turn, input }) => void, called for every provider call.
+ * @param options.onPrompt ({ stage, turn, input }) => void or a promise, called (and awaited) for every provider call.
+ * @param options.messages the user's text for each turn: an array (the nth turn is messages[n - 1]) or (number) => text. Turns without one read
+ *   "Synthetic message N." as before.
+ * @param options.reply ({ number, ids }) => text or null, the candidate's answer for that turn in place of the scaffold sentence. null keeps the
+ *   scaffold. One paragraph, ending in a statement and not a question: the question is the plan's own and is added after it.
+ * @param options.clock true for a clock that depends only on the turn number (reproducible packets, and a copy of the store continues with
+ *   the times the original read); a function returning an ISO time; false (the default) for the real clock.
+ * @param options.copyStoreFrom a folder holding a copy of an earlier state of this case's store (see snapshot()), and options.startTurn the
+ *   number of user turns it holds. Together they open the case at that point; fork() does this.
  * @param options.ownerFallback true to turn the fixed fallback message on (INNER_SIGNAL_OWNER_FALLBACK). Off by default, as it is in production,
  *   and set explicitly in the config so that the environment of whoever runs the tests never decides it.
  * @param options.forcedRoute a route id, or ({ turn }) => route id or null, written to the stored episode's route and active step after the
@@ -55,16 +74,26 @@ export async function openScriptedRiskRuntime(t, {
   onAuditPacket = () => {},
   onPrompt = () => {},
   ownerFallback = false,
-  forcedRoute = null
+  forcedRoute = null,
+  messages = null,
+  reply = null,
+  clock = false,
+  copyStoreFrom = null,
+  startTurn = 0
 } = {}) {
   if (![1, 6].includes(itemsPerTurn)) throw new Error("itemsPerTurn must be 1 or 6.");
   if (!Number.isSafeInteger(maximumTurns) || maximumTurns < 1 || maximumTurns > MAXIMUM_TURNS) throw new Error("maximumTurns is out of range.");
+  if (!Number.isSafeInteger(startTurn) || startTurn < 0 || startTurn > maximumTurns || (startTurn > 0) !== (copyStoreFrom != null)) throw new Error("startTurn and copyStoreFrom go together.");
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-synthetic-risk-"));
+  if (copyStoreFrom != null) await fs.cp(copyStoreFrom, rootDir, { recursive: true });
+  const turnTimes = clock === true ? turnClock() : null;
   const store = createEncryptedPrivateCaseStore({
     rootDir,
     routineKek: Buffer.alloc(32, 61),
     recoverySecretBytes: Buffer.alloc(32, 62),
-    developmentExternalCredentialAuthorized: true
+    developmentExternalCredentialAuthorized: true,
+    ...(turnTimes ? { now: () => turnTimes.now() } : {}),
+    ...(typeof clock === "function" ? { now: clock } : {})
   });
   t.after(async () => {
     store.close();
@@ -77,16 +106,19 @@ export async function openScriptedRiskRuntime(t, {
     phases: Array.from({ length: Math.ceil(maximumTurns / TURNS_PER_PHASE) }, () => ({ messages: ["Synthetic placeholder."], repeat: TURNS_PER_PHASE }))
   };
   const { providers, counts } = await makeScriptedProviders({ scenario });
+  // The scripted providers count the turns they have read; a case opened at turn N has them read N empty extractions first.
+  for (let burned = 0; burned < startTurn; burned += 1) await providers.openai.generate({ system: "", user: "", metadata: { stage: "case_extraction" } });
+  const messageFor = (number) => (typeof messages === "function" ? messages(number) : messages?.[number - 1]) ?? syntheticMessage(number);
 
-  let turn = 0;
+  let turn = startTurn;
   let auditNumber = 0;
-  let currentMessage = syntheticMessage(1);
+  let currentMessage = messageFor(startTurn + 1);
   for (const provider of Object.values(providers)) {
     const generate = provider.generate.bind(provider);
     provider.generate = async (input) => {
       const stage = input.metadata?.fixtureKey ?? input.metadata?.stage;
       if (stage === "case_extraction") { turn += 1; auditNumber = 0; }
-      onPrompt({ stage, turn, input });
+      await onPrompt({ stage, turn, input });
       if (stage === "private_candidate_audit" && auditFails({ turn, auditNumber: auditNumber + 1 })) {
         auditNumber += 1;
         throw new Error("Synthetic audit provider failure.");
@@ -123,6 +155,17 @@ export async function openScriptedRiskRuntime(t, {
         value.findings = auditFindings({ turn, auditNumber, packet }) ?? [];
         return { ...raw, text: JSON.stringify(value) };
       }
+      if (stage === "realization" && reply) {
+        const value = JSON.parse(raw.text);
+        const text = reply({ number: turn, ids: value.realized_nodes.map((node) => node.id) });
+        if (typeof text === "string" && text.trim()) {
+          // The contract check wants each realized node's evidence quote to be in the answer, so every node quotes the reply's first sentence.
+          const quote = text.trim().split(/(?<=[.!])\s/u)[0];
+          value.answer = text.trim();
+          value.realized_nodes = value.realized_nodes.map((node) => ({ ...node, evidence_quote: quote }));
+          return { ...raw, text: JSON.stringify(value) };
+        }
+      }
       return raw;
     };
   }
@@ -142,7 +185,8 @@ export async function openScriptedRiskRuntime(t, {
   const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime, maximumInvocationAttempts: 1 });
   // Runs the nth user turn through the given controller.
   function runThrough(through, number) {
-    currentMessage = syntheticMessage(number);
+    currentMessage = messageFor(number);
+    turnTimes?.begin(number);
     const id = `risk-${number}`;
     return through.run({
       caseId,
@@ -154,6 +198,13 @@ export async function openScriptedRiskRuntime(t, {
       userInput: { processingMode: "fast" }
     });
   }
+  async function snapshotStore() {
+    const copy = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-synthetic-risk-snapshot-"));
+    await fs.cp(rootDir, copy, { recursive: true });
+    t.after(() => fs.rm(copy, { recursive: true, force: true }));
+    return copy;
+  }
+  const options = { caseId, readings, itemsPerTurn, maximumTurns, auditFindings, auditFails, onAuditPacket, onPrompt, ownerFallback, forcedRoute, messages, reply, clock };
   return {
     caseId,
     rootDir,
@@ -165,6 +216,16 @@ export async function openScriptedRiskRuntime(t, {
     modelRuntime,
     // Runs the nth user turn through the whole audit loop and returns the controller's result, or throws what it throws.
     run: (number) => runThrough(controller, number),
+    // How many user turns the scripted providers have read, including ones that ended without a reply.
+    get turns() { return turn; },
+    // A copy of the store as it is now, in a new folder (removed at the end of the test). Take it between turns, never during one.
+    snapshot: snapshotStore,
+    // A second runtime over a copy of this one's stored case at its current turn, with other options for the turns that follow (for example
+    // other audit findings, or the fallback setting). The original is untouched.
+    async fork(t2 = t, overrides = {}) {
+      const copy = await snapshotStore();
+      return openScriptedRiskRuntime(t2, { ...options, ...overrides, copyStoreFrom: copy, startTurn: turn });
+    },
     // A second model runtime and controller over the same store and the same scripted providers, with the setting chosen here. For a test
     // that opens a case again under the other setting: the case, its saved turns and the providers' turn count carry over.
     reopen({ ownerFallback: enabled = false } = {}) {

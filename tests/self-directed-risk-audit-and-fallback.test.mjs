@@ -494,16 +494,16 @@ test("in a real run, the turn-9 audit packet carries the digest and the record a
   assert.deepEqual(digest.route_sequence.runs.map((run) => [run.route, run.from_turn, run.to_turn]), [[CALM, 1, 5], [INQUIRY, 6, 7], [CALM, 8, 9]]);
   assert.deepEqual(
     [digest.suicide_family.earlier_user_turns_outside_verbatim_window, digest.suicide_family.turn_numbers, digest.suicide_family.with_exact_text_in_targeted_older_evidence, digest.suicide_family.without_exact_text_in_this_packet],
-    [2, [6, 7], 1, 1],
-    "two earlier risk turns outside the window; the turn of the record's highest reading (the later of the two equal readings) has its exact text, the other does not"
+    [2, [6, 7], 2, 0],
+    "two earlier risk turns outside the window, and both have their exact text: the turn of the record's highest reading (the later of the two equal readings) and the turn of its first reading"
   );
   const risk = digest.self_directed_risk;
   assert.deepEqual([risk.level, risk.assessed_turn_number, risk.latest_reading_turn_number, risk.latest_reading_unknown, risk.fresh_readings_below_held_level],
     ["ideation", 6, 9, true, []]);
   assert.deepEqual(risk.history.map((entry) => [entry.change, entry.turn_number]), [["raised", 6], ["held", 7]]);
 
-  assert.deepEqual(packet.targeted_older_evidence.map((entry) => [entry.turn_id, entry.turn.text]), [["risk-7-user", "Synthetic message 7."]]);
-  assert.deepEqual(risk.highest_reading_in_history, { reading: "ideation", turn_id: "risk-7-user", turn_number: 7 }, "the digest names the turn the packet carries");
+  assert.deepEqual(packet.targeted_older_evidence.map((entry) => [entry.turn_id, entry.turn.text]), [["risk-7-user", "Synthetic message 7."], ["risk-6-user", "Synthetic message 6."]], "the highest reading's turn and the first statement's turn");
+  assert.deepEqual(risk.highest_reading_in_history, { reading: "ideation", turn_id: "risk-7-user", turn_number: 7 }, "the digest names the highest reading's turn, which the packet carries");
   assert.equal(Object.hasOwn(packet.case_state, "self_directed_risk"), false, "the record reaches the auditor once, through the digest");
   assert.deepEqual(
     [packet.disclosure_manifest.trajectory_digest_included, packet.disclosure_manifest.trajectory_digest_computed_in_code_without_model, packet.disclosure_manifest.self_directed_risk_record_included],
@@ -619,18 +619,103 @@ test("a quiet stretch after one reading keeps that turn's exact text in the audi
   assert.equal(packets.get(5).trajectory_digest.suicide_family.with_exact_text_in_targeted_older_evidence, 1);
 });
 
-test("the turn stays in the audit packet for ten planned turns after the lowering to absent, and then leaves it", async (t) => {
+test("a turn that is both the first and the highest reading stays in the audit packet after its ten planned turns end, for the rest of the case (the shape of arc A8)", async (t) => {
   const readings = ["absent", "ideation"];
   const packets = new Map();
-  const runtime = await openScriptedRiskRuntime(t, { readings, maximumTurns: 16, onAuditPacket({ turn, auditNumber, packet }) { if (auditNumber === 1) packets.set(turn, packet); } });
-  for (let number = 1; number <= 16; number += 1) assert.equal((await runtime.run(number)).deliveryKind, "candidate");
+  const runtime = await openScriptedRiskRuntime(t, { readings, maximumTurns: 17, onAuditPacket({ turn, auditNumber, packet }) { if (auditNumber === 1) packets.set(turn, packet); } });
+  for (let number = 1; number <= 17; number += 1) assert.equal((await runtime.run(number)).deliveryKind, "candidate");
   const stored = await runtime.load();
   assert.equal(stored.case_state.self_directed_risk.current.lowered_at_planned_turn, 4);
+  assert.equal(stored.case_state.self_directed_risk.first_reading.assessed_turn_id, "risk-2-user");
   const holds = (turn) => packets.get(turn).targeted_older_evidence.some((entry) => entry.turn_id === "risk-2-user");
   const turnsWithIt = [...packets.keys()].filter(holds);
-  assert.deepEqual(turnsWithIt, [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], "from the reading's next turn to the tenth planned turn after the lowering turn (turn 4)");
-  assert.equal(holds(15), false);
-  assert.equal(holds(16), false);
-  assert.equal(packets.get(15).trajectory_digest.self_directed_risk.level, "absent", "the record itself stays, with its history");
-  assert.equal(packets.get(15).trajectory_digest.self_directed_risk.history.length, 2);
+  assert.deepEqual(turnsWithIt, [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], "from the reading's next turn on: the tenth planned turn after the lowering turn (turn 4) is turn 14, and the first reading's turn stays after it");
+  for (const turn of [14, 15, 16, 17]) assert.deepEqual(packets.get(turn).targeted_older_evidence.map((entry) => entry.turn_id), ["risk-2-user"], `one entry, once, on turn ${turn}`);
+  assert.equal(packets.get(16).trajectory_digest.self_directed_risk.level, "absent", "the record itself stays, with its history");
+  assert.equal(packets.get(16).trajectory_digest.self_directed_risk.history.length, 2);
+  assert.equal(packets.get(16).trajectory_digest.suicide_family.without_exact_text_in_this_packet, 0, "before this change the packet on turn 15 and after had none of it");
+});
+
+test("the highest reading's turn leaves the audit packet ten planned turns after the lowering to absent, while the first statement's turn stays in the audit packet and in the repair packet", async (t) => {
+  // The statement on turn 2 and again on turn 3 (equal readings: turn 3 is the highest reading, turn 2 the first). Turns 4 and 5 are quiet, so
+  // the level goes to absent while turn 5 is merged and the highest reading's window runs to turn 15. A repair is forced on turns 6 and 17.
+  const readings = ["absent", "ideation", "ideation"];
+  const packets = new Map();
+  const repairs = [];
+  const runtime = await openScriptedRiskRuntime(t, {
+    readings,
+    maximumTurns: 18,
+    auditFindings: ({ turn, auditNumber }) => ((turn === 6 || turn === 17) && auditNumber === 1 ? [BLOCKING_FINDING] : []),
+    onPrompt({ stage, turn, input }) { if (stage === "private_candidate_repair") repairs.push({ turn, text: shownIn(input) }); },
+    onAuditPacket({ turn, auditNumber, packet }) { if (auditNumber === 1) packets.set(turn, packet); }
+  });
+  for (let number = 1; number <= 18; number += 1) assert.equal((await runtime.run(number)).deliveryKind, "candidate");
+  const stored = await runtime.load();
+  assert.equal(stored.case_state.self_directed_risk.current.lowered_at_planned_turn, 5);
+  assert.deepEqual([stored.case_state.self_directed_risk.first_reading.level, stored.case_state.self_directed_risk.first_reading.assessed_turn_id], ["ideation", "risk-2-user"]);
+  const evidenceIds = (turn) => packets.get(turn).targeted_older_evidence.map((entry) => entry.turn_id);
+  for (const turn of [1, 2, 3]) assert.deepEqual(evidenceIds(turn), [], `turn ${turn}: turns 2 and 3 are inside the verbatim window`);
+  for (let turn = 4; turn <= 15; turn += 1) assert.deepEqual(evidenceIds(turn), ["risk-3-user", "risk-2-user"], `turn ${turn}: the highest reading's turn, then the first statement's`);
+  for (const turn of [16, 17, 18]) assert.deepEqual(evidenceIds(turn), ["risk-2-user"], `turn ${turn}: only the first statement's turn, which has no window`);
+  assert.deepEqual(packets.get(18).targeted_older_evidence.map((entry) => entry.turn.text), ["Synthetic message 2."]);
+  const countsAt = (turn) => { const family = packets.get(turn).trajectory_digest.suicide_family; return [family.with_exact_text_in_targeted_older_evidence, family.without_exact_text_in_this_packet]; };
+  assert.deepEqual(countsAt(15), [2, 0], "the digest's own counts follow the packet");
+  assert.deepEqual(countsAt(16), [1, 1]);
+
+  // The repair writer is part of the reply check, so it gets the same turns, and never the record.
+  const repairAt = (turn) => repairs.find((entry) => entry.turn === turn)?.text ?? "";
+  for (const turn of [6, 17]) {
+    assert.ok(repairAt(turn).includes(RECORD_REASON) && repairAt(turn).includes("Synthetic message 2."), `the repair on turn ${turn} holds the first statement's exact text`);
+    assert.equal(repairAt(turn).includes("self_directed_risk\""), false, `turn ${turn}: no record in case_state`);
+    assert.equal(repairAt(turn).includes("lowering_readings"), false);
+    assert.equal(repairAt(turn).includes("trajectory_digest"), false);
+  }
+  assert.equal(repairAt(6).includes("Synthetic message 3."), true, "inside the window the repair writer also gets the highest reading's turn");
+  assert.equal(repairAt(17).includes("Synthetic message 3."), false, "past the window it does not");
+});
+
+test("through the audit loop, the first turn at the highest level stays in the audit and repair packets beside the latest repeat and the first statement (the shape of arc A5, variant)", async (t) => {
+  // Ideation on turns 4 and 5, imminent on turns 6 and 7 (the second repeats the first), then ideation again. The route changes at turns 4, 6
+  // and 8, so from turn 8 the window holds only the current turn. The first reading is turn 4, the highest reading is turn 7, and turn 6 is
+  // the first time the person reached the highest level. A repair is forced on turn 9.
+  const readings = ["absent", "absent", "absent", "ideation", "ideation", "imminent", "imminent", "ideation", "ideation", "ideation", "ideation", "ideation"];
+  const packets = new Map();
+  const repairs = [];
+  const runtime = await openScriptedRiskRuntime(t, {
+    readings,
+    maximumTurns: 12,
+    auditFindings: ({ turn, auditNumber }) => (turn === 9 && auditNumber === 1 ? [BLOCKING_FINDING] : []),
+    onPrompt({ stage, turn, input }) { if (stage === "private_candidate_repair") repairs.push({ turn, text: shownIn(input) }); },
+    onAuditPacket({ turn, auditNumber, packet }) { if (auditNumber === 1) packets.set(turn, packet); }
+  });
+  const routes = [];
+  for (let number = 1; number <= 12; number += 1) {
+    assert.equal((await runtime.run(number)).deliveryKind, "candidate");
+    routes.push((await runtime.load()).case_state.current_episode.route);
+  }
+  assert.deepEqual(routes, [CALM, CALM, CALM, INQUIRY, INQUIRY, SAFETY, SAFETY, INQUIRY, INQUIRY, INQUIRY, INQUIRY, INQUIRY]);
+  const record = (await runtime.load()).case_state.self_directed_risk;
+  assert.deepEqual([record.first_reading.level, record.first_reading.assessed_turn_id], ["ideation", "risk-4-user"]);
+  assert.equal(record.history.find((entry) => entry.reading === "imminent").assessed_turn_id, "risk-6-user");
+  const evidenceIds = (turn) => packets.get(turn).targeted_older_evidence.map((entry) => entry.turn_id);
+  for (const turn of [1, 2, 3, 4, 5]) assert.deepEqual(evidenceIds(turn), [], `turn ${turn}: no record yet, or every turn of it is inside the verbatim window`);
+  for (const turn of [6, 7]) assert.deepEqual(evidenceIds(turn), ["risk-4-user"], `turn ${turn}: the escalation is inside the window, the first statement is not`);
+  for (let turn = 8; turn <= 12; turn += 1) {
+    assert.deepEqual(evidenceIds(turn), ["risk-7-user", "risk-6-user", "risk-4-user"], `turn ${turn}: the highest reading, the first turn at that level, the first statement`);
+    assert.deepEqual(packets.get(turn).targeted_older_evidence.map((entry) => entry.turn.text), ["Synthetic message 7.", "Synthetic message 6.", "Synthetic message 4."], `turn ${turn}: their exact words`);
+    for (const entry of packets.get(turn).targeted_older_evidence) assert.deepEqual([entry.reasons, entry.item_ids], [[RECORD_REASON], [RECORD_ITEM]], `turn ${turn}: one label`);
+    assert.equal(packets.get(turn).recent_verbatim.turns.some((entry) => ["risk-4-user", "risk-6-user", "risk-7-user"].includes(entry.id)), false, `turn ${turn}: all three are outside the window`);
+  }
+  // The digest's own counts follow the packet: the four earlier risk turns, three of them with their exact text (turn 5 is the one without).
+  const family = (turn) => { const counts = packets.get(turn).trajectory_digest.suicide_family; return [counts.turn_numbers, counts.with_exact_text_in_targeted_older_evidence, counts.without_exact_text_in_this_packet]; };
+  assert.deepEqual(family(8), [[4, 5, 6, 7], 3, 1]);
+  assert.deepEqual(family(12), [[4, 5, 6, 7], 3, 1]);
+  assert.deepEqual(packets.get(8).trajectory_digest.self_directed_risk.highest_reading_in_history, { reading: "imminent", turn_id: "risk-7-user", turn_number: 7 });
+
+  // The repair writer is part of the reply check, so it gets the same three turns, and never the record.
+  const repair = repairs.find((entry) => entry.turn === 9)?.text ?? "";
+  assert.ok(repair.includes(RECORD_REASON), "the repair on turn 9 carries the retrieval label");
+  for (const text of ["Synthetic message 4.", "Synthetic message 6.", "Synthetic message 7."]) assert.ok(repair.includes(text), `the repair holds ${text}`);
+  assert.equal(repair.includes("self_directed_risk\""), false, "no record in case_state");
+  assert.equal(repair.includes("trajectory_digest"), false);
 });

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 4527efce2bf5040b7104c02bb6308150dac410d826aef551c635b3548e94eb28
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 63be7f1d4a42d127c6f6619de2b0a0e8ab5b7e269c8125a116ba707bcfe69362
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
@@ -17,7 +17,7 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "approvedAt": "2026-10-26",
     "domain": "cross-guide",
@@ -25,6 +25,6 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "status": "owner-approved",
     "text": "For nonjudgmental understanding, distinguish involuntary feelings, spontaneous thoughts, freely chosen thoughts, intentions, and reported conduct. Feelings do not by themselves establish character, misconduct or a clinical diagnosis. Preserve informed consent, vulnerability, non-exploitation, chosen boundaries and protective action; neither shame nor permission to act on every impulse follows from having a feeling. A self-chosen boundary around an unsuitable attraction can be a mature Protector act. Avoid treating variable legal rules, ethical consent and diagnoses as interchangeable. A historical trauma report merits careful support but fantasies, imagery and uncertain memories do not establish further events or a cause of attraction; no guaranteed change of attraction follows from maturation or therapy. A sexual-life concern may include shame, fantasy, arousal and intimacy even without partnered activity. Examine what a previous specialist actually did before suggesting a new specialty or assuming treatment completed. Particularly sensitive institutional referrals require verified, action-changing purpose, client fit, realistic privacy/reporting limits, independent experience and available alternatives; do not automatically recommend preventive institutions for distress about a feeling alone, while preserving appropriate protection when present supported harm risk exists."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

@@ -2,7 +2,7 @@ import { projectEvidenceAuthority } from "./evidence-authority.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
 import { createEmptyCaseState, validateCaseState } from "./longitudinal-state.mjs";
-import { SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID, SELF_DIRECTED_RISK_RETRIEVAL_REASON, selfDirectedRiskRetrievalTurn } from "./self-directed-risk.mjs";
+import { SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID, SELF_DIRECTED_RISK_RETRIEVAL_REASON, selfDirectedRiskRetrievalTurns } from "./self-directed-risk.mjs";
 import { summarizeTrackerWindow } from "./tracker.mjs";
 
 export const CONTEXT_WINDOW_LIMITS = Object.freeze({
@@ -102,10 +102,10 @@ export function formatVerbatimWindow(window) {
   return window.turns.map((turn) => `${turn.role.toUpperCase()}: ${turn.text}`).join("\n\n");
 }
 
-// `forReplyCheck` adds the request for the older turn that holds the person's own highest earlier risk reading (see
-// selfDirectedRiskRetrievalTurn). Only the reply check asks for it: the audit packet and the repair packet. The extraction and
-// writing prompts are built without it, so a reading the extractor made on an earlier turn cannot come back to it as the person's
-// current words and keep itself alive (owner decision D1: the state alone drives nothing).
+// `forReplyCheck` adds the requests for the older turns that hold the person's own highest earlier risk reading, the first turn at that
+// level and the first reading above absent (see selfDirectedRiskRetrievalTurns). Only the reply check asks for them: the audit packet
+// and the repair packet. The extraction and writing prompts are built without them, so a reading the extractor made on an earlier turn
+// cannot come back to it as the person's current words and keep itself alive (owner decision D1: the state alone drives nothing).
 export function targetedRetrievalRequests(caseState, recentTurnIds = [], { forReplyCheck = false } = {}) {
   const state = validateCaseState(structuredClone(caseState));
   const recent = new Set(recentTurnIds);
@@ -119,12 +119,15 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = [], { forRe
       item_id: "threat_pathway.current"
     });
   }
-  // The turn of the highest self-directed-risk reading still in the record, for the reply check only. The label names no level.
-  const selfDirectedRiskTurn = forReplyCheck ? selfDirectedRiskRetrievalTurn(state) : null;
-  if (selfDirectedRiskTurn && !recent.has(selfDirectedRiskTurn)) {
+  // The turns of the highest self-directed-risk reading still in the record, of the first turn at that level and of the first reading
+  // above absent (at most three; fewer where they are the same turn, none when the record is not held or the window already holds them),
+  // for the reply check only. They share one label, which names no level: each is a turn the current record points to.
+  const selfDirectedRiskTurns = forReplyCheck ? selfDirectedRiskRetrievalTurns(state) : [];
+  for (const turnId of selfDirectedRiskTurns) {
+    if (recent.has(turnId)) continue;
     refs.push({
       reason: SELF_DIRECTED_RISK_RETRIEVAL_REASON,
-      turn_id: selfDirectedRiskTurn,
+      turn_id: turnId,
       item_id: SELF_DIRECTED_RISK_RETRIEVAL_ITEM_ID
     });
   }
@@ -222,6 +225,6 @@ export function decisionRelevantProjection(context) {
       human_review_required: state.protective_compatibility.current.human_review_required,
       assessed_turn_id: state.protective_compatibility.current.assessed_turn_id
     } : null,
-    retrieval_item_ids: context.targeted_retrieval_requests.map((item) => item.item_id)
+    retrieval_item_ids: [...new Set(context.targeted_retrieval_requests.map((item) => item.item_id))]
   };
 }

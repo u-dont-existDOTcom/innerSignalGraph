@@ -16,6 +16,8 @@ graph_tags:
 source_refs:
   - IC.BEFORE_DEEP
   - IC.REGULATION_BEFORE_DIALOGUE
+  - AMEND.IC.SCAFFOLDING_IS_READINESS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G014
   - G025
@@ -28,9 +30,9 @@ regression_refs:
   - G106
   - G131
   - G154
-base_record_sha256: b1e65d2504260a9a984e57eccfe96057e0116ab9e8b7aeba5957e00552b94344
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 7d6dac93489f2821e8bfb9f38c0a1401fb617b53198d996b039d78427481af68
+base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Outside safety and present orientation first
@@ -94,7 +96,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
   "recommendations": [
     "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
     "Use eyes-open, present-focused contact and the smallest reversible action.",
-    "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored."
+    "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored.",
+    "Scaffolding is the readiness check: start with the smallest step that feels possible and go deeper only after the last one went well. Coming back to the room is practised on those small steps, never tested before starting; what sends the work here first is noticing that the person plainly can't stay present or find their way back right now."
   ],
   "successSignals": [
     "The person can stop, orient, and return to ordinary life."
@@ -108,3 +111,7 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/sources/inner-child-guide/IC.BEFORE_DEEP]]
 
 [[current/sources/inner-child-guide/IC.REGULATION_BEFORE_DIALOGUE]]
+
+[[current/governance/amendments/AMEND.IC.SCAFFOLDING_IS_READINESS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

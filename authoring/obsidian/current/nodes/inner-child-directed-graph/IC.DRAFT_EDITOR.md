@@ -18,10 +18,11 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.WISDOM_DRAFT_EDITOR
   - AMEND.IC.WISDOM_SOURCES
+  - AMEND.CROSS.AI_SIDEWAYS_AND_OWN_WORDS_20261120
 regression_refs: []
-base_record_sha256: 16d69337c42b93ceff4ab265ae073802767a15632dfa2e7dd4024e105ffab900
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: ac634c8f70c448f996308307cdeffd91ec6d50b231743e78b384e6b5da06b137
+base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Edit the communication without rejecting its author
@@ -103,7 +104,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Invite a brief private mental or written draft of what the person wants to say. Keep raw draft and sendable response clearly separate; do not require disclosure or storage.",
     "Take the caring editor's position: preserve the important truth, justified protest, proportionate responsibility, realistic aim and necessary boundary. Better does not mean softer or more agreeable.",
     "Check an honest sufficient response for this actual recipient and situation. The human decides whether to send, pause, apologize, refuse or not respond. Do not send anything automatically.",
-    "Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing."
+    "Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing.",
+    "For a message to another person, help work out what to say and offer it as a draft for the person to put in their own words, not as ready-to-send text."
   ],
   "successSignals": [
     "The communication is more appropriate without internal abandonment.",
@@ -120,3 +122,5 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.IC.WISDOM_DRAFT_EDITOR]]
 
 [[current/governance/amendments/AMEND.IC.WISDOM_SOURCES]]
+
+[[current/governance/amendments/AMEND.CROSS.AI_SIDEWAYS_AND_OWN_WORDS_20261120]]

@@ -20,10 +20,13 @@ source_refs:
   - AMEND.IC.WISDOM_CRITICISM_KERNEL
   - AMEND.IC.WISDOM_SOURCES
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
+  - AMEND.IC.GUARDS_USUALLY_A_MIX_20261120
 regression_refs: []
-base_record_sha256: e548d1b69d1675daa6bd4a923049599206dab0d0fb13fa947734a9e4a91bc154
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: dd46cff9ad297bcc9227825155838e90a5535e75a1ebdb5c0826ecf16e99f1cb
+base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Receive useful content without accepting contempt
@@ -105,7 +108,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
     "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
     "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt.",
-    "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or a vulnerable part of them from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish when the person finds that useful; understanding it does not mean agreeing with it or letting it keep attacking."
+    "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or a vulnerable part of them from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish when the person finds that useful; understanding it does not mean agreeing with it or letting it keep attacking.",
+    "Answering the strict disciplinarian (the owner's exercise): remember who drove the person so hard as a child, start a little rap sheet of their provoking lines, and comfort the little one before answering any of it. The answers can be firm or funny, never mean, since mean is the inner critic's department.",
+    "Like a guard, an inner critic may be helpful, unhelpful or, usually, a mix; when the person finds it isn't helping (a totally useless old script, say), it can be fully reprogrammed: they choose what they'd rather hear and practise it in place of the old line, never with cruelty. Whether it is that is the person's call."
   ],
   "successSignals": [
     "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."
@@ -125,3 +130,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.IC.WISDOM_SOURCES]]
 
 [[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]
+
+[[current/governance/amendments/AMEND.IC.GUARDS_USUALLY_A_MIX_20261120]]

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_DRAFT_EDITOR
 status: owner-approved
 domain: inner-child
-base_record_sha256: 50af2e111e0fc2799ef4e2447254f8806c87cd4aea437b88d3d8be52ee582238
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: d1074dfcbd66aa39eb5185ef101c5a5b5d553e9d36e5c7c17ca6b3b901cf2df1
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.WISDOM_DRAFT_EDITOR
@@ -17,13 +17,13 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_DRAFT_EDITOR",
     "status": "owner-approved",
     "text": "Preserve what the person wants to say as an optional private mental or written draft. Use a caring editor who is on the person's side and wants to be fair. Preserve valid protest, facts, necessary firmness, proportionate responsibility and appropriate requests. Check what is actually suitable to communicate now. The human decides whether to send, pause, revise, apologize, refuse or not respond. Then return to the original draft for inward understanding and care. Do not equate editing with suppression, agreeableness, or shame. The raw draft may contain mature protest and is not automatically an inner child or settled intent. Inward care may precede editing when needed; urgent external action is not delayed by the exercise. Saving, sustained venting and permanent storage are not required."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

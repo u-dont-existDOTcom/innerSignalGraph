@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.MUSIC_EMOTIONAL_ACCESS
 status: owner-approved
 domain: inner-child
-base_record_sha256: fc1cdf0a892d7d9a8c5d4fa2b7cc6824831e3842983eba348acd7e5b141efa32
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 8dfa336765e25217d7b0efae4e3f0aa7a56e142450288e8ee2b959b19b2010de
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.MUSIC_EMOTIONAL_ACCESS
@@ -17,13 +17,13 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
     "status": "owner-approved",
     "text": "Personally meaningful, user-chosen music may be used as an optional emotional-access cue when words, imagery, or deliberate effort are not making a relevant feeling or caring function available. Ask about music the person already knows has helped; do not infer taste or prescribe a supposedly therapeutic song. Treat tears, chills, a rush of energy, vivid memory, or emotional intensity as access signals only—not proof of processing, memory accuracy, causal insight, integration, or durable improvement. Once something becomes available, continue through the existing relevant route such as borrowed love/Nurturer access, child contact, memory inquiry, or integration rather than chasing intensity. Preserve intervention identity and session context: same exercise versus different exercise, music present/absent and user-named track if supplied, state beforehand, immediate opening, and later carryover. If music increases overwhelm, derealization/dissociation, panic, disorientation, or loss of stopping capacity, reduce or stop it and return to present orientation/stabilization; existing safety gates retain priority."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

@@ -10,6 +10,8 @@ import { sha256Bytes } from "../src/authoring/canonical-json.mjs";
 import { createProposal, loadProposal } from "../src/authoring/proposal.mjs";
 import { buildProposal, checkProposal, materializeProposal } from "../src/authoring/proposal-builder.mjs";
 import { reconcileApprovedProposal } from "../src/authoring/reconcile.mjs";
+import { MAP_FILE_PATHS, buildMapFiles } from "../src/authoring/map-files.mjs";
+import { createCurrentProjection } from "../src/authoring/projection.mjs";
 import { createStoredZip, readZipEntries } from "../src/core/zip.mjs";
 import { canonicalJson as packetCanonicalJson } from "../src/guide-packet/contract.mjs";
 
@@ -201,4 +203,24 @@ test("only an exact approved packet can reconcile candidate graphs on a task bra
   const after = await graphHashes(root);
   assert.equal(after["somatic.graph.json"], sourceBefore["somatic.graph.json"]);
   assert.equal(after["cross-guide.graph.json"], sourceBefore["cross-guide.graph.json"]);
+});
+
+test("a reconciliation that fails after writing the maps restores every map and box-guidance file", async (t) => {
+  const root = await fixtureRoot(t);
+  await createProposal({ root, id: "neutral-rollback-r1", nodeIds: ["IC.NEUTRAL_WITNESS"], regressionIds: ["G001"] });
+  const note = path.join(root, "authoring", "obsidian", "proposals", "neutral-rollback-r1", "nodes", "IC.NEUTRAL_WITNESS.md");
+  await fs.writeFile(note, (await fs.readFile(note, "utf8")).replace("title: Begin with a neutral witness", "title: Begin with a rolled-back neutral witness"), "utf8");
+  await buildProposal({ root, id: "neutral-rollback-r1" });
+  const approved = approvePacket(await fs.readFile(path.join(root, "authoring", ".build", "neutral-rollback-r1", "packet", "proposal.zip")));
+  const approvedPath = path.join(root, "authoring", ".build", "neutral-rollback-r1", "packet", "approved.zip");
+  await fs.writeFile(approvedPath, approved);
+  const readOrNull = (relative) => fs.readFile(path.join(root, relative), "utf8").catch((error) => { if (error.code === "ENOENT") return null; throw error; });
+  // The restore set is exactly what the map build writes.
+  assert.deepEqual([...buildMapFiles((await createCurrentProjection({ root })).authority).keys()], [...MAP_FILE_PATHS]);
+  const before = await Promise.all(MAP_FILE_PATHS.map(readOrNull));
+  // The receipt is written last; a file already at its temporary path makes the reconciliation fail after the maps were rewritten.
+  await fs.writeFile(path.join(root, "authoring", ".build", "neutral-rollback-r1", `reconciliation.json.${process.pid}.reconcile`), "occupied", "utf8");
+  await assert.rejects(() => reconcileApprovedProposal({ root, id: "neutral-rollback-r1", packetId: "authoring-neutral-rollback-r1", packetPath: path.relative(root, approvedPath), packetSha256: sha256Bytes(approved), branchName: "codex/test-task", runCompleteGates: false }), { code: "EEXIST" });
+  assert.deepEqual(await Promise.all(MAP_FILE_PATHS.map(readOrNull)), before, "every map and box-guidance file is as it was");
+  for (const text of await Promise.all(MAP_FILE_PATHS.map(readOrNull))) assert.ok(!String(text).includes("rolled-back neutral witness"));
 });

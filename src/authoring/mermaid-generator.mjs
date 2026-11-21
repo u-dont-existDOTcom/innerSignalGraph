@@ -33,7 +33,11 @@ export function buildMermaidModel({ bundle, registries, mapId }) {
   if (!graph) throw new Error(`Missing compiled graph for map ${mapId}.`);
   const nodes = [...graph.nodes].sort((left, right) => compareText(left.id, right.id));
   const edges = [...graph.edges].sort((left, right) => compareText(`${left.from}\0${left.relation}\0${left.to}`, `${right.from}\0${right.relation}\0${right.to}`));
-  return { graph, nodes, edges, overlays: activeOverlays(registries, { mapId }) };
+  const declared = new Set(nodes.map((node) => node.id));
+  const externals = [...new Set(edges.flatMap((edge) => [edge.from, edge.to]).filter((id) => !declared.has(id)))]
+    .sort(compareText)
+    .map((id) => ({ id, title: bundle.graphs.flatMap((other) => other.nodes).find((node) => node.id === id)?.title ?? "" }));
+  return { graph, nodes, edges, externals, overlays: activeOverlays(registries, { mapId }) };
 }
 
 export function renderMermaidMap({ bundle, registries, mapId, projectionInputSha256 }) {
@@ -50,6 +54,7 @@ export function renderMermaidMap({ bundle, registries, mapId, projectionInputSha
     "",
     `This is an inner-child-scoped view: all ${model.nodes.length} compiled inner-child nodes and all ${model.edges.length} compiled inner-child edges are shown. It is not a whole-bundle view.`,
     "",
+    ...(model.externals.length ? [`The ${model.externals.length} cross-guide routes that these arrows reach are named in their own group. What is inside every box, and all the cross-guide routes, is in the box guidance file (INNER-CHILD-BOX-GUIDANCE.md).`, ""] : []),
     "The map is not a linear requirement to perform every node. The smallest sufficient branch wins.",
     "",
     "```mermaid",
@@ -60,6 +65,11 @@ export function renderMermaidMap({ bundle, registries, mapId, projectionInputSha
     lines.push(`    ${mermaidId("node", node.id)}["${escapeMermaidLabel(`${node.id}\n${node.title}`)}"]`);
   }
   lines.push("  end");
+  if (model.externals.length) {
+    lines.push(`  subgraph ${mermaidId("subgraph", "external-routes")}["Cross-guide routes reached from this map"]`);
+    for (const node of model.externals) lines.push(`    ${mermaidId("node", node.id)}["${escapeMermaidLabel(`${node.id}\n${node.title}`)}"]`);
+    lines.push("  end");
+  }
   for (const edge of model.edges) {
     lines.push(`  ${mermaidId("node", edge.from)} -- "${escapeMermaidLabel(edge.relation)}" --> ${mermaidId("node", edge.to)}`);
   }
@@ -77,7 +87,7 @@ export function renderMermaidMap({ bundle, registries, mapId, projectionInputSha
   }
   lines.push("  classDef compiled fill:#eef4ff,stroke:#2855a6,stroke-width:2px");
   lines.push("  classDef overlay fill:#fff7e6,stroke:#9a6700,stroke-width:2px,stroke-dasharray: 6 4");
-  if (model.nodes.length) lines.push(`  class ${model.nodes.map((node) => mermaidId("node", node.id)).join(",")} compiled`);
+  if (model.nodes.length) lines.push(`  class ${[...model.nodes, ...model.externals].map((node) => mermaidId("node", node.id)).join(",")} compiled`);
   if (model.overlays.length) lines.push(`  class ${model.overlays.map((item) => mermaidId("overlay", item.id)).join(",")} overlay`);
   lines.push("```", "", "## Authority legend", "", "- Solid nodes and arrows: exact compiled graph records.", "- Dashed relationships: owner-approved documentation overlays; not compiled and not executable.", "- Canvas geometry, Mermaid layout, links, and visual grouping have no runtime meaning.", "", "## Maintenance", "", "Run `npm run authoring:maps:check`. Update graph authority through validated proposals and the existing owner-decision lifecycle, never by editing this map.", "");
   const output = lines.join("\n");

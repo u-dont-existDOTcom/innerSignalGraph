@@ -75,7 +75,7 @@ const CONTRIBUTION_CONTRACT = {
 const PUBLIC_POSTURE_SHA256 = {
   "README.md": "1e6e8f8911d9e6c9d4f625e69595470b7b0cadf9b7f8c3568b6c6c029dbc3868",
   "AGENTS.md": "71124d35705ee8dbb892c1fdc3b97d6fb6f49974042609459953dbfd1af445db",
-  "docs/INDEX.md": "62fb9c4e4243a26fb9231392b6a9b21c514b3fce0581a68155a1016d9435922c",
+  "docs/INDEX.md": "63f31507f1eb0216b68386f28cc3509fbabb2753a95a9155bd62fb7f9c6c93f4",
   "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
   "CONTRIBUTING.md": "3e36a03597382a82cb628f0daa1c9595ad86b57ffa339873dcf18be1efdd40c4"
 };
@@ -922,7 +922,7 @@ function auditOwnershipAndCi(root, findings) {
       [/branches:\s*\[main, stable\]/, "main and stable triggers are required"],
       [/node-version-file:\s*\.nvmrc/, "CI must use .nvmrc"],
       [/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/, "checkout revision is not the reviewed SHA"],
-      [/actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/, "setup-node revision is not the reviewed SHA"]
+      [/actions\/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1/, "setup-node revision is not the reviewed SHA"]
     ]) {
       requireMatch(workflow, pattern, "ci-contract", relative, message, findings);
     }

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: fe0b5f5ef64346c018adddcd1ef26e7234d8d71880ddc20feb464947622cc5c1
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 0272bedf730c7c2be3be3b87fc61d9c5de7fcf4e7ce69c80a12ad84eebdf2a16
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
@@ -17,13 +17,13 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
     "status": "owner-approved",
     "text": "Intuitive, mystical, gestalt, affective, and subconscious cognition are required resources, but they must work together with analytical, propositional, contradiction-sensitive cognition. Do not literalize this as a simplistic left-brain/right-brain anatomy claim. Intuitive cognition can surface patterns, resonance, meaning, and information that analysis has not consciously assembled, but a felt gestalt is not by itself a true/false adjudicator. Analytical cognition checks contradiction, track record, scope, falsifiability, and whether a compelling experience is being generalized beyond its evidence; it can also become overburdened, rigid, or eager to hand off the pressure of checking. In high-stakes trust and spiritual-authority decisions, neither mode gets unilateral control: separate the felt signal from the proposition inferred from it, let both modes contribute, and require the conclusion to remain corrigible by contrary evidence."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```
