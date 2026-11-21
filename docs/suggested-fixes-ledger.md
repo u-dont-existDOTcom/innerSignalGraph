@@ -163,3 +163,38 @@ The authenticated read-only inbox scan identified four proposal-only items not y
 - Check: the humanized guide lane's record (`articles/inner-child-therapy/experiments/t120-queue/QUEUE-CLEARED.md` and `.json` at `9e639bf19`) holds the same 52 IDs as queue version 2026-10-31-r20, once each; every passage it quotes is in the owner's guide word for word (SHA-256 `100c3c76…`, the hash the record names), and every heading it names is a heading of that guide. PGQ-039 and PGQ-048 asked for a legal review of explicit jurisdictional statements before public placement: the guide's passage makes only general, hedged statements and no jurisdiction-specific one, and the accidental-exposure sentence is not in it, so nothing needs that review now.
 - Outcome: **ADOPTED.** All 52 entries consumed (26 in, 25 with the core point in the owner's words and the rest left out by his choice, 1 left out: PGQ-036); the queue is reset to its EMPTY sentinel and `authoring/public-guide-sync.json` records the humanized draft's identity and every entry's fate. This supersedes the 2026-10-22 deferral of queue consumption (PR #416), which waited for an evidence-based sync: this record quotes the guide's own words for every entry. Receipt: ADOPTED, `PROPOSED_ON_TASK_BRANCH` (branch `task/clear-humanization-queue-20261104`).
 - Intake: the automated inbox check got HTTP 401 from the development container (state unknown); the lane was read with git instead: the default branch's items are all dispositioned, and the item above sits in open PR #467.
+
+## 2026-11-21 — An outcome for every open pull request (architecture repository, merged)
+
+- Item: `suggested-fixes/innerSignalGraph/2026-11-06-open-pull-request-outcomes.md`, filed on 6 November 2026 by the Claude session that maintains `u-dont-existDOTcom/universal-dev-architecture` and merged there the same day (`c25062c3`, its pull request #470), from that repository's `patterns/short-lived-pull-requests.md`. It is an owner request of 6 November 2026; his words are in that repository's `docs/requirements/2026-11-06-short-lived-pull-requests.owner-requirement.json`. It asks for an outcome for every open pull request here (merge it when its gates pass, update it and resolve its conflicts, or close it with one line saying why and what replaced it), and from then on at every turn's mailbox check.
+- Outcome: **ADOPTED.** On 21 November 2026 this repository had 23 open pull requests. Each got an outcome; every merge carries the merge statement (Codex's review of the final commit found nothing, each earlier review comment has a fix or a reason, all four required checks passed on a branch up to date with `main`), and every closed pull request keeps its branch and can be reopened.
+
+| PR | What it was | Outcome | Why, and what carries it |
+| --- | --- | --- | --- |
+| #232 | InnerSignal in parts, so every app gets all the rules (owner answer i60a) | Left open | Parked by the owner on 21 Nov (his i61b: the runner first); the InnerSignal lane holds it. |
+| #225 | The self-directed risk safeguards write-up | Closed | Replaced by #226 (merged 2 Nov), which carries the page. |
+| #223 | Sealed Claude CLI calls without `--max-turns` | Closed | Replaced by #226 (merged 2 Nov), which carries the change unchanged. |
+| #222 | `actions/setup-node` v7.1.0 (Dependabot) | Merged, `c4fcb4c6` | With a reviewed pin: `949feb24` is the v7.1.0 tag's commit (GitHub API, 21 Nov), now in `scripts/audit-repository.mjs` and its two tests. |
+| #221 | `github/codeql-action` v4.39.1, init and analyze (Dependabot) | Merged, `be634740` | With a reviewed pin: `9b325408` is the v4.39.1 tag's commit, now `CODEQL_ACTION_SHA` and its test. |
+| #209 | Research: LessWrong therapy ideas against InnerSignal | Closed | A finished research note whose own decision is no change; its optional behaviour test was not taken up. |
+| #208 | fast-uri 3.1.9 (Dependabot) | Merged, `d15a72fc` | |
+| #207 | undici, 8.13.1 after Dependabot's rebase (Dependabot) | Merged, `8e18bf7f` | |
+| #196 | Design for mechanical response-evidence enforcement (issue #195) | Updated and merged, `ed9e8d69` | The design the owner asked to implement on 26 Oct, reviewed on 28 Oct; slices 1 and 5 were already merged (#203, #210, #211). Conflicts resolved; its state section sits before slice 1 with a status line. |
+| #189 | vitest and @vitest/mocker, vitest 5.1.1 after the rebase (Dependabot) | Merged, `eee0d9ca` | |
+| #188 | Draft: owner-authored Inner Child guide changes against the AI guide, map and rules | Closed | Replaced by #229 (merged 21 Nov), which redid its six amendments of 22 Oct with the owner's 23 Oct correction. |
+| #186 | vite, 8.3.8 after the rebase (Dependabot) | Merged, `40a1c3c5` | |
+| #185 | Ordinary desires and symptom causation (owner-approved 19 Oct) | Closed | Replaced by #229: AI guide r11 carries both points in the owner's own words. Its symptom amendment, the two `IC.SOLAR_PLEXUS_RELAXATION` lines and a graph case, which #229 did not carry, came back through #234 (IS7, merged 21 Nov). |
+| #182 | Research: inner-child reparenting against Schema Therapy (book audit checkpoints) | Closed | Its proposals were decided and carried: r11 through #229, and the schema-therapy comparison through owner question 50 and #213. The notes stay on the branch. |
+| #148 | source-map-js, 1.2.4 after the rebase (Dependabot) | Merged, `1680c14e` | |
+| #141 | State record of the live named-case continuity deployment | Closed | Replaced by #142 (merged 6 Oct). |
+| #139 | Owner-supplied historical delivery checkpoints | Closed | Replaced by #203 (merged 30 Oct), which reconciles its contract. |
+| #122 | Design: storage for the public plugin | Closed | Paused by the owner on 4 Oct; closed under his 6 Nov rule. Reopen when the storage work starts (the runner may change where things are kept). |
+| #114 | vite 8.3.5 (Dependabot, older) | Closed | Replaced by #186. |
+| #113 | vitest 5.0.5 (Dependabot, older) | Closed | Replaced by #189. |
+| #112 | @types/node 26 (Dependabot) | Closed | Node 26 types on a package that runs on Node 24 (`.nvmrc` 24.18.0, `engines` below 25). |
+| #96 | Claim-integrity rules in the served protocol and reply prompts | Closed | Parked by the owner on 4 Oct (his 9c, after approving the wording, 1 A); closed under his 6 Nov rule. Reopen at the polish-and-ship phase, then fit the rules to that day's protocol and test them again. |
+| #85 | yaml 2.9.1 (Dependabot) | Merged, `9e08d0ee` | |
+
+- Not in scope: #233 and #234, opened and merged on 21 Nov by other InnerSignal sessions. Merges went one at a time because `main` requires up-to-date branches; this work paused once for #234.
+- From now on: at each turn's mailbox check (`AGENTS.md`, "Suggested fixes from other projects"), the maintaining session lists this repository's open pull requests with their state (ready, behind, conflicting or draft) and age and gives each an outcome under the pattern's step 3; one waiting for the owner is listed once as waiting for him. This repository has no end-of-turn step (see the 31 October entry), so the check is recorded in the session's handoff note.
+- Nothing went to `stable` or to a server, no branch was deleted, and no therapy content changed in this work. The `2026-09-30-claim-integrity-checks.md` receipt now names the closed #96 and its branch.
