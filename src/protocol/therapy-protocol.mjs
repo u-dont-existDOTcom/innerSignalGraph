@@ -447,20 +447,20 @@ export function therapyProtocolDelivery(protocol) {
   if (bytesOf(renderFirstAnswer(delivery, firstNames, groups, "f".repeat(64))) > PROTOCOL_ANSWER_MAX_BYTES) {
     throw new TherapyProtocolUnavailableError("The first part of the rules doesn't fit in one answer.");
   }
-  // Every part fits in an answer beside the longest lines one can carry: 40 of the longest part names still to load, more
-  // beyond them, and five unknown names at their longest. So any request naming a part gets at least that part.
-  const longestNames = [...all].sort((a, b) => b.name.length - a.name.length).slice(0, MAX_LISTED_PARTS).map((part) => part.name);
-  const longestUnknown = Array.from({ length: MAX_ECHOED_UNKNOWN }, (_, index) => `${"\u0000".repeat(199)}${index}`);
-  for (const part of all) {
-    if (bytesOf(renderPartsAnswer(delivery, [part], longestNames, longestUnknown, 1)) > PROTOCOL_ANSWER_MAX_BYTES) {
-      throw new TherapyProtocolUnavailableError(`The part ${part.name} doesn't fit in one answer.`);
-    }
-  }
   groups.forEach((group) => group.sort((a, b) => order.get(a) - order.get(b)));
   delivery.firstNames = Object.freeze(firstNames);
   delivery.groups = Object.freeze(groups.map((group) => Object.freeze(group)));
   delivery.groupNames = Object.freeze(groups.map((_, index) => `${GROUP_PREFIX}${index + 1}`));
   groups.forEach((group, index) => aliases.set(`${GROUP_PREFIX}${index + 1}`, group));
+  // Every part fits in an answer beside the shortest form of an answer's own lines at their longest: 40 of the longest
+  // part names still to load, more beyond them, and unknown names counted. packAnswer falls back to that form when
+  // nothing else fits, so any request naming a part gets at least that part.
+  const longestNames = [...all].sort((a, b) => b.name.length - a.name.length).slice(0, MAX_LISTED_PARTS).map((part) => part.name);
+  for (const part of all) {
+    if (bytesOf(renderPartsAnswer(delivery, [part], longestNames, ["x", "y"], 1, true)) > PROTOCOL_ANSWER_MAX_BYTES) {
+      throw new TherapyProtocolUnavailableError(`The part ${part.name} doesn't fit in one answer.`);
+    }
+  }
   const frozen = Object.freeze(delivery);
   deliveries.set(protocol, frozen);
   return frozen;
@@ -504,7 +504,9 @@ function renderFirstAnswer(delivery, firstNames, groups, changedFrom = null) {
   return lines.join("\n");
 }
 
-function renderPartsAnswer(delivery, parts, stillToLoad, unknown, beyond = 0) {
+// `brief` keeps the answer's own lines at their shortest: the names still to load (real part names, at most 40) and
+// counts, with no echo of unknown names and no list of groups.
+function renderPartsAnswer(delivery, parts, stillToLoad, unknown, beyond = 0, brief = false) {
   const asked = parts.length + stillToLoad.length + beyond;
   const opening = asked === 0
     ? `${header(delivery.protocol)}: none of the names you sent is a part of this protocol.`
@@ -514,9 +516,12 @@ function renderPartsAnswer(delivery, parts, stillToLoad, unknown, beyond = 0) {
   if (stillToLoad.length > MAX_LISTED_PARTS || beyond > 0) {
     lines.push(`And ${stillToLoad.length - Math.min(stillToLoad.length, MAX_LISTED_PARTS) + beyond} more parts after those: ask for them by name once you have loaded these (a part's name and number are in its BEGIN line).`);
   }
-  if (unknown.length > 0) {
+  if (unknown.length > 0 && brief) lines.push(`${unknown.length} of the names you sent ${unknown.length === 1 ? "is not a part name" : "are not part names"}: the first answer and the box list give the names.`);
+  if (unknown.length > 0 && !brief) {
     const shown = unknown.slice(0, MAX_ECHOED_UNKNOWN).map(echoedName);
-    lines.push(`Not part names of this protocol: ${nameList(shown)}${unknown.length > shown.length ? ` and ${unknown.length - shown.length} more` : ""}. The names are the groups ${nameList(delivery.groupNames ?? [])}, the paths the rules name, \`${BOX_LIST_PART}\`, and each box's name from the box list.`);
+    const groups = delivery.groupNames ?? [];
+    const groupNames = groups.length === 0 ? "" : groups.length === 1 ? `the group \`${groups[0]}\`, ` : `the groups \`${groups[0]}\` to \`${groups.at(-1)}\`, `;
+    lines.push(`Not part names of this protocol: ${nameList(shown)}${unknown.length > shown.length ? ` and ${unknown.length - shown.length} more` : ""}. The names are ${groupNames}the paths the rules name, \`${BOX_LIST_PART}\`, and each box's name from the box list.`);
   }
   lines.push("", ...parts.map(block));
   return lines.join("\n");
@@ -618,6 +623,12 @@ function packAnswer(delivery, wanted, unknown, beyond = 0) {
     const trial = [...included, name];
     const rest = wanted.filter((other) => !trial.includes(other));
     if (bytesOf(renderPartsAnswer(delivery, partsOf(trial), rest, unknown, beyond)) <= PROTOCOL_ANSWER_MAX_BYTES) included.push(name);
+  }
+  if (included.length === 0 && wanted.length > 0) {
+    // The answer's own lines left no room for any part: the first part goes out with those lines at their shortest, which
+    // every part was checked to fit beside when the protocol loaded. So a request naming a real part always gets one.
+    const rest = wanted.slice(1);
+    return { included: [wanted[0]], stillToLoad: rest, text: renderPartsAnswer(delivery, partsOf([wanted[0]]), rest, unknown, beyond, true) };
   }
   const stillToLoad = wanted.filter((name) => !included.includes(name));
   return { included, stillToLoad, text: renderPartsAnswer(delivery, partsOf(included), stillToLoad, unknown, beyond) };

@@ -250,6 +250,32 @@ test("the box list names every box once, and every box the map shows", () => {
   assert.ok(delivery.byName.has(example), "the first answer's example box is a real one");
 });
 
+test("the line on unknown names stays short however many groups there are, and never crowds a part out", () => {
+  const lineOf = (made) => therapyProtocolAnswer(made, { parts: ["unknown"] }).text.split("\n").find((line) => line.startsWith("Not part names"));
+  const withGroups = (count) => syntheticProtocol("Rules.\n", Array.from({ length: count }, (_, index) => ({ path: `references/R${String(index).padStart(3, "0")}.md`, content: `# R\n\n${"r".repeat(20_000)}\n` })));
+  const few = withGroups(3);
+  const many = withGroups(40);
+  assert.equal(therapyProtocolDelivery(many).groupNames.length, 40);
+  assert.ok(lineOf(many).length - lineOf(few).length <= 2, "only the last group's number grows");
+  assert.match(lineOf(many), /The names are the groups `group\/1` to `group\/40`, the paths the rules name/u);
+  // In the real protocol, a part asked for beside an unknown name still comes.
+  for (const part of delivery.all) assert.deepEqual(therapyProtocolAnswer(protocol, { parts: [part.name, "unknown"] }).included, [part.name], part.name);
+});
+
+test("any request naming a real part gets at least one part and fits, whatever else it holds (500 random requests)", () => {
+  let seed = 21_112_026;
+  const random = (n) => { seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648; return seed % n; };
+  const strange = () => Array.from({ length: 1 + random(99) }, () => String.fromCodePoint([0, 7, 34, 92, 0x2028, 0x1f600, 65 + random(26)][random(7)])).join("");
+  const names = [...delivery.all.map((part) => part.name), ...delivery.groupNames, "rules", "boxes", BOX_FILE];
+  for (let round = 0; round < 500; round += 1) {
+    const parts = Array.from({ length: 1 + random(40) }, () => (random(3) === 0 ? strange() : names[random(names.length)]));
+    const answer = therapyProtocolAnswer(protocol, { parts });
+    assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES, `round ${round}: ${bytes(answer.text)} bytes`);
+    const namesReal = parts.some((name) => names.includes(name));
+    if (namesReal) assert.ok(answer.included.length > 0, `round ${round}: a part`);
+  }
+});
+
 test("unknown names are echoed plainly and briefly, so a request naming real parts always gets one", () => {
   const ids = [...SAFETY_BOX_IDS];
   const big = `### IC.BIG: Big\n\n${Array.from({ length: 900 }, () => `- Do: ${"d".repeat(1000)}\n\n`).join("")}`;
@@ -288,7 +314,7 @@ test("names resolve leniently, unknown ones are reported plainly, and the rest w
   const none = therapyProtocolAnswer(protocol, { parts: ["no-such-part"] });
   assert.deepEqual([none.included, none.unknown], [[], ["no-such-part"]]);
   assert.match(none.text, /: none of the names you sent is a part of this protocol\.\n/u);
-  assert.match(none.text, /Not part names of this protocol: \["no-such-part"\]\. The names are the groups \["group\/1"/u);
+  assert.match(none.text, /Not part names of this protocol: \["no-such-part"\]\. The names are the groups `group\/1` to `group\/5`, the paths the rules name/u);
   // A request naming too much gets what fits and the names of the rest, never a cut part.
   const everything = therapyProtocolAnswer(protocol, { parts: delivery.all.slice(0, 40).map((part) => part.name) });
   assert.ok(everything.included.length > 0 && everything.stillToLoad.length > 0);

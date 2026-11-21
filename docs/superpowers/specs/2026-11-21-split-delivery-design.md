@@ -176,3 +176,13 @@ once; ChatGPT makes them one after another. Each later box costs one call of 1,0
    characters, and the load-time check measures that worst case. A regression test fails without the fix.
 2. The rewrite had dropped the check that the box list names every box: restored, with the map's boxes and the first
    answer's example box.
+
+**Codex's review of `5023459e4`** (one finding): the line answering unknown names listed every group, and the load-time
+size check ran before the groups existed, so a protocol with hundreds of groups could crowd a real part out. The line now
+names the range (`group/1` to `group/N`) and the check runs after the groups are set.
+
+This was the third finding of one kind (an answer's own lines crowding its parts out: the 40-part expansion, the echoed
+unknown names, the group list), so the guarantee moved to the one place answers are packed: when no part fits beside the
+full lines, the first part goes out with those lines at their shortest (part names still to load, and counts), which
+every part is checked to fit beside when the protocol loads. A property test sends 500 random requests mixing real names
+with odd ones and requires a part whenever a real part is named, and every answer within the cap.
