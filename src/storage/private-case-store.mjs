@@ -1261,15 +1261,24 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
-    // The runner trial's readers' results for one turn, stored once before anything is shown. A second call returns the stored
-    // record unchanged (a rerun after a restart reuses the first reading rather than reading again).
-    async recordRunnerReading(caseId, runtimeTurnId, reading) {
+    // The runner trial's readers' results for one turn, each reader's stored once, before anything that rests on it is shown.
+    // A later call adds readers not yet stored and never changes one already there (a rerun reuses the first reading). The
+    // conversation the turn belongs to is fixed by the first call.
+    async recordRunnerReading(caseId, runtimeTurnId, { conversationId, readers = {} }) {
       let stored = null;
       await mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
-        if (runtimeTurn.runner_reading) { stored = structuredClone(runtimeTurn.runner_reading); return null; }
+        const existing = runtimeTurn.runner_reading ?? null;
+        if (existing && existing.conversation_id !== conversationId) throw new ValidationError("A turn's conversation is fixed by its first reading.");
+        const added = Object.entries(readers).filter(([name]) => !existing?.readers?.[name]);
+        if (existing && added.length === 0) { stored = structuredClone(existing); return null; }
         if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no new reading.");
-        runtimeTurn.runner_reading = structuredClone({ ...reading, schema_version: 1, recorded_at: reading?.recorded_at ?? now() });
+        runtimeTurn.runner_reading = {
+          schema_version: 1,
+          conversation_id: conversationId,
+          recorded_at: existing?.recorded_at ?? now(),
+          readers: { ...(existing?.readers ?? {}), ...structuredClone(Object.fromEntries(added)) }
+        };
         validatePrivateRuntimeTurn(runtimeTurn);
         stored = structuredClone(runtimeTurn.runner_reading);
         return record;
