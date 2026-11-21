@@ -406,6 +406,26 @@ test("30 days after it was kept, the next load deletes the plan (lines removed, 
   assert.equal((await other.store.load(CASE_ID)).runner_kept_plans[0].deletion_reason, "expired");
 });
 
+test("a plan kept while the switch was on is still deleted at its 30 days after the switch is turned off: the page's load deletes it, and its reconcile answers as before", async (t) => {
+  const runner = await makeRunner(t, keptPlanScript());
+  await reachPlan(runner);
+  await runner.send("[keep] Synthetic: keep it.");
+  const keptAt = Date.parse((await runner.store.load(CASE_ID)).runner_kept_plans[0].kept_at);
+  // The switch turned off: a runtime and controller without it, over the same encrypted store and clock.
+  const off = createRunnerTrialRuntime({ privateCaseSource: runner.store, parts, workerFor: fakeWorkers(keptPlanScript()).workerFor, keptPlanEnabled: false, now: () => runner.clock.now });
+  const controller = createPrivateTherapyTurnController({ privateCaseSource: runner.store, modelRuntime: off, maximumInvocationAttempts: 1 });
+  assert.equal(typeof controller.resumeStatus, "undefined", "nothing of the kept plan's page methods with the switch off");
+  runner.clock.now = keptAt + THIRTY_DAYS - 60 * 60 * 1000;
+  const before = await controller.reconcile({ caseId: CASE_ID, currentConversation: true });
+  assert.equal((await runner.store.load(CASE_ID)).runner_kept_plans[0].deleted_at, null, "an hour before its 30 days, the page's load leaves it");
+  runner.clock.now = keptAt + THIRTY_DAYS + 60 * 1000;
+  const after = await controller.reconcile({ caseId: CASE_ID, currentConversation: true });
+  const [plan] = (await runner.store.load(CASE_ID)).runner_kept_plans;
+  assert.deepEqual([plan.lines, plan.deletion_reason, plan.deleted_at], [[], "expired", new Date(runner.clock.now).toISOString()], "the page's load deleted it, with no message sent");
+  assert.deepEqual(JSON.parse(JSON.stringify(after)), JSON.parse(JSON.stringify(before)), "the reconcile's answer is the same turns, as before");
+  assert.deepEqual(after.map((turn) => Object.keys(turn)), before.map(() => ["exchangeId", "userMessage", "answer", "deliveryKind", "closing", "provisional", "emergencyLineShown"]));
+});
+
 test("deleted when the person asks: in the conversation, before the writer starts, and with the page's button; the transcript keeps the words, and deleting the case deletes all", async (t) => {
   const runner = await makeRunner(t, keptPlanScript());
   await reachPlan(runner);

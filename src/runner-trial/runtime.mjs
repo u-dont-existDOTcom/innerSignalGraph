@@ -118,15 +118,15 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext)
     : privateCaseSource.loadOrCreate(caseId);
   const source = (method, args, authContext) => privateCaseSource[method](...args, authContext);
-  // A kept plan is deleted 30 days after it was kept, checked whenever the runtime loads the case (design, section 9). Only a case
-  // that holds a kept plan has anything to check, so a case that never kept one is read exactly as before; a plan kept while the
-  // switch was on is still deleted on time after it is turned off.
-  async function expireKeptPlans(caseId, record, authContext) {
+  // A kept plan is deleted 30 days after it was kept, checked whenever the runtime loads the case and when the page loads (the
+  // controller's reconcile; design, section 9). Only a case that holds a kept plan has anything to check, so a case that never kept
+  // one is read exactly as before; a plan kept while the switch was on is still deleted on time after it is turned off.
+  async function deleteExpiredKeptPlans(caseId, record, authContext) {
     if (!record || !hasExpiredKeptPlan(record, now())) return record;
     await source("deleteRunnerKeptPlans", [caseId, { reason: "expired" }], authContext);
     return loadRecord(caseId, authContext);
   }
-  const load = async (caseId, authContext) => expireKeptPlans(caseId, await loadRecord(caseId, authContext), authContext);
+  const load = async (caseId, authContext) => deleteExpiredKeptPlans(caseId, await loadRecord(caseId, authContext), authContext);
 
   const deadlineOf = (runtimeTurn) => Date.parse(runtimeTurn.created_at) + config.deadlineMs;
   const limitFor = (runtimeTurn, kind, stage) => {
@@ -663,13 +663,19 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       return turns.slice(first).filter((turn) => (turn.runner_reading?.conversation_id ?? latest) === latest).map((turn) => turn.id);
     },
 
+    // The page's load deletes a kept plan past its 30 days whether or not the switch is on now (design, section 9): the controller's
+    // reconcile calls this with the case's record and goes on with the record it returns. Nothing to do for a case with no plan.
+    async expireKeptPlans({ caseId, record, authContext }) {
+      return deleteExpiredKeptPlans(caseId, record, authContext);
+    },
+
     // The kept plan's page methods, only while it is on (design, section 9): what the page needs to ask "Pick up where we left
     // off?" when it loads, and the page's "Delete the kept plan".
     ...(keptPlanEnabled ? {
       // Whether the case has a conversation, and whether the next message opens a new one (after the conversation gap). The page
       // asks from these alone, so its question tells no one whether a plan is kept. A kept plan past its 30 days is deleted here too.
       async resumeStatus({ caseId, record = null, authContext }) {
-        const current = record ? await expireKeptPlans(caseId, record, authContext) : null;
+        const current = record ? await deleteExpiredKeptPlans(caseId, record, authContext) : null;
         const latest = [...(current?.runtime_turns ?? [])].reverse().find((turn) => turn.runner_reading?.conversation_id);
         return Object.freeze({
           hasConversation: Boolean(latest),

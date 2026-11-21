@@ -296,7 +296,7 @@ ones again before it keeps anything, so no caller can keep a plan they don't all
 - **Switch off**: nothing below runs. Every worker's prompt, packet and schema is byte-identical to before (a test runs a fixed
   scenario through both arms, a repair included, and compares one digest of every call with the digest taken from `aa9d03112`);
   the case record gains no field; answers, the reconcile and the page are as before. Only `/health` shows it: `runnerKeptPlan: "off"`.
-  A plan kept while the switch was on is still deleted at its 30 days.
+  A plan kept while the switch was on is still deleted at its 30 days (at the next message or page load), with the trial on.
 - **The ask**: the crisis reader also returns `asks_to_keep_plan` (the person asks to keep their plan, or says yes to the offer in
   the reply just before) and `asks_to_delete_plan`, from this conversation's words.
 - **Kept** only when (a) the crisis reader reads that the person asks in this turn, or (b) the reply just before offered and the
@@ -332,10 +332,11 @@ ones again before it keeps anything, so no caller can keep a plan they don't all
   beyond "never offered or kept"). Start fresh changes only this: earlier turns are still given as background, as before. The page
   learns when to ask from its reconcile (`resume`: whether the case has a conversation and whether the next message opens a new
   one), which says nothing of a plan; when the gap passes while the page stays open, it isn't asked, and no plan is given.
-- **Deleted** 30 days after it was kept, checked whenever the runtime loads the case (every turn, and the page's load), or when the
-  person asks: in the conversation (the crisis reader's `asks_to_delete_plan`; deleted before the writer starts, whose packet then
-  says `kept_plan_deleted_on_request`) or with "Delete the kept plan" on the trial page, after the plain confirmation "This removes
-  the kept plan. Its words are still in the stored conversation, which can't be edited; deleting them too means deleting the case."
+- **Deleted** 30 days after it was kept, checked whenever the runtime loads the case (every turn) and when the page loads (its
+  reconcile, whether or not the switch is on), or when the person asks: in the conversation (the crisis reader's
+  `asks_to_delete_plan`; deleted before the writer starts, whose packet then says `kept_plan_deleted_on_request`) or with "Delete
+  the kept plan" on the trial page, after the plain confirmation "This removes the kept plan. Its words are still in the stored
+  conversation, which can't be edited; deleting them too means deleting the case."
   (`POST /v1/runner/kept-plan/delete`: the owner's page on this machine only; the same answer whether or not a plan was kept).
   Deleting removes the lines from the record and keeps when it was kept, when it was deleted and why. The transcript is append-only,
   so the replies that hold the lines stay, as do the stored drafts; deleting them means deleting the case, which deletes the plan

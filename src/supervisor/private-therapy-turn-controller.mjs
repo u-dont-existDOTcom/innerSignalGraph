@@ -134,6 +134,8 @@ export function createPrivateTherapyTurnController({
   async function reconcileCase({ caseId, afterExchangeId, currentConversation = false, authContext }) {
     let record = await loadExistingCase(caseId, authContext);
     if (!record) return [];
+    // The runner trial's kept plan: one past its 30 days is deleted when the page loads, whether or not its switch is on now.
+    if (typeof modelRuntime.expireKeptPlans === "function") record = await modelRuntime.expireKeptPlans({ caseId, record, authContext });
     if (record.runtime_turns.some((turn) => !isFinishedRuntimeTurn(turn))) {
       await modelRuntime.closeUnfinishedTurns({ caseId, keepRuntimeTurnId: null, authContext });
       record = await loadCase(caseId, authContext);
