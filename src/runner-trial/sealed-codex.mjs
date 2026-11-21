@@ -12,10 +12,17 @@ import { CODEX_ISOLATION_CONFIG } from "../evals/protocol-application.mjs";
 // config, rules and MCP servers ignored; every agent feature the protocol-application eval turns off turned off; the rules and
 // instructions in a 0600 file given as `model_instructions_file`, which replaces Codex's own instructions (a command-line
 // argument can't carry them: Linux caps one at 131,072 bytes); the case packet on stdin; the answer read from the event stream,
-// so no answer file is written. Codex still offers a model some actions, so the isolation is checked on the result, not
+// so no answer file is written; and a Codex home of its own for the call, holding only a link to the sign-in, so the person's
+// global Codex instructions (AGENTS.md), memories and logs never reach the worker or keep anything of the call (a probe on
+// 21 Nov 2026 showed the global instructions reaching a worker that used the person's own Codex home). Codex still offers a model some actions, so the isolation is checked on the result, not
 // prevented: a call whose event stream shows any action, or isn't whole, is refused. A CLI without every flag is refused.
 
-const REQUIRED_FLAGS = ["ephemeral", "json", "sandbox", "approval", "skipGit", "config", "outputSchema", "ignoreUserConfig", "ignoreRules"];
+// `exec` never asks for approval, and Codex 0.171 has no --ask-for-approval on exec: it is passed only when the CLI lists it.
+// Codex's own built-in server offers two tools that only list MCP servers' resources. The call's Codex home configures no MCP
+// server, so they can reach nothing; a call to them, by these exact names, isn't counted as an action. Any other is.
+const INTROSPECTION_TOOLS = Object.freeze(["list_mcp_resources", "list_mcp_resource_templates"]);
+const isIntrospection = (item) => item?.type === "mcp_tool_call" && item.server === "codex" && INTROSPECTION_TOOLS.includes(item.tool);
+const REQUIRED_FLAGS = ["ephemeral", "json", "sandbox", "skipGit", "config", "outputSchema", "ignoreUserConfig", "ignoreRules"];
 const capabilityCache = new Map();
 
 export function classifyCodexFailure(text) {
@@ -35,11 +42,11 @@ function parseEvents(text) {
   return { events, malformed };
 }
 
-export function sealedCodexArgs({ model, effort, instructionsPath, schemaPath }) {
-  const args = ["exec", "--ephemeral", "--json", "--sandbox", "read-only", "--ask-for-approval", "never", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules"];
+export function sealedCodexArgs({ model, effort, instructionsPath, schemaPath, approvalFlag = false }) {
+  const args = ["exec", "--ephemeral", "--json", "--sandbox", "read-only", ...(approvalFlag ? ["--ask-for-approval", "never"] : []), "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules"];
   if (model) args.push("--model", model);
   if (effort) args.push("-c", `model_reasoning_effort=${JSON.stringify(effort)}`);
-  for (const setting of CODEX_ISOLATION_CONFIG) args.push("-c", setting);
+  for (const setting of [...CODEX_ISOLATION_CONFIG, "features.goals=false", "features.memories=false"]) args.push("-c", setting);
   args.push("-c", `model_instructions_file=${JSON.stringify(instructionsPath)}`, "--output-schema", schemaPath, "-");
   return args;
 }
@@ -63,20 +70,23 @@ export class SealedCodexWorker {
   }
 
   async call({ system, user, schema, timeoutMs, stage }) {
-    await this.capabilities();
+    const capabilities = await this.capabilities();
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-runner-codex-"));
     const work = path.join(folder, "work");
     await fs.mkdir(work, { mode: 0o700 });
+    const codexHome = path.join(folder, "codex-home");
+    await fs.mkdir(codexHome, { mode: 0o700 });
+    await fs.symlink(path.join(this.environment.CODEX_HOME || path.join(os.homedir(), ".codex"), "auth.json"), path.join(codexHome, "auth.json"));
     const instructionsPath = path.join(folder, "instructions.md");
     const schemaPath = path.join(folder, "schema.json");
     await fs.writeFile(instructionsPath, system, { mode: 0o600 });
     await fs.writeFile(schemaPath, `${JSON.stringify(schema)}\n`, { mode: 0o600 });
     const started = Date.now();
     try {
-      const environment = { ...sealedInferenceEnvironment(this.environment), ...(this.environment.CODEX_HOME ? { CODEX_HOME: this.environment.CODEX_HOME } : {}) };
+      const environment = { ...sealedInferenceEnvironment(this.environment), CODEX_HOME: codexHome };
       let run;
       try {
-        run = await runSubprocess({ command: this.command, args: sealedCodexArgs({ model: this.model, effort: this.effort, instructionsPath, schemaPath }), stdin: `${user}\n`, cwd: work, env: environment, timeoutMs, label: `Runner ${stage}` });
+        run = await runSubprocess({ command: this.command, args: sealedCodexArgs({ model: this.model, effort: this.effort, instructionsPath, schemaPath, approvalFlag: Boolean(capabilities.flags.approval) }), stdin: `${user}\n`, cwd: work, env: environment, timeoutMs, label: `Runner ${stage}` });
       } catch (error) {
         throw new ProviderError(`Runner ${stage} failed to finish.`, { code: /timed out/iu.test(error.message) ? "TIMEOUT" : "PROVIDER_FAILED", details: { stage } });
       }
@@ -88,10 +98,10 @@ export class SealedCodexWorker {
       const completed = [...events].reverse().find((event) => event.type === "turn.completed");
       const messages = events.filter((event) => event.type === "item.completed" && event.item?.type === "agent_message");
       if (malformed !== 0 || !completed || messages.length === 0) throw new ProviderError("The sealed Codex call's event stream isn't whole, so whether it acted can't be told.", { code: "CODEX_RECEIPT_INCOMPLETE", details: { stage } });
-      const actions = new Set(events
-        .filter((event) => ["item.started", "item.updated", "item.completed"].includes(event.type) && event.item
-          && !["agent_message", "reasoning", "todo_list", "error"].includes(event.item.type))
-        .map((event, index) => event.item.id ?? `item-${index}`)).size;
+      const acting = events.filter((event) => ["item.started", "item.updated", "item.completed"].includes(event.type) && event.item
+        && !["agent_message", "reasoning", "todo_list", "error"].includes(event.item.type));
+      const actions = new Set(acting.filter((event) => !isIntrospection(event.item)).map((event, index) => event.item.id ?? `item-${index}`)).size;
+      const introspection = new Set(acting.filter((event) => isIntrospection(event.item)).map((event, index) => event.item.id ?? `item-${index}`)).size;
       if (actions !== 0) throw new ProviderError("The sealed Codex call took an action; its answer is refused.", { code: "CODEX_ACTION_TAKEN", details: { stage, actions } });
       let value;
       try { value = JSON.parse(String(messages.at(-1).item.text ?? "").trim()); } catch { value = null; }
@@ -111,7 +121,8 @@ export class SealedCodexWorker {
           output_tokens: usage.output_tokens ?? null,
           reasoning_output_tokens: usage.reasoning_output_tokens ?? null,
           isolation: this.isolation,
-          actions: 0
+          actions: 0,
+          introspection_calls: introspection
         })
       };
     } finally {

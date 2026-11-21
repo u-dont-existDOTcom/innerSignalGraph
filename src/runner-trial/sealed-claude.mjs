@@ -23,8 +23,13 @@ export function classifyClaudeFailure(text) {
 }
 
 export class SealedClaudeWorker {
-  constructor({ command = "claude", model, effort = "medium", environment = process.env } = {}) {
+  // configDir: the Claude sign-in folder the runner's calls use (CLAUDE_CONFIG_DIR), so the runner can have a sign-in of its own
+  // apart from the person's default `claude` (the InnerSignal lane's question i64, option a). The folder is only named here:
+  // nothing reads or copies what is in it.
+  constructor({ command = "claude", model, effort = "medium", environment = process.env, configDir = null } = {}) {
     if (typeof model !== "string" || !model.trim()) throw new ProviderError("A runner worker needs an explicit Claude model.", { code: "RUNNER_SETTINGS_INVALID" });
+    if (configDir != null && (typeof configDir !== "string" || !path.isAbsolute(configDir))) throw new ProviderError("The runner's Claude config folder must be an absolute path.", { code: "RUNNER_SETTINGS_INVALID" });
+    this.configDir = configDir;
     this.provider = "anthropic";
     this.command = command;
     this.model = model;
@@ -55,7 +60,8 @@ export class SealedClaudeWorker {
       args.push("--no-session-persistence", "--permission-mode", "dontAsk", "--no-chrome", "--safe-mode", "--strict-mcp-config", "--system-prompt-file", systemPath);
       let run;
       try {
-        run = await runSubprocess({ command: this.command, args, stdin: user, cwd: folder, env: sealedInferenceEnvironment(this.environment), timeoutMs, label: `Runner ${stage}` });
+        const env = { ...sealedInferenceEnvironment(this.environment), ...(this.configDir ? { CLAUDE_CONFIG_DIR: this.configDir } : {}) };
+        run = await runSubprocess({ command: this.command, args, stdin: user, cwd: folder, env, timeoutMs, label: `Runner ${stage}` });
       } catch (error) {
         throw new ProviderError(`Runner ${stage} failed to finish.`, { code: /timed out/iu.test(error.message) ? "TIMEOUT" : "PROVIDER_FAILED", details: { stage } });
       }
