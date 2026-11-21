@@ -88,9 +88,26 @@ test("the harm-reduction facts give no amounts to someone who may be taking some
   assert.match(read(SKILL), /This is for taking something for its effects\. If they may be taking it to die or to hurt themselves, or have said in this conversation that they want to die, give no amounts or doses for anything/u);
   assert.match(read(SKILL), /the only guide links are the ones the section on that names/u);
   // The owner's reply on 388 (Inbox, 20 Nov 2026 23:45 UTC): therapy questions InnerSignal can't answer, suggestions and praise go to a
-  // comment on his guide, where he answers. His direct contact as a last resort waits for his answer on how people reach him.
+  // comment on his guide, where he answers. His direct contact as a last resort is his Signal username (391a, the next test).
   assert.match(read(SKILL), /they can leave a comment on the owner's guide \(https:\/\/innerchild\.u-dont-exist\.com, or the guide the question is about\), and he answers there/u);
   assert.doesNotMatch(read(SKILL), /whatsapp|\+\d{6,}/iu, "no personal contact detail is in the served rules");
+});
+
+test("the owner's Signal username is the last resort in step 2, after the other options, and never a promise (391a)", () => {
+  // The owner's answer 391a (chat, 21 Nov 2026): the last-resort contact is his Signal username, which is public and which he can
+  // retire, never his phone number.
+  const text = section();
+  const noOne = text.indexOf("If there's no one, believe them and don't list people again");
+  const contact = text.indexOf("If they've tried those and none is there for them right now (for example, the crisis line didn't help)");
+  assert.ok(noOne > 0 && contact > noOne, "the contact comes after the options for someone who has no one");
+  assert.ok(text.indexOf("\n3. The body") > contact, "and inside step 2");
+  assert.match(text, /they can message the owner, who wrote the guide InnerSignal is built on, on Signal, where his username is udontexist\.42 \(in Signal, start a new chat and find him by username\)/u);
+  assert.match(text, /Say plainly that he can't talk with everyone and may not be free, so it's a chance, not a promise, and keep the other steps going/u);
+  const served = loadTherapyProtocol({ boxGuidance: true }).instructions;
+  assert.equal(count(served, "udontexist.42"), 1, "the username is served once, in step 2");
+  assert.doesNotMatch(served, /whatsapp/iu);
+  const longNumbers = [...read(SKILL).matchAll(/\+?\d[\d ().-]{5,}\d/gu)].map((match) => match[0]);
+  assert.deepEqual(longNumbers, ["189761959", "189761959"], "no phone number: the only long digit runs are the therapist list's post id");
 });
 
 test("the owner's answer on guards is an owner-approved amendment in his words, written once in each of the two boxes, compiled and served", () => {
