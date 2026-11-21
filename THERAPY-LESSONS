@@ -201,3 +201,8 @@ Development-branch closeout (not an installed-runtime claim): scaffolding, not a
 
 Authority and evidence: the owner's answers of 20 Nov 2026 in `guides/owner-amendments.json` (r22); `tests/owner-decisions-20261120.test.mjs`; eight test chats on the Claude plan. Prepared tests and a handful of chats are not clinical results.
 
+## 2026-11-21 — Crisis rules in levels, and what a plugin can't force
+
+Development-branch closeout (not an installed-runtime claim): someone who has acted or is about to gets the emergency number at once, and that stays the subject until help is coming; someone who says they want to die gets a short first reply (what they want to end, one question about now, the four people to reach), then one step per reply; thoughts of death with no wish to act, or with pain, get no crisis script; fasting, detox, other guide links and how to die stay out for the whole conversation. Guards and critical voices are usually a mix, and only the person decides on a full reprogram. A plugin's instruction shifts a host model's crisis reply but cannot force a sentence: measure such a rule over repeated runs, on the models people use, before calling it followed.
+
+Authority and evidence: the owner's request of 20 Nov 2026 (the t135 handoff), his answers 387a, 388b and point 16 in `guides/owner-amendments.json` (r23); `tests/crisis-rules-and-guards-20261121.test.mjs`; 42 test conversations on GPT and checks on Claude (owner-pages `askrigor/innersignal/crisis-tests-20261121/`). Test chats are not clinical results.

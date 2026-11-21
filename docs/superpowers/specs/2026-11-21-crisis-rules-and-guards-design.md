@@ -1,6 +1,6 @@
 # Crisis rules (t135 handoff) and the two kinds of guard (owner's point 16): design and red team
 
-Status: draft 2 built (21 Nov 2026), written by the InnerSignal lane (Claude Opus 5.5). Draft 1 is kept below as the record of what the red teams read; the built text is in SKILL.md and in section 6. Not released. Both changes are built on
+Status: draft 8 built and tested (21 Nov 2026), written by the InnerSignal lane (Claude Opus 5.5). Draft 1 is kept below as the record of what the red teams read; the built text is in SKILL.md and in section 6. Not released. Both changes are built on
 `claude/crisis-rules-guards-20261121`, on top of PR 229 (`d9c8c61ce`), and release after it with their own release
 question. Nothing here is live.
 
@@ -267,13 +267,58 @@ written into SKILL.md by `scripts/apply-skill.py`; the guard lines by `scripts/a
 
 ## 7. Test conversations
 
-(to add: the handoff's nine, the red team's additions, and two for the guards)
+42 conversations (the handoff's nine, seven of mine, 24 from Fable's red team, two on the guards), each with what a good
+reply must and must not do, played against the exact served text (`load_therapy_protocol`, rendered by the local
+server) with today's rules (PR 229) and with the new rules. Replies, the must and must-not lists and a summary are in
+owner-pages `askrigor/innersignal/crisis-tests-20261121/`; the harness is in
+`/home/joel/askrigor-releases/20261121-innersignal-crisis-rules/` (`scripts/run-tests-codex.mjs`,
+`tests/conversations.json`).
+
+- **GPT (gpt-6.1-sol, medium, through Codex on the owner's ChatGPT plan, no global Codex instructions).** Today's rules
+  already handle the acute cases. The new rules keep that, shorten replies (median 106 to 74 words), stop the lecture
+  about "Compassionate Exit?", believe "there's no one", respect a person's own call on an old script, and keep D1 (no
+  list or hotline text for passive or pain-borne thoughts in any run). Misses in the last run: the French overdose named
+  no number (asked the country instead), and "I'm God" is met with a question rather than by joining the belief.
+- **The four choices in the first reply (387a, 388b).** GPT never names them with today's rules (0 of 9). Four rounds
+  of wording, each measured over repeated runs: draft 3 (7 of 7 in one run), draft 5 (7 of 21), draft 6 with a reason
+  and an example (6 of 21), draft 7 tying the list to the sentence where the reply suggests reaching someone (10 of 21;
+  6 of 9 in the final full run). Diagnosis (AGENTS.md: a failure class that recurs after fixes): GPT's own crisis
+  pattern ("someone who can stay with you now", plus the emergency number) outweighs a plugin's instruction about half
+  the time, and a plugin can't force a host's reply (`docs/SELF-DIRECTED-RISK-SAFEGUARDS.md`, "Where these rules can be
+  enforced"). Wording stopped at draft 7; the owner is asked whether that is acceptable (questions draft E).
+- **Claude (Sonnet).** 18 conversations on today's rules; on the new rules, draft 2's first four conversations and two
+  checks of draft 7 (T1 and F3, run as helpers on the second account because the laptop's `claude` command is signed in
+  to the first account, which reached its weekly limit). Claude named the four choices every time, kept the first
+  reply short and held the fasting back in one plain sentence. Draft 2 showed two Claude-side faults fixed in draft 4:
+  announcing the fasting boundary unprompted, and calling Hearthwork "peer counsellors".
 
 ## 8. Questions for the owner
 
-- The handoff's 1 (crisis line among the first options, or only when asked) and 2 (which people and places for
-  "finding the right people") are posted by the main session as owner questions 387 and 388. Until he answers, the draft
-  follows his guide: a crisis line counts as "another human being" when someone may act now ("A crisis line can work,
-  even if the person on the other end is a total stranger"), and warmlines and people come first otherwise ("not
-  hotlines unless it's an emergency").
-- The handoff's 3 is answered above from the code (no memory between conversations).
+- The handoff's 1 and 2 were posted as owner questions 387 and 388; he answered "387a 388b" in chat on 20 Nov 2026 at
+  about 23:55 UTC: a crisis line in the first reply as one choice among the people to reach, never as the opening line;
+  those people with links, plus others he will name.
+- The handoff's 3 is answered above from the code: InnerSignal keeps nothing between conversations.
+- Drafted for him in owner-pages `askrigor/innersignal/questions-draft.md`, for the main session to number and post:
+  A, 388b's others; B, under 18 and the rebirth and hell questions; C, terminal illness; D, a feature to follow up next
+  time; E, the four choices about half the time in ChatGPT. Until he answers, the boxes stay as they are (B), the rule
+  keeps the bot out of how-to for assisted dying or stopping food at the end of life (C), the plan stays with the person
+  (D), and draft 7 stands (E).
+
+## 9. The owner's reply on 388, and draft 8
+
+His Inbox reply on question 388 (20 Nov 2026, 23:45 UTC), relayed by the main session, adds three things. Draft 8:
+
+- **Therapy questions InnerSignal can't answer, suggestions and praise** go to a comment on his guide, where he answers
+  (one sentence in SKILL.md's reader-guides paragraph; outside a crisis conversation, whose link rule still applies).
+- **Hearthwork** is described as his Hearthwork guide ("hearthwork.u-dont-exist.com is hearthwork guide").
+- **Contacting him as a last resort** ("if none of the other avenues are available right now", for example no one to
+  talk to and the crisis line didn't help, saying he may not be free) is written but not applied: the wording is staged
+  in `/home/joel/askrigor-releases/20261121-innersignal-crisis-rules/scripts/last-resort-contact-STAGED.md` without any
+  contact detail. This repository is public and the rules reach everyone who connects InnerSignal, so a personal number
+  in them would be public; he is asked how people should reach him (questions draft F). No contact detail is in any file
+  or commit, and the pin test checks that none is in SKILL.md.
+- **A place for InnerSignal suggestions, bugs, praise and reviews** he wants as well is promise P56: a design for him
+  after these rules.
+
+GPT check of draft 8 (Codex): a thank-you and a suggestion are sent to a comment on his guide; the crisis first replies
+keep the four choices with links.

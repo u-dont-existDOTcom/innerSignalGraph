@@ -55,11 +55,15 @@ test("the first step: the emergency number at once, poison help never instead, n
 
 test("387a and 388b: the people to reach are in the first reply, never as its opening line, with their links", () => {
   const text = section();
-  assert.match(text, /never as the opening line, the people they could reach today or tonight, as choices/u);
+  assert.match(text, /In this order, it says that you heard what they want to end/u);
+  assert.match(text, /in the sentence where you suggest reaching someone, names all four people they could reach, today or in the next days, as choices with their links/u);
+  assert.match(text, /the owner's Hearthwork guide, https:\/\/hearthwork\.u-dont-exist\.com, shows a free way for two people to listen to each other; it isn't a service to call/u);
+  assert.match(text, /It isn't a hotline script, it isn't repeated in later replies, and it never goes to the third level above/u);
+  assert.match(text, /don't argue with it or say you can't confirm it; join what you can honestly share in it/u);
   assert.ok(text.includes("https://hearthwork.u-dont-exist.com"));
   assert.ok(text.includes("https://ibogaqueen.substack.com/i/189761959/finding-a-therapist"));
   assert.ok(text.includes("https://findahelpline.com"));
-  assert.match(text, /even with a stranger on the other end/u);
+  assert.match(text, /or a crisis line, where even a stranger can help/u);
 });
 
 test("the boundary: no fasting, no detox, no other guide links and nothing about how to die, kept for the whole conversation", () => {
@@ -73,7 +77,7 @@ test("the boundary: no fasting, no detox, no other guide links and nothing about
   // The only links before the fasting paragraph are the three people-to-reach links; the guide's suicide, pain, Compassionate Exit
   // and detox sections are never linked in a crisis.
   const crisisPart = text.slice(0, text.indexOf("**Fasting otherwise.**"));
-  const links = [...crisisPart.matchAll(/https?:\/\/[^\s),]+/gu)].map((match) => match[0]);
+  const links = [...crisisPart.matchAll(/https?:\/\/[^\s),;]+/gu)].map((match) => match[0]);
   assert.deepEqual([...new Set(links)].sort(), ["https://findahelpline.com", "https://hearthwork.u-dont-exist.com",
     "https://ibogaqueen.substack.com/i/189761959/finding-a-therapist"]);
   assert.doesNotMatch(read(SKILL), /compassionate-exit|if-you-want-to-kill-yourself|physical-pain/u);
@@ -82,6 +86,10 @@ test("the boundary: no fasting, no detox, no other guide links and nothing about
 test("the harm-reduction facts give no amounts to someone who may be taking something to die", () => {
   assert.match(read(SKILL), /This is for taking something for its effects\. If they may be taking it to die or to hurt themselves, or have said in this conversation that they want to die, give no amounts or doses for anything/u);
   assert.match(read(SKILL), /the only guide links are the ones the section on that names/u);
+  // The owner's reply on 388 (Inbox, 20 Nov 2026 23:45 UTC): therapy questions InnerSignal can't answer, suggestions and praise go to a
+  // comment on his guide, where he answers. His direct contact as a last resort waits for his answer on how people reach him.
+  assert.match(read(SKILL), /they can leave a comment on the owner's guide \(https:\/\/innerchild\.u-dont-exist\.com, or the guide the question is about\), and he answers there/u);
+  assert.doesNotMatch(read(SKILL), /whatsapp|\+\d{6,}/iu, "no personal contact detail is in the served rules");
 });
 
 test("the owner's answer on guards is an owner-approved amendment in his words, written once in each of the two boxes, compiled and served", () => {
