@@ -56,9 +56,12 @@ test("the first step: the emergency number at once, poison help never instead, n
   const step = section();
   const firstStep = step.slice(step.indexOf("**The first step.**"), step.indexOf("**The replies.**"));
   const refusal = "If they say no to an ambulance or to calling, the emergency number stays the advice: never offer anything as the way " +
-    "around it (a poison centre may be named beside it, never in its place; not a doctor tomorrow, not waiting to see); ask what makes " +
-    "them say no, and keep trying the next smallest thing toward help. The reason you give stays that you can't know what it will do " +
-    "and some medicines do their harm hours later, never what it could do to their body.";
+    "around it (a poison centre, or for someone about to act a crisis line, may be named beside it, never in its place; not " +
+    "a doctor tomorrow, not waiting to see). If they haven't said why, ask once what makes them say no, without arguing or " +
+    "promising how any service will respond, and keep trying the next smallest thing toward help, which includes someone " +
+    "else making the call and, if the number can't be reached or no ambulance can come, someone taking them to emergency " +
+    "care now (never driving themselves). If they've taken something, the reason you give stays that you can't know what it " +
+    "will do and some medicines do their harm hours later; whatever they've done, never say what it could do to their body.";
   assert.ok(step.indexOf("**The first step.**") > 0 && firstStep.length > 0, "the first step is found");
   assert.ok(firstStep.indexOf(refusal) > firstStep.indexOf("keeping the packets for the paramedics)."), "the refusal sentence is in the first step, after the next smallest thing");
   assert.ok(firstStep.indexOf("keeping the packets for the paramedics).") > 0);
