@@ -112,6 +112,71 @@ function runnerReplayEntries(turn, at = new Date().toISOString()) {
   return entries;
 }
 
+// The parts of a trial turn on the page, in the order it shows them: the person's message, the provisional reply, the emergency
+// line and the reply (a closing notice is the reply of a turn closed without one).
+const RUNNER_TURN_PARTS = Object.freeze(["user", "provisional", "emergency_line", "reply"]);
+
+// Which part of its turn a conversation item is, or null for an item that is none (the line a failed request left, a divider).
+function runnerTurnPart(entry) {
+  if (entry?.role === "user") return "user";
+  if (entry?.kind === "provisional" || entry?.kind === "emergency_line") return entry.kind;
+  return entry?.role === "assistant" && entry.error !== true ? "reply" : null;
+}
+
+// Whether the page (`therapy`) shows every part of a turn the server sent back.
+function runnerTurnShown(therapy, turn) {
+  const shown = new Set(therapy.filter((entry) => entry?.exchangeId === turn?.exchangeId).map((entry) => runnerTurnPart(entry)));
+  const parts = runnerReplayEntries(turn).map((entry) => runnerTurnPart(entry));
+  return parts.length > 0 && parts.every((part) => shown.has(part));
+}
+
+// Adds to the page (`therapy`, changed in place) the parts of a turn the server sent back that it doesn't show yet, and never one it
+// shows already. A turn the page doesn't hold goes at the end. The missing parts of a turn it holds go into that turn, each before
+// the turn's first later part, or else after the turn's last item: a page whose stream failed after the person's message gets the
+// provisional reply, the emergency line and the reply there, after the line the failure left. Returns whether the page now shows
+// every part of the turn.
+function mergeRunnerTurn(therapy, turn, at = new Date().toISOString()) {
+  for (const entry of runnerReplayEntries(turn, at)) {
+    const part = runnerTurnPart(entry);
+    const own = [];
+    therapy.forEach((item, index) => { if (item?.exchangeId === turn.exchangeId) own.push(index); });
+    if (own.some((index) => runnerTurnPart(therapy[index]) === part)) continue;
+    const later = own.find((index) => RUNNER_TURN_PARTS.indexOf(runnerTurnPart(therapy[index])) > RUNNER_TURN_PARTS.indexOf(part));
+    therapy.splice(later ?? (own.length ? own.at(-1) + 1 : therapy.length), 0, entry);
+  }
+  return runnerTurnShown(therapy, turn);
+}
+
+// What the page shows of the turns its reconcile got back (design, section 8), changing `therapy` in place, and the cursor that
+// follows. Each turn is merged into the page (mergeRunnerTurn), except one still coming in on this page (`inFlight`), which its own
+// stream shows. The cursor moves through the turns in order while the page shows each one whole, and stops before the first it
+// doesn't, so a later reconcile gets that one back.
+function showRunnerTurns(therapy, turns, shownThrough, inFlight = new Set(), at = new Date().toISOString()) {
+  let cursor = shownThrough;
+  let advancing = true;
+  for (const turn of turns) {
+    if (typeof turn?.exchangeId !== "string") continue;
+    const shown = !inFlight.has(turn.exchangeId) && mergeRunnerTurn(therapy, turn, at);
+    advancing = advancing && shown;
+    if (advancing) cursor = turn.exchangeId;
+  }
+  return cursor;
+}
+
+// Whether the page shows the reply of every turn it holds after the cursor `shownThrough` (of every turn it holds, when it doesn't
+// show the cursor's turn), so the cursor may move to a turn just shown without passing one whose stream failed: that turn stays
+// after the cursor, and a later reconcile brings back what it missed.
+function runnerRepliesShownAfter(therapy, shownThrough) {
+  const from = therapy.findLastIndex((entry) => typeof shownThrough === "string" && entry?.exchangeId === shownThrough) + 1;
+  const parts = new Map();
+  for (const entry of therapy.slice(from)) {
+    if (typeof entry?.exchangeId !== "string") continue;
+    if (!parts.has(entry.exchangeId)) parts.set(entry.exchangeId, new Set());
+    parts.get(entry.exchangeId).add(runnerTurnPart(entry));
+  }
+  return [...parts.values()].every((shown) => shown.has("reply"));
+}
+
 // Why a turn closed without a reply, in plain words, shown outside the reply.
 function runnerClosingReason(closing) {
   return closing && typeof closing.reason_code === "string" && Object.hasOwn(CLOSING_REASONS, closing.reason_code) ? CLOSING_REASONS[closing.reason_code] : "";
@@ -144,7 +209,8 @@ function forgetDeletedCase(pageState, empty) {
 }
 // runner-trial-page:end
 
-const runnerTrial = { on: false, newConversation: false };
+// `inFlight`: the exchanges of the trial turns this page is still receiving, which a reconcile leaves to their own stream.
+const runnerTrial = { on: false, newConversation: false, inFlight: new Set() };
 const RUNNER_RECONCILE_LABEL = "Looking for a reply that finished while this page was closed…";
 let healthChecked = Promise.resolve();
 
@@ -169,6 +235,7 @@ function applyRunnerTrial(on) {
 // When the page loads with the trial on (design, section 8): the server closes any turn of this case that a restart left
 // unfinished (and delivers one that was already approved), then sends back the turns that finished after the last one this page
 // showed, such as a reply that came while the page was closed. While a turn of the case is still running on the server, it waits.
+// A turn the page holds only in part (its stream failed) gets what it missed; the cursor passes only turns the page shows whole.
 async function reconcileRunnerCase() {
   const progress = $("#runner-progress");
   progress.hidden = false;
@@ -181,12 +248,7 @@ async function reconcileRunnerCase() {
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok || !Array.isArray(payload?.turns)) return;
-    for (const turn of payload.turns) {
-      if (typeof turn?.exchangeId !== "string") continue;
-      // A turn the page shows already isn't shown twice.
-      if (!state.therapy.some((entry) => entry.exchangeId === turn.exchangeId)) state.therapy.push(...runnerReplayEntries(turn));
-      state.runnerShownThrough = turn.exchangeId;
-    }
+    state.runnerShownThrough = showRunnerTurns(state.therapy, payload.turns, state.runnerShownThrough, runnerTrial.inFlight);
     if (payload.turns.length) {
       saveState();
       renderTherapy();
@@ -213,6 +275,7 @@ function beginRunnerTurn(exchangeId) {
   const timer = setInterval(showProgress, 1000);
   const added = [];
   let finished = false;
+  runnerTrial.inFlight.add(exchangeId);
   return {
     newConversation,
     onEvent(event) {
@@ -229,10 +292,12 @@ function beginRunnerTurn(exchangeId) {
       renderTherapy();
     },
     // `result` is the answer, when there is one: what its stored turn showed and no live event brought (a JSON answer, a replay)
-    // is added here, as the stream would have added it.
+    // is added here, as the stream would have added it. The page writes the reply or the failure's line right after this, with
+    // no wait in between, so a reconcile never sees the turn between the two.
     finish(result = null) {
       if (finished) return;
       finished = true;
+      runnerTrial.inFlight.delete(exchangeId);
       clearInterval(timer);
       progress.hidden = true;
       progress.textContent = "";
@@ -1024,13 +1089,16 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       // A runner-trial turn closed without a reply: its notice is the reply, and the reason shows outside it.
       ...(result.closing ? { kind: "closing", closingReason: runnerClosingReason(result.closing) } : {})
     });
-    if (runnerTurn) state.runnerShownThrough = exchangeId;
+    // The cursor moves to this turn only if no earlier turn after it still misses its reply (a failed stream), so a reconcile
+    // can bring that reply back.
+    if (runnerTurn && runnerRepliesShownAfter(state.therapy, state.runnerShownThrough)) state.runnerShownThrough = exchangeId;
     saveState();
     renderTherapy();
     renderCaseState("diff");
   } catch (error) {
     runnerTurn?.finish();
-    state.therapy.push({ role: "assistant", content: `Runtime error: ${error.message}`, at: new Date().toISOString(), error: true });
+    // The line belongs to its exchange, so a reply a reconcile brings back later goes after it, in the same turn.
+    state.therapy.push({ role: "assistant", exchangeId, content: `Runtime error: ${error.message}`, at: new Date().toISOString(), error: true });
     saveState();
     renderTherapy();
   } finally {

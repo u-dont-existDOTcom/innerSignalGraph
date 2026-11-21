@@ -714,9 +714,12 @@ async function reconcilingPage(base, initialState) {
   const state = structuredClone(initialState);
   const requests = [];
   const progress = { hidden: true, textContent: "" };
+  // The exchanges of the turns the page is still receiving, as beginRunnerTurn records them.
+  const runnerTrial = { on: true, newConversation: false, inFlight: new Set() };
   const context = vm.createContext({
     TextDecoder,
     state,
+    runnerTrial,
     RUNNER_RECONCILE_LABEL: "Looking for a reply that finished while this page was closed…",
     $: (selector) => { assert.equal(selector, "#runner-progress"); return progress; },
     fetch: (url, init) => {
@@ -727,7 +730,7 @@ async function reconcilingPage(base, initialState) {
     renderTherapy: () => {}
   });
   const reconcileRunnerCase = vm.runInContext(`${block}\n${app.slice(start, end)}\n;reconcileRunnerCase`, context);
-  return { state, requests, reconcileRunnerCase };
+  return { state, requests, runnerTrial, reconcileRunnerCase };
 }
 
 test("a reloaded page shows the current conversation again, every turn with its provisional reply and emergency line; a page that still shows its turns gets only newer ones", async (t) => {
@@ -769,6 +772,100 @@ test("a reloaded page shows the current conversation again, every turn with its 
   assert.deepEqual(JSON.parse(JSON.stringify(runnerReconcileRequest(CASE_ID, [{ exchangeId: "exchange-x" }], "exchange-y"))), { caseId: CASE_ID, conversation: "current" }, "a cursor the page doesn't show isn't used");
 });
 
+// Each conversation item as [exchange, part, words], the part named by the test itself: the person's message, the provisional reply,
+// the emergency line, the reply (a closing notice included) or the line a failed request left.
+const pageParts = (therapy) => JSON.parse(JSON.stringify(therapy)).map((entry) => [
+  entry.exchangeId ?? null,
+  entry.error ? "failure" : entry.role === "user" ? "user" : ["provisional", "emergency_line"].includes(entry.kind) ? entry.kind : "reply",
+  entry.content
+]);
+
+test("a page whose stream failed gets back what each turn missed, in its place and never twice, and its cursor passes only turns it shows whole", async (t) => {
+  const acted = (provisional) => ({ ...quietReader(), level: "acted_or_about_to", reason: "says they took something", provisional_reply: provisional });
+  const { base } = await trialServer(t, baseScript({
+    // The second message shows a provisional reply; the third's names a number that isn't an emergency number, so the emergency
+    // line shows instead.
+    R1: (count) => (count === 2 ? acted(PROVISIONAL) : count === 3 ? acted("Please get help now, call 0800 555 0100.") : quietReader()),
+    W: (count) => ({ reply: `A synthetic reply ${count}.`, answered_level: "none", quotes: [] })
+  }));
+  const [m1, m2, m3] = ["exchange-m1", "exchange-m2", "exchange-m3"];
+  for (const [index, exchangeId] of [m1, m2, m3].entries()) assert.equal((await respond(base, { exchangeId, userMessage: `Synthetic message ${index + 1}.` })).lines.at(-1).type, "final", exchangeId);
+  const stored = (await ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID, conversation: "current" })).json.turns;
+  assert.deepEqual(stored.map((turn) => [turn.exchangeId, turn.provisional, turn.emergencyLineShown]), [[m1, null, false], [m2, PROVISIONAL, false], [m3, null, true]]);
+  const answer = Object.fromEntries(stored.map((turn) => [turn.exchangeId, turn.answer]));
+  assert.ok(Object.values(answer).every((text) => typeof text === "string" && text), "every turn has its answer");
+
+  // The page as its streams left it: the first turn whole; the second's stream broke after its provisional reply came, leaving the
+  // failure's line; the third's is still coming in, with only the person's message shown so far.
+  const message = (exchangeId, index) => ({ id: `${exchangeId}-user`, exchangeId, role: "user", content: `Synthetic message ${index}.` });
+  const FAILED = "Runtime error: The reply stream ended before the reply.";
+  const failure = (exchangeId) => ({ role: "assistant", exchangeId, content: FAILED, error: true });
+  const page = await reconcilingPage(base, {
+    caseId: CASE_ID,
+    runnerShownThrough: m1,
+    therapy: [
+      message(m1, 1), { id: `${m1}-assistant`, exchangeId: m1, role: "assistant", content: answer[m1] },
+      message(m2, 2), { role: "assistant", kind: "provisional", exchangeId: m2, content: PROVISIONAL_PREFIX + PROVISIONAL, thinking: false }, failure(m2),
+      message(m3, 3)
+    ]
+  });
+  page.runnerTrial.inFlight.add(m3);
+  await page.reconcileRunnerCase();
+  assert.deepEqual(page.requests[0], { caseId: CASE_ID, afterExchangeId: m1 });
+  const first = [
+    [m1, "user", "Synthetic message 1."], [m1, "reply", answer[m1]],
+    [m2, "user", "Synthetic message 2."], [m2, "provisional", PROVISIONAL_PREFIX + PROVISIONAL], [m2, "failure", FAILED], [m2, "reply", answer[m2]],
+    [m3, "user", "Synthetic message 3."]
+  ];
+  assert.deepEqual(pageParts(page.state.therapy), first, "the second turn gets its reply after the failure's line and its provisional reply only once; the third is left to its stream");
+  assert.equal(page.state.runnerShownThrough, m2, "the cursor stops before the turn still coming in");
+
+  // The third turn's stream then failed before anything came: the next reconcile brings its emergency line and its reply.
+  page.state.therapy.push(failure(m3));
+  page.runnerTrial.inFlight.delete(m3);
+  await page.reconcileRunnerCase();
+  assert.deepEqual(page.requests[1], { caseId: CASE_ID, afterExchangeId: m2 }, "it asks again from the last turn shown whole");
+  const whole = [...first, [m3, "failure", FAILED], [m3, "emergency_line", EMERGENCY_LINE], [m3, "reply", answer[m3]]];
+  assert.deepEqual(pageParts(page.state.therapy), whole);
+  assert.equal(page.state.runnerShownThrough, m3);
+
+  // Sent back the whole conversation again, a page that shows every part of every turn adds nothing.
+  page.state.runnerShownThrough = "exchange-not-on-this-page";
+  await page.reconcileRunnerCase();
+  assert.deepEqual(page.requests[2], { caseId: CASE_ID, conversation: "current" });
+  assert.deepEqual(pageParts(page.state.therapy), whole, "no part is shown twice");
+  assert.equal(page.state.runnerShownThrough, m3);
+});
+
+test("after a failed stream, the next turn shown whole moves the cursor only once the failed turn shows its reply", async () => {
+  const page = await pageBlock();
+  const message = (exchangeId) => ({ id: `${exchangeId}-user`, exchangeId, role: "user", content: `Synthetic ${exchangeId}.` });
+  const reply = (exchangeId) => ({ id: `${exchangeId}-assistant`, exchangeId, role: "assistant", content: `Synthetic reply ${exchangeId}.` });
+  const therapy = [
+    message("exchange-a"), reply("exchange-a"),
+    message("exchange-b"), { role: "assistant", exchangeId: "exchange-b", content: "Runtime error: synthetic.", error: true },
+    message("exchange-c"), reply("exchange-c")
+  ];
+  assert.equal(page.runnerRepliesShownAfter(therapy, "exchange-a"), false, "the failed turn after the cursor holds it");
+  assert.equal(page.runnerRepliesShownAfter(therapy, null), false, "a page without a cursor counts every turn it holds");
+  assert.equal(page.runnerRepliesShownAfter(therapy, "exchange-c"), true, "nothing after the newest turn");
+  assert.equal(page.mergeRunnerTurn(therapy, { exchangeId: "exchange-b", userMessage: "Synthetic exchange-b.", answer: "Synthetic reply exchange-b.", provisional: null, emergencyLineShown: false }, "2026-11-21T00:00:00.000Z"), true);
+  assert.deepEqual(pageParts(therapy).map(([exchangeId, part]) => [exchangeId, part]), [
+    ["exchange-a", "user"], ["exchange-a", "reply"],
+    ["exchange-b", "user"], ["exchange-b", "failure"], ["exchange-b", "reply"],
+    ["exchange-c", "user"], ["exchange-c", "reply"]
+  ], "the recovered reply goes into its own turn, before the later one");
+  assert.equal(page.runnerRepliesShownAfter(therapy, "exchange-a"), true, "once it shows its reply, the cursor may pass it");
+  // The page's own stream: the cursor moves only under that rule, a failure's line belongs to its turn, and a turn coming in is
+  // marked as such until it is finished, so a reconcile leaves it to its stream.
+  const { app } = await pageSource();
+  assert.match(app, /if \(runnerTurn && runnerRepliesShownAfter\(state\.therapy, state\.runnerShownThrough\)\) state\.runnerShownThrough = exchangeId;/u);
+  assert.match(app, /state\.therapy\.push\(\{ role: "assistant", exchangeId, content: `Runtime error: \$\{error\.message\}`/u);
+  assert.match(app, /runnerTrial\.inFlight\.add\(exchangeId\);/u);
+  assert.match(app, /runnerTrial\.inFlight\.delete\(exchangeId\);/u);
+  assert.match(app, /state\.runnerShownThrough = showRunnerTurns\(state\.therapy, payload\.turns, state\.runnerShownThrough, runnerTrial\.inFlight\);/u);
+});
+
 test("Delete this case removes the case through the route, and the next message starts an empty case", async (t) => {
   const { base, store } = await trialServer(t, baseScript());
   await respond(base, { exchangeId: "exchange-d1", userMessage: "Something synthetic." });
@@ -796,7 +893,7 @@ async function pageBlock() {
   const end = app.indexOf("// runner-trial-page:end");
   assert.ok(start > 0 && end > start, "the page marks its runner-trial block");
   const block = app.slice(start, end);
-  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, runnerClosingReason, runnerProgressText, runnerReconcileRequest, forgetDeletedCase, PAGE_STATE_KEPT_AFTER_DELETION })`, { TextDecoder });
+  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, mergeRunnerTurn, showRunnerTurns, runnerRepliesShownAfter, runnerClosingReason, runnerProgressText, runnerReconcileRequest, forgetDeletedCase, PAGE_STATE_KEPT_AFTER_DELETION })`, { TextDecoder });
   return { block, ...exports };
 }
 
@@ -1009,4 +1106,74 @@ test("after Delete this case the page holds nothing of the case: not in its stat
     assert.equal(call.state.includes(SECRET), false, `${name} ran on the cleared state`);
   }
   assert.equal(calls.some((entry) => entry.name === "alert"), false);
+});
+
+test("a request the supervisor panel made before Delete this case cleared it shows, keeps and copies nothing of the deleted case when it answers", async (t) => {
+  const { html } = await pageSource();
+  const dom = new JSDOM(html, { url: "http://127.0.0.1/" });
+  t.after(() => dom.window.close());
+  const { document } = dom.window;
+  const SECRET = "synthetic-deleted";
+  const artifact = { artifact_id: `art_${"3".repeat(40)}`, status: "approved_for_delivery", source: "external_draft", approved: true, fresh: true, exportable: true, stale_reasons: [], not_approved_reasons: [], delivery: { exported: { at: "2026-11-21T00:00:00.000Z" }, reported_sent: null }, companion: null };
+  const snapshot = {
+    basis: { sha256: "b".repeat(64) },
+    latest_client_turn: { text: `${SECRET} client message` },
+    owner_supplied_inputs: [{ input_type: "client_message", text: `${SECRET} relayed input`, supplied_by: { actor_resolution: "owner_verified" } }],
+    artifacts: [artifact]
+  };
+  // Every request waits until the test answers it.
+  const pending = [];
+  const fetchImpl = (url, init) => new Promise((resolve) => { pending.push({ url, body: JSON.parse(init.body), resolve }); });
+  const take = (url, predicate = () => true) => {
+    const index = pending.findIndex((request) => request.url === url && predicate(request.body));
+    assert.ok(index >= 0, `a request to ${url} on its way`);
+    return pending.splice(index, 1)[0];
+  };
+  const answer = (request, payload) => request.resolve(new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } }));
+  const settle = async () => { for (let round = 0; round < 20; round += 1) await new Promise((resolve) => setTimeout(resolve, 0)); };
+  const written = [];
+  globalThis.confirm = () => true;
+  t.after(() => { delete globalThis.confirm; });
+  const { initSupervisorPanel, SUPERVISOR_ENDPOINTS } = await import("../apps/web/supervisor-panel.js");
+  const panel = initSupervisorPanel({ document, getCaseId: () => "case-synthetic-deleted", fetchImpl, clipboard: { async writeText(value) { written.push(value); } }, newKey: () => "synthetic-key" });
+  const loaded = panel.refresh();
+  answer(take(SUPERVISOR_ENDPOINTS.prepare), snapshot);
+  await loaded;
+  assert.ok(document.body.textContent.includes(`${SECRET} client message`), "the panel showed the case");
+
+  // One request of every kind the panel makes, each still on its way when the case is deleted and the page clears the panel.
+  const refreshing = panel.refresh();
+  document.getElementById("supervisor-input-text").value = "Synthetic owner instruction.";
+  document.getElementById("supervisor-input-form").dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
+  document.getElementById("supervisor-draft-text").value = "Synthetic draft.";
+  document.getElementById("supervisor-draft-form").dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
+  const buttons = [...document.querySelectorAll("#supervisor-artifacts button")];
+  buttons.find((button) => button.textContent === "Copy approved text").click();
+  buttons.find((button) => button.textContent === "I sent this").click();
+  assert.equal(pending.length, 5, "a refresh, a relayed input, a draft, a copy and a report on their way");
+  panel.clear();
+
+  // Each answers with the deleted case's words.
+  answer(take(SUPERVISOR_ENDPOINTS.prepare, (body) => !body.inputs), snapshot);
+  answer(take(SUPERVISOR_ENDPOINTS.prepare, (body) => Array.isArray(body.inputs)), snapshot);
+  answer(take(SUPERVISOR_ENDPOINTS.submit), { notice: `${SECRET} notice`, exportable: true });
+  answer(take(SUPERVISOR_ENDPOINTS.export), { client_text: `${SECRET} approved text`, companion: { language: "de", text: `${SECRET} companion` } });
+  answer(take(SUPERVISOR_ENDPOINTS.report), { recorded: true });
+  await refreshing;
+  await settle();
+  assert.equal(document.body.textContent.includes(SECRET), false, "nothing of the deleted case on screen");
+  assert.equal(document.getElementById("supervisor-client-message").textContent, "Not loaded.");
+  assert.equal(document.getElementById("supervisor-status").textContent, "Open this tab to load the case.");
+  assert.deepEqual(written, [], "nothing on the clipboard");
+  assert.equal(pending.length, 0, "no answer for the deleted case led to another request");
+
+  // Nor was anything of it kept: a draft written next has no basis from the deleted case, and a draft with an old draft's id shows
+  // no copied text or companion.
+  document.getElementById("supervisor-write-draft").click();
+  assert.equal(take(SUPERVISOR_ENDPOINTS.submit).body.basisSha256, null, "no basis of the deleted case");
+  const next = panel.refresh();
+  answer(take(SUPERVISOR_ENDPOINTS.prepare), { basis: { sha256: "c".repeat(64) }, latest_client_turn: null, owner_supplied_inputs: [], artifacts: [artifact] });
+  await next;
+  assert.equal(document.querySelectorAll("#supervisor-artifacts .supervisor-artifact").length, 1);
+  assert.equal(document.body.textContent.includes(SECRET), false, "no copied text or companion of the deleted case was kept");
 });

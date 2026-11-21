@@ -50,8 +50,11 @@ export async function callSupervisor(fetchImpl, kind, body) {
 
 // The copy action. It asks the server for the exact approved text and puts that, and only that, on the clipboard. When the browser
 // refuses clipboard access the text is handed back so the page can show it for a manual copy; it is not retyped or reformatted.
-export async function copyApprovedText({ call, clipboard, caseId, artifactId }) {
+// `isCurrent` says whether the panel still shows the case the request was made for: when it was cleared (the case deleted) while
+// the text was coming, nothing goes on the clipboard and nothing is handed back (null).
+export async function copyApprovedText({ call, clipboard, caseId, artifactId, isCurrent = () => true }) {
   const exported = await call("export", { caseId, artifactId });
+  if (!isCurrent()) return null;
   if (typeof exported?.client_text !== "string" || !exported.client_text) throw new Error("The server returned no approved text.");
   let copied = false;
   try {
@@ -132,6 +135,10 @@ export function initSupervisorPanel({
   // What the last copy of each draft showed, so a refresh of the list does not take away a companion the owner is reading.
   const outputs = new Map();
   let basisSha256 = null;
+  // clear() (after "Delete this case") starts a new generation. Each request notes the generation it was made in, and its answer,
+  // or its failure, is dropped before anything is shown, cached or copied if the panel was cleared since: it is the deleted case's.
+  let generation = 0;
+  const current = (asked) => asked === generation;
   const status = (message, tone = "info") => {
     const node = $("supervisor-status");
     node.textContent = message;
@@ -191,9 +198,12 @@ export function initSupervisorPanel({
       }
     }
     copy.addEventListener("click", async () => {
+      const asked = generation;
       busy(copy, true);
       try {
-        const { copied, exported } = await copyApprovedText({ call, clipboard, caseId: getCaseId(), artifactId: artifact.artifact_id });
+        const copiedText = await copyApprovedText({ call, clipboard, caseId: getCaseId(), artifactId: artifact.artifact_id, isCurrent: () => current(asked) });
+        if (!copiedText || !current(asked)) return;
+        const { copied, exported } = copiedText;
         outputs.set(artifact.artifact_id, {
           copied,
           manual: copied ? null : exported.client_text,
@@ -202,6 +212,7 @@ export function initSupervisorPanel({
         status("Released from InnerSignal. That is not the same as sent.", "info");
         await refresh({ quiet: true });
       } catch (error) {
+        if (!current(asked)) return;
         failure(error);
         await refresh({ quiet: true }).catch(() => {});
       } finally {
@@ -217,6 +228,7 @@ export function initSupervisorPanel({
       sent.type = "button";
       sent.addEventListener("click", async () => {
         if (!globalThis.confirm?.("Record that you sent this exact text to the client? InnerSignal cannot see whether it was sent.")) return;
+        const asked = generation;
         busy(sent, true);
         try {
           if (!reportKeys.has(artifact.artifact_id)) reportKeys.set(artifact.artifact_id, newKey());
@@ -227,10 +239,12 @@ export function initSupervisorPanel({
             sentAt: when && !Number.isNaN(when.valueOf()) ? when.toISOString() : null,
             idempotencyKey: reportKeys.get(artifact.artifact_id)
           });
+          if (!current(asked)) return;
           reportKeys.delete(artifact.artifact_id);
           status("Recorded as your own report. The time is left unknown unless you entered it.", "info");
           await refresh({ quiet: true });
         } catch (error) {
+          if (!current(asked)) return;
           failure(error);
         } finally {
           busy(sent, false);
@@ -243,11 +257,15 @@ export function initSupervisorPanel({
   }
 
   async function refresh({ quiet = false } = {}) {
+    const asked = generation;
     if (!quiet) status("Loading the case…", "info");
     try {
-      renderSnapshot(await call("prepare", { caseId: getCaseId() }));
+      const snapshot = await call("prepare", { caseId: getCaseId() });
+      if (!current(asked)) return;
+      renderSnapshot(snapshot);
       if (!quiet) status("Up to date.", "info");
     } catch (error) {
+      if (!current(asked)) return;
       failure(error);
       throw error;
     }
@@ -262,13 +280,17 @@ export function initSupervisorPanel({
     const button = $("supervisor-input-save");
     const textValue = $("supervisor-input-text").value;
     if (!textValue.trim()) return;
+    const asked = generation;
     busy(button, true);
     try {
-      renderSnapshot(await call("prepare", { caseId: getCaseId(), inputs: [{ type: $("supervisor-input-type").value, text: textValue, idempotencyKey: keyFor("input") }] }));
+      const snapshot = await call("prepare", { caseId: getCaseId(), inputs: [{ type: $("supervisor-input-type").value, text: textValue, idempotencyKey: keyFor("input") }] });
+      if (!current(asked)) return;
+      renderSnapshot(snapshot);
       clearKey("input");
       $("supervisor-input-text").value = "";
       status("Recorded. Earlier drafts no longer cover this new information, so they cannot be copied.", "info");
     } catch (error) {
+      if (!current(asked)) return;
       if (error.status && error.status < 500) clearKey("input");
       failure(error);
     } finally {
@@ -286,14 +308,17 @@ export function initSupervisorPanel({
       const companionText = $("supervisor-companion-text").value;
       if (companionText.trim()) body.companion = { language: $("supervisor-companion-language").value.trim() || "en", text: companionText };
     }
+    const asked = generation;
     busy(button, true);
     status("Reviewing. This can take a minute.", "info");
     try {
       const result = await call("submit", body);
+      if (!current(asked)) return;
       clearKey(slot);
       status(result.notice, result.exportable ? "info" : "error");
       await refresh({ quiet: true });
     } catch (error) {
+      if (!current(asked)) return;
       if (error.status && error.status < 500) clearKey(slot);
       failure(error);
       await refresh({ quiet: true }).catch(() => {});
@@ -306,8 +331,10 @@ export function initSupervisorPanel({
   $("supervisor-write-draft").addEventListener("click", () => submit("backend_produced", "write"));
 
   // Forget what the panel holds of the case (the runner trial page calls this after the case was deleted): the client's message,
-  // the relayed inputs, the drafts, any copied text or companion, what its forms hold, and the keys and basis of the old case.
+  // the relayed inputs, the drafts, any copied text or companion, what its forms hold, and the keys and basis of the old case. A
+  // request still on its way belongs to the old case: the new generation drops its answer when it comes.
   function clear() {
+    generation += 1;
     basisSha256 = null;
     outputs.clear();
     reportKeys.clear();

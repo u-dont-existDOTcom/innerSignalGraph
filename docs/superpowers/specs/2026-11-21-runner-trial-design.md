@@ -233,7 +233,9 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   queue in the store, so none can be written after a deletion returned. Then the page forgets the case too: every field of its
   state but the settings, the case id, the storage mode and the older-versions flag (so the transcript, the tracker and journal
   entries, the hypnosis sessions, the case views and the handoff go, and its backup export and recovery ZIP hold nothing of the
-  case), what it shows of the case (the hypnosis session, the supervisor panel) and the text typed into its forms.
+  case), what it shows of the case (the hypnosis session, the supervisor panel) and the text typed into its forms. An answer
+  the supervisor panel was still waiting for when the case was deleted is dropped when it comes, before it is shown, kept or
+  copied.
 
 ## 7. When no checked reply can be made (point 4a)
 
@@ -276,7 +278,10 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   unfinished turn of the case is closed as `UNANSWERED` (reason `interrupted`), except an `APPROVED` one, which is delivered.
   A page that still shows its last turn names it and gets the turns that finished after it; a page that shows none (after a
   reload, since the page keeps no transcript) asks for the current conversation and gets all its turns. Either way a reply
-  that finished while the page was gone is shown, each turn with its provisional reply and emergency line. Before a new
+  that finished while the page was gone is shown, each turn with its provisional reply and emergency line. A turn the page
+  shows only in part (its stream failed after the person's message or the provisional reply) gets the parts it missed, in
+  their place and none twice; a turn the page is still receiving is left to its stream; and the page's last-turn mark moves
+  only past turns it shows whole, so a failed turn is asked for again until its reply is shown. Before a new
   message, an unfinished turn is closed the same way. A delivered turn replays without a model call; the JSON answer and the
   stream's final line carry the stored provisional reply and whether the emergency line was shown, so a replay shows them too.
 
