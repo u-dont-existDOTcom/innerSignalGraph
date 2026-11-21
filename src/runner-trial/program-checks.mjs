@@ -99,6 +99,8 @@ export function shapeProblems(text) {
 
 const questionMarks = (text) => (text.match(/[?？؟]/gu) ?? []).length;
 const fold = (value) => String(value).normalize("NFC").replace(/\s+/gu, " ").trim();
+// "Word for word after folding whitespace", for the declared quotes here and the kept plan's lines (kept-plan.mjs).
+export const foldWhitespace = fold;
 
 // Quoted spans in any of the common quotation styles.
 export function quotedSpans(text) {

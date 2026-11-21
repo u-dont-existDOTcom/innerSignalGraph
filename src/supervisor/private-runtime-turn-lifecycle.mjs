@@ -150,6 +150,9 @@ export function validatePrivateRuntimeTurn(value) {
   if (!["RECEIVED", "UNANSWERED"].includes(value.state) && value.current_candidate_id == null) throw new ValidationError("Private runtime turn current candidate is required after RECEIVED.");
   if (value.runner_reading != null) validateRunnerReading(value.runner_reading);
   if (value.provisional != null) validateProvisional(value.provisional);
+  // The runner trial's kept plan (src/runner-trial/kept-plan.mjs): when this turn kept a plan, and when it deleted the kept plan on
+  // the person's request. The plan itself is in the case record, never on the turn.
+  for (const field of ["kept_plan_kept_at", "kept_plan_deleted_at"]) if (value[field] != null) requiredTimestamp(value[field], `runtime turn ${field}`);
   if (value.state === "UNANSWERED") {
     validateClosure(value.closure);
     if (value.delivery != null || value.assistant_turn_id !== value.closure.assistant_turn_id) throw new ValidationError("A turn closed without a reply has a closing, not a delivery.");
@@ -208,6 +211,10 @@ function validateRunnerReading(value) {
       requiredId(entry.candidate_id, "runner_reading checker level candidate_id");
       if (!["C1", "CW"].includes(entry.checker) || !LEVELS.includes(entry.level)) throw new ValidationError("runner_reading checker level is invalid.");
       requiredTimestamp(entry.recorded_at, "runner_reading checker level recorded_at");
+      // The same checker's kept-plan readings, present only while the kept plan is on.
+      for (const field of ["plan_reached", "confirms_keep_plan_yes"]) {
+        if (Object.hasOwn(entry, field) && typeof entry[field] !== "boolean") throw new ValidationError("runner_reading checker level is invalid.");
+      }
     });
   }
   return value;

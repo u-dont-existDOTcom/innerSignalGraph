@@ -23,7 +23,7 @@ import { SealedCodexWorker } from "./sealed-codex.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-export { RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, RUNNER_CLAUDE_CONFIG_DIR, readRunnerTrialSwitch } from "./switch.mjs";
+export { RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, RUNNER_CLAUDE_CONFIG_DIR, RUNNER_KEPT_PLAN_SETTING, readRunnerTrialSwitch, readRunnerKeptPlanSwitch } from "./switch.mjs";
 import { RUNNER_TRIAL_SETTINGS_FILE, RUNNER_CLAUDE_CONFIG_DIR } from "./switch.mjs";
 
 export const RUNNER_ROLES = Object.freeze(["R1", "R2", "R3", "W", "W-repair", "C1", "C2", "C3", "C4", "C5", "CW"]);

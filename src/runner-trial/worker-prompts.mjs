@@ -148,3 +148,60 @@ repair_induced_checks: empty unless your job says to copy the list. missed_boxes
 Answer only with the JSON object the schema asks for.`;
   return { system, user: `CHECK PACKET\n${JSON.stringify(packet, null, 2)}` };
 }
+
+// ---- The plan kept for next time (design, section 9) ----------------------------------------------------------------------------
+// Everything below is used only while INNER_SIGNAL_RUNNER_KEPT_PLAN is on. With it off, every worker gets exactly the prompt and
+// the schema above, byte for byte (tests/runner-trial-kept-plan.test.mjs compares them with the packets from before it was built).
+
+// Adds `note` on the line before the prompt's last line ("Answer only with the JSON object the schema asks for.").
+export function withNoteBeforeAnswerLine(system, note) {
+  const at = system.lastIndexOf("\nAnswer only with the JSON");
+  if (at < 0) throw new Error("A worker prompt has no answer line.");
+  return `${system.slice(0, at)}\n${note}${system.slice(at)}`;
+}
+
+export const CRISIS_READER_KEPT_PLAN_SCHEMA = Object.freeze(object({
+  ...CRISIS_READER_SCHEMA.properties,
+  asks_to_keep_plan: bool,
+  asks_to_delete_plan: bool
+}));
+
+export function crisisReaderKeptPlanNote() {
+  return "asks_to_keep_plan: true when the person's latest message asks InnerSignal to keep their plan for next time, or says yes to InnerSignal's offer, in its reply just before, to keep it; otherwise false. asks_to_delete_plan: true when the latest message asks InnerSignal to delete or forget a plan it kept; otherwise false. Only this conversation's words count.";
+}
+
+export const WRITER_KEPT_PLAN_SCHEMA = Object.freeze(object({
+  ...WRITER_SCHEMA.properties,
+  plan_reached: bool,
+  offered_to_keep_plan: bool,
+  kept_plan_lines: strings
+}));
+
+// What the writer is told while the switch is on. `rule` is the runner-only rule, given only when the packet holds kept_plan.
+export function writerKeptPlanNote({ rule = null } = {}) {
+  return [
+    "- plan_reached: true when, with your reply, this conversation has reached the plan for the next hours of the section on someone who may want to die (its step 5: a few lines they keep where they'll see it); otherwise false.",
+    "- may_offer_to_keep_plan: only when the packet holds it, you may end the reply with one plain sentence offering to keep that plan for next time (its lines and today's date, kept on this computer for 30 days, and deleted whenever they ask), and then offered_to_keep_plan is true. Without it, never offer, and offered_to_keep_plan is false.",
+    "- keep_plan_asked: when the packet holds it, the person asked to keep their plan for next time: copy into kept_plan_lines, word for word, the sentences of an earlier InnerSignal reply in this conversation that hold the plan (who they'll reach, the message, what they'll do in the next hours). The app keeps only the lines it finds word for word in those replies and tells the person itself what it kept, so don't say in the reply whether the plan is kept. Without it, kept_plan_lines is empty.",
+    "- kept_plan_deleted_on_request: the person asked to delete the kept plan, and the app has deleted it: no kept plan remains.",
+    "- kept_plan: when the packet holds it, the person chose to pick up where they left off, and this is the plan they kept on that date, in the lines they saw then.",
+    ...(rule ? [`- ${rule}`] : [])
+  ].join("\n");
+}
+
+// The crisis checker (the whole checker in its arm) answers two more fields while the switch is on.
+export const LEVEL_CHECKER_KEPT_PLAN_SCHEMA = Object.freeze(object({
+  ...CHECKER_SCHEMA.properties,
+  plan_reached: bool,
+  confirms_keep_plan_yes: bool
+}));
+
+export function levelCheckerKeptPlanNote({ rule = null } = {}) {
+  return [
+    "",
+    "THE PLAN KEPT FOR NEXT TIME",
+    "plan_reached: true when this conversation, with the candidate reply, has reached the plan for the next hours of the section on someone who may want to die (its step 5); otherwise false.",
+    "confirms_keep_plan_yes: only when kept_plan_offer is in the packet (InnerSignal's previous reply offered to keep the person's plan for next time): true when the person's latest message says yes to keeping it; otherwise false.",
+    ...(rule ? [`kept_plan: when the packet holds it, the person chose to pick up where they left off, and this is the plan they kept on that date; judge the candidate with this rule too: ${rule}`] : [])
+  ].join("\n");
+}

@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
 import { readOnOffSetting } from "./on-off-setting.mjs";
-import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
+import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_KEPT_PLAN_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerKeptPlanSwitch, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -84,6 +84,9 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     // The runner trial (src/runner-trial/settings.mjs): off unless switched on. The two paths are passed on as given and checked
     // only when the trial is built, so they matter only while it is on.
     runnerTrialEnabled: readRunnerTrialSwitch(process.env[RUNNER_TRIAL_SETTING]),
+    // The plan kept for next time (src/runner-trial/kept-plan.mjs): its own switch, off unless switched on, and meaningful only
+    // while the runner trial is on.
+    runnerKeptPlanEnabled: readRunnerKeptPlanSwitch(process.env[RUNNER_KEPT_PLAN_SETTING]),
     runnerTrialSettingsPath: nonBlankEnv(RUNNER_TRIAL_SETTINGS_FILE, null),
     runnerClaudeConfigDir: nonBlankEnv(RUNNER_CLAUDE_CONFIG_DIR, null),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),

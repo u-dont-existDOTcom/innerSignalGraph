@@ -13,6 +13,25 @@ export const EMERGENCY_LINE = "In danger right now? Call your local emergency nu
 export const PROVISIONAL_PREFIX = "Provisional urgent response: ";
 export const THINKING_LINE = "Thinking more about the full response...";
 
+// The plan kept for next time (the owner's 5b, question i62; design, section 9), behind INNER_SIGNAL_RUNNER_KEPT_PLAN, off until
+// the owner has seen these words (/home/joel/askrigor-releases/20261121-innersignal-runner-note/kept-plan-rule-draft.md).
+//
+// The runner-only rule, in its exact words. It is shown to the owner before use, and it is given to the writer and the crisis
+// checker (the whole checker in its arm) only when a kept plan is in their packet: after the person chose "Yes" to picking up where
+// they left off, with a kept plan that isn't deleted or past its 30 days.
+export const KEPT_PLAN_RULE = "A kept plan is a reason to ask one question about the message, never a sign of risk now, never a reason for numbers or safety questions.";
+// The question a new conversation opens with whenever an earlier one exists, kept plan or not, so the question itself tells no one
+// that a plan exists; and its two answers.
+export const RESUME_QUESTION = "Pick up where we left off?";
+export const RESUME_YES = "Yes";
+export const RESUME_FRESH = "Start fresh";
+// What the page says when the person deletes the kept plan with its button, before they confirm.
+export const KEPT_PLAN_DELETE_NOTE = "This removes the kept plan. Its words are still in the stored conversation, which can't be edited; deleting them too means deleting the case.";
+// What the page says, outside the reply, after a turn kept a plan, or after the kept plan was deleted (in the conversation or with
+// the button). The writer can't know whether the program keeps the lines it returns, so the page says it.
+export const KEPT_PLAN_KEPT_LINE = "Kept for next time: the lines of your plan and today's date, encrypted on this computer for 30 days.";
+export const KEPT_PLAN_GONE_LINE = "No kept plan remains.";
+
 // Why a turn closed without a reply. Fixed words, never case content; the page shows a plain-language reason beside the notice.
 export const CLOSING_REASONS = Object.freeze({
   checks_failed: "No reply passed its checks.",

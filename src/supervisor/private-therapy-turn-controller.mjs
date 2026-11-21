@@ -495,7 +495,17 @@ export function createPrivateTherapyTurnController({
       },
       async deleteCase({ caseId, authContext } = {}) {
         return queued(caseId, () => call("deletePrivateCase", [caseId], authContext));
-      }
+      },
+      // The plan kept for next time, only when the trial's runtime has it on (design, section 9): what the page needs to ask "Pick
+      // up where we left off?" when it loads (read without creating a case), and its "Delete the kept plan". Both wait for the queue.
+      ...(typeof modelRuntime.resumeStatus === "function" && typeof modelRuntime.deleteKeptPlans === "function" ? {
+        async resumeStatus({ caseId, authContext } = {}) {
+          return queued(caseId, async () => modelRuntime.resumeStatus({ caseId, record: await loadExistingCase(caseId, authContext), authContext }));
+        },
+        async deleteKeptPlan({ caseId, authContext } = {}) {
+          return queued(caseId, () => modelRuntime.deleteKeptPlans({ caseId, authContext }));
+        }
+      } : {})
     } : {})
   });
 }

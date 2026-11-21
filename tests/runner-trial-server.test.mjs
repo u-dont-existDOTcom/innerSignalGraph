@@ -1072,6 +1072,9 @@ test("after Delete this case the page holds nothing of the case: not in its stat
     fetch: async () => ({ ok: true, json: async () => ({ caseId: state.caseId, deleted: true, handoffsKept: 0 }) }),
     alert: spy("alert"),
     syncRunnerNewConversation: spy("syncRunnerNewConversation"),
+    // The plan kept for next time: the page's question and its kept-plan line are cleared with the case.
+    showRunnerResume: spy("showRunnerResume"),
+    setRunnerKeptPlanStatus: spy("setRunnerKeptPlanStatus"),
     syncSpeechPlaybackControls: spy("syncSpeechPlaybackControls"),
     saveState: spy("saveState"),
     renderTherapy: spy("renderTherapy"),
@@ -1100,7 +1103,7 @@ test("after Delete this case the page holds nothing of the case: not in its stat
   assert.equal(document.querySelector("#supervisor-client-message").textContent, "Not loaded.");
   assert.deepEqual(["#hypnosis-result", "#hypnosis-gate", "#hypnosis-route"].map((id) => document.querySelector(id).hidden), [true, true, true]);
   // The transcript, the case views and the handoff status are drawn again from that state, and it is saved.
-  for (const name of ["saveState", "renderTherapy", "renderCaseState", "renderHandoffStatus", "speechPlayback.stop"]) {
+  for (const name of ["saveState", "renderTherapy", "renderCaseState", "renderHandoffStatus", "speechPlayback.stop", "showRunnerResume", "setRunnerKeptPlanStatus"]) {
     const call = calls.find((entry) => entry.name === name);
     assert.ok(call, `${name} ran`);
     assert.equal(call.state.includes(SECRET), false, `${name} ran on the cleared state`);

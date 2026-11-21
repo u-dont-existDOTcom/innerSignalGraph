@@ -85,6 +85,19 @@ import {
   validateTranscriptAmendments
 } from "./transcript-amendments.mjs";
 import { getSharedCaseMutationCoordinator } from "./shared-case-coordinator.mjs";
+import {
+  KEPT_PLAN_DELETION_REASONS,
+  assertKeptPlansAppendOnly,
+  crisisReadingOf,
+  earlierRepliesInConversation,
+  keepPlanBasis,
+  keepPlanYesConfirmed,
+  keptPlanExpired,
+  keptPlanLinesFound,
+  keptPlanRefusal,
+  markKeptPlanDeleted,
+  validateKeptPlans
+} from "../runner-trial/kept-plan.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const JOURNAL_ID = /^[A-Za-z0-9:_-]{1,160}$/;
@@ -470,6 +483,8 @@ export function validatePrivateCaseRecord(value) {
     keyCorpusIds.add(entry.corpus_id);
   }
   if (keyCorpusIds.size !== corpusIds.size) throw new ValidationError("Every journal corpus requires exactly one key entry.");
+  // The runner trial's plans kept for next time (src/runner-trial/kept-plan.mjs). A case that never kept one has no such field.
+  if (Object.hasOwn(value, "runner_kept_plans")) validateKeptPlans(value.runner_kept_plans, value);
   return value;
 }
 
@@ -539,6 +554,10 @@ function assertAppendOnly(previous, next) {
     if (levelsAfter.length < levelsBefore.length || levelsBefore.some((entry, levelIndex) => JSON.stringify(entry) !== JSON.stringify(levelsAfter[levelIndex]))) {
       throw new ValidationError("Runner checker levels are append-only and immutable.");
     }
+    // When a turn kept a plan or deleted the kept plan, once stored, never changes.
+    for (const field of ["kept_plan_kept_at", "kept_plan_deleted_at"]) {
+      if (before[field] != null && before[field] !== after[field]) throw new ValidationError("A turn's kept-plan record is immutable.");
+    }
   }
   if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
@@ -566,6 +585,7 @@ function assertAppendOnly(previous, next) {
   for (const [corpusId] of previousCorpora) {
     if (!next.journal_corpora.some((reference) => reference.corpus_id === corpusId)) throw new ValidationError("Journal corpus references cannot be removed by ordinary mutation.");
   }
+  assertKeptPlansAppendOnly(previous.runner_kept_plans ?? [], next.runner_kept_plans ?? []);
 }
 
 async function durableEncryptedWrite(file, envelope) {
@@ -714,10 +734,12 @@ export function createEncryptedPrivateCaseStore({
   };
   const loadOrCreate = async (caseId) => mutate(safeCaseId(caseId), () => null);
   // `afterWrite` writes a file that names the case (a locator) in the same turn of the case's queue as the record, after it: a
-  // deletion queued behind finds the file and removes it, so none can appear after a deletion returned.
-  const mutate = async (caseId, operation, { afterWrite = null } = {}) => coordinator.run(safeCaseId(caseId), async () => {
+  // deletion queued behind finds the file and removes it, so none can appear after a deletion returned. `requireExisting` leaves a
+  // case that has no file as it is (the operation isn't run and the result is null), where every other write would create it.
+  const mutate = async (caseId, operation, { afterWrite = null, requireExisting = false } = {}) => coordinator.run(safeCaseId(caseId), async () => {
     const id = safeCaseId(caseId);
     const existing = await readExistingWithEnvelope(id);
+    if (!existing && requireExisting) return null;
     let previous;
     let currentEnvelope = null;
     if (existing) {
@@ -1325,16 +1347,22 @@ export function createEncryptedPrivateCaseStore({
     },
     // One audit attempt's crisis level, as the level reader (the crisis checker, or the whole checker) read it, appended as soon
     // as it answers, even when another checker gave no reading: the closing and later turns read every one of them.
-    async recordRunnerCheckerLevel(caseId, runtimeTurnId, { candidateId, candidateVersion = null, checker, level }) {
+    // With the kept plan on (src/runner-trial/kept-plan.mjs), the same entry also holds that checker's two kept-plan readings: whether
+    // the conversation reached the plan for the next hours, and whether the person's yes is about keeping the plan.
+    async recordRunnerCheckerLevel(caseId, runtimeTurnId, { candidateId, candidateVersion = null, checker, level, planReached = undefined, confirmsKeepPlanYes = undefined }) {
       let stored = null;
       await mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (!runtimeTurn.runner_reading) throw new ValidationError("A checker level belongs to a turn the runner trial read.");
         if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no new reading.");
         const levels = runtimeTurn.runner_reading.checker_levels ?? [];
+        const keptPlanReadings = {
+          ...(planReached === undefined ? {} : { plan_reached: planReached === true }),
+          ...(confirmsKeepPlanYes === undefined ? {} : { confirms_keep_plan_yes: confirmsKeepPlanYes === true })
+        };
         runtimeTurn.runner_reading = {
           ...runtimeTurn.runner_reading,
-          checker_levels: [...levels, { attempt: levels.length + 1, candidate_id: candidateId, candidate_version: candidateVersion, checker, level, recorded_at: now() }]
+          checker_levels: [...levels, { attempt: levels.length + 1, candidate_id: candidateId, candidate_version: candidateVersion, checker, level, recorded_at: now(), ...keptPlanReadings }]
         };
         validatePrivateRuntimeTurn(runtimeTurn);
         stored = structuredClone(runtimeTurn.runner_reading.checker_levels);
@@ -1370,6 +1398,71 @@ export function createEncryptedPrivateCaseStore({
         validatePrivateRuntimeTurn(runtimeTurn);
         return record;
       });
+    },
+    // The plan kept for next time (the runner trial's kept plan, design section 9; rules in src/runner-trial/kept-plan.mjs). Kept for
+    // one turn, once: only when the case's stored readings and this turn's allow it (the crisis reader read that the person asks;
+    // the crisis checker confirmed a yes to an offer made in the reply before; no reading anywhere in the case says they may be
+    // under 18 or that home isn't safe), and only the lines found word for word in a reply InnerSignal delivered earlier in this
+    // conversation, with the date. A plan kept before is deleted in its place. Never in the transcript; the record is append-only.
+    async recordRunnerKeptPlan(caseId, runtimeTurnId, { lines = [] } = {}) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const plans = record.runner_kept_plans ?? [];
+        const existing = plans.find((plan) => plan.runtime_turn_id === runtimeTurnId);
+        if (existing) { stored = structuredClone(existing); return null; }
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw keptPlanRefusal("finished_turn");
+        const basis = keepPlanBasis(record, runtimeTurn);
+        if (!basis.allowed) throw keptPlanRefusal(basis.reason);
+        if (basis.needsConfirmation && !keepPlanYesConfirmed(runtimeTurn)) throw keptPlanRefusal("not_confirmed");
+        const found = keptPlanLinesFound(lines, earlierRepliesInConversation(record, runtimeTurn));
+        if (found.length === 0) throw keptPlanRefusal("no_line_found");
+        const timestamp = now();
+        for (const plan of plans) if (plan.deleted_at == null) markKeptPlanDeleted(plan, "replaced", timestamp);
+        const plan = {
+          schema_version: 1,
+          id: `kept-plan:${sha256Hex(runtimeTurnId).slice(0, 24)}`,
+          conversation_id: runtimeTurn.runner_reading.conversation_id,
+          runtime_turn_id: runtimeTurnId,
+          kept_at: timestamp,
+          lines: found,
+          deleted_at: null,
+          deletion_reason: null
+        };
+        record.runner_kept_plans = [...plans, plan];
+        runtimeTurn.kept_plan_kept_at = timestamp;
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(plan);
+        return record;
+      });
+      return stored;
+    },
+    // Deletes the case's kept plan (its lines removed, the date and the reason kept): `expired` deletes only plans 30 days old by
+    // this store's clock; `asked_in_conversation` needs the turn whose crisis reading says the person asked (and marks that turn);
+    // `deleted_on_page` is the page's button. A case without a file is left as it is.
+    async deleteRunnerKeptPlans(caseId, { reason, runtimeTurnId = null } = {}) {
+      if (!KEPT_PLAN_DELETION_REASONS.includes(reason) || reason === "replaced") throw new ValidationError("The kept plan's deletion reason is invalid.");
+      let deleted = 0;
+      await mutate(caseId, (record) => {
+        let runtimeTurn = null;
+        if (reason === "asked_in_conversation") {
+          runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+          if (crisisReadingOf(runtimeTurn)?.asks_to_delete_plan !== true) throw keptPlanRefusal("not_asked");
+          if (runtimeTurn.kept_plan_deleted_at) return null;
+          if (isFinishedRuntimeTurn(runtimeTurn)) throw keptPlanRefusal("finished_turn");
+        }
+        const timestamp = now();
+        const due = (record.runner_kept_plans ?? []).filter((plan) => plan.deleted_at == null && (reason !== "expired" || keptPlanExpired(plan, Date.parse(timestamp))));
+        if (due.length === 0 && !runtimeTurn) return null;
+        for (const plan of due) markKeptPlanDeleted(plan, reason, timestamp);
+        if (runtimeTurn) {
+          runtimeTurn.kept_plan_deleted_at = timestamp;
+          validatePrivateRuntimeTurn(runtimeTurn);
+        }
+        deleted = due.length;
+        return record;
+      }, { requireExisting: true });
+      return Object.freeze({ deleted });
     },
     // Close a turn the runner trial can't answer, in one write: the person's turn if the transcript doesn't hold it yet, the case
     // state computed from the stored readings, the active draft superseded, and the fixed text as the exchange's assistant turn.

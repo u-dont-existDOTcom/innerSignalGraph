@@ -36,6 +36,13 @@ const CLOSING_REASONS = Object.freeze({
 });
 const RUNNER_PROGRESS_LABEL = "Writing and checking a reply…";
 const RUNNER_ONLY_KINDS = Object.freeze(["provisional", "emergency_line", "divider"]);
+// The plan kept for next time (design, section 9), used only while /health says runnerKeptPlan is on.
+const RESUME_QUESTION = "Pick up where we left off?";
+const RESUME_YES = "Yes";
+const RESUME_FRESH = "Start fresh";
+const KEPT_PLAN_DELETE_NOTE = "This removes the kept plan. Its words are still in the stored conversation, which can't be edited; deleting them too means deleting the case.";
+const KEPT_PLAN_KEPT_LINE = "Kept for next time: the lines of your plan and today's date, encrypted on this computer for 30 days.";
+const KEPT_PLAN_GONE_LINE = "No kept plan remains.";
 
 // Reads the trial's newline-delimited JSON answer. Every line before the last is an event of the turn and goes to onEvent; the
 // last is the reply ("final", returned) or why there is none ("error", thrown). A line split across chunks is joined first, and a
@@ -195,6 +202,23 @@ function runnerReconcileRequest(caseId, therapy, shownThrough) {
   return showsEarlierTurns ? { caseId, afterExchangeId: shownThrough } : { caseId, conversation: "current" };
 }
 
+// What the page says outside the reply after a turn that kept a plan ("kept") or deleted the kept plan ("deleted"); nothing otherwise.
+function keptPlanStatusText(action) {
+  return action === "kept" ? KEPT_PLAN_KEPT_LINE : action === "deleted" ? KEPT_PLAN_GONE_LINE : "";
+}
+
+// Whether the page asks "Pick up where we left off?" when it loads: the case has a conversation and the next message opens a new
+// one. The server says nothing of a kept plan, so the question shows whether or not one is kept.
+function runnerAsksResumeOnLoad(resume) {
+  return resume?.hasConversation === true && resume?.nextStartsNewConversation === true;
+}
+
+// What the next message tells the server of the answer: Yes (true) or Start fresh (false), only while the question is shown and
+// only once it is answered. An unanswered question sends nothing, which the server reads as no Yes.
+function runnerResumeField(shown, answer) {
+  return shown === true && typeof answer === "boolean" ? { resumeConfirmed: answer } : {};
+}
+
 // The fields of the page's state that aren't the case's: what the person set, the case id (the next message starts an empty case
 // under it), how the server stores cases and whether this browser holds data of older versions. Every other field is the case's,
 // a field added later included.
@@ -210,7 +234,9 @@ function forgetDeletedCase(pageState, empty) {
 // runner-trial-page:end
 
 // `inFlight`: the exchanges of the trial turns this page is still receiving, which a reconcile leaves to their own stream.
-const runnerTrial = { on: false, newConversation: false, inFlight: new Set() };
+// `keptPlanOn`: the plan kept for next time is on; `hasConversation`: the case has a conversation (from the server, or a turn sent);
+// `resumeShown` and `resumeAnswer`: "Pick up where we left off?" is shown, and its answer (true, false, or null before one).
+const runnerTrial = { on: false, newConversation: false, inFlight: new Set(), keptPlanOn: false, hasConversation: false, resumeShown: false, resumeAnswer: null };
 const RUNNER_RECONCILE_LABEL = "Looking for a reply that finished while this page was closed…";
 let healthChecked = Promise.resolve();
 
@@ -232,6 +258,44 @@ function applyRunnerTrial(on) {
   syncRunnerNewConversation();
 }
 
+// The plan kept for next time (design, section 9): the question a new conversation opens with, its two answers, the line that says
+// what happened to the kept plan, and the button that deletes it. Every word is fixed and set with textContent.
+function applyRunnerKeptPlan(on) {
+  runnerTrial.keptPlanOn = on && runnerTrial.on;
+  $("#runner-delete-kept-plan").hidden = !runnerTrial.keptPlanOn;
+  $("#runner-resume-question").textContent = runnerTrial.keptPlanOn ? RESUME_QUESTION : "";
+  $("#runner-resume-yes").textContent = runnerTrial.keptPlanOn ? RESUME_YES : "";
+  $("#runner-resume-fresh").textContent = runnerTrial.keptPlanOn ? RESUME_FRESH : "";
+  if (!runnerTrial.keptPlanOn) {
+    showRunnerResume(false);
+    setRunnerKeptPlanStatus("");
+  }
+}
+
+function syncRunnerResume() {
+  for (const [selector, value] of [["#runner-resume-yes", true], ["#runner-resume-fresh", false]]) {
+    const button = $(selector);
+    button.setAttribute("aria-pressed", runnerTrial.resumeAnswer === value ? "true" : "false");
+    button.classList.toggle("selected", runnerTrial.resumeAnswer === value);
+  }
+}
+
+// Shows "Pick up where we left off?" (before anything else of the new conversation, above the message box) or hides it. A question
+// shown anew starts unanswered; one already shown keeps the answer the person gave.
+function showRunnerResume(show) {
+  if (show === true && runnerTrial.resumeShown) return;
+  runnerTrial.resumeShown = show === true && runnerTrial.keptPlanOn;
+  runnerTrial.resumeAnswer = null;
+  $("#runner-resume").hidden = !runnerTrial.resumeShown;
+  syncRunnerResume();
+}
+
+function setRunnerKeptPlanStatus(words) {
+  const line = $("#runner-kept-plan-status");
+  line.textContent = words;
+  line.hidden = !words;
+}
+
 // When the page loads with the trial on (design, section 8): the server closes any turn of this case that a restart left
 // unfinished (and delivers one that was already approved), then sends back the turns that finished after the last one this page
 // showed, such as a reply that came while the page was closed. While a turn of the case is still running on the server, it waits.
@@ -248,6 +312,11 @@ async function reconcileRunnerCase() {
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok || !Array.isArray(payload?.turns)) return;
+    // With the kept plan on: a new conversation opens with "Pick up where we left off?" whenever an earlier one exists.
+    if (runnerTrial.keptPlanOn && payload.resume) {
+      runnerTrial.hasConversation = payload.resume.hasConversation === true;
+      if (runnerAsksResumeOnLoad(payload.resume)) showRunnerResume(true);
+    }
     state.runnerShownThrough = showRunnerTurns(state.therapy, payload.turns, state.runnerShownThrough, runnerTrial.inFlight);
     if (payload.turns.length) {
       saveState();
@@ -266,6 +335,11 @@ function beginRunnerTurn(exchangeId) {
   const newConversation = runnerTrial.newConversation;
   runnerTrial.newConversation = false;
   syncRunnerNewConversation();
+  // The answer to "Pick up where we left off?" goes with this message, and the question and the kept-plan line go.
+  const resume = runnerResumeField(runnerTrial.resumeShown, runnerTrial.resumeAnswer);
+  if (runnerTrial.resumeShown) showRunnerResume(false);
+  if (runnerTrial.keptPlanOn) setRunnerKeptPlanStatus("");
+  runnerTrial.hasConversation = true;
   const progress = $("#runner-progress");
   const startedAt = Date.now();
   let step = "";
@@ -278,6 +352,7 @@ function beginRunnerTurn(exchangeId) {
   runnerTrial.inFlight.add(exchangeId);
   return {
     newConversation,
+    resume,
     onEvent(event) {
       if (finished) return;
       if (event?.type === "status") {
@@ -1006,6 +1081,7 @@ async function checkHealth() {
     badge.className = "status ok";
     badge.textContent = `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
     applyRunnerTrial(health.runnerTrial === "on");
+    applyRunnerKeptPlan(health.runnerKeptPlan === "on");
     if (runnerTrial.on) await reconcileRunnerCase();
     state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
     if (health.privateCaseStorage?.available) {
@@ -1061,10 +1137,13 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       priorCaseSnapshot: state.caseSnapshot,
       priorInterventionContract: state.interventionContract,
       priorProcessingTier: state.priorProcessingTier,
-      ...(runnerTurn?.newConversation ? { newConversation: true } : {})
+      ...(runnerTurn?.newConversation ? { newConversation: true } : {}),
+      ...(runnerTurn?.resume ?? {})
     };
     const result = runnerTurn ? await postRunnerTurn(request, runnerTurn) : await postJson("/v1/therapy/respond", request);
     runnerTurn?.finish(result);
+    // What happened to the kept plan in this turn, said outside the reply in fixed words (the writer can't know what was kept).
+    if (runnerTurn && runnerTrial.keptPlanOn) setRunnerKeptPlanStatus(keptPlanStatusText(result.keptPlan));
     const answer = text(result.answer) || text(result.decision_summary) || "The runtime returned no answer text.";
     state.caseSnapshot = result.caseFormulation && typeof result.caseFormulation === "object" ? result.caseFormulation : state.caseSnapshot;
     state.interventionContract = result.interventionContract && typeof result.interventionContract === "object" ? result.interventionContract : state.interventionContract;
@@ -1114,6 +1193,40 @@ $("#runner-new-conversation").addEventListener("click", () => {
   state.therapy.push({ role: "notice", kind: "divider", content: "New conversation", at: new Date().toISOString() });
   renderTherapy();
   syncRunnerNewConversation();
+  // With the kept plan on, the new conversation opens with "Pick up where we left off?" whenever an earlier one exists.
+  if (runnerTrial.keptPlanOn && (runnerTrial.hasConversation || state.therapy.some((entry) => typeof entry?.exchangeId === "string"))) showRunnerResume(true);
+});
+
+// "Pick up where we left off?": the answer goes to the server with the next message.
+for (const [selector, answer] of [["#runner-resume-yes", true], ["#runner-resume-fresh", false]]) {
+  $(selector).addEventListener("click", () => {
+    if (!runnerTrial.resumeShown) return;
+    runnerTrial.resumeAnswer = answer;
+    syncRunnerResume();
+  });
+}
+
+// "Delete the kept plan" (design, section 9): after the plain confirmation, the server deletes the case's kept plan (its lines leave
+// the record; the conversation that holds them stays, since only deleting the case removes it). The answer is the same whether or
+// not a plan was kept.
+$("#runner-delete-kept-plan").addEventListener("click", async () => {
+  if (!runnerTrial.keptPlanOn || !confirm(KEPT_PLAN_DELETE_NOTE)) return;
+  const button = $("#runner-delete-kept-plan");
+  setBusy(button, true, "Deleting…");
+  try {
+    const response = await fetch("/v1/runner/kept-plan/delete", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ caseId: state.caseId, confirmed: true })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
+    setRunnerKeptPlanStatus(KEPT_PLAN_GONE_LINE);
+  } catch (error) {
+    alert(`The kept plan was not deleted: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
 });
 
 // After "Delete this case" succeeded (design, section 6), nothing of the case stays in the page: its state forgets every field
@@ -1135,6 +1248,10 @@ function clearDeletedCase() {
   supervisorPanel?.clear();
   runnerTrial.newConversation = false;
   syncRunnerNewConversation();
+  // The deleted case's kept plan went with it: no question about an earlier conversation, and no line about a plan.
+  runnerTrial.hasConversation = false;
+  showRunnerResume(false);
+  setRunnerKeptPlanStatus("");
   syncSpeechPlaybackControls();
   saveState();
   renderTherapy();

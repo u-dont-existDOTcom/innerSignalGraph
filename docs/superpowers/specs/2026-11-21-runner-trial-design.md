@@ -287,22 +287,59 @@ fullwidth and the other common decimal digits), so the number checks work whatev
 
 ## 9. The plan kept for next time (point 5b)
 
-- Kept when the person asks, and offered once by the writer at the end of a crisis plan (step 5 of the crisis replies), as
-  one plain sentence that is checked with the rest of the reply.
-- Never offered or kept when any stored reading in the case (not only this conversation) says `may_be_under_18` or
-  `home_unsafe`, or when R1 gave no reading this turn.
-- Kept only after the person says yes in a later message (C1 confirms the yes is about keeping the plan); what is kept is the
-  plan's lines as the person saw them (each line checked word for word against the earlier reply) and the date, encrypted
-  in the case file.
-- Next time: "Pick up where we left off?" (Yes / Start fresh) is shown whenever an earlier conversation exists, kept plan or
-  not, so the question itself tells no one that a plan exists. Only Yes gives the writer the plan.
-- The runner-only rule, given to the writer and C1 only when a confirmed plan is in the packet, shown to the owner before use:
-  "a kept plan is a reason to ask one question about the message, never a sign of risk now, never a reason for numbers or
-  safety questions".
-- Deleted 30 days after it was kept (when the trial next starts after that) or when the person asks. The transcript is
-  append-only, so deleting the plan removes the kept-plan record, not the conversation turns that contain its lines;
-  deleting those means deleting the case. The page says so.
-- Behind its own switch, off until the owner has seen the rule text.
+**Built** on 21 Nov 2026, behind its own switch `INNER_SIGNAL_RUNNER_KEPT_PLAN` (on/off, read like the trial's; off by default;
+meaningful only with the trial on), off until the owner has seen the rule text
+(`/home/joel/askrigor-releases/20261121-innersignal-runner-note/kept-plan-rule-draft.md`). Its rules are in
+`src/runner-trial/kept-plan.mjs`: the runtime uses them to decide what goes into a packet, and the encrypted store applies the same
+ones again before it keeps anything, so no caller can keep a plan they don't allow. Tests: `tests/runner-trial-kept-plan.test.mjs`.
+
+- **Switch off**: nothing below runs. Every worker's prompt, packet and schema is byte-identical to before (a test runs a fixed
+  scenario through both arms, a repair included, and compares one digest of every call with the digest taken from `aa9d03112`);
+  the case record gains no field; answers, the reconcile and the page are as before. Only `/health` shows it: `runnerKeptPlan: "off"`.
+  A plan kept while the switch was on is still deleted at its 30 days.
+- **The ask**: the crisis reader also returns `asks_to_keep_plan` (the person asks to keep their plan, or says yes to the offer in
+  the reply just before) and `asks_to_delete_plan`, from this conversation's words.
+- **Kept** only when (a) the crisis reader reads that the person asks in this turn, or (b) the reply just before offered and the
+  person says yes in this turn: read by the crisis reader and confirmed by the crisis checker (the whole checker in its arm) in its
+  own field `confirms_keep_plan_yes`. Never when any stored crisis reading in the case (any turn, any conversation) says
+  `may_be_under_18` or `home_unsafe`, or when the crisis reader gave no reading this turn. The writer, given `keep_plan_asked`,
+  copies into `kept_plan_lines` the sentences of an earlier InnerSignal reply in this conversation that hold the plan (who they'll
+  reach, the message, what they'll do in the next hours); the program keeps only the lines found word for word (whitespace folded)
+  in a reply InnerSignal delivered earlier in this conversation, with the date. (a) is kept right after the writer; (b) the moment
+  the checker's confirmation arrives; a repaired draft's lines are tried when the first draft's kept none. A refusal keeps nothing
+  and never stops the turn.
+- **Where**: the case file's `runner_kept_plans`, encrypted with the rest, one plan at a time (a newer plan deletes the older, reason
+  `replaced`), append-only (no plan is removed, what was kept and when never changes; the only change is deletion). Never in the
+  transcript; the turn notes `kept_plan_kept_at`. The writer's declared lines are also in its stored output, as its draft is.
+- **The offer**: once per conversation, when the conversation is a crisis conversation, a reply already delivered in it reached the
+  plan for the next hours (step 5 of the crisis replies: the writer's `plan_reached` for the reply it sent, or the crisis checker's
+  on the audit of that reply), the crisis reader read this turn, no stored reading rules it out and no plan from this conversation
+  is kept. Then the writer's packet gets `may_offer_to_keep_plan: true`, stored with the turn's readings before it writes (so it is
+  given once), and the writer may end the reply with one plain sentence offering to keep the plan, declared in
+  `offered_to_keep_plan`; it is checked with the rest of the reply. The offer counts as made when that reply is delivered. So it comes
+  at the earliest in the turn after the plan reply.
+- **What the page says**: the writer can't know what the program keeps, so it is told not to say. The answer and the stream's final
+  line carry `keptPlan` (`kept`, `deleted` or null), never the lines, and the page shows outside the reply "Kept for next time: the
+  lines of your plan and today's date, encrypted on this computer for 30 days." or "No kept plan remains."
+- **Next time**: when a new conversation opens (the "New conversation" button, or the first message after the 12-hour gap) and an
+  earlier conversation exists, kept plan or not, the page shows "Pick up where we left off?" with Yes and Start fresh above the
+  message box. The answer goes with the next message as `resumeConfirmed` (only exactly true is a Yes; an unanswered question
+  sends nothing) and is stored with the new conversation's first turn, for the whole conversation. Only Yes, with a plan kept in an
+  earlier conversation that isn't deleted or past 30 days, puts `kept_plan` (its lines and the day it was kept) in the writer's and
+  the crisis checker's packets (the whole checker's in its arm), with the runner-only rule in their prompts, exactly: "A kept plan is
+  a reason to ask one question about the message, never a sign of risk now, never a reason for numbers or safety questions." No
+  other worker gets either. A plan is also left out while any stored reading says `may_be_under_18` or `home_unsafe` (one step
+  beyond "never offered or kept"). Start fresh changes only this: earlier turns are still given as background, as before. The page
+  learns when to ask from its reconcile (`resume`: whether the case has a conversation and whether the next message opens a new
+  one), which says nothing of a plan; when the gap passes while the page stays open, it isn't asked, and no plan is given.
+- **Deleted** 30 days after it was kept, checked whenever the runtime loads the case (every turn, and the page's load), or when the
+  person asks: in the conversation (the crisis reader's `asks_to_delete_plan`; deleted before the writer starts, whose packet then
+  says `kept_plan_deleted_on_request`) or with "Delete the kept plan" on the trial page, after the plain confirmation "This removes
+  the kept plan. Its words are still in the stored conversation, which can't be edited; deleting them too means deleting the case."
+  (`POST /v1/runner/kept-plan/delete`: the owner's page on this machine only; the same answer whether or not a plan was kept).
+  Deleting removes the lines from the record and keeps when it was kept, when it was deleted and why. The transcript is append-only,
+  so the replies that hold the lines stay, as do the stored drafts; deleting them means deleting the case, which deletes the plan
+  with everything else.
 
 ## 10. Providers (point 2)
 

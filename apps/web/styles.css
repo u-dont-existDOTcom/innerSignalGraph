@@ -164,3 +164,8 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 .runner-divider { margin: 1rem 0; padding-top: .5rem; border-top: 1px solid var(--line); text-align: center; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .runner-progress { margin: .25rem 0 0; }
 #runner-new-conversation.selected { outline: 2px solid var(--accent-strong); }
+/* The plan kept for next time (shown only while /health says runnerKeptPlan is on) */
+.runner-resume { margin: .5rem 0; padding: .65rem .85rem; border: 1px solid var(--accent); border-radius: .65rem; }
+.runner-resume p { margin: 0 0 .5rem; font-weight: 700; }
+.runner-resume button.selected { outline: 2px solid var(--accent-strong); }
+.runner-kept-plan-status { margin: .25rem 0 0; }

@@ -218,7 +218,7 @@ async function readJson(req, maxBytes = 2_000_000) {
 // authorization; a request that carries its own bearer token is an authenticated agent acting for someone, which does not make
 // it the owner.
 const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
-const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/reconcile", "/v1/case/delete"]);
+const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
 const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
 const SUPERVISOR_STATUS = Object.freeze({
   SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
@@ -287,8 +287,9 @@ function failureResponse(error) {
 // also carries its closing: the kind (the notice or the owner's fixed message) and the reason, in fixed words. With the trial on,
 // every answer also carries what the stored turn showed before its reply: the provisional reply's exact text (or null) and whether
 // the emergency line was put into the conversation, so a page that got no live events (a JSON answer, or a replay of a finished
-// turn) shows them as the stream would have.
-function therapyAnswer(result, { runnerTrial = false } = {}) {
+// turn) shows them as the stream would have. With the kept plan on too, it says whether the turn kept a plan or deleted the kept
+// plan ("kept", "deleted" or null), so the page can say so outside the reply: the writer can't know what the program keeps.
+function therapyAnswer(result, { runnerTrial = false, keptPlan = false } = {}) {
   const metadata = result.runtimeMetadata ?? {};
   return {
     answer: result.answer,
@@ -314,7 +315,8 @@ function therapyAnswer(result, { runnerTrial = false } = {}) {
     ...(runnerTrial ? {
       provisional: typeof result.runtimeTurn?.provisional?.exact_text === "string" ? result.runtimeTurn.provisional.exact_text : null,
       emergencyLineShown: Boolean(result.runtimeTurn?.emergency_line_shown_at)
-    } : {})
+    } : {}),
+    ...(runnerTrial && keptPlan ? { keptPlan: result.runtimeTurn?.kept_plan_kept_at ? "kept" : result.runtimeTurn?.kept_plan_deleted_at ? "deleted" : null } : {})
   };
 }
 
@@ -326,7 +328,7 @@ const acceptsNdjson = (req) => /(?:^|,)\s*application\/x-ndjson\s*(?:[;,]|$)/iu.
 // request is authorized for its case first, with the check the turn itself makes (`authorize`): a request the turn would refuse
 // gets that refusal as its answer (thrown before anything is written) and never listens, so it hears no line of another
 // request's turn of the same case and turn id.
-async function streamRunnerTurn(res, { events, caseId, runtimeTurnId, authorize, run }) {
+async function streamRunnerTurn(res, { events, caseId, runtimeTurnId, authorize, run, keptPlan = false }) {
   await authorize();
   res.writeHead(200, securityHeaders({ "content-type": "application/x-ndjson" }));
   const write = (line) => {
@@ -338,7 +340,7 @@ async function streamRunnerTurn(res, { events, caseId, runtimeTurnId, authorize,
     if (line) write(line);
   });
   try {
-    write({ type: "final", ...therapyAnswer(await run(), { runnerTrial: true }) });
+    write({ type: "final", ...therapyAnswer(await run(), { runnerTrial: true, keptPlan }) });
   } catch (error) {
     const { body } = failureResponse(error);
     write({ type: "error", error: body.error, code: body.code });
@@ -383,6 +385,19 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       })
     : null);
   const runnerEvents = runnerTrial?.events ?? null;
+  // The plan kept for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN; design, section 9): on only with the trial on. A controller brought in
+  // with it on must offer the page's two kept-plan methods; the trial built here offers them exactly when the switch is on.
+  let runnerKeptPlan = false;
+  const controllerKeepsPlans = runnerTrial && (typeof runnerTrial.controller.resumeStatus === "function" || typeof runnerTrial.controller.deleteKeptPlan === "function");
+  if (runnerTrial && config.runnerKeptPlanEnabled === true) {
+    if (typeof runnerTrial.controller.resumeStatus !== "function" || typeof runnerTrial.controller.deleteKeptPlan !== "function") {
+      throw new RuntimeError("A runner trial controller with the kept plan on needs its resume status and its kept-plan deletion.", { code: "BAD_CONFIG" });
+    }
+    runnerKeptPlan = true;
+  } else if (controllerKeepsPlans) {
+    // The switch has one state: a controller built with the kept plan on can't serve a server whose switch is off.
+    throw new RuntimeError("The kept plan is off, but the runner trial controller brought in has it on.", { code: "BAD_CONFIG" });
+  }
   // Built on first use, so a server that never serves a supervisor request never builds a second model runtime.
   let supervisorDrafts = privateSupervisorService;
   const supervisorDraftService = () => {
@@ -436,6 +451,9 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // Whether therapy turns run through the runner trial. It is on exactly when INNER_SIGNAL_RUNNER_TRIAL is on: with the switch
           // on, a server that can't build the trial doesn't start. The page shows the trial's banner, line and stream from it.
           runnerTrial: runnerEvents ? "on" : "off",
+          // Whether the trial keeps a plan for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN): on only with the trial on. The page shows the
+          // "Pick up where we left off?" question and the "Delete the kept plan" button from it.
+          runnerKeptPlan: runnerKeptPlan ? "on" : "off",
           endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
@@ -461,15 +479,16 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
             userTurnId,
             assistantTurnId,
             userMessage: input.userMessage,
-            // The trial starts a new conversation only on exactly true (the page's "New conversation" button).
-            userInput: runnerEvents ? { ...input, newConversation: input.newConversation === true } : input,
+            // The trial starts a new conversation only on exactly true (the page's "New conversation" button). With the kept plan on, the
+            // answer to "Pick up where we left off?" is a Yes only on exactly true too.
+            userInput: runnerEvents ? { ...input, newConversation: input.newConversation === true, ...(runnerKeptPlan ? { resumeConfirmed: input.resumeConfirmed === true } : {}) } : input,
             authContext
           });
           if (runnerEvents && acceptsNdjson(req)) {
             const authorize = () => automaticPrivateTherapy.authorizeTurn({ caseId, authContext });
-            return await streamRunnerTurn(res, { events: runnerEvents, caseId, runtimeTurnId, authorize, run });
+            return await streamRunnerTurn(res, { events: runnerEvents, caseId, runtimeTurnId, authorize, run, keptPlan: runnerKeptPlan });
           }
-          return send(res, 200, therapyAnswer(await run(), { runnerTrial: Boolean(runnerEvents) }));
+          return send(res, 200, therapyAnswer(await run(), { runnerTrial: Boolean(runnerEvents), keptPlan: runnerKeptPlan }));
         }
         if (config.mode !== "mock") {
           return send(res, 503, { error: "Encrypted automatic therapy orchestration is not configured.", code: "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE" });
@@ -540,11 +559,13 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           privateCaseStorage: privateCaseStore ? "encrypted" : "session_only"
         });
       }
-      // The runner trial page's own routes (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 6 and 8): its
-      // reconcile when it loads, and "Delete this case". Only with the trial on, only from the owner's page on this machine (no
-      // agent's bearer token, a loopback Host and a matching Origin), and only as JSON; anything else is refused.
+      // The runner trial page's own routes (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 6, 8 and 9): its
+      // reconcile when it loads, "Delete this case" and, with the kept plan on, "Delete the kept plan". Only with the trial on (the
+      // last only with the kept plan on too), only from the owner's page on this machine (no agent's bearer token, a loopback Host and
+      // a matching Origin), and only as JSON; anything else is refused.
       if (req.method === "POST" && RUNNER_PAGE_ROUTES.has(url.pathname)) {
         if (!runnerEvents || typeof automaticPrivateTherapy?.reconcile !== "function" || typeof automaticPrivateTherapy?.deleteCase !== "function") return send(res, 404, { error: "Not found" });
+        if (url.pathname === "/v1/runner/kept-plan/delete" && !runnerKeptPlan) return send(res, 404, { error: "Not found" });
         if (supervisorChannelFor(req) !== "owner_ui") throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
         assertOwnerChannelRequest(req);
         const input = await readSupervisorBody(req);
@@ -555,7 +576,18 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // shows its earlier turns asks for those after the last one it shows.
           const currentConversation = input.conversation === "current";
           const afterExchangeId = currentConversation || input.afterExchangeId == null ? null : safeEntryId(input.afterExchangeId, null);
-          return send(res, 200, { caseId, turns: await automaticPrivateTherapy.reconcile({ caseId, afterExchangeId, currentConversation, authContext }) });
+          const turns = await automaticPrivateTherapy.reconcile({ caseId, afterExchangeId, currentConversation, authContext });
+          // With the kept plan on, whether to ask "Pick up where we left off?": the case has a conversation and the next message opens
+          // a new one. Nothing in it says whether a plan is kept.
+          const resume = runnerKeptPlan ? await automaticPrivateTherapy.resumeStatus({ caseId, authContext }) : null;
+          return send(res, 200, { caseId, turns, ...(resume ? { resume: { hasConversation: resume.hasConversation === true, nextStartsNewConversation: resume.nextStartsNewConversation === true } } : {}) });
+        }
+        if (url.pathname === "/v1/runner/kept-plan/delete") {
+          // The page's "Delete the kept plan", after the person confirmed its plain words. The answer is the same whether or not a
+          // plan was kept: none remains.
+          if (input.confirmed !== true) return send(res, 400, { error: "Confirm to delete the kept plan.", code: "VALIDATION_ERROR" });
+          await automaticPrivateTherapy.deleteKeptPlan({ caseId, authContext });
+          return send(res, 200, { caseId, keptPlanRemains: false });
         }
         if (input.confirmation !== "DELETE") return send(res, 400, { error: "Type DELETE to delete this case.", code: "VALIDATION_ERROR" });
         const deleted = await automaticPrivateTherapy.deleteCase({ caseId, authContext });

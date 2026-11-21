@@ -7,9 +7,22 @@ export const RUNNER_TRIAL_SETTING = "INNER_SIGNAL_RUNNER_TRIAL";
 export const RUNNER_TRIAL_SETTINGS_FILE = "INNER_SIGNAL_RUNNER_TRIAL_SETTINGS";
 export const RUNNER_CLAUDE_CONFIG_DIR = "INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR";
 
+// The plan kept for next time (design, section 9): its own switch, off by default and off until the owner has seen the rule text.
+// It means something only while INNER_SIGNAL_RUNNER_TRIAL is on; with the trial off it changes nothing.
+export const RUNNER_KEPT_PLAN_SETTING = "INNER_SIGNAL_RUNNER_KEPT_PLAN";
+
+function readSwitch(raw, name) {
+  const reading = readOnOffSetting(raw);
+  if (reading === null) throw new RuntimeError(`${name} must be on or off.`, { code: "BAD_CONFIG" });
+  return reading;
+}
+
 // Off unless set to on; any value other than on or off stops startup with a message that names the setting, never its value.
 export function readRunnerTrialSwitch(raw) {
-  const reading = readOnOffSetting(raw);
-  if (reading === null) throw new RuntimeError(`${RUNNER_TRIAL_SETTING} must be on or off.`, { code: "BAD_CONFIG" });
-  return reading;
+  return readSwitch(raw, RUNNER_TRIAL_SETTING);
+}
+
+// Read the same way as the trial's switch.
+export function readRunnerKeptPlanSwitch(raw) {
+  return readSwitch(raw, RUNNER_KEPT_PLAN_SETTING);
 }

@@ -351,6 +351,13 @@ export function createPrivateCaseAccessService({
     async closeRuntimeTurnUnanswered(caseId, runtimeTurnId, input, authContext) {
       return write(caseId, authContext, (store) => store.closeRuntimeTurnUnanswered(caseId, runtimeTurnId, input));
     },
+    // The runner trial's plan kept for next time (section 9 of the design): keeping one, and deleting it.
+    async recordRunnerKeptPlan(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerKeptPlan(caseId, runtimeTurnId, input));
+    },
+    async deleteRunnerKeptPlans(caseId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deleteRunnerKeptPlans(caseId, input));
+    },
     // The runner trial page's "Delete this case" (section 6 of the design): the case file, its handoffs and the files naming it.
     async deletePrivateCase(caseId, authContext) {
       return write(caseId, authContext, (store) => store.deletePrivateCase(caseId));

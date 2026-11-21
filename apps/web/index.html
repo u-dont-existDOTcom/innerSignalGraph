@@ -62,6 +62,7 @@
           <button id="open-state-diff" class="secondary" type="button">What changed this turn</button>
           <button id="export-diagnostic" class="secondary" type="button">Export recovery ZIP</button>
           <button id="clear-therapy" class="secondary" type="button">Clear session view</button>
+          <button id="runner-delete-kept-plan" class="secondary" type="button" hidden>Delete the kept plan</button>
           <button id="runner-delete-case" class="danger" type="button" hidden>Delete this case</button>
         </div>
       </div>
@@ -69,8 +70,16 @@
       <p class="notice">This is a reflective companion, not emergency care. Ordinary low-ambiguity turns use a fast Sonnet + decision-graph path. The runtime automatically adds Codex review or the full Opus + GPT adversarial pipeline when ambiguity, depth, or safety makes that worthwhile.</p>
       <div id="therapy-transcript" class="transcript" aria-live="polite"></div>
       <p id="runner-progress" class="small runner-progress" role="status" aria-live="polite" hidden></p>
+      <p id="runner-kept-plan-status" class="small runner-kept-plan-status" role="status" aria-live="polite" hidden></p>
       <form id="therapy-form" class="composer">
         <p id="runner-emergency-line" class="runner-emergency-line" role="note" hidden></p>
+        <div id="runner-resume" class="runner-resume" role="group" aria-labelledby="runner-resume-question" hidden>
+          <p id="runner-resume-question"></p>
+          <div class="actions">
+            <button id="runner-resume-yes" class="secondary" type="button" aria-pressed="false"></button>
+            <button id="runner-resume-fresh" class="secondary" type="button" aria-pressed="false"></button>
+          </div>
+        </div>
         <label for="therapy-message">What is happening?</label>
         <textarea id="therapy-message" rows="5" required placeholder="Describe the live conflict in your own words."></textarea>
         <div class="therapy-controls">
