@@ -44,7 +44,7 @@ test("every answer is recorded as an owner-approved amendment, with his words", 
   assert.match(amendment("AMEND.CROSS.STRICTER_THAN_GUIDE_20261120").text, /too quickly validating some fleeting feeling as identity/u);
   assert.match(amendment("AMEND.CROSS.KEEP_CAREFUL_LINES_20261120").text, /fasting in chronic pain is not brought in/u);
   assert.match(amendment("AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022").text, /answer 369c applied/u);
-  assert.equal(json("../guides/owner-amendments.json").version, "owner-amendments-2026-11-20-r23");
+  assert.equal(json("../guides/owner-amendments.json").version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
 });
 
 test("the AI guide r11 is r10 plus the live-guide passages, word for word, without the fasting passage", () => {

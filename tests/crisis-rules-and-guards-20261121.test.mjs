@@ -161,5 +161,5 @@ test("the owner's answer on guards is an owner-approved amendment in his words, 
     assert.equal(count(read(BOXES), line), 1, `${id}'s line is served once`);
   }
   assert.match(read(SKILL), /Guards and critical voices alike may be helpful, unhelpful or, usually, a mix/u);
-  assert.equal(amendments.version, "owner-amendments-2026-11-20-r23");
+  assert.equal(amendments.version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
 });

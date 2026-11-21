@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: 2026-11-20-r23
+Queue version: 2026-11-21-r24
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -254,6 +254,17 @@ Teaching point: A guard (on duty all the time, or jumping in when pain gets clos
 Reader need: Readers meeting a guard or a critical voice should neither assume it's useless nor that it must be kept, and should know that a full reprogram is open to them when it really is just an old script.
 Already covered: Partly: the live guide's “Reframe the Critic” teaches the Mr. Rogers reframing trick, and “The Parent You Inherited” says a critical voice may be an inherited script, protective, or pointing to a real problem cruelly; “usually a mix” and the full reprogram of a useless old script are not in it as of 20 Nov 2026.
 Where: The public guide's “The Parent You Inherited” and “Reframe the Critic”, and where it describes guards (“The Urge to Escape”).
+
+## Pending: the owner's approved change of 19 October 2026 (PGQ-089)
+
+The owner approved two clarifications on 19 October 2026 (pull request 185, closed on 21 November 2026 as replaced by pull request 229). Pull request 229 carried his own words on both into guide r11, and the ordinary-want point into `IC.MEET_GUARD`; this entry carries the map line on symptoms that it left out. The ordinary-want amendment of the same day is not ported.
+
+### PGQ-089 — A symptom doesn't prove an emotional cause
+Caused by: Owner-approved 19 Oct 2026 AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019 (pull request 185), ported on 21 Nov 2026 to `IC.SOLAR_PLEXUS_RELAXATION` (one avoid line and one required nuance) with graph case G20261019C. Not an r11 passage.
+Teaching point: Pain or illness is real, but it doesn't show its own cause: don't take a symptom as proof of a suppressed feeling, a childhood event or a neglected little one. Emotional care can go alongside medical assessment and treatment, never instead of it.
+Reader need: A reader with pain or illness could take it as their own emotional failure, put off care they need, or expect reparenting to tell them what is wrong.
+Already covered: Partly: the live guide's “Physical Pain Makes It Harder” and “Listen To Your Body, Or Else!” (PGQ-075 and PGQ-076; r11 lines 1171–1183) say that normal test results don't prove pain imaginary, that a treatment that helps doesn't explain the cause, and that not all illness is emotional; that a symptom alone doesn't show a suppressed feeling or a neglected little one is not said as such.
+Where: The public guide's “Listen To Your Body, Or Else!”, beside pain's emotional side; the humanizer chooses.
 
 ## EMPTY sentinel
 

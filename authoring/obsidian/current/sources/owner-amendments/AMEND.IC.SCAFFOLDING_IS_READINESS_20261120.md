@@ -7,14 +7,14 @@ source_id: AMEND.IC.SCAFFOLDING_IS_READINESS_20261120
 guide_id: owner-amendments
 heading: AMEND.IC.SCAFFOLDING_IS_READINESS_20261120
 source_role: owner-approved-extension
-source_hash: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+source_hash: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
 section_hash: 889001f39ce66e98d697bee804b8d58a998fd570b508f7e9f4aef76a6c679b3d
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
   - IC.SAFETY_ORIENTATION
   - IC.SCAFFOLDED_CHALLENGE
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.SCAFFOLDING_IS_READINESS_20261120

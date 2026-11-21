@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4dddd3d81c9030100ae2a04ffc48c3614488843b2c688f725388fbc2dc77638c
-source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+base_record_sha256: c16c95151026a9c89628f4865e995f1c636a57188aa2c1408c1de176dd960028
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022
@@ -25,6 +25,6 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
     "status": "owner-approved",
     "text": "Owner correction: being grateful that one has more than other people who suffer is comparative and not the spiritual gratitude intended. Invite gratitude for concretely present good or the relief one can truthfully recognize, without using another person's deprivation as a basis for feeling fortunate; gratitude may foster compassion toward people who suffer. Preserve the owner's practice of noticing that suffering could be greater without requiring favorable social rank or gratitude on command. Do not blame or shame clients who use comparison as an initial coping thought."
   },
-  "version": "owner-amendments-2026-11-20-r23"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

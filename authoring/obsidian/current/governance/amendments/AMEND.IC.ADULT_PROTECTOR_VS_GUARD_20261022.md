@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
 status: owner-approved
 domain: inner-child
-base_record_sha256: 6f212815960606d443493fbb30e4ec19b18eae8a44bca56a6e033d36b1b0def3
-source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+base_record_sha256: 2da6bb6e517c05dafb892c31298f77b47d039c22a19943312df181e5b3915682
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
@@ -25,6 +25,6 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
     "status": "owner-approved",
     "text": "The developing Inner Adult is one adult with Nurturer, Adult Protector and Guide functions. The Adult Protector is a chosen caring/protective function. Existing proactive/reactive guards and inherited critic scripts are learned responses that may be helpful or harmful; avoid using 'Protector' ambiguously for both. Do not assume any strong urge is a part or a trauma-derived protector. These roles are optional descriptions, not separate inner people."
   },
-  "version": "owner-amendments-2026-11-20-r23"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```
