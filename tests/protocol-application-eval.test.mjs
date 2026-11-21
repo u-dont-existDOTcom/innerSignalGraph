@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
-import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
+import { loadTherapyProtocol, therapyProtocolDelivery } from "../src/protocol/therapy-protocol.mjs";
 import {
   ANSWER_STAGE,
   CODEX_ISOLATION_CONFIG,
@@ -113,14 +113,19 @@ test("the model is asked with the connector's own results: the protocol exactly 
   const protocolCalls = transcript.calls.filter((call) => call.name === "load_therapy_protocol");
   assert.deepEqual(protocolCalls.slice(1).map((call) => call.arguments), loadCalls.map((parts) => ({ parts, protocol_sha256: protocol.protocolSha256 })));
   assert.ok(protocolCalls.every((call) => !/Still to load|Not part names/u.test(call.text)), "every call's parts came whole");
+  // Every part arrives exactly once, its text byte for byte as its BEGIN line's count says.
   const loaded = protocolCalls.map((call) => call.text).join("\n");
-  assert.ok(loaded.includes(protocol.instructions.slice(0, 2000)) && loaded.includes(protocol.instructions.slice(-2000)), "the rules, start and end");
-  for (const file of protocol.files.filter((file) => file.path !== "references/INNER-CHILD-BOX-GUIDANCE.md")) {
-    assert.ok(loaded.includes(file.content), `${file.path} is served byte for byte`);
+  const delivered = new Map();
+  for (const match of loaded.matchAll(/<<<BEGIN (.+?) sha256=([0-9a-f]{64}) bytes=(\d+)>>>\n/gu)) {
+    const start = Buffer.byteLength(loaded.slice(0, match.index + match[0].length), "utf8");
+    const body = Buffer.from(loaded, "utf8").subarray(start, start + Number(match[3])).toString("utf8");
+    assert.ok(!delivered.has(match[1]), `${match[1]} arrives once`);
+    delivered.set(match[1], body);
   }
-  for (const heading of protocol.files.find((file) => file.path === "references/INNER-CHILD-BOX-GUIDANCE.md").content.match(/^### [^\n]+$/gmu)) {
-    assert.ok(loaded.includes(heading), heading);
-  }
+  const delivery = therapyProtocolDelivery(protocol);
+  assert.equal(delivered.size, delivery.all.length);
+  for (const part of delivery.all) assert.equal(delivered.get(part.label), part.content, part.name);
+  assert.equal(delivery.rules.map((part) => delivered.get(part.label)).join(""), protocol.instructions);
 
   const { system, user } = answerPrompt(spec, transcript);
   for (const call of protocolCalls) assert.ok(user.includes(call.text), "the prompt holds every protocol answer unchanged");

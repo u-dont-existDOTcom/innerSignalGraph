@@ -49,10 +49,12 @@ check exactly those things. This test calls models, so it runs by hand and not i
      to send. His `grading.scripture` (`welcome: "declined"`) records what he asked for.
 2. **What the answering model sees**:
    - the connector's own instructions and tool list;
-   - the results of `load_therapy_protocol` (its first answer and, for code that serves the protocol in parts, one call
-     for each group that answer lists), `load_case_context` and `find_journal_quotes` for the case, exactly as a
-     real connector process returns them, after the supervisor's message;
-   - for a case that names `known_vs_new_points`, a fourth call, `check_case_known_vs_new` on those points, answered by
+   - the results of `load_therapy_protocol`, `load_case_context` and `find_journal_quotes` for the case, exactly as a
+     real connector process returns them, after the supervisor's message. For code that serves the protocol in parts
+     (owner answer i60a, 21 Nov 2026) that is every part, since the model can't call tools to load a box when it uses
+     one: the first answer, each group it lists by name, then every other box and the guide referrals, 40 names a call
+     (14 protocol calls for 0.2.5's files);
+   - for a case that names `known_vs_new_points`, one more call, `check_case_known_vs_new` on those points, answered by
      that code's own encrypted store, opened in a throwaway folder with random keys used once, so the model sees the check's
      answer, note and all, exactly as the connector gives it. A connector without that check (a commit from before #176)
      can't run such a case.

@@ -214,9 +214,9 @@ export function therapyProtocolManifest(protocol) {
 // spare, and far under the 25,000 tokens Claude hosts show before they move a result to a file.
 export const PROTOCOL_ANSWER_MAX_BYTES = 28_000;
 // The most one part may hold. The difference is room for an answer's own text: its first line, the note on loading and
-// the list of groups in the first answer, and each part's BEGIN and END lines. At 24,000 the rules' first part ends with
+// the list of groups in the first answer, and each part's BEGIN and END lines. At 24,500 the rules' first part ends with
 // the section on someone who may want to die; tests/split-delivery.test.mjs fails if that section leaves the first answer.
-export const PROTOCOL_PART_MAX_BYTES = 24_000;
+export const PROTOCOL_PART_MAX_BYTES = 24_500;
 
 export const RULES_PART_PREFIX = "rules/";
 export const BOX_LIST_PART = "boxes";
@@ -227,7 +227,8 @@ const ON_REQUEST_FILES = new Set(["references/GUIDE-REFERRALS.md"]);
 // The safety boxes, loaded before the first reply with the rules and the always-read files: tier 1 of the compiled
 // inner-child map and of the cross-guide routes. They hold what the rules' section on someone who may want to die relies
 // on (the adult seat, the self/death inquiry, this precious human life) and the urgent medical, pain and fresh-grief
-// routes. Every other box is loaded when it's used. tests/split-delivery.test.mjs checks this list against both maps' tier 1.
+// routes. SKILL.md names the same boxes to read before responding, for the plugin that reads its own files. Every other
+// box is loaded when it's used. tests/split-delivery.test.mjs checks this list against SKILL.md and both maps' tier 1.
 export const SAFETY_BOX_IDS = Object.freeze([
   "IC.SAFETY_ORIENTATION", "IC.SUICIDAL_ADULT_SEAT", "IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY",
   "ROUTE.MEDICAL_RED_FLAG", "ROUTE.ALTERED_MEDICAL_SAFETY", "ROUTE.REFRACTORY_PAIN_NAVIGATION", "ROUTE.FRESH_GRIEF_FIRST"
@@ -235,6 +236,9 @@ export const SAFETY_BOX_IDS = Object.freeze([
 // Loaded right after the safety boxes, so an app that stops early has it: it decides whether any exercise fits.
 const EARLY_FILES = Object.freeze(["references/PROTECTIVE-COMPATIBILITY.md"]);
 const MAX_REQUESTED_PARTS = 40;
+// The most part names an answer lists as still to load; a request that covers more parts is answered 40 at a time.
+const MAX_LISTED_PARTS = 40;
+const MAX_ECHOED_UNKNOWN = 5;
 const bytesOf = (text) => Buffer.byteLength(text, "utf8");
 
 export class ProtocolRequestError extends Error {
@@ -273,16 +277,21 @@ const CUT_LEVELS = [(text) => lineStartsWith(text, "## "), (text) => lineStartsW
 // consecutive pieces joined while they fit. A single line longer than `max` is cut between code points.
 export function textPieces(text, max, level = 0) {
   if (bytesOf(text) <= max) return [text];
-  if (level >= CUT_LEVELS.length) {
+  // Joins consecutive units while they fit, counting bytes as it goes.
+  const join = (units) => {
     const pieces = [];
     let current = "";
-    for (const char of text) {
-      if (current !== "" && bytesOf(current) + bytesOf(char) > max) { pieces.push(current); current = ""; }
-      current += char;
+    let size = 0;
+    for (const unit of units) {
+      const unitSize = bytesOf(unit);
+      if (current !== "" && size + unitSize > max) { pieces.push(current); current = ""; size = 0; }
+      current += unit;
+      size += unitSize;
     }
     if (current !== "") pieces.push(current);
     return pieces;
-  }
+  };
+  if (level >= CUT_LEVELS.length) return join(Array.from(text));
   const cuts = CUT_LEVELS[level](text);
   if (cuts.length === 0) return textPieces(text, max, level + 1);
   const units = [];
@@ -292,14 +301,7 @@ export function textPieces(text, max, level = 0) {
     units.push(...(bytesOf(unit) <= max ? [unit] : textPieces(unit, max, level + 1)));
     start = cut;
   }
-  const pieces = [];
-  let current = "";
-  for (const unit of units) {
-    if (current !== "" && bytesOf(current) + bytesOf(unit) > max) { pieces.push(current); current = ""; }
-    current += unit;
-  }
-  if (current !== "") pieces.push(current);
-  return pieces;
+  return join(units);
 }
 
 const BOX_HEADING = /^### ([A-Z][A-Z0-9]*\.[A-Z0-9_]+): (.+)$/u;
@@ -445,6 +447,15 @@ export function therapyProtocolDelivery(protocol) {
   if (bytesOf(renderFirstAnswer(delivery, firstNames, groups, "f".repeat(64))) > PROTOCOL_ANSWER_MAX_BYTES) {
     throw new TherapyProtocolUnavailableError("The first part of the rules doesn't fit in one answer.");
   }
+  // Every part fits in an answer beside the longest lines one can carry: 40 of the longest part names still to load, more
+  // beyond them, and five unknown names at their longest. So any request naming a part gets at least that part.
+  const longestNames = [...all].sort((a, b) => b.name.length - a.name.length).slice(0, MAX_LISTED_PARTS).map((part) => part.name);
+  const longestUnknown = Array.from({ length: MAX_ECHOED_UNKNOWN }, () => "x".repeat(200));
+  for (const part of all) {
+    if (bytesOf(renderPartsAnswer(delivery, [part], longestNames, longestUnknown, 1)) > PROTOCOL_ANSWER_MAX_BYTES) {
+      throw new TherapyProtocolUnavailableError(`The part ${part.name} doesn't fit in one answer.`);
+    }
+  }
   groups.forEach((group) => group.sort((a, b) => order.get(a) - order.get(b)));
   delivery.firstNames = Object.freeze(firstNames);
   delivery.groups = Object.freeze(groups.map((group) => Object.freeze(group)));
@@ -466,7 +477,7 @@ function loadingNote(delivery) {
   const exampleBox = delivery.boxes[0]?.name;
   return [
     "This is the first part of InnerSignal's therapy rules. The rest comes in parts, so that every app shows each answer whole: apps cut long tool results.",
-    "Before your first reply, load every group listed below: one call to load_therapy_protocol per group (the calls may run at the same time), with `parts` set to the group's name and `protocol_sha256` set to the sha256 above. Then follow the rules and their files.",
+    "Before your first reply, load every group listed below: one call to load_therapy_protocol per group (the calls may run at the same time), with `parts` set to a list holding the group's name, such as `[\"group/1\"]`, and `protocol_sha256` set to the sha256 above. Then follow the rules and their files.",
     "One exception: if the person says they want to die, may act on it or has already taken something, reply at once from the section on someone who may want to die, which this answer holds in full, and load the groups before your next reply.",
     "Paths such as `references/FOCUS-DISCIPLINE.md` in the rules are part names.",
     ...(delivery.boxList.length > 0 ? [`The map's boxes: before you use a box, load its advice by its name from the box list (\`box/\` and the box's ID, for example \`${exampleBox}\`); several in one call is fine.`] : []),
@@ -493,15 +504,16 @@ function renderFirstAnswer(delivery, firstNames, groups, changedFrom = null) {
   return lines.join("\n");
 }
 
-const MAX_ECHOED_UNKNOWN = 5;
-
-function renderPartsAnswer(delivery, parts, stillToLoad, unknown) {
-  const asked = parts.length + stillToLoad.length;
+function renderPartsAnswer(delivery, parts, stillToLoad, unknown, beyond = 0) {
+  const asked = parts.length + stillToLoad.length + beyond;
   const opening = asked === 0
     ? `${header(delivery.protocol)}: none of the names you sent is a part of this protocol.`
-    : `${header(delivery.protocol)}: ${stillToLoad.length === 0 ? "the parts you asked for." : `${parts.length} of the ${asked} parts you asked for; the rest didn't fit in one answer.`}`;
+    : `${header(delivery.protocol)}: ${stillToLoad.length + beyond === 0 ? "the parts you asked for." : `${parts.length} of the ${asked} parts you asked for; the rest didn't fit in one answer.`}`;
   const lines = [opening];
-  if (stillToLoad.length > 0) lines.push(`Still to load (ask for these in another call): ${nameList(stillToLoad)}`);
+  if (stillToLoad.length > 0) lines.push(`Still to load (ask for these in another call): ${nameList(stillToLoad.slice(0, MAX_LISTED_PARTS))}`);
+  if (stillToLoad.length > MAX_LISTED_PARTS || beyond > 0) {
+    lines.push(`And ${stillToLoad.length - Math.min(stillToLoad.length, MAX_LISTED_PARTS) + beyond} more parts after those: ask for them by name once you have loaded these (a part's name and number are in its BEGIN line).`);
+  }
   if (unknown.length > 0) {
     const shown = unknown.slice(0, MAX_ECHOED_UNKNOWN).map((name) => (name.length > 60 ? `${name.slice(0, 60)}…` : name));
     lines.push(`Not part names of this protocol: ${nameList(shown)}${unknown.length > shown.length ? ` and ${unknown.length - shown.length} more` : ""}. The names are the groups ${nameList(delivery.groupNames ?? [])}, the paths the rules name, \`${BOX_LIST_PART}\`, and each box's name from the box list.`);
@@ -573,28 +585,33 @@ export function therapyProtocolAnswer(protocol, args = {}) {
     return { text: renderFirstAnswer(delivery, delivery.firstNames, delivery.groups, requestedSha), included: [...delivery.firstNames], stillToLoad: [], unknown: [] };
   }
   if (parts.length === 0) return { text: renderFirstAnswer(delivery, delivery.firstNames, delivery.groups), included: [...delivery.firstNames], stillToLoad: [], unknown: [] };
-  const wanted = [];
+  const expanded = [];
   const unknown = [];
   for (const name of parts) {
     const resolved = resolveName(delivery, name);
     if (resolved === null) { if (!unknown.includes(name)) unknown.push(name); continue; }
-    for (const partName of resolved) if (!wanted.includes(partName)) wanted.push(partName);
+    for (const partName of resolved) if (!expanded.includes(partName)) expanded.push(partName);
   }
-  const { included, stillToLoad, text } = packAnswer(delivery, wanted, unknown);
-  return { text, included, stillToLoad, unknown };
+  // A request whose names stand for more than 40 parts is answered from its first 40; the answer says how many more.
+  const wanted = expanded.slice(0, MAX_REQUESTED_PARTS);
+  const beyond = expanded.length - wanted.length;
+  const { included, stillToLoad, text } = packAnswer(delivery, wanted, unknown, beyond);
+  return { text, included, stillToLoad: [...stillToLoad, ...expanded.slice(MAX_REQUESTED_PARTS)], unknown };
 }
 
 // Which of the wanted parts go in one answer: each part in the order asked that still fits; one that doesn't is named
 // as still to load, and a smaller one after it may still go in. A part is measured with every wanted part not yet taken
 // listed as still to load, the longest that list can be, so the answer as sent is never longer than what was measured.
-function packAnswer(delivery, wanted, unknown) {
+// At most 40 parts are wanted and at most 40 named as still to load, so the answer's own lines stay short and the first
+// wanted part always fits (checked for every part when the protocol loads).
+function packAnswer(delivery, wanted, unknown, beyond = 0) {
   const partsOf = (names) => names.map((name) => delivery.byName.get(name));
   const included = [];
   for (const name of wanted) {
     const trial = [...included, name];
     const rest = wanted.filter((other) => !trial.includes(other));
-    if (bytesOf(renderPartsAnswer(delivery, partsOf(trial), rest, unknown)) <= PROTOCOL_ANSWER_MAX_BYTES) included.push(name);
+    if (bytesOf(renderPartsAnswer(delivery, partsOf(trial), rest, unknown, beyond)) <= PROTOCOL_ANSWER_MAX_BYTES) included.push(name);
   }
   const stillToLoad = wanted.filter((name) => !included.includes(name));
-  return { included, stillToLoad, text: renderPartsAnswer(delivery, partsOf(included), stillToLoad, unknown) };
+  return { included, stillToLoad, text: renderPartsAnswer(delivery, partsOf(included), stillToLoad, unknown, beyond) };
 }

@@ -89,7 +89,7 @@ test("the first answer holds the start of the rules and the whole section on som
   assert.ok(rules.length >= end, "through the end of the crisis section");
   // It names each group to load before the first reply, with what is in it.
   delivery.groups.forEach((group, index) => assert.ok(first.includes(`\n- \`${GROUP_PREFIX}${index + 1}\`: ${group.join(", ")}`), `group ${index + 1}`));
-  assert.match(first, /Before your first reply, load every group listed below/u);
+  assert.match(first, /Before your first reply, load every group listed below: one call to load_therapy_protocol per group \(the calls may run at the same time\), with `parts` set to a list holding the group's name, such as `\["group\/1"\]`/u);
   // Someone who may want to die gets a reply at once, from the section this answer holds in full.
   assert.match(first, /if the person says they want to die, may act on it or has already taken something, reply at once from the section on someone who may want to die, which this answer holds in full, and load the groups before your next reply\./u);
   // An app holding the old tool list: no therapy from this part alone, the crisis section first, the refresh after.
@@ -146,8 +146,11 @@ test("before the first reply: the rules, every file the rules say to read before
   for (const id of SAFETY_BOX_IDS) assert.ok(early.includes(`${BOX_PART_PREFIX}${id}`), id);
   assert.ok(early.includes("references/PROTECTIVE-COMPATIBILITY.md"));
   assert.match(delivery.boxList[0].content, /Where a box and `SKILL\.md` or another reference seem to differ, keep the safer reading/u);
-  // The rules tell a model to read a box's section before using it.
-  assert.match(protocol.instructions, /`references\/INNER-CHILD-BOX-GUIDANCE\.md` \(one section per box\): read a box's section before you use that box\./u);
+  // The rules say the same for every app, the plugin reading its own files included: the safety boxes' sections before
+  // responding, any other box's section before it's used.
+  const boxSentence = /`references\/INNER-CHILD-BOX-GUIDANCE\.md` \(one section per box\): read the safety boxes' sections before responding \(([^)]+)\), and any other box's section before you use that box\./u.exec(protocol.instructions);
+  assert.ok(boxSentence, "the box sentence");
+  assert.deepEqual([...boxSentence[1].matchAll(/`([A-Z]+\.[A-Z0-9_]+)`/gu)].map((match) => match[1]), [...SAFETY_BOX_IDS]);
 });
 
 test("the safety boxes are tier 1 of the inner-child map and of the cross-guide routes, and the crisis section's boxes are among them", async () => {
@@ -189,6 +192,35 @@ test("a box list too long for one answer comes in pieces, and `boxes` still load
   for (const answer of [therapyProtocolAnswer(made, {}), ...built.groupNames.map((name) => therapyProtocolAnswer(made, { parts: [name] }))]) {
     assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES);
   }
+});
+
+test("a name standing for more than 40 parts is answered 40 at a time, and every answer brings at least one part", () => {
+  const ids = [...SAFETY_BOX_IDS];
+  const huge = `### IC.HUGE: Huge\n\n${Array.from({ length: 1150 }, () => `- Do: ${"d".repeat(1000)}\n\n`).join("")}`;
+  const large = `### IC.LARGE: Large\n\n${Array.from({ length: 120 }, () => `- Do: ${"e".repeat(1000)}\n\n`).join("")}`;
+  const content = syntheticBoxFile(ids).replace("## Cross-guide routes", `${huge}${large}## Cross-guide routes`);
+  const made = syntheticProtocol("Rules.\n", [{ path: BOX_FILE, content }]);
+  const built = therapyProtocolDelivery(made);
+  const pieces = built.aliases.get("box/IC.HUGE");
+  assert.ok(pieces.length > 40, `${pieces.length} pieces`);
+  for (const parts of [["box/IC.HUGE"], ["box/IC.HUGE", "box/IC.LARGE"], ["box/IC.LARGE", ...Array(39).fill("box/IC.HUGE")]]) {
+    const answer = therapyProtocolAnswer(made, { parts });
+    assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES, `${bytes(answer.text)} bytes`);
+    assert.ok(answer.included.length > 0, "at least one part");
+    assert.ok(answer.text.split("\n").find((line) => line.startsWith("Still to load")).length < 3_000, "the list stays short");
+  }
+  const first = therapyProtocolAnswer(made, { parts: ["box/IC.HUGE"] });
+  assert.match(first.text, /And \d+ more parts after those: ask for them by name once you have loaded these/u);
+  // Asking by name for what is still to load brings every piece, each once, in order.
+  const loaded = [...first.included];
+  let pending = first.stillToLoad;
+  for (let round = 0; round < 100 && pending.length > 0; round += 1) {
+    const answer = therapyProtocolAnswer(made, { parts: pending.slice(0, 40) });
+    assert.ok(answer.included.length > 0 && bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES);
+    loaded.push(...answer.included);
+    pending = [...answer.stillToLoad.filter((name) => !pending.slice(40).includes(name)), ...pending.slice(40)];
+  }
+  assert.deepEqual(loaded, pieces);
 });
 
 test("the first answer fits with its group list and a changed-protocol note, whatever the rules' sizes", () => {
