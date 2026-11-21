@@ -8,7 +8,7 @@ import { readZipEntries } from "../core/zip.mjs";
 import { compileGuideGraphs } from "../guide-graph/compiler.mjs";
 import { runGraphRegressionSuite } from "../guide-graph/regressions.mjs";
 import { canonicalJson, sha256Bytes } from "./canonical-json.mjs";
-import { buildMapFiles, writeMapFiles } from "./map-files.mjs";
+import { MAP_FILE_PATHS, buildMapFiles, writeMapFiles } from "./map-files.mjs";
 import { parseAuthoringNote } from "./note-parser.mjs";
 import { assertNoSymlinkAncestors, assertPublicAuthoringText, resolveInside } from "./private-data-boundary.mjs";
 import { createCurrentProjection, loadCurrentAuthority } from "./projection.mjs";
@@ -137,7 +137,7 @@ export async function reconcileApprovedProposal({ root, id, packetId, packetPath
   assertPublicAuthoringText(nextProposalText, { label: proposalRelative });
   const snapshotPaths = [
     "guide-graphs/candidates", "guide-graphs/compiled", "guide-graphs/source-maps", "guide-graphs/reports",
-    "authoring/obsidian/current", GENERATED_MAP_PATH, PLUGIN_MAP_REFERENCE_PATH, "guides/owner-amendments.json", proposalRelative
+    "authoring/obsidian/current", ...new Set([GENERATED_MAP_PATH, PLUGIN_MAP_REFERENCE_PATH, ...MAP_FILE_PATHS]), "guides/owner-amendments.json", proposalRelative
   ];
   const snapshot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-reconcile-backup-"));
   const temporaryFiles = new Set();

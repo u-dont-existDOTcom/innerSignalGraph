@@ -21,10 +21,12 @@ source_refs:
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - IC.GUIDE_LATER
   - IC.DIFFERENTIATION
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs: []
-base_record_sha256: 654eb69e423d9615aa46e5ef73b5cd983a75e816f471fecdca2dbdb09ffb031a
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 674e29cfe1acd9a382ea44aec0cd95a3b8f88fa83da84addefa5e27a0d10fbba
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Make intuition and analysis correct each other before trust transfers
@@ -81,7 +83,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Do not teach that intuition, mystical cognition, humor, spontaneity, compassion, attraction, or spiritual gifts are inherently untrustworthy.",
     "Do not make analytical cognition the sole authority or treat every contradiction, confession, or influence cue as proof that another person is malicious or manipulative.",
     "Do not literalize the intuitive/analytic distinction as a simplistic left-brain/right-brain anatomy claim.",
-    "Do not recommend automatic cutoff merely because trust is unresolved; slow consequential transfers while evidence is being calibrated."
+    "Do not recommend automatic cutoff merely because trust is unresolved; slow consequential transfers while evidence is being calibrated.",
+    "Do not label a person manipulative or a relationship abusive from one incident; the named moves are patterns to watch over time."
   ],
   "defaultQuestion": "What exactly is your intuition telling you, what evidence supports or contradicts that conclusion, and what evidence would actually lower your trust?",
   "effects": {
@@ -110,7 +113,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Notice influence hooks without diagnosing the other person: praise or specialness, mirroring, pity for a wounded healer, rescue or miracle hopes, attraction, belonging, fear, spiritual charisma, hypnotic or mystical ease, confession, and humor can all change how evidence is weighted.",
     "Ask whether compassion is preserving the facts or erasing them. A wounded person can deserve compassion while still being unsafe or unreliable in a particular domain.",
     "Use prediction → observation → update: state what trustworthy and untrustworthy behavior would each predict, watch what actually happens, and let the result change trust rather than protecting the original intuition.",
-    "When intuition and evidence seriously conflict, do not increase high-leverage authority while the conflict is unresolved. Keep money, medical decisions, sexual consent, isolation, legal control, altered-state dependence, and exclusive spiritual authority especially answerable to ordinary evidence."
+    "When intuition and evidence seriously conflict, do not increase high-leverage authority while the conflict is unresolved. Keep money, medical decisions, sexual consent, isolation, legal control, altered-state dependence, and exclusive spiritual authority especially answerable to ordinary evidence.",
+    "Manipulation moves to watch for as patterns over time, never as a label from one incident: gaslighting (perception slowly giving way to someone else's; trust intuition and perceptions after documenting, analyzing or double-checking), D.A.R.V.O. (deny, attack, reverse victim and offender), guilt tripping, White Knight (problems created to be rescued from), triangulation (another person brought in so it becomes two against one), silent treatment (which can be confused with simply avoiding what someone can't handle) and breadcrumbing. The person can also check whether they use them on themselves or others."
   ],
   "successSignals": [
     "The person can preserve useful intuitive information and analytical checking at the same time, distinguish resonance from proof, and allow new evidence to raise or lower domain-specific trust."
@@ -128,3 +132,7 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/sources/inner-child-guide/IC.GUIDE_LATER]]
 
 [[current/sources/inner-child-guide/IC.DIFFERENTIATION]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

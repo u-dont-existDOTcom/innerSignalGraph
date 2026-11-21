@@ -33,8 +33,9 @@ const count = (text, part) => text.split(part).length - 1;
 // holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
 const assertEntriesConsumed = (expected) => {
   const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^Status: \*\*EMPTY\*\*$/mu);
-  assert.match(queue, /^Queue version: 2026-11-04-r21$/mu);
+  // Reset to EMPTY at 2026-11-04-r21; what is queued since (PGQ-056 on, 20 Nov 2026) is new, never an entry consumed then.
+  assert.equal(json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.resetTo, "2026-11-04-r21 (EMPTY)");
+  assert.doesNotMatch(queue, /^### PGQ-0(?:0[1-9]|[1-4]\d|5[0-5]) — /mu, "no entry consumed on 2026-11-04 is queued again");
   const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
   for (const [id, fate, status] of expected) {
     assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
@@ -145,8 +146,8 @@ test("the served references end with the module text byte for byte, and each bul
     if (file.path !== FIDELITY) assert.equal(file.content.includes(FIDELITY_BULLET), false, `${file.path} does not carry the question-selection bullet`);
   }
   // The plugin keeps the same files and references: nothing was added for this change.
-  assert.equal(pluginFiles().length, 12, "the plugin keeps its 12 files");
-  assert.equal(protocol.files.filter((file) => file.path.startsWith("references/")).length, 9, "and its 9 references");
+  assert.equal(pluginFiles().length, 13, "the plugin keeps its 13 files (the box guidance was added on 20 Nov 2026)");
+  assert.equal(protocol.files.filter((file) => file.path.startsWith("references/")).length, 10, "and its 10 references (the box guidance was added on 20 Nov 2026)");
 });
 
 test("the question-selection rule says what the lesson asks, in the existing response-fidelity list, with no new audit failure", () => {
@@ -234,7 +235,7 @@ test("the amendment extends the existing reality check once, with no duplicate n
   // One avoid line, last in the list.
   const avoid = node.avoid.filter((line) => /^Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement/u.test(line));
   assert.equal(avoid.length, 1);
-  assert.equal(node.avoid.at(-1), avoid[0]);
+  assert.equal(node.avoid.filter((line) => line === avoid[0]).length, 1, "once; the October 2026 lines redone on 20 Nov 2026 follow it");
   assert.match(avoid[0], /a person can stand by a position, regret the wording and grieve the loss at once/u);
   assert.match(avoid[0], /do not keep asking for incident detail unless the missing detail would change the next step or safety/u);
   // The safety gate, activation, question policy and the route's own question are unchanged.
@@ -444,8 +445,8 @@ test("AI guide r9 is r8 plus the owner's two sentences directly after the going-
   const active = manifest.sources.find((source) => source.id === "inner-child-guide");
   // Later the same day the owner answered question 52, and r10 (r9 plus one paragraph; tested in the spiritual-source-paragraph test) became the
   // active revision. r9 stays immutable in the manifest's source history, which is the file this test is about.
-  assert.equal(active.file, "inner-child-guide-2026-10-31-r10.txt");
-  assert.equal(active.version, "owner-approved-spiritual-source-paragraph-2026-10-31-r10");
+  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
+  assert.equal(active.version, "owner-decisions-live-guide-passages-2026-11-20-r11");
   const r9Entry = manifest.sourceHistory.find((entry) => entry.version === "owner-approved-conflict-appraisal-addition-2026-10-31-r9");
   assert.equal(r9Entry?.file, "inner-child-guide-2026-10-31-r9.txt");
   // The same day the owner also approved three Inner Child refinements (issue 215), made inside r9 itself. They are tested in the

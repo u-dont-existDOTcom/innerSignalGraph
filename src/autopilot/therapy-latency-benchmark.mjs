@@ -29,12 +29,17 @@ export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
   // seriously anything useful in the message and, if it is willing, see whether it would make its point without the
   // contempt, as revised after the owner's follow-up and again in the review of it) reaches the mock reviewed tier's plan,
   // so its hash changes; the fast tier and provider/planning shape remain fixed.
-  revision: "critical-voice-refinements-2026-10-31-r15",
+  // 2026-11-20: the owner's answers to cards 368 to 378 add and replace lines on boxes the mock reviewed tier selects, so its hash
+  // changes again; the fast tier and provider/planning shape remain fixed.
+  // 2026-11-21: the owner's answer on the two kinds of guard (point 16, 20 Nov 2026) adds a line to IC.MEET_GUARD and to
+  // IC.CRITICISM_KERNEL, which the mock reviewed tier selects, so its hash changes; the fast tier and provider/planning shape
+  // remain fixed.
+  revision: "guards-usually-a-mix-20261121-r17",
   fast: Object.freeze({
     semanticHash: "d982b9be86cfc6db196030b95c0a0a874d0de66f6eb92f72d63eeb3edfa3ff4f"
   }),
   reviewed: Object.freeze({
-    semanticHash: "c160c2b590e1cde813dcf3820192140271313e78138549dc06b42cf32eb2e8ec"
+    semanticHash: "5c45bc7a5b66ccdd460c258d3ccf24ae7cdcbc92b8c256a8b329d24ac10e9a11"
   })
 });
 

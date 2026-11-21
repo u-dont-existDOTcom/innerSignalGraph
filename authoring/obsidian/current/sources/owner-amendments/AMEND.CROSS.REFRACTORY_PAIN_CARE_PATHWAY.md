@@ -7,14 +7,14 @@ source_id: AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
 guide_id: owner-amendments
 heading: AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
 source_role: owner-approved-extension
-source_hash: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
+source_hash: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
 section_hash: 034e58b5b3f2f9e9bf8522cbbb136f4e5916c305cbe9657b8384fe19cc822d46
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.ACT_OUTWARD
   - ROUTE.MEDICAL_RED_FLAG
   - ROUTE.REFRACTORY_PAIN_NAVIGATION
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY

@@ -445,6 +445,601 @@
             "publicHeading": "Conclusion and Appendix > Appendix > Internal Family Systems (IFS)"
           }
         ]
+      },
+      "ownerDecisions20261120": {
+        "what": "Provenance of the queue bundle PGQ-056 to PGQ-087 (queue version 2026-11-20-r22). Guide r11 quotes 28 passages of the owner's live public guide word for word for his answers to questions 368 to 378; PGQ-084 to PGQ-087 are reader-relevant points of the same change that are not r11 passages.",
+        "direction": "Public guide to canonical source, approved by the owner: the r11 passages were public-guide text that no canonical source carried (proposed upstream in effect) until his answers adopted them. Nothing in the public guide changed.",
+        "liveGuide": {
+          "url": "https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided",
+          "postId": 189761959,
+          "updatedAt": "2026-11-20T01:19:09.988Z",
+          "fetchedAt": "2026-11-20T01:23Z",
+          "bodyHtmlSha256": "1fa0ce2b0523232ab57b784cf8d2cf31d127b3071b4b8bcb5f008dcd4fdd05e9"
+        },
+        "ownerAnswers": {
+          "at": "2026-11-20T01:18:01Z",
+          "words": "368a 369c 370a 371b 372b  373a 374 defaults 375 1a2a3c4b  376a 377 1a2a 378a 379a",
+          "notes": "379 is not InnerSignal. His Inbox notes of the same night (369 at 00:19, 371 at 00:25, 373 at 00:59, 374 at 01:04 UTC) refine the choices; the owner amendments quote them."
+        },
+        "canonical": {
+          "path": "guides/inner-child-guide-2026-11-20-r11.txt",
+          "version": "owner-decisions-live-guide-passages-2026-11-20-r11",
+          "sha256": "6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f",
+          "section": "Owner Decisions of 20 November 2026: Passages From the Live Guide",
+          "lines": [
+            1047,
+            1225
+          ]
+        },
+        "amendments": {
+          "path": "guides/owner-amendments.json",
+          "version": "owner-amendments-2026-11-20-r22"
+        },
+        "status": "The entries are PENDING in the queue. As in queueConsumption, each gets its fate and status (SYNCED, NOT_PUBLIC or PROPOSED_UPSTREAM) when a humanizer consumes it. The registered humanizedDraft predates his live edits of 18 to 20 November, and this record does not re-check its headings.",
+        "obligations": [
+          {
+            "id": "PGQ-056",
+            "title": "The three jobs work together",
+            "source": "live guide, word for word",
+            "liveHeading": "Understanding Reparenting",
+            "r11Lines": [
+              1051,
+              1053
+            ],
+            "decisions": [
+              "settled by his reply of 18 Nov 2026 on the cards' introduction"
+            ],
+            "amendments": [
+              "AMEND.IC.THREE_JOBS_WORK_TOGETHER_20261118"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-057",
+            "title": "Five stages of reparenting, with forced adulthood as the first",
+            "source": "live guide, word for word",
+            "liveHeading": "Five Stages of Reparenting",
+            "r11Lines": [
+              1055,
+              1067
+            ],
+            "decisions": [
+              "373a"
+            ],
+            "amendments": [
+              "AMEND.IC.FORCED_ADULTHOOD_AND_CLAMPING_DOWN_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-058",
+            "title": "Check how much of the grown-up is here before going deep",
+            "source": "live guide, word for word",
+            "liveHeading": "Dip Your Toes In Before You Go Deep",
+            "r11Lines": [
+              1069,
+              1075
+            ],
+            "decisions": [
+              "368a",
+              "376a (warmlines)"
+            ],
+            "amendments": [
+              "AMEND.IC.SCAFFOLDING_IS_READINESS_20261120",
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-059",
+            "title": "Scaffolding: go smaller when the love isn't coming yet",
+            "source": "live guide, word for word",
+            "liveHeading": "If the Love Isn’t Coming Yet",
+            "r11Lines": [
+              1077,
+              1079
+            ],
+            "decisions": [
+              "368a"
+            ],
+            "amendments": [
+              "AMEND.IC.SCAFFOLDING_IS_READINESS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-060",
+            "title": "Loving-kindness for ill will starts with the adult",
+            "source": "live guide, word for word",
+            "liveHeading": "Ill Will and Loving-Kindness",
+            "r11Lines": [
+              1081,
+              1083
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-061",
+            "title": "Seven manipulation patterns, and checking ourselves",
+            "source": "live guide, word for word",
+            "liveHeading": "Signs of Manipulation",
+            "r11Lines": [
+              1085,
+              1103
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-062",
+            "title": "Shame: open up to someone trusted, or to the inner adult or a higher power",
+            "source": "live guide, word for word",
+            "liveHeading": "Shame can make you feel unlovable",
+            "r11Lines": [
+              1105,
+              1107
+            ],
+            "decisions": [
+              "374 defaults (4a)",
+              "his line added on 20 Nov 2026 (Inbox, 01:04 UTC)"
+            ],
+            "amendments": [
+              "AMEND.IC.GENTLER_THAN_GUIDE_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-063",
+            "title": "\"And so that's the way it happened!\", with a memory you can handle",
+            "source": "live guide, word for word",
+            "liveHeading": "“And So That’s the Way It Happened!”",
+            "r11Lines": [
+              1109,
+              1111
+            ],
+            "decisions": [
+              "375 (3c)"
+            ],
+            "amendments": [
+              "AMEND.CROSS.STRICTER_THAN_GUIDE_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-064",
+            "title": "Forgiveness cures resentment but can't be scheduled",
+            "source": "live guide, word for word",
+            "liveHeading": "How to Forgive Without Forgetting",
+            "r11Lines": [
+              1113,
+              1123
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-065",
+            "title": "Forgiving yourself keeps the responsibility",
+            "source": "live guide, word for word",
+            "liveHeading": "Forgiving Yourself",
+            "r11Lines": [
+              1125,
+              1127
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-066",
+            "title": "Divine love is the Inner Guide's work",
+            "source": "live guide, word for word",
+            "liveHeading": "A Bigger Doorway: Divine Love",
+            "r11Lines": [
+              1129,
+              1131
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-067",
+            "title": "Between spoiling and clamping down",
+            "source": "live guide, word for word",
+            "liveHeading": "Between Spoiling and Clamping Down",
+            "r11Lines": [
+              1133,
+              1137
+            ],
+            "decisions": [
+              "373a",
+              "376a (treats at set times)"
+            ],
+            "amendments": [
+              "AMEND.IC.FORCED_ADULTHOOD_AND_CLAMPING_DOWN_20261120",
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-068",
+            "title": "Borrow hindsight, with continuous breathing",
+            "source": "live guide, word for word",
+            "liveHeading": "Borrow Hindsight",
+            "r11Lines": [
+              1139,
+              1141
+            ],
+            "decisions": [
+              "376a (continuous breathing)"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-069",
+            "title": "Invite the little one in, and listen if it calls BS",
+            "source": "live guide, word for word",
+            "liveHeading": "Invite Your Little One In",
+            "r11Lines": [
+              1143,
+              1145
+            ],
+            "decisions": [
+              "374 defaults (2a)"
+            ],
+            "amendments": [
+              "AMEND.IC.GENTLER_THAN_GUIDE_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-070",
+            "title": "A passing feeling doesn't settle identity",
+            "source": "live guide, word for word",
+            "liveHeading": "What to Make of a Passing Feeling",
+            "r11Lines": [
+              1147,
+              1149
+            ],
+            "decisions": [
+              "375 (4b)"
+            ],
+            "amendments": [
+              "AMEND.CROSS.STRICTER_THAN_GUIDE_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-071",
+            "title": "Re-do traumatic memories with the cast from hindsight",
+            "source": "live guide, word for word",
+            "liveHeading": "Use hindsight to “re-do” traumatic memories in a healthier way",
+            "r11Lines": [
+              1151,
+              1153
+            ],
+            "decisions": [
+              "375 (3c)",
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.CROSS.STRICTER_THAN_GUIDE_20261120",
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-072",
+            "title": "Discipline: his time-in told as his experience, and no expert consensus",
+            "source": "live guide, word for word",
+            "liveHeading": "Use hindsight to “re-do” traumatic memories in a healthier way",
+            "livePart": "its passage on discipline",
+            "r11Lines": [
+              1155,
+              1161
+            ],
+            "decisions": [
+              "370a"
+            ],
+            "amendments": [
+              "AMEND.CROSS.PARENT_REAL_CHILD_DANGER_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-073",
+            "title": "Answering the strict disciplinarian",
+            "source": "live guide, word for word",
+            "liveHeading": "Answering the Strict Disciplinarian",
+            "r11Lines": [
+              1163,
+              1165
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-074",
+            "title": "When the adult voice feels fake, ask why first",
+            "source": "live guide, word for word",
+            "liveHeading": "When the Adult Voice Feels Fake",
+            "r11Lines": [
+              1167,
+              1169
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-075",
+            "title": "Chronic pain: basic checks, diagnostics during a flare, a written plan",
+            "source": "live guide, word for word",
+            "liveHeading": "Physical Pain Makes It Harder",
+            "r11Lines": [
+              1171,
+              1177
+            ],
+            "decisions": [
+              "376a",
+              "372b: the passage after it in his guide is not brought into the canonical guide"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+              "AMEND.CROSS.KEEP_CAREFUL_LINES_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-076",
+            "title": "Pain's emotional side, after the medical checks",
+            "source": "live guide, word for word",
+            "liveHeading": "Listen To Your Body, Or Else!",
+            "r11Lines": [
+              1179,
+              1183
+            ],
+            "decisions": [
+              "376a (pain's emotional side)"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-077",
+            "title": "When being happy feels like abandoning someone",
+            "source": "live guide, word for word",
+            "liveHeading": "When Being Happy Feels Like Abandoning Someone",
+            "r11Lines": [
+              1185,
+              1193
+            ],
+            "decisions": [
+              "372b (item 8)",
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.HAPPIER_FRIENDS_THEIR_CHOICE_20261120",
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-078",
+            "title": "A dream narrative at first; a present danger is never held back",
+            "source": "live guide, word for word",
+            "liveHeading": "Before You Tell the Hardest Stuff",
+            "r11Lines": [
+              1195,
+              1199
+            ],
+            "decisions": [
+              "369c"
+            ],
+            "amendments": [
+              "AMEND.CROSS.DREAM_NARRATIVE_FIRST_STEP_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-079",
+            "title": "Distrust as a self-fulfilling prophecy",
+            "source": "live guide, word for word",
+            "liveHeading": "How To Let People In",
+            "r11Lines": [
+              1201,
+              1203
+            ],
+            "decisions": [
+              "376a (self-fulfilling prophecy)"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-080",
+            "title": "Finding a therapist to borrow adulthood",
+            "source": "live guide, word for word",
+            "liveHeading": "Finding a Therapist to Borrow Adulthood",
+            "r11Lines": [
+              1205,
+              1213
+            ],
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-081",
+            "title": "AI can go sideways; use it alongside people",
+            "source": "live guide, word for word",
+            "liveHeading": "AI therapy",
+            "r11Lines": [
+              1215,
+              1217
+            ],
+            "decisions": [
+              "377 (1a, 2a)"
+            ],
+            "amendments": [
+              "AMEND.CROSS.AI_SIDEWAYS_AND_OWN_WORDS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-082",
+            "title": "Call yourself out first",
+            "source": "live guide, word for word",
+            "liveHeading": "Speak Toward What You Are Building",
+            "r11Lines": [
+              1219,
+              1221
+            ],
+            "decisions": [
+              "376a (own fault first)"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-083",
+            "title": "When a relationship keeps feeling unsafe: outward first, then inward",
+            "source": "live guide, word for word",
+            "liveHeading": "If a Relationship Keeps Making You Feel Less Safe",
+            "r11Lines": [
+              1223,
+              1225
+            ],
+            "decisions": [
+              "375 (2a)"
+            ],
+            "amendments": [
+              "AMEND.CROSS.STRICTER_THAN_GUIDE_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-084",
+            "title": "A dream can be true: one hint among others",
+            "source": "his reply of 18 Nov 2026",
+            "liveHeading": null,
+            "r11Lines": null,
+            "decisions": [
+              "settled by his reply of 18 Nov 2026 on the cards' introduction"
+            ],
+            "amendments": [
+              "AMEND.CROSS.DREAM_ONE_HINT_20261118"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-085",
+            "title": "A protective part's no is heard out, neither obeyed nor overridden automatically",
+            "source": "his note on card 372 (item 13)",
+            "liveHeading": null,
+            "r11Lines": null,
+            "decisions": [
+              "372b (item 13)"
+            ],
+            "amendments": [
+              "AMEND.IC.PROTECTIVE_NO_AGREEMENT_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-086",
+            "title": "Less need for therapy, and more play, are signs of success",
+            "source": "card 376 (376a), placed in the map",
+            "liveHeading": null,
+            "r11Lines": null,
+            "decisions": [
+              "376a"
+            ],
+            "amendments": [
+              "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-087",
+            "title": "The October map-intake distinctions, redone on 20 Nov",
+            "source": "the owner-approved October review (22 Oct 2026), redone under 378a",
+            "liveHeading": null,
+            "r11Lines": null,
+            "decisions": [
+              "378a (the six October amendments redone)"
+            ],
+            "amendments": [
+              "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022",
+              "AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022",
+              "AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022",
+              "AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022",
+              "AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-088",
+            "title": "Guards and critical voices are usually a mix",
+            "source": "the owner's answer to point 16 (Inbox, 20 Nov 2026, 22:27 UTC)",
+            "liveHeading": null,
+            "r11Lines": null,
+            "decisions": [
+              "point 16 (Inbox, 20 Nov 2026, 22:27 UTC)"
+            ],
+            "amendments": [
+              "AMEND.IC.GUARDS_USUALLY_A_MIX_20261120"
+            ],
+            "queue": "PENDING"
+          }
+        ]
       }
     },
     {

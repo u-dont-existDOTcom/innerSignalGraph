@@ -20,9 +20,9 @@ test("current projection has the exact canonical inventories and resolved links"
   const keys = [...projected.output.keys()];
   assert.equal(keys.filter((item) => item.includes("/nodes/")).length, 87);
   assert.equal(keys.filter((item) => item.includes("/edges/")).length, 126);
-  assert.equal(keys.filter((item) => item.includes("/sources/")).length, 153);
+  assert.equal(keys.filter((item) => item.includes("/sources/")).length, 175); // the point-16 amendment of 20 Nov 2026 adds one
   assert.equal(keys.filter((item) => item.includes("/regressions/")).length, 119);
-  assert.equal(keys.filter((item) => item.includes("/governance/amendments/")).length, 74);
+  assert.equal(keys.filter((item) => item.includes("/governance/amendments/")).length, 95); // and one amendment note
   assert.equal(keys.filter((item) => item.includes("/governance/decisions/")).length, 15);
   assert(keys.includes("current/maps/development-graph.canvas"));
   assert(keys.includes("current/manifest.json"));

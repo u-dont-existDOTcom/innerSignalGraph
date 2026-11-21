@@ -16,7 +16,7 @@ reconciled_nodes:
   - IC.CREDIBILITY_REPAIR
   - IC.PROTECTOR_ACTION
 base_record_sha256: 97793dfd0365f5cfea94a163e20bc9dded28cae0c6e8c2c9129d06c9c69a9407
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Review without holding a trial

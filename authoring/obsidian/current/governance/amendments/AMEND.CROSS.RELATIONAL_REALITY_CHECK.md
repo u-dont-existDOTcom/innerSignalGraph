@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.RELATIONAL_REALITY_CHECK
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 7ade70c25269b56d1ed585adea9a5dd971c47a624640aaf691e3b2cfa53b4b12
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 7779dfdf82605af9dee66f32d4d096805b9fc81c36575e5676915a70429e0b6b
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.CROSS.RELATIONAL_REALITY_CHECK
@@ -17,13 +17,13 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
     "status": "owner-approved",
     "text": "When another person is central, do not begin by asking only what inside the user was triggered. First use detached observation: identify observable behavior and sequence; assess only the relational capacities the person has demonstrated, including tolerance of disagreement, empathy, accountability, respect for no, repair, and reality-based conduct under stress; notice whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; and define a realistic interaction outcome before re-engaging. The available outcome may be mutual understanding, conveying information, a boundary or refusal, distance or ending the interaction, or learning how the person responds to a limit. Act outward as needed, then route inward only if useful. Preserve inner boundaries and self-possession. A history of internalizing, managing adults, or forced adulthood can make self-analysis or caretaking reflexive, but do not infer that history without evidence. Select and invest for demonstrated reciprocal maturity rather than motive or potential. Do not diagnose or automatically label someone emotionally immature, recommend cutoff by default, or treat disagreement as immaturity."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

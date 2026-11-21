@@ -12,7 +12,7 @@ section_hash: 2306c35a1665e1d9fdafe1f5cc24b51057b446dfa76721b09bb9ca7c25cd68db
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.AQUATIC_BODYWORK
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Aquatic Bodywork / Water Therapy

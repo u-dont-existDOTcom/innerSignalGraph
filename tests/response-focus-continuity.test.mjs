@@ -13,8 +13,9 @@ const json = (file) => JSON.parse(read(file));
 // holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
 const assertEntriesConsumed = (expected) => {
   const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^Status: \*\*EMPTY\*\*$/mu);
-  assert.match(queue, /^Queue version: 2026-11-04-r21$/mu);
+  // Reset to EMPTY at 2026-11-04-r21; what is queued since (PGQ-056 on, 20 Nov 2026) is new, never an entry consumed then.
+  assert.equal(json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.resetTo, "2026-11-04-r21 (EMPTY)");
+  assert.doesNotMatch(queue, /^### PGQ-0(?:0[1-9]|[1-4]\d|5[0-5]) — /mu, "no entry consumed on 2026-11-04 is queued again");
   const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
   for (const [id, fate, status] of expected) {
     assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
@@ -52,7 +53,7 @@ test("app and served protocol use the same expanded fidelity and focus rules", (
 test("delivery, functional coping and focus nuance reach compiled guide sources with unchanged safety routing", () => {
   const owner = json("../guides/owner-amendments.json");
   const manifest = json("../guides/manifest.json");
-  assert.equal(owner.version, "owner-amendments-2026-10-31-r21");
+  assert.equal(owner.version, "owner-amendments-2026-11-20-r23");
   assert.equal(owner.items.find(x=>x.id===name)?.status, "owner-approved");
   assert.equal(manifest.sources.find(x=>x.id==="owner-amendments")?.version, owner.version);
   const paths = [

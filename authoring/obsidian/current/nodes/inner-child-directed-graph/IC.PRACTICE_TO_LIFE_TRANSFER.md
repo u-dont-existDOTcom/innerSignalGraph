@@ -23,13 +23,14 @@ source_refs:
   - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
   - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
   - AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
 regression_refs:
   - G089
   - G090
   - G091
-base_record_sha256: 68aa2934a57b9b44b71d85796b35e3cdad4cf617faf49fc5e3b3954a6f272a70
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 2fe11ff96335231c411a95d5ad73e9c7fc8fcd4fa3e7001ed459adba32b94f64
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Carry a working inner adult into ordinary life
@@ -99,7 +100,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "requiredNuance": [
       "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
       "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
-      "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice."
+      "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice.",
+      "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress.",
+      "Less need for therapy, and more play, are signs of success."
     ]
   },
   "recommendations": [
@@ -113,7 +116,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
   ],
   "successSignals": [
     "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
-    "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity."
+    "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity.",
+    "Greater reliability of nurturing, protective and guiding actions in daily life is meaningful reparenting outcome evidence, with context and limits noted.",
+    "Less need for therapy, and more play, are signs of success."
   ]
 }
 ```
@@ -134,3 +139,5 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]
 
 [[current/governance/amendments/AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]

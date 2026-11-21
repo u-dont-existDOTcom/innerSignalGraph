@@ -18,10 +18,13 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.IC.WISDOM_WISER_SELF
   - AMEND.IC.WISDOM_SOURCES
+  - AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs: []
-base_record_sha256: 14a7861393a5482c1c8838458649f5da8f08598f114767e436f876901d5dd0f1
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 54e213115fdbdae48983b8b0b85e1d4e6a45162c2c811b0f402d6d2e459f1dca
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Borrow a wiser perspective without rejecting the present self
@@ -77,7 +80,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
   "avoid": [
     "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
     "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
-    "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+    "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.",
+    "Do not steer what happened in a re-done memory, treat the corrected version as a finding about the past, or start with the hardest memory."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -102,7 +106,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Offer: “Imagine looking back when you are clearer and compassionate toward everyone involved, including yourself. What would you understand about this moment?”",
     "Allow clearer understanding, feeling like that wiser self, or feeling accompanied by it; use whichever actually helps, including more than one. Do not force visualization or a state transition.",
     "Ask what that perspective understands about the present person's limitations and how it would care for them now. When embodiment is unavailable, use one honest sufficient action, firm boundary, acknowledgment or pause.",
-    "The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence."
+    "The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence.",
+    "Re-doing a memory with hindsight (the owner's exercise): once the person has a cast of wiser future characters from borrowing hindsight, they can go back to an earlier painful memory and relive it the corrected way. The condition: that hindsight cast first, a memory they can handle for the first tries, then small steps (scaffolding); harder memories only after lighter ones went well."
   ],
   "successSignals": [
     "The person has more usable choice or caring contact, with appropriate boundaries intact."
@@ -118,3 +123,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.IC.WISDOM_WISER_SELF]]
 
 [[current/governance/amendments/AMEND.IC.WISDOM_SOURCES]]
+
+[[current/governance/amendments/AMEND.CROSS.STRICTER_THAN_GUIDE_20261120]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

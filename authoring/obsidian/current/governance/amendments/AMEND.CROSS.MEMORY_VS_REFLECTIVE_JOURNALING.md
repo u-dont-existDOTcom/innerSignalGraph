@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 4923af22e9888d3d23504dfc56c34de137913f3730be04bf81851cc3c04ae5e7
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 8224bfa7bdb904d75a1cee60d23d369b4c1e7e27f85d036209c1a54501d248bf
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING
@@ -17,13 +17,13 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.MEMORY_VS_REFLECTIVE_JOURNALING",
     "status": "owner-approved",
     "text": "Separate reflective journaling from external memory support. If narrative, interpretive, or meaning-making journaling increases confusion, do not assume the answer is more journaling or more interpretation. Preserve the useful memory and continuity function in the least cognitively demanding format that fits the person—for example brief dated facts, what helped, what needs remembering, one next step, or a voice note—while leaving interpretation and pattern-finding optional for later. A memory aid does not need to explain the person's life in order to be useful."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

@@ -21,6 +21,9 @@ source_refs:
   - AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST
   - AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM
   - AMEND.CROSS.RESPONSE_FIDELITY_20261025
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
+  - AMEND.CROSS.KEEP_CAREFUL_LINES_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G099
   - G100
@@ -33,9 +36,9 @@ regression_refs:
   - G107
   - G108
   - G127
-base_record_sha256: b694de729766bb5d07fe908be970a52b18b99c3eaa2805f964877a10e1cc099a
-base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 48e464fdd0d2efeb32cb1d9ec04ba48af4f4ea3ef63bc1c31ca0cd03f0921da2
+base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Coordinate a specialist chronic-pain pathway and flare plan
@@ -112,7 +115,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Do not coach a false denial of current suicidal intent, a suicide plan, inability to remain safe, or imminent danger, inability to stay safe or another actual urgent danger; immediate protection still matters in that situation.",
     "Do not overdiagnose central sensitization or claim a PPI, antidepressant or neuromodulation response proves the pain mechanism or repairs drug-related injury.",
     "Do not confuse treatments offered, declined, actually taken and ineffective, or invent access guarantees.",
-    "Do not treat another checkup as inherently therapeutic after an already extensive unsuccessful workup; do not promise specific relief or erase the person's informed understanding of local services."
+    "Do not treat another checkup as inherently therapeutic after an already extensive unsuccessful workup; do not promise specific relief or erase the person's informed understanding of local services.",
+    "Do not present an emotional side as \"the pain isn't real\", or offer it before the medical checks."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -145,7 +149,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Seek an individualized written plan for predictable pain flares: whom to contact, agreed treatments and which features require urgent medical triage. SAMU or emergency care is a backup for new red flags, changed or atypical symptoms, unusually severe or unmanageable attacks, not the only near-daily strategy.",
     "Preserve previous investigations and distinguish offered/prescribed from actually tried medicines and experienced effects. A specialist may evaluate structural, visceral, neuropathic and nociplastic possibilities without claiming a diagnosis from a response.",
     "Respect prior coercive or harmful care, patient agency and an appropriately chosen trusted friend/advocate without assuming family or medical institutions are automatically safe or automatically malicious.",
-    "Consider tDCS/rTMS only if a qualified pain specialist finds an appropriate condition and indication, without promising symptom relief or recommending home stimulation."
+    "Consider tDCS/rTMS only if a qualified pain specialist finds an appropriate condition and indication, without promising symptom relief or recommending home stimulation.",
+    "Pain can have an emotional side. After the medical checks, the person may consider that as one possibility among others; normal test results don't prove the pain is imaginary, and not all illness is rooted in emotional issues."
   ],
   "successSignals": [
     "A specific specialist referral or justified priority request is submitted, or its exact current blocker and next step are identified.",
@@ -164,3 +169,9 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM]]
 
 [[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
+
+[[current/governance/amendments/AMEND.CROSS.KEEP_CAREFUL_LINES_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

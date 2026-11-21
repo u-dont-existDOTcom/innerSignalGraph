@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
 status: owner-approved
 domain: cross-guide
-base_record_sha256: f06a8c611987ccf1de0f2c770da44a8a1c84fd7842ec335531185a7e1c69ee80
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: ab9471af1b7d6b67fd340813510bc8e61018dbe2b6d8a34d87613441de5aa455
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
@@ -17,13 +17,13 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
     "status": "owner-approved",
     "text": "Before adding more therapy, classify the useful movement as go inward, act outward, or leave it alone. Go inward when there is genuinely avoided, disowned, or unfinished emotional, relational, somatic, memory, or part-level material and enough capacity to contact it; act outward when a concrete current problem can yield a decision or observable action; leave it alone when rumination, symptom checking, reassurance seeking, repeated self-analysis, or searching for the right healing method repeats without producing new information, a decision, or an action. 'Leave it alone' means notice thoughts or sensations without suppressing them or repeatedly answering them, then re-engage ordinary life; it is not denial of safety, medical, relational, or practical problems. If inward attention reliably worsens derealization, panic, or hypermonitoring, prefer eyes-open external orientation and ordinary embodied activity such as walking, gym, sport, chores, or social contact without concluding that all somatic therapy is contraindicated. If a concrete problem or clearly avoided material emerges, route back to outward action or inward processing."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

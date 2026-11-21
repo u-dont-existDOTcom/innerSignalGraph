@@ -17,6 +17,18 @@ import { runJournalWorkMcp } from "../src/cli/journal-work-mcp.mjs";
 import { createJournalWorkTools, JOURNAL_WORK_TOOL_DEFINITIONS, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../src/server/journal-work-tools.mjs";
 
 const SENTINEL = "SYNTHETIC_CLAUDE_PRIVATE_SENTINEL_DO_NOT_LOG";
+// slow_preflight: the worker cuts each host call off at the smaller of the run timeout and 120 s, and every host call here
+// starts two Node processes (the fake ssh, then the host command), which can take seconds while the full suite loads the
+// machine. So the three host calls after the reservation each sleep well inside the run timeout, while their sleeps alone
+// pass the preflight limit (the smaller of the run timeout and 5 minutes). With a 2.5 s timeout and two 1.5 s calls, one
+// slow start was enough to cut a call off, and the attempt ended as an error before the preflight check.
+const SLOW_PREFLIGHT_TIMEOUT_MS = 7_000;
+const SLOW_PREFLIGHT_HOST_CALL_MS = 2_400;
+// The fixture's run timeout also bounds the fake Claude run and each host call, and each starts Node processes from the
+// worktree. Under the full suite one start can take seconds; with 2.5 s, "Claude large_user_line is admitted", "Claude
+// reply_limit_words is admitted" and init_exit_release_failure failed, and project_file's cut-off release left the worker
+// waiting out its reservation (twice the timeout plus ten minutes). So runs get 15 s; only the timeout scenario keeps 2.5 s.
+const RUN_TIMEOUT_MS = 15_000;
 const ANSWER = { schema_version: "1.0", source_only_first_pass: true, reference_items: [], questions: [], unassessed_unit_ids: [] };
 const GRANT = { grant_id: "grant:synthetic", principal_id: "synthetic-operator", purpose: "organize_search",
   allowed_roles: ["reference_reader"], revoked: false, expires_at: null };
@@ -30,7 +42,7 @@ function call(operationKey) {
       adjacent_context: { by_unit: [] }, visual_context: [], neutral_reading_instructions: [] } };
 }
 
-async function fixture(t, scenario = "ok", { workName = "work", effort = "max" } = {}) {
+async function fixture(t, scenario = "ok", { workName = "work", effort = "max", timeoutMs = scenario === "slow_preflight" ? SLOW_PREFLIGHT_TIMEOUT_MS : scenario === "timeout" ? 2500 : RUN_TIMEOUT_MS } = {}) {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-claude-test-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const host = path.join(base, "host"), laptop = path.join(base, "laptop");
@@ -93,8 +105,8 @@ if (${JSON.stringify(scenario)} === "refuse_unsaved" && args.at(-1).includes("'a
   if (seen === 0) { fs.renameSync(pending, moved); fs.writeFileSync(pending, ""); process.exit(42); }
   if (seen === 1) { fs.rmSync(pending); fs.renameSync(moved, pending); process.exit(42); }
 }
-if (${JSON.stringify(scenario)} === "slow_preflight" && /'(?:stage-create|session-reserve)'/.test(args.at(-1))) {
-  await new Promise((resolve) => setTimeout(resolve, 1500)); // each within the host-call timeout, together past the preflight limit
+if (${JSON.stringify(scenario)} === "slow_preflight" && /'(?:packet-check|stage-create|session-reserve)'/.test(args.at(-1))) {
+  await new Promise((resolve) => setTimeout(resolve, ${SLOW_PREFLIGHT_HOST_CALL_MS})); // each within the host-call timeout, together past the preflight limit
 }
 if (${JSON.stringify(scenario)} === "session_stolen" && args.at(-1).includes("'promote'")) {
   // Another item takes this run's session reservation between Claude's run and promotion.
@@ -301,7 +313,7 @@ else {
     HOME: laptop, LANG: "C" };
   const args = ["--agent", "claude", "--remote", "synthetic-host", "--remote-checkout", checkout,
     "--remote-config", config, "--remote-node", process.execPath, "--work-dir", workDir, "--ssh-bin", ssh, "--claude-bin", claude,
-    "--log", log, "--once", "--max-items", "1", "--poll-ms", "10", "--timeout-ms", "2500"];
+    "--log", log, "--once", "--max-items", "1", "--poll-ms", "10", "--timeout-ms", String(timeoutMs)];
   return { base, host, laptop, root, workDir, secret, secretFile, config, trace, sshTrace, log, exchange, port, environment, args };
 }
 
@@ -741,7 +753,7 @@ test("a run whose preflight outlasts its limit releases the reservation without 
   const f = await fixture(t, "slow_preflight");
   const operationKey = "job:synthetic-slow-preflight";
   await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-  // The fixture's 2.5 s run timeout bounds the preflight; two 1.5 s host calls exceed it every attempt.
+  // The scenario's 7 s run timeout bounds the preflight; three 2.4 s host calls exceed it every attempt, each well inside it.
   await runJournalClaudeWorker(f.args, { environment: f.environment });
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
   assert.deepEqual(logs.map((item) => item.outcome), ["preflight_expired", "preflight_expired", "preflight_expired"]);

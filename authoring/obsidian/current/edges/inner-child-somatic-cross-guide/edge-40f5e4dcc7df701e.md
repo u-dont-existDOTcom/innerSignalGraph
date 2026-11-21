@@ -9,8 +9,8 @@ graph_id: inner-child-somatic-cross-guide
 from_node_id: ROUTE.ALTERED_STABLE_THERAPY
 to_node_id: ROUTE.ALTERED_STATE_TRANSFER
 relation: followed-by-sober-transfer
-base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # ROUTE.ALTERED_STABLE_THERAPY followed-by-sober-transfer ROUTE.ALTERED_STATE_TRANSFER
