@@ -22,6 +22,7 @@ import { privateRuntimeRepairPrompt } from "../src/prompts/private-runtime-repai
 import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
+import { loadWholeProtocolOverMcp, servedFile } from "./helpers/whole-protocol.mjs";
 
 // Issue #172 (17 Oct 2026): after a journal import, a supervisor answer called an established theme a new idea and did not
 // say what the journal changed. These tests establish that the known-versus-new rules reach every app role and the served
@@ -131,12 +132,7 @@ test("the plugin reads the longitudinal synthesis reference and the connector se
 
   const listener = await listenPrivateCaseMcp({ caseAccessService: deniedService });
   t.after(() => listener.close());
-  const response = await fetch(listener.url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "load_therapy_protocol", arguments: {} } })
-  });
-  const served = (await response.json()).result.structuredContent.files.find((file) => file.path === "references/LONGITUDINAL-SYNTHESIS.md");
-  assert.equal(served.content, reference);
-  assert.equal(served.content, loadTherapyProtocol().files.find((file) => file.path === "references/LONGITUDINAL-SYNTHESIS.md").content);
+  const served = servedFile(await loadWholeProtocolOverMcp(listener.url), "references/LONGITUDINAL-SYNTHESIS.md");
+  assert.equal(served, reference);
+  assert.equal(served, loadTherapyProtocol().files.find((file) => file.path === "references/LONGITUDINAL-SYNTHESIS.md").content);
 });

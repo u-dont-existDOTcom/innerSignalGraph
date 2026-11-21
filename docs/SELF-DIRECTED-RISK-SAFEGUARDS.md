@@ -260,7 +260,7 @@ Run on 1 November 2026, 23:12 to 23:52 UTC, on pull request 220's branch at `09a
 
 ### 4.1 What is live today
 
-The hosted private-case connector serves InnerSignal's rules to ChatGPT and Claude. `load_therapy_protocol` returns the therapy skill's instructions and reference files, including the map with the safety routes (`docs/CLAUDE-CONNECTOR.md`). The state file records the hosted connector as redeployed and verified through ChatGPT on 6 October 2026. The chat follows the rules as instructions. Nothing checks the chat's replies afterwards, and the host decides what it shows (issue 216: a plugin can request review but cannot force the host to display only approved text).
+The hosted private-case connector serves InnerSignal's rules to ChatGPT and Claude. `load_therapy_protocol` returns the therapy skill's instructions and reference files, including the map with the safety routes (`docs/CLAUDE-CONNECTOR.md`), in parts since owner answer i60a (21 Nov 2026): its first answer holds the whole section on someone who may want to die, and the four safety boxes come with the groups loaded before the first reply. Before that, ChatGPT kept only the start and the end of the single long answer of 0.2.5. The state file records the hosted connector as redeployed and verified through ChatGPT on 6 October 2026. The chat follows the rules as instructions. Nothing checks the chat's replies afterwards, and the host decides what it shows (issue 216: a plugin can request review but cannot force the host to display only approved text).
 
 ### 4.2 What is built and not running
 

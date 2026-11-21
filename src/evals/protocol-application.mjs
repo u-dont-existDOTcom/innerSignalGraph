@@ -336,7 +336,12 @@ export async function connectorSource({ ref = null, repoRoot = ROOT } = {}) {
     }
     return store;
   };
-  return Object.freeze({ root, label, listen: server.listenPrivateCaseMcp, loadTherapyProtocol: protocolModule.loadTherapyProtocol, openStore });
+  // The groups of parts a host loads before its first reply, for code that serves the protocol in parts (owner answer i60a,
+  // 21 Nov 2026); code from before that serves it whole in one answer and has none.
+  const loadGroups = typeof protocolModule.therapyProtocolDelivery === "function"
+    ? (protocol) => protocolModule.therapyProtocolDelivery(protocol).groups.map((group) => [...group])
+    : () => [];
+  return Object.freeze({ root, label, listen: server.listenPrivateCaseMcp, loadTherapyProtocol: protocolModule.loadTherapyProtocol, loadGroups, openStore });
 }
 
 async function rpc(url, method, params = {}) {
@@ -352,8 +357,10 @@ async function rpc(url, method, params = {}) {
 
 /**
  * Runs the connector (from `source`) on the synthetic case and returns what a chat host would show the model: the
- * server's instructions, its tools, and three calls with their text results, exactly as the connector returned them; a
- * fourth, check_case_known_vs_new on the case's `known_vs_new_points`, when it names them. A connector that doesn't offer
+ * server's instructions, its tools, and its calls with their text results, exactly as the connector returned them:
+ * load_therapy_protocol and, for code that serves the protocol in parts, one more call for each group its first answer
+ * lists, then load_case_context and find_journal_quotes; then check_case_known_vs_new on the case's
+ * `known_vs_new_points`, when it names them. A connector that doesn't offer
  * that check can't run such a case, and says so before anything else is called.
  */
 export async function connectorTranscript(spec, source) {
@@ -400,6 +407,7 @@ export async function connectorTranscript(spec, source) {
     const calls = [];
     for (const [name, args] of [
       ["load_therapy_protocol", {}],
+      ...(source.loadGroups?.(protocol) ?? []).map((parts) => ["load_therapy_protocol", { parts, protocol_sha256: protocol.protocolSha256 }]),
       ["load_case_context", { case_id: spec.case_id }],
       ["find_journal_quotes", { case_id: spec.case_id, corpus_id: spec.corpus_id, query: spec.journal_query, purpose: "session_use" }],
       ...(checks ? [["check_case_known_vs_new", { case_id: spec.case_id, points: [...checks] }]] : [])

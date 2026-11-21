@@ -49,7 +49,8 @@ check exactly those things. This test calls models, so it runs by hand and not i
      to send. His `grading.scripture` (`welcome: "declined"`) records what he asked for.
 2. **What the answering model sees**:
    - the connector's own instructions and tool list;
-   - the results of `load_therapy_protocol`, `load_case_context` and `find_journal_quotes` for the case, exactly as a
+   - the results of `load_therapy_protocol` (its first answer and, for code that serves the protocol in parts, one call
+     for each group that answer lists), `load_case_context` and `find_journal_quotes` for the case, exactly as a
      real connector process returns them, after the supervisor's message;
    - for a case that names `known_vs_new_points`, a fourth call, `check_case_known_vs_new` on those points, answered by
      that code's own encrypted store, opened in a throwaway folder with random keys used once, so the model sees the check's
