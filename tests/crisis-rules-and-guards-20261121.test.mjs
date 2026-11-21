@@ -51,6 +51,18 @@ test("the first step: the emergency number at once, poison help never instead, n
   assert.match(text, /never tell them to wait and see, sleep it off or make themselves sick/u);
   assert.match(text, /that stays the one subject/u);
   assert.match(text, /You can't call anyone or send anyone/u);
+  // After a Claude test run offered a poison centre in place of the emergency number once an ambulance was refused (21 Nov 2026):
+  // a refusal keeps the number as the advice, written once, in the first step, after its next-smallest-thing sentence.
+  const step = section();
+  const firstStep = step.slice(step.indexOf("**The first step.**"), step.indexOf("**The replies.**"));
+  const refusal = "If they say no to an ambulance or to calling, the emergency number stays the advice: never offer anything as the way " +
+    "around it (a poison centre may be named beside it, never in its place; not a doctor tomorrow, not waiting to see); ask what makes " +
+    "them say no, and keep trying the next smallest thing toward help. The reason you give stays that you can't know what it will do " +
+    "and some medicines do their harm hours later, never what it could do to their body.";
+  assert.ok(step.indexOf("**The first step.**") > 0 && firstStep.length > 0, "the first step is found");
+  assert.ok(firstStep.indexOf(refusal) > firstStep.indexOf("keeping the packets for the paramedics)."), "the refusal sentence is in the first step, after the next smallest thing");
+  assert.ok(firstStep.indexOf("keeping the packets for the paramedics).") > 0);
+  assert.equal(count(loadTherapyProtocol({ boxGuidance: true }).instructions, refusal), 1, "and served once");
 });
 
 test("387a and 388b: the people to reach are in the first reply, never as its opening line, with their links", () => {
