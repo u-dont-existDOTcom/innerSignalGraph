@@ -117,6 +117,11 @@ test("every method of the access service refuses a holder of only the reply-draf
     savePrivateRuntimeDiscriminator: () => access.savePrivateRuntimeDiscriminator(CASE_ID, "runtime:x", {}, replyOnly),
     deliverPrivateRuntimeCandidate: () => access.deliverPrivateRuntimeCandidate(CASE_ID, "runtime:x", {}, replyOnly),
     deliverPrivateRuntimeDiscriminator: () => access.deliverPrivateRuntimeDiscriminator(CASE_ID, "runtime:x", {}, replyOnly),
+    // The runner trial's records (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 1).
+    recordRunnerReading: () => access.recordRunnerReading(CASE_ID, "runtime:x", {}, replyOnly),
+    recordRunnerProvisional: () => access.recordRunnerProvisional(CASE_ID, "runtime:x", {}, replyOnly),
+    recordRunnerEmergencyLine: () => access.recordRunnerEmergencyLine(CASE_ID, "runtime:x", {}, replyOnly),
+    closeRuntimeTurnUnanswered: () => access.closeRuntimeTurnUnanswered(CASE_ID, "runtime:x", {}, replyOnly),
     saveCaseState: () => access.saveCaseState(CASE_ID, {}, replyOnly),
     getCaseState: () => access.getCaseState(CASE_ID, replyOnly),
     saveCaseDiff: () => access.saveCaseDiff(CASE_ID, {}, {}, replyOnly),

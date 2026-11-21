@@ -335,6 +335,19 @@ export function createPrivateCaseAccessService({
     async deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
       return write(caseId, authContext, (store) => store.deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
     },
+    // The runner trial's records (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 1).
+    async recordRunnerReading(caseId, runtimeTurnId, reading, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerReading(caseId, runtimeTurnId, reading));
+    },
+    async recordRunnerProvisional(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerProvisional(caseId, runtimeTurnId, input));
+    },
+    async recordRunnerEmergencyLine(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerEmergencyLine(caseId, runtimeTurnId, input));
+    },
+    async closeRuntimeTurnUnanswered(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.closeRuntimeTurnUnanswered(caseId, runtimeTurnId, input));
+    },
     async saveCaseState(caseId, state, authContext) { return write(caseId, authContext, (store) => store.saveCaseState(caseId, state)); },
     async getCaseState(caseId, authContext) { return read(caseId, authContext, (store) => store.getCaseState(caseId)); },
     async saveCaseDiff(caseId, diff, options, authContext) { return write(caseId, authContext, (store) => store.saveCaseDiff(caseId, diff, options)); },

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES } from "./private-candidate-lifecycle.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "./owner-fallback-message.mjs";
+import { CLOSING_REASONS, RUNNER_UNAVAILABLE_NOTICE } from "../runner-trial/notices.mjs";
 
 export const PRIVATE_RUNTIME_TURN_STATES = Object.freeze([
   "RECEIVED",
@@ -11,8 +12,17 @@ export const PRIVATE_RUNTIME_TURN_STATES = Object.freeze([
   "DELIVERED",
   "REPAIR_REQUIRED",
   "RECONSTRUCTING",
-  "DISCRIMINATING_QUESTION_REQUIRED"
+  "DISCRIMINATING_QUESTION_REQUIRED",
+  // The runner trial's terminal state for a turn that ends without a reply (docs/superpowers/specs/2026-11-21-runner-trial-design.md,
+  // section 7). Only the trial's controller path closes a turn this way; a build without this state can't open such a case.
+  "UNANSWERED"
 ]);
+
+// What a turn closed as UNANSWERED shows the person: the trial's fixed notice, or the owner's fixed message.
+export const RUNNER_CLOSURE_KINDS = Object.freeze(["runner_unavailable", OWNER_FALLBACK_KIND]);
+export const RUNNER_CLOSURE_REASONS = Object.freeze(Object.keys(CLOSING_REASONS));
+const TERMINAL_STATES = new Set(["DELIVERED", "UNANSWERED"]);
+export const isFinishedRuntimeTurn = (runtimeTurn) => TERMINAL_STATES.has(runtimeTurn?.state);
 
 export const PRIVATE_RUNTIME_INVOCATION_EVENT_TYPES = Object.freeze([
   "INVOCATION_STARTED",
@@ -26,14 +36,15 @@ const INVOCATION_EVENT_SET = new Set(PRIVATE_RUNTIME_INVOCATION_EVENT_TYPES);
 const ID = /^[A-Za-z0-9:_-]{1,200}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const TRANSITIONS = Object.freeze({
-  RECEIVED: new Set(["CANDIDATE_PENDING_AUDIT"]),
-  CANDIDATE_PENDING_AUDIT: new Set(["AUDITING"]),
-  AUDITING: new Set(["APPROVED", "REPAIR_REQUIRED", "DISCRIMINATING_QUESTION_REQUIRED"]),
+  RECEIVED: new Set(["CANDIDATE_PENDING_AUDIT", "UNANSWERED"]),
+  CANDIDATE_PENDING_AUDIT: new Set(["AUDITING", "UNANSWERED"]),
+  AUDITING: new Set(["APPROVED", "REPAIR_REQUIRED", "DISCRIMINATING_QUESTION_REQUIRED", "UNANSWERED"]),
   APPROVED: new Set(["DELIVERED"]),
   DELIVERED: new Set(),
-  REPAIR_REQUIRED: new Set(["RECONSTRUCTING"]),
-  RECONSTRUCTING: new Set(["CANDIDATE_PENDING_AUDIT"]),
-  DISCRIMINATING_QUESTION_REQUIRED: new Set(["DELIVERED"])
+  REPAIR_REQUIRED: new Set(["RECONSTRUCTING", "UNANSWERED"]),
+  RECONSTRUCTING: new Set(["CANDIDATE_PENDING_AUDIT", "UNANSWERED"]),
+  DISCRIMINATING_QUESTION_REQUIRED: new Set(["DELIVERED", "UNANSWERED"]),
+  UNANSWERED: new Set()
 });
 
 export const sha256ExactText = (value) => createHash("sha256").update(value, "utf8").digest("hex");
@@ -135,7 +146,15 @@ export function validatePrivateRuntimeTurn(value) {
     derivedState = event.to_state;
   }
   if (derivedState !== value.state) throw new ValidationError("Private runtime turn state does not match its transition ledger.");
-  if (value.state !== "RECEIVED" && value.current_candidate_id == null) throw new ValidationError("Private runtime turn current candidate is required after RECEIVED.");
+  if (!["RECEIVED", "UNANSWERED"].includes(value.state) && value.current_candidate_id == null) throw new ValidationError("Private runtime turn current candidate is required after RECEIVED.");
+  if (value.runner_reading != null) validateRunnerReading(value.runner_reading);
+  if (value.provisional != null) validateProvisional(value.provisional);
+  if (value.state === "UNANSWERED") {
+    validateClosure(value.closure);
+    if (value.delivery != null || value.assistant_turn_id !== value.closure.assistant_turn_id) throw new ValidationError("A turn closed without a reply has a closing, not a delivery.");
+  } else if (value.closure != null) {
+    throw new ValidationError("Only a turn closed without a reply has a closing.");
+  }
 
   if (value.discriminator != null) {
     if (!value.discriminator || typeof value.discriminator !== "object" || Array.isArray(value.discriminator)) throw new ValidationError("Private runtime discriminator is invalid.");
@@ -148,7 +167,7 @@ export function validatePrivateRuntimeTurn(value) {
   }
 
   if (value.delivery == null) {
-    if (value.state === "DELIVERED" || value.assistant_turn_id != null) throw new ValidationError("Delivered runtime state requires an exact delivery record.");
+    if (value.state === "DELIVERED" || (value.assistant_turn_id != null && value.state !== "UNANSWERED")) throw new ValidationError("Delivered runtime state requires an exact delivery record.");
   } else {
     const delivery = value.delivery;
     if (!delivery || typeof delivery !== "object" || Array.isArray(delivery)) throw new ValidationError("Private runtime delivery is invalid.");
@@ -171,6 +190,44 @@ export function validatePrivateRuntimeTurn(value) {
     }
   }
   return value;
+}
+
+// The runner trial's readers' results for one turn (conversation, crisis level, box picks, compatibility assessment), stored once
+// before anything is shown, so a rerun reuses them and a turn that ends without a draft still feeds the records.
+function validateRunnerReading(value) {
+  boundedJson(value, "runtime turn runner_reading", 200_000);
+  if (value.schema_version !== 1) throw new ValidationError("runner_reading version is invalid.");
+  requiredId(value.conversation_id, "runner_reading conversation_id");
+  requiredTimestamp(value.recorded_at, "runner_reading recorded_at");
+  return value;
+}
+
+// A provisional reply shown before the full checked one (the owner's 3, question i62): its exact bytes and when it showed.
+function validateProvisional(value) {
+  boundedJson(value, "runtime turn provisional", 40_000);
+  if (typeof value.exact_text !== "string" || !value.exact_text || value.exact_text.length > 4_000) throw new ValidationError("Provisional exact text is invalid.");
+  if (value.sha256 !== sha256ExactText(value.exact_text)) throw new ValidationError("Provisional digest does not match its exact bytes.");
+  requiredTimestamp(value.shown_at, "provisional shown_at");
+  return value;
+}
+
+function validateClosure(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("A turn closed without a reply requires its closing record.");
+  if (!RUNNER_CLOSURE_KINDS.includes(value.kind)) throw new ValidationError("Runtime closing kind is invalid.");
+  if (!RUNNER_CLOSURE_REASONS.includes(value.reason_code)) throw new ValidationError("Runtime closing reason is invalid.");
+  if (typeof value.exact_text !== "string" || !value.exact_text || value.exact_text.length > 2_000) throw new ValidationError("Runtime closing text is invalid.");
+  if (value.sha256 !== sha256ExactText(value.exact_text)) throw new ValidationError("Runtime closing digest does not match its exact bytes.");
+  requiredId(value.assistant_turn_id, "runtime closing assistant_turn_id");
+  requiredTimestamp(value.closed_at, "runtime closing closed_at");
+  return value;
+}
+
+// Only the fixed texts can be created as a closing; a stored one is read back by shape, as the owner fallback is.
+export function createRunnerClosure({ kind, reasonCode, assistantTurnId, closedAt }) {
+  if (!RUNNER_CLOSURE_KINDS.includes(kind)) throw new ValidationError("Runtime closing kind is invalid.");
+  if (kind === OWNER_FALLBACK_KIND && reasonCode !== "checks_failed") throw new ValidationError("The owner fallback closes only a turn whose checks failed.");
+  const exactText = kind === OWNER_FALLBACK_KIND ? OWNER_FALLBACK_MESSAGE : RUNNER_UNAVAILABLE_NOTICE;
+  return validateClosure({ kind, reason_code: reasonCode, exact_text: exactText, sha256: sha256ExactText(exactText), assistant_turn_id: assistantTurnId, closed_at: closedAt });
 }
 
 export function createPrivateRuntimeTurn({ id, exchangeId, userTurnId, exactText, createdAt }) {
@@ -277,6 +334,7 @@ export function privateRuntimeNextAction(runtimeTurn) {
     DELIVERED: "RETURN_PERSISTED_DELIVERY",
     REPAIR_REQUIRED: "START_RECONSTRUCTION",
     RECONSTRUCTING: "RECONCILE_OR_RUN_REPAIR",
-    DISCRIMINATING_QUESTION_REQUIRED: "PRODUCE_OR_DELIVER_DISCRIMINATOR"
+    DISCRIMINATING_QUESTION_REQUIRED: "PRODUCE_OR_DELIVER_DISCRIMINATOR",
+    UNANSWERED: "RETURN_PERSISTED_CLOSING"
   }[runtimeTurn.state]);
 }

@@ -27,6 +27,8 @@ import {
   appendPrivateRuntimeTransition,
   createPrivateRuntimeDiscriminator,
   createPrivateRuntimeTurn,
+  createRunnerClosure,
+  isFinishedRuntimeTurn,
   sha256ExactText,
   validatePrivateRuntimeTurn
 } from "../supervisor/private-runtime-turn-lifecycle.mjs";
@@ -402,6 +404,13 @@ export function validatePrivateCaseRecord(value) {
     }
     if (runtimeTurn.current_candidate_id != null && !value.candidate_responses.some((entry) => entry.id === runtimeTurn.current_candidate_id)) {
       throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has a missing current candidate.`);
+    }
+    if (runtimeTurn.closure) {
+      // A turn the runner trial closed without a reply: its fixed text is the exchange's assistant turn, byte for byte.
+      const closingTurn = value.raw_transcript.find((entry) => entry.id === runtimeTurn.closure.assistant_turn_id);
+      if (!closingTurn || closingTurn.role !== "assistant" || closingTurn.exchange_id !== runtimeTurn.exchange_id || closingTurn.text !== runtimeTurn.closure.exact_text) {
+        throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has an invalid exact closing transcript binding.`);
+      }
     }
     if (runtimeTurn.delivery) {
       const assistantTurn = value.raw_transcript.find((entry) => entry.id === runtimeTurn.assistant_turn_id);
@@ -928,7 +937,7 @@ export function createEncryptedPrivateCaseStore({
           }
           return null;
         }
-        const unfinished = record.runtime_turns.find((entry) => entry.state !== "DELIVERED");
+        const unfinished = record.runtime_turns.find((entry) => !isFinishedRuntimeTurn(entry));
         if (unfinished) throw new ValidationError(`Private case already has unfinished runtime turn ${unfinished.id}.`, { code: "PRIVATE_RUNTIME_CASE_BUSY" });
         if (record.runtime_turns.some((entry) => entry.exchange_id === exchangeId || entry.user_turn_id === userTurnId)
             || record.raw_transcript.some((entry) => entry.id === userTurnId)) {
@@ -1247,6 +1256,98 @@ export function createEncryptedPrivateCaseStore({
           at: timestamp,
           details: { kind: deliveryKind },
           projectionPatch: { assistant_turn_id: assistantTurnId, delivery }
+        });
+        Object.assign(runtimeTurn, updatedRuntime);
+        return record;
+      });
+    },
+    // The runner trial's readers' results for one turn, stored once before anything is shown. A second call returns the stored
+    // record unchanged (a rerun after a restart reuses the first reading rather than reading again).
+    async recordRunnerReading(caseId, runtimeTurnId, reading) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.runner_reading) { stored = structuredClone(runtimeTurn.runner_reading); return null; }
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no new reading.");
+        runtimeTurn.runner_reading = structuredClone({ ...reading, schema_version: 1, recorded_at: reading?.recorded_at ?? now() });
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(runtimeTurn.runner_reading);
+        return record;
+      });
+      return stored;
+    },
+    // A provisional reply (the owner's 3, question i62), stored when it is shown; immutable once stored.
+    async recordRunnerProvisional(caseId, runtimeTurnId, { exactText, checks = [] }) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.provisional) {
+          if (runtimeTurn.provisional.exact_text !== exactText) throw new ValidationError("A turn's provisional reply is immutable.");
+          stored = structuredClone(runtimeTurn.provisional);
+          return null;
+        }
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no provisional reply.");
+        runtimeTurn.provisional = { exact_text: exactText, sha256: sha256ExactText(exactText), checks: structuredClone(checks), shown_at: now() };
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(runtimeTurn.provisional);
+        return record;
+      });
+      return stored;
+    },
+    // When the page put the always-visible emergency line into the conversation for this turn (section 4 of the design).
+    async recordRunnerEmergencyLine(caseId, runtimeTurnId, { reason }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.emergency_line_shown_at) return null;
+        runtimeTurn.emergency_line_shown_at = now();
+        runtimeTurn.emergency_line_reason = String(reason ?? "crisis").slice(0, 80);
+        validatePrivateRuntimeTurn(runtimeTurn);
+        return record;
+      });
+    },
+    // Close a turn the runner trial can't answer, in one write: the person's turn if the transcript doesn't hold it yet, the case
+    // state computed from the stored readings, the active draft superseded, and the fixed text as the exchange's assistant turn.
+    async closeRuntimeTurnUnanswered(caseId, runtimeTurnId, { kind, reasonCode, assistantTurnId, caseState = null, stateDiff = null, diffId = null, eventId }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.state === "UNANSWERED") {
+          if (runtimeTurn.closure.kind === kind && runtimeTurn.closure.assistant_turn_id === assistantTurnId) return null;
+          throw new ValidationError("This turn is already closed differently.");
+        }
+        if (["DELIVERED", "APPROVED"].includes(runtimeTurn.state)) throw new ValidationError("A delivered or approved turn is not closed without a reply.");
+        if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
+        const timestamp = now();
+        if (caseState != null) {
+          const state = validateCaseState(keepStoredRoadmap(caseState, record.case_state));
+          if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
+          record.case_state = state;
+        }
+        let userTurn = record.raw_transcript.find((entry) => entry.id === runtimeTurn.user_turn_id);
+        if (!userTurn) {
+          userTurn = {
+            id: runtimeTurn.user_turn_id,
+            exchange_id: runtimeTurn.exchange_id,
+            role: "user",
+            text: runtimeTurn.inbound.exact_text,
+            at: runtimeTurn.inbound.received_at,
+            episode_id: record.case_state.current_episode?.id ?? null
+          };
+          record.raw_transcript.push(userTurn);
+          if (stateDiff != null) appendDiff(record, stateDiff, { turnId: runtimeTurn.user_turn_id, diffId });
+        }
+        for (const candidate of record.candidate_responses.filter(isActivePrivateCandidate)) {
+          candidate.metadata = { ...candidate.metadata, superseded_from_status: candidate.status, superseded_by_runner_closing_runtime_turn_id: runtimeTurn.id };
+          candidate.status = "superseded";
+          candidate.updated_at = timestamp;
+        }
+        const closure = createRunnerClosure({ kind, reasonCode, assistantTurnId, closedAt: timestamp });
+        record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: closure.exact_text, at: timestamp, episode_id: userTurn.episode_id ?? record.case_state.current_episode?.id ?? null });
+        const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
+          eventId,
+          toState: "UNANSWERED",
+          at: timestamp,
+          details: { kind, reason_code: reasonCode },
+          projectionPatch: { assistant_turn_id: assistantTurnId, closure }
         });
         Object.assign(runtimeTurn, updatedRuntime);
         return record;
