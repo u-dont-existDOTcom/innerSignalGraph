@@ -206,7 +206,8 @@
         "IC.REGULATION_BEFORE_DIALOGUE",
         "IC.HEART_SOLAR_LOOP",
         "AMEND.SOM.PREP_MODALITIES",
-        "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -215,7 +216,8 @@
         "Breathing can stay continuous and unforced: no holding or straining."
       ],
       "avoid": [
-        "Do not force breath, chase intensity, or assume tension proves a hidden memory."
+        "Do not force breath, chase intensity, or assume tension proves a hidden memory.",
+        "Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care."
       ],
       "successSignals": [
         "The body softens without air hunger, flooding, or loss of orientation."
@@ -231,7 +233,8 @@
         ],
         "blockNodes": [],
         "requiredNuance": [
-          "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict."
+          "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict.",
+          "Emotional regulation and medical care may proceed together; the symptom is real, but its origin is not established by its emotional associations alone."
         ],
         "forbiddenOverclaims": [
           "Do not claim that energy has definitively moved or trauma has been released."

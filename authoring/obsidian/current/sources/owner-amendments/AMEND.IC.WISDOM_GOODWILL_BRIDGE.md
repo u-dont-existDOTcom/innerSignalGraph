@@ -7,12 +7,12 @@ source_id: AMEND.IC.WISDOM_GOODWILL_BRIDGE
 guide_id: owner-amendments
 heading: AMEND.IC.WISDOM_GOODWILL_BRIDGE
 source_role: owner-approved-extension
-source_hash: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+source_hash: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
 section_hash: b91a238f9e8f44abda5928e11951436deb9d1bee074f88197cdde4e892deefbf
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.GOODWILL_BRIDGE
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.WISDOM_GOODWILL_BRIDGE

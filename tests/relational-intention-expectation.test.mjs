@@ -437,7 +437,7 @@ test("graph cases G142 to G144 cover a step left to take, an accepted cost and a
   const result = await runGraphRegressionSuite();
   for (const id of ["G013", "G141", "G142", "G143", "G144"]) assert.equal(result.results.find((item) => item.id === id)?.ok, true, id);
   assert.equal(result.ok, true);
-  assert.equal(result.count, 119);
+  assert.equal(result.count, 120); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one (G20261019C)
 });
 
 test("AI guide r9 is r8 plus the owner's two sentences directly after the going-back sentence, and r8 stays immutable", () => {

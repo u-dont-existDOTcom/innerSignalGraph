@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
 guide_id: owner-amendments
 heading: AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
 source_role: owner-approved-extension
-source_hash: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+source_hash: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
 section_hash: d022371461f796f2ed8513ae42a6d99d9c9ec5b9bd48fafd0ecde8c0dcb7a58d
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -15,7 +15,7 @@ cited_by_node_ids:
   - ROUTE.INFLUENCE_SOCIAL_PROTECTION
   - ROUTE.LEAVE_ALONE
   - ROUTE.RELATIONAL_REALITY_CHECK
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY

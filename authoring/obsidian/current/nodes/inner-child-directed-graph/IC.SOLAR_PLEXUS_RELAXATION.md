@@ -19,6 +19,7 @@ source_refs:
   - IC.HEART_SOLAR_LOOP
   - AMEND.SOM.PREP_MODALITIES
   - AMEND.IC.NEWER_GUIDE_PARTS_20261120
+  - AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019
 regression_refs:
   - G002
   - G003
@@ -31,9 +32,10 @@ regression_refs:
   - G105
   - G106
   - G138
-base_record_sha256: 45cbbaf232930d45b69df5cad030fcec37ab6a37b5710de8648259e6f4393457
-base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+  - G20261019C
+base_record_sha256: 328c337fa713dd24707ca397b1c43064e7d9c440e21023d0e99a11ecd71a0e33
+base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Relax solar-plexus or abdominal holding before dialogue
@@ -72,7 +74,8 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
     ]
   },
   "avoid": [
-    "Do not force breath, chase intensity, or assume tension proves a hidden memory."
+    "Do not force breath, chase intensity, or assume tension proves a hidden memory.",
+    "Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -84,7 +87,8 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
       "Do not claim that energy has definitively moved or trauma has been released."
     ],
     "requiredNuance": [
-      "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict."
+      "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict.",
+      "Emotional regulation and medical care may proceed together; the symptom is real, but its origin is not established by its emotional associations alone."
     ]
   },
   "recommendations": [
@@ -108,3 +112,5 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
 [[current/governance/amendments/AMEND.SOM.PREP_MODALITIES]]
 
 [[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
+
+[[current/governance/amendments/AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019]]

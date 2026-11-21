@@ -12,7 +12,7 @@ section_hash: 6aa85ac3ba0a7633773a7ca57c7b49ae630f9a6917adb346b34b99789ad8206b
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.DISCHARGE_SETTLE_STACK
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # The Discharge → Settle Stack

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 status: owner-approved
 domain: inner-child
-base_record_sha256: f0792b9ecf6c80f8cd9283645ee1f87373b55b980d36e9107d0187b6e8e1a3ed
-source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+base_record_sha256: 29877a7b8c92494b9ae346b3fbe3aecb9e56cd91e03675889bfbe6c4c9e85931
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
@@ -24,6 +24,6 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
     "status": "owner-approved",
     "text": "For strong shame distinguish the felt rejection alarm, what others actually did or might do, the person's own ethical values and chosen conduct, inherited self-condemnation, protective avoidance, and shame about the feeling itself. Social disapproval, even when accurately predicted or repeated, is not proof of wrongdoing; acceptance is not proof of innocence. Disclosure to an unpredictable or hostile audience is not a default treatment or behavioral experiment. When conduct caused actual harm, identify the person's realistic responsibility, reparability and changes that prevent repetition, preserving consequences without requiring numerical allocation, forgiveness or renewed trust. When group norms demand self-betrayal, consider boundaries, distance and healthier belonging. Preserve the original feeling without an added inner attack, and use the smallest existing routes for guard work, compassionate adult capacities, relational reality, repair and community; do not manufacture a new exercise."
   },
-  "version": "owner-amendments-2026-11-20-r23"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 1236f6068004881f768dff3a0567ea4418e47efab61888ab91b41b2d175013c9
-source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+base_record_sha256: 05d3c4a6286b3e68d79827b9b71581c9f16783bf4f37a8b82706e701f945cad9
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
@@ -25,6 +25,6 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
     "status": "owner-approved",
     "text": "When longitudinal history establishes that coping attempts do not sufficiently relieve the worst crisis peak, do not re-ask the same question without new information. Examine earlier moments when existing methods sometimes helped and compare timing, first cues, sleep, pain, social environment, practical capacity, amount of relief, duration and after-effects. Prefer the smallest discriminating question that could improve early use. Preserve the reports of failed efforts without assuming inactivity. Prioritize feasible practical corrections to identified sleep and environment disruptions when appropriate, distinguishing effects from unproven causal theories. Do not overload the client with tracking assignments; urgent safety and consent remain independently operative."
   },
-  "version": "owner-amendments-2026-11-20-r23"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

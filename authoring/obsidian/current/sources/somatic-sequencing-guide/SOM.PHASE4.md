@@ -12,7 +12,7 @@ section_hash: 7c61e6f0959d433e4d03b17a16251439bfb6690bc65df8a4cf0b7a18a656d878
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.EMDR_DISCRETE
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Phase 4: Targeted Memory Reconsolidation

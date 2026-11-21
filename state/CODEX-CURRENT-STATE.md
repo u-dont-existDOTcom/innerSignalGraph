@@ -6,6 +6,12 @@ Therapy skill 0.2.5 was released on `stable` at `a7550955` (kit: `InnerSignal_0.
 
 Updated: 2026-11-21
 
+## The owner's 19 Oct 2026 symptom line (IS7) — 21 November 2026 (branch `claude/is7-symptom-causal-humility-20261121`; not released, not installed)
+
+- **Authority:** the owner approved two clarifications on 19 Oct 2026 (pull request 185's body). Pull request 185 was closed on 21 Nov 2026 as replaced by pull request 229, which carried his own words on both into guide r11 and the ordinary-want point into IC.MEET_GUARD, but not the map line on symptoms.
+- **Change:** `AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019` (amendments r24, his approved words); IC.SOLAR_PLEXUS_RELAXATION gains one avoid line and one required nuance, served in its box; graph case G20261019C; PGQ-089 queued (queue r24). The ordinary-want amendment of the same day stays on its branch, `chat/schema-source-clarifications-20261019`.
+- **Next:** it reaches chats with the next release of the therapy skill; nothing goes to `stable` with this change.
+
 ## Crisis rules from the t135 handoff, and the owner's answer on guards — 21 November 2026 (branch `claude/crisis-rules-guards-20261121`, on top of PR 229; not merged, not released, not installed)
 
 - **Owner outcome and authority:** his request of 20 Nov 2026 at 23:25 UTC to fold his inner child lane's t135 handoff into InnerSignal's crisis rules; his answers "387a 388b" (chat, about 23:55 UTC); his answer to point 16 on the two kinds of guard (Inbox, 22:27 UTC). Kept: no fasting as a way to let go and nothing about how to die in replies to someone who may want to die (point 24, 20 Nov); D1.

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EXISTENTIAL_LOVE_ROUTING
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4939176efd7a55cec68c48ce8215086398febc78aceaa0dd615932bb80de8b0d
-source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+base_record_sha256: 02c696f121142a5f777b1be61cd3a1701424c2935a9c8f25b1ddace5739df133
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.EXISTENTIAL_LOVE_ROUTING
@@ -24,6 +24,6 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
     "status": "owner-approved",
     "text": "Deep spiritual love is not a universal prerequisite for healing. First distinguish whether the love, meaning, belonging, beauty, purpose, and wellbeing already available feel sufficient, whether the person is curious for something deeper, or whether ordinary life feels radically insufficient. Do not push spiritual exploration on somebody who is satisfied and not curious. When hopelessness is profound, immediate safety and human support remain first, but do not pretend a tiny behavioral action answers the person’s existential question. Never romanticize suicidality or suggest an NDE, psychedelic experience, conversion, or other dangerous or extraordinary event as the route to hope."
   },
-  "version": "owner-amendments-2026-11-20-r23"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

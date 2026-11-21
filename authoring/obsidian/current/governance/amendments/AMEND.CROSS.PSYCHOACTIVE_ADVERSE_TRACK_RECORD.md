@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 3bbcd5d85682e48831812a52f18b0151178fec4c172ed8977db08bbcd51b3442
-source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+base_record_sha256: 05f47318c5e565e31862dfc3937a97f769b03cef7c29ac6b6e0174b13736d482
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD
@@ -24,6 +24,6 @@ projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a7
     "status": "owner-approved",
     "text": "A person's adverse response history to psychoactive substances changes risk. One episode of voices, paranoia, major loss of reality testing or a perceptual disturbance persisting beyond expected intoxication is enough reason not to retest that substance without professional assessment, even after apparent stabilization, and that history should inform consideration of other psychoactives capable of disturbing reality testing. Repeated milder confusion or dissociation also matters. Severe or risky symptoms warrant prompt professional help; persistence or recurrence while sober strengthens that need. Do not generalize this into a blanket anti-drug rule, and do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on; appropriate medical guidance may be needed for stopping safely. The one-episode threshold applies to psychotic-type or persisting perceptual reactions; repeated episodes are not required. Severe, current, risky or safety-uncertain symptoms call for prompt professional or emergency assessment."
   },
-  "version": "owner-amendments-2026-11-20-r23"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```
