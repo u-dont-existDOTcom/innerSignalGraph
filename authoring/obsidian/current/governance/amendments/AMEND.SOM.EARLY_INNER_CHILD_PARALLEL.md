@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
 status: owner-approved
 domain: somatic
-base_record_sha256: 768a0a85f6cc656069418a4da74e9bcd364a281a63982c3d3d1ce5a568b0b3a9
-source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: 7eaf90aa355ae006576b54d34184982696c32b142bcb51ddd285d0504d0be479
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
@@ -24,6 +24,6 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "status": "owner-approved",
     "text": "Early inner-child work may run alongside somatic preparation when it remains present-focused: neutral witness, borrowed adulthood, non-cruelty, Protector actions, borrowed love, and limited dialogue. Deep memories, immersive child dialogue, and deep hypnosis wait for adequate capacity."
   },
-  "version": "owner-amendments-2026-11-20-r22"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

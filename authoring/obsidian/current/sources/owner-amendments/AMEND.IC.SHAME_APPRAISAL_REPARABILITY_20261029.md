@@ -7,7 +7,7 @@ source_id: AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 guide_id: owner-amendments
 heading: AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 source_role: owner-approved-extension
-source_hash: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
+source_hash: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
 section_hash: 46bec857b4f8b93a95e9d3fa9cccf2676ee22d1345e128b8e7ee68a91b17d374
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -21,7 +21,7 @@ cited_by_node_ids:
   - ROUTE.COMMUNITY_SUPPORT
   - ROUTE.LEAVE_ALONE
   - ROUTE.RELATIONAL_REALITY_CHECK
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029

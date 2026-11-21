@@ -22,10 +22,11 @@ source_refs:
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
   - AMEND.IC.NEWER_GUIDE_PARTS_20261120
   - IC.LIVE_GUIDE_DECISIONS_20261120
+  - AMEND.IC.GUARDS_USUALLY_A_MIX_20261120
 regression_refs: []
-base_record_sha256: a46eab112c6a5b76f1af0edb120239ed78dc9319f48b114e30b3c6376c442b8d
-base_graph_sha256: 7f401520a572665d79bdfae5a61af5c6d31cc60dc11f8f429832f544d0460f7b
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: dd46cff9ad297bcc9227825155838e90a5535e75a1ebdb5c0826ecf16e99f1cb
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Receive useful content without accepting contempt
@@ -108,7 +109,8 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
     "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt.",
     "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or a vulnerable part of them from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish when the person finds that useful; understanding it does not mean agreeing with it or letting it keep attacking.",
-    "Answering the strict disciplinarian (the owner's exercise): remember who drove the person so hard as a child, start a little rap sheet of their provoking lines, and comfort the little one before answering any of it. The answers can be firm or funny, never mean, since mean is the inner critic's department."
+    "Answering the strict disciplinarian (the owner's exercise): remember who drove the person so hard as a child, start a little rap sheet of their provoking lines, and comfort the little one before answering any of it. The answers can be firm or funny, never mean, since mean is the inner critic's department.",
+    "Like a guard, an inner critic may be helpful, unhelpful or, usually, a mix; when the person finds it isn't helping (a totally useless old script, say), it can be fully reprogrammed: they choose what they'd rather hear and practise it in place of the old line, never with cruelty. Whether it is that is the person's call."
   ],
   "successSignals": [
     "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."
@@ -132,3 +134,5 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
 [[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
 
 [[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]
+
+[[current/governance/amendments/AMEND.IC.GUARDS_USUALLY_A_MIX_20261120]]

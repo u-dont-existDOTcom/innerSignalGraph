@@ -22,8 +22,8 @@ source_refs:
   - AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028
 regression_refs: []
 base_record_sha256: 746af17017092f3d222c3d78b9ab80579f57d05311a4c755473c380b60bc139b
-base_graph_sha256: 7f401520a572665d79bdfae5a61af5c6d31cc60dc11f8f429832f544d0460f7b
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Recognize shared humanity without minimizing this experience

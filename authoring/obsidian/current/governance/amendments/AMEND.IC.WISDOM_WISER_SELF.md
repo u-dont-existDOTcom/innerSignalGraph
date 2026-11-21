@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_WISER_SELF
 status: owner-approved
 domain: inner-child
-base_record_sha256: c9148f0ff0e19e5a980b60374918cc3f8f5ebb00254e5037f1553c6dbef09e92
-source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: f8afea01b7e4f27d9b9c7025752795da3ff9a68d3728efb08952cd9db9d93f54
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.WISDOM_WISER_SELF
@@ -24,6 +24,6 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "status": "owner-approved",
     "text": "Borrowed hindsight asks what a wiser, clearer, compassionate and revisable future self would understand about the present situation and the present person's limitations. Allow a change of view, embodied access, or felt caring company, together or separately. Bring care back to the hurting person now. When the preferred state is unavailable, choose the smallest honest sufficient response, boundary, action or pause rather than demanding manufactured warmth. A possible wiser future other may support goodwill but does not establish the current person's safety, intentions, future agreement, or trustworthiness."
   },
-  "version": "owner-amendments-2026-11-20-r22"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

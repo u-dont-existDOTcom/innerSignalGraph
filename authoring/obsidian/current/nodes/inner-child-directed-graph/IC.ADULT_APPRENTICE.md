@@ -28,8 +28,8 @@ source_refs:
   - AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022
 regression_refs: []
 base_record_sha256: 48316af51f0cd9a6627597103969c89905b9866b586aedd2cf781e644a52e0e5
-base_graph_sha256: 7f401520a572665d79bdfae5a61af5c6d31cc60dc11f8f429832f544d0460f7b
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Move from receiving care to doing five percent

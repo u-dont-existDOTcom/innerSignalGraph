@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_COMMON_HUMANITY
 status: owner-approved
 domain: inner-child
-base_record_sha256: 87ed5076ffee53e01a93638d81e53b5ae4e7aae6a4cbbc7f0a9cce610c76654b
-source_file_sha256: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: 46413defd8de61dad1aa6cf7a83cabfba7f0060b702be34ca45df2af7f30f093
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.WISDOM_COMMON_HUMANITY
@@ -24,6 +24,6 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "status": "owner-approved",
     "text": "Common humanity remains a standing relational stance, while any explicit shared-suffering exercise is optional. Acknowledge the particular experience while recognizing shared vulnerability and possible longings for safety, understanding, dignity, belonging, freedom, or repair. Let the person name or reject the suggested longing. Do not compare suffering, flatten power or circumstance, impose doctrine, or use universality instead of accompaniment. A shared longing does not justify a harmful tactic. References to rebirth or former mothers retain their religious status and are not requirements or empirical claims."
   },
-  "version": "owner-amendments-2026-11-20-r22"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

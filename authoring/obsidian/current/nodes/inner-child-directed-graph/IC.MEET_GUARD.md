@@ -27,6 +27,7 @@ source_refs:
   - AMEND.IC.PROTECTIVE_NO_AGREEMENT_20261120
   - AMEND.IC.GENTLER_THAN_GUIDE_20261120
   - IC.LIVE_GUIDE_DECISIONS_20261120
+  - AMEND.IC.GUARDS_USUALLY_A_MIX_20261120
 regression_refs:
   - G001
   - G002
@@ -42,9 +43,9 @@ regression_refs:
   - G114
   - G115
   - G139
-base_record_sha256: 5391b311212cd58f0de857a84d00f665a8aae24a7cf01c4330b6f646557b2e8a
-base_graph_sha256: 7f401520a572665d79bdfae5a61af5c6d31cc60dc11f8f429832f544d0460f7b
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+base_record_sha256: 4f9531bf527a4cb5c05a94f6b6b88fe87e9ccf3880bee76fd79c32541c62e099
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Hear the protective response without automatically obeying it
@@ -115,7 +116,8 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
     "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
     "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
     "When shame becomes shame about being ashamed, distinguish the initial experience from a secondary self-attack and investigate any useful protective aim without treating the first feeling as a malfunction.",
-    "Distinguish a learned defensive guard from the chosen Adult Protector role; a guard may carry a useful warning or an obsolete coping tactic, whereas the Adult Protector is the present adult's capacity to protect and respond."
+    "Distinguish a learned defensive guard from the chosen Adult Protector role; a guard may carry a useful warning or an obsolete coping tactic, whereas the Adult Protector is the present adult's capacity to protect and respond.",
+    "Any guard, whether it stays on duty or jumps in when pain gets close, and any critical voice, an inherited script included, may be helpful, unhelpful or, usually, a mix. Don't decide which in advance. When the person wants to, find out with them by getting to know it (asking it, or just noticing when it shows up and what it's after), to see whether an understanding can be reached; this is never required before they reject an insult, set a limit or take relief. Normally there's something good to keep, though not always, and never invent one: what's kept is what the part is for (rest, relief, safety, a warning), not necessarily its way of getting it. For a critical voice, the reframing trick in the owner's guide (from a film scene with Fred Rogers): stay curious about its motives and open to any kernel of truth, without accepting insults or cruelty, then let it go with compassion. When the person, having got to know a part, finds it isn't helping (the owner's example: a totally useless old script), it can be fully reprogrammed: they choose what they'd rather hear or do at that moment and practise it in place of the old line, firmly or with humour, never with cruelty. Whether a part is that is the person's call; say what you notice only when asked, as a guess. For a part's no to going deeper, to an altered state or to touch or sex, the override rule decides, not this one. A wish to die is handled by the section on someone who may want to die, not here."
   ],
   "successSignals": [
     "The protective response can be heard without running the session or being exiled."
@@ -149,3 +151,5 @@ projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad4
 [[current/governance/amendments/AMEND.IC.GENTLER_THAN_GUIDE_20261120]]
 
 [[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]
+
+[[current/governance/amendments/AMEND.IC.GUARDS_USUALLY_A_MIX_20261120]]

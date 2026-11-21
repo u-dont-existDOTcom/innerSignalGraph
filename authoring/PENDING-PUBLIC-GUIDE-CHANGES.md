@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: 2026-11-20-r22
+Queue version: 2026-11-20-r23
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -247,6 +247,13 @@ Teaching point: (1) The Adult Protector is a chosen caring function of the one i
 Reader need: Readers need these distinctions where the guide meets protectors, habits, progress, gratitude and loyalty to others' suffering.
 Already covered: Partly: (4) and (5) are the guide's own October passages (its gratitude line; “When Being Happy Feels Like Abandoning Someone”, PGQ-077); the humanizer checks the guide for (1) to (3).
 Where: The public guide's sections on protectors, the Inner Critic, practice in real life, gratitude, and “When Being Happy Feels Like Abandoning Someone”.
+
+### PGQ-088 — Guards and critical voices are usually a mix
+Caused by: The owner's answer to point 16 (Inbox, 20 Nov 2026, 22:27 UTC): "both types of guards should be considered as possibly helpful, possibly unhelpful, and usuallly a mix of both, and we should be deciding that as we commune with them to see if we can reach some beneficial understandings or if we need to fully reprogram them like if it's a totally useless old script. but normally there's some good things we can extract (Mr Rogers reframing trick)". Owner amendment AMEND.IC.GUARDS_USUALLY_A_MIX_20261120 (r23).
+Teaching point: A guard (on duty all the time, or jumping in when pain gets close) and a critical voice (an inherited script included) can each be helpful, unhelpful or, usually, a mix; which it is is found by getting to know it, and normally there's something good to keep (the Mr. Rogers reframing trick); a part that turns out to be a totally useless old script can be fully reprogrammed, and whether it is that is the reader's call.
+Reader need: Readers meeting a guard or a critical voice should neither assume it's useless nor that it must be kept, and should know that a full reprogram is open to them when it really is just an old script.
+Already covered: Partly: the live guide's “Reframe the Critic” teaches the Mr. Rogers reframing trick, and “The Parent You Inherited” says a critical voice may be an inherited script, protective, or pointing to a real problem cruelly; “usually a mix” and the full reprogram of a useless old script are not in it as of 20 Nov 2026.
+Where: The public guide's “The Parent You Inherited” and “Reframe the Critic”, and where it describes guards (“The Urge to Escape”).
 
 ## EMPTY sentinel
 

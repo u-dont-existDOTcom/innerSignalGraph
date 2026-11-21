@@ -7,7 +7,7 @@ source_id: AMEND.IC.NEWER_GUIDE_PARTS_20261120
 guide_id: owner-amendments
 heading: AMEND.IC.NEWER_GUIDE_PARTS_20261120
 source_role: owner-approved-extension
-source_hash: 0f79f522e21e534a6ac3dfbc6f5cbd4c65cfac37a59e9ed9d58a749060055913
+source_hash: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
 section_hash: 2c72c1c33e8011815094dc003ad204f0c93c0ab79cce75acfe99d2c6091c5046
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -23,7 +23,7 @@ cited_by_node_ids:
   - ROUTE.COMMUNITY_SUPPORT
   - ROUTE.GRATITUDE_PRACTICE
   - ROUTE.REFRACTORY_PAIN_NAVIGATION
-projection_input_sha256: a8d986c8d7166502311649d217423c618a18c039b77dbc6202a1ad434682ae7d
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.NEWER_GUIDE_PARTS_20261120

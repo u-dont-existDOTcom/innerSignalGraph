@@ -53,7 +53,7 @@ const BORROW_LOVE_BEFORE_SHA256 = "7fb68c7cf4e75619389136bbb3afdd5ff217c3b8a03ab
 // Re-pinned on 20 Nov 2026, when the owner's answers to questions 368 to 378 changed other nodes (IC.BORROW_LOVE itself is unchanged), and again
 // the same day for the fix round after Fable's check (IC.DIFFERENTIATION, IC.GUIDE_LATER, ROUTE.INFLUENCE_INTERNAL, ROUTE.COMMUNITY_SUPPORT),
 // and once more after Codex's review, when IC.PRACTICE_TO_LIFE_TRANSFER's 376a success sign also became a served "Keep in mind" line.
-const OTHER_NODES_AND_EDGES_SHA256 = "247c6e8c90ea28c067fe43331a8e85710c92e2cd13f86bd1ca42749c43130f9a";
+const OTHER_NODES_AND_EDGES_SHA256 = "b34f773a4992d660be09f0d470082ae5b205412281b3d948533111bbe1fda484"; // 21 Nov 2026: IC.MEET_GUARD and IC.CRITICISM_KERNEL gain the point-16 line
 
 const manifest = json("../guides/manifest.json");
 const active = manifest.sources.find((source) => source.id === "inner-child-guide");
@@ -165,8 +165,8 @@ test("everything that names the active revision names r10 and its hash, and r9 m
   assert.equal(read("../docs/CONCEPT-SOURCE-READING.md").includes(CURRENT_R9_SHA256), false);
   // The owner amendments are not touched by this change.
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-11-20-r22");
-  assert.equal(amendments.items.length, 94);
+  assert.equal(amendments.version, "owner-amendments-2026-11-20-r23");
+  assert.equal(amendments.items.length, 95);
   assert.equal(manifest.sources.find((source) => source.id === "owner-amendments").version, amendments.version);
 });
 
@@ -209,8 +209,8 @@ test("IC.BORROW_LOVE gains the one line, last, once, and it is the only node tha
   const compiled = await compileGuideGraphs({ write: false });
   assert.equal(compiled.stats.nodeCount, 87);
   assert.equal(compiled.stats.edgeCount, 126);
-  assert.equal(compiled.stats.sourceSectionCount, 174);
-  assert.equal(compiled.stats.ownerAmendmentCount, 94);
+  assert.equal(compiled.stats.sourceSectionCount, 175);
+  assert.equal(compiled.stats.ownerAmendmentCount, 95);
   assert.equal(candidateGraph.nodes.length, 46);
   assert.equal(candidateGraph.edges.length, 58);
   const ids = candidateGraph.nodes.map((candidate) => candidate.id);
