@@ -286,7 +286,7 @@ const PROTOCOL_TOOL_DEFINITIONS = Object.freeze([
 const PROTOCOL_TOOLS = new Set(PROTOCOL_TOOL_DEFINITIONS.map((tool) => tool.name));
 
 const THERAPY_INSTRUCTIONS = [
-  "InnerSignal. Before any inner-child, younger-self, reparenting, or self-relationship therapy response, including advice to a supervisor about that work or a review of case records or the person's own writing for it, call load_therapy_protocol, load every group of parts its first answer lists, and follow the rules and files it returns; do not mention the map to the user.",
+  "InnerSignal. Before any inner-child, younger-self, reparenting, or self-relationship therapy response, including advice to a supervisor about that work or a review of case records or the person's own writing for it, call load_therapy_protocol and load the parts its first answer lists, as it says, and follow the rules and files it returns; do not mention the map to the user.",
   "If the protocol cannot be loaded, say that InnerSignal's therapy protocol is unavailable right now instead of improvising it from memory."
 ];
 const AUTHORIZATION_INSTRUCTION = "Authorization is transport-owned; never put bearer tokens or key material in tool arguments.";

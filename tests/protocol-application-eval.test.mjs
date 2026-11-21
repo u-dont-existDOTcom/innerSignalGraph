@@ -106,19 +106,21 @@ test("the model is asked with the connector's own results: the protocol exactly 
   assert.equal(transcript.calls[0].name, "load_therapy_protocol");
   assert.equal(transcript.calls[0].text, served);
   assert.deepEqual(transcript.protocol, { version: protocol.version, sha256: protocol.protocolSha256 });
-  // Then one call per group its first answer lists (owner answer i60a), as a host loads them before its first reply: the
-  // rules and every always-read file arrive byte for byte; the guide referrals and the other boxes wait to be asked for.
-  const groups = source.loadGroups(protocol);
-  assert.ok(groups.length > 0);
+  // Then the calls that bring every other part (owner answer i60a): each group the first answer lists, by name, then the
+  // rest, since the answering model can't call tools to load a box when it uses one. Every file arrives byte for byte.
+  const loadCalls = source.loadCalls(protocol);
+  assert.ok(loadCalls.length > 0);
   const protocolCalls = transcript.calls.filter((call) => call.name === "load_therapy_protocol");
-  assert.deepEqual(protocolCalls.slice(1).map((call) => call.arguments), groups.map((parts) => ({ parts, protocol_sha256: protocol.protocolSha256 })));
+  assert.deepEqual(protocolCalls.slice(1).map((call) => call.arguments), loadCalls.map((parts) => ({ parts, protocol_sha256: protocol.protocolSha256 })));
+  assert.ok(protocolCalls.every((call) => !/Still to load|Not part names/u.test(call.text)), "every call's parts came whole");
   const loaded = protocolCalls.map((call) => call.text).join("\n");
   assert.ok(loaded.includes(protocol.instructions.slice(0, 2000)) && loaded.includes(protocol.instructions.slice(-2000)), "the rules, start and end");
-  for (const file of protocol.files.filter((file) => !["references/GUIDE-REFERRALS.md", "references/INNER-CHILD-BOX-GUIDANCE.md"].includes(file.path))) {
+  for (const file of protocol.files.filter((file) => file.path !== "references/INNER-CHILD-BOX-GUIDANCE.md")) {
     assert.ok(loaded.includes(file.content), `${file.path} is served byte for byte`);
   }
-  assert.ok(loaded.includes("### IC.SUICIDAL_SELF_DEATH_INQUIRY: "), "the safety boxes come before the first reply");
-  assert.ok(!loaded.includes("### IC.MEET_GUARD: "), "other boxes wait until they're used");
+  for (const heading of protocol.files.find((file) => file.path === "references/INNER-CHILD-BOX-GUIDANCE.md").content.match(/^### [^\n]+$/gmu)) {
+    assert.ok(loaded.includes(heading), heading);
+  }
 
   const { system, user } = answerPrompt(spec, transcript);
   for (const call of protocolCalls) assert.ok(user.includes(call.text), "the prompt holds every protocol answer unchanged");
@@ -171,8 +173,8 @@ test("a case that names points to check gets check_case_known_vs_new's own answe
   const spec = caseById.get("journal-review-paraphrased-known");
   const transcript = await connectorTranscript(spec, await connectorSource());
   const source = await connectorSource();
-  const groups = source.loadGroups(loadTherapyProtocol());
-  assert.deepEqual(transcript.calls.map((call) => call.name), [...Array(1 + groups.length).fill("load_therapy_protocol"), "load_case_context", "find_journal_quotes", "check_case_known_vs_new"]);
+  const loadCalls = source.loadCalls(loadTherapyProtocol());
+  assert.deepEqual(transcript.calls.map((call) => call.name), [...Array(1 + loadCalls.length).fill("load_therapy_protocol"), "load_case_context", "find_journal_quotes", "check_case_known_vs_new"]);
   const check = callOf(transcript, "check_case_known_vs_new");
   assert.deepEqual(check.arguments, { case_id: spec.case_id, points: spec.known_vs_new_points });
   const checked = JSON.parse(check.text);
@@ -189,7 +191,7 @@ test("a case that names points to check gets check_case_known_vs_new's own answe
   assert.match(judged, /a record check that matches words \(such as check_case_known_vs_new\) found no close match for it/u);
   assert.match(judged, /Calling any of them a new finding, pattern or insight fails known_not_called_new, whatever the check returned/u);
   // A case without points makes the calls it always made: the protocol's, the case and the journal.
-  assert.equal((await connectorTranscript(caseById.get("supervisor-invites-the-split"), source)).calls.length, 1 + groups.length + 2);
+  assert.equal((await connectorTranscript(caseById.get("supervisor-invites-the-split"), source)).calls.length, 1 + loadCalls.length + 2);
 });
 
 test("a connector that can't answer the check can't run such a case, and nothing is asked of a model", async () => {

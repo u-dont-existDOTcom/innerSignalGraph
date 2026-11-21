@@ -128,9 +128,9 @@ test("protocol tools are public and read-only while private case tools keep OAut
   // matching its hash.
   const delivery = therapyProtocolDelivery(protocol);
   const texts = [first];
-  for (const group of delivery.groups) {
-    assert.ok(first.includes(`. ${JSON.stringify(group[0])}`) || first.includes(`[${JSON.stringify(group[0])}`), `${group[0]} is listed`);
-    const answer = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { parts: group, protocol_sha256: protocol.protocolSha256 } });
+  for (const name of delivery.groupNames) {
+    assert.ok(first.includes(`- \`${name}\`: `), `${name} is listed`);
+    const answer = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { parts: [name], protocol_sha256: protocol.protocolSha256 } });
     texts.push(answer.body.result.content[0].text);
   }
   const text = texts.join("\n");

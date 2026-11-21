@@ -205,27 +205,35 @@ export function therapyProtocolManifest(protocol) {
 // 5,000 tokens of the 325,393-character protocol of 0.2.5, and Claude hosts put it in a file, which a chat without file
 // tools can't open. So load_therapy_protocol answers in parts, each answer small enough to reach any host whole: the
 // first answer holds the start of the rules and the groups of parts to load before the first reply; later calls name
-// parts (the rest of the rules, a reference file, the box list, one box's advice) and get as many as fit in one answer.
-// The parts are the packaged files' own text, cut at headings; nothing is reworded, and the protocol hash is unchanged.
+// parts (a group, the rest of the rules, a reference file, the box list, one box's advice) and get as many as fit in one
+// answer. The parts are the packaged files' own text, cut at headings; nothing is reworded, and the protocol hash is
+// unchanged.
 
 // The most a protocol answer may hold, in UTF-8 bytes of its whole text. About 7,000 tokens: under the roughly 10,000
 // tokens ChatGPT keeps of a tool result (measured on 21 Nov 2026: the first and last ~19,700 characters), with room to
 // spare, and far under the 25,000 tokens Claude hosts show before they move a result to a file.
 export const PROTOCOL_ANSWER_MAX_BYTES = 28_000;
 // The most one part may hold. The difference is room for an answer's own text: its first line, the note on loading and
-// the list of groups in the first answer, and each part's BEGIN and END lines.
-export const PROTOCOL_PART_MAX_BYTES = 24_500;
+// the list of groups in the first answer, and each part's BEGIN and END lines. At 24,000 the rules' first part ends with
+// the section on someone who may want to die; tests/split-delivery.test.mjs fails if that section leaves the first answer.
+export const PROTOCOL_PART_MAX_BYTES = 24_000;
 
 export const RULES_PART_PREFIX = "rules/";
 export const BOX_LIST_PART = "boxes";
 export const BOX_PART_PREFIX = "box/";
+export const GROUP_PREFIX = "group/";
 // Read when the rules say so, not before the first reply.
 const ON_REQUEST_FILES = new Set(["references/GUIDE-REFERRALS.md"]);
 // The safety boxes, loaded before the first reply with the rules and the always-read files: tier 1 of the compiled
-// inner-child map, the boxes the rules' section on someone who may want to die relies on (the adult seat, the self/death
-// inquiry, this precious human life) with the outside-safety box. Every other box is loaded when it's used.
-// tests/split-delivery.test.mjs checks this list against the compiled map's tier 1.
-export const SAFETY_BOX_IDS = Object.freeze(["IC.SAFETY_ORIENTATION", "IC.SUICIDAL_ADULT_SEAT", "IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY"]);
+// inner-child map and of the cross-guide routes. They hold what the rules' section on someone who may want to die relies
+// on (the adult seat, the self/death inquiry, this precious human life) and the urgent medical, pain and fresh-grief
+// routes. Every other box is loaded when it's used. tests/split-delivery.test.mjs checks this list against both maps' tier 1.
+export const SAFETY_BOX_IDS = Object.freeze([
+  "IC.SAFETY_ORIENTATION", "IC.SUICIDAL_ADULT_SEAT", "IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY",
+  "ROUTE.MEDICAL_RED_FLAG", "ROUTE.ALTERED_MEDICAL_SAFETY", "ROUTE.REFRACTORY_PAIN_NAVIGATION", "ROUTE.FRESH_GRIEF_FIRST"
+]);
+// Loaded right after the safety boxes, so an app that stops early has it: it decides whether any exercise fits.
+const EARLY_FILES = Object.freeze(["references/PROTECTIVE-COMPATIBILITY.md"]);
 const MAX_REQUESTED_PARTS = 40;
 const bytesOf = (text) => Buffer.byteLength(text, "utf8");
 
@@ -296,9 +304,9 @@ export function textPieces(text, max, level = 0) {
 
 const BOX_HEADING = /^### ([A-Z][A-Z0-9]*\.[A-Z0-9_]+): (.+)$/u;
 
-// The box file as its opening text, its group headings and one section per box, each kept byte for byte; the pieces
-// rebuild the file exactly, or the protocol is unavailable.
-function boxSections(content) {
+// The box file as its opening text, its group headings and one section per box. The pieces rebuild the file exactly, or
+// the protocol is unavailable. A box's part is its section; the opening and the group headings go into the box list.
+export function boxSections(content) {
   const groupCuts = lineStartsWith(content, "## ");
   if (groupCuts.length === 0) throw new TherapyProtocolUnavailableError(`The packaged ${BOX_GUIDANCE_FILE} has no box groups.`);
   const opening = content.slice(0, groupCuts[0]);
@@ -327,6 +335,7 @@ function boxSections(content) {
   return { opening, groups, boxes };
 }
 
+// The box list: the box file's opening, byte for byte, then each group's heading as written and its boxes by name.
 function boxListText(opening, groups) {
   const lines = [
     opening.replace(/\n*$/u, "\n"),
@@ -334,7 +343,7 @@ function boxListText(opening, groups) {
     ""
   ];
   for (const group of groups) {
-    lines.push(`${group.title}:`);
+    lines.push(group.heading.replace(/\n*$/u, ""), "");
     for (const box of group.boxes) lines.push(`- \`${BOX_PART_PREFIX}${box.id}\`: ${box.title}`);
     lines.push("");
   }
@@ -346,81 +355,101 @@ function makePart(name, label, content, source) {
 }
 
 // One or more parts for a text: one named `name` when it fits, else `name/1`, `name/2`... in order.
-function namedPieces(name, content, source, labelOf = (piece, index, count) => (count === 1 ? name : `${name}/${index + 1} of ${count}`)) {
+function namedPieces(name, content, source) {
   const pieces = textPieces(content, PROTOCOL_PART_MAX_BYTES);
-  return pieces.map((piece, index) => makePart(pieces.length === 1 ? name : `${name}/${index + 1}`, labelOf(piece, index, pieces.length), piece, source));
+  return pieces.map((piece, index) => (pieces.length === 1
+    ? makePart(name, name, piece, source)
+    : makePart(`${name}/${index + 1}`, `${name}/${index + 1} of ${pieces.length}`, piece, source)));
 }
 
 const deliveries = new WeakMap();
 
-// Everything a host can load from this protocol, in reading order, and what to load before the first reply.
+// Everything a host can load from this protocol, in reading order, what the first answer holds and the groups to load
+// before the first reply.
 export function therapyProtocolDelivery(protocol) {
   const cached = deliveries.get(protocol);
   if (cached) return cached;
-  const rulesPieces = textPieces(protocol.instructions, PROTOCOL_PART_MAX_BYTES);
-  const rules = rulesPieces.map((piece, index) => makePart(`${RULES_PART_PREFIX}${index + 1}`, `${RULES_PART_PREFIX}${index + 1} of ${rulesPieces.length}`, piece, "SKILL.md"));
+  const rules = namedPieces("rules", protocol.instructions, "SKILL.md");
+  // The rules' parts are always numbered, even when there is one, so the first answer can name the rest the same way.
+  const numberedRules = rules.length === 1 ? [makePart(`${RULES_PART_PREFIX}1`, `${RULES_PART_PREFIX}1 of 1`, rules[0].content, "SKILL.md")] : rules;
   const references = [];
-  const aliases = new Map([["rules", rules.map((part) => part.name)], ["instructions", rules.map((part) => part.name)], ["SKILL.md", rules.map((part) => part.name)]]);
-  let boxList = null;
+  const aliases = new Map([["rules", numberedRules.map((part) => part.name)], ["instructions", numberedRules.map((part) => part.name)], ["SKILL.md", numberedRules.map((part) => part.name)]]);
+  let boxList = [];
   const boxes = [];
   for (const file of protocol.files) {
     if (file.path === BOX_GUIDANCE_FILE) {
       const { opening, groups, boxes: sections } = boxSections(file.content);
-      boxList = makePart(BOX_LIST_PART, BOX_LIST_PART, boxListText(opening, groups), file.path);
+      boxList = namedPieces(BOX_LIST_PART, boxListText(opening, groups), file.path);
+      aliases.set(BOX_LIST_PART, boxList.map((part) => part.name));
       for (const box of sections) {
         const parts = namedPieces(`${BOX_PART_PREFIX}${box.id}`, box.text, file.path);
         boxes.push(...parts);
-        if (parts.length > 1) aliases.set(`${BOX_PART_PREFIX}${box.id}`, parts.map((part) => part.name));
+        aliases.set(`${BOX_PART_PREFIX}${box.id}`, parts.map((part) => part.name));
         aliases.set(box.id, parts.map((part) => part.name));
       }
-      aliases.set(file.path, [BOX_LIST_PART]);
+      aliases.set(file.path, boxList.map((part) => part.name));
+      aliases.set(file.path.slice(REFERENCE_PREFIX.length), boxList.map((part) => part.name));
       continue;
     }
     const parts = namedPieces(file.path, file.content, file.path);
     references.push(...parts);
-    if (parts.length > 1) aliases.set(file.path, parts.map((part) => part.name));
+    aliases.set(file.path, parts.map((part) => part.name));
     aliases.set(file.path.slice(REFERENCE_PREFIX.length), parts.map((part) => part.name));
   }
-  const all = [...rules, ...references, ...(boxList ? [boxList] : []), ...boxes];
+  const missing = boxList.length > 0 ? SAFETY_BOX_IDS.filter((id) => !aliases.has(id)) : [];
+  if (missing.length > 0) throw new TherapyProtocolUnavailableError(`The packaged ${BOX_GUIDANCE_FILE} lacks a safety box: ${missing.join(", ")}.`);
+  const safetyBoxes = boxList.length > 0 ? SAFETY_BOX_IDS.flatMap((id) => aliases.get(id)) : [];
+  const all = [...numberedRules, ...references, ...boxList, ...boxes];
   const byName = new Map(all.map((part) => [part.name, part]));
-  // The first answer: as many of the rules' parts, in order, as fit beside its own text.
-  const safetyBoxes = boxList ? SAFETY_BOX_IDS.flatMap((id) => aliases.get(id) ?? []).map((name) => byName.get(name)) : [];
-  if (boxList && safetyBoxes.length < SAFETY_BOX_IDS.length) {
-    throw new TherapyProtocolUnavailableError(`The packaged ${BOX_GUIDANCE_FILE} lacks a safety box: ${SAFETY_BOX_IDS.filter((id) => !aliases.has(id)).join(", ")}.`);
-  }
-  const before = [
-    ...rules,
-    ...references.filter((part) => !ON_REQUEST_FILES.has(part.source)),
-    ...(boxList ? [boxList] : []),
-    ...safetyBoxes
-  ];
-  const delivery = { protocol, rules, references, boxList, boxes, all, byName, aliases, firstNames: [], groups: [] };
-  const firstNames = [];
-  for (const part of rules) {
-    const candidate = [...firstNames, part.name];
-    if (firstNames.length > 0 && bytesOf(renderFirstAnswer(delivery, candidate, [])) > PROTOCOL_ANSWER_MAX_BYTES) break;
-    firstNames.push(part.name);
-  }
-  // The rest of what comes before the first reply, packed into groups that each fit in one answer: the rest of the
-  // rules first, then the largest parts first into the first group with room. Groups list their parts in reading order.
-  const remaining = before.filter((part) => !firstNames.includes(part.name));
   const order = new Map(all.map((part, index) => [part.name, index]));
-  const groups = [];
-  const fits = (names) => packAnswer(delivery, names, []).stillToLoad.length === 0;
-  // The rest of the rules and the safety boxes go first, so an app that loads the groups in order has them earliest.
-  const early = remaining.filter((part) => part.name.startsWith(RULES_PART_PREFIX) || safetyBoxes.includes(part));
-  for (const part of early) {
-    const last = groups.at(-1);
-    if (last && fits([...last, part.name])) last.push(part.name); else groups.push([part.name]);
+  const delivery = { protocol, rules: numberedRules, references, boxList, boxes, all, byName, aliases, firstNames: [], groups: [], groupNames: [] };
+  // Everything before the first reply, most urgent first: the rest of the rules, the box list (with its rule to keep the
+  // safer reading), the safety boxes and the protective-compatibility file in that order, then the other always-read
+  // files, largest first, wherever they fit.
+  const before = [
+    ...numberedRules.map((part) => part.name),
+    ...boxList.map((part) => part.name),
+    ...safetyBoxes,
+    ...references.filter((part) => EARLY_FILES.includes(part.source)).map((part) => part.name),
+    ...references.filter((part) => !ON_REQUEST_FILES.has(part.source) && !EARLY_FILES.includes(part.source)).map((part) => part.name)
+  ];
+  const urgent = new Set(before.filter((name) => !references.some((part) => part.name === name && !EARLY_FILES.includes(part.source))));
+  const pack = (firstNames) => {
+    const groups = [];
+    const fits = (names) => packAnswer(delivery, names, []).stillToLoad.length === 0;
+    for (const name of before.filter((candidate) => !firstNames.includes(candidate) && urgent.has(candidate))) {
+      const last = groups.at(-1);
+      if (last && fits([...last, name])) last.push(name); else groups.push([name]);
+    }
+    const others = before.filter((name) => !firstNames.includes(name) && !urgent.has(name))
+      .sort((a, b) => byName.get(b).bytes - byName.get(a).bytes || order.get(a) - order.get(b));
+    for (const name of others) {
+      const group = groups.find((candidate) => fits([...candidate, name]));
+      if (group) group.push(name); else groups.push([name]);
+    }
+    return groups;
+  };
+  // The first answer: as many of the rules' parts, in order, as fit beside its own lines at their longest (the group list
+  // and a note that the protocol has changed), so no first answer is ever over the cap.
+  let firstNames = [];
+  let groups = [];
+  for (let count = numberedRules.length; count >= 1; count -= 1) {
+    const candidate = numberedRules.slice(0, count).map((part) => part.name);
+    const candidateGroups = pack(candidate);
+    if (count === 1 || bytesOf(renderFirstAnswer(delivery, candidate, candidateGroups, "f".repeat(64))) <= PROTOCOL_ANSWER_MAX_BYTES) {
+      firstNames = candidate;
+      groups = candidateGroups;
+      break;
+    }
   }
-  const others = remaining.filter((part) => !early.includes(part)).sort((a, b) => b.bytes - a.bytes || order.get(a.name) - order.get(b.name));
-  for (const part of others) {
-    const group = groups.find((candidate) => fits([...candidate, part.name]));
-    if (group) group.push(part.name); else groups.push([part.name]);
+  if (bytesOf(renderFirstAnswer(delivery, firstNames, groups, "f".repeat(64))) > PROTOCOL_ANSWER_MAX_BYTES) {
+    throw new TherapyProtocolUnavailableError("The first part of the rules doesn't fit in one answer.");
   }
-  for (const group of groups) group.sort((a, b) => order.get(a) - order.get(b));
+  groups.forEach((group) => group.sort((a, b) => order.get(a) - order.get(b)));
   delivery.firstNames = Object.freeze(firstNames);
   delivery.groups = Object.freeze(groups.map((group) => Object.freeze(group)));
+  delivery.groupNames = Object.freeze(groups.map((_, index) => `${GROUP_PREFIX}${index + 1}`));
+  groups.forEach((group, index) => aliases.set(`${GROUP_PREFIX}${index + 1}`, group));
   const frozen = Object.freeze(delivery);
   deliveries.set(protocol, frozen);
   return frozen;
@@ -437,14 +466,19 @@ function loadingNote(delivery) {
   const exampleBox = delivery.boxes[0]?.name;
   return [
     "This is the first part of InnerSignal's therapy rules. The rest comes in parts, so that every app shows each answer whole: apps cut long tool results.",
-    "Before your first reply, load every group listed below: one call to load_therapy_protocol per group (the calls may run at the same time), with `parts` set to the group exactly as written and `protocol_sha256` set to the sha256 above. Then follow the rules and their files.",
+    "Before your first reply, load every group listed below: one call to load_therapy_protocol per group (the calls may run at the same time), with `parts` set to the group's name and `protocol_sha256` set to the sha256 above. Then follow the rules and their files.",
+    "One exception: if the person says they want to die, may act on it or has already taken something, reply at once from the section on someone who may want to die, which this answer holds in full, and load the groups before your next reply.",
     "Paths such as `references/FOCUS-DISCIPLINE.md` in the rules are part names.",
-    ...(delivery.boxList ? [`The map's boxes: before you use a box, load its advice by its name from the box list (\`box/\` and the box's ID, for example \`${exampleBox}\`); several in one call is fine.`] : []),
+    ...(delivery.boxList.length > 0 ? [`The map's boxes: before you use a box, load its advice by its name from the box list (\`box/\` and the box's ID, for example \`${exampleBox}\`); several in one call is fine.`] : []),
     "Load `references/GUIDE-REFERRALS.md` when the rules say to.",
-    "If an answer looks cut off or says it was shortened, ask again for fewer parts at a time.",
-    "If load_therapy_protocol has no `parts` input among your tools, the app holds an older tool list for this connector: follow the rules in this answer, and tell the user to refresh the InnerSignal connector's tools in the app's settings.",
+    "Send `protocol_sha256` with every call; if an answer says the protocol has changed, start again from that answer. In a long chat, if you can no longer see a part you need, load it again. If an answer looks cut off or says it was shortened, ask again for fewer parts at a time.",
+    "If load_therapy_protocol has no `parts` input among your tools, the app holds an older tool list for this connector and can't load the rest: tell the user that InnerSignal needs its connector's tools refreshed in the app's settings before it can help with this, and don't give the therapy from this part alone or from memory. If the person may want to die, follow the section on that in this answer first, and leave the refresh for later.",
     "Record `version` and `protocol_sha256` with any continuity handoff. Never mention the parts, the map or the boxes to the person."
   ].join(" ");
+}
+
+function groupLines(delivery, groups) {
+  return groups.map((group, index) => `- \`${GROUP_PREFIX}${index + 1}\`: ${group.join(", ")}`);
 }
 
 function renderFirstAnswer(delivery, firstNames, groups, changedFrom = null) {
@@ -454,10 +488,7 @@ function renderFirstAnswer(delivery, firstNames, groups, changedFrom = null) {
   }
   lines.push("", loadingNote(delivery), "");
   if (groups.length === 0) lines.push("Before your first reply, load: nothing more; this answer holds all of the rules.");
-  else {
-    lines.push("Load before your first reply, one call per group:");
-    groups.forEach((group, index) => lines.push(`${index + 1}. ${nameList(group)}`));
-  }
+  else lines.push("Load before your first reply, one call per group, by the group's name:", ...groupLines(delivery, groups));
   lines.push("", ...firstNames.map((name) => block(delivery.byName.get(name))));
   return lines.join("\n");
 }
@@ -465,45 +496,76 @@ function renderFirstAnswer(delivery, firstNames, groups, changedFrom = null) {
 const MAX_ECHOED_UNKNOWN = 5;
 
 function renderPartsAnswer(delivery, parts, stillToLoad, unknown) {
-  const lines = [`${header(delivery.protocol)}: ${stillToLoad.length === 0 ? "the parts you asked for." : `${parts.length} of the ${parts.length + stillToLoad.length} parts you asked for; the rest didn't fit in one answer.`}`];
+  const asked = parts.length + stillToLoad.length;
+  const opening = asked === 0
+    ? `${header(delivery.protocol)}: none of the names you sent is a part of this protocol.`
+    : `${header(delivery.protocol)}: ${stillToLoad.length === 0 ? "the parts you asked for." : `${parts.length} of the ${asked} parts you asked for; the rest didn't fit in one answer.`}`;
+  const lines = [opening];
   if (stillToLoad.length > 0) lines.push(`Still to load (ask for these in another call): ${nameList(stillToLoad)}`);
   if (unknown.length > 0) {
     const shown = unknown.slice(0, MAX_ECHOED_UNKNOWN).map((name) => (name.length > 60 ? `${name.slice(0, 60)}…` : name));
-    lines.push(`Not part names of this protocol (the first answer and the box list give the names): ${nameList(shown)}${unknown.length > shown.length ? ` and ${unknown.length - shown.length} more` : ""}`);
+    lines.push(`Not part names of this protocol: ${nameList(shown)}${unknown.length > shown.length ? ` and ${unknown.length - shown.length} more` : ""}. The names are the groups ${nameList(delivery.groupNames ?? [])}, the paths the rules name, \`${BOX_LIST_PART}\`, and each box's name from the box list.`);
   }
-  if (parts.length === 0 && stillToLoad.length === 0) lines.push("No part to send.");
   lines.push("", ...parts.map(block));
   return lines.join("\n");
 }
 
-// A requested name as the parts it stands for: an exact part name, an alias (a whole file, a reference's file name, a
-// box ID without `box/`, the rules), or nothing.
-function resolveName(delivery, name) {
-  if (delivery.byName.has(name)) return [name];
-  if (delivery.aliases.has(name)) return delivery.aliases.get(name);
-  const trimmed = name.trim().replace(/^`|`$/gu, "");
-  if (trimmed !== name) return resolveName(delivery, trimmed);
+const WRAPPERS = /^[\s"'`[\]()]+|[\s"'`[\]()]+$/gu;
+
+// A requested name as the parts it stands for, or null. Exact names and aliases first (a group, a whole file, a
+// reference's file name, a box ID without `box/`, the rules), then the same ignoring case, quotes, brackets, a leading
+// `./`, a missing `.md` or `references/`, `boxes/` for `box/`, and a bare group number.
+function resolveName(delivery, raw) {
+  const direct = (name) => (delivery.byName.has(name) ? [name] : delivery.aliases.get(name) ?? null);
+  const name = raw.replace(WRAPPERS, "").replace(/^\.\//u, "");
+  const candidates = [name, name.replace(/^boxes\//iu, BOX_PART_PREFIX), `${name}.md`, `${REFERENCE_PREFIX}${name}`, `${REFERENCE_PREFIX}${name}.md`];
+  const group = /^(?:group[ /]?)?(\d{1,2})$/iu.exec(name);
+  if (group) candidates.push(`${GROUP_PREFIX}${Number(group[1])}`);
+  for (const candidate of candidates) {
+    const found = direct(candidate);
+    if (found) return found;
+  }
+  const lower = new Map([...delivery.byName.keys(), ...delivery.aliases.keys()].map((key) => [key.toLowerCase(), key]));
+  for (const candidate of candidates) {
+    const key = lower.get(candidate.toLowerCase());
+    if (key !== undefined) return direct(key);
+  }
   return null;
+}
+
+// `parts` as the list of names it means: a list of strings, or one string holding a JSON list or names separated by
+// commas or spaces.
+function requestedNames(parts) {
+  if (typeof parts === "string") {
+    const text = parts.trim();
+    if (text.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) return requestedNames(parsed);
+      } catch { /* read it as names separated by commas or spaces */ }
+    }
+    return text.split(/[\s,]+/u).filter((name) => name.replace(WRAPPERS, "") !== "");
+  }
+  if (!Array.isArray(parts) || parts.some((name) => typeof name !== "string" || name.length > 200)) {
+    throw new ProtocolRequestError("`parts` must be a list of part names, as the first answer and the box list give them.");
+  }
+  return parts.filter((name) => name.replace(WRAPPERS, "") !== "");
 }
 
 function validatedRequest(args) {
   if (args === null || typeof args !== "object" || Array.isArray(args)) throw new ProtocolRequestError("The arguments must be an object.");
-  const { parts, protocol_sha256: requestedSha } = args;
-  if (parts !== undefined) {
-    if (!Array.isArray(parts) || parts.some((name) => typeof name !== "string" || name.length === 0 || name.length > 200)) {
-      throw new ProtocolRequestError("`parts` must be a list of part names, as the first answer and the box list give them.");
-    }
-    if (parts.length > MAX_REQUESTED_PARTS) throw new ProtocolRequestError(`Ask for at most ${MAX_REQUESTED_PARTS} parts in one call.`);
-  }
-  if (requestedSha !== undefined && (typeof requestedSha !== "string" || !/^[0-9a-f]{64}$/u.test(requestedSha))) {
+  const parts = args.parts === undefined ? [] : requestedNames(args.parts);
+  if (parts.length > MAX_REQUESTED_PARTS) throw new ProtocolRequestError(`Ask for at most ${MAX_REQUESTED_PARTS} parts in one call.`);
+  const requestedSha = args.protocol_sha256 === undefined ? null : typeof args.protocol_sha256 === "string" ? args.protocol_sha256.trim().toLowerCase() : args.protocol_sha256;
+  if (requestedSha !== null && (typeof requestedSha !== "string" || !/^[0-9a-f]{64}$/u.test(requestedSha))) {
     throw new ProtocolRequestError("`protocol_sha256` must be the 64-character sha256 from the first answer.");
   }
-  return { parts: parts ?? [], requestedSha: requestedSha ?? null };
+  return { parts, requestedSha };
 }
 
 // The text load_therapy_protocol returns for these arguments. Without `parts`, the first answer; with them, as many of
-// the named parts as fit in one answer, in the order asked, and the names of the rest. A `protocol_sha256` that isn't the
-// one served now gets the first answer again, saying the protocol has changed.
+// the named parts as fit in one answer and the names of the rest. A `protocol_sha256` that isn't the one served now gets
+// the first answer again, saying the protocol has changed.
 export function therapyProtocolAnswer(protocol, args = {}) {
   const { parts, requestedSha } = validatedRequest(args);
   const delivery = therapyProtocolDelivery(protocol);
@@ -522,9 +584,9 @@ export function therapyProtocolAnswer(protocol, args = {}) {
   return { text, included, stillToLoad, unknown };
 }
 
-// Which of the wanted parts go in one answer: in the order asked, each part that still fits. A part is measured with every
-// wanted part not yet taken listed as still to load, the longest that list can be, so the answer as sent is never longer
-// than what was measured.
+// Which of the wanted parts go in one answer: each part in the order asked that still fits; one that doesn't is named
+// as still to load, and a smaller one after it may still go in. A part is measured with every wanted part not yet taken
+// listed as still to load, the longest that list can be, so the answer as sent is never longer than what was measured.
 function packAnswer(delivery, wanted, unknown) {
   const partsOf = (names) => names.map((name) => delivery.byName.get(name));
   const included = [];

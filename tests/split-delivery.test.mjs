@@ -11,9 +11,12 @@ import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import {
   BOX_LIST_PART,
   BOX_PART_PREFIX,
+  GROUP_PREFIX,
   PROTOCOL_ANSWER_MAX_BYTES,
   PROTOCOL_PART_MAX_BYTES,
   SAFETY_BOX_IDS,
+  TherapyProtocolUnavailableError,
+  boxSections,
   loadTherapyProtocol,
   textPieces,
   therapyProtocolAnswer,
@@ -38,8 +41,25 @@ function blockBody(text, part) {
   return part.content.endsWith("\n") ? body : body.slice(0, -1);
 }
 
+// A protocol made up for a test: its rules, and a box file when one is given.
+function syntheticProtocol(instructions, files = []) {
+  return Object.freeze({
+    protocolId: "inner-signal-therapy",
+    version: "0.0.0-test",
+    protocolSha256: sha256(instructions + files.map((file) => file.content).join("")),
+    instructions,
+    instructionsSha256: sha256(instructions),
+    files: Object.freeze(files.map((file) => Object.freeze({ ...file, sha256: sha256(file.content), bytes: bytes(file.content) })))
+  });
+}
+
+function syntheticBoxFile(ids, { titleBytes = 40, bodyBytes = 200 } = {}) {
+  const box = (id) => `### ${id}: ${"T".repeat(titleBytes)}\n\n- Do: ${"d".repeat(bodyBytes)}\n\n`;
+  return `# Boxes\n\nOpening text. Do not mention boxes, their IDs or the map to the person.\n\n## Inner-child boxes\n\n${ids.filter((id) => id.startsWith("IC.")).map(box).join("")}## Cross-guide routes\n\n${ids.filter((id) => id.startsWith("ROUTE.")).map(box).join("")}`;
+}
+
 test("every answer fits in one app's view: the first, each group, every single part, and a request for everything", () => {
-  const answers = [therapyProtocolAnswer(protocol, {}), ...delivery.groups.map((parts) => therapyProtocolAnswer(protocol, { parts }))];
+  const answers = [therapyProtocolAnswer(protocol, {}), ...delivery.groupNames.map((name) => therapyProtocolAnswer(protocol, { parts: [name] }))];
   for (const part of delivery.all) answers.push(therapyProtocolAnswer(protocol, { parts: [part.name] }));
   answers.push(therapyProtocolAnswer(protocol, { parts: delivery.all.slice(0, 40).map((part) => part.name) }));
   answers.push(therapyProtocolAnswer(protocol, { protocol_sha256: "0".repeat(64) }));
@@ -48,11 +68,14 @@ test("every answer fits in one app's view: the first, each group, every single p
   answers.push(therapyProtocolAnswer(protocol, { parts: [largest.name, ...Array.from({ length: 39 }, (_, index) => `${"x".repeat(190)}${index}`)] }));
   answers.push(therapyProtocolAnswer(protocol, { parts: [...delivery.boxes.slice(0, 39).map((part) => part.name), largest.name] }));
   for (const answer of answers) assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES, `${bytes(answer.text)} bytes`);
-  // A single part always fits, so a request never comes back empty while it names a real part.
   for (const part of delivery.all) assert.ok(part.bytes <= PROTOCOL_PART_MAX_BYTES, part.name);
   assert.ok(answers.at(-2).included.includes(largest.name), "the largest part fits beside the longest lines");
-  // Each group listed in the first answer fits whole, so loading the groups leaves nothing still to load.
-  for (const parts of delivery.groups) assert.deepEqual(therapyProtocolAnswer(protocol, { parts }).stillToLoad, []);
+  // Each group the first answer lists fits whole, so loading the groups leaves nothing still to load.
+  delivery.groupNames.forEach((name, index) => {
+    const answer = therapyProtocolAnswer(protocol, { parts: [name] });
+    assert.deepEqual(answer.stillToLoad, []);
+    assert.deepEqual(answer.included, [...delivery.groups[index]]);
+  });
 });
 
 test("the first answer holds the start of the rules and the whole section on someone who may want to die", () => {
@@ -64,29 +87,37 @@ test("the first answer holds the start of the rules and the whole section on som
   const rules = delivery.firstNames.map((name) => blockBody(first, delivery.byName.get(name))).join("");
   assert.ok(protocol.instructions.startsWith(rules), "the rules from their first byte");
   assert.ok(rules.length >= end, "through the end of the crisis section");
-  // It says how to load the rest: each group, in order, exactly as a call should send it.
-  delivery.groups.forEach((group, index) => assert.ok(first.includes(`\n${index + 1}. ${JSON.stringify(group).replaceAll(",", ", ")}`), `group ${index + 1}`));
+  // It names each group to load before the first reply, with what is in it.
+  delivery.groups.forEach((group, index) => assert.ok(first.includes(`\n- \`${GROUP_PREFIX}${index + 1}\`: ${group.join(", ")}`), `group ${index + 1}`));
   assert.match(first, /Before your first reply, load every group listed below/u);
-  assert.match(first, /has no `parts` input among your tools, the app holds an older tool list/u);
+  // Someone who may want to die gets a reply at once, from the section this answer holds in full.
+  assert.match(first, /if the person says they want to die, may act on it or has already taken something, reply at once from the section on someone who may want to die, which this answer holds in full, and load the groups before your next reply\./u);
+  // An app holding the old tool list: no therapy from this part alone, the crisis section first, the refresh after.
+  assert.match(first, /has no `parts` input among your tools, the app holds an older tool list for this connector and can't load the rest/u);
+  assert.match(first, /don't give the therapy from this part alone or from memory\. If the person may want to die, follow the section on that in this answer first, and leave the refresh for later\./u);
+  assert.match(first, /Send `protocol_sha256` with every call/u);
+  assert.match(first, /if you can no longer see a part you need, load it again/u);
 });
 
-test("the parts rebuild every served file byte for byte, and every part's hash is its text's", () => {
+test("the parts rebuild the rules and every reference byte for byte, the boxes exactly, and every hash is its text's", () => {
   assert.equal(delivery.rules.map((part) => part.content).join(""), protocol.instructions);
   for (const file of protocol.files.filter((file) => file.path !== BOX_FILE)) {
     assert.equal(delivery.references.filter((part) => part.source === file.path).map((part) => part.content).join(""), file.content, file.path);
   }
+  // The box file is its opening, its group headings and its boxes' sections, exactly; each box's part is its section.
   const box = protocol.files.find((file) => file.path === BOX_FILE);
-  for (const part of delivery.boxes) assert.ok(box.content.includes(part.content), part.name);
-  assert.equal(delivery.boxes.reduce((sum, part) => sum + part.bytes, 0) + bytes(box.content.slice(0, box.content.indexOf("\n## ") + 1)) <= bytes(box.content), true);
+  const { opening, groups, boxes } = boxSections(box.content);
+  assert.equal(opening + groups.map((group) => group.heading + group.boxes.map((entry) => entry.text).join("")).join(""), box.content);
+  assert.deepEqual(delivery.boxes.map((part) => part.content), boxes.map((entry) => entry.text));
+  // The box list carries the opening byte for byte and each group heading as written.
+  const list = delivery.boxList.map((part) => part.content).join("");
+  assert.ok(list.startsWith(opening.replace(/\n*$/u, "\n")));
+  for (const group of groups) assert.ok(list.includes(group.heading.replace(/\n*$/u, "")), group.title);
+  assert.throws(() => boxSections(box.content.replace("### IC.MEET_GUARD:", "### meet guard:")), TherapyProtocolUnavailableError);
   for (const part of delivery.all) {
     assert.equal(part.sha256, sha256(part.content), part.name);
     assert.equal(part.bytes, bytes(part.content), part.name);
   }
-  // Each box's part is its section exactly, from its heading to the next.
-  const sections = box.content.split(/\n(?=### )/u).slice(1).map((section) => section.replace(/\n## [\s\S]*$/u, "\n"));
-  assert.equal(delivery.boxes.length, sections.length);
-  delivery.boxes.forEach((part, index) => assert.equal(part.content.trimEnd(), sections[index].trimEnd(), part.name));
-  // The manifest names every part with its hash, and how the first answer and the groups are made up.
   const manifest = therapyProtocolManifest(protocol);
   assert.deepEqual(manifest.parts.map((part) => part.name), delivery.all.map((part) => part.name));
   assert.deepEqual(manifest.first_answer, [...delivery.firstNames]);
@@ -102,55 +133,108 @@ test("before the first reply: the rules, every file the rules say to read before
   assert.ok(!named.includes(BOX_FILE), "the box file is read a box at a time (i60a)");
   const referencesBefore = delivery.references.filter((part) => before.includes(part.name)).map((part) => part.source);
   assert.deepEqual([...new Set(referencesBefore)].sort(), [...named].sort());
-  for (const part of delivery.rules) assert.ok(before.includes(part.name), part.name);
-  assert.ok(before.includes(BOX_LIST_PART));
+  for (const part of [...delivery.rules, ...delivery.boxList]) assert.ok(before.includes(part.name), part.name);
   for (const id of SAFETY_BOX_IDS) assert.ok(before.includes(`${BOX_PART_PREFIX}${id}`), id);
   assert.ok(!before.some((name) => delivery.byName.get(name).source === ON_REQUEST), "the guide referrals wait until the rules call for them");
   const others = delivery.boxes.filter((part) => !SAFETY_BOX_IDS.some((id) => part.name === `${BOX_PART_PREFIX}${id}`));
   assert.ok(others.length > 0 && others.every((part) => !before.includes(part.name)), "every other box waits until it's used");
-  // The rest of the rules and the safety boxes come in the first group.
-  assert.ok(delivery.rules.slice(delivery.firstNames.length).every((part) => delivery.groups[0].includes(part.name)));
-  for (const id of SAFETY_BOX_IDS) assert.ok(delivery.groups[0].includes(`${BOX_PART_PREFIX}${id}`), id);
+  // Most urgent first: the rest of the rules, the box list with its rule to keep the safer reading, and the inner-child
+  // safety boxes in the first group; the safety routes and the protective-compatibility file in the second.
+  for (const part of [...delivery.rules.slice(delivery.firstNames.length), ...delivery.boxList]) assert.ok(delivery.groups[0].includes(part.name), part.name);
+  for (const id of SAFETY_BOX_IDS.filter((entry) => entry.startsWith("IC."))) assert.ok(delivery.groups[0].includes(`${BOX_PART_PREFIX}${id}`), id);
+  const early = delivery.groups.slice(0, 2).flat();
+  for (const id of SAFETY_BOX_IDS) assert.ok(early.includes(`${BOX_PART_PREFIX}${id}`), id);
+  assert.ok(early.includes("references/PROTECTIVE-COMPATIBILITY.md"));
+  assert.match(delivery.boxList[0].content, /Where a box and `SKILL\.md` or another reference seem to differ, keep the safer reading/u);
   // The rules tell a model to read a box's section before using it.
   assert.match(protocol.instructions, /`references\/INNER-CHILD-BOX-GUIDANCE\.md` \(one section per box\): read a box's section before you use that box\./u);
 });
 
-test("the safety boxes are the compiled map's tier 1, and the crisis section's boxes are among them", async () => {
-  const graph = JSON.parse(await fs.readFile(path.join(root, "guide-graphs/compiled/inner-child-directed-graph.json"), "utf8"));
-  const tierOne = graph.nodes.filter((node) => node.tier === 1).map((node) => node.id);
-  assert.deepEqual([...SAFETY_BOX_IDS].sort(), [...tierOne].sort());
-  const titles = new Map(graph.nodes.map((node) => [node.id, node.title]));
-  assert.match(titles.get("IC.SUICIDAL_ADULT_SEAT"), /adult or witness seat/u);
-  assert.match(titles.get("IC.SUICIDAL_SELF_DEATH_INQUIRY"), /self\/death/u);
-  assert.match(titles.get("IC.PRECIOUS_HUMAN_OPPORTUNITY"), /precious/u);
+test("the safety boxes are tier 1 of the inner-child map and of the cross-guide routes, and the crisis section's boxes are among them", async () => {
+  const tierOne = [];
+  for (const graph of ["inner-child-directed-graph", "inner-child-somatic-cross-guide"]) {
+    const compiled = JSON.parse(await fs.readFile(path.join(root, `guide-graphs/compiled/${graph}.json`), "utf8"));
+    tierOne.push(...compiled.nodes.filter((node) => node.tier === 1).map((node) => node.id));
+  }
+  assert.deepEqual([...SAFETY_BOX_IDS].sort(), tierOne.sort());
+  const titles = new Map(delivery.boxes.map((part) => [part.name, part.content.split("\n")[0]]));
+  assert.match(titles.get("box/IC.SUICIDAL_ADULT_SEAT"), /adult or witness seat/u);
+  assert.match(titles.get("box/IC.SUICIDAL_SELF_DEATH_INQUIRY"), /self\/death/u);
+  assert.match(titles.get("box/IC.PRECIOUS_HUMAN_OPPORTUNITY"), /precious/u);
   assert.match(protocol.instructions, /the boxes on the adult seat, the self\/death inquiry and this precious human life/u);
 });
 
-test("the box list names every box once, and every box the map shows", () => {
-  const list = delivery.byName.get(BOX_LIST_PART).content;
-  for (const part of delivery.boxes) assert.equal(list.split(`\`${part.name}\``).length - 1, 1, part.name);
-  const map = protocol.files.find((file) => file.path === "references/INNER-CHILD-THERAPY-MAP.md").content;
-  for (const [, id] of map.matchAll(/\["((?:IC|ROUTE)\.[A-Z0-9_]+)<br\/>/gu)) assert.ok(delivery.byName.has(`${BOX_PART_PREFIX}${id}`), id);
-  assert.match(list, /Do not mention boxes, their IDs or the map to the person\./u);
-  // The first answer's example box is a real one.
-  const example = /for example `(box\/[^`]+)`/u.exec(therapyProtocolAnswer(protocol, {}).text)[1];
-  assert.ok(delivery.byName.has(example));
+test("a safety box missing from the box file makes the protocol unavailable, even when another safety box is split", () => {
+  const ids = SAFETY_BOX_IDS.filter((id) => id !== "IC.PRECIOUS_HUMAN_OPPORTUNITY");
+  const content = syntheticBoxFile(ids).replace(`### ${ids[0]}: `, `### ${ids[0]}: `).replace("- Do: ", `- Do: ${"long ".repeat(6000)}\n\n`);
+  const broken = syntheticProtocol("Rules.\n", [{ path: BOX_FILE, content }]);
+  assert.throws(() => therapyProtocolDelivery(broken), { name: "TherapyProtocolUnavailableError", message: /lacks a safety box: IC\.PRECIOUS_HUMAN_OPPORTUNITY/u });
 });
 
-test("names resolve leniently, unknown ones are reported, and the rest waits for the next call", () => {
-  const byAlias = therapyProtocolAnswer(protocol, { parts: ["FOCUS-DISCIPLINE.md", "IC.MEET_GUARD", "rules", " `box/IC.NEUTRAL_WITNESS` ", "no-such-part"] });
-  assert.ok(byAlias.included.includes("references/FOCUS-DISCIPLINE.md"));
-  assert.ok(byAlias.included.includes("box/IC.MEET_GUARD"));
-  assert.deepEqual(byAlias.unknown, ["no-such-part"]);
-  assert.match(byAlias.text, /Not part names of this protocol \(the first answer and the box list give the names\): \["no-such-part"\]/u);
-  const wanted = [...delivery.rules.map((part) => part.name), "references/FOCUS-DISCIPLINE.md", "box/IC.MEET_GUARD", "box/IC.NEUTRAL_WITNESS"];
-  assert.deepEqual([...byAlias.included, ...byAlias.stillToLoad].sort(), [...wanted].sort());
-  if (byAlias.stillToLoad.length > 0) assert.match(byAlias.text, /Still to load \(ask for these in another call\): \[/u);
-  // The whole box file stands for the box list.
-  assert.deepEqual(therapyProtocolAnswer(protocol, { parts: [BOX_FILE] }).included, [BOX_LIST_PART]);
+test("a box list too long for one answer comes in pieces, and `boxes` still loads all of them", () => {
+  const ids = [...SAFETY_BOX_IDS, ...Array.from({ length: 400 }, (_, index) => `IC.SYNTHETIC_${index}`)];
+  const made = syntheticProtocol("Rules.\n", [{ path: BOX_FILE, content: syntheticBoxFile(ids, { titleBytes: 90, bodyBytes: 20 }) }]);
+  const built = therapyProtocolDelivery(made);
+  assert.ok(built.boxList.length > 1, "the box list is split");
+  const loaded = [];
+  let pending = [BOX_LIST_PART];
+  for (let round = 0; round < 10 && pending.length > 0; round += 1) {
+    const answer = therapyProtocolAnswer(made, { parts: pending });
+    assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES);
+    assert.ok(answer.included.length > 0, "every call brings something");
+    loaded.push(...answer.included);
+    pending = answer.stillToLoad;
+  }
+  assert.deepEqual(loaded, built.boxList.map((part) => part.name));
+  for (const answer of [therapyProtocolAnswer(made, {}), ...built.groupNames.map((name) => therapyProtocolAnswer(made, { parts: [name] }))]) {
+    assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES);
+  }
+});
+
+test("the first answer fits with its group list and a changed-protocol note, whatever the rules' sizes", () => {
+  for (const sizes of [[26_001, 100], [12_000, 12_000, 12_000], [23_900, 23_900], [3_000]]) {
+    const rules = sizes.map((size, index) => `## Section ${index}\n\n${"r".repeat(size)}\n\n`).join("");
+    const made = syntheticProtocol(rules);
+    const built = therapyProtocolDelivery(made);
+    for (const args of [{}, { protocol_sha256: "f".repeat(64) }]) {
+      const answer = therapyProtocolAnswer(made, args);
+      assert.ok(bytes(answer.text) <= PROTOCOL_ANSWER_MAX_BYTES, `${sizes}: ${bytes(answer.text)} bytes`);
+      assert.ok(answer.included.length >= 1);
+    }
+    assert.equal([...built.firstNames, ...built.groups.flat()].filter((name) => name.startsWith("rules/")).length, built.rules.length, `${sizes}: every rules part is loaded before the first reply`);
+  }
+});
+
+test("names resolve leniently, unknown ones are reported plainly, and the rest waits for the next call", () => {
+  const cases = new Map([
+    ["1", [...delivery.groups[0]]],
+    ["group 2", [...delivery.groups[1]]],
+    ["group/3", [...delivery.groups[2]]],
+    ["FOCUS-DISCIPLINE", ["references/FOCUS-DISCIPLINE.md"]],
+    ["FOCUS-DISCIPLINE.md", ["references/FOCUS-DISCIPLINE.md"]],
+    ["references/focus-discipline.md", ["references/FOCUS-DISCIPLINE.md"]],
+    ["./references/GUIDE-REFERRALS.md", ["references/GUIDE-REFERRALS.md"]],
+    ["IC.MEET_GUARD", ["box/IC.MEET_GUARD"]],
+    ["boxes/IC.MEET_GUARD", ["box/IC.MEET_GUARD"]],
+    ["\"rules/2\"", ["rules/2"]],
+    ["[box/IC.NEUTRAL_WITNESS]", ["box/IC.NEUTRAL_WITNESS"]],
+    ["INNER-CHILD-BOX-GUIDANCE.md", delivery.boxList.map((part) => part.name)],
+    [BOX_FILE, delivery.boxList.map((part) => part.name)]
+  ]);
+  for (const [name, expected] of cases) assert.deepEqual(therapyProtocolAnswer(protocol, { parts: [name] }).included, expected, name);
+  // `parts` as one string: a JSON list, or names separated by commas or spaces. A sha256 in capitals is the same sha256.
+  assert.deepEqual(therapyProtocolAnswer(protocol, { parts: "rules/2, boxes" }).included, ["rules/2", ...delivery.boxList.map((part) => part.name)]);
+  assert.deepEqual(therapyProtocolAnswer(protocol, { parts: "[\"rules/2\"]" }).included, ["rules/2"]);
+  assert.deepEqual(therapyProtocolAnswer(protocol, { parts: ["rules/2"], protocol_sha256: protocol.protocolSha256.toUpperCase() }).included, ["rules/2"]);
+  // Nothing known: said plainly, with the names to use.
+  const none = therapyProtocolAnswer(protocol, { parts: ["no-such-part"] });
+  assert.deepEqual([none.included, none.unknown], [[], ["no-such-part"]]);
+  assert.match(none.text, /: none of the names you sent is a part of this protocol\.\n/u);
+  assert.match(none.text, /Not part names of this protocol: \["no-such-part"\]\. The names are the groups \["group\/1"/u);
   // A request naming too much gets what fits and the names of the rest, never a cut part.
   const everything = therapyProtocolAnswer(protocol, { parts: delivery.all.slice(0, 40).map((part) => part.name) });
   assert.ok(everything.included.length > 0 && everything.stillToLoad.length > 0);
+  assert.match(everything.text, /Still to load \(ask for these in another call\): \[/u);
   for (const name of everything.included) assert.equal(blockBody(everything.text, delivery.byName.get(name)), delivery.byName.get(name).content);
 });
 
@@ -159,16 +243,14 @@ test("a changed protocol says so and starts again from the first answer", () => 
   assert.match(changed.text, /The protocol has changed since the answer whose sha256 you sent \(a{64}\)/u);
   assert.ok(changed.text.includes(`InnerSignal therapy protocol ${protocol.version} (sha256 ${protocol.protocolSha256})`));
   assert.deepEqual(changed.included, [...delivery.firstNames]);
-  const same = therapyProtocolAnswer(protocol, { parts: ["rules/2"], protocol_sha256: protocol.protocolSha256 });
-  assert.deepEqual(same.included, ["rules/2"]);
+  assert.deepEqual(therapyProtocolAnswer(protocol, { parts: ["rules/2"], protocol_sha256: protocol.protocolSha256 }).included, ["rules/2"]);
 });
 
-test("with the box advice switched off, nothing points to boxes", () => {
+test("with the box advice switched off, no answer names the box file or a box part", () => {
   const off = loadTherapyProtocol({ boxGuidance: false });
   const offDelivery = therapyProtocolDelivery(off);
-  assert.equal(offDelivery.boxList, null);
-  assert.deepEqual(offDelivery.boxes, []);
-  const texts = [therapyProtocolAnswer(off, {}).text, ...offDelivery.groups.map((parts) => therapyProtocolAnswer(off, { parts }).text)];
+  assert.deepEqual([offDelivery.boxList, offDelivery.boxes], [[], []]);
+  const texts = [therapyProtocolAnswer(off, {}).text, ...offDelivery.groupNames.map((name) => therapyProtocolAnswer(off, { parts: [name] }).text)];
   for (const text of texts) {
     assert.ok(bytes(text) <= PROTOCOL_ANSWER_MAX_BYTES);
     assert.doesNotMatch(text, /box\/|INNER-CHILD-BOX-GUIDANCE/u);
@@ -184,7 +266,6 @@ test("the text is cut only at headings, paragraphs or lines while they work, and
   assert.equal(pieces.join(""), text);
   assert.ok(pieces.every((piece) => bytes(piece) <= 50));
   assert.ok(pieces.slice(1).every((piece) => piece.startsWith("## ")), "cut at level-2 headings");
-  // A section too long alone is cut at its paragraphs, then lines; one long line between code points, multi-byte ones whole.
   const long = `## L\n\n${"word ".repeat(40)}\n\n${"é".repeat(70)}\n`;
   const cut = textPieces(long, 60);
   assert.equal(cut.join(""), long);
@@ -202,12 +283,12 @@ test("over MCP: the tool takes parts and the protocol's sha256, answers in text 
   assert.equal(tool.inputSchema.additionalProperties, false);
   assert.match(tool.description, /comes in parts/u);
   const instructions = (await post("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "1" } })).result.instructions;
-  assert.match(instructions, /call load_therapy_protocol, load every group of parts its first answer lists/u);
-  const answer = (await post("tools/call", { name: "load_therapy_protocol", arguments: { parts: ["box/IC.MEET_GUARD"], protocol_sha256: protocol.protocolSha256 } })).result;
+  assert.match(instructions, /call load_therapy_protocol and load the parts its first answer lists, as it says/u);
+  const answer = (await post("tools/call", { name: "load_therapy_protocol", arguments: { parts: ["group/1"], protocol_sha256: protocol.protocolSha256 } })).result;
   assert.deepEqual(Object.keys(answer).sort(), ["content", "isError"]);
   assert.equal(answer.isError, false);
-  assert.equal(blockBody(answer.content[0].text, delivery.byName.get("box/IC.MEET_GUARD")), delivery.byName.get("box/IC.MEET_GUARD").content);
-  for (const args of [{ parts: "rules/2" }, { parts: [3] }, { parts: [""] }, { parts: Array(41).fill("rules/2") }, { protocol_sha256: "abc" }]) {
+  for (const name of delivery.groups[0]) assert.equal(blockBody(answer.content[0].text, delivery.byName.get(name)), delivery.byName.get(name).content, name);
+  for (const args of [{ parts: 3 }, { parts: [3] }, { parts: Array(41).fill("rules/2") }, { protocol_sha256: "abc" }]) {
     const refused = (await post("tools/call", { name: "load_therapy_protocol", arguments: args })).result;
     assert.equal(refused.isError, true, JSON.stringify(args));
     assert.equal(refused.structuredContent.code, "INVALID_PROTOCOL_REQUEST");
