@@ -97,17 +97,27 @@ test("the owner's Signal username is the last resort in step 2, after the other 
   // The owner's answer 391a (chat, 21 Nov 2026): the last-resort contact is his Signal username, which is public and which he can
   // retire, never his phone number.
   const text = section();
-  const noOne = text.indexOf("If there's no one, believe them and don't list people again");
-  const contact = text.indexOf("If they've tried those and none is there for them right now (for example, the crisis line didn't help)");
-  assert.ok(noOne > 0 && contact > noOne, "the contact comes after the options for someone who has no one");
-  assert.ok(text.indexOf("\n3. The body") > contact, "and inside step 2");
-  assert.match(text, /they can message the owner, who wrote the guide InnerSignal is built on, on Signal, where his username is udontexist\.42 \(in Signal, start a new chat and find him by username\)/u);
-  assert.match(text, /Say plainly that he can't talk with everyone and may not be free, so it's a chance, not a promise, and keep the other steps going/u);
+  const stepTwo = text.indexOf("\n2. One person:");
+  const stepThree = text.indexOf("\n3. The body");
+  assert.ok(stepTwo > 0 && stepThree > stepTwo, "step 2 is found");
+  const step = text.slice(stepTwo, stepThree);
+  // The whole sentence, so the username and the caveat stay attached to the condition, inside step 2 and after the options for
+  // someone who has no one.
+  const lastResort = "If they've tried those and none is there for them right now (for example, the crisis line didn't help), they can " +
+    "message the owner, who wrote the guide InnerSignal is built on, on Signal, where his username is udontexist.42 (in Signal, start a " +
+    "new chat and find him by username). Say plainly that he can't talk with everyone and may not be free, so it's a chance, not a " +
+    "promise, and keep the other steps going.";
+  const noOne = step.indexOf("If there's no one, believe them and don't list people again");
+  assert.ok(noOne > 0 && step.indexOf(lastResort) > noOne, "the sentence comes in step 2, after the options for someone who has no one");
   const served = loadTherapyProtocol({ boxGuidance: true }).instructions;
-  assert.equal(count(served, "udontexist.42"), 1, "the username is served once, in step 2");
+  assert.equal(count(served, lastResort), 1, "the sentence is served once");
+  assert.equal(count(served, "udontexist.42"), 1, "the username is served only in that sentence");
   assert.doesNotMatch(served, /whatsapp/iu);
-  const longNumbers = [...read(SKILL).matchAll(/\+?\d[\d ().-]{5,}\d/gu)].map((match) => match[0]);
-  assert.deepEqual(longNumbers, ["189761959", "189761959"], "no phone number: the only long digit runs are the therapist list's post id");
+  // No phone number: no long run of digits in SKILL.md once the therapist list's link (whose post id is a long number) is set aside
+  // as a whole link; digits inside any other link still count.
+  const therapistList = "https://ibogaqueen.substack.com/i/189761959/finding-a-therapist";
+  const scanned = read(SKILL).replace(/https?:\/\/[^\s),;"]+/gu, (link) => (link === therapistList ? " " : link));
+  assert.doesNotMatch(scanned, /\+?\d[\d ().-]{5,}\d/u, "no phone number in SKILL.md");
 });
 
 test("the owner's answer on guards is an owner-approved amendment in his words, written once in each of the two boxes, compiled and served", () => {
