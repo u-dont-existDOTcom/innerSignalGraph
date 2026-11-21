@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { JSDOM } from "jsdom";
 import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { loadConfig } from "../src/core/config.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
@@ -14,6 +15,7 @@ import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { createInnerSignalServer } from "../src/server/create-server.mjs";
 import { listenInnerSignalLoopback } from "../src/server/listen-loopback.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
+import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService } from "../src/storage/private-case-access.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { CLOSING_REASONS, EMERGENCY_LINE, PROVISIONAL_PREFIX, RUNNER_UNAVAILABLE_NOTICE, THINKING_LINE } from "../src/runner-trial/notices.mjs";
@@ -352,9 +354,11 @@ test("/health reports runnerTrial on or off, and the switch on with no vault sto
   const noVault = (error) => error?.code === "BAD_CONFIG" && /^INNER_SIGNAL_RUNNER_TRIAL is on, but encrypted private case storage isn't configured/u.test(error.message);
   assert.throws(() => createInnerSignalServer({ config: onConfig, providers: createProviders(onConfig) }), noVault);
   await assert.rejects(() => listenInnerSignalLoopback({ config: onConfig, providers: createProviders(onConfig), port: 0 }), noVault);
-  // A controller brought in for the trial must come with its hub.
-  const { controller } = createRunnerTrialController({ privateCaseSource: store, config: onConfig, settings: validateRunnerTrialSettings({}), parts, workerFor: fakeWorkers(baseScript()).workerFor });
+  // A controller brought in for the trial must come with its hub, and must authorize a turn (the stream asks it before it listens).
+  const { controller, events } = createRunnerTrialController({ privateCaseSource: store, config: onConfig, settings: validateRunnerTrialSettings({}), parts, workerFor: fakeWorkers(baseScript()).workerFor });
   assert.throws(() => createInnerSignalServer({ config: onConfig, providers: createProviders(onConfig), privateCaseStore: store, privateTherapyController: controller }), /needs its event hub/u);
+  assert.equal(typeof controller.authorizeTurn, "function");
+  assert.throws(() => createInnerSignalServer({ config: onConfig, providers: createProviders(onConfig), privateCaseStore: store, privateTherapyController: { async run() {} }, runnerTrialEvents: events }), /needs its turn authorization/u);
 });
 
 // ---- The stream --------------------------------------------------------------------------------------------------------------
@@ -456,7 +460,7 @@ test("the page's New conversation reaches the trial only as exactly true", async
 test("a failure streams one error line with a safe message, as the JSON path answers it", async (t) => {
   const config = trialConfig();
   const events = createRunnerEventHub();
-  const failingController = { async run() { throw Object.assign(new Error("Synthetic private detail that must not show."), { code: "PRIVATE_CASE_ACCESS_DENIED" }); } };
+  const failingController = { async authorizeTurn() {}, async run() { throw Object.assign(new Error("Synthetic private detail that must not show."), { code: "PRIVATE_CASE_ACCESS_DENIED" }); } };
   const base = await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateTherapyController: failingController, runnerTrialEvents: events }));
   const streamed = await respond(base, { exchangeId: "exchange-error", userMessage: "Synthetic message." });
   assert.equal(streamed.status, 200);
@@ -510,6 +514,97 @@ test("events are keyed by case and turn: another case's stream with the same tur
   const streamed = await respond(base, { exchangeId: "exchange-shared", userMessage: "I took all my pills an hour ago." });
   assert.ok(streamed.lines.some((line) => line.type === "provisional"), "this case's stream got it");
   assert.deepEqual(other, [], "the other case's listener got nothing");
+});
+
+// The trial over the access service, as serve.mjs builds it: every request is authorized for its case by a bearer token, the
+// owner's page by the server's own (privateAuthContext), an agent by the one it sends. The synthetic owner token holds the case's
+// read, write and audit scopes; any other token holds nothing.
+const OWNER_TOKEN = "synthetic-owner-token";
+const accessKeys = () => ({ routineKek: Buffer.alloc(32, 95), recoverySecretBytes: Buffer.alloc(32, 96) });
+
+async function accessTrialServer(t, script) {
+  const rootDir = await tempDir(t, "runner-access");
+  const access = createPrivateCaseAccessService({
+    rootDir,
+    allowDevelopmentFileProvider: true,
+    authorizationProvider: {
+      async authorize({ authContext }) {
+        return authContext?.bearerToken === OWNER_TOKEN
+          ? { allowed: true, principalId: "synthetic-owner", scopes: [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE, PRIVATE_CASE_SCOPES.AUDIT], purposes: [] }
+          : { allowed: false };
+      }
+    },
+    keyProvider: { async getCaseKeyMaterial() { return { ...accessKeys(), accessAssurance: "development_external_file", provider: "development-file-provider" }; } }
+  });
+  const config = trialConfig();
+  const workers = fakeWorkers(script);
+  const trial = createRunnerTrialController({ privateCaseSource: access, config, settings: validateRunnerTrialSettings({}), parts, workerFor: workers.workerFor });
+  const base = await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseAccessService: access, privateAuthContext: { bearerToken: OWNER_TOKEN }, privateTherapyController: trial.controller, runnerTrialEvents: trial.events }));
+  // The same vault opened directly, to look at what the turns stored.
+  const store = createEncryptedPrivateCaseStore({ rootDir, ...accessKeys(), developmentExternalCredentialAuthorized: true });
+  return { base, store, trial, calls: workers.calls };
+}
+
+// A streamed turn as the owner's page asks for it (no token of its own), or as an agent with its own token.
+async function respondWith(base, token, body) {
+  const headers = { "content-type": "application/json", accept: "application/x-ndjson", ...(token ? { authorization: `Bearer ${token}` } : {}) };
+  const response = await fetch(`${base}/v1/therapy/respond`, { method: "POST", headers, body: JSON.stringify({ caseId: CASE_ID, ...body }) });
+  return { status: response.status, type: response.headers.get("content-type") ?? "", text: await response.text() };
+}
+const streamLines = (answer) => answer.text.trim().split("\n").map((line) => JSON.parse(line));
+
+test("a request the turn would refuse hears nothing of another request's turn: the stream authorizes it for its case before it listens", async (t) => {
+  let readerReached;
+  const reached = new Promise((resolve) => { readerReached = resolve; });
+  let releaseReader;
+  const readerHeld = new Promise((resolve) => { releaseReader = resolve; });
+  const { base, store, trial, calls } = await accessTrialServer(t, baseScript({
+    R1: async () => {
+      readerReached();
+      await readerHeld;
+      return { ...quietReader(), level: "acted_or_about_to", reason: "says they took pills", provisional_reply: PROVISIONAL };
+    },
+    W: () => ({ reply: "Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] }),
+    C1: () => ({ findings: [], level: "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] })
+  }));
+  await store.loadOrCreate(CASE_ID);
+  // Both ask for the same case and the same turn id; only the owner's page may use the case.
+  const body = { exchangeId: "exchange-shared-turn", userMessage: "I took all my pills an hour ago." };
+  const owner = respondWith(base, null, body);
+  let other = null;
+  try {
+    await Promise.race([reached, owner.then(() => { throw new Error("the owner's turn ended before its crisis reader"); })]);
+    let otherAnswered = false;
+    other = respondWith(base, "synthetic-other-token", body).finally(() => { otherAnswered = true; });
+    // Until the other request has its answer, or (were it let listen first) it listens on the owner's turn too.
+    for (let waited = 0; waited < 400 && !otherAnswered && trial.events.listenerCount(CASE_ID, "runtime:exchange-shared-turn") < 2; waited += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  } finally {
+    releaseReader();
+  }
+  const [ownerAnswer, otherAnswer] = await Promise.all([owner, other]);
+  const ownerLines = streamLines(ownerAnswer);
+  assert.deepEqual(ownerLines.find((line) => line.type === "provisional"), { type: "provisional", text: PROVISIONAL }, "the owner's stream has its provisional reply");
+  assert.equal(ownerLines.at(-1).type, "final");
+  assert.equal(otherAnswer.status, 403, "the other request is refused before it listens");
+  assert.match(otherAnswer.type, /^application\/json/u, "its answer is the refusal, not a stream");
+  assert.deepEqual(JSON.parse(otherAnswer.text), { error: "InnerSignal could not safely complete this request.", code: "PRIVATE_CASE_ACCESS_DENIED" });
+  assert.equal(otherAnswer.text.includes(PROVISIONAL), false, "no line of the owner's turn");
+  assert.equal(calls.filter((call) => call.role === "R1").length, 1, "the refused request ran no turn");
+  assert.equal(trial.events.listenerCount(CASE_ID, "runtime:exchange-shared-turn"), 0);
+});
+
+test("over the access service a new case's first message is answered, and so is the first after Delete this case", async (t) => {
+  const { base, store } = await accessTrialServer(t, baseScript());
+  const first = await respondWith(base, null, { exchangeId: "exchange-new-1", userMessage: "Something synthetic." });
+  assert.deepEqual([first.status, streamLines(first).at(-1).type, streamLines(first).at(-1).answer], [200, "final", "A synthetic reply."]);
+  const deleted = await ownerPost(base, "/v1/case/delete", { caseId: CASE_ID, confirmation: "DELETE" });
+  assert.equal(deleted.status, 200);
+  assert.equal(await store.load(CASE_ID), null);
+  const next = await respondWith(base, null, { exchangeId: "exchange-new-2", userMessage: "Something new and synthetic." });
+  assert.equal(streamLines(next).at(-1).answer, "A synthetic reply.", "an empty case under the same id");
+  assert.equal((await store.load(CASE_ID)).runtime_turns.length, 1);
 });
 
 test("only the four event kinds reach the page, each with its own fields", () => {
@@ -608,6 +703,72 @@ test("the page's reconcile delivers an approved turn a failure left undelivered,
   }
 });
 
+// The page's own reconcile (reconcileRunnerCase and the runner-trial block), run on its own against a real server, as a page on
+// that server would: the browser adds the page's Origin to every POST.
+async function reconcilingPage(base, initialState) {
+  const { app } = await pageSource();
+  const block = app.slice(app.indexOf("// runner-trial-page:start"), app.indexOf("// runner-trial-page:end"));
+  const start = app.indexOf("async function reconcileRunnerCase()");
+  const end = app.indexOf("// One trial turn on the page", start);
+  assert.ok(start > 0 && end > start, "the page has its reconcile");
+  const state = structuredClone(initialState);
+  const requests = [];
+  const progress = { hidden: true, textContent: "" };
+  const context = vm.createContext({
+    TextDecoder,
+    state,
+    RUNNER_RECONCILE_LABEL: "Looking for a reply that finished while this page was closed…",
+    $: (selector) => { assert.equal(selector, "#runner-progress"); return progress; },
+    fetch: (url, init) => {
+      requests.push(JSON.parse(init.body));
+      return fetch(`${base}${url}`, { ...init, headers: { ...init.headers, origin: base } });
+    },
+    saveState: () => {},
+    renderTherapy: () => {}
+  });
+  const reconcileRunnerCase = vm.runInContext(`${block}\n${app.slice(start, end)}\n;reconcileRunnerCase`, context);
+  return { state, requests, reconcileRunnerCase };
+}
+
+test("a reloaded page shows the current conversation again, every turn with its provisional reply and emergency line; a page that still shows its turns gets only newer ones", async (t) => {
+  const acted = (provisional) => ({ ...quietReader(), level: "acted_or_about_to", reason: "says they took something", provisional_reply: provisional });
+  const { base } = await trialServer(t, baseScript({
+    // The new conversation's first message shows a provisional reply; its second's fails its checks, so the emergency line shows.
+    R1: (count) => (count === 2 ? acted(PROVISIONAL) : count === 3 ? acted("Please get help now, call 0800 555 0100.") : quietReader()),
+    W: (count) => ({ reply: `A synthetic reply ${count}.`, answered_level: "none", quotes: [] })
+  }));
+  await respond(base, { exchangeId: "exchange-earlier", userMessage: "A synthetic message of an earlier conversation." });
+  const exchanges = Array.from({ length: 11 }, (_, index) => `exchange-now-${index + 1}`);
+  for (const [index, exchangeId] of exchanges.entries()) {
+    const answer = await respond(base, { exchangeId, userMessage: `Synthetic message ${index + 1}.`, ...(index === 0 ? { newConversation: true } : {}) });
+    assert.equal(answer.lines.at(-1).type, "final", exchangeId);
+  }
+
+  // The server: every turn of the current conversation (more than the ten a cursor gets), none of the earlier one.
+  const current = await ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID, conversation: "current" });
+  assert.deepEqual(current.json.turns.map((turn) => turn.exchangeId), exchanges);
+  assert.deepEqual([current.json.turns[0].provisional, current.json.turns[1].provisional, current.json.turns[1].emergencyLineShown], [PROVISIONAL, null, true]);
+
+  // The page after a reload: no transcript, and the cursor still at the last turn it showed.
+  const page = await reconcilingPage(base, { caseId: CASE_ID, therapy: [], runnerShownThrough: exchanges.at(-1) });
+  await page.reconcileRunnerCase();
+  assert.deepEqual(page.requests, [{ caseId: CASE_ID, conversation: "current" }], "a page that shows none of its turns asks for the current conversation");
+  const shown = JSON.parse(JSON.stringify(page.state.therapy));
+  assert.deepEqual([...new Set(shown.map((entry) => entry.exchangeId))], exchanges, "the whole current conversation is shown again, in order");
+  assert.deepEqual(shown.filter((entry) => entry.role === "user").map((entry) => entry.content), exchanges.map((_, index) => `Synthetic message ${index + 1}.`));
+  assert.deepEqual(shown.filter((entry) => entry.kind === "provisional").map((entry) => [entry.exchangeId, entry.content]), [[exchanges[0], PROVISIONAL_PREFIX + PROVISIONAL]]);
+  assert.deepEqual(shown.filter((entry) => entry.kind === "emergency_line").map((entry) => [entry.exchangeId, entry.content]), [[exchanges[1], EMERGENCY_LINE]]);
+  assert.equal(shown.filter((entry) => entry.role === "assistant" && entry.kind !== "provisional").length, 11, "every reply");
+  assert.equal(page.state.runnerShownThrough, exchanges.at(-1));
+
+  // The page now shows its turns, so it asks only for what came after the last one, and nothing is shown twice.
+  await page.reconcileRunnerCase();
+  assert.deepEqual(page.requests[1], { caseId: CASE_ID, afterExchangeId: exchanges.at(-1) });
+  assert.equal(page.state.therapy.length, shown.length);
+  const { runnerReconcileRequest } = await pageBlock();
+  assert.deepEqual(JSON.parse(JSON.stringify(runnerReconcileRequest(CASE_ID, [{ exchangeId: "exchange-x" }], "exchange-y"))), { caseId: CASE_ID, conversation: "current" }, "a cursor the page doesn't show isn't used");
+});
+
 test("Delete this case removes the case through the route, and the next message starts an empty case", async (t) => {
   const { base, store } = await trialServer(t, baseScript());
   await respond(base, { exchangeId: "exchange-d1", userMessage: "Something synthetic." });
@@ -635,7 +796,7 @@ async function pageBlock() {
   const end = app.indexOf("// runner-trial-page:end");
   assert.ok(start > 0 && end > start, "the page marks its runner-trial block");
   const block = app.slice(start, end);
-  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, runnerClosingReason, runnerProgressText })`, { TextDecoder });
+  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, runnerClosingReason, runnerProgressText, runnerReconcileRequest, forgetDeletedCase, PAGE_STATE_KEPT_AFTER_DELETION })`, { TextDecoder });
   return { block, ...exports };
 }
 
@@ -736,4 +897,116 @@ test("the page's trial parts are hidden until /health says on, send for the stre
   const trialCode = app.slice(app.indexOf("// ---- Runner trial"), app.indexOf("function loadState()"));
   assert.ok(trialCode.length > 1_000);
   assert.equal(/innerHTML|outerHTML|insertAdjacentHTML/u.test(trialCode), false, "text goes in with textContent");
+});
+
+test("after Delete this case the page holds nothing of the case: not in its state (so not in its backup export), not on screen, not in its forms", async (t) => {
+  const { html, app } = await pageSource();
+  const dom = new JSDOM(html, { url: "http://127.0.0.1/" });
+  t.after(() => dom.window.close());
+  const { document } = dom.window;
+  const SECRET = "synthetic-private";
+  const state = {
+    therapy: [
+      { id: "exchange-1-user", exchangeId: "exchange-1", role: "user", content: `${SECRET} message` },
+      { id: "exchange-1-assistant", exchangeId: "exchange-1", role: "assistant", content: `${SECRET} reply`, feedback: { rating: "good", note: `${SECRET} feedback` } }
+    ],
+    hypnosisHistory: [{ target: `${SECRET} target`, selectedRouteText: `${SECRET} session` }],
+    settings: { synthetic: "kept" },
+    caseId: "case-synthetic-deleted",
+    runnerShownThrough: "exchange-1",
+    caseSnapshot: { note: `${SECRET} snapshot` },
+    interventionContract: { note: `${SECRET} contract` },
+    priorProcessingTier: "deep",
+    durableCaseState: { note: `${SECRET} state` },
+    caseStateView: { note: `${SECRET} view` },
+    lastStateDiff: { note: `${SECRET} diff` },
+    trackerEntries: [{ id: "tracker-1", stressors_events: [`${SECRET} tracker`] }],
+    journalEntries: [{ id: "journal-1", text: `${SECRET} journal` }],
+    lastHandoffId: "handoff:00000000-0000-4000-8000-0000000000d1",
+    handoffStatus: { handoff_id: "handoff:00000000-0000-4000-8000-0000000000d1", note: `${SECRET} handoff` },
+    privateStorageMode: "encrypted",
+    legacyPrivateDataDetected: false,
+    // A field a later change adds is the case's too.
+    laterField: { note: `${SECRET} later field` }
+  };
+  // What the page shows of the case and what its forms hold.
+  document.querySelector("#hypnosis-result").hidden = false;
+  document.querySelector("#hypnosis-gate").hidden = false;
+  document.querySelector("#hypnosis-route").hidden = false;
+  for (const id of ["#hypnosis-pre-gate", "#gate-title", "#gate-intro", "#gate-note", "#hypnosis-route"]) document.querySelector(id).textContent = `${SECRET} ${id}`;
+  const routeButton = document.createElement("button");
+  routeButton.textContent = `${SECRET} route label`;
+  document.querySelector("#gate-actions").append(routeButton);
+  for (const id of ["#therapy-message", "#journal-text", "#tracker-note", "#hypnosis-context", "#supervisor-input-text", "#supervisor-draft-text", "#supervisor-companion-text"]) document.querySelector(id).value = `${SECRET} ${id}`;
+  // The real supervisor panel, showing the case.
+  const { initSupervisorPanel } = await import("../apps/web/supervisor-panel.js");
+  const snapshot = {
+    basis: { sha256: "a".repeat(64) },
+    latest_client_turn: { text: `${SECRET} client message` },
+    owner_supplied_inputs: [{ input_type: "client_message", text: `${SECRET} relayed input`, supplied_by: { actor_resolution: "owner_verified" } }],
+    artifacts: []
+  };
+  const supervisorPanel = initSupervisorPanel({ document, getCaseId: () => state.caseId, fetchImpl: async () => new Response(JSON.stringify(snapshot), { status: 200 }), newKey: () => "synthetic-key" });
+  await supervisorPanel.refresh();
+  assert.ok(document.body.textContent.includes(`${SECRET} client message`), "the panel showed the case");
+
+  // The page's deletion, as the page runs it, with the server answering that the case was deleted.
+  const block = app.slice(app.indexOf("// runner-trial-page:start"), app.indexOf("// runner-trial-page:end"));
+  const emptyStart = app.indexOf("function emptyPageState()");
+  const emptyEnd = app.indexOf("function loadState()", emptyStart);
+  const start = app.indexOf("function clearDeletedCase()");
+  const end = app.indexOf('$("#clear-therapy").addEventListener', start);
+  assert.ok(emptyStart > 0 && emptyEnd > emptyStart && start > 0 && end > start, "the page has its empty state and its deletion");
+  let handler = null;
+  const calls = [];
+  const spy = (name) => () => { calls.push({ name, state: JSON.stringify(state) }); };
+  const context = vm.createContext({
+    TextDecoder,
+    crypto: globalThis.crypto,
+    state,
+    runnerTrial: { on: true, newConversation: true },
+    currentPlan: { target: `${SECRET} plan` },
+    selectedRouteText: `${SECRET} selected route`,
+    speechPlayback: { stop: spy("speechPlayback.stop") },
+    supervisorPanel,
+    $: (selector) => (selector === "#runner-delete-case" ? { addEventListener: (_type, listener) => { handler = listener; } } : document.querySelector(selector)),
+    prompt: () => "DELETE",
+    setBusy: () => {},
+    fetch: async () => ({ ok: true, json: async () => ({ caseId: state.caseId, deleted: true, handoffsKept: 0 }) }),
+    alert: spy("alert"),
+    syncRunnerNewConversation: spy("syncRunnerNewConversation"),
+    syncSpeechPlaybackControls: spy("syncSpeechPlaybackControls"),
+    saveState: spy("saveState"),
+    renderTherapy: spy("renderTherapy"),
+    renderCaseState: spy("renderCaseState"),
+    renderHandoffStatus: spy("renderHandoffStatus")
+  });
+  vm.runInContext(`${block}\n${app.slice(emptyStart, emptyEnd)}\n${app.slice(start, end)}`, context);
+  assert.equal(typeof handler, "function");
+  await handler();
+
+  // The state: nothing of the case, so the backup export (the whole state) and the recovery ZIP hold none of it.
+  const backup = JSON.stringify({ format: "inner-signal-backup-v1", exportedAt: "2026-11-21T00:00:00.000Z", state });
+  assert.equal(backup.includes(SECRET), false, backup);
+  assert.equal(backup.includes("exchange-1"), false);
+  assert.equal(backup.includes("handoff:"), false);
+  const empty = vm.runInContext("emptyPageState()", context);
+  assert.deepEqual(Object.keys(state).sort(), Object.keys(empty).sort(), "every field the page uses, and no other");
+  assert.deepEqual(JSON.parse(JSON.stringify(state.therapy)).map((entry) => [entry.kind, entry.content]), [["divider", "This case was deleted"]]);
+  assert.deepEqual([state.caseId, JSON.stringify(state.settings), state.privateStorageMode], ["case-synthetic-deleted", JSON.stringify({ synthetic: "kept" }), "encrypted"], "the case id, the settings and the storage mode stay");
+  assert.deepEqual([state.trackerEntries.length, state.journalEntries.length, state.hypnosisHistory.length, state.runnerShownThrough, state.lastHandoffId], [0, 0, 0, null, null]);
+  // The page's own variables, its screen and its forms.
+  assert.deepEqual([context.currentPlan, context.selectedRouteText, context.runnerTrial.newConversation], [null, "", false]);
+  assert.equal(document.body.textContent.includes(SECRET), false, "nothing of the case on screen");
+  const typed = [...document.querySelectorAll("input, textarea")].filter((field) => field.value.includes(SECRET)).map((field) => field.id);
+  assert.deepEqual(typed, [], "nothing of the case in a form");
+  assert.equal(document.querySelector("#supervisor-client-message").textContent, "Not loaded.");
+  assert.deepEqual(["#hypnosis-result", "#hypnosis-gate", "#hypnosis-route"].map((id) => document.querySelector(id).hidden), [true, true, true]);
+  // The transcript, the case views and the handoff status are drawn again from that state, and it is saved.
+  for (const name of ["saveState", "renderTherapy", "renderCaseState", "renderHandoffStatus", "speechPlayback.stop"]) {
+    const call = calls.find((entry) => entry.name === name);
+    assert.ok(call, `${name} ran`);
+    assert.equal(call.state.includes(SECRET), false, `${name} ran on the cleared state`);
+  }
+  assert.equal(calls.some((entry) => entry.name === "alert"), false);
 });

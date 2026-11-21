@@ -121,6 +121,27 @@ function runnerProgressText(step, startedAt, now = Date.now()) {
   const seconds = Math.max(0, Math.floor((now - startedAt) / 1000));
   return `${RUNNER_PROGRESS_LABEL} ${typeof step === "string" && step ? `${step} · ` : ""}${seconds} s`;
 }
+
+// What the page asks the server for when it loads (design, section 8). The page keeps no transcript across a reload, only the
+// exchange of the last turn it showed: that cursor is used only while the page still shows that turn, and the server then sends
+// the turns after it. A page that doesn't show it (a reload) asks for the whole current conversation, with what each turn showed.
+function runnerReconcileRequest(caseId, therapy, shownThrough) {
+  const showsEarlierTurns = typeof shownThrough === "string" && Array.isArray(therapy) && therapy.some((entry) => entry?.exchangeId === shownThrough);
+  return showsEarlierTurns ? { caseId, afterExchangeId: shownThrough } : { caseId, conversation: "current" };
+}
+
+// The fields of the page's state that aren't the case's: what the person set, the case id (the next message starts an empty case
+// under it), how the server stores cases and whether this browser holds data of older versions. Every other field is the case's,
+// a field added later included.
+const PAGE_STATE_KEPT_AFTER_DELETION = Object.freeze(["settings", "caseId", "privateStorageMode", "legacyPrivateDataDetected"]);
+
+// After "Delete this case" succeeded: the state keeps only what isn't the case's, and every other field takes its empty value
+// (`empty` is the state of a page that never held a case), so the backup export and the recovery ZIP hold nothing of the case.
+function forgetDeletedCase(pageState, empty) {
+  const kept = Object.fromEntries(PAGE_STATE_KEPT_AFTER_DELETION.filter((key) => Object.hasOwn(pageState, key)).map((key) => [key, pageState[key]]));
+  for (const key of Object.keys(pageState)) delete pageState[key];
+  return Object.assign(pageState, empty, kept);
+}
 // runner-trial-page:end
 
 const runnerTrial = { on: false, newConversation: false };
@@ -156,13 +177,15 @@ async function reconcileRunnerCase() {
     const response = await fetch("/v1/runner/reconcile", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ caseId: state.caseId, afterExchangeId: state.runnerShownThrough })
+      body: JSON.stringify(runnerReconcileRequest(state.caseId, state.therapy, state.runnerShownThrough))
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok || !Array.isArray(payload?.turns)) return;
     for (const turn of payload.turns) {
-      state.therapy.push(...runnerReplayEntries(turn));
-      if (typeof turn?.exchangeId === "string") state.runnerShownThrough = turn.exchangeId;
+      if (typeof turn?.exchangeId !== "string") continue;
+      // A turn the page shows already isn't shown twice.
+      if (!state.therapy.some((entry) => entry.exchangeId === turn.exchangeId)) state.therapy.push(...runnerReplayEntries(turn));
+      state.runnerShownThrough = turn.exchangeId;
     }
     if (payload.turns.length) {
       saveState();
@@ -241,31 +264,44 @@ function runnerLine(className, words) {
   return line;
 }
 
+// The state of a page that holds no case: what a first visit starts from, and every field's value once "Delete this case" ran.
+function emptyPageState() {
+  return {
+    therapy: [],
+    hypnosisHistory: [],
+    settings: {},
+    caseId: `case-${crypto.randomUUID()}`,
+    // The runner trial: the exchange of the last turn this page showed, so a page that still shows it gets back only what
+    // finished after it.
+    runnerShownThrough: null,
+    caseSnapshot: null,
+    interventionContract: null,
+    priorProcessingTier: "",
+    durableCaseState: null,
+    caseStateView: null,
+    lastStateDiff: null,
+    trackerEntries: [],
+    journalEntries: [],
+    lastHandoffId: null,
+    handoffStatus: null,
+    privateStorageMode: "unknown",
+    legacyPrivateDataDetected: false
+  };
+}
+
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const empty = emptyPageState();
     return {
-      therapy: [],
-      hypnosisHistory: [],
+      ...empty,
       settings: parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {},
-      caseId: typeof parsed.caseId === "string" ? parsed.caseId : `case-${crypto.randomUUID()}`,
-      // The runner trial: the exchange of the last turn this page showed, so a reload gets back only what finished after it.
+      caseId: typeof parsed.caseId === "string" ? parsed.caseId : empty.caseId,
       runnerShownThrough: typeof parsed.runnerShownThrough === "string" ? parsed.runnerShownThrough : null,
-      caseSnapshot: null,
-      interventionContract: null,
-      priorProcessingTier: "",
-      durableCaseState: null,
-      caseStateView: null,
-      lastStateDiff: null,
-      trackerEntries: [],
-      journalEntries: [],
-      lastHandoffId: null,
-      handoffStatus: null,
-      privateStorageMode: "unknown",
       legacyPrivateDataDetected: LEGACY_STORAGE_KEYS.some((key) => localStorage.getItem(key))
     };
   } catch {
-    return { therapy: [], hypnosisHistory: [], settings: {}, caseId: `case-${crypto.randomUUID()}`, runnerShownThrough: null, caseSnapshot: null, interventionContract: null, priorProcessingTier: "", durableCaseState: null, caseStateView: null, lastStateDiff: null, trackerEntries: [], journalEntries: [], lastHandoffId: null, handoffStatus: null, privateStorageMode: "unknown", legacyPrivateDataDetected: false };
+    return emptyPageState();
   }
 }
 
@@ -924,7 +960,7 @@ async function checkHealth() {
 }
 
 for (const button of $$(".tab")) button.addEventListener("click", () => activateTab(button.dataset.tab));
-initSupervisorPanel({ getCaseId: () => state.caseId });
+const supervisorPanel = initSupervisorPanel({ getCaseId: () => state.caseId });
 
 $("#therapy-form").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -1012,9 +1048,35 @@ $("#runner-new-conversation").addEventListener("click", () => {
   syncRunnerNewConversation();
 });
 
+// After "Delete this case" succeeded (design, section 6), nothing of the case stays in the page: its state forgets every field
+// that is the case's (the transcript, the tracker and journal entries, the hypnosis sessions, the case views, the handoff and any
+// field added later), so the backup export and the recovery ZIP hold none of it; what the page shows of it is emptied (the
+// hypnosis session on screen, the supervisor panel's text), and so are the forms with text typed for it. The settings and the case
+// id stay, so the next message starts an empty case.
+function clearDeletedCase() {
+  forgetDeletedCase(state, emptyPageState());
+  state.therapy.push({ role: "notice", kind: "divider", content: "This case was deleted", at: new Date().toISOString() });
+  speechPlayback.stop();
+  currentPlan = null;
+  selectedRouteText = "";
+  for (const id of ["#hypnosis-pre-gate", "#gate-title", "#gate-intro", "#gate-note", "#hypnosis-route"]) $(id).textContent = "";
+  $("#gate-actions").replaceChildren();
+  for (const id of ["#hypnosis-result", "#hypnosis-gate", "#hypnosis-route"]) $(id).hidden = true;
+  $("#therapy-message").value = "";
+  for (const id of ["#hypnosis-form", "#tracker-form", "#journal-form"]) $(id)?.reset();
+  supervisorPanel?.clear();
+  runnerTrial.newConversation = false;
+  syncRunnerNewConversation();
+  syncSpeechPlaybackControls();
+  saveState();
+  renderTherapy();
+  renderCaseState();
+  renderHandoffStatus();
+}
+
 // The runner trial's "Delete this case" (design, section 6): once the person types DELETE, the server removes this case from this
-// computer (its conversations, risk record and handoffs, and the files that name it). The page keeps its case id, so the next
-// message starts an empty case.
+// computer (its conversations, risk record and handoffs, and the files that name it), and then the page forgets it too. The page
+// keeps its case id, so the next message starts an empty case.
 $("#runner-delete-case").addEventListener("click", async () => {
   if (!runnerTrial.on) return;
   const typed = prompt("This deletes this case from this computer: every conversation, its risk record and its handoffs. It can't be undone. Type DELETE to delete it.");
@@ -1029,20 +1091,7 @@ $("#runner-delete-case").addEventListener("click", async () => {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
-    state.therapy = [{ role: "notice", kind: "divider", content: "This case was deleted", at: new Date().toISOString() }];
-    state.caseSnapshot = null;
-    state.interventionContract = null;
-    state.priorProcessingTier = "";
-    state.durableCaseState = null;
-    state.caseStateView = null;
-    state.lastStateDiff = null;
-    state.lastHandoffId = null;
-    state.handoffStatus = null;
-    state.runnerShownThrough = null;
-    saveState();
-    renderTherapy();
-    renderCaseState();
-    renderHandoffStatus();
+    clearDeletedCase();
     if (payload.handoffsKept) alert(`${payload.handoffsKept} handoff file(s) couldn't be confirmed as this case's and were kept.`);
   } catch (error) {
     alert(`The case was not deleted: ${error.message}`);

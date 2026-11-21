@@ -4,12 +4,15 @@ import { createCandidateAuditEvidence, REPAIR_INDUCED_ERROR_CHECKS } from "./pri
 import { isFinishedRuntimeTurn, privateRuntimeNextAction } from "./private-runtime-turn-lifecycle.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { OWNER_FALLBACK_KIND } from "./owner-fallback-message.mjs";
+import { PRIVATE_CASE_SCOPES } from "../storage/private-case-access.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
 
-// The most finished turns the runner trial page's reconcile returns at once (when the page shows none of the case's turns yet).
+// The most finished turns the runner trial page's reconcile returns at once: after the page's last one, or when it names none.
 const RECONCILE_TURN_LIMIT = 10;
+// What a runner trial turn does with its case: it reads the case, writes the turn and records the turn's audit.
+const RUNNER_TURN_SCOPES = Object.freeze([PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE, PRIVATE_CASE_SCOPES.AUDIT]);
 
 function requiredFunction(value, name) {
   if (typeof value !== "function") throw new ValidationError(`${name} must be a function.`);
@@ -76,7 +79,7 @@ export function createPrivateTherapyTurnController({
   // The runner trial's runtime (src/runner-trial/runtime.mjs) closes a turn it can't answer instead of producing a discriminator,
   // and says whether a repair still fits in the turn's time; every other runtime leaves this path exactly as it was.
   const closesTurns = typeof modelRuntime.closeTurn === "function";
-  if (closesTurns) for (const method of ["repairFits", "closingReason", "closeUnfinishedTurns"]) requiredFunction(modelRuntime[method], `modelRuntime.${method}`);
+  if (closesTurns) for (const method of ["repairFits", "closingReason", "closeUnfinishedTurns", "currentConversationTurnIds"]) requiredFunction(modelRuntime[method], `modelRuntime.${method}`);
   if (journalEvidenceProvider != null) requiredFunction(journalEvidenceProvider.freezeForTurn, "journalEvidenceProvider.freezeForTurn");
   if (!Number.isSafeInteger(maximumInvocationAttempts) || maximumInvocationAttempts < 1 || maximumInvocationAttempts > 3) {
     throw new ValidationError("maximumInvocationAttempts must be from one to three.");
@@ -113,12 +116,22 @@ export function createPrivateTherapyTurnController({
     }
   }
 
+  // The check a runner trial turn of this case needs, made before anything of a turn is shared: the case's read, write and audit
+  // scopes, from a source that authorizes each request for its case (the access service); a source without that (the owner's own
+  // store opened by this server) has nothing to check. The turn makes it first, and the page's stream makes the same check before
+  // it listens for the case's events, so a request the turn would refuse hears nothing of another request's turn.
+  async function authorizeTurn({ caseId, authContext }) {
+    if (typeof privateCaseSource.authorizeCase !== "function") return;
+    for (const scope of RUNNER_TURN_SCOPES) await privateCaseSource.authorizeCase(caseId, authContext, scope);
+  }
+
   // The runner trial page's recovery when it loads (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 8). The store
   // can't list cases, so a restart can't find unfinished turns by itself: the page names its case. Inside the case's queue, so a
   // turn still running in this server is waited for, never closed under it. Every unfinished turn is closed as interrupted, except
-  // an APPROVED one, which is delivered; then the finished turns after the last one the page shows come back, so a reply that
-  // finished while the page was gone is shown (at most RECONCILE_TURN_LIMIT, the latest, when the page shows none of them).
-  async function reconcileCase({ caseId, afterExchangeId, authContext }) {
+  // an APPROVED one, which is delivered. Then a page that still shows its earlier turns gets the finished turns after the last one
+  // it shows, so a reply that finished while the page was gone is shown (at most RECONCILE_TURN_LIMIT, the latest); a page that
+  // shows none of them (a reload: the page keeps no transcript) gets every turn of the current conversation instead.
+  async function reconcileCase({ caseId, afterExchangeId, currentConversation = false, authContext }) {
     let record = await loadExistingCase(caseId, authContext);
     if (!record) return [];
     if (record.runtime_turns.some((turn) => !isFinishedRuntimeTurn(turn))) {
@@ -126,8 +139,15 @@ export function createPrivateTherapyTurnController({
       record = await loadCase(caseId, authContext);
     }
     const finished = record.runtime_turns.filter(isFinishedRuntimeTurn);
-    const shownAt = afterExchangeId == null ? -1 : finished.findIndex((turn) => turn.exchange_id === afterExchangeId);
-    return finished.slice(shownAt + 1).slice(-RECONCILE_TURN_LIMIT).map((turn) => Object.freeze({
+    let turns;
+    if (currentConversation) {
+      const conversation = new Set(modelRuntime.currentConversationTurnIds(record));
+      turns = finished.filter((turn) => conversation.has(turn.id));
+    } else {
+      const shownAt = afterExchangeId == null ? -1 : finished.findIndex((turn) => turn.exchange_id === afterExchangeId);
+      turns = finished.slice(shownAt + 1).slice(-RECONCILE_TURN_LIMIT);
+    }
+    return turns.map((turn) => Object.freeze({
       exchangeId: turn.exchange_id,
       userMessage: turn.inbound.exact_text,
       answer: turn.delivery?.exact_text ?? turn.closure?.exact_text ?? null,
@@ -240,9 +260,13 @@ export function createPrivateTherapyTurnController({
     if (userInput && Object.hasOwn(userInput, "pendingReplyRevision")) {
       throw new ValidationError("Supervisor reply revision cannot be submitted to the private therapy response endpoint.");
     }
-    // Inside the per-case queue (run below): a turn of this case that a restart or a failure left unfinished is closed first, so the
+    // Inside the per-case queue (run below): on the runner trial's path the request is authorized for every scope the turn uses
+    // before the turn does anything, then a turn of this case that a restart or a failure left unfinished is closed first, so the
     // new message isn't refused as busy. Only the runner trial's runtime does this.
-    if (closesTurns) await modelRuntime.closeUnfinishedTurns({ caseId, keepRuntimeTurnId: runtimeTurnId, authContext });
+    if (closesTurns) {
+      await authorizeTurn({ caseId, authContext });
+      await modelRuntime.closeUnfinishedTurns({ caseId, keepRuntimeTurnId: runtimeTurnId, authContext });
+    }
     await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage }], authContext);
     const operationKey = sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24);
 
@@ -462,10 +486,12 @@ export function createPrivateTherapyTurnController({
     async run(input) {
       return queued(input?.caseId, () => executeRun(input));
     },
-    // Only the runner trial's controller offers these (its page's reconcile and "Delete this case"); both wait for the case's queue.
+    // Only the runner trial's controller offers these: the turn's authorization, for the page's stream before it listens (it needs
+    // no queue: it reads nothing of the case); its page's reconcile and "Delete this case", which wait for the case's queue.
     ...(closesTurns ? {
-      async reconcile({ caseId, afterExchangeId = null, authContext } = {}) {
-        return queued(caseId, () => reconcileCase({ caseId, afterExchangeId, authContext }));
+      authorizeTurn,
+      async reconcile({ caseId, afterExchangeId = null, currentConversation = false, authContext } = {}) {
+        return queued(caseId, () => reconcileCase({ caseId, afterExchangeId, currentConversation: currentConversation === true, authContext }));
       },
       async deleteCase({ caseId, authContext } = {}) {
         return queued(caseId, () => call("deletePrivateCase", [caseId], authContext));

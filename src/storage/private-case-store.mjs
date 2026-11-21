@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ValidationError } from "../core/errors.mjs";
+import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
 import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
 import { applyRoadmapDecision, projectCasePlan, readCaseRoadmap } from "../case-formulation/case-roadmap.mjs";
@@ -75,7 +75,7 @@ import {
 } from "./private-case-supervisor.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
 import { listPrivateArtifactLocatorsForCase, writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
-import { listPrivateCaseAliasLocatorsForCase } from "./private-case-alias-locator.mjs";
+import { listPrivateCaseAliasLocatorsForCase, writePrivateCaseAliasLocator } from "./private-case-alias-locator.mjs";
 import { privateJournalCorpusDirectory } from "./private-journal-corpus.mjs";
 import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
 import {
@@ -713,7 +713,9 @@ export function createEncryptedPrivateCaseStore({
     return structuredClone(candidate);
   };
   const loadOrCreate = async (caseId) => mutate(safeCaseId(caseId), () => null);
-  const mutate = async (caseId, operation) => coordinator.run(safeCaseId(caseId), async () => {
+  // `afterWrite` writes a file that names the case (a locator) in the same turn of the case's queue as the record, after it: a
+  // deletion queued behind finds the file and removes it, so none can appear after a deletion returned.
+  const mutate = async (caseId, operation, { afterWrite = null } = {}) => coordinator.run(safeCaseId(caseId), async () => {
     const id = safeCaseId(caseId);
     const existing = await readExistingWithEnvelope(id);
     let previous;
@@ -728,11 +730,17 @@ export function createEncryptedPrivateCaseStore({
       currentEnvelope = created.envelope;
     }
     const next = await operation(structuredClone(previous));
-    if (next === null) return structuredClone(previous);
-    next.updated_at = now();
-    next.revision = previous.revision + 1;
-    return write(id, next, previous, currentEnvelope);
+    let result;
+    if (next === null) result = structuredClone(previous);
+    else {
+      next.updated_at = now();
+      next.revision = previous.revision + 1;
+      result = await write(id, next, previous, currentEnvelope);
+    }
+    if (afterWrite) await afterWrite(result);
+    return result;
   });
+  const candidateLocator = (caseId, candidateId) => () => writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
   const readRequired = async (caseId) => {
     const record = await readExisting(safeCaseId(caseId));
     if (!record) throw new ValidationError(`Private case ${caseId} was not found.`, { code: "PRIVATE_CASE_NOT_FOUND" });
@@ -1039,7 +1047,7 @@ export function createEncryptedPrivateCaseStore({
       metadata = {},
       eventId
     }) {
-      const record = await mutate(caseId, (record) => {
+      return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         const existing = record.candidate_responses.find((entry) => entry.id === candidateId);
         if (existing) {
@@ -1134,9 +1142,7 @@ export function createEncryptedPrivateCaseStore({
         });
         Object.assign(runtimeTurn, updatedRuntime);
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
-      return record;
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
     },
     async commitPrivateRuntimeAudit(caseId, runtimeTurnId, evidence, { eventId }) {
       return mutate(caseId, (record) => {
@@ -1561,13 +1567,11 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async saveCandidateResponse(caseId, candidateId, exactText, metadata = {}) {
-      const record = await mutate(caseId, (record) => {
+      return mutate(caseId, (record) => {
         rejectReservedCandidateMetadata(metadata);
         appendOriginalCandidate(record, candidateId, exactText, metadata);
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
-      return record;
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
     },
     async updateCandidateStatus(caseId, candidateId, status, metadataPatch = {}) {
       return mutate(caseId, (record) => {
@@ -1591,13 +1595,11 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata = {}) {
-      const record = await mutate(caseId, (record) => {
+      return mutate(caseId, (record) => {
         rejectReservedCandidateMetadata(metadata);
         appendReconstruction(record, parentCandidateId, candidateId, exactText, metadata);
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
-      return record;
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
     },
     async approveCandidateForDelivery(caseId, candidateId, auditId) {
       return mutate(caseId, (record) => {
@@ -1872,8 +1874,7 @@ export function createEncryptedPrivateCaseStore({
           }));
         }
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
       const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
       return Object.freeze({ case_id: caseId, revision: record.revision, replayed, artifact: supervisorArtifactView(record, candidate) });
     },
@@ -1925,8 +1926,7 @@ export function createEncryptedPrivateCaseStore({
           }
         });
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: childId, caseId });
+      }, { afterWrite: () => candidateLocator(caseId, childId)() });
       return Object.freeze({ case_id: caseId, revision: record.revision, artifact: supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === childId)) });
     },
     // The only function that returns the exact approved client text. It re-checks, inside the same write that records the export,
@@ -2310,83 +2310,11 @@ export function createEncryptedPrivateCaseStore({
         hidden_reasoning_included: false
       });
     },
-    async createHandoff(caseId, {
-      handoffId = createHandoffId(),
-      runtimeVersion = RUNTIME_VERSION,
-      auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION
-    } = {}) {
-      const record = await readRequired(caseId);
-      const transcript = effectiveTranscript(record);
-      const durableContext = buildDurableCaseContext({
-        caseId,
-        caseState: record.case_state,
-        transcriptEntries: transcript,
-        trackerEntries: record.tracker_entries
-      });
-      const recentVerbatim = selectRecentVerbatimWindow(transcript, {
-        currentEpisodeId: record.case_state.current_episode?.id ?? null,
-        currentEpisodeStartTurnId: record.case_state.current_episode?.started_turn_id ?? null,
-        maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
-        requireCompleteEpisode: true
-      });
-      const candidate = selectContinuationCandidate(record, "current_pending");
-      const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
-      const historicalDelivery = candidate == null ? resolveHistoricalDeliveryCheckpoint(record) : null;
-      const context = {
-        case_state: record.case_state,
-        last_state_diff: lastTurnDiff(record),
-        current_episode: record.case_state.current_episode,
-        constitution_ref: durableContext.constitution_ref,
-        candidate_response: candidate,
-        delivery_completion: deliveryCompletion,
-        historical_delivery_completion: historicalDelivery,
-        recent_verbatim: recentVerbatim,
-        source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
-        targeted_older_evidence: durableContext.targeted_older_evidence,
-        journal_continuity: createJournalContinuityProjection(record.journal_corpora, {
-          consumerCapabilitySupported: true
-        })
-      };
-      const continuationSafety = assessContinuationSafety(context);
-      const createdAt = now();
-      const { artifact, packet } = compilePrivateHandoffArtifact({
-        handoffId,
-        record,
-        recentVerbatim,
-        continuationSafety,
-        historicalDelivery,
-        runtimeVersion,
-        auditVersion,
-        createdAt
-      });
-      const file = handoffFileFor(handoffId);
-      if (await fs.access(file).then(() => true).catch((error) => error?.code === "ENOENT" ? false : Promise.reject(error))) {
-        throw new ValidationError(`Private handoff ${handoffId} already exists and is immutable.`);
-      }
-      if (!recoverySecret) throw new ValidationError("Recovery secret is required when creating a private handoff envelope.");
-      const plaintext = Buffer.from(JSON.stringify(artifact), "utf8");
-      try {
-        const envelope = await createVaultEnvelope({ plaintextBytes: plaintext, routineKek: routineKey, recoverySecretBytes: recoverySecret });
-        await fs.mkdir(handoffDirectory, { recursive: true, mode: 0o700 });
-        await fs.chmod(handoffDirectory, 0o700);
-        await durableEncryptedWrite(file, envelope);
-      } finally { plaintext.fill(0); }
-      await writePrivateArtifactLocator({ rootDir, kind: "handoff", artifactId: handoffId, caseId });
-      for (const pending of packet.pending_artifacts) {
-        await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: pending.id, caseId });
-      }
-      const reopened = await readHandoffArtifactWithEnvelope(handoffId, caseId);
-      if (!reopened || reopened.artifact.exact_text !== artifact.exact_text) throw new ValidationError("Private handoff encrypted round-trip verification failed.");
-      return Object.freeze({
-        handoff_id: handoffId,
-        case_id: caseId,
-        candidate_ids: packet.pending_artifacts.map((entry) => entry.id),
-        handoff_status: packet.handoff_status,
-        local_round_trip_verified: true,
-        fresh_session_status: "PENDING_FRESH_SESSION",
-        encrypted_export_available: true,
-        continuation_safety: cloneValue(packet.continuation_safety)
-      });
+    // A handoff of the case, from one reading of its record to the last file written (the envelope, its locator and the
+    // locators of the drafts it carries), in one turn of the case's queue: a deletion either finds all of it and removes it,
+    // or comes first, and then the case is gone and no handoff is made. None can be written after a deletion returned.
+    async createHandoff(caseId, options = {}) {
+      return coordinator.run(safeCaseId(caseId), () => createHandoffInQueue(caseId, options));
     },
     async loadHandoff(caseId, handoffId) {
       const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
@@ -2411,59 +2339,26 @@ export function createEncryptedPrivateCaseStore({
       }
       return body;
     },
+    // Bind an alias to the case. The alias file names the case, so it is written in the case's queue, like every file that does:
+    // a deletion finds it, and none is written for a case after its deletion returned.
+    async bindCaseAlias(caseId, caseAlias) {
+      const id = safeCaseId(caseId);
+      return coordinator.run(id, async () => {
+        ensureOpen();
+        if (!(await readExisting(id))) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        await writePrivateCaseAliasLocator({ rootDir, alias: caseAlias, caseId: id });
+        return Object.freeze({ case_id: id, alias_bound: true });
+      });
+    },
     // Delete one case from this vault (the runner trial page's "Delete this case"; docs/superpowers/specs/2026-11-21-runner-trial-
     // design.md, section 6): its encrypted case file, the handoff envelopes its locators name (each first opened with this case's
     // key and confirmed to be this case's), the folders of the journal corpora its record names, and the locator and alias files
     // that name it. Only paths proven to be this case's are touched: a handoff that can't be opened and confirmed is kept, with
-    // its locator, and reported. Inside the case's mutation queue, so nothing writes the case meanwhile; the caller also holds the
-    // turn controller's queue, so no turn of the case is running. Run again after an interruption, it finishes the job.
+    // its locator, and reported. Inside the case's mutation queue, which every write of the case and of a file naming it takes, so
+    // nothing writes the case or such a file meanwhile; the caller also holds the turn controller's queue, so no turn of the case
+    // is running. Run again after an interruption, it finishes the job.
     async deletePrivateCase(caseId) {
-      const id = safeCaseId(caseId);
-      return coordinator.run(id, async () => {
-        ensureOpen();
-        // A case file that is there but can't be opened with this case's key stops the deletion before anything is removed.
-        const existing = await readExistingWithEnvelope(id);
-        const locators = await listPrivateArtifactLocatorsForCase({ rootDir, caseId: id });
-        const keptHandoffs = [];
-        let handoffsRemoved = 0;
-        for (const locator of locators.filter((entry) => entry.kind === "handoff")) {
-          let opened;
-          try { opened = await readHandoffArtifactWithEnvelope(locator.artifactId, id); }
-          catch { keptHandoffs.push(locator.artifactId); continue; }
-          if (opened && await removeFile(handoffFileFor(locator.artifactId))) handoffsRemoved += 1;
-        }
-        let journalCorporaRemoved = 0;
-        for (const reference of existing?.record.journal_corpora ?? []) {
-          const directory = privateJournalCorpusDirectory({ rootDir, caseId: id, corpusId: reference.corpus_id });
-          const info = await fs.lstat(directory).catch((error) => (error?.code === "ENOENT" ? null : Promise.reject(error)));
-          if (!info?.isDirectory()) continue;
-          await fs.rm(directory, { recursive: true });
-          journalCorporaRemoved += 1;
-        }
-        const caseFileRemoved = await removeFile(fileFor(id));
-        await removeFile(`${fileFor(id)}.tmp`);
-        let locatorFilesRemoved = 0;
-        for (const locator of locators) {
-          if (locator.kind === "handoff" && keptHandoffs.includes(locator.artifactId)) continue;
-          if (await removeFile(locator.file)) locatorFilesRemoved += 1;
-        }
-        let aliasFilesRemoved = 0;
-        for (const alias of await listPrivateCaseAliasLocatorsForCase({ rootDir, caseId: id })) {
-          if (await removeFile(alias.file)) aliasFilesRemoved += 1;
-        }
-        for (const directory of [rootDir, handoffDirectory, path.join(rootDir, ".artifact-locators"), path.join(rootDir, ".case-alias-locators"), path.join(rootDir, ".journal-corpora")]) {
-          await syncDirectory(directory);
-        }
-        return Object.freeze({
-          case_id: id,
-          case_file_removed: caseFileRemoved,
-          handoffs_removed: handoffsRemoved,
-          journal_corpora_removed: journalCorporaRemoved,
-          locator_files_removed: locatorFilesRemoved,
-          alias_locator_files_removed: aliasFilesRemoved,
-          handoffs_kept: Object.freeze([...keptHandoffs])
-        });
-      });
+      return deleteCaseInQueue(caseId);
     },
     async getHandoffTrackerWindow(caseId, handoffId, options = {}) {
       const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
@@ -2497,4 +2392,133 @@ export function createEncryptedPrivateCaseStore({
       }
     }
   });
+
+  async function createHandoffInQueue(caseId, {
+    handoffId = createHandoffId(),
+    runtimeVersion = RUNTIME_VERSION,
+    auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION
+  } = {}) {
+    const record = await readRequired(caseId);
+    const transcript = effectiveTranscript(record);
+    const durableContext = buildDurableCaseContext({
+      caseId,
+      caseState: record.case_state,
+      transcriptEntries: transcript,
+      trackerEntries: record.tracker_entries
+    });
+    const recentVerbatim = selectRecentVerbatimWindow(transcript, {
+      currentEpisodeId: record.case_state.current_episode?.id ?? null,
+      currentEpisodeStartTurnId: record.case_state.current_episode?.started_turn_id ?? null,
+      maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
+      requireCompleteEpisode: true
+    });
+    const candidate = selectContinuationCandidate(record, "current_pending");
+    const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
+    const historicalDelivery = candidate == null ? resolveHistoricalDeliveryCheckpoint(record) : null;
+    const context = {
+      case_state: record.case_state,
+      last_state_diff: lastTurnDiff(record),
+      current_episode: record.case_state.current_episode,
+      constitution_ref: durableContext.constitution_ref,
+      candidate_response: candidate,
+      delivery_completion: deliveryCompletion,
+      historical_delivery_completion: historicalDelivery,
+      recent_verbatim: recentVerbatim,
+      source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
+      targeted_older_evidence: durableContext.targeted_older_evidence,
+      journal_continuity: createJournalContinuityProjection(record.journal_corpora, {
+        consumerCapabilitySupported: true
+      })
+    };
+    const continuationSafety = assessContinuationSafety(context);
+    const createdAt = now();
+    const { artifact, packet } = compilePrivateHandoffArtifact({
+      handoffId,
+      record,
+      recentVerbatim,
+      continuationSafety,
+      historicalDelivery,
+      runtimeVersion,
+      auditVersion,
+      createdAt
+    });
+    const file = handoffFileFor(handoffId);
+    if (await fs.access(file).then(() => true).catch((error) => error?.code === "ENOENT" ? false : Promise.reject(error))) {
+      throw new ValidationError(`Private handoff ${handoffId} already exists and is immutable.`);
+    }
+    if (!recoverySecret) throw new ValidationError("Recovery secret is required when creating a private handoff envelope.");
+    const plaintext = Buffer.from(JSON.stringify(artifact), "utf8");
+    try {
+      const envelope = await createVaultEnvelope({ plaintextBytes: plaintext, routineKek: routineKey, recoverySecretBytes: recoverySecret });
+      await fs.mkdir(handoffDirectory, { recursive: true, mode: 0o700 });
+      await fs.chmod(handoffDirectory, 0o700);
+      await durableEncryptedWrite(file, envelope);
+    } finally { plaintext.fill(0); }
+    await writePrivateArtifactLocator({ rootDir, kind: "handoff", artifactId: handoffId, caseId });
+    for (const pending of packet.pending_artifacts) {
+      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: pending.id, caseId });
+    }
+    const reopened = await readHandoffArtifactWithEnvelope(handoffId, caseId);
+    if (!reopened || reopened.artifact.exact_text !== artifact.exact_text) throw new ValidationError("Private handoff encrypted round-trip verification failed.");
+    return Object.freeze({
+      handoff_id: handoffId,
+      case_id: caseId,
+      candidate_ids: packet.pending_artifacts.map((entry) => entry.id),
+      handoff_status: packet.handoff_status,
+      local_round_trip_verified: true,
+      fresh_session_status: "PENDING_FRESH_SESSION",
+      encrypted_export_available: true,
+      continuation_safety: cloneValue(packet.continuation_safety)
+    });
+  }
+
+  // The deletion's steps, in the case's queue (deletePrivateCase above).
+  async function deleteCaseInQueue(caseId) {
+    const id = safeCaseId(caseId);
+    return coordinator.run(id, async () => {
+      ensureOpen();
+      // A case file that is there but can't be opened with this case's key stops the deletion before anything is removed.
+      const existing = await readExistingWithEnvelope(id);
+      const locators = await listPrivateArtifactLocatorsForCase({ rootDir, caseId: id });
+      const keptHandoffs = [];
+      let handoffsRemoved = 0;
+      for (const locator of locators.filter((entry) => entry.kind === "handoff")) {
+        let opened;
+        try { opened = await readHandoffArtifactWithEnvelope(locator.artifactId, id); }
+        catch { keptHandoffs.push(locator.artifactId); continue; }
+        if (opened && await removeFile(handoffFileFor(locator.artifactId))) handoffsRemoved += 1;
+      }
+      let journalCorporaRemoved = 0;
+      for (const reference of existing?.record.journal_corpora ?? []) {
+        const directory = privateJournalCorpusDirectory({ rootDir, caseId: id, corpusId: reference.corpus_id });
+        const info = await fs.lstat(directory).catch((error) => (error?.code === "ENOENT" ? null : Promise.reject(error)));
+        if (!info?.isDirectory()) continue;
+        await fs.rm(directory, { recursive: true });
+        journalCorporaRemoved += 1;
+      }
+      const caseFileRemoved = await removeFile(fileFor(id));
+      await removeFile(`${fileFor(id)}.tmp`);
+      let locatorFilesRemoved = 0;
+      for (const locator of locators) {
+        if (locator.kind === "handoff" && keptHandoffs.includes(locator.artifactId)) continue;
+        if (await removeFile(locator.file)) locatorFilesRemoved += 1;
+      }
+      let aliasFilesRemoved = 0;
+      for (const alias of await listPrivateCaseAliasLocatorsForCase({ rootDir, caseId: id })) {
+        if (await removeFile(alias.file)) aliasFilesRemoved += 1;
+      }
+      for (const directory of [rootDir, handoffDirectory, path.join(rootDir, ".artifact-locators"), path.join(rootDir, ".case-alias-locators"), path.join(rootDir, ".journal-corpora")]) {
+        await syncDirectory(directory);
+      }
+      return Object.freeze({
+        case_id: id,
+        case_file_removed: caseFileRemoved,
+        handoffs_removed: handoffsRemoved,
+        journal_corpora_removed: journalCorporaRemoved,
+        locator_files_removed: locatorFilesRemoved,
+        alias_locator_files_removed: aliasFilesRemoved,
+        handoffs_kept: Object.freeze([...keptHandoffs])
+      });
+    });
+  }
 }

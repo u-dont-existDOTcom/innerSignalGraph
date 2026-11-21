@@ -50,6 +50,8 @@ export const DEFAULT_RUNNER_SETTINGS = Object.freeze({
   maxBoxes: 6
 });
 
+// The checkers whose own crisis level the program checks use: the crisis checker in the split arm, the whole checker in its arm.
+const LEVEL_READERS = Object.freeze(["C1", "CW"]);
 const RISK_FROM_LEVEL = Object.freeze({ acted_or_about_to: "imminent", thoughts_no_intent: "ideation", none: "absent", unclear: "unknown" });
 const ROUTE_FROM_LEVEL = Object.freeze({
   acted_or_about_to: ["RUNNER.ACTED_OR_ABOUT_TO", "Someone has acted or is about to"],
@@ -391,6 +393,15 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const repairPart = repaired ? { previous_candidate: parent?.exact_text ?? null, findings_that_caused_the_repair: previousFindings, repair_induced_error_checks: [...REPAIR_INDUCED_ERROR_CHECKS] } : {};
       const weigh = [readers.crisis?.level, written.answeredLevel].includes("acted_or_about_to") ? { readings_to_weigh: { crisis_reader: readers.crisis?.level ?? "unclear", writer: written.answeredLevel ?? "unclear" } } : {};
       const risk = await loadRiskContext(caseId, authContext);
+      // The level reader's reading (C1's, or the whole checker's) is stored and acted on the moment it arrives, while the other
+      // checkers may still be reading: the closing and later turns see it even when another checker gives no reading, and someone
+      // who has acted gets the emergency line at once (design, section 4), not after the slowest checker.
+      const actOnLevel = async (result) => {
+        const level = validLevel(result.value?.level);
+        await source("recordRunnerCheckerLevel", [caseId, runtimeTurn.id, { candidateId: candidate.id, candidateVersion: candidate.version, checker: result.checker.id, level }], authContext);
+        if (level === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
+        return result;
+      };
       const plan = [];
       if (config.checkerMode === "whole") {
         plan.push({ checker: CHECKERS.whole, rules: wholeRules(parts), packet: { ...base, ...repairPart, ...weigh, stored_risk_record: risk, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []), child_contact_gate: gateView, child_contact_pattern_hits: patternHits }, extra: selfDirectedRiskAuditRules });
@@ -405,18 +416,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // Every checker runs to its end: one that gives no reading can't take away another's (design, section 4).
       const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "" }) => {
         const prompt = checkerPrompt({ checker, rules, packet, extraRules: extra });
-        const result = await callWorker(checker.id, { kind: "checker", runtimeTurn, ...prompt, schema: CHECKER_SCHEMA });
-        return { checker, ...result };
+        const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, ...prompt, schema: CHECKER_SCHEMA })) };
+        return LEVEL_READERS.includes(checker.id) ? actOnLevel(result) : result;
       }));
       const results = settled.filter((entry) => entry.status === "fulfilled").map((entry) => entry.value);
-      // The level reader's reading (C1's, or the whole checker's) is stored and acted on before anything else, so it holds even
-      // when another checker gave no reading: the closing and later turns see it, and someone who has acted gets the emergency line.
-      const levelReader = results.find((result) => ["C1", "CW"].includes(result.checker.id));
+      const levelReader = results.find((result) => LEVEL_READERS.includes(result.checker.id));
       const checkerLevel = levelReader ? validLevel(levelReader.value?.level) : null;
-      if (levelReader) {
-        await source("recordRunnerCheckerLevel", [caseId, runtimeTurn.id, { candidateId: candidate.id, candidateVersion: candidate.version, checker: levelReader.checker.id, level: checkerLevel }], authContext);
-        if (checkerLevel === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
-      }
       // A checker that failed, timed out or refused is "no reading", never a pass: the draft can't be delivered (design, section 3).
       const failed = settled.find((entry) => entry.status === "rejected");
       if (failed) {
@@ -498,8 +503,26 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
 
     closeTurn,
 
+    // The turns of the case's current conversation, in order, for a page that shows none of them (a reload; design, section 8):
+    // every turn from the first one stored with the latest conversation id on. A turn closed before it was read has no id; one
+    // after that first turn counts as part of it.
+    currentConversationTurnIds(record) {
+      const turns = record?.runtime_turns ?? [];
+      const latest = [...turns].reverse().find((turn) => turn.runner_reading?.conversation_id)?.runner_reading.conversation_id;
+      if (!latest) return turns.map((turn) => turn.id);
+      const first = turns.findIndex((turn) => turn.runner_reading?.conversation_id === latest);
+      return turns.slice(first).filter((turn) => (turn.runner_reading?.conversation_id ?? latest) === latest).map((turn) => turn.id);
+    },
+
     async closeUnfinishedTurns({ caseId, keepRuntimeTurnId, authContext }) {
-      const record = await load(caseId, authContext);
+      let record;
+      try { record = await load(caseId, authContext); }
+      catch (error) {
+        // A case with no record yet (its first message, or the first after "Delete this case") has no turn to close: the access
+        // service refuses to load a case that isn't there, where the store opened by this server would create it.
+        if (error?.code === "PRIVATE_CASE_NOT_FOUND") return;
+        throw error;
+      }
       for (const turn of record.runtime_turns) {
         if (turn.id === keepRuntimeTurnId || isFinishedRuntimeTurn(turn)) continue;
         const assistantTurnId = `${turn.exchange_id}-assistant`;

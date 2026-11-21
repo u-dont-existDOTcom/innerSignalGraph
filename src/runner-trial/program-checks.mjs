@@ -135,10 +135,11 @@ export function provisionalProblems(text, { maxCharacters = 900 } = {}) {
   if (typeof text !== "string" || !text.trim()) return ["empty"];
   if (text.length > maxCharacters) problems.push("too_long");
   if (emergencyNumbersIn(text).length === 0) problems.push("no_emergency_number");
-  // Every number is one of the emergency numbers: each run of three or more digits (a five-digit poison line an R1 invented is
-  // caught), and each phone-shaped run of digits joined by spaces, dots, dashes or brackets. One- and two-digit runs (a time,
-  // "24/7") aren't read as numbers.
-  const unknownRun = readDigitRuns(text).some((run) => run.count >= 3 && (run.digits == null || !EMERGENCY_NUMBERS.includes(run.digits)));
+  // Every number is one of the emergency numbers: each run of two or more digits, in any script (a poison line an R1 invented is
+  // caught however short, "42" included), and each phone-shaped run of digits joined by spaces, dots, dashes or brackets. So a
+  // two-digit time or count ("10 minutes", "24/7") or a national two-digit number keeps a provisional from showing too, and the
+  // highlighted emergency line shows instead. A single digit isn't read as a number.
+  const unknownRun = readDigitRuns(text).some((run) => run.count >= 2 && (run.digits == null || !EMERGENCY_NUMBERS.includes(run.digits)));
   if (unknownRun || phoneLikeRuns(text).some((run) => !EMERGENCY_NUMBERS.includes(run))) problems.push("unknown_number");
   if (questionMarks(text) > 1) problems.push("more_than_one_question");
   problems.push(...shapeProblems(text));

@@ -322,8 +322,12 @@ const acceptsNdjson = (req) => /(?:^|,)\s*application\/x-ndjson\s*(?:[;,]|$)/iu.
 
 // The runner trial's page asks for newline-delimited JSON: one line per event of this request's turn as it happens (status,
 // provisional, emergency_line, closed), then one final line with the same fields as the JSON answer, or an error line. Nothing
-// is logged, and the subscription (to this case's turn, never another case's turn of the same id) ends with the request.
-async function streamRunnerTurn(res, { events, caseId, runtimeTurnId, run }) {
+// is logged, and the subscription (to this case's turn, never another case's turn of the same id) ends with the request. The
+// request is authorized for its case first, with the check the turn itself makes (`authorize`): a request the turn would refuse
+// gets that refusal as its answer (thrown before anything is written) and never listens, so it hears no line of another
+// request's turn of the same case and turn id.
+async function streamRunnerTurn(res, { events, caseId, runtimeTurnId, authorize, run }) {
+  await authorize();
   res.writeHead(200, securityHeaders({ "content-type": "application/x-ndjson" }));
   const write = (line) => {
     if (res.writableEnded || res.destroyed) return;
@@ -364,6 +368,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
   if (config.runnerTrialEnabled === true) {
     if (privateTherapyController) {
       if (!isRunnerEventHub(runnerTrialEvents)) throw new RuntimeError("A runner trial controller needs its event hub.", { code: "BAD_CONFIG" });
+      // The stream authorizes a request for its case before it listens for the case's events, with the turn's own check.
+      if (typeof privateTherapyController.authorizeTurn !== "function") throw new RuntimeError("A runner trial controller needs its turn authorization.", { code: "BAD_CONFIG" });
       runnerTrial = { controller: privateTherapyController, events: runnerTrialEvents };
     } else {
       runnerTrial = createRunnerTrialController({ privateCaseSource, config });
@@ -447,6 +453,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         const assistantTurnId = safeEntryId(input.assistantTurnId, `${exchangeId}-assistant`);
         if (automaticPrivateTherapy) {
           const runtimeTurnId = safeEntryId(input.runtimeTurnId, `runtime:${exchangeId}`);
+          const authContext = requestAuthContext(req);
           const run = () => automaticPrivateTherapy.run({
             caseId,
             runtimeTurnId,
@@ -456,9 +463,12 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
             userMessage: input.userMessage,
             // The trial starts a new conversation only on exactly true (the page's "New conversation" button).
             userInput: runnerEvents ? { ...input, newConversation: input.newConversation === true } : input,
-            authContext: requestAuthContext(req)
+            authContext
           });
-          if (runnerEvents && acceptsNdjson(req)) return await streamRunnerTurn(res, { events: runnerEvents, caseId, runtimeTurnId, run });
+          if (runnerEvents && acceptsNdjson(req)) {
+            const authorize = () => automaticPrivateTherapy.authorizeTurn({ caseId, authContext });
+            return await streamRunnerTurn(res, { events: runnerEvents, caseId, runtimeTurnId, authorize, run });
+          }
           return send(res, 200, therapyAnswer(await run(), { runnerTrial: Boolean(runnerEvents) }));
         }
         if (config.mode !== "mock") {
@@ -541,8 +551,11 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         const caseId = readCaseId(input.caseId);
         const authContext = requestAuthContext(req);
         if (url.pathname === "/v1/runner/reconcile") {
-          const afterExchangeId = input.afterExchangeId == null ? null : safeEntryId(input.afterExchangeId, null);
-          return send(res, 200, { caseId, turns: await automaticPrivateTherapy.reconcile({ caseId, afterExchangeId, authContext }) });
+          // A page that shows none of the case's turns (a reload) asks for the current conversation, all of it; a page that still
+          // shows its earlier turns asks for those after the last one it shows.
+          const currentConversation = input.conversation === "current";
+          const afterExchangeId = currentConversation || input.afterExchangeId == null ? null : safeEntryId(input.afterExchangeId, null);
+          return send(res, 200, { caseId, turns: await automaticPrivateTherapy.reconcile({ caseId, afterExchangeId, currentConversation, authContext }) });
         }
         if (input.confirmation !== "DELETE") return send(res, 400, { error: "Type DELETE to delete this case.", code: "VALIDATION_ERROR" });
         const deleted = await automaticPrivateTherapy.deleteCase({ caseId, authContext });

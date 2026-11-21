@@ -8,7 +8,7 @@ import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
 import { createPrivateJournalCorpusStore } from "./private-journal-corpus.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 import { resolvePrivateArtifactCaseId } from "./private-artifact-locator.mjs";
-import { resolvePrivateCaseAliasCaseId, writePrivateCaseAliasLocator } from "./private-case-alias-locator.mjs";
+import { resolvePrivateCaseAliasCaseId } from "./private-case-alias-locator.mjs";
 
 export { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 
@@ -523,13 +523,9 @@ export function createPrivateCaseAccessService({
     async appendTracker(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendTracker(caseId, entry)); },
     async appendJournal(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendJournal(caseId, entry)); },
     async getCurrentEpisode(caseId, authContext) { return read(caseId, authContext, (store) => store.getCurrentEpisode(caseId)); },
+    // The alias file names the case, so the store writes it in the case's queue, where a deletion of the case finds it.
     async bindCaseAlias(caseId, caseAlias, authContext) {
-      return write(caseId, authContext, async (store) => {
-        const record = await store.load(caseId);
-        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
-        await writePrivateCaseAliasLocator({ rootDir, alias: caseAlias, caseId });
-        return Object.freeze({ case_id: caseId, alias_bound: true });
-      });
+      return write(caseId, authContext, (store) => store.bindCaseAlias(caseId, caseAlias));
     },
     async createHandoff(caseId, options, authContext) { return write(caseId, authContext, (store) => store.createHandoff(caseId, options)); },
     async loadHandoff(handoffId, authContext, { requireContinuationSafe = true, journalContinuitySupported = false } = {}) {

@@ -187,7 +187,7 @@ fullwidth and the other common decimal digits), so the number checks work whatev
 |---|---|---|---|
 | Emergency number present | the first turn of this conversation that C1 reads `acted_or_about_to`, over the provisional and the full reply together (on later turns C1 judges "come back to it") | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number. It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step). France's 15 alone doesn't pass (a reply naming only "le 15" is repaired to add 112), and 111 and 119 mean other services in some countries | blocks |
 | Provisional: a number | the provisional | at least one number from that list, as a whole number | not shown |
-| Provisional: numbers known | the provisional | every run of three or more digits, and every phone-shaped run (digits joined by spaces, dots, dashes or brackets), is on that list (catches an invented number, a five-digit one included); one- and two-digit runs aren't read as numbers | not shown |
+| Provisional: numbers known | the provisional | every run of two or more digits (any script), and every phone-shaped run (digits joined by spaces, dots, dashes or brackets), is on that list (catches an invented number however short: "Call 112 now, or the poison service at 42." isn't shown); so a two-digit time or count ("10 minutes", "24/7") or a national two-digit number (France's 15) keeps it from showing too, and the highlighted line shows instead; a single digit isn't read as a number | not shown |
 | Provisional: shape | the provisional | at most 900 characters; at most one question mark (`?`, `？`, `؟`); no list line, heading or bold; no link other than the three of the crisis section | not shown |
 | Owner's guide links | a crisis conversation | no link to the owner's sites (`u-dont-exist.com` and its subdomains, `ibogaqueen.substack.com`) other than the Hearthwork and therapist links the crisis section names; other sites (a poison centre, a health service) are left to C1 | blocks |
 | "detox" | a crisis conversation | no word containing "detox" in Latin letters; other spellings and languages are C1's (`CRISIS_NEVER_LIST`) | blocks |
@@ -228,7 +228,12 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   machine only, with the trial on), removes, inside the case's queues, the case file, the handoff envelopes its locators name
   (each opened with the case's key and confirmed to be the case's first), the folders of the journal corpora its record names,
   and the locator and alias files that name its ID (`src/storage/private-artifact-locator.mjs`,
-  `src/storage/private-case-alias-locator.mjs`). Nothing it can't prove is the case's is touched.
+  `src/storage/private-case-alias-locator.mjs`). Nothing it can't prove is the case's is touched. Making a handoff (from reading
+  the record to its last file) and every write of a file that names the case (a draft's locator, an alias) take the same case
+  queue in the store, so none can be written after a deletion returned. Then the page forgets the case too: every field of its
+  state but the settings, the case id, the storage mode and the older-versions flag (so the transcript, the tracker and journal
+  entries, the hypnosis sessions, the case views and the handoff go, and its backup export and recovery ZIP hold nothing of the
+  case), what it shows of the case (the hypnosis session, the supervisor panel) and the text typed into its forms.
 
 ## 7. When no checked reply can be made (point 4a)
 
@@ -263,14 +268,17 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   timed batch (first value, before measuring: 100 s). The per-call limits are caps for a stuck call, not a round's expected
   length.
 - **Delivery**: `/v1/therapy/respond` streams newline-delimited JSON when the page asks (`accept: application/x-ndjson`): a
-  `status` line per step, a `provisional` line, a `notice` line, the final line. A page that asks for JSON gets one answer.
+  `status` line per step, a `provisional` line, a `notice` line, the final line. A page that asks for JSON gets one answer. The
+  request is authorized for its case (the read, write and audit scopes, the check the turn itself makes first) before the stream
+  listens for the case's events: a refused request gets the refusal and no line of another request's turn.
 - **Restarts and reloads**: the store can't list cases, so nothing is closed when the server starts. When the trial page loads,
-  it calls `POST /v1/runner/reconcile` with its case and the last turn it shows: inside the case's queue (a turn still running
-  is waited for), every unfinished turn of the case is closed as `UNANSWERED` (reason `interrupted`), except an `APPROVED` one,
-  which is delivered, and the turns that finished after the page's last one come back, so a reply that finished while the page
-  was gone is shown, with its provisional reply and emergency line. Before a new message, an unfinished turn is closed the same
-  way. A delivered turn replays without a model call; the JSON answer and the stream's final line carry the stored provisional
-  reply and whether the emergency line was shown, so a replay shows them too.
+  it calls `POST /v1/runner/reconcile` with its case: inside the case's queue (a turn still running is waited for), every
+  unfinished turn of the case is closed as `UNANSWERED` (reason `interrupted`), except an `APPROVED` one, which is delivered.
+  A page that still shows its last turn names it and gets the turns that finished after it; a page that shows none (after a
+  reload, since the page keeps no transcript) asks for the current conversation and gets all its turns. Either way a reply
+  that finished while the page was gone is shown, each turn with its provisional reply and emergency line. Before a new
+  message, an unfinished turn is closed the same way. A delivered turn replays without a model call; the JSON answer and the
+  stream's final line carry the stored provisional reply and whether the emergency line was shown, so a replay shows them too.
 
 ## 9. The plan kept for next time (point 5b)
 

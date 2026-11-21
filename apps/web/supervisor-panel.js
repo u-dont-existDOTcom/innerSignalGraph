@@ -305,5 +305,20 @@ export function initSupervisorPanel({
   $("supervisor-draft-form").addEventListener("submit", (event) => { event.preventDefault(); submit("external_draft", "draft"); });
   $("supervisor-write-draft").addEventListener("click", () => submit("backend_produced", "write"));
 
-  return Object.freeze({ refresh });
+  // Forget what the panel holds of the case (the runner trial page calls this after the case was deleted): the client's message,
+  // the relayed inputs, the drafts, any copied text or companion, what its forms hold, and the keys and basis of the old case.
+  function clear() {
+    basisSha256 = null;
+    outputs.clear();
+    reportKeys.clear();
+    for (const slot of Object.keys(keys)) clearKey(slot);
+    $("supervisor-client-message").textContent = "Not loaded.";
+    $("supervisor-inputs").replaceChildren();
+    $("supervisor-artifacts").replaceChildren();
+    $("supervisor-input-form").reset();
+    $("supervisor-draft-form").reset();
+    status("Open this tab to load the case.", "info");
+  }
+
+  return Object.freeze({ refresh, clear });
 }

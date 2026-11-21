@@ -8,6 +8,7 @@ import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-sto
 import { listPrivateArtifactLocatorsForCase } from "../src/storage/private-artifact-locator.mjs";
 import { listPrivateCaseAliasLocatorsForCase, writePrivateCaseAliasLocator } from "../src/storage/private-case-alias-locator.mjs";
 import { privateJournalCorpusDirectory } from "../src/storage/private-journal-corpus.mjs";
+import { createCaseMutationCoordinator } from "../src/storage/shared-case-coordinator.mjs";
 import { childContactPatternHits } from "../src/case-formulation/protective-compatibility.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../src/supervisor/private-candidate-lifecycle.mjs";
@@ -54,9 +55,13 @@ test("the exact checks read numbers in any script and decide only exact things",
   assert.deepEqual(provisionalProblems("I'm here. Please call 112 now, and unlock the door if you can."), []);
   assert.ok(provisionalProblems("I'm here with you. Please get help now.").includes("no_emergency_number"));
   assert.ok(provisionalProblems("Call 112 or the poison line 0800 555 0100 now.").includes("unknown_number"), "an invented number is caught");
-  assert.deepEqual(provisionalProblems("Call 112 now, or call the poison service at 12345."), ["unknown_number"], "a number of three or more digits off the list is caught, however short");
+  assert.deepEqual(provisionalProblems("Call 112 now, or call the poison service at 12345."), ["unknown_number"], "a five-digit number off the list is caught");
   assert.deepEqual(provisionalProblems("Call 112 now, or the line at ١٢٣٤٥."), ["unknown_number"], "in any script");
-  assert.deepEqual(provisionalProblems("Call 112 now. I'll stay here with you for the next 10 minutes, 24/7 if you need."), [], "one- and two-digit runs aren't numbers");
+  // Every run of two or more digits must be an emergency number: an invented two-digit number is caught too.
+  assert.deepEqual(provisionalProblems("Call 112 now, or the poison service at 42."), ["unknown_number"], "a two-digit number off the list is caught");
+  assert.deepEqual(provisionalProblems("Call 112 now, or the poison service at ٤٢."), ["unknown_number"], "a two-digit number in another script too");
+  assert.deepEqual(provisionalProblems("Call 112 now. I'll stay here with you for the next 10 minutes."), ["unknown_number"], "a two-digit count is read as a number: the provisional isn't shown");
+  assert.deepEqual(provisionalProblems("Call 112 now. I'll stay here with you for the next 5 minutes."), [], "a single digit isn't read as a number");
   assert.ok(provisionalProblems("Call 112. Are you alone? Is the door open?").includes("more_than_one_question"));
   assert.ok(provisionalProblems("- Call 112\n- Unlock the door").includes("list"));
   assert.ok(provisionalProblems("Call 112 now. https://detox.u-dont-exist.com").includes("link_not_allowed"));
@@ -305,6 +310,37 @@ test("a checker that gives no reading can't take away the crisis checker's: the 
   assert.ok(nextBoxChecker.system.includes("## When someone may want to die"), "the stored reading made it a crisis conversation");
 });
 
+test("the crisis checker's level is stored and acted on the moment it arrives, while another checker is still reading", async (t) => {
+  let releaseSkillChecker;
+  const skillCheckerHeld = new Promise((resolve) => { releaseSkillChecker = resolve; });
+  const runner = await makeRunner(t, baseScript({
+    W: () => ({ reply: "Please call 112 now. Is anyone with you?", answered_level: "acted_or_about_to", quotes: [] }),
+    C1: () => ({ findings: [], level: "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] }),
+    C2: async () => { await skillCheckerHeld; return passing(); }
+  }));
+  const sending = runner.send("Something synthetic the crisis reader read as nothing.");
+  try {
+    let line = null;
+    for (let waited = 0; waited < 300 && !line; waited += 1) {
+      line = runner.events.find((event) => event.type === "emergency_line") ?? null;
+      if (!line) await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    assert.ok(line, "the emergency line shows while the skill checker is still reading");
+    assert.equal(line.reason, "checker_read_acted");
+    assert.equal(runner.calls.filter((call) => call.role === "C2").length, 1, "the skill checker was called and hasn't answered");
+    const turn = (await runner.store.load(CASE_ID)).runtime_turns[0];
+    assert.deepEqual(turn.runner_reading.checker_levels.map((entry) => [entry.checker, entry.level]), [["C1", "acted_or_about_to"]], "the level is stored at once");
+    assert.ok(turn.emergency_line_shown_at);
+    assert.equal(turn.state, "AUDITING", "the draft is still being checked");
+  } finally {
+    releaseSkillChecker();
+  }
+  const result = await sending;
+  assert.equal(result.deliveryKind, "candidate");
+  assert.equal(runner.events.filter((event) => event.type === "emergency_line").length, 1, "shown once");
+  assert.equal((await runner.store.load(CASE_ID)).runtime_turns[0].runner_reading.checker_levels.length, 1, "stored once");
+});
+
 test("every audit attempt's crisis level is kept: a repaired draft read as none doesn't erase it, so the fixed-message rule still holds", async (t) => {
   const failing = { findings: [{ code: "VERBOSITY", severity: "substantive", summary: "too long", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] };
   const runner = await makeRunner(t, baseScript({
@@ -432,6 +468,84 @@ test("deleting a case removes its file, handoffs, journal folders and the files 
   const again = await store.deletePrivateCase(a);
   assert.deepEqual([again.case_file_removed, again.handoffs_removed, again.locator_files_removed], [false, 0, 0]);
   assert.equal((await store.loadOrCreate(a)).runtime_turns.length, 0);
+});
+
+// The store's per-case queue, watched: each run says whether its operation has started and finished.
+function watchedCoordinator() {
+  const inner = createCaseMutationCoordinator();
+  const runs = [];
+  const coordinator = Object.freeze({
+    async run(caseId, operation) {
+      const entry = { caseId, started: false, finished: false };
+      runs.push(entry);
+      return inner.run(caseId, async () => {
+        entry.started = true;
+        try { return await operation(); } finally { entry.finished = true; }
+      });
+    }
+  });
+  return { coordinator, runs };
+}
+
+// Holds the next creation of one folder (the store creates a file's folder just before writing the file) until released.
+function holdFolderCreation(folder) {
+  const original = fs.mkdir;
+  let arrived;
+  const reached = new Promise((resolve) => { arrived = resolve; });
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let armed = true;
+  fs.mkdir = async function heldMkdir(target, ...rest) {
+    if (armed && path.resolve(String(target)) === folder) {
+      armed = false;
+      arrived();
+      await held;
+    }
+    return original.call(this, target, ...rest);
+  };
+  return { reached, release, restore: () => { release(); fs.mkdir = original; } };
+}
+
+test("a handoff, a draft's locator or an alias being written when the case is deleted is never left behind: each write takes the case's queue", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-runner-delete-race-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const watched = watchedCoordinator();
+  const store = createEncryptedPrivateCaseStore({ rootDir: root, routineKek: Buffer.alloc(32, 85), recoverySecretBytes: Buffer.alloc(32, 86), developmentExternalCredentialAuthorized: true, mutationCoordinator: watched.coordinator });
+  const writers = [
+    ["handoff", path.join(root, ".handoffs"), (caseId) => store.createHandoff(caseId, { handoffId: "handoff:00000000-0000-4000-8000-0000000000c1", runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" }), "handoffs_removed"],
+    ["draft locator", path.join(root, ".artifact-locators"), (caseId) => store.saveCandidateResponse(caseId, "candidate:synthetic-race", "A synthetic draft.", { producer_context_id: "synthetic-producer" }), "locator_files_removed"],
+    ["alias", path.join(root, ".case-alias-locators"), (caseId) => store.bindCaseAlias(caseId, `${caseId} alias`), "alias_locator_files_removed"]
+  ];
+  for (const [name, folder, write, removedCount] of writers) {
+    const caseId = `synthetic-race-${name.replace(/\W+/gu, "-")}`;
+    await store.loadOrCreate(caseId);
+    const hold = holdFolderCreation(folder);
+    let deleted;
+    try {
+      const writing = write(caseId);
+      await Promise.race([hold.reached, writing.then(() => { throw new Error(`${name}: finished without writing its file`); })]);
+      assert.ok(watched.runs.some((entry) => entry.caseId === caseId && entry.started && !entry.finished), `${name}: the write holds the case's queue while it writes the file that names the case`);
+      const asked = watched.runs.length;
+      const deleting = store.deletePrivateCase(caseId);
+      const deletion = watched.runs[asked];
+      assert.equal(deletion?.caseId, caseId, `${name}: the deletion asks for the same queue`);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.equal(deletion.started, false, `${name}: the deletion waits for the write`);
+      hold.release();
+      [, deleted] = await Promise.all([writing, deleting]);
+    } finally {
+      hold.restore();
+    }
+    assert.equal(deleted.case_file_removed, true, name);
+    assert.ok(deleted[removedCount] >= 1, `${name}: the deletion found what the write left and removed it`);
+    assert.equal(await store.load(caseId), null, `${name}: the case is gone`);
+    assert.deepEqual(await listPrivateArtifactLocatorsForCase({ rootDir: root, caseId }), [], `${name}: no locator names the case`);
+    assert.deepEqual(await listPrivateCaseAliasLocatorsForCase({ rootDir: root, caseId }), [], `${name}: no alias names the case`);
+  }
+  assert.deepEqual(await fs.readdir(path.join(root, ".handoffs")), [], "no handoff envelope is left");
+  // A handoff asked for after the deletion finds no case and writes nothing.
+  await assert.rejects(() => store.createHandoff("synthetic-race-handoff", { handoffId: "handoff:00000000-0000-4000-8000-0000000000c2" }), (error) => error.code === "PRIVATE_CASE_NOT_FOUND");
+  assert.deepEqual(await fs.readdir(path.join(root, ".handoffs")), []);
 });
 
 test("a repair that returns the same reply ends the turn as a failed check, so a crisis conversation gets the owner's fixed message when it is on", async (t) => {
