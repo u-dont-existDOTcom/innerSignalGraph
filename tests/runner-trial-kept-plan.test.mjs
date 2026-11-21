@@ -214,8 +214,13 @@ test("asked and kept: only the lines found word for word (whitespace folded) in 
   assert.equal(plan.conversation_id, record.runtime_turns[1].runner_reading.conversation_id, "kept for the conversation that made it");
   assert.equal(record.raw_transcript.length, 6, "the transcript holds the three exchanges and nothing else");
   assert.equal(record.raw_transcript.filter((entry) => entry.text.includes("lamp on")).length, 1, "the lines are in the transcript only where the person saw them");
+  // Encrypted, not just encoded: neither the file's text nor its decoded payload holds the plan's words.
   const file = await fs.readFile(path.join(runner.root, `${CASE_ID}.vault.json`), "utf8");
-  assert.equal(file.includes("lamp on") || file.includes("rough night"), false, "the case file holds them encrypted");
+  const payload = Buffer.from(JSON.parse(file).payload.ciphertext, "base64");
+  assert.ok(payload.length > 1_000, "the payload holds the whole record");
+  for (const words of ["lamp on", "rough night", "runner_kept_plans"]) {
+    assert.equal(file.includes(words) || payload.includes(Buffer.from(words, "utf8")), false, `the case file holds "${words}" only encrypted`);
+  }
 });
 
 test("offered once at the end of a crisis plan, then kept only on a yes the crisis checker confirms", async (t) => {
