@@ -7,7 +7,7 @@ source_id: AMEND.IC.WISDOM_CORE
 guide_id: owner-amendments
 heading: AMEND.IC.WISDOM_CORE
 source_role: owner-approved-extension
-source_hash: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
+source_hash: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
 section_hash: 3398fd0bea7352f4deff149dd34f544534f57ab5f35cf42c49fab441a652c0cc
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -26,7 +26,7 @@ cited_by_node_ids:
   - IC.WISER_SELF_PERSPECTIVE
   - ROUTE.ACT_OUTWARD
   - ROUTE.RELATIONAL_REALITY_CHECK
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.WISDOM_CORE

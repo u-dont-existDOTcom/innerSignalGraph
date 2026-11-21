@@ -7,21 +7,21 @@ source_id: IC.HEART_SOLAR_LOOP
 guide_id: inner-child-guide
 heading: A Heart-to-Child Loop
 source_role: primary-framework
-source_hash: 0ad32952057b1fbf4c8407bef8035475c9629ad4be7545adee76652ba7774ab2
+source_hash: 6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f
 section_hash: 4741fc586497a522e6c94464de3499428927a91a0b64f51255d260184fde883e
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.BORROW_LOVE
   - IC.DEEP_LOVE_TO_CHILD
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # A Heart-to-Child Loop
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-31-r10.txt`
+Authority path: `guides/inner-child-guide-2026-11-20-r11.txt`
 
 Locator: Lines 673–726
 

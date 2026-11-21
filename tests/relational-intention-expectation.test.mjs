@@ -28,6 +28,23 @@ import { withoutIssue215, QUESTION_51_R9_SHA256 } from "./fixtures/issue-215-gui
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
 const count = (text, part) => text.split(part).length - 1;
+
+// The humanization queue was cleared on 2026-11-04 (queue version 2026-11-04-r21, EMPTY): an entry is consumed when the queue no longer
+// holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
+const assertEntriesConsumed = (expected) => {
+  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  // Reset to EMPTY at 2026-11-04-r21; what is queued since (PGQ-056 on, 20 Nov 2026) is new, never an entry consumed then.
+  assert.equal(json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.resetTo, "2026-11-04-r21 (EMPTY)");
+  assert.doesNotMatch(queue, /^### PGQ-0(?:0[1-9]|[1-4]\d|5[0-5]) — /mu, "no entry consumed on 2026-11-04 is queued again");
+  const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
+  for (const [id, fate, status] of expected) {
+    assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
+    const records = obligations.filter((record) => record.id === id);
+    assert.equal(records.length, 1, `${id} has one obligation record`);
+    assert.equal(records[0].fate, fate, `${id} fate`);
+    assert.equal(records[0].status, status, `${id} status`);
+  }
+};
 const sha256 = (text) => crypto.createHash("sha256").update(text).digest("hex");
 const AMENDMENT = "AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031";
 const SEQUENCE_AMENDMENT = "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028";
@@ -129,8 +146,8 @@ test("the served references end with the module text byte for byte, and each bul
     if (file.path !== FIDELITY) assert.equal(file.content.includes(FIDELITY_BULLET), false, `${file.path} does not carry the question-selection bullet`);
   }
   // The plugin keeps the same files and references: nothing was added for this change.
-  assert.equal(pluginFiles().length, 12, "the plugin keeps its 12 files");
-  assert.equal(protocol.files.filter((file) => file.path.startsWith("references/")).length, 9, "and its 9 references");
+  assert.equal(pluginFiles().length, 13, "the plugin keeps its 13 files (the box guidance was added on 20 Nov 2026)");
+  assert.equal(protocol.files.filter((file) => file.path.startsWith("references/")).length, 10, "and its 10 references (the box guidance was added on 20 Nov 2026)");
 });
 
 test("the question-selection rule says what the lesson asks, in the existing response-fidelity list, with no new audit failure", () => {
@@ -218,7 +235,7 @@ test("the amendment extends the existing reality check once, with no duplicate n
   // One avoid line, last in the list.
   const avoid = node.avoid.filter((line) => /^Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement/u.test(line));
   assert.equal(avoid.length, 1);
-  assert.equal(node.avoid.at(-1), avoid[0]);
+  assert.equal(node.avoid.filter((line) => line === avoid[0]).length, 1, "once; the October 2026 lines redone on 20 Nov 2026 follow it");
   assert.match(avoid[0], /a person can stand by a position, regret the wording and grieve the loss at once/u);
   assert.match(avoid[0], /do not keep asking for incident detail unless the missing detail would change the next step or safety/u);
   // The safety gate, activation, question policy and the route's own question are unchanged.
@@ -420,7 +437,7 @@ test("graph cases G142 to G144 cover a step left to take, an accepted cost and a
   const result = await runGraphRegressionSuite();
   for (const id of ["G013", "G141", "G142", "G143", "G144"]) assert.equal(result.results.find((item) => item.id === id)?.ok, true, id);
   assert.equal(result.ok, true);
-  assert.equal(result.count, 119);
+  assert.equal(result.count, 120); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one (G20261019C)
 });
 
 test("AI guide r9 is r8 plus the owner's two sentences directly after the going-back sentence, and r8 stays immutable", () => {
@@ -428,8 +445,8 @@ test("AI guide r9 is r8 plus the owner's two sentences directly after the going-
   const active = manifest.sources.find((source) => source.id === "inner-child-guide");
   // Later the same day the owner answered question 52, and r10 (r9 plus one paragraph; tested in the spiritual-source-paragraph test) became the
   // active revision. r9 stays immutable in the manifest's source history, which is the file this test is about.
-  assert.equal(active.file, "inner-child-guide-2026-10-31-r10.txt");
-  assert.equal(active.version, "owner-approved-spiritual-source-paragraph-2026-10-31-r10");
+  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
+  assert.equal(active.version, "owner-decisions-live-guide-passages-2026-11-20-r11");
   const r9Entry = manifest.sourceHistory.find((entry) => entry.version === "owner-approved-conflict-appraisal-addition-2026-10-31-r9");
   assert.equal(r9Entry?.file, "inner-child-guide-2026-10-31-r9.txt");
   // The same day the owner also approved three Inner Child refinements (issue 215), made inside r9 itself. They are tested in the
@@ -451,30 +468,15 @@ test("AI guide r9 is r8 plus the owner's two sentences directly after the going-
   assert.match(manifest.notes, /question 51, option A, answered 31 October 2026 at 12:43 UTC/u);
 });
 
-test("the humanized-guide queue carries the same teaching point as PGQ-051, and nothing else about it is published", () => {
-  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
-  assert.match(queue, /^### PGQ-051 — After a painful disagreement, ask what you aimed for, what you expected and how you judge it now$/mu);
-  const start = queue.indexOf("### PGQ-051 — ");
-  const ends = ["\n### ", "\n## "].map((marker) => queue.indexOf(marker, start + 5)).filter((index) => index !== -1);
-  const entry = queue.slice(start, ends.length ? Math.min(...ends) : undefined);
-  const lines = entry.split("\n");
-  for (const field of ["Caused by", "Teaching point", "Reader need", "Already covered", "Where"]) assert.equal(lines.filter((line) => line.startsWith(`${field}: `)).length, 1, field);
-  assert.equal(lines.find((line) => line.startsWith("Teaching point: ")), `Teaching point: ${ADDITION}`);
-  assert.match(entry, /Owner answer of 31 Oct 2026, 12:43 UTC/u);
-  assert.match(entry, /question 51, option A/u);
-  assert.ok(entry.includes(AMENDMENT));
-  assert.ok(entry.includes("inner-child-guide-2026-10-31-r9.txt"));
-  assert.ok(entry.includes(ANCHOR));
-  // "Already covered" points at the guide's own lines: the owner's two sentences are in the paragraph at r9 line 153, and the paragraph
-  // after it, at line 155, is the one that says feeling guilty proves neither fault nor manipulation.
+test("PGQ-051 is consumed from the humanized-guide queue, and the AI guide still carries the owner's two sentences", () => {
+  assertEntriesConsumed([["PGQ-051", "core point in", "SYNCED"]]);
+  // The owner's two sentences are in the AI guide's paragraph at r9 line 153, and the paragraph after it, at line 155, is the one that
+  // says feeling guilty proves neither fault nor manipulation.
   const r9Lines = read("../guides/inner-child-guide-2026-10-31-r9.txt").split("\n");
   assert.ok(r9Lines[152].includes(ADDITION), "line 153 carries the owner's two sentences");
   assert.match(r9Lines[154], /^Notice your side too\. Feeling guilty does not prove that you did something wrong; it also does not prove that somebody manipulated you\./u);
-  assert.ok(entry.includes("does not make someone emotionally immature, and the paragraph after it (r9 line 155) says that feeling guilty proves neither fault nor manipulation."));
-  assert.match(entry, /not publication authority/u);
-  assert.match(queue, /^Queue version: 2026-10-31-r20$/mu);
-  // The earlier entries on the same passage and on the schema comparison are still there, once.
-  for (const id of ["PGQ-049", "PGQ-050"]) assert.equal(count(queue, `\n### ${id} — `), 1, id);
+  // The earlier entries on the same passage and on the schema comparison are consumed too, once each.
+  assertEntriesConsumed([["PGQ-049", "core point in", "SYNCED"], ["PGQ-050", "core point in", "SYNCED"]]);
 });
 
 test("the lesson, the state section, the ledger and the intake receipt carry the change", () => {

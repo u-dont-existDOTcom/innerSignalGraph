@@ -25,10 +25,11 @@ source_refs:
   - IC.SPIRITUAL_LOAN
   - AMEND.IC.NONPUNITIVE_REVIEW
   - AMEND.IC.PRACTICE_TO_LIFE_TRANSFER
+  - AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022
 regression_refs: []
-base_record_sha256: d330ec1b4eaa008d5dc984be4c651481c242e40a2e11b1853eac56f5c7787c89
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: 48316af51f0cd9a6627597103969c89905b9866b586aedd2cf781e644a52e0e5
+base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Move from receiving care to doing five percent
@@ -92,11 +93,14 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise.",
     "Carry the borrowed function into one ordinary-life act that the person initiates, then review what it actually contributed rather than treating completion alone as success.",
     "Keep outside support available when useful while returning authorship, judgment, disagreement, and revision to the person.",
+    "Treat the growing ability to give the vulnerable self real nurturing, protection and guidance as a central outcome of reparenting. Assess actual caring behavior in life without demanding automaticity, constant happiness, total self-sufficiency or flawless consistency.",
     "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
   ],
   "successSignals": [
     "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission.",
     "The person can initiate a small caring/protective act and evaluate whether it helped without handing the helper permanent authority.",
+    "With repeated real-world use, some caring, protective and guiding responses become more automatic and require less compulsive monitoring, without losing the ability to reflect, change course or ask for help.",
+    "Repeated, credible care for the younger self through ordinary choices is central outcome evidence even when it still requires conscious effort or suitable outside support.",
     "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack."
   ]
 }
@@ -124,3 +128,5 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
 
 [[current/governance/amendments/AMEND.IC.PRACTICE_TO_LIFE_TRANSFER]]
+
+[[current/governance/amendments/AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022]]

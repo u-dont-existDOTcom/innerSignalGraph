@@ -14,7 +14,7 @@ reconciled_nodes:
   - IC.CREDIBILITY_REPAIR
   - IC.AGE_RESPONSIBILITY_CLARIFICATION
 base_record_sha256: 86ec17c1be267dc626a7e62bd570ad21c8255d553f8847ed03f6a1f21c698266
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Answer serious content inside contempt or bluster

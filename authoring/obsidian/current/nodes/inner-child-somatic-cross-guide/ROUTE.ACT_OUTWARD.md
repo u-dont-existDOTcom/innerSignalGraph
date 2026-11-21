@@ -32,6 +32,7 @@ source_refs:
   - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
   - AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+  - AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022
 regression_refs:
   - G013
   - G014
@@ -51,9 +52,9 @@ regression_refs:
   - G142
   - G143
   - G144
-base_record_sha256: faf2bb1cba2d53021db09c634d48047b5dd7b14c2638a8d23a965de202be903a
-base_graph_sha256: 268f8d617789fd24a00cf2a471136936c7d05e5f76a6e61a280e9c19a4adb249
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: c0e47179ec67025524cbba7daaaeacac05637362550786bcdfe294ae62de58f3
+base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Act on the concrete problem
@@ -116,7 +117,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
     "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
     "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting.",
-    "Do not collapse feelings, chosen conduct, legal restrictions, clinical categories and consent into the same question."
+    "Do not collapse feelings, chosen conduct, legal restrictions, clinical categories and consent into the same question.",
+    "Do not help hold back a danger that's happening now from people who can help, whether by calling it a dream, fiction or a hypothetical, and do not coach a false denial of current intent, a plan or immediate danger. Telling a hard or past thing at first as a dream narrative is a separate, legitimate first step."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -206,3 +208,5 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/governance/amendments/AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026]]
 
 [[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
+
+[[current/governance/amendments/AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022]]

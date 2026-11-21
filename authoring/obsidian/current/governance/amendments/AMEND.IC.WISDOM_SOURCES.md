@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_SOURCES
 status: owner-approved
 domain: inner-child
-base_record_sha256: a31acd38e888cf2d7b3da945b93fceaec78e5919ba69ae521035c8eafa1833fb
-source_file_sha256: a337b976cfd522f6035bc7d57b795b6c81531a9ec0bd48cd5a4457baeafa2ab3
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: e1deb4d2bf2e627f174c5535ccf5f823c2a35ed03e8be5bfa43e07fff2589f9c
+source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # AMEND.IC.WISDOM_SOURCES
@@ -17,13 +17,13 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 
 ```json
 {
-  "approvedAt": "2026-10-29",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_SOURCES",
     "status": "owner-approved",
     "text": "Religious and philosophical variants are optional references attached to a practice function, not extra required graph stages or additions to the always-loaded constitution. Preserve textual provenance and distinguish original teaching from modern adaptation. The mustard-seed account is a commentarial story; ocean-of-tears and former-mother reflections retain their rebirth context. Bible, Quran, Buddhist and Stoic language depends on individual preference, not a presumed hierarchy of acceptability. Do not force forgiveness, minimize grief, make postmortem claims as fact, promise that kindness reforms an aggressor, or misattribute an unverified maxim. Keep full reference detail in the attached research source and reference cards, not every response."
   },
-  "version": "owner-amendments-2026-10-31-r21"
+  "version": "owner-amendments-2026-11-21-r24"
 }
 ```

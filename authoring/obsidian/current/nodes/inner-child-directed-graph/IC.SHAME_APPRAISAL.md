@@ -19,15 +19,17 @@ graph_tags:
 source_refs:
   - IC.SHAME_APPRAISAL
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+  - AMEND.IC.GENTLER_THAN_GUIDE_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G150
   - G151
   - G152
   - G153
   - G154
-base_record_sha256: 9d1d8c83f772217bfadf1991df91d7c2c73c2108122a6f9accf139eef12f45da
-base_graph_sha256: 08376d416655f165c24c8f8a344ed4367809b7908531259762d22689f1f9cef6
-projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf96abf11c75
+base_record_sha256: fd5f42125e0e634d7c3a4f94ddd361f5ba7b53a3cfc1a45426f39e6e7cbfe8d5
+base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Differentiate shame signals, social judgments, responsibility, and viable repair
@@ -110,7 +112,8 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
     "For genuinely harmful conduct, support specific acknowledgment, realistic reparability, changed behavior and appropriate consequences; release from endless self-punishment does not depend on forgiveness or restored trust.",
     "When shame is followed by shame about being ashamed or other cruel self-criticism, preserve the initial feeling, inquire into any protective purpose of the secondary attack, and change the self-treatment through existing Nurturer, Protector, Guide and guard work.",
     "Where rejection under unfair group expectations continues, consider boundaries, selective belonging and safe alternatives instead of repeating hostile or unpredictable disclosure.",
-    "Use existing relational, action, forgiveness, guard, common-humanity and community routes rather than a compulsory shame exposure or novel parts ritual."
+    "Use existing relational, action, forgiveness, guard, common-humanity and community routes rather than a compulsory shame exposure or novel parts ritual.",
+    "Finding someone trusted to open up to slowly is one of the strongest ways through shame, and relief doesn't depend on it: when the person can't open up to anyone else safely, opening up to their inner adult and/or a higher power counts too. Accountability and repair for any damage they caused still apply."
   ],
   "successSignals": [
     "Responsibility, legitimate protection, and freedom from an unsupported global verdict are separated clearly enough to support one feasible next move."
@@ -124,3 +127,7 @@ projection_input_sha256: 03576b1a5b660a988cae723abb148c21ab7972e00e185762b00ddf9
 [[current/sources/inner-child-guide/IC.SHAME_APPRAISAL]]
 
 [[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
+
+[[current/governance/amendments/AMEND.IC.GENTLER_THAN_GUIDE_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

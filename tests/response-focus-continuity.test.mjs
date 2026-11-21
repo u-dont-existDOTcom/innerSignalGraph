@@ -8,6 +8,23 @@ import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 
 const read = (file) => fs.readFileSync(new URL(file, import.meta.url), "utf8");
 const json = (file) => JSON.parse(read(file));
+
+// The humanization queue was cleared on 2026-11-04 (queue version 2026-11-04-r21, EMPTY): an entry is consumed when the queue no longer
+// holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
+const assertEntriesConsumed = (expected) => {
+  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  // Reset to EMPTY at 2026-11-04-r21; what is queued since (PGQ-056 on, 20 Nov 2026) is new, never an entry consumed then.
+  assert.equal(json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.resetTo, "2026-11-04-r21 (EMPTY)");
+  assert.doesNotMatch(queue, /^### PGQ-0(?:0[1-9]|[1-4]\d|5[0-5]) — /mu, "no entry consumed on 2026-11-04 is queued again");
+  const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
+  for (const [id, fate, status] of expected) {
+    assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
+    const records = obligations.filter((record) => record.id === id);
+    assert.equal(records.length, 1, `${id} has one obligation record`);
+    assert.equal(records[0].fate, fate, `${id} fate`);
+    assert.equal(records[0].status, status, `${id} status`);
+  }
+};
 const name = "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025";
 const flags = [
   "UNSENT_ADVICE_AS_DELIVERED", "DELIVERED_ADVICE_AS_NEW", "SPLIT_FOCUS_RETURN",
@@ -36,7 +53,7 @@ test("app and served protocol use the same expanded fidelity and focus rules", (
 test("delivery, functional coping and focus nuance reach compiled guide sources with unchanged safety routing", () => {
   const owner = json("../guides/owner-amendments.json");
   const manifest = json("../guides/manifest.json");
-  assert.equal(owner.version, "owner-amendments-2026-10-31-r21");
+  assert.equal(owner.version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
   assert.equal(owner.items.find(x=>x.id===name)?.status, "owner-approved");
   assert.equal(manifest.sources.find(x=>x.id==="owner-amendments")?.version, owner.version);
   const paths = [
@@ -59,11 +76,8 @@ test("delivery, functional coping and focus nuance reach compiled guide sources 
 });
 
 test("guide handoff tracks new reader-facing meaning without rewriting owner-authored prose", () => {
-  const pending = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
   const lessons = read("../THERAPY-LESSONS");
-  assert.match(pending,/PGQ-041 — Make existing partial regulation usable outside the exercise/);
-  assert.match(pending,/PGQ-042 — Protect from relapse by understanding the need/);
-  assert.match(pending,/practice-to-life/i);
+  assertEntriesConsumed([["PGQ-041","core point in","SYNCED"],["PGQ-042","core point in","SYNCED"]]);
   assert.match(lessons,/inclusive group in translation/);
   assert.match(lessons,/Development candidate, not live/);
 });

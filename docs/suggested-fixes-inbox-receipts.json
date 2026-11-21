@@ -73,6 +73,13 @@
       "destination": "AGENTS.md 'Suggested fixes from other projects' replaced with the item's exact text; the project-specific inbox paragraph kept (batch PR #213, task branch feat/map-identity-play-permissive-20261031)",
       "implementation": "PROPOSED_ON_TASK_BRANCH",
       "nextCondition": "Review and merge #213 to main"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-11-04-clear-the-inner-child-humanization-queue.md",
+      "disposition": "ADOPTED",
+      "destination": "authoring/PENDING-PUBLIC-GUIDE-CHANGES.md reset to its EMPTY sentinel (queue version 2026-11-04-r21) after all 52 entries of 2026-10-31-r20 were consumed against the owner's humanized guide, and authoring/public-guide-sync.json (inner-child: humanizedDraft, queueConsumption with every entry's fate) updated, on branch task/clear-humanization-queue-20261104 (UDA PR #467, open, owner request)",
+      "implementation": "PROPOSED_ON_TASK_BRANCH",
+      "nextCondition": "Review and merge the pull request from task/clear-humanization-queue-20261104 to main; publishing the humanized guide stays behind the publication gate"
     }
   ]
 }

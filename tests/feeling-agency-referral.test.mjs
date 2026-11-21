@@ -7,6 +7,23 @@ import {loadTherapyProtocol} from "../src/protocol/therapy-protocol.mjs";
 
 const read=(p)=>fs.readFileSync(new URL(p,import.meta.url),"utf8");
 const json=(p)=>JSON.parse(read(p));
+
+// The humanization queue was cleared on 2026-11-04 (queue version 2026-11-04-r21, EMPTY): an entry is consumed when the queue no longer
+// holds it and the inner-child record in the public-guide sync file has exactly one obligation for it, with its fate and status.
+const assertEntriesConsumed = (expected) => {
+  const queue = read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
+  // Reset to EMPTY at 2026-11-04-r21; what is queued since (PGQ-056 on, 20 Nov 2026) is new, never an entry consumed then.
+  assert.equal(json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.resetTo, "2026-11-04-r21 (EMPTY)");
+  assert.doesNotMatch(queue, /^### PGQ-0(?:0[1-9]|[1-4]\d|5[0-5]) — /mu, "no entry consumed on 2026-11-04 is queued again");
+  const obligations = json("../authoring/public-guide-sync.json").guides.find((guide) => guide.id === "inner-child").queueConsumption.obligations;
+  for (const [id, fate, status] of expected) {
+    assert.ok(!queue.includes(`### ${id} — `), `${id} is no longer queued`);
+    const records = obligations.filter((record) => record.id === id);
+    assert.equal(records.length, 1, `${id} has one obligation record`);
+    assert.equal(records[0].fate, fate, `${id} fate`);
+    assert.equal(records[0].status, status, `${id} status`);
+  }
+};
 const a1="AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026";
 const a2="AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026";
 const failures=["ATTRACTION_ACTION_CONFLATION","SHAME_RESPONSIBILITY_FALSE_CHOICE","UNSUPPORTED_SEXUAL_CAUSE","SEXUAL_CARE_SCOPE_ERROR","SENSITIVE_REFERRAL_FIT_MISSING","REFRACTORY_PEAK_REASK","LEGAL_CLINICAL_CONSENT_COLLAPSE"];
@@ -24,8 +41,8 @@ test("owner amendment and guide projections match current source",()=>{
  const m=json("../guides/manifest.json");
  const a=json("../guides/owner-amendments.json");
  assert.equal(m.sources.find(x=>x.id==="owner-amendments").version,a.version);
- assert.equal(a.items.length,74);
- assert.equal(a.version,"owner-amendments-2026-10-31-r21");
+ assert.equal(a.items.length,96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+ assert.equal(a.version,"owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
  assert.equal(a.items.find(x=>x.id===a1)?.status,"owner-approved");
  assert.equal(a.items.find(x=>x.id===a2)?.status,"owner-approved");
  const groups=[
@@ -45,10 +62,9 @@ test("owner amendment and guide projections match current source",()=>{
  assert.match(prot.avoid.at(-1),/Do not make review punitive/);
 });
 test("public guide handoff is scoped, not automatically published",()=>{
- const queue=read("../authoring/PENDING-PUBLIC-GUIDE-CHANGES.md");
- assert.match(queue,/PGQ-043 — Notice feelings, choose actions without self-condemnation/);
- assert.match(queue,/PGQ-039/);
- assert.match(queue,/Also Look Outward/);
+ assertEntriesConsumed([["PGQ-039","core point in","SYNCED"],["PGQ-043","core point in","SYNCED"]]);
+ const consumption=json("../authoring/public-guide-sync.json").guides.find(guide=>guide.id==="inner-child").queueConsumption;
+ assert.match(consumption.legalReview,/PGQ-039/);
 });
 test("synthetic regression prompts are explicitly behavior tests for future replay",()=>{
  const cases=json("../corpus/attraction-agency-regression-cases.json");
