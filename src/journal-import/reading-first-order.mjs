@@ -14,8 +14,13 @@ const DIGEST = /^[0-9a-f]{64}$/;
 const MODALITIES = new Set(["text", "image", "text+image"]);
 const PENDING_REASONS = new Set([
   "tool_refused", "visual_pending", "consent_pending",
-  "qualified_review_pending", "source_unavailable"
+  "qualified_review_pending", "source_unavailable",
+  // A page the run config gives to an authorized reviewer, and a page the reader could not read as asked.
+  "operator_review_requested", "reader_output_invalid", "reader_evidence_invalid", "reader_unavailable"
 ]);
+// How a reviewed page was reviewed: by the source reader, or by an authorized operator review. Rows from before the
+// route was recorded carry neither.
+const REVIEW_ROUTES = new Set(["source_reader", "authorized_operator_review"]);
 
 function invariant(ok, code) {
   if (!ok) throw new ValidationError(code, { code });
@@ -101,6 +106,8 @@ function checkCoverage(receipt, sourcePages) {
         digest(entry.read_result_sha256) &&
         entry.reviewed_modalities === original.required_modalities,
         "JOURNAL_READING_FIRST_SOURCE_READ_RECEIPT_REQUIRED");
+      invariant(entry.review_route === undefined || REVIEW_ROUTES.has(entry.review_route),
+        "JOURNAL_READING_FIRST_COVERAGE_INVALID");
     }
   }
   return { reviewed, pending, private_coverage_ref: receipt.private_coverage_ref };

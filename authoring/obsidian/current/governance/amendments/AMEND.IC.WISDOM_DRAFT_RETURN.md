@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_DRAFT_RETURN
 status: owner-approved
 domain: inner-child
-base_record_sha256: 3f04c004b71dd0db2fc34377328005938373297389f2582c4ebe43063a7a6a94
-source_file_sha256: 98664b10000dc1844828f5e957c8e589bbd052ba293fd84dc6ed50eebb241a75
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: b7df4a75fa2627719a583a31d70ef8f8ca1ce8564e9ac5fb0193c88987623d9c
+source_file_sha256: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # AMEND.IC.WISDOM_DRAFT_RETURN
@@ -17,13 +17,13 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 
 ```json
 {
-  "approvedAt": "2026-10-25",
+  "approvedAt": "2026-11-20",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_DRAFT_RETURN",
     "status": "owner-approved",
     "text": "The return to the original draft is a distinct issue-bound therapeutic purpose, not an automatically scheduled message or an instruction to contact the other person. After the outward decision or response is actually reported, attend to what its writer was experiencing and what understanding, protection, reassurance, responsibility or practical help is now needed. Use the existing Nurturer/Protector/Guide and credibility/guard routes when supported. Do not infer a child-state, hidden memory or cause. Adult care is shown through a feasible action before demanding that a part feel reassured. An outward response completed is not inward care completed. A user may defer or decline this return without losing care; do not force an assignment or carry task authority across a changed issue."
   },
-  "version": "owner-amendments-2026-10-25-r16"
+  "version": "owner-amendments-2026-11-20-r23"
 }
 ```

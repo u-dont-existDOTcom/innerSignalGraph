@@ -145,3 +145,12 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 .guide-quality-item.severity-warning { border-left-color:#b77b22; }
 .guide-quality-item.severity-info { border-left-color:var(--accent); }
 @media (max-width:720px) { .guide-status-grid { grid-template-columns:1fr; } }
+.supervisor-list { list-style:none; margin:.5rem 0 1rem; padding:0; display:grid; gap:.65rem; }
+.supervisor-input, .supervisor-artifact { display:grid; gap:.3rem; border-left:4px solid var(--line); padding:.65rem .8rem; background:var(--bg); }
+.supervisor-artifact.tone-ready { border-left-color:var(--accent); }
+.supervisor-artifact.tone-blocked { border-left-color:var(--danger); }
+.supervisor-artifact.tone-stale { border-left-color:#b77b22; }
+.supervisor-artifact.tone-replaced, .supervisor-artifact.tone-pending { border-left-color:var(--muted); }
+.supervisor-text { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.5; margin:.25rem 0; font:inherit; }
+.supervisor-output { display:grid; gap:.4rem; margin-top:.4rem; }
+#supervisor-status[data-tone="error"] { color:var(--danger); font-weight:700; }

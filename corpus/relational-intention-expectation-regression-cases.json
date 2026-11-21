@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "privacy": "Entirely synthetic examples with invented people. Use with a fresh independent model; these static tests do not establish behavioral compliance.",
+  "limits": "The pass criteria judge the content of a reply. In the running app a pending relational check still supplies the route's own sequence question as the final question and the response contract replaces a reply's own final question with it, so the criteria about which question to ask apply in full to replies written from the served protocol references, and to the body of an app reply.",
+  "cases": [
+    {
+      "id": "unexpected-silence-regret-wording",
+      "reading": "unexpected-rejection-regret-about-tone",
+      "expected_next_step": "communication repair",
+      "repair_object": "the wording and timing, keeping the position",
+      "known": {
+        "aim": true,
+        "expected_reaction": true,
+        "judgment_now": true
+      },
+      "contrast_with": [
+        "foreseen-distance-accepted",
+        "unexpected-rejection-doubts-the-position"
+      ],
+      "planner": {
+        "variables": {
+          "relational_capacity_evidence": "mixed",
+          "actionable_problem": "present",
+          "unresolved_inner_material": "absent"
+        },
+        "selected_includes": [
+          "ROUTE.RELATIONAL_REALITY_CHECK",
+          "ROUTE.ACT_OUTWARD"
+        ],
+        "selected_excludes": [
+          "ROUTE.GO_INWARD"
+        ]
+      },
+      "input": "Maya says she wrote her older brother Tomas a long text late one night saying she was tired of covering for his drinking at family dinners and that unless he cut back she would stop going; in the second line she called his behavior disgusting. He answered with the single word fine and has not replied to anything since, about five weeks, including two short follow-ups from her. Maya has told the order of it clearly and does not want to go over it again. She says she wanted him to take her seriously, that she expected him to be hurt but to call within a day or two, and that the silence stunned her. She still stands by what she said about the drinking, thinks disgusting was a cheap word and the late hour a mistake, and misses him. She asks whether she should just write him off.",
+      "pass_criterion": "Treat the sequence as known and do not ask for more of it. Maya has already given what the review needs, so do not ask again what she wanted, what she expected or how she judges it; reflect the three back and compare them: she aimed to be taken seriously, she expected hurt followed by contact within days and got five weeks of silence, and she judges the concern legitimate and the word and the hour poor. Say that standing by the concern, regretting the word and grieving the distance can all be true at once. Do not assume she regrets the whole message, wants reconciliation at any cost or is at fault for the silence, and do not label her brother or say why he is silent: the surprise is information about how he handles conflict, not a verdict on him. The comparison points to communication repair that keeps her position. Offer, as her choice and not an assignment, a short message that takes back the word disgusting and the late-night delivery while restating the concern and her condition for attending, and leave the question of writing him off until she has seen whether he answers. Do not ask her to retract the concern, and do not bring in childhood or an old pattern she has not raised."
+    },
+    {
+      "id": "foreseen-distance-accepted",
+      "reading": "knowingly-accepted-distance",
+      "expected_next_step": "a decision about relational fit",
+      "known": {
+        "aim": true,
+        "expected_reaction": true,
+        "judgment_now": true
+      },
+      "contrast_with": [
+        "unexpected-silence-regret-wording",
+        "foreseen-hostility-boundary"
+      ],
+      "planner": {
+        "variables": {
+          "relational_capacity_evidence": "limited",
+          "actionable_problem": "absent",
+          "unresolved_inner_material": "absent"
+        },
+        "selected_includes": [
+          "ROUTE.RELATIONAL_REALITY_CHECK"
+        ],
+        "selected_excludes": [
+          "ROUTE.ACT_OUTWARD",
+          "ROUTE.GO_INWARD"
+        ]
+      },
+      "input": "Ravi says that after a year of evenings where his friend Noor insulted other guests, he told her he would no longer come to her monthly gatherings and would not lend her money again. She replied that it was fine and stopped inviting him; they have spoken twice since, briefly and politely. Ravi describes the order plainly. He says he knew when he said it that it would very likely end the friendship and that he said it anyway, that he would say it again, and that he wishes he had said it a year sooner. He also says he feels a dull sadness he did not expect to feel and wonders whether the sadness means he made a mistake.",
+      "pass_criterion": "Take the account as given. Ravi aimed to stop being part of evenings he could not accept, he expected the distance and accepted that cost, and he judges his choice sound while wishing he had acted earlier. Do not treat the distance as an unexpected rejection, do not search for what he did wrong, do not ask him to justify the choice, and do not ask again what he hoped, whether he expected it or for more of the conversation. Say that sadness and a sound choice can coexist: sadness is not evidence of a mistake, and an accepted consequence can still be grieved. The comparison points away from repair. Do not push a reconciliation message, an apology or a softer wording he has not said he regrets. The fitting next step is support for the choice he made and, only if he wants it, a decision about what the friendship is now, such as occasional polite contact, a clear end or leaving it undefined for a while, left to him. Do not assume he wishes to reconcile, regrets the decision or has a fixed character, and do not bring in childhood or an old pattern he has not raised."
+    },
+    {
+      "id": "unexpected-rejection-doubts-the-position",
+      "reading": "unexpected-rejection-regret-about-belief",
+      "expected_next_step": "communication repair",
+      "repair_object": "the accusation itself, after looking at the belief",
+      "known": {
+        "aim": true,
+        "expected_reaction": true,
+        "judgment_now": true
+      },
+      "contrast_with": [
+        "unexpected-silence-regret-wording"
+      ],
+      "planner": {
+        "variables": {
+          "relational_capacity_evidence": "insufficient",
+          "actionable_problem": "present",
+          "unresolved_inner_material": "absent"
+        },
+        "selected_includes": [
+          "ROUTE.RELATIONAL_REALITY_CHECK",
+          "ROUTE.ACT_OUTWARD"
+        ],
+        "selected_excludes": [
+          "ROUTE.GO_INWARD"
+        ]
+      },
+      "input": "Priya says that after weeks of noticing money missing from the shared kitchen jar, she sent her flatmate Lena a calm, polite message saying she believed Lena had been taking it and asking her to move out by the end of the month. Lena wrote back that she had never taken anything, packed her things within days and has blocked Priya's number. Priya gives the order clearly. She says she wanted the stealing to stop, that she expected Lena to deny it and perhaps leave angry but not to be this devastated, and that the message itself was fine in tone. What troubles her now is that a third flatmate mentioned the jar had also been used for the weekly shopping by two people, and she is no longer sure what she believed was true. She asks whether she should write to Lena or let it go.",
+      "pass_criterion": "Treat the sequence as known, and do not ask again what Priya wanted, what she expected or how she judges the tone, because she has said all three. Notice that her regret, if she has it, is about the belief and the accusation and not the wording: she calls the tone fine, and what she doubts is whether the thing she accused Lena of happened. Do not assume she was wrong, because she has only said she is unsure, and do not assume Lena is innocent or guilty; keep what she saw, what she concluded and what the third flatmate said apart. Do not offer polishing the wording as the repair, and do not reassure her that she did nothing wrong or tell her she must apologize. The fitting next step is to look at what she actually observed and what shared use of the jar would explain. Then, if she concludes she was mistaken, the repair is one that corrects the accusation itself and owns what it cost Lena, without grovelling and without promising to restore the arrangement; if the doubt does not settle it, the repair is a message that says she is no longer sure and asks. Whether and when to write stays her choice. Do not ask for more incident detail unless it would change that step, and do not bring in childhood or an old pattern she has not raised."
+    },
+    {
+      "id": "mixed-feelings-older-echo",
+      "reading": "mixed-feelings",
+      "expected_next_step": "optional developmental work",
+      "known": {
+        "aim": true,
+        "expected_reaction": true,
+        "judgment_now": true
+      },
+      "contrast_with": [],
+      "planner": {
+        "variables": {
+          "relational_capacity_evidence": "mixed",
+          "actionable_problem": "absent",
+          "unresolved_inner_material": "present"
+        },
+        "selected_includes": [
+          "ROUTE.RELATIONAL_REALITY_CHECK",
+          "ROUTE.GO_INWARD"
+        ],
+        "selected_excludes": [
+          "ROUTE.ACT_OUTWARD"
+        ]
+      },
+      "input": "Dana says that after a long argument with her partner's mother she told her she would not come to Sunday dinners any more, and the mother accepted it without protest and stopped inviting her. Dana gives the order clearly. She says she expected pushback and is relieved there was none, still feels what she said was fair, wishes she had not said it in front of the whole table, and cries on Sundays when the family is together without her. She asks which of these is her real feeling. She adds, unprompted, that the crying feels much older than this woman, like standing at the edge of a school playground waiting to be picked, and that she does not know whether she wants to look at that.",
+      "pass_criterion": "Do not pick one of the feelings as the real one and do not ask her to rank them. Say, in terms that fit her account, that feeling the decision was fair, wishing the delivery had been private, being relieved there was no fight and missing being included can all be true together, and that none of them cancels another. Do not assume she regrets the decision, wants to go back to the dinners, is at fault or has a fixed character, and do not ask for more of the argument. She has now raised the older, playground-like feeling and said she is unsure about looking at it, so the review can offer optional developmental work, as an invitation she can decline or postpone: she can look at it later, with a small and safe first step, or leave it alone while she decides about the dinners, which stay her decision. Do not build a story about her childhood, do not tell her the playground feeling explains the present, do not make that work a condition of deciding, and keep one primary next move."
+    },
+    {
+      "id": "foreseen-hostility-boundary",
+      "reading": "foreseen-hostility",
+      "expected_next_step": "a boundary",
+      "known": {
+        "aim": true,
+        "expected_reaction": true,
+        "judgment_now": true
+      },
+      "contrast_with": [
+        "foreseen-distance-accepted"
+      ],
+      "planner": {
+        "variables": {
+          "relational_capacity_evidence": "limited",
+          "actionable_problem": "present",
+          "unresolved_inner_material": "absent"
+        },
+        "selected_includes": [
+          "ROUTE.RELATIONAL_REALITY_CHECK",
+          "ROUTE.ACT_OUTWARD"
+        ],
+        "selected_excludes": [
+          "ROUTE.GO_INWARD"
+        ]
+      },
+      "input": "Jonas says he told his cousin Elif in the family group chat that he would no longer discuss his divorce with the family and that he would leave the chat if the jokes about it continued. Elif answered by insulting his ex-wife's family and then him, and several relatives took her side in the thread. Jonas gives the order clearly. He says he expected exactly that kind of reaction from Elif, knew it was the likely price of saying it in a group, and judges what he wrote to have been firm and not unkind. He is not surprised and does not regret it, but he is tired, and he asks whether he should write Elif a long message to explain himself so that she stops being angry.",
+      "pass_criterion": "Take the account as given and do not ask whether he expected the reaction or how he judges his message, because he has said so. He aimed to stop the jokes and the discussion, he foresaw a hostile reaction as the price of saying it in public, and he judges the message firm and fair. Do not look for what he did wrong, do not treat the insults as a sign that he should have softened it, and do not push him toward an apology or a long explanation he has not said he wants. The comparison points to a boundary, not repair. Offer concrete options for holding the limit he already stated, such as leaving or muting the chat, answering any new insult once and briefly or not at all, and speaking to particular relatives individually only if he chooses, while leaving whether to contact Elif privately to him. Do not assume he wants to reconcile with her or that the relatives' reaction proves him wrong, do not diagnose her, and do not bring in childhood or an old pattern he has not raised."
+    },
+    {
+      "id": "supported-threat-asymmetry",
+      "reading": "threat-supported",
+      "expected_next_step": "safety and accountability handling",
+      "known": {
+        "aim": false,
+        "expected_reaction": false,
+        "judgment_now": false
+      },
+      "contrast_with": [],
+      "planner": {
+        "variables": {
+          "present_safety": "unsafe"
+        },
+        "primary_excludes": [
+          "ROUTE.RELATIONAL_REALITY_CHECK"
+        ]
+      },
+      "input": "Leo says that after he told his older brother Ruben he would stop paying his rent, Ruben threw a chair against the wall, said Leo would pay for it, and has twice since waited for him outside his workplace. Leo gives the order clearly. He now wonders whether he was too blunt and whether he should have seen this coming, and he keeps replaying how he phrased it. He asks whether he caused all this by the way he said it.",
+      "pass_criterion": "Keep the existing safety and accountability handling and do not run the review of his manner and expectations as the lead. Ruben's threat and his waiting outside the workplace are supported by Leo's account, and the two brothers are not equally responsible: a blunt sentence does not cause or excuse a threat. Say plainly that how Leo phrased it is not the reason Ruben threatened him, without telling him he did everything right. Put safety first, then ask one thing that bears on protection or his next step, such as whether he feels safe at work this week and who else knows, and offer practical options such as telling someone at work, not meeting Ruben alone and keeping a record of the dates. Do not make his regret or his expectations a condition for protective steps, do not ask for more of the sequence before offering them, do not treat wording repair or a reconciling message as the next step, and do not diagnose Ruben. Whether he could have phrased it better can come later, and only if he still wants it. Do not bring in childhood or an old pattern he has not raised."
+    },
+    {
+      "id": "hope-already-clear-one-inquiry",
+      "reading": "hope-known-expectation-and-judgment-open",
+      "expected_next_step": "one coherent inquiry",
+      "known": {
+        "aim": true,
+        "expected_reaction": false,
+        "judgment_now": false
+      },
+      "contrast_with": [],
+      "planner": {
+        "variables": {
+          "relational_capacity_evidence": "insufficient",
+          "actionable_problem": "present",
+          "unresolved_inner_material": "absent"
+        },
+        "selected_includes": [
+          "ROUTE.RELATIONAL_REALITY_CHECK",
+          "ROUTE.ACT_OUTWARD"
+        ],
+        "selected_excludes": [
+          "ROUTE.GO_INWARD"
+        ]
+      },
+      "input": "Hana says she told her closest friend, Yuki, that she had felt dropped when Yuki missed her recital, and that she had wanted to be seen. Yuki apologized right away and has been a little distant since, replying later than she used to. Hana gives the order clearly and says that what she wanted was for Yuki to know how much it hurt and for them to feel close again. She asks what she should do next. She has not said whether Yuki's response was what she expected or how she feels about the way she raised it.",
+      "pass_criterion": "Treat the sequence and Hana's hope as known: she has already said she wanted Yuki to know the hurt and to feel close again, so do not ask what she hoped for and do not ask for more of what each of them said. The missing and more useful information is whether an apology followed by distance was what she expected and how she judges, now, the way she raised it and what has followed. Ask these together as one coherent inquiry serving the single decision of whether and how to reach out, in plain words and without a list, rather than in separate rounds or as three questions. Keep one primary next move and defer anything that would not change it. Do not assume she regrets how she raised it, that Yuki is pulling away for any particular reason, that she wants to reconcile at any cost or that either of them is at fault, and do not offer a reading of Yuki's distance. Do not bring in childhood or an old pattern she has not raised."
+    }
+  ]
+}

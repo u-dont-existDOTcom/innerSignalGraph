@@ -23,6 +23,12 @@ source_refs:
   - AMEND.IC.WISDOM_CORE
   - AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY
   - AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+  - AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028
+  - AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031
+  - AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022
+  - AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G013
   - G014
@@ -30,9 +36,13 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: 6402c41bc507769f621c6cfd64e18c9046f9d0f284e8a635f872245a78b22079
-base_graph_sha256: d145252bb6e094d5fa9198c422f41f3ea60dfb0e93fc1c92682fba10ed0c81cf
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+  - G141
+  - G142
+  - G143
+  - G144
+base_record_sha256: e1c1c045f3bb3f9d52a27f394a6f4d9fe1faecb3937627b493fe57b491a3fa64
+base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -99,9 +109,11 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.",
     "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
     "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
-    "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships."
+    "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships.",
+    "Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement: a person can stand by a position, regret the wording and grieve the loss at once. Once the sequence is known, do not keep asking for incident detail unless the missing detail would change the next step or safety.",
+    "Do not call every negative reaction jealousy, dismiss real hurt or duties, or suggest that protecting the person’s happiness requires ending relationships indiscriminately."
   ],
-  "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
+  "defaultQuestion": "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
@@ -120,7 +132,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
       "Acceptance, attachment relief, attraction, romantic love, compatibility and trust are separable observations that should not be collapsed into one another.",
       "Support and mutual co-regulation are healthy relational functions; the restriction targets using another person as a certainty test, reassurance machine or diagnostic instrument.",
       "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability.",
-      "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy."
+      "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy.",
+      "In sensitive disclosure, privacy and graded trust remain legitimate: the person may begin with general information, or tell a hard thing at first as a dream narrative and see how the listener handles it. That never covers a danger that's happening now, which is not held back from people who can help; do not promise blanket secrecy or withhold protective help."
     ]
   },
   "questionPolicy": {
@@ -128,7 +141,9 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "unresolvedFields": []
   },
   "recommendations": [
-    "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+    "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
+    "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
+    "Once that sequence is known well enough, review the completed encounter before choosing a next step: distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time (including surprise or a foreseeable tradeoff), and how they now judge both their manner and what followed, then compare the three. This is not the same as defining a realistic outcome for a future interaction (below). The next step may be communication repair, a boundary, a decision about relational fit or optional developmental work. When context already suggests what the person hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now, and asking all three is not required every time. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions and do not treat the threatening and the threatened party as equally responsible.",
     "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
     "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
     "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -140,7 +155,11 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Calibrate vulnerability to demonstrated trust. Privacy with strangers or low-trust contacts is not fakery and total disclosure is not required; when closeness deepens beyond the level at which the person can be meaningfully honest, either increase truthful contact at a safe pace or reduce the depth.",
     "Treat the relief of being accepted or not judged as important relational information without automatically calling it romantic love, compatibility or earned trust.",
     "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure.",
-    "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection."
+    "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection.",
+    "For shame involving social rejection, test the actual evidence and the consequences of disclosure. Correctly predicted rejection may reflect an unfair audience, not wrongdoing; do not advise disclosure to an untested or hostile person by default.",
+    "When a person’s greater happiness or independence changes a relationship, acknowledge that another person may actually resent or withdraw from the change. Observe specific conduct, limits and willingness to repair before deciding whether to invest, grieve or step back; do not promise approval from everyone.",
+    "Distrust can become a self-fulfilling prophecy: if nobody hears that the person is struggling, nobody offers help, and that can look like proof nobody cares. Keeping quiet may once have been the smartest choice; with people who are safely available now, it can keep help away.",
+    "Before calling someone out, the person can name their own part of the same problem first (the log in their own eye)."
   ],
   "successSignals": [
     "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
@@ -165,3 +184,15 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY]]
 
 [[current/governance/amendments/AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
+
+[[current/governance/amendments/AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028]]
+
+[[current/governance/amendments/AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031]]
+
+[[current/governance/amendments/AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022]]
+
+[[current/governance/amendments/AMEND.CROSS.STRICTER_THAN_GUIDE_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

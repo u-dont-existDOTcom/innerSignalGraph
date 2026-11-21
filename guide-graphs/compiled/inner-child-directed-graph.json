@@ -42,13 +42,16 @@
       },
       "sourceRefs": [
         "IC.BEFORE_DEEP",
-        "IC.REGULATION_BEFORE_DIALOGUE"
+        "IC.REGULATION_BEFORE_DIALOGUE",
+        "AMEND.IC.SCAFFOLDING_IS_READINESS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
         "Use eyes-open, present-focused contact and the smallest reversible action.",
-        "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored."
+        "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored.",
+        "Scaffolding is the readiness check: start with the smallest step that feels possible and go deeper only after the last one went well. Coming back to the room is practised on those small steps, never tested before starting; what sends the work here first is noticing that the person plainly can't stay present or find their way back right now."
       ],
       "avoid": [
         "Do not deepen, interpret memories, or require an inner-child response."
@@ -202,12 +205,14 @@
       "sourceRefs": [
         "IC.REGULATION_BEFORE_DIALOGUE",
         "IC.HEART_SOLAR_LOOP",
-        "AMEND.SOM.PREP_MODALITIES"
+        "AMEND.SOM.PREP_MODALITIES",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use non-forced longer exhales, gentle self-massage, or another low-dose somatic method to reduce holding around the solar plexus or abdomen.",
-        "Treat softening as an opening for love or presence, not an order to enter memories."
+        "Treat softening as an opening for love or presence, not an order to enter memories.",
+        "Breathing can stay continuous and unforced: no holding or straining."
       ],
       "avoid": [
         "Do not force breath, chase intensity, or assume tension proves a hidden memory."
@@ -280,7 +285,8 @@
         "AMEND.IC.WISDOM_CORE",
         "IC.SPIRITUAL_LOAN",
         "IC.ALTERED_STATES",
-        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014"
+        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -291,7 +297,9 @@
         "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.",
         "Start with what is actually accessible in the present. If a profound loving state is only remembered, use sober recollection or a chosen benevolent reference as preparation and see whether any caring function becomes available now.",
         "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity.",
-        "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing."
+        "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing.",
+        "When care feels unavailable, distinguish fear of compassion, lack of developed capacity and a mismatch in the form of care before attempting a different approach; none requires forcing the same image or feeling.",
+        "When a person reports contact with a deeper spiritual level of perfection, wisdom or compassion, it may bring release, love and reassurance in its own right and can help build the inner Nurturer, Protector and Guide; do not treat it as a source of specific facts about ordinary life or let it replace discernment, so an impression that seems to come through it is tested like any other, and neither affirm nor deny what it is."
       ],
       "avoid": [
         "Do not manufacture warmth or make the loved being responsible for the session.",
@@ -545,7 +553,8 @@
         "IC.BORROW_ONE_FUNCTION",
         "IC.SPIRITUAL_LOAN",
         "AMEND.IC.NONPUNITIVE_REVIEW",
-        "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER"
+        "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+        "AMEND.IC.AUTOMATIC_CARE_INTEGRATION_20261022"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -554,6 +563,7 @@
         "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise.",
         "Carry the borrowed function into one ordinary-life act that the person initiates, then review what it actually contributed rather than treating completion alone as success.",
         "Keep outside support available when useful while returning authorship, judgment, disagreement, and revision to the person.",
+        "Treat the growing ability to give the vulnerable self real nurturing, protection and guidance as a central outcome of reparenting. Assess actual caring behavior in life without demanding automaticity, constant happiness, total self-sufficiency or flawless consistency.",
         "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
       ],
       "avoid": [
@@ -563,6 +573,8 @@
       "successSignals": [
         "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission.",
         "The person can initiate a small caring/protective act and evaluate whether it helped without handing the helper permanent authority.",
+        "With repeated real-world use, some caring, protective and guiding responses become more automatic and require less compulsive monitoring, without losing the ability to reflect, change course or ask for help.",
+        "Repeated, credible care for the younger self through ordinary choices is central outcome evidence even when it still requires conscious effort or suitable outside support.",
         "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack."
       ],
       "tags": [
@@ -634,7 +646,9 @@
         "IC.PROTECTOR_VISIBLE",
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
         "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
-        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+        "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -643,17 +657,21 @@
         "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
         "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity.",
         "When a currently accessible practice has a small observed benefit, compare its personally effective technique, duration, continuation, delayed costs and carryover into ordinary life before changing it or demanding more intensity.",
-        "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment."
+        "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment.",
+        "When a known practice sometimes calms early distress but fails once overwhelmed, compare the successful pre-peak contexts with the unsuccessful ones rather than asking again what worked at the worst peak."
       ],
       "avoid": [
         "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
         "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
         "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.",
-        "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization."
+        "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization.",
+        "Do not infer that a person made no effort simply because no method provided sufficient relief at the peak, or require exhaustive logs to make sense of mixed outcomes."
       ],
       "successSignals": [
         "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
-        "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity."
+        "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity.",
+        "Greater reliability of nurturing, protective and guiding actions in daily life is meaningful reparenting outcome evidence, with context and limits noted.",
+        "Less need for therapy, and more play, are signs of success."
       ],
       "tags": [
         "inner-signal-continuity",
@@ -669,7 +687,9 @@
         "requiredNuance": [
           "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
           "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
-          "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice."
+          "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice.",
+          "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress.",
+          "Less need for therapy, and more play, are signs of success."
         ],
         "forbiddenOverclaims": [
           "Do not claim that a successful meditation proves durable real-life change.",
@@ -711,19 +731,31 @@
         "IC.GUARDS",
         "IC.BOTTOM_UP_SEQUENCE",
         "IC.ESCAPE_URGE",
+        "IC.INHERITED_PARENT",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
-        "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION"
+        "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022",
+        "AMEND.IC.PROTECTIVE_NO_AGREEMENT_20261120",
+        "AMEND.IC.GENTLER_THAN_GUIDE_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120",
+        "AMEND.IC.GUARDS_USUALLY_A_MIX_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
         "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
+        "Meet a critical inner voice with compassion, curiosity and understanding as well as firm limits. Where a protective purpose is plausible, do not assume it protects only the younger self: it may be guarding another vulnerable part, belonging, status, control or safety. Explore what it fears or is trying to accomplish when the person finds that useful, treating the answer as a hypothesis; it is not required before the person rejects the insult, sets a boundary or takes relief.",
         "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
-        "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes."
+        "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes.",
+        "When shame becomes shame about being ashamed, distinguish the initial experience from a secondary self-attack and investigate any useful protective aim without treating the first feeling as a malfunction.",
+        "Distinguish a learned defensive guard from the chosen Adult Protector role; a guard may carry a useful warning or an obsolete coping tactic, whereas the Adult Protector is the present adult's capacity to protect and respond.",
+        "Any guard, whether it stays on duty or jumps in when pain gets close, and any critical voice, an inherited script included, may be helpful, unhelpful or, usually, a mix. Don't decide which in advance. When the person wants to, find out with them by getting to know it (asking it, or just noticing when it shows up and what it's after), to see whether an understanding can be reached; this is never required before they reject an insult, set a limit or take relief. Normally there's something good to keep, though not always, and never invent one: what's kept is what the part is for (rest, relief, safety, a warning), not necessarily its way of getting it. For a critical voice, the reframing trick in the owner's guide (from a film scene with Fred Rogers): stay curious about its motives and open to any kernel of truth, without accepting insults or cruelty, then let it go with compassion. When the person, having got to know a part, finds it isn't helping (the owner's example: a totally useless old script), it can be fully reprogrammed: they choose what they'd rather hear or do at that moment and practise it in place of the old line, firmly or with humour, never with cruelty. Whether a part is that is the person's call; say what you notice only when asked, as a guess. For a part's no to going deeper, to an altered state or to touch or sex, the override rule decides, not this one. A wish to die is handled by the section on someone who may want to die, not here."
       ],
       "avoid": [
         "Do not classify the voice more confidently than the transcript supports or push past it.",
-        "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex."
+        "Do not assume an inner critic is a guard: it is one when it works as a self-critical strategy trying to prevent a feared outcome, but a critical voice may also, or instead, replay something learned from a parent or point to a real problem in a cruel way.",
+        "Do not equate listening to a protective alarm with obeying it. A protective part's no to going deeper, to an altered state or to sex is neither obeyed nor overridden automatically: hear the part out and look for an agreement every part can accept. An override fits only when the person already understands the no as an old, unhelpful pattern (the owner's example: a part that told him not to talk to strangers); it is not one size fits all. InnerSignal never pushes an override, including through prediction-testing: the person decides."
       ],
       "successSignals": [
         "The protective response can be heard without running the session or being exiled."
@@ -741,12 +773,13 @@
         "requiredNuance": [
           "The contempt may be child, protector, adult evaluator, or blend.",
           "Protective intent and predictive accuracy are separate: an alarm can be understandable and still be mistaken, outdated, or overprotective.",
-          "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward."
+          "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward.",
+          "Ordinary wishes, habits and critical thoughts are not automatically a guard, a hidden trauma or a separate inner person; test function and context before assigning a role."
         ],
         "forbiddenOverclaims": [
           "Do not definitively label a cynical voice as a guard.",
           "Do not claim that anxiety or another protective alarm proves the feared conclusion is true.",
-          "Do not claim that testing a protective prediction authorizes overriding a protector's no to deeper or altered-state work, or hesitation about touch or sex."
+          "Do not claim that testing a protective prediction, or InnerSignal's own reading, authorizes overriding a protector's no to deeper or altered-state work, or hesitation about touch or sex; only the person can decide that a no is an old pattern to override."
         ],
         "deferralUnless": [
           {
@@ -784,7 +817,10 @@
         "IC.BOTTOM_UP_SEQUENCE",
         "IC.BORROW_LOVE",
         "IC.BORROW_ONE_FUNCTION",
-        "AMEND.IC.NONPUNITIVE_REVIEW"
+        "AMEND.IC.NONPUNITIVE_REVIEW",
+        "AMEND.IC.LEARNED_PATTERN_FEEDBACK_AND_CRITIC_20261022",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -795,7 +831,9 @@
         "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
         "If positive nurture is the missing function, borrow or build that function rather than asking the younger state to open merely because hostility stopped.",
         "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both.",
-        "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible."
+        "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible.",
+        "When an old expectation, coping response, and later self-attack appear together, check the real sequence and whether the response helped maintain the expectation; preserve evidence that another person actually withheld care or acted unsafely.",
+        "When the adult voice feels fake, meditate first on why it feels fake before pushing on with persistence: asking to connect with a little one the adult doesn't believe is real can feel like gaslighting to the child."
       ],
       "avoid": [
         "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed.",
@@ -824,7 +862,8 @@
           "A pre-existing adverse track record is different from having no track record yet.",
           "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
           "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable.",
-          "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse."
+          "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse.",
+          "Useful intentions or self-reviews can be recaptured by a punitive inherited script. Keep useful responsibility, learning and repair while avoiding shame about having the feeling or about the method not instantly working."
         ]
       },
       "defaultQuestion": ""
@@ -912,24 +951,34 @@
       "sourceRefs": [
         "IC.PROTECTOR_VISIBLE",
         "IC.ADULT_APPRENTICE",
+        "IC.GUIDE_LATER",
+        "IC.INHERITED_PARENT",
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.NONPUNITIVE_REVIEW",
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
-        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022",
+        "AMEND.IC.THREE_JOBS_WORK_TOGETHER_20261118",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
         "Report the action without requiring the younger state to trust it yet.",
         "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
+        "The inner adult can meet a harsh inner voice with compassion, curiosity and understanding and still give it firm limits: reject the insult and stop the attack without first settling which purpose the voice serves, take seriously anything useful in the message and, if it is willing, see whether it would make its point without the contempt. Understanding where the criticism comes from does not mean agreeing with it or allowing it to keep attacking.",
         "For recurring risky relief used against sleep disruption or other distress, identify the unmet need and one feasible safer response available in the moment, evaluating realistic access barriers and social or environmental supports without blaming the person.",
+        "Choosing not to act on an unsuitable attraction can be a compassionate protective response, respecting the needs, boundaries and consent of everyone affected without making the feeling itself a source of shame.",
         "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
       ],
       "avoid": [
         "Do not recommend a coping strategy known to worsen the person's condition merely because it briefly relieves distress.",
         "Do not choose an action so large that failure becomes new evidence of unreliability.",
+        "Do not mistake escape from anything difficult for self-love: without direction, reparenting can become permissive.",
         "Do not confuse being capable of stopping a substance with removing the circumstances that repeatedly drive a return to it.",
+        "Do not equate involuntary feeling and chosen harmful conduct, and do not use acceptance of a feeling to exempt behavior from ordinary accountability.",
         "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
       ],
       "successSignals": [
@@ -945,7 +994,10 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [],
-        "requiredNuance": []
+        "requiredNuance": [
+          "The Adult Protector is a chosen adult function, not a synonym for learned protective guards or the inherited critic; a warm limit may include both comfort and a firm no.",
+          "Safety (the Protector) usually comes first, then love, then guidance, but no job works alone: never hold love or guidance back until safety is \"done\". The step order stays."
+        ]
       },
       "defaultQuestion": ""
     },
@@ -1061,7 +1113,8 @@
         "IC.BORROW_ONE_FUNCTION",
         "IC.BORROW_LOVE",
         "IC.SPIRITUAL_LOAN",
-        "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER"
+        "AMEND.IC.PRACTICE_TO_LIFE_TRANSFER",
+        "AMEND.IC.SCAFFOLDING_IS_READINESS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1070,7 +1123,8 @@
         "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift.",
         "When the needed positive caring/protective function is known to be unavailable, use IC.BORROW_ONE_FUNCTION as adult-side preparation before deeper child-facing dialogue.",
         "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap.",
-        "When the adult function is already clearly usable in-session but ordinary-life transfer is still session-only, hand off to IC.PRACTICE_TO_LIFE_TRANSFER before repeating or deepening the child-facing exercise for more intensity."
+        "When the adult function is already clearly usable in-session but ordinary-life transfer is still session-only, hand off to IC.PRACTICE_TO_LIFE_TRANSFER before repeating or deepening the child-facing exercise for more intensity.",
+        "Readiness for deeper dialogue comes from scaffolding: smaller steps that went well. Staying present, stopping and recovering are practised on those smaller steps, never tested before starting and never by stopping someone midway through a deep step."
       ],
       "avoid": [
         "Do not interrogate imagery or imply emotional truth proves historical fact.",
@@ -1128,12 +1182,14 @@
       ],
       "authority": "author-framework",
       "recommendations": [
+        "When childhood was organized around avoiding pain and preserving attachment, attention went into reading danger, meeting other people’s expectations, and keeping the bond, leaving much less room for the ordinary experiments (what do I like, what do I want to try, who am I when nobody is grading me) through which identity grows by trial and error. When curiosity or mistakes brought ridicule, punishment, or withdrawal of love, the performed self got better at surviving while the less-practiced self stayed blurry. Recovery includes more than uncovering a fully formed “true self” hidden underneath: some of it is developmental pl/ork (play + work) done late, creating enough safety for preference, curiosity, and experimentation to grow.",
         "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
         "Protect the beginner from immediate talent judgments.",
         "Make room for being interested in and enjoying the child, not only correcting or protecting them. A secure base supports safe exploration; outward competence alone does not demonstrate warmth or vitality."
       ],
       "avoid": [
-        "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
+        "Do not assume a fully formed true self is merely hidden and waiting to be uncovered.",
+        "Do not set up the performed self as a “fake” part to erase; the aim is a more workable internal relationship, not a new division between the acceptable self and another self that must disappear."
       ],
       "successSignals": [
         "Preferences become more stable across relationships and settings."
@@ -1174,17 +1230,32 @@
       "sourceRefs": [
         "IC.DIFFERENTIATION",
         "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
-        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.IC.COMPASSION_WITHOUT_REQUIRED_MISERY_20261022",
+        "AMEND.IC.HAPPIER_FRIENDS_THEIR_CHOICE_20261120",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Notice where other people’s emotions and group expectations replace personal knowing.",
         "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
-        "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+        "Practice selective belonging, disagreement, and leaving when staying requires disappearance.",
+        "A spontaneous attraction or feeling can be noticed without automatically following it. Choose whether an action would support reciprocal connection, consent, safety and trustworthy boundaries; neither repress the appearance of the feeling nor treat it as a command.",
+        "If repeated real rejection reflects unfair group norms, respect that evidence and help consider boundaries, reduced access, another community or leaving; no requirement to disclose repeatedly to the same group.",
+        "Where a person feels disloyal for enjoying life while others suffer, distinguish actual responsibilities and compassion-in-action from a learned requirement to stay miserable as proof of belonging or care.",
+        "Explore whether cultivating the person’s own happiness or steadiness might enlarge what they can offer others; use the owner’s lived example as an invitation to inquire, not a rule that unhappy people cannot help.",
+        "Do not promise that everyone will welcome their growth; assess what has actually happened.",
+        "When friends or family pull away from a happier person, or try to drag them back into the old misery because \"misery loves company\", that is their choice, and being happy is ultimately more helpful for everyone. But don't assume everyone pulls away because the person is happier: they might also have become, for example, snobbier, or done something while unaware.",
+        "When being happy feels like abandoning someone (\"If I'm happy while someone I love is suffering, I'm abandoning them\"), the person can do their part for people who are suffering, which may sometimes just be modeling how to live, and skip the part where they have to be miserable too."
       ],
       "avoid": [
         "Do not equate differentiation with isolation or automatic permanent cutoff.",
-        "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
+        "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate.",
+        "Do not infer wrongdoing or a hidden event solely from an unchosen attraction, or treat self-acceptance as permission for harmful chosen conduct.",
+        "Do not assume that a distressed or unhappy person is incapable of caring for others, or that anyone who dislikes another person’s choices is jealous; distinguish behavior, motive, legitimate responsibility and social pressure."
       ],
       "successSignals": [
         "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
@@ -1252,20 +1323,28 @@
         "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
         "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
         "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
-        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022",
+        "AMEND.IC.FORCED_ADULTHOOD_AND_CLAMPING_DOWN_20261120",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
         "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.",
         "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes.",
-        "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on."
+        "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on.",
+        "Set kind, predictable limits while preserving comfort and responsiveness: an ordinary want can be heard without being obeyed, pathologized, or treated as an independent protector.",
+        "Divine love and gratitude are the Guide's work, offered after enough Nurturer and Protector, as the owner's guide places them.",
+        "Treats and pampering do better at set times, where they can't get out of hand, and shouldn't get canceled as a punishment after a bad day. Sometimes \"I want it NOW!\" is just a want: it can be heard without shame and without giving in to it."
       ],
       "avoid": [
         "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
         "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
         "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
         "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks.",
+        "Do not let reparenting become permissive: without direction the child receives attention but does not develop, and candy, screens, and escape from anything difficult can masquerade as self-love. Do not fall into the opposite trap either, clamping down, forcing strict discipline on oneself (perfect discipline, no visible needs, and very little joy or closeness), where the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect, not tightening control again.",
         "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity."
       ],
       "successSignals": [
@@ -1286,7 +1365,8 @@
           "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound.",
           "An external guide may contribute real wisdom while remaining trustworthy only in a limited domain. The internal Guide keeps authority corrigible by evidence and does not outsource true/false judgment to charisma, intuition, or specialness.",
           "Mental health and mature guidance concern the relationship to mental events and the ability to choose skillful action; involuntary occurrence alone is not endorsement or identity.",
-          "Occurrence-versus-endorsement distinctions do not suspend current-intent, planning, consent or safety routing; reported intention and behavior still matter."
+          "Occurrence-versus-endorsement distinctions do not suspend current-intent, planning, consent or safety routing; reported intention and behavior still matter.",
+          "\"Forced adulthood\" is the owner's stage 1 of reparenting: the child-state forced to handle grown-up situations, even when it looks like having it all together; when a person forces it on themselves (strict discipline, no visible needs, little joy), call it \"clamping down\", the opposite trap to spoiling. His five stages: forced adulthood; begin to borrow adulthood; practice being the adult; adult mode itself; adult and child in relationship. A person may start at any point, and it may change even from hour to hour."
         ]
       },
       "defaultQuestion": ""
@@ -1399,7 +1479,7 @@
     },
     {
       "id": "IC.FORGIVENESS_LATER",
-      "title": "Approach forgiveness without bypassing accountability",
+      "title": "Forgiveness as the Nurturer's work on resentment, never on a schedule",
       "kind": "decision-node",
       "tier": 7,
       "priority": 50,
@@ -1409,23 +1489,25 @@
             "field": "forgiveness_interest",
             "op": "eq",
             "value": "present"
-          },
-          {
-            "field": "deep_work_readiness",
-            "op": "eq",
-            "value": "yes"
           }
         ]
       },
       "sourceRefs": [
-        "IC.FORGIVENESS"
+        "IC.FORGIVENESS",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
-        "Use responsibility, remorse, rectification, and release for self-forgiveness; preserve boundaries and consequences for others."
+        "Use responsibility, remorse, rectification, and release for self-forgiveness; preserve boundaries and consequences for others.",
+        "Consider what repair is realistically possible, what cannot be undone, and what remains someone else's choice; accountability may continue even when forgiveness, renewed trust or reconciliation is unavailable.",
+        "Forgiveness is the Nurturer's work on resentment: the cure for resentment is forgiveness, but it can't be put on a schedule. Nobody has to forgive first to get safe, set boundaries, hold someone accountable, get justice or get better.",
+        "When the person is ready, it can help to see how the other person's conditioning, history, pain and capacity shaped the harmful move; they still have to answer for it, and a boundary, the law, distance or keeping away for good can sit beside forgiveness."
       ],
       "avoid": [
-        "Do not force forgiveness early or use causal understanding to erase moral judgment."
+        "Do not force forgiveness early or use causal understanding to erase moral judgment.",
+        "Do not schedule forgiveness, press for it, or treat an early, enlightened-looking act of forgiveness as healing."
       ],
       "successSignals": [
         "Understanding changes the emotional relationship without erasing the harm."
@@ -1490,7 +1572,9 @@
         "IC.BORROW_LOVE",
         "IC.SPIRITUAL_LOAN",
         "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014",
-        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014"
+        "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
+        "AMEND.IC.GENTLER_THAN_GUIDE_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1499,7 +1583,8 @@
         "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.",
         "If the younger state rejects or cannot receive the love, regard that as a potentially important honest response. Listen humbly and patiently, be thankful for that honesty only when genuine, and demonstrate non-contingent care without interpreting refusal as a deliberate test or asking the child to be grateful.",
         "If current positive adult preparation is still active, use remembered or present love as a resource for the adult side first and complete that preparation before attempting transfer.",
-        "After preparation becomes usable and existing safety, permission, and readiness still allow the step, offer inclusion without treating refusal or partial reception as failure."
+        "After preparation becomes usable and existing safety, permission, and readiness still allow the step, offer inclusion without treating refusal or partial reception as failure.",
+        "When the little one goes numb or calls BS on the love, one possibility among others, beside hearing the guard first, is the owner's reading: they might need to see whether the adult is humble and grateful enough to listen to their rejection and be patient. Offer it as a possibility, never as blame."
       ],
       "avoid": [
         "Do not force transfer, interpret reluctance as spiritual failure, or prescribe a stronger altered state because the child cannot receive the love.",
@@ -1520,7 +1605,7 @@
         "deferNodes": [],
         "forbiddenOverclaims": [
           "Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state.",
-          "Do not assert that numbness, refusal, or cynicism means the child is testing whether the adult is sufficiently grateful or humble."
+          "Do not assert as the explanation, or as blame on the person or the little one, that numbness, refusal, or cynicism means the child is testing whether the adult is sufficiently grateful or humble; it is one possibility among others."
         ],
         "requiredNuance": [
           "Having access to profound love and being able to let the wounded child receive it are separate capacities.",
@@ -2195,7 +2280,9 @@
         "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
         "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
         "IC.GUIDE_LATER",
-        "IC.DIFFERENTIATION"
+        "IC.DIFFERENTIATION",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -2204,13 +2291,15 @@
         "Notice influence hooks without diagnosing the other person: praise or specialness, mirroring, pity for a wounded healer, rescue or miracle hopes, attraction, belonging, fear, spiritual charisma, hypnotic or mystical ease, confession, and humor can all change how evidence is weighted.",
         "Ask whether compassion is preserving the facts or erasing them. A wounded person can deserve compassion while still being unsafe or unreliable in a particular domain.",
         "Use prediction → observation → update: state what trustworthy and untrustworthy behavior would each predict, watch what actually happens, and let the result change trust rather than protecting the original intuition.",
-        "When intuition and evidence seriously conflict, do not increase high-leverage authority while the conflict is unresolved. Keep money, medical decisions, sexual consent, isolation, legal control, altered-state dependence, and exclusive spiritual authority especially answerable to ordinary evidence."
+        "When intuition and evidence seriously conflict, do not increase high-leverage authority while the conflict is unresolved. Keep money, medical decisions, sexual consent, isolation, legal control, altered-state dependence, and exclusive spiritual authority especially answerable to ordinary evidence.",
+        "Manipulation moves to watch for as patterns over time, never as a label from one incident: gaslighting (perception slowly giving way to someone else's; trust intuition and perceptions after documenting, analyzing or double-checking), D.A.R.V.O. (deny, attack, reverse victim and offender), guilt tripping, White Knight (problems created to be rescued from), triangulation (another person brought in so it becomes two against one), silent treatment (which can be confused with simply avoiding what someone can't handle) and breadcrumbing. The person can also check whether they use them on themselves or others."
       ],
       "avoid": [
         "Do not teach that intuition, mystical cognition, humor, spontaneity, compassion, attraction, or spiritual gifts are inherently untrustworthy.",
         "Do not make analytical cognition the sole authority or treat every contradiction, confession, or influence cue as proof that another person is malicious or manipulative.",
         "Do not literalize the intuitive/analytic distinction as a simplistic left-brain/right-brain anatomy claim.",
-        "Do not recommend automatic cutoff merely because trust is unresolved; slow consequential transfers while evidence is being calibrated."
+        "Do not recommend automatic cutoff merely because trust is unresolved; slow consequential transfers while evidence is being calibrated.",
+        "Do not label a person manipulative or a relationship abusive from one incident; the named moves are patterns to watch over time."
       ],
       "successSignals": [
         "The person can preserve useful intuitive information and analytical checking at the same time, distinguish resonance from proof, and allow new evidence to raise or lower domain-specific trust."
@@ -2580,19 +2669,24 @@
       "sourceRefs": [
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.WISDOM_COMMON_HUMANITY",
-        "AMEND.IC.WISDOM_SOURCES"
+        "AMEND.IC.WISDOM_SOURCES",
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Begin with the particular experience and its circumstances. If useful, recognize that the longing underneath it is something other people may know as well.",
         "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
         "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
-        "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance."
+        "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.",
+        "Where shame surrounds an unchosen thought or feeling, offer shared humanity and accurate responsibility for chosen behavior together, without a degrading global self-verdict.",
+        "Where strong shame may be guarding something the person believes they can't tell anyone, being understood without flinching is itself the shared-humanity move. Read it as ordinary therapeutic material, name what it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) and keep it apart from the person's worth and from intent, without waiting for a journal to show it."
       ],
       "avoid": [
         "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
         "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
-        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.",
+        "Do not meet disclosed or approached taboo material with alarm, moralizing, a refusal script or a global verdict on the person's worth or intent."
       ],
       "successSignals": [
         "The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized."
@@ -2762,15 +2856,24 @@
         ]
       },
       "sourceRefs": [
+        "IC.INHERITED_PARENT",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.WISDOM_CRITICISM_KERNEL",
-        "AMEND.IC.WISDOM_SOURCES"
+        "AMEND.IC.WISDOM_SOURCES",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120",
+        "AMEND.IC.GUARDS_USUALLY_A_MIX_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.",
         "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
-        "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity."
+        "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.",
+        "Do not equate a rejecting audience's moral verdict with actual responsibility. Identify concretely supported behavior worth repairing, without accepting global contempt.",
+        "When the criticism is an inner voice, it may be replaying something learned from a parent, trying to protect the person or a vulnerable part of them from rejection or failure, holding on to belonging, status, control or safety, pointing to a real problem in a cruel way, or doing several of these at once. Meet it with compassion, curiosity and understanding as well as firm limits. The person does not have to settle which it is before protecting themselves: reject the insult, take seriously anything useful in the message, and ask what the voice is afraid of or trying to accomplish when the person finds that useful; understanding it does not mean agreeing with it or letting it keep attacking.",
+        "Answering the strict disciplinarian (the owner's exercise): remember who drove the person so hard as a child, start a little rap sheet of their provoking lines, and comfort the little one before answering any of it. The answers can be firm or funny, never mean, since mean is the inner critic's department.",
+        "Like a guard, an inner critic may be helpful, unhelpful or, usually, a mix; when the person finds it isn't helping (a totally useless old script, say), it can be fully reprogrammed: they choose what they'd rather hear and practise it in place of the old line, never with cruelty. Whether it is that is the person's call."
       ],
       "avoid": [
         "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
@@ -2855,14 +2958,16 @@
       "sourceRefs": [
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.WISDOM_DRAFT_EDITOR",
-        "AMEND.IC.WISDOM_SOURCES"
+        "AMEND.IC.WISDOM_SOURCES",
+        "AMEND.CROSS.AI_SIDEWAYS_AND_OWN_WORDS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Invite a brief private mental or written draft of what the person wants to say. Keep raw draft and sendable response clearly separate; do not require disclosure or storage.",
         "Take the caring editor's position: preserve the important truth, justified protest, proportionate responsibility, realistic aim and necessary boundary. Better does not mean softer or more agreeable.",
         "Check an honest sufficient response for this actual recipient and situation. The human decides whether to send, pause, apologize, refuse or not respond. Do not send anything automatically.",
-        "Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing."
+        "Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing.",
+        "For a message to another person, help work out what to say and offer it as a draft for the person to put in their own words, not as ready-to-send text."
       ],
       "avoid": [
         "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
@@ -3132,19 +3237,24 @@
       "sourceRefs": [
         "AMEND.IC.WISDOM_CORE",
         "AMEND.IC.WISDOM_WISER_SELF",
-        "AMEND.IC.WISDOM_SOURCES"
+        "AMEND.IC.WISDOM_SOURCES",
+        "AMEND.CROSS.STRICTER_THAN_GUIDE_20261120",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Offer: “Imagine looking back when you are clearer and compassionate toward everyone involved, including yourself. What would you understand about this moment?”",
         "Allow clearer understanding, feeling like that wiser self, or feeling accompanied by it; use whichever actually helps, including more than one. Do not force visualization or a state transition.",
         "Ask what that perspective understands about the present person's limitations and how it would care for them now. When embodiment is unavailable, use one honest sufficient action, firm boundary, acknowledgment or pause.",
-        "The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence."
+        "The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence.",
+        "Re-doing a memory with hindsight (the owner's exercise): once the person has a cast of wiser future characters from borrowing hindsight, they can go back to an earlier painful memory and relive it the corrected way. The condition: that hindsight cast first, a memory they can handle for the first tries, then small steps (scaffolding); harder memories only after lighter ones went well."
       ],
       "avoid": [
         "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
         "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
-        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.",
+        "Do not steer what happened in a re-done memory, treat the corrected version as a finding about the past, or start with the hardest memory."
       ],
       "successSignals": [
         "The person has more usable choice or caring contact, with appropriate boundaries intact."
@@ -3615,14 +3725,17 @@
       "sourceRefs": [
         "AMEND.IC.SCAFFOLDED_CHALLENGE",
         "IC.REGULATION_BEFORE_DIALOGUE",
-        "IC.SESSION_CLOSURE"
+        "IC.SESSION_CLOSURE",
+        "AMEND.IC.SCAFFOLDING_IS_READINESS_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Treat difficult material as calibration information, not automatic evidence of harm or progress. Workable requires intact orientation/stopping/return, willingness to re-approach, a non-aversive appraisal, and recovery/later functioning that have not meaningfully deteriorated.",
         "Pendulate between challenge and resource. Adjust one dimension at a time when calibrating, or several at once if distress is climbing: duration, depth, timing, imagery intensity, representation, eyes-open/external anchoring, isolation, and support.",
         "Re-approach only when the person wants to and both their appraisal and observed recovery/functioning support it.",
-        "Dreams and imagery may be explored for present meaning, feelings, needs, or capacities; they are not evidence of historical events and must not be used to confirm or reconstruct memories."
+        "Dreams and imagery may be explored for present meaning, feelings, needs, or capacities; they are not evidence of historical events and must not be used to confirm or reconstruct memories.",
+        "Finding the most feasible next challenge is scaffolding, and it is also the readiness check for going deeper: go deeper only after the last step went well."
       ],
       "avoid": [
         "Do not protect the person from every unpleasant emotion or dream merely because it is distressing.",
@@ -3810,6 +3923,104 @@
         ]
       },
       "defaultQuestion": "Do you actually want to return to the inner-child work now, starting gentler than where it became too much?"
+    },
+    {
+      "id": "IC.SHAME_APPRAISAL",
+      "title": "Differentiate shame signals, social judgments, responsibility, and viable repair",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 40,
+      "activation": {
+        "none": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ],
+        "all": [
+          {
+            "field": "shame_context",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.SHAME_APPRAISAL",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.IC.GENTLER_THAN_GUIDE_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Apply this branch only when the current case evidence makes shame or humiliation relevant. Generic criticism, need for belonging, guilt or conflict do not establish shame by themselves.",
+        "When shame matters to the active focus, separate the felt rejection alarm, actual social behavior, predicted judgment, chosen conduct and values, inherited self-treatment, and avoidance or self-blame. These can coexist; ask only distinctions that change the next action.",
+        "Actual or predicted group rejection is not proof of moral wrongdoing. Acceptance does not prove harmlessness either. Appraise social evidence and independent ethical obligations separately.",
+        "For genuinely harmful conduct, support specific acknowledgment, realistic reparability, changed behavior and appropriate consequences; release from endless self-punishment does not depend on forgiveness or restored trust.",
+        "When shame is followed by shame about being ashamed or other cruel self-criticism, preserve the initial feeling, inquire into any protective purpose of the secondary attack, and change the self-treatment through existing Nurturer, Protector, Guide and guard work.",
+        "Where rejection under unfair group expectations continues, consider boundaries, selective belonging and safe alternatives instead of repeating hostile or unpredictable disclosure.",
+        "Use existing relational, action, forgiveness, guard, common-humanity and community routes rather than a compulsory shame exposure or novel parts ritual.",
+        "Finding someone trusted to open up to slowly is one of the strongest ways through shame, and relief doesn't depend on it: when the person can't open up to anyone else safely, opening up to their inner adult and/or a higher power counts too. Accountability and repair for any damage they caused still apply."
+      ],
+      "avoid": [
+        "Do not use disclosure to an unpredictable or hostile listener merely to test a fear of rejection, and do not dismiss accurate rejection predictions as irrational.",
+        "Do not assign numerical percentages of responsibility, require reconciliation or promise that apology produces renewed trust.",
+        "Do not call the shame feeling itself a malfunction, endorse global worthlessness or conflate involuntary experience with chosen harmful conduct.",
+        "Do not infer shame merely from self-criticism or belonging pressure when the person has not supplied evidence of shame."
+      ],
+      "successSignals": [
+        "Responsibility, legitimate protection, and freedom from an unsupported global verdict are separated clearly enough to support one feasible next move."
+      ],
+      "tags": [
+        "shame",
+        "social-judgment",
+        "accountability",
+        "repair",
+        "belonging"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Social acceptance, rejection risk and moral rightness are different variables.",
+          "Disclosure, accountability, self-care and differentiation serve different functions; no generic exposure ladder."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that rejection proves wrongdoing, or acceptance proves innocence."
+        ]
+      },
+      "defaultQuestion": ""
     }
   ],
   "edges": [
@@ -4077,6 +4288,31 @@
       "from": "IC.REALIZATION_LOVE_INTEGRATION",
       "to": "ROUTE.GRATITUDE_PRACTICE",
       "relation": "precedes"
+    },
+    {
+      "from": "IC.SHAME_APPRAISAL",
+      "to": "IC.DIFFERENTIATION",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "IC.SHAME_APPRAISAL",
+      "to": "IC.MEET_GUARD",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "IC.SHAME_APPRAISAL",
+      "to": "IC.CRITICISM_KERNEL",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "IC.SHAME_APPRAISAL",
+      "to": "IC.FORGIVENESS_LATER",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "IC.SHAME_APPRAISAL",
+      "to": "IC.PROTECTOR_ACTION",
+      "relation": "may-route-to"
     }
   ],
   "taskPolicyVersion": 1,

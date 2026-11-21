@@ -150,6 +150,45 @@ test("refused and image-pending source cannot be silently indexed as complete", 
   assert.equal(s.milestone_receipts.INDEX_BUILT, undefined);
 });
 
+test("a page waiting for an authorized review or the reader's failure is pending for its own reason and blocks the index", () => {
+  const inv = inventory(start());
+  for (const reason of ["operator_review_requested", "reader_output_invalid", "reader_evidence_invalid", "reader_unavailable"]) {
+    const r = read(inv, [reviewed(1), pending(2, reason), reviewed(3)]);
+    assert.equal(r.source_coverage.pending, 1, reason);
+    assert.throws(() => indexed(synthesized(r)), { code: "JOURNAL_READING_FIRST_REVIEW_PENDING" }, reason);
+  }
+  // A reason the importer does not name is still no reason.
+  assert.throws(() => read(inv, [reviewed(1), pending(2, "someone_said_so"), reviewed(3)]),
+    { code: "JOURNAL_READING_FIRST_PENDING_REASON_REQUIRED" });
+  assert.throws(() => read(inv, [reviewed(1), { ...pending(2, "visual_pending"), reason: undefined }, reviewed(3)]),
+    { code: "JOURNAL_READING_FIRST_PENDING_REASON_REQUIRED" });
+});
+
+test("a reviewed page may name the route that reviewed it, only one of the two routes, and the route is signed with the receipt", () => {
+  const inv = inventory(start());
+  for (const route of ["source_reader", "authorized_operator_review", undefined]) {
+    const r = read(inv, [reviewed(1), { ...reviewed(2), review_route: route }, reviewed(3)]);
+    assert.deepEqual(r.source_coverage, { reviewed: 3, pending: 0, private_coverage_ref: "synthetic:coverage:1" }, String(route));
+    assert.equal(indexed(synthesized(r)).phase, "INDEX_BUILT", String(route));
+  }
+  for (const route of ["operator", "", null, "SOURCE_READER", 3])
+    assert.throws(() => read(inv, [reviewed(1), { ...reviewed(2), review_route: route }, reviewed(3)]),
+      { code: "JOURNAL_READING_FIRST_COVERAGE_INVALID" }, String(route));
+  // The route does not stand in for what a reviewed page must still carry.
+  assert.throws(() => read(inv, [reviewed(1), { ...reviewed(2), review_route: "authorized_operator_review", reviewed_modalities: "text" }, reviewed(3)]),
+    { code: "JOURNAL_READING_FIRST_SOURCE_READ_RECEIPT_REQUIRED" });
+  assert.throws(() => read(inv, [reviewed(1), { ...reviewed(2), review_route: "authorized_operator_review", read_result_sha256: undefined }, reviewed(3)]),
+    { code: "JOURNAL_READING_FIRST_SOURCE_READ_RECEIPT_REQUIRED" });
+  // The route is signed with the rest of the receipt: relabelling a signed row breaks the signature.
+  const receipt = signed("READING_DISPOSITIONED", { private_coverage_ref: "synthetic:coverage:1",
+    page_dispositions: [reviewed(1), { ...reviewed(2), review_route: "source_reader" }, reviewed(3)] });
+  const relabelled = structuredClone(receipt);
+  relabelled.page_dispositions[1].review_route = "authorized_operator_review";
+  assert.throws(() => advanceReadingFirstJournal(inv, { to: "READING_DISPOSITIONED", receipt: relabelled }, { attestationSecret: SECRET }),
+    { code: "JOURNAL_READING_FIRST_RECEIPT_NOT_TRUSTED" });
+  assert.equal(advanceReadingFirstJournal(inv, { to: "READING_DISPOSITIONED", receipt }, { attestationSecret: SECRET }).phase, "READING_DISPOSITIONED");
+});
+
 test("correctly attested chronological reading can yield index, graph, verification and publication", () => {
   const initial = start();
   const index = indexed(synthesized(allRead(inventory(initial))));

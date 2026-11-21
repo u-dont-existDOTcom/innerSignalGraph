@@ -93,3 +93,74 @@ The new `reading-first-order.mjs` validator (draft PR #184) requires each stage 
 - **Qualified reviewer/owner:** owns sensitive-source access, legal/clinical/privacy decisions and publication gates when actually required.
 
 The code already includes mechanical `buildQuotes` and `pointerRun` paths that only require archived parsed source (`src/journal-import/private-runtime.mjs`). They currently violate this new order for **new reading-first generations** and must be integrated with the read/synthesis receipt gate, not merely relabeled. The existing branch/installed runtime is unchanged by this document. The owner outcome is **OPEN** until the actual importer obeys the sequence and a fresh authorized import demonstrates it.
+
+## 6. Authorized review route (28 Oct 2026)
+
+**Status:** IMPLEMENTATION CANDIDATE on a task branch / NOT DEPLOYED. This section adds the "separate authorized channel" that §1 already allows ("a human review is an appropriate separate authorized channel"; a page's source is presented "to an authorized human or permitted model"). It changes how the importer treats a page it cannot read; it adds no owner decision, and the rules of §1 and §2 are unchanged: no page is counted as read without verified evidence, every page is read or reviewed before any index is built, and the receipts are attested only by the runtime's own key.
+
+### 6.1 What went wrong without it
+
+1. A page with a picture, no extractable text, or a refused reading became `REVIEW_PENDING`, yet `read-source` still synthesized and signed receipts. From then on `read-source` returned early, so nothing could ever be added to that page and `build-quotes` stayed blocked.
+2. One bad model answer for one page (a quotation not in the page, an invalid output) ended the run, and because the answer is stored durably every rerun ended the same way.
+3. A model that did not answer a page held the run for two 24 hour item lifetimes.
+4. A new execution root published into a new `corpus:<uuid>:quotes` corpus, so a case ended up with two quote corpora and no way to say which one the connector should search.
+
+### 6.2 The route
+
+`read-source` sends a page to the source reader only when it is a text page with text that no reviewer was given. Every other page, and every page the reader cannot read, is `REVIEW_PENDING` with a reason, and **while any page is pending nothing is synthesized and nothing is signed**. The run returns `status: REVIEW_PENDING`, the counts (`source_pages`, `read`, `operator_reviewed`, `pending`) and the pending pages by number and reason. It keeps no `reading_first_receipts_ref`, so `read-source` can run again, and `build-quotes`, the pointer pass and pointer publication fail with `JOURNAL_READING_FIRST_REVIEW_PENDING` until it has finished.
+
+| Reason | Page |
+| --- | --- |
+| `visual_pending` | has a picture (`image` or `text+image`); the reader is text only |
+| `source_unavailable` | text page with no text; an empty extraction is not comprehension |
+| `operator_review_requested` | named in `operator_read_pages`; never sent to the reader |
+| `tool_refused` | the reader's tool refused it; it is not retried (as before) |
+| `reader_output_invalid` | the reader's answer did not have the required structure (`INVALID_STRUCTURED_OUTPUT`) |
+| `reader_evidence_invalid` | the answer was well formed but failed the source checks (a quotation not in the page, missing anchors or findings, a page or digest that does not match); nothing from it is kept |
+| `reader_unavailable` | the reader could not be asked or did not answer within its limits (`INFERENCE_RETRY_LIMIT`, `JOURNAL_EXCHANGE_RETRY_LIMIT`, an exhausted item, a page or work packet too large) |
+
+Every other failure is still fatal exactly as before: an unknown completion (`COMPLETION_UNKNOWN`), an unavailable exchange, authorization or grant errors, a completion the runtime cannot verify (`JOURNAL_READING_FIRST_RECEIPT_NOT_TRUSTED`) and persistence failures. A page is never marked pending to get past a problem that is not about the page.
+
+When a run ends pending, it writes the **worklist**, `<operator_review_dir>/reading-first-review-worklist.json` (owner-only, replaced atomically): `{ schema_version, source_sha256, generation, pages: [{ page, source_page_sha256, required_modalities, reason, text }] }`. `text` is the importer's exact text of the page, so a reviewer quotes what the importer will check against. The run state and `status` carry the pages and reasons, never text. The worklist holds journal text and is removed when no page is pending.
+
+The reviewer writes the **review bundle**, `<operator_review_dir>/reading-first-reviews.json`, and `read-source` is run again. A rerun replays the reader's stored answers (no new model call for a page already answered), applies the reviews, and finishes when no page is pending.
+
+### 6.3 Files and settings
+
+| Name | Where | Notes |
+| --- | --- | --- |
+| `operator_review_dir` | run config (existing key, also used by `pointer-examples`) | absolute, owner-only directory outside the repository, checked as `pointer-examples` checks it; if unset no bundle is read and no worklist is written |
+| `reading-first-reviews.json` | `operator_review_dir` | the reviewer's input; a regular file (opened without following links), mode with no group or other bits, at most 32 MiB, valid JSON |
+| `reading-first-review-worklist.json` | `operator_review_dir` | the importer's output, as above |
+| `operator_read_pages` | run config | unique positive page numbers given to a reviewer instead of the reader; needs `operator_review_dir` (`JOURNAL_OPERATOR_REVIEW_DIR_REQUIRED`); a number past the last page is refused once the inventory is known (`JOURNAL_OPERATOR_READ_PAGES_INVALID`) |
+| `semantic_concurrency` | run config (existing key) | now also the number of pages with the reader at once (1 to 8, default 1; a direct browser route has one page and takes one call at a time, as the pointer steps' standard calls do, so there it stays 1); results are still handled strictly in page order, so what is verified, kept and left pending does not depend on it; a page that ends the run with a fatal error first waits for the calls already started, so the runtime is not closed under a call that is still writing its answer (those answers are kept for the next run) |
+| `reading-first-progress.json` | execution root | owner-only, replaced atomically, page numbers and counts only (`waiting_on_page`, `through_page`, `read`, `operator_reviewed`, `pending`, `updated_at`); `status` shows it as `reading_first_progress` |
+| `replaces_published_quotes` | run config | see 6.6 |
+
+Bundle schema, strict at every level (a key it does not name is refused): `{ schema_version: 1, source_sha256, reviewer (1..200), authorization_ref (1..320), reviews: [...] }` with at most one review per page and no more reviews than pages. A review is `{ page, source_page_sha256, reviewed_modalities, source_read_complete: true, image_content_reviewed, source_specific_understanding (1..2500), exact_source_anchors, source_findings, reviewer? }`: anchors and findings have the reader's shapes and bounds, `image_content_reviewed: true` is required exactly when `reviewed_modalities` contains `image` and must be absent otherwise, and an optional `reviewer` (1..200) replaces the bundle's for that page only, so pages reviewed by different people or models are recorded accurately.
+
+### 6.4 What the importer checks, and what it cannot
+
+A review is bound to the inventory page: `page`, `source_page_sha256` and `reviewed_modalities` must equal the importer's own. For a page with text, at least one anchor and one finding are required and every anchor must be found in the page text (the same location rule as the reader's, 6.5); for a page without text both lists must be empty. Any failure ends the run with `JOURNAL_READING_FIRST_OPERATOR_REVIEW_INVALID`, before any page is sent, and the error names no page and no text. A review for a page that is not waiting for one (the reader read it) is `JOURNAL_READING_FIRST_OPERATOR_REVIEW_UNEXPECTED`, and every review must be used.
+
+The importer cannot check that the reviewer looked at the picture or understood the page: `image_content_reviewed: true` and the understanding are the reviewer's statements. They are recorded with the reviewer and the `authorization_ref`; the protection is that only the owner of the private directory can place the file. This route does not send a page anywhere: it retries nothing through other encodings, chunk sizes, models or transports (§1), and it neither signs nor attests anything for the reviewer.
+
+A page's evidence is kept as the reader's is (`reading-first:page:<n>` in the encrypted store), with `provenance: "authorized_operator_review"` and `review: { route, reviewer, authorization_ref, review_sha256 }`, where `review_sha256` is the digest of that one review's canonical JSON, so adding a review for another page never changes a page already kept. The page's row in the signed `READING_DISPOSITIONED` receipt is `REVIEWED_ALL_SOURCE_MODALITIES` with the importer's own `reviewed_modalities` and a new `review_route` (`source_reader` or `authorized_operator_review`). The route is inside what the runtime key signs.
+
+**Applied reviews are immutable.** Evidence is written once; changing a review after it was applied (its text, its reviewer or the bundle's `authorization_ref`, all of which are part of the kept evidence) is refused with `JOURNAL_IMMUTABLE_RESULT_CONFLICT`, and the run signs nothing. To correct a review that was already applied, start a new execution root (6.6 carries the published corpus over). The reader's evidence for a page is kept the same way, so a page the reader has already read cannot be handed to a reviewer afterwards (the review would conflict with what is kept): take it out of `operator_read_pages` and the stored reader answer is used again. A run that signed receipts with pending pages before this route keeps them (`read-source` returns early once receipts exist), so it cannot be completed in place either; it too needs a new execution root.
+
+### 6.5 Quotation location
+
+For an anchor without explicit offsets the page is searched for the exact text first (overlapping matches counted). Only when there is none is it searched with a pattern in which a run of whitespace (`\s`, no-break space, narrow no-break space, thin space) matches one or more of those characters and each of the apostrophes U+0027, U+2018, U+2019 and U+02BC matches any of the four; every other character is literal. The occurrence rules are unchanged (a unique match, or the `occurrence` index), and the kept anchor text is the page's own slice, never the model's or the reviewer's spelling. Anchors with explicit `start` and `end` stay exact. This applies to the reader's evidence and to a review alike, so a line break or a typographic apostrophe in a PDF no longer leaves a page pending for a correct quotation, and a quotation that is not in the page still does.
+
+### 6.6 Replacing the published quote corpus in place
+
+A new execution root used to publish into a new quote corpus. With `replaces_published_quotes: { corpus_id: "corpus:<uuid v4>", generation: "<the corpus's active generation>" }` (`corpus_id` is the base id, without `:quotes`; invalid values are `JOURNAL_REPLACED_PUBLICATION_INVALID`, and doctor checks them) a **new** run takes that corpus's id, records the generation as the one it replaces (`quote_published`), and its `buildQuotes`, `publish-quotes` and `pointer-publish` publish into the same corpus: `publishJournalGenerationFromStaging` replaces that generation only while it is still the active one, keeps it among the corpus's `previous_generations`, and refuses a corpus that does not exist in the case (`JOURNAL_PUBLICATION_REPLACED_CORPUS_MISSING`) rather than create a second one. A run keeps what it began with: a later config that drops the setting or names another corpus or generation is `JOURNAL_REPLACED_PUBLICATION_CHANGED`.
+
+A new run also archives its original as `original:source:<first 24 hex of the source's sha256>` instead of the constant `original:source`, because two sources in one corpus would otherwise collide (`JOURNAL_TRANSFER_DESTINATION_CONFLICT`). Runs that began earlier keep the constant id they have and are otherwise unchanged.
+
+Rollback is the existing one: `rollbackJournalGeneration` through the case access service, with a `correct`-purpose grant (the documented import grant cannot roll back), to the replaced generation named in `previous_generations`.
+
+### 6.7 Not shown by the synthetic tests
+
+The tests use invented text, a mock inference port and a mock source parser. They show the sequence, the checks, the receipts and the replacement and rollback mechanics; they do not show how a real reader behaves on a real journal, how large a real worklist or bundle is, or that a real PDF yields the page text a reviewer was shown. A reader that stalls on one page still holds the pages after it (results are handled in page order), which is the price of keeping the result identical to sequential reading; for the same reason a fatal error waits for the calls that were already started (at most `semantic_concurrency` less one), which the port's own deadlines bound. Whether a particular page may be shown to a particular reviewer is the owner's decision, made outside this code.

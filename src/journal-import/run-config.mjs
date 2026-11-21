@@ -82,6 +82,35 @@ export function journalOperatorReviewDir(config) {
   return dir;
 }
 
+// The pages of a reading-first import that an authorized reviewer reads instead of the model (`operator_read_pages`): unique
+// positive page numbers, none of them ever sent to the source reader. The reviews come from `reading-first-reviews.json` in the
+// operator review directory, so a run that names pages needs that directory. Whether a number is past the last page is checked
+// once the source's pages are known.
+export function journalOperatorReadPages(config) {
+  const pages = config.operator_read_pages;
+  if (pages === undefined || pages === null) return Object.freeze([]);
+  if (!Array.isArray(pages) || pages.some((page) => !Number.isSafeInteger(page) || page < 1) || new Set(pages).size !== pages.length)
+    throw new ValidationError("JOURNAL_OPERATOR_READ_PAGES_INVALID", { code: "JOURNAL_OPERATOR_READ_PAGES_INVALID" });
+  if (pages.length > 0 && !journalOperatorReviewDir(config))
+    throw new ValidationError("JOURNAL_OPERATOR_REVIEW_DIR_REQUIRED", { code: "JOURNAL_OPERATOR_REVIEW_DIR_REQUIRED" });
+  return Object.freeze([...pages].sort((a, b) => a - b));
+}
+
+// The quote generation a new import replaces in place (`replaces_published_quotes`): the published corpus's base id, without the
+// `:quotes` its quote corpus carries, and the generation that corpus has active. Only a new run applies it, and a run keeps it.
+const REPLACED_CORPUS_ID = /^corpus:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const REPLACED_GENERATION_ID = /^[A-Za-z0-9:_-]{1,160}$/u;
+
+export function journalReplacedPublication(config) {
+  const value = config.replaces_published_quotes;
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join(",") !== "corpus_id,generation"
+    || typeof value.corpus_id !== "string" || !REPLACED_CORPUS_ID.test(value.corpus_id)
+    || typeof value.generation !== "string" || !REPLACED_GENERATION_ID.test(value.generation))
+    throw new ValidationError("JOURNAL_REPLACED_PUBLICATION_INVALID", { code: "JOURNAL_REPLACED_PUBLICATION_INVALID" });
+  return Object.freeze({ corpus_id: value.corpus_id, generation: value.generation });
+}
+
 export function journalPointerCopyRunWords(config) {
   const value = config.pointer_copy_run_words ?? POINTER_COPY_RUN_WORDS;
   if (!Number.isSafeInteger(value) || value < POINTER_COPY_RUN_LIMITS.min || value > POINTER_COPY_RUN_LIMITS.max)

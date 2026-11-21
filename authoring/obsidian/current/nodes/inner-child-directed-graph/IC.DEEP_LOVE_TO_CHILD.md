@@ -24,15 +24,17 @@ source_refs:
   - IC.SPIRITUAL_LOAN
   - AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+  - AMEND.IC.GENTLER_THAN_GUIDE_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G114
   - G115
   - G118
   - G121
   - G123
-base_record_sha256: 4f9dcf7d9937f07b4f1fa02e671121b7235bf9a685f61aaeb70249c64355dedf
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: a90ec3fd3b4e552cf20f40a1749a51b012e40064e04bad47dcec34266dbe7277
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Bring already-accessible deep love to the younger self without force
@@ -88,7 +90,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "deferNodes": [],
     "forbiddenOverclaims": [
       "Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state.",
-      "Do not assert that numbness, refusal, or cynicism means the child is testing whether the adult is sufficiently grateful or humble."
+      "Do not assert as the explanation, or as blame on the person or the little one, that numbness, refusal, or cynicism means the child is testing whether the adult is sufficiently grateful or humble; it is one possibility among others."
     ],
     "requiredNuance": [
       "Having access to profound love and being able to let the wounded child receive it are separate capacities.",
@@ -105,7 +107,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.",
     "If the younger state rejects or cannot receive the love, regard that as a potentially important honest response. Listen humbly and patiently, be thankful for that honesty only when genuine, and demonstrate non-contingent care without interpreting refusal as a deliberate test or asking the child to be grateful.",
     "If current positive adult preparation is still active, use remembered or present love as a resource for the adult side first and complete that preparation before attempting transfer.",
-    "After preparation becomes usable and existing safety, permission, and readiness still allow the step, offer inclusion without treating refusal or partial reception as failure."
+    "After preparation becomes usable and existing safety, permission, and readiness still allow the step, offer inclusion without treating refusal or partial reception as failure.",
+    "When the little one goes numb or calls BS on the love, one possibility among others, beside hearing the guard first, is the owner's reading: they might need to see whether the adult is humble and grateful enough to listen to their rejection and be patient. Offer it as a possibility, never as blame."
   ],
   "successSignals": [
     "Profound love can include the younger self without coercion, or the specific block becomes clear enough to work with relationally."
@@ -131,3 +134,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014]]
 
 [[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]
+
+[[current/governance/amendments/AMEND.IC.GENTLER_THAN_GUIDE_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

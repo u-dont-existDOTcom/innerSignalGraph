@@ -1,0 +1,29 @@
+---
+authoring_contract: inner-signal-authoring-projection-v1
+entity_type: source-section
+projection_mode: current
+generated: true
+source_id: AMEND.IC.GUARDS_USUALLY_A_MIX_20261120
+guide_id: owner-amendments
+heading: AMEND.IC.GUARDS_USUALLY_A_MIX_20261120
+source_role: owner-approved-extension
+source_hash: c0d1bf6d3db3a93b26029c0bd2d3cca1a66c6e0e16fbdbb06cac83a7a0d82e7c
+section_hash: 53ebfb7848f63d83b511beaae09a72359f8820ffad7c74f421716dbe904f0378
+locator_kind: amendment-record
+cited_by_node_ids:
+  - IC.CRITICISM_KERNEL
+  - IC.MEET_GUARD
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+---
+
+# AMEND.IC.GUARDS_USUALLY_A_MIX_20261120
+
+> [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
+
+Authority path: `guides/owner-amendments.json`
+
+Locator: Structured owner-amendment record
+
+```text
+Owner answer to point 16 (Inbox, 20 Nov 2026, 22:27 UTC), on the two kinds of guard: "both types of guards should be considered as possibly helpful, possibly unhelpful, and usuallly a mix of both, and we should be deciding that as we commune with them to see if we can reach some beneficial understandings or if we need to fully reprogram them like if it's a totally useless old script. but normally there's some good things we can extract (Mr Rogers reframing trick)". His live guide's "Reframe the Critic" (as of 20 Nov 2026) describes the trick: "We want to use the Mr. Rogers reframing trick to stay curious about the critical voice's motivations, and open to any kernels of truth it points out, without accepting its insults and cruelty. Then we send it on its way with compassion, since that voice surely needs some." InnerSignal never pushes a reprogram or an override: the person decides.
+```

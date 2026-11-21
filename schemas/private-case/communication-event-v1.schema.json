@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inner-signal.local/schemas/private-case/communication-event-v1.schema.json",
+  "title": "Private communication evidence event",
+  "description": "One append-only observation about who has seen a piece of text: shown to the supervisor, exported, or reported as sent to the client, or the retraction of an earlier observation. An event never marks a candidate delivered, never audits and never authorizes delivery. Runtime validators additionally enforce that every subject names stored candidate or transcript data and binds its exact bytes, that ids are unique, and that a retraction names an earlier event that is not already retracted.",
+  "oneOf": [
+    { "$ref": "#/$defs/candidateExposure" },
+    { "$ref": "#/$defs/companionExposure" },
+    { "$ref": "#/$defs/reportedSentWithTime" },
+    { "$ref": "#/$defs/reportedSentWithoutTime" },
+    { "$ref": "#/$defs/retraction" }
+  ],
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,160}$" },
+    "refId": { "type": "string", "minLength": 1, "maxLength": 160, "pattern": "\\S" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "timestamp": { "type": "string", "format": "date-time", "maxLength": 80 },
+    "version": { "type": "integer", "minimum": 1 },
+    "sourceRef": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "quote": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 2000, "pattern": "\\S" }, { "type": "null" }] },
+    "candidateRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["candidate_id", "candidate_version"],
+      "properties": { "candidate_id": { "$ref": "#/$defs/refId" }, "candidate_version": { "$ref": "#/$defs/version" } }
+    },
+    "candidateSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "candidate_id", "candidate_version", "text_sha256"],
+      "properties": {
+        "kind": { "const": "candidate" },
+        "candidate_id": { "$ref": "#/$defs/refId" },
+        "candidate_version": { "$ref": "#/$defs/version" },
+        "text_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "companionSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "companion_of", "artifact_sha256"],
+      "properties": {
+        "kind": { "const": "companion" },
+        "companion_of": { "$ref": "#/$defs/candidateRef" },
+        "artifact_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "transcriptTurnSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "assistant_turn_id", "in_reply_to_turn_id", "text_sha256"],
+      "properties": {
+        "kind": { "const": "transcript_turn" },
+        "assistant_turn_id": { "$ref": "#/$defs/refId" },
+        "in_reply_to_turn_id": { "$ref": "#/$defs/refId" },
+        "text_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "unresolvedSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "reason", "candidate_refs"],
+      "properties": {
+        "kind": { "const": "unresolved" },
+        "reason": { "const": "ambiguous" },
+        "candidate_refs": { "type": "array", "maxItems": 10, "items": { "$ref": "#/$defs/candidateRef" } }
+      }
+    },
+    "ownerProvenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["origin", "actor_resolution", "source_ref", "quote"],
+      "properties": {
+        "origin": { "const": "owner_action" },
+        "actor_resolution": { "const": "owner_verified" },
+        "source_ref": { "$ref": "#/$defs/sourceRef" },
+        "quote": { "$ref": "#/$defs/quote" }
+      }
+    },
+    "relayedProvenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["origin", "actor_resolution", "source_ref", "quote"],
+      "properties": {
+        "origin": { "const": "agent_relayed" },
+        "actor_resolution": { "const": "unresolved" },
+        "source_ref": { "$ref": "#/$defs/sourceRef" },
+        "quote": { "$ref": "#/$defs/quote" }
+      }
+    },
+    "applicationProvenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["origin", "actor_resolution", "source_ref", "quote"],
+      "properties": {
+        "origin": { "const": "application" },
+        "actor_resolution": { "const": "application" },
+        "source_ref": { "$ref": "#/$defs/sourceRef" },
+        "quote": { "$ref": "#/$defs/quote" }
+      }
+    },
+    "personProvenance": { "oneOf": [{ "$ref": "#/$defs/ownerProvenance" }, { "$ref": "#/$defs/relayedProvenance" }] },
+    "anyProvenance": { "oneOf": [{ "$ref": "#/$defs/ownerProvenance" }, { "$ref": "#/$defs/relayedProvenance" }, { "$ref": "#/$defs/applicationProvenance" }] },
+    "candidateExposure": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "id", "kind", "recorded_at", "audience", "subject", "provenance"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["exposed", "exported"] },
+        "recorded_at": { "$ref": "#/$defs/timestamp" },
+        "audience": { "const": "client" },
+        "subject": { "$ref": "#/$defs/candidateSubject" },
+        "provenance": { "$ref": "#/$defs/anyProvenance" }
+      }
+    },
+    "companionExposure": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "id", "kind", "recorded_at", "audience", "subject", "provenance"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["exposed", "exported"] },
+        "recorded_at": { "$ref": "#/$defs/timestamp" },
+        "audience": { "const": "supervisor" },
+        "subject": { "$ref": "#/$defs/companionSubject" },
+        "provenance": { "$ref": "#/$defs/anyProvenance" }
+      }
+    },
+    "reportedSentWithTime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "id", "kind", "recorded_at", "audience", "subject", "sent_at", "sent_at_status", "provenance"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "const": "reported_sent" },
+        "recorded_at": { "$ref": "#/$defs/timestamp" },
+        "audience": { "const": "client" },
+        "subject": { "oneOf": [{ "$ref": "#/$defs/candidateSubject" }, { "$ref": "#/$defs/transcriptTurnSubject" }, { "$ref": "#/$defs/unresolvedSubject" }] },
+        "sent_at": { "$ref": "#/$defs/timestamp" },
+        "sent_at_status": { "const": "known" },
+        "provenance": { "$ref": "#/$defs/personProvenance" }
+      }
+    },
+    "reportedSentWithoutTime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "id", "kind", "recorded_at", "audience", "subject", "sent_at", "sent_at_status", "provenance"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "const": "reported_sent" },
+        "recorded_at": { "$ref": "#/$defs/timestamp" },
+        "audience": { "const": "client" },
+        "subject": { "oneOf": [{ "$ref": "#/$defs/candidateSubject" }, { "$ref": "#/$defs/transcriptTurnSubject" }, { "$ref": "#/$defs/unresolvedSubject" }] },
+        "sent_at": { "type": "null" },
+        "sent_at_status": { "const": "unavailable" },
+        "provenance": { "$ref": "#/$defs/personProvenance" }
+      }
+    },
+    "retraction": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "id", "kind", "recorded_at", "retracts_event_id", "reason", "provenance"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "const": "retraction" },
+        "recorded_at": { "$ref": "#/$defs/timestamp" },
+        "retracts_event_id": { "$ref": "#/$defs/id" },
+        "reason": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 500, "pattern": "\\S" }, { "type": "null" }] },
+        "provenance": { "$ref": "#/$defs/anyProvenance" }
+      }
+    }
+  }
+}

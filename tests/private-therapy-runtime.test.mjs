@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,7 +10,9 @@ import { loadConfig } from "../src/core/config.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
 import { createInnerSignalServer } from "../src/server/create-server.mjs";
 import { createPrivateCaseAccessService } from "../src/storage/private-case-access.mjs";
-import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
+import { projectCommunicationState, resolveCandidateAppDelivery, validateCommunicationProjection } from "../src/storage/private-case-communication.mjs";
+import { assessContinuationSafety } from "../src/storage/private-case-continuity.mjs";
+import { createEncryptedPrivateCaseStore, validatePrivateCaseRecord } from "../src/storage/private-case-store.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
 
@@ -400,4 +403,143 @@ test("private therapy runtime rejects an unsent supervisor edit before persistin
   };
   await assert.rejects(controller.run(request),/Supervisor reply revision cannot be submitted/);
   assert.equal(modelRuntime.calls.length,0);
+});
+
+const sha256Hex = (text) => createHash("sha256").update(text, "utf8").digest("hex");
+
+test("an automatic runtime delivery binds its inbound turn and resolves exactly as an ordinary delivery does", async (t) => {
+  const { store } = await makeStore(t);
+  const request = input("bound");
+  const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: scriptedRuntime() });
+  const result = await controller.run(request);
+  const record = await store.load(CASE_ID);
+  const candidate = record.candidate_responses[0];
+  const [user, assistant] = record.raw_transcript;
+
+  assert.deepEqual([candidate.metadata.sent_turn_id, candidate.metadata.sent_in_reply_to_turn_id], [request.assistantTurnId, request.userTurnId]);
+  assert.equal(candidate.metadata.sent_status_only, undefined, "an application delivery is not a status-only marking");
+  assert.deepEqual([user.id, user.role, assistant.id, assistant.role, assistant.exchange_id, assistant.text], [request.userTurnId, "user", request.assistantTurnId, "assistant", request.exchangeId, result.answer]);
+
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(context.delivery_completion, { candidate_id: candidate.id, candidate_version: 1 });
+  const safety = assessContinuationSafety(context);
+  assert.equal(safety.exact_delivery_available, true);
+  assert.equal(safety.failures.includes("sent candidate is missing exact transcript-bound delivery evidence"), false);
+
+  const projection = context.communication_projection;
+  assert.equal(projection.confirmed_or_reported_client_outbound.length, 1);
+  const [committed] = projection.confirmed_or_reported_client_outbound;
+  assert.deepEqual(
+    { state: committed.state, audience: committed.audience, evidence: committed.delivery_evidence, route: committed.source.route, audit: committed.source.audit_id, reply: committed.in_reply_to_turn_id, turn: committed.assistant_turn_id },
+    { state: "app_committed", audience: "client", evidence: "application_persisted", route: "transcript_bound", audit: candidate.metadata.sent_with_audit_id, reply: request.userTurnId, turn: request.assistantTurnId }
+  );
+  assert.deepEqual(projection.supervisor_only_artifacts, []);
+  assert.deepEqual(projection.unresolved_delivery, []);
+  validateCommunicationProjection(projection, { rawTranscript: record.raw_transcript });
+
+  const handoffId = "handoff:00000000-0000-4000-8000-0000000000b1";
+  await store.createHandoff(CASE_ID, { handoffId, runtimeVersion: "synthetic-runtime", auditVersion: "private-candidate-audit-v2" });
+  const packet = await store.loadHandoff(CASE_ID, handoffId);
+  assert.deepEqual(
+    [packet.delivery_completion.candidate_id, packet.delivery_completion.assistant_turn_id, packet.delivery_completion.in_reply_to_turn_id, packet.delivery_completion.audit_id],
+    [candidate.id, request.assistantTurnId, request.userTurnId, candidate.metadata.sent_with_audit_id]
+  );
+  assert.deepEqual(packet.communication_projection, projection, "the handoff and the case context tell one story");
+});
+
+test("a replayed runtime request and a replayed store delivery change nothing, and a conflicting delivery is refused", async (t) => {
+  const { store } = await makeStore(t);
+  const request = input("replay-projection");
+  const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: scriptedRuntime() });
+  await controller.run(request);
+  const before = await store.load(CASE_ID);
+  const projectionBefore = projectCommunicationState(before);
+
+  await controller.run(request);
+  const runtimeTurn = before.runtime_turns[0];
+  const candidate = before.candidate_responses[0];
+  await store.deliverPrivateRuntimeCandidate(CASE_ID, runtimeTurn.id, { candidateId: candidate.id, assistantTurnId: request.assistantTurnId, eventId: "event:synthetic:delivery-replay" });
+  const replayed = await store.load(CASE_ID);
+  assert.equal(replayed.revision, before.revision, "neither replay is a write");
+  assert.deepEqual(projectCommunicationState(replayed), projectionBefore);
+  assert.equal(replayed.raw_transcript.length, 2);
+
+  await assert.rejects(
+    () => store.deliverPrivateRuntimeCandidate(CASE_ID, runtimeTurn.id, { candidateId: candidate.id, assistantTurnId: "turn:synthetic:another-assistant", eventId: "event:synthetic:delivery-conflict" }),
+    /conflicts with an existing immutable delivery/u
+  );
+  assert.equal((await store.load(CASE_ID)).revision, before.revision);
+});
+
+test("a runtime delivery recorded before candidates carried transcript identifiers still resolves from its own runtime receipt", async (t) => {
+  const { store } = await makeStore(t);
+  const request = input("legacy-receipt");
+  await createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: scriptedRuntime() }).run(request);
+  const legacy = structuredClone(await store.load(CASE_ID));
+  delete legacy.candidate_responses[0].metadata.sent_turn_id;
+  delete legacy.candidate_responses[0].metadata.sent_in_reply_to_turn_id;
+
+  const migrated = validatePrivateCaseRecord(legacy);
+  const delivery = resolveCandidateAppDelivery(migrated, migrated.candidate_responses[0]);
+  assert.deepEqual([delivery.route, delivery.assistant_turn_id, delivery.in_reply_to_turn_id], ["runtime_receipt", request.assistantTurnId, request.userTurnId]);
+  assert.deepEqual(
+    projectCommunicationState(migrated).confirmed_or_reported_client_outbound.map((entry) => [entry.state, entry.delivery_evidence, entry.source.route]),
+    [["app_committed", "application_persisted", "runtime_receipt"]]
+  );
+
+  const unbound = (change) => {
+    const record = structuredClone(migrated);
+    change(record);
+    return resolveCandidateAppDelivery(record, record.candidate_responses[0]);
+  };
+  assert.equal(unbound((record) => { record.raw_transcript[1].text = "Synthetic text the application never committed."; }), null, "different bytes are not the delivery");
+  assert.equal(unbound((record) => { record.runtime_turns[0].delivery.audit_id = "audit:synthetic:other"; }), null, "a receipt for another audit certifies nothing");
+  assert.equal(unbound((record) => { record.raw_transcript[1].exchange_id = "exchange:synthetic:other"; }), null, "the reply must answer its own exchange");
+  assert.equal(unbound((record) => { record.raw_transcript.reverse(); }), null, "the reply must come after the user turn");
+
+  const disagree = structuredClone(await store.load(CASE_ID));
+  disagree.candidate_responses[0].metadata.sent_turn_id = "turn:synthetic:not-the-receipt";
+  assert.throws(() => validatePrivateCaseRecord(disagree), /transcript identifiers disagree with its candidate/u);
+});
+
+test("a delivered discriminating question is client history and every failed draft stays an unsent draft", async (t) => {
+  const { store } = await makeStore(t);
+  const modelRuntime = scriptedRuntime({ verdicts: ["fail", "fail", "fail"] });
+  const request = input("discriminator-projection");
+  const result = await createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime }).run(request);
+  assert.equal(result.deliveryKind, "discriminator");
+  const record = await store.load(CASE_ID);
+  const context = await store.loadCaseContext(CASE_ID);
+  const projection = context.communication_projection;
+
+  assert.equal(context.delivery_completion, null, "no candidate was delivered");
+  const [committed, ...others] = projection.confirmed_or_reported_client_outbound;
+  assert.equal(others.length, 0);
+  assert.deepEqual(
+    { kind: committed.subject.kind, state: committed.state, evidence: committed.delivery_evidence, route: committed.source.route, turn: committed.assistant_turn_id, reply: committed.in_reply_to_turn_id, sha: committed.subject.text_sha256 },
+    { kind: "transcript_turn", state: "app_committed", evidence: "application_persisted", route: "runtime_discriminator", turn: request.assistantTurnId, reply: request.userTurnId, sha: sha256Hex(result.answer) }
+  );
+  assert.deepEqual(
+    projection.supervisor_only_artifacts.map((entry) => [entry.subject.candidate_version, entry.state, entry.delivery_evidence, entry.candidate_status]),
+    [[1, "draft", "none", "superseded"], [2, "draft", "none", "superseded"], [3, "draft", "none", "superseded"]]
+  );
+  assert.equal(record.candidate_responses.some((candidate) => candidate.exact_text === result.answer), false, "the delivered question is not any draft's bytes");
+  assert.deepEqual(projection.unresolved_delivery, []);
+  validateCommunicationProjection(projection, { rawTranscript: record.raw_transcript });
+});
+
+test("a runtime turn that stops before delivery leaves its draft unsent and unattributed to the client", async (t) => {
+  const { store } = await makeStore(t);
+  const modelRuntime = scriptedRuntime({ reuseContext: true });
+  await assert.rejects(
+    () => createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime, maximumInvocationAttempts: 2 }).run(input("stalled")),
+    (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE"
+  );
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(context.communication_projection.confirmed_or_reported_client_outbound, []);
+  assert.deepEqual(
+    context.communication_projection.supervisor_only_artifacts.map((entry) => [entry.state, entry.delivery_evidence, entry.candidate_status]),
+    [["draft", "none", "pending_audit"]]
+  );
+  assert.equal(context.delivery_completion, null);
 });

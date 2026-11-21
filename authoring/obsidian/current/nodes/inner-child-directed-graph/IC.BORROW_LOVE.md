@@ -24,6 +24,7 @@ source_refs:
   - IC.SPIRITUAL_LOAN
   - IC.ALTERED_STATES
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
 regression_refs:
   - G003
   - G005
@@ -44,9 +45,9 @@ regression_refs:
   - G132
   - G134
   - G139
-base_record_sha256: 61461a7787a6f651dd64494ef55d8a40ead4c79892bb094e88b10666d73807cc
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: f9c3089a0ffdf8430707ce7a973c74a44f336633f9784ce51e8a91c803772d43
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -133,7 +134,9 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.",
     "Start with what is actually accessible in the present. If a profound loving state is only remembered, use sober recollection or a chosen benevolent reference as preparation and see whether any caring function becomes available now.",
     "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity.",
-    "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing."
+    "When someone is numb and a little love for a pet or a person is the grip, start there; gratitude comes back later either way, and switching angles abandons nothing.",
+    "When care feels unavailable, distinguish fear of compassion, lack of developed capacity and a mismatch in the form of care before attempting a different approach; none requires forcing the same image or feeling.",
+    "When a person reports contact with a deeper spiritual level of perfection, wisdom or compassion, it may bring release, love and reassurance in its own right and can help build the inner Nurturer, Protector and Guide; do not treat it as a source of specific facts about ordinary life or let it replace discernment, so an impression that seems to come through it is tested like any other, and neither affirm nor deny what it is."
   ],
   "successSignals": [
     "The capacity for love becomes experientially available without coercion."
@@ -161,3 +164,5 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
 
 [[current/governance/amendments/AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]

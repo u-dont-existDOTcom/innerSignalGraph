@@ -13,20 +13,58 @@ export const THERAPY_PROTOCOL_ID = "inner-signal-therapy";
 
 const DEFAULT_PLUGIN_ROOT = new URL("../../plugins/inner-signal-therapy/", import.meta.url);
 
+// Whether chats receive the advice and cautions inside every map box (owner answer 378a, 20 Nov 2026). This constant is
+// the one switch for it. Off, the box file leaves the served list and the served texts lose the sentences that point to it
+// (withoutBoxGuidancePointers), so no host is told to read a file it does not receive; the packaged file stays in the
+// plugin, and `npm run authoring:maps:check` keeps it current. The protective-part rule, the one rule the 20 Nov test chats
+// found only in a box, is in SKILL.md too, so it reaches chats in both settings.
+export const SERVE_INNER_CHILD_BOX_GUIDANCE = true;
+
+const BOX_GUIDANCE_FILE = "references/INNER-CHILD-BOX-GUIDANCE.md";
+
 // Fixed order: the always-read files first, in the order the skill lists them, then the
 // conditional guide-referral file. Every always-read reference must be served, or an MCP
 // host receives instructions to read a file it cannot see.
-export const THERAPY_PROTOCOL_FILES = Object.freeze([
-  "references/PROTECTIVE-COMPATIBILITY.md",
-  "references/INNER-CHILD-THERAPY-MAP.md",
-  "references/PHENOMENOLOGY-AND-REPRESENTATION.md",
-  "references/PROTOCOL-STATE-PROVENANCE.md",
-  "references/ROLE-BELIEF-INTEGRITY.md",
-  "references/FOCUS-DISCIPLINE.md",
-  "references/LONGITUDINAL-SYNTHESIS.md",
-  "references/RESPONSE-FIDELITY.md",
-  "references/GUIDE-REFERRALS.md"
-]);
+export function therapyProtocolFiles({ boxGuidance = SERVE_INNER_CHILD_BOX_GUIDANCE } = {}) {
+  return Object.freeze([
+    "references/PROTECTIVE-COMPATIBILITY.md",
+    "references/INNER-CHILD-THERAPY-MAP.md",
+    ...(boxGuidance ? [BOX_GUIDANCE_FILE] : []),
+    "references/PHENOMENOLOGY-AND-REPRESENTATION.md",
+    "references/PROTOCOL-STATE-PROVENANCE.md",
+    "references/ROLE-BELIEF-INTEGRITY.md",
+    "references/FOCUS-DISCIPLINE.md",
+    "references/LONGITUDINAL-SYNTHESIS.md",
+    "references/RESPONSE-FIDELITY.md",
+    "references/GUIDE-REFERRALS.md"
+  ]);
+}
+
+export const THERAPY_PROTOCOL_FILES = therapyProtocolFiles();
+
+const BOX_GUIDANCE_NAME = "INNER-CHILD-BOX-GUIDANCE.md";
+const BOX_GUIDANCE_LIST_ENTRY = `\`${BOX_GUIDANCE_FILE}\`, `;
+
+// A served text without its pointers to the box guidance, for a build that does not serve it: the file's entry leaves the
+// read list, and every other sentence naming it is left out, with its line when nothing else is on it (and then one blank
+// line, so paragraphs stay apart). Today these are SKILL.md's read list and its sentence on where the boxes' advice is, and
+// the map's note on the box file. A text that names none of them is returned unchanged, byte for byte.
+export function withoutBoxGuidancePointers(text) {
+  const lines = text.split("\n");
+  const kept = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    let line = lines[index].replaceAll(BOX_GUIDANCE_LIST_ENTRY, "");
+    if (line.includes(BOX_GUIDANCE_NAME)) {
+      line = line.split(/(?<=\.) +/u).filter((sentence) => !sentence.includes(BOX_GUIDANCE_NAME)).join(" ");
+      if (line === "") {
+        if (lines[index + 1] === "" && (kept.length === 0 || kept.at(-1) === "")) index += 1;
+        continue;
+      }
+    }
+    kept.push(line);
+  }
+  return kept.join("\n");
+}
 
 const sha256 = (text) => createHash("sha256").update(text, "utf8").digest("hex");
 
@@ -78,8 +116,8 @@ function codeSpans(line) {
 // of "references/" is reported, whatever characters it uses: outside a code span, inside a wider
 // span, inside a span that holds anything more or less than a served path, or in an unclosed one.
 // The packaged skill already writes every reference this way.
-export function unservedReferenceMentions(text) {
-  const served = new Set(THERAPY_PROTOCOL_FILES);
+export function unservedReferenceMentions(text, servedFiles = THERAPY_PROTOCOL_FILES) {
+  const served = new Set(servedFiles);
   const unserved = [];
   for (const line of text.split("\n")) {
     const spans = codeSpans(line);
@@ -93,9 +131,9 @@ export function unservedReferenceMentions(text) {
 }
 
 // A served text that names an unserved reference makes the protocol unavailable, not incomplete.
-function requireServedReferences(texts) {
+function requireServedReferences(texts, servedFiles) {
   for (const [label, text] of texts) {
-    const [mention] = unservedReferenceMentions(text);
+    const [mention] = unservedReferenceMentions(text, servedFiles);
     if (mention !== undefined) {
       throw new TherapyProtocolUnavailableError(`The packaged ${label} names ${mention}, which this server does not serve.`);
     }
@@ -110,19 +148,21 @@ export class TherapyProtocolUnavailableError extends Error {
   }
 }
 
-export function loadTherapyProtocol({ pluginRoot = DEFAULT_PLUGIN_ROOT } = {}) {
+export function loadTherapyProtocol({ pluginRoot = DEFAULT_PLUGIN_ROOT, boxGuidance = SERVE_INNER_CHILD_BOX_GUIDANCE } = {}) {
   const root = pluginRoot instanceof URL ? pluginRoot : pathToFileURL(`${path.resolve(String(pluginRoot))}${path.sep}`);
+  const servedFiles = therapyProtocolFiles({ boxGuidance });
+  const serve = boxGuidance ? (text) => text : withoutBoxGuidancePointers;
   try {
     const manifest = JSON.parse(fs.readFileSync(new URL(".codex-plugin/plugin.json", root), "utf8"));
     if (manifest.name !== THERAPY_PROTOCOL_ID || typeof manifest.version !== "string") {
       throw new Error("The packaged plugin manifest does not identify the InnerSignal therapy protocol.");
     }
-    const instructions = requireContent(skillBody(fs.readFileSync(new URL("skills/inner-signal-therapy/SKILL.md", root), "utf8")), "skill instructions");
-    const files = THERAPY_PROTOCOL_FILES.map((relative) => {
-      const content = requireContent(fs.readFileSync(new URL(`skills/inner-signal-therapy/${relative}`, root), "utf8"), relative);
+    const instructions = requireContent(serve(skillBody(fs.readFileSync(new URL("skills/inner-signal-therapy/SKILL.md", root), "utf8"))), "skill instructions");
+    const files = servedFiles.map((relative) => {
+      const content = requireContent(serve(fs.readFileSync(new URL(`skills/inner-signal-therapy/${relative}`, root), "utf8")), relative);
       return Object.freeze({ path: relative, sha256: sha256(content), bytes: Buffer.byteLength(content, "utf8"), content });
     });
-    requireServedReferences([["skill instructions", instructions], ...files.map((file) => [file.path, file.content])]);
+    requireServedReferences([["skill instructions", instructions], ...files.map((file) => [file.path, file.content])], servedFiles);
     const instructionsSha256 = sha256(instructions);
     const protocolSha256 = sha256(JSON.stringify({
       protocol_id: THERAPY_PROTOCOL_ID,

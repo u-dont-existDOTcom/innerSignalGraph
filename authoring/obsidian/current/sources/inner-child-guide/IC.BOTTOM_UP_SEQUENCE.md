@@ -7,7 +7,7 @@ source_id: IC.BOTTOM_UP_SEQUENCE
 guide_id: inner-child-guide
 heading: A Bottom-Up Sequence
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+source_hash: 6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f
 section_hash: b935ce45c4789b28e25185fcfdf0b425dbffb94b2af324b6ab1281664ad88823
 locator_kind: text-lines
 cited_by_node_ids:
@@ -15,16 +15,16 @@ cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
   - IC.DEEP_LOVE_TO_CHILD
   - IC.MEET_GUARD
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # A Bottom-Up Sequence
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-11-20-r11.txt`
 
-Locator: Lines 465–498
+Locator: Lines 479–512
 
 ```text
 A Bottom-Up Sequence

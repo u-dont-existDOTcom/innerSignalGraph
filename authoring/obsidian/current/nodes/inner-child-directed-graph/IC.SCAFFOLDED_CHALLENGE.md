@@ -20,6 +20,8 @@ source_refs:
   - AMEND.IC.SCAFFOLDED_CHALLENGE
   - IC.REGULATION_BEFORE_DIALOGUE
   - IC.SESSION_CLOSURE
+  - AMEND.IC.SCAFFOLDING_IS_READINESS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G062
   - G066
@@ -28,9 +30,9 @@ regression_refs:
   - G079
   - G087
   - G088
-base_record_sha256: 1ecb8c30862c45cb361f6f35312de3ad57fd48a02e2bb7450c8702a49eff88ac
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 8f5babd26f65401d48b0cd260f05bb83364c34b09b0c818780b120d6ee8b3ed3
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Titrate difficult material instead of equating distress with harm
@@ -129,7 +131,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Treat difficult material as calibration information, not automatic evidence of harm or progress. Workable requires intact orientation/stopping/return, willingness to re-approach, a non-aversive appraisal, and recovery/later functioning that have not meaningfully deteriorated.",
     "Pendulate between challenge and resource. Adjust one dimension at a time when calibrating, or several at once if distress is climbing: duration, depth, timing, imagery intensity, representation, eyes-open/external anchoring, isolation, and support.",
     "Re-approach only when the person wants to and both their appraisal and observed recovery/functioning support it.",
-    "Dreams and imagery may be explored for present meaning, feelings, needs, or capacities; they are not evidence of historical events and must not be used to confirm or reconstruct memories."
+    "Dreams and imagery may be explored for present meaning, feelings, needs, or capacities; they are not evidence of historical events and must not be used to confirm or reconstruct memories.",
+    "Finding the most feasible next challenge is scaffolding, and it is also the readiness check for going deeper: go deeper only after the last step went well."
   ],
   "successSignals": [
     "The person can approach and leave difficult material voluntarily while remaining oriented and recovering afterward.",
@@ -146,3 +149,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/sources/inner-child-guide/IC.REGULATION_BEFORE_DIALOGUE]]
 
 [[current/sources/inner-child-guide/IC.SESSION_CLOSURE]]
+
+[[current/governance/amendments/AMEND.IC.SCAFFOLDING_IS_READINESS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

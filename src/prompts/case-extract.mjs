@@ -25,6 +25,7 @@ ${focusDisciplineExtractionRules}
 - Put psychological role assignments, causal stories, and speaker identity into hypotheses, never observations.
 - Preserve multiple alternatives when the transcript does not discriminate.
 - Use unknown rather than guessing.
+- shame_context tracks shame/humiliation as a currently relevant experience, not a diagnosis or belief that shame is malfunctioning. Mark present when the person reports shame, humiliation, being exposed as defective, or a clearly expressed shame-related social/moral verdict (whether or not the literal word 'shame' is used). Keep the report of an emotion separate from whether the social judgment is fair or chosen conduct requires repair. A generic disagreement, guilt about an action, ordinary criticism, or longing for belonging alone does not establish present shame; use unknown unless the shame connection is actually supported. Use absent only when it is clearly not in play. Never infer past abuse or a particular inner part from shame alone.
 - Distinguish literal childhood, adolescence, younger adulthood, a present child-state, and chronological adulthood.
 - Track witness capacity separately from inner-adult capacity: a person may already observe and distinguish several internal positions while still lacking a stable Nurturer/Protector/Guide role.
 - Track credibility evidence separately from credibility conflict. If the younger position points to how adult life actually turned out as evidence against the promise, that is an adverse track record, not an absence of track record.

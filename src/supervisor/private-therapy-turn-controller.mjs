@@ -3,6 +3,7 @@ import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { createCandidateAuditEvidence, REPAIR_INDUCED_ERROR_CHECKS } from "./private-candidate-lifecycle.mjs";
 import { privateRuntimeNextAction } from "./private-runtime-turn-lifecycle.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
+import { OWNER_FALLBACK_KIND } from "./owner-fallback-message.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
@@ -337,7 +338,12 @@ export function createPrivateTherapyTurnController({
             authContext,
             execute: (attemptContextId) => modelRuntime.produceDiscriminator({ caseId, runtimeTurn, authContext, attemptContextId })
           });
-          await call("savePrivateRuntimeDiscriminator", [caseId, runtimeTurnId, { exactText: produced.exactText, producerContextId: produced.contextId }], authContext);
+          // The owner fallback is saved and delivered as its own kind, so it is never mistaken for a question or an approved candidate.
+          await call("savePrivateRuntimeDiscriminator", [caseId, runtimeTurnId, {
+            exactText: produced.exactText,
+            producerContextId: produced.contextId,
+            ...(produced.kind === OWNER_FALLBACK_KIND ? { kind: OWNER_FALLBACK_KIND } : {})
+          }], authContext);
         }
         await call("deliverPrivateRuntimeDiscriminator", [caseId, runtimeTurnId, {
           assistantTurnId,

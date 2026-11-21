@@ -58,9 +58,13 @@ regression_refs:
   - G135
   - G136
   - G140
+  - G143
+  - G150
+  - G152
+  - G153
 base_record_sha256: 9abd685a7a54c9265c03891516135ff34ba0fcbe17e24b3ed3bcea7eb54283d0
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Use gentle shaking for regulation and judge benefit by carryover

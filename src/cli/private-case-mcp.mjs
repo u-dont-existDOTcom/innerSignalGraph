@@ -8,6 +8,7 @@ import { listenPrivateCaseMcp } from "../server/private-case-mcp.mjs";
 import { assertJournalWorkExchangeRoot, createJournalWorkExchange, journalWorkExchangeSecret, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
 import { createJournalPrivateApi } from "../journal-import/http.mjs";
 import { createJournalWorkTools } from "../server/journal-work-tools.mjs";
+import { createSupervisorReplyConnector } from "../server/supervisor-reply-setup.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -86,6 +87,9 @@ if (configuredJournalWork === 3) {
 process.stderr.on("error", () => {});
 const callLog = (event) => { process.stderr.write(`${JSON.stringify(event)}\n`); };
 
+// Optional reply-draft tools (off unless INNER_SIGNAL_MCP_SUPERVISOR_DRAFTS is true; see src/server/supervisor-reply-setup.mjs).
+const supervisorReply = await createSupervisorReplyConnector({ access: service, log: callLog });
+
 const listener = await listenPrivateCaseMcp({
   caseAccessService: service,
   callLog,
@@ -94,10 +98,15 @@ const listener = await listenPrivateCaseMcp({
   host: hosted ? "0.0.0.0" : "127.0.0.1",
   productionAuthReady: providers.productionReady,
   journalWork,
+  supervisorReply,
   oauth: hosted ? {
     resource,
     authorizationServers: [providers.oauth.issuer],
-    scopesSupported: [...providers.oauth.scopesSupported, ...(journalWork ? [PRIVATE_CASE_SCOPES.JOURNAL_SUBMIT] : [])],
+    scopesSupported: [
+      ...providers.oauth.scopesSupported,
+      ...(journalWork ? [PRIVATE_CASE_SCOPES.JOURNAL_SUBMIT] : []),
+      ...(supervisorReply ? [PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT] : [])
+    ],
     resourceDocumentation: process.env.INNER_SIGNAL_RESOURCE_DOCUMENTATION || undefined
   } : null
 });
@@ -107,7 +116,14 @@ const ready = {
   provider: providers.kind,
   productionReady: providers.productionReady,
   journalEnabled: providers.journalEnabled === true,
-  journalWork: Boolean(journalWork)
+  journalWork: Boolean(journalWork),
+  // Present only when the reply-draft tools are on, so the ready line of a deployment that has not turned them on is unchanged.
+  // `supervisorBackendDrafts` is whether InnerSignal can also write a draft itself, which needs the OpenAI key as well.
+  ...(supervisorReply ? {
+    supervisorDrafts: true,
+    supervisorReview: supervisorReply.reviewAvailable ? "available" : "unavailable",
+    supervisorBackendDrafts: supervisorReply.backendDraftsAvailable ? "available" : "unavailable"
+  } : {})
 };
 const readyFile = valueAfter("--ready-file");
 if (readyFile) {

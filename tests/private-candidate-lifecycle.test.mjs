@@ -4,7 +4,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
+import { createHash } from "node:crypto";
+import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
+import { projectCommunicationState, resolveCandidateAppDelivery, validateCommunicationProjection } from "../src/storage/private-case-communication.mjs";
+import { assessContinuationSafety } from "../src/storage/private-case-continuity.mjs";
 import { createEncryptedPrivateCaseStore, validatePrivateCaseRecord } from "../src/storage/private-case-store.mjs";
 import { runPrivateCandidateAudit } from "../src/supervisor/private-candidate-audit.mjs";
 import {
@@ -382,4 +385,318 @@ test("schema v5 migrates through v6 to v7 without changing exact Unicode candida
   assert.equal(migrated.candidate_responses[0].exact_text, before.candidate_responses[0].exact_text);
   assert.deepEqual(migrated.candidate_responses[0].audit_history, before.candidate_responses[0].audit_history);
   assert.equal(migrated.candidate_responses[0].root_candidate_id, before.candidate_responses[0].root_candidate_id);
+});
+
+const sha256Hex = (text) => createHash("sha256").update(text, "utf8").digest("hex");
+const OWNER_REPORT = { origin: "agent_relayed", sourceRef: "message:synthetic:owner-report", quote: "Synthetic quote: I sent that reply." };
+
+async function appendUserTurn(store, suffix) {
+  const turn = { id: `turn:synthetic:user:${suffix}`, exchange_id: `exchange:synthetic:${suffix}`, role: "user", text: `Synthetic user message ${suffix}.`, at: "2026-09-10T11:00:00.000Z", episode_id: null };
+  await store.appendTranscriptTurn(CASE_ID, turn);
+  return turn;
+}
+
+async function approvedOriginal(store, id = "candidate:comm:original") {
+  await store.saveCandidateResponse(CASE_ID, id, "Synthetic approved original candidate.", { producer_context_id: "producer:comm:original" });
+  const candidate = await store.getCandidateResponse(CASE_ID, id);
+  const audit = evidence(candidate, `audit:comm:${id}`, [], { contextId: `fresh-auditor:comm:${id}` });
+  await store.recordCandidateAudit(CASE_ID, id, audit);
+  await store.approveCandidateForDelivery(CASE_ID, id, audit.id);
+  return { candidate: await store.getCandidateResponse(CASE_ID, id), audit };
+}
+
+const candidateSubject = (candidate) => ({ kind: "candidate", candidateId: candidate.id, candidateVersion: candidate.version });
+const outbound = (context) => context.communication_projection.confirmed_or_reported_client_outbound;
+const supervisorOnly = (context) => context.communication_projection.supervisor_only_artifacts;
+const unresolved = (context) => context.communication_projection.unresolved_delivery;
+
+test("delivery states tell an unsent failed draft from the exact version the application committed", async (t) => {
+  const store = await makeStore(t);
+  const { parent, candidate: v2 } = await firstReconstruction(store);
+  const user = await appendUserTurn(store, "pair");
+  const v2Audit = evidence(v2, "audit:comm:v2:pass", [], { contextId: "fresh-auditor:comm:v2" });
+  await store.recordCandidateAudit(CASE_ID, v2.id, v2Audit);
+  await store.approveCandidateForDelivery(CASE_ID, v2.id, v2Audit.id);
+
+  const beforeDelivery = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(outbound(beforeDelivery), [], "an approved draft that was not delivered is not client history");
+  assert.deepEqual(supervisorOnly(beforeDelivery).map((entry) => [entry.subject.candidate_id, entry.state, entry.delivery_evidence, entry.candidate_status]), [
+    [parent.id, "draft", "none", "superseded"],
+    [v2.id, "draft", "none", "approved_for_delivery"]
+  ]);
+  assert.equal(beforeDelivery.delivery_completion, null);
+
+  await store.deliverCandidateResponse(CASE_ID, v2.id, { auditId: v2Audit.id, assistantTurnId: "turn:synthetic:assistant:pair", inReplyToTurnId: user.id });
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(context.delivery_completion, { candidate_id: v2.id, candidate_version: 2 });
+  assert.equal(outbound(context).length, 1);
+  const [committed] = outbound(context);
+  assert.deepEqual(
+    { subject: committed.subject, audience: committed.audience, state: committed.state, evidence: committed.delivery_evidence },
+    { subject: { kind: "candidate", candidate_id: v2.id, candidate_version: 2, text_sha256: sha256Hex(v2.exact_text) }, audience: "client", state: "app_committed", evidence: "application_persisted" }
+  );
+  assert.equal(committed.assistant_turn_id, "turn:synthetic:assistant:pair");
+  assert.equal(committed.in_reply_to_turn_id, user.id);
+  assert.deepEqual(committed.event_time, { at: "2026-09-10T12:00:00.000Z", status: "known" });
+  assert.equal(committed.source.kind, "application_transcript");
+  assert.equal(committed.source.route, "transcript_bound");
+  assert.equal(committed.source.audit_id, v2Audit.id);
+  assert.deepEqual(supervisorOnly(context).map((entry) => [entry.subject.candidate_id, entry.state, entry.candidate_status]), [[parent.id, "draft", "superseded"]]);
+  assert.notEqual(supervisorOnly(context)[0].subject.text_sha256, committed.subject.text_sha256, "the unsent version keeps its own exact bytes");
+  assert.deepEqual(unresolved(context), [], "the only assistant turn is vouched for by the delivery");
+  const record = await store.load(CASE_ID);
+  validateCommunicationProjection(context.communication_projection, { rawTranscript: record.raw_transcript });
+});
+
+test("a status-only markCandidateSent never reads as delivered history and cannot later be upgraded", async (t) => {
+  const store = await makeStore(t);
+  const { candidate, audit } = await approvedOriginal(store);
+  await store.markCandidateSent(CASE_ID, candidate.id);
+  const sent = await store.getCandidateResponse(CASE_ID, candidate.id);
+  assert.equal(sent.status, "sent");
+  assert.equal(sent.metadata.sent_status_only, true);
+  assert.equal(sent.metadata.sent_turn_id, undefined);
+
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.equal(context.delivery_completion, null);
+  assert.deepEqual(outbound(context), []);
+  assert.equal(unresolved(context).length, 1);
+  const [unknown] = unresolved(context);
+  assert.deepEqual([unknown.state, unknown.audience, unknown.delivery_evidence], ["unknown", "unknown", "unknown"]);
+  assert.deepEqual([unknown.source.kind, unknown.source.route, unknown.candidate_status], ["legacy_status_only", "mark_candidate_sent", "sent"]);
+  assert.ok(assessContinuationSafety(context).failures.includes("sent candidate is missing exact transcript-bound delivery evidence"));
+
+  const user = await appendUserTurn(store, "status-only");
+  await assert.rejects(
+    () => store.deliverCandidateResponse(CASE_ID, candidate.id, { auditId: audit.id, assistantTurnId: "turn:synthetic:assistant:late", inReplyToTurnId: user.id }),
+    /replay conflicts with the immutable sent response/i
+  );
+  const handoffId = "handoff:00000000-0000-4000-8000-0000000000a1";
+  await store.createHandoff(CASE_ID, { handoffId, runtimeVersion: "synthetic-runtime", auditVersion: "private-candidate-audit-v2" });
+  const packet = await store.loadHandoff(CASE_ID, handoffId);
+  assert.equal(packet.delivery_completion, null);
+  assert.equal(packet.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
+  assert.deepEqual(packet.communication_projection.confirmed_or_reported_client_outbound, []);
+});
+
+test("an owner's report of sending is recorded as reported delivery without auditing, approving or marking anything", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await firstReconstruction(store);
+  const before = await store.getCandidateResponse(CASE_ID, candidate.id);
+  const recorded = await store.recordCommunicationEvent(CASE_ID, {
+    eventId: "comm:report:v2",
+    kind: "reported_sent",
+    audience: "client",
+    subject: candidateSubject(candidate),
+    sentAt: "2026-09-10T11:30:00.000Z",
+    provenance: OWNER_REPORT
+  });
+  assert.equal(recorded.event.provenance.actor_resolution, "unresolved", "an agent's relay is not a verified owner event");
+  assert.deepEqual(await store.getCandidateResponse(CASE_ID, candidate.id), before, "the candidate record is untouched");
+  assert.deepEqual(before.audit_history, []);
+
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.equal(context.delivery_completion, null);
+  assert.equal(outbound(context).length, 1);
+  const [reported] = outbound(context);
+  assert.deepEqual([reported.state, reported.audience, reported.delivery_evidence, reported.candidate_status], ["reported_sent", "client", "owner_reported_sent", "reconstructed_pending_audit"]);
+  assert.equal(reported.subject.text_sha256, sha256Hex(candidate.exact_text));
+  assert.deepEqual(reported.event_time, { at: "2026-09-10T11:30:00.000Z", status: "known" });
+  assert.deepEqual([reported.source.kind, reported.source.origin, reported.source.actor_resolution, reported.source.source_ref], ["owner_report", "agent_relayed", "unresolved", "message:synthetic:owner-report"]);
+  assert.equal(JSON.stringify(context.communication_projection).includes("Synthetic quote"), false, "the quoted report stays in the encrypted record, not the projection");
+  assert.equal((await store.load(CASE_ID)).communication_events[0].provenance.quote, OWNER_REPORT.quote);
+  assert.deepEqual(supervisorOnly(context).map((entry) => entry.subject.candidate_id), [before.parent_candidate_id], "only the earlier superseded draft remains supervisor-only");
+});
+
+test("an unreported send time stays explicitly unavailable and is never invented", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await firstReconstruction(store);
+  const { event } = await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:report:no-time", kind: "reported_sent", audience: "client", subject: candidateSubject(candidate), provenance: OWNER_REPORT });
+  assert.deepEqual([event.sent_at, event.sent_at_status], [null, "unavailable"]);
+  assert.deepEqual(outbound(await store.loadCaseContext(CASE_ID))[0].event_time, { at: null, status: "unavailable" });
+});
+
+test("an ambiguous report stays unresolved until a later report names one exact version, and the correction is appended", async (t) => {
+  const store = await makeStore(t);
+  const { parent, candidate: v2 } = await firstReconstruction(store);
+  await store.recordCommunicationEvent(CASE_ID, {
+    eventId: "comm:report:ambiguous",
+    kind: "reported_sent",
+    audience: "client",
+    subject: { kind: "unresolved", candidateRefs: [{ candidateId: parent.id, candidateVersion: 1 }, { candidateId: v2.id, candidateVersion: 2 }] },
+    provenance: OWNER_REPORT
+  });
+  let context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(outbound(context), [], "no guessed binding");
+  assert.equal(unresolved(context).length, 1);
+  assert.equal(unresolved(context)[0].subject.kind, "unresolved");
+  assert.deepEqual(unresolved(context)[0].subject.candidate_refs.map((entry) => entry.candidate_version), [1, 2]);
+  assert.deepEqual(supervisorOnly(context).map((entry) => [entry.subject.candidate_version, entry.state]), [[1, "draft"], [2, "draft"]], "neither candidate was upgraded");
+
+  await assert.rejects(() => store.recordCommunicationEvent(CASE_ID, { eventId: "comm:retract:missing", kind: "retraction", retractsEventId: "comm:report:never-recorded", provenance: OWNER_REPORT }), /does not precede it/);
+  await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:retract:ambiguous", kind: "retraction", retractsEventId: "comm:report:ambiguous", reason: "The owner named the version.", provenance: OWNER_REPORT });
+  await assert.rejects(() => store.recordCommunicationEvent(CASE_ID, { eventId: "comm:retract:again", kind: "retraction", retractsEventId: "comm:report:ambiguous", provenance: OWNER_REPORT }), /already retracted/);
+  await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:report:v2", kind: "reported_sent", audience: "client", subject: candidateSubject(v2), provenance: OWNER_REPORT });
+  context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(unresolved(context), []);
+  assert.deepEqual(outbound(context).map((entry) => [entry.subject.candidate_version, entry.state]), [[2, "reported_sent"]]);
+  assert.deepEqual(supervisorOnly(context).map((entry) => [entry.subject.candidate_version, entry.state]), [[1, "draft"]]);
+  assert.equal(context.communication_projection.retracted_event_count, 1);
+  const record = await store.load(CASE_ID);
+  assert.deepEqual(record.communication_events.map((event) => event.id), ["comm:report:ambiguous", "comm:retract:ambiguous", "comm:report:v2"], "history is appended, never rewritten");
+});
+
+test("an export or a translation shown to the supervisor never marks the client message as sent", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await firstReconstruction(store);
+  const translation = "Synthetic English companion for the supervisor.";
+  const common = { audience: "client", subject: candidateSubject(candidate), provenance: { origin: "application", sourceRef: null, quote: null } };
+  await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:expose:v2", kind: "exposed", ...common });
+  let context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(supervisorOnly(context).filter((entry) => entry.subject.candidate_version === 2).map((entry) => [entry.state, entry.audience, entry.delivery_evidence]), [["exposed", "client", "none"]]);
+  await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:export:v2", kind: "exported", ...common });
+  const companion = { kind: "companion", companionOf: candidateSubject(candidate), artifactSha256: sha256Hex(translation) };
+  await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:expose:translation", kind: "exposed", audience: "supervisor", subject: companion, provenance: common.provenance });
+  await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:export:translation", kind: "exported", audience: "supervisor", subject: companion, provenance: common.provenance });
+  context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(outbound(context), [], "no export, exposure or translation is client history");
+  assert.equal(context.delivery_completion, null);
+  const exported = supervisorOnly(context).filter((entry) => entry.state === "exported");
+  assert.deepEqual(exported.map((entry) => [entry.subject.kind, entry.audience, entry.delivery_evidence]), [["candidate", "client", "none"], ["companion", "supervisor", "none"]]);
+  assert.equal(exported[1].subject.artifact_sha256, sha256Hex(translation));
+
+  const refused = (input) => assert.rejects(() => store.recordCommunicationEvent(CASE_ID, input), /not valid for a/);
+  await refused({ eventId: "comm:bad:1", kind: "reported_sent", audience: "supervisor", subject: candidateSubject(candidate), provenance: OWNER_REPORT });
+  await refused({ eventId: "comm:bad:2", kind: "reported_sent", audience: "client", subject: companion, provenance: OWNER_REPORT });
+  await refused({ eventId: "comm:bad:3", kind: "exported", audience: "supervisor", subject: candidateSubject(candidate), provenance: common.provenance });
+  await assert.rejects(() => store.recordCommunicationEvent(CASE_ID, { eventId: "comm:bad:4", kind: "reported_sent", audience: "client", subject: candidateSubject(candidate), provenance: { origin: "application", sourceRef: null, quote: null } }), /application cannot report that the owner sent/);
+});
+
+test("an exact replay of a communication event changes nothing and a conflicting one is refused", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await firstReconstruction(store);
+  const input = { eventId: "comm:report:replay", kind: "reported_sent", audience: "client", subject: candidateSubject(candidate), sentAt: "2026-09-10T11:30:00.000Z", provenance: OWNER_REPORT };
+  const first = await store.recordCommunicationEvent(CASE_ID, input);
+  const second = await store.recordCommunicationEvent(CASE_ID, input);
+  assert.equal(second.revision, first.revision, "a replay is not a write");
+  assert.deepEqual(second.event, first.event);
+  assert.equal((await store.load(CASE_ID)).communication_events.length, 1);
+  await assert.rejects(() => store.recordCommunicationEvent(CASE_ID, { ...input, sentAt: "2026-09-10T11:45:00.000Z" }), /conflicts with an existing immutable event/);
+  await assert.rejects(() => store.recordCommunicationEvent(CASE_ID, { ...input, eventId: "comm:report:wrong-version", subject: { ...input.subject, candidateVersion: 9 } }), /exact candidate version/);
+});
+
+test("records from before communication evidence load, and nothing in them is promoted to delivered history", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await approvedOriginal(store);
+  const user = await appendUserTurn(store, "legacy");
+  await store.markCandidateSent(CASE_ID, candidate.id);
+  await store.appendTranscriptTurn(CASE_ID, { id: "turn:synthetic:assistant:legacy", exchange_id: user.exchange_id, role: "assistant", text: "Synthetic older reply of unknown audience.", at: "2026-09-10T11:05:00.000Z", episode_id: null });
+  const legacy = structuredClone(await store.load(CASE_ID));
+  delete legacy.communication_events;
+  delete legacy.candidate_responses[0].metadata.sent_status_only;
+  const migrated = validatePrivateCaseRecord(legacy);
+  assert.equal(migrated.schema_version, 7);
+  assert.deepEqual(migrated.communication_events, []);
+  const projection = projectCommunicationState(migrated);
+  assert.deepEqual(projection.confirmed_or_reported_client_outbound, []);
+  assert.deepEqual(projection.unresolved_delivery.map((entry) => [entry.subject.kind, entry.state, entry.delivery_evidence, entry.source.kind, entry.source.route]), [
+    ["candidate", "unknown", "unknown", "legacy_status_only", null],
+    ["unattributed_assistant_turns", "unknown", "unknown", "transcript_role_only", null]
+  ]);
+  assert.deepEqual(projection.unresolved_delivery[1].subject, { kind: "unattributed_assistant_turns", count: 1, turn_ids: ["turn:synthetic:assistant:legacy"] });
+  validateCommunicationProjection(projection, { rawTranscript: migrated.raw_transcript });
+});
+
+test("the record validator refuses forged, mismatched or inconsistent communication evidence", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await firstReconstruction(store);
+  await store.recordCommunicationEvent(CASE_ID, { eventId: "comm:report:v2", kind: "reported_sent", audience: "client", subject: candidateSubject(candidate), provenance: OWNER_REPORT });
+  const base = await store.load(CASE_ID);
+  const forge = (change) => {
+    const record = structuredClone(base);
+    change(record);
+    return () => validatePrivateCaseRecord(record);
+  };
+  assert.doesNotThrow(() => validatePrivateCaseRecord(structuredClone(base)));
+  assert.throws(forge((record) => { record.communication_events[0].subject.text_sha256 = sha256Hex("other bytes"); }), /exact candidate bytes/);
+  assert.throws(forge((record) => { record.communication_events[0].audience = "supervisor"; }), /not valid for a reported_sent event/);
+  assert.throws(forge((record) => { record.communication_events[0].extra = true; }), /unexpected or missing fields/);
+  assert.throws(forge((record) => { record.communication_events[0].provenance.actor_resolution = "owner_verified"; }), /origin and actor resolution are inconsistent/);
+  assert.throws(forge((record) => { record.communication_events[0].sent_at_status = "known"; }), /sent_at is invalid/);
+  assert.throws(forge((record) => { record.communication_events.push(structuredClone(record.communication_events[0])); }), /Duplicate communication event/);
+  assert.throws(forge((record) => { record.communication_events[0].subject.candidate_version = 7; }), /exact candidate version/);
+  assert.throws(forge((record) => { record.candidate_responses[0].metadata.sent_status_only = true; }), /status-only delivery/);
+});
+
+test("a reply to a user turn outside any episode takes the current episode and the delivery still resolves in the context and the handoff", async (t) => {
+  const store = await makeStore(t);
+  const { candidate, audit } = await approvedOriginal(store);
+  await store.saveCaseState(CASE_ID, applyCaseStatePatch(createEmptyCaseState({ caseId: CASE_ID }), {
+    current_episode: {
+      id: "episode:comm:current",
+      target: "Distinguish two synthetic possibilities.",
+      route: "SYNTHETIC.ROUTE",
+      prediction: "The next exact observation will discriminate.",
+      next_question: "Which synthetic signal changed first?",
+      started_turn_id: "turn:synthetic:user:episode",
+      constitutional_aim_ids: ["CARE"],
+      adverse_signs: ["less choice"],
+      stay_conditions: ["new information"],
+      switch_conditions: ["no information"],
+      stop_conditions: ["decline"],
+      source_item_ids: []
+    }
+  }));
+  const user = await appendUserTurn(store, "episode");
+  await store.deliverCandidateResponse(CASE_ID, candidate.id, { auditId: audit.id, assistantTurnId: "turn:synthetic:assistant:episode", inReplyToTurnId: user.id });
+
+  const record = await store.load(CASE_ID);
+  const [storedUser, storedAssistant] = record.raw_transcript;
+  assert.equal(storedUser.episode_id, null);
+  assert.equal(storedAssistant.episode_id, "episode:comm:current", "the reply joins the episode the case is in");
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.deepEqual(context.delivery_completion, { candidate_id: candidate.id, candidate_version: candidate.version });
+  assert.equal(outbound(context)[0].state, "app_committed");
+  const handoffId = "handoff:00000000-0000-4000-8000-0000000000a2";
+  await store.createHandoff(CASE_ID, { handoffId, runtimeVersion: "synthetic-runtime", auditVersion: "private-candidate-audit-v2" });
+  assert.equal((await store.loadHandoff(CASE_ID, handoffId)).delivery_completion.assistant_turn_id, storedAssistant.id);
+
+  // Two different episodes are not the same delivery.
+  const mismatched = structuredClone(record);
+  mismatched.raw_transcript[0].episode_id = "episode:comm:other";
+  assert.equal(resolveCandidateAppDelivery(mismatched, mismatched.candidate_responses[0]), null);
+});
+
+test("an owner's report of a reply the application already committed corroborates it and is not listed twice", async (t) => {
+  const store = await makeStore(t);
+  const { candidate, audit } = await approvedOriginal(store);
+  const user = await appendUserTurn(store, "corroborate");
+  await store.deliverCandidateResponse(CASE_ID, candidate.id, { auditId: audit.id, assistantTurnId: "turn:synthetic:assistant:corroborate", inReplyToTurnId: user.id });
+  await store.recordCommunicationEvent(CASE_ID, {
+    eventId: "comm:report:committed-pair",
+    kind: "reported_sent",
+    audience: "client",
+    subject: { kind: "transcript_turn", assistantTurnId: "turn:synthetic:assistant:corroborate", inReplyToTurnId: user.id },
+    sentAt: "2026-09-10T11:45:00.000Z",
+    provenance: OWNER_REPORT
+  });
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.equal(outbound(context).length, 1, "one reply, one entry");
+  assert.deepEqual([outbound(context)[0].state, outbound(context)[0].delivery_evidence], ["app_committed", "application_persisted"], "the application's own record stays the stronger evidence");
+  assert.deepEqual(outbound(context)[0].corroborating_event_ids, ["comm:report:committed-pair"]);
+  assert.deepEqual(unresolved(context), []);
+});
+
+test("a status-only marking stays unresolved even when its record also carries a runtime receipt shape", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await approvedOriginal(store);
+  await store.markCandidateSent(CASE_ID, candidate.id);
+  const record = structuredClone(await store.load(CASE_ID));
+  // A forged receipt for the same candidate and audit must not lend a status-only marking a delivery it never had.
+  record.runtime_turns = [{ id: "runtime:forged", user_turn_id: "turn:forged:user", exchange_id: "exchange:forged", delivery: { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version, audit_id: record.candidate_responses[0].metadata.sent_with_audit_id, assistant_turn_id: "turn:forged:assistant" } }];
+  record.raw_transcript = [
+    { id: "turn:forged:user", exchange_id: "exchange:forged", role: "user", text: "Synthetic forged user turn.", at: "2026-09-10T11:00:00.000Z", episode_id: null },
+    { id: "turn:forged:assistant", exchange_id: "exchange:forged", role: "assistant", text: record.candidate_responses[0].exact_text, at: "2026-09-10T11:01:00.000Z", episode_id: null }
+  ];
+  assert.equal(resolveCandidateAppDelivery(record, record.candidate_responses[0]), null);
 });

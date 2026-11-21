@@ -21,9 +21,9 @@ source_refs:
   - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 regression_refs:
   - G008
-base_record_sha256: 9b8b14532a85240dad58a4d4cba65a487ec8894e7221122463998e05393a4aa1
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 092c80e7dc3d4a13692251a3250e5f0a1f59eaa4d92b6591e4284b788bea919c
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Build identity through private preference and experimental play
@@ -53,7 +53,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     ]
   },
   "avoid": [
-    "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
+    "Do not assume a fully formed true self is merely hidden and waiting to be uncovered.",
+    "Do not set up the performed self as a “fake” part to erase; the aim is a more workable internal relationship, not a new division between the acceptable self and another self that must disappear."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -63,6 +64,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "requiredNuance": []
   },
   "recommendations": [
+    "When childhood was organized around avoiding pain and preserving attachment, attention went into reading danger, meeting other people’s expectations, and keeping the bond, leaving much less room for the ordinary experiments (what do I like, what do I want to try, who am I when nobody is grading me) through which identity grows by trial and error. When curiosity or mistakes brought ridicule, punishment, or withdrawal of love, the performed self got better at surviving while the less-practiced self stayed blurry. Recovery includes more than uncovering a fully formed “true self” hidden underneath: some of it is developmental pl/ork (play + work) done late, creating enough safety for preference, curiosity, and experimentation to grow.",
     "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
     "Protect the beginner from immediate talent judgments.",
     "Make room for being interested in and enjoying the child, not only correcting or protecting them. A secure base supports safe exploration; outward competence alone does not demonstrate warmth or vitality."

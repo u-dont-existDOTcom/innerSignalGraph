@@ -20,6 +20,8 @@ source_refs:
   - AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014
   - AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014
   - IC.SPIRITUAL_LOAN
+  - AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
 regression_refs:
   - G047
   - G109
@@ -44,9 +46,9 @@ regression_refs:
   - G138
   - G139
   - G140
-base_record_sha256: f21123eab0dbf0ef6460f18f49de6f7293ebc2eb162f353289760b75ca8492d9
-base_graph_sha256: d145252bb6e094d5fa9198c422f41f3ea60dfb0e93fc1c92682fba10ed0c81cf
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 8b046d7cb314a632bff53c9271e008ca87c08b28cc75a283f2c1f40fad7cc926
+base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Offer gratitude toward unconditional love, asking rather than preaching
@@ -128,7 +130,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Do not preach, lecture or insist, and don’t bring it up in every reply. If the person keeps resisting, leave it (“we can come back to this later, now may not be the time”) and come back later from another angle.",
     "Do not demand a feeling, ask anyone to thank an abuser or endorse harm, or put thanks in place of protection, treatment, grief or practical help.",
     "Do not lead with gratitude, or gratitude for suffering, right after a fresh death or harm, and do not pile it on top of an unexamined contradiction.",
-    "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity."
+    "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity.",
+    "Do not use other people's deprivation as the reason this person should feel fortunate, or treat gratitude as a social ranking. Notice concretely present good while retaining compassion for those who suffer."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -140,7 +143,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "requiredNuance": [
       "Ordinary love (love_access) and unconditional love (deep_love_access) are different: someone can love their pets and still feel no unconditional love or acceptance.",
       "Expressed thanks, felt softness, unconditional love, and a spiritual interpretation are distinct observations.",
-      "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care."
+      "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care.",
+      "The owner's spiritual gratitude does not mean satisfaction with having more than someone else. Recognizing that suffering could be greater is a different reflection from ranking one's fortune against another person's hardship."
     ]
   },
   "recommendations": [
@@ -156,7 +160,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Once unconditional love is felt, gratitude goes on: for the chance to care for whoever is hurting, oneself included, and with the suffering of other beings in view, so an opening becomes a continuing relationship rather than a special episode.",
     "Notice what actually opens when gratitude is offered: a little freedom, peace, softness, or sacred love. Words of thanks or an insight are not proof that unconditional love is felt.",
     "After a fresh death or harm, gratitude comes in only sideways (ROUTE.FRESH_GRIEF_FIRST leads). With an obvious contradiction, like “I love everyone, I just hate my dad”, don’t jump to it: start from the love they feel and work toward it (IC.REALIZATION_LOVE_INTEGRATION).",
-    "In a calm altered state, gratitude can come in as it does sober. Calm is shown, not assumed: clear-headed (coherent), medically stable, safe, oriented and able to stop, the same evidence as the stable-state therapy; unknown isn’t calm. While the state is overwhelming it waits for it to settle (ROUTE.ALTERED_ACUTE_STABILIZATION leads), and it stays out when capacity is impaired or there is a medical concern."
+    "In a calm altered state, gratitude can come in as it does sober. Calm is shown, not assumed: clear-headed (coherent), medically stable, safe, oriented and able to stop, the same evidence as the stable-state therapy; unknown isn’t calm. While the state is overwhelming it waits for it to settle (ROUTE.ALTERED_ACUTE_STABILIZATION leads), and it stays out when capacity is impaired or there is a medical concern.",
+    "Divine love and gratitude are the Guide's work, after enough Nurturer and Protector; start small, never push gratitude on fresh grief, and never build it on comparing with others."
   ],
   "successSignals": [
     "The person finds something they are genuinely grateful for and notices what it opens, or sees for themselves where their gratitude depends on things going their way."
@@ -174,3 +179,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014]]
 
 [[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]
+
+[[current/governance/amendments/AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]

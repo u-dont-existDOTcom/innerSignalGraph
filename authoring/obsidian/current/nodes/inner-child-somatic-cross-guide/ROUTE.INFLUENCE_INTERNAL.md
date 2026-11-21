@@ -20,6 +20,10 @@ source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
   - AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
   - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
+  - AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028
+  - AMEND.CROSS.DREAM_ONE_HINT_20261118
+  - AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261120
 regression_refs:
   - G015
   - G016
@@ -29,9 +33,9 @@ regression_refs:
   - G049
   - G054
   - G055
-base_record_sha256: a6d1b3debcdd132a2e3698b7f116f00933a6f3f634d6d1dda1f5121bc567f560
-base_graph_sha256: d145252bb6e094d5fa9198c422f41f3ea60dfb0e93fc1c92682fba10ed0c81cf
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 75e8b78b0e3c82387b6f72f5130be33e6b4954e9f3025169dfce4a641c5a9294
+base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Separate inner experience from interpretation before routing
@@ -56,7 +60,9 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
     "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
     "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
-    "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
+    "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values.",
+    "Do not treat taboo content, a dream, a fantasy or a past accidental exposure as evidence of intent or current risk, or as a reason to send journal or conversation material for outside review.",
+    "Do not quickly validate a fleeting feeling as identity, and do not rule for the person whether a feeling is authentically theirs or pressed on them; the person sorts that over time."
   ],
   "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
   "effects": {
@@ -85,7 +91,9 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent.",
     "Separate the occurrence of a thought, image, urge or sensation from the interpretation placed on it and from the action chosen next; a felt state can be completely real as an experience without being self-interpreting proof of identity, intention, endorsement, love, danger or required action.",
     "When shame is attached to intrusive material, protect against identity fusion and reassurance loops rather than asking the person to construct the feared moral verdict about what the material supposedly proves.",
-    "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance."
+    "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance.",
+    "When a thought, image, dream, memory or exposure carries shame the person believes they can't tell anyone, name what kind of material it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) before routing: a dream or uncertain memory is neither confirmed nor dismissed, an accidental exposure is not seeking, and a chosen act is named as chosen. A dream can be true: like a feeling, it is one hint among others, to check against real life.",
+    "\"I feel attracted\" or \"I feel ashamed\" is real as a feeling, but it doesn't settle who the person is, or who they love. Give it time to see what patterns form more durably, and what feels authentically theirs versus something planted or manipulated into being there from society, influencers, family, friends or religion. Neither validate a passing feeling as identity nor wave a real attraction, orientation or gender identity away; the person sorts it over time."
   ],
   "successSignals": [
     "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -101,3 +109,11 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.CROSS.INFLUENCE_PROTECTION_LOVE]]
 
 [[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]
+
+[[current/governance/amendments/AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028]]
+
+[[current/governance/amendments/AMEND.CROSS.DREAM_ONE_HINT_20261118]]
+
+[[current/governance/amendments/AMEND.CROSS.STRICTER_THAN_GUIDE_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]

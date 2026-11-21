@@ -22,13 +22,15 @@ source_refs:
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
   - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
+  - AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
 regression_refs:
   - G089
   - G090
   - G091
-base_record_sha256: 35e34f43763f6a03fbb42c1725260a03782bcc3c6eac272af80cddbccf8e9a59
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 2fe11ff96335231c411a95d5ad73e9c7fc8fcd4fa3e7001ed459adba32b94f64
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Carry a working inner adult into ordinary life
@@ -82,7 +84,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly.",
     "Do not require every inner-child practice to produce an outward assignment or reduce relational inner work to productivity.",
     "Do not turn transfer review into a performance score, compulsive tracking, or another reason for self-attack.",
-    "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization."
+    "Do not infer that relaxed shoulders mean all anxiety is gone, or that longer practice must always increase relief; real evidence may include mixed results and destabilization.",
+    "Do not infer that a person made no effort simply because no method provided sufficient relief at the peak, or require exhaustive logs to make sense of mixed outcomes."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -97,7 +100,9 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "requiredNuance": [
       "In-session adult access and generalized ordinary-life capacity are different evidence states; a person can sound and feel genuinely caring in meditation while still lacking carryover.",
       "One successful real-world act is evidence of emerging transfer, not proof that the function is durable across contexts.",
-      "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice."
+      "Transfer work is triggered by a supported mismatch, not imposed as homework after every practice.",
+      "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required, and appropriate help remains compatible with progress.",
+      "Less need for therapy, and more play, are signs of success."
     ]
   },
   "recommendations": [
@@ -106,11 +111,14 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Review what the action actually contributed and what should be kept or adjusted. The younger state does not have to trust the adult yet, and completion alone is not the success criterion.",
     "After carryover becomes observable, let later depth decisions depend on actual unresolved material and current gates rather than repeating an already-working meditation merely to produce more intensity.",
     "When a currently accessible practice has a small observed benefit, compare its personally effective technique, duration, continuation, delayed costs and carryover into ordinary life before changing it or demanding more intensity.",
-    "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment."
+    "Where planning becomes difficult during distress, help assemble a very small, low-cost, easy-to-retrieve list of already-tested stabilizing options instead of an elaborate schedule or compulsive tracking assignment.",
+    "When a known practice sometimes calms early distress but fails once overwhelmed, compare the successful pre-peak contexts with the unsuccessful ones rather than asking again what worked at the worst peak."
   ],
   "successSignals": [
     "At least one caring, protective, or guiding action that matches the in-session function occurs outside the exercise and is initiated by the person.",
-    "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity."
+    "Repeated carryover can move from session-only to emerging or generalizing transfer without requiring immediate child trust or a perfect adult identity.",
+    "Greater reliability of nurturing, protective and guiding actions in daily life is meaningful reparenting outcome evidence, with context and limits noted.",
+    "Less need for therapy, and more play, are signs of success."
   ]
 }
 ```
@@ -129,3 +137,7 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION]]
 
 [[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]
+
+[[current/governance/amendments/AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]

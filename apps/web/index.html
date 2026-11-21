@@ -46,6 +46,7 @@
       <button class="tab active" data-tab="therapy" type="button">Therapy dialogue</button>
       <button class="tab" data-tab="hypnosis" type="button">Structured hypnosis</button>
       <button class="tab" data-tab="guides" type="button">Guide Packet</button>
+      <button class="tab" data-tab="supervisor" type="button">Supervisor drafts</button>
       <button class="tab" data-tab="case-state" type="button">State &amp; tracker</button>
       <button class="tab" data-tab="data" type="button">Local data</button>
     </nav>
@@ -175,6 +176,58 @@
         <button id="guide-packet-install" type="button" disabled>Install approved packet</button>
         <button id="guide-refresh" class="secondary" type="button">Refresh status</button>
       </div>
+    </section>
+
+    <section id="supervisor" class="panel" aria-labelledby="supervisor-heading" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">EXACT TEXT, CHECKED BEFORE IT LEAVES</p>
+          <h2 id="supervisor-heading">Supervisor drafts</h2>
+        </div>
+        <div class="actions wrap">
+          <button id="supervisor-refresh" class="secondary" type="button">Refresh</button>
+        </div>
+      </div>
+      <p class="notice">A draft you write, or one InnerSignal writes, is checked by the independent review before it can be copied out. Only the exact words that passed can be copied; edit one word and it is a new draft that is reviewed again. Copying is not sending: InnerSignal cannot see what you send, and it records a send only when you say so. The review checks the draft against the stored case record. It does not see the messages you relay here, and it does not judge an English companion's meaning.</p>
+      <p id="supervisor-status" class="small" role="status" aria-live="polite" data-tone="info">Open this tab to load the case.</p>
+
+      <h3>The client's latest message</h3>
+      <pre id="supervisor-client-message" class="supervisor-text">Not loaded.</pre>
+
+      <h3>Information you have relayed</h3>
+      <ul id="supervisor-inputs" class="supervisor-list"></ul>
+      <form id="supervisor-input-form" class="settings-grid">
+        <label>What you are adding
+          <select id="supervisor-input-type">
+            <option value="client_message">A message the client sent me</option>
+            <option value="supervisor_revision">An instruction for the reply</option>
+          </select>
+        </label>
+        <label class="wide">Text
+          <textarea id="supervisor-input-text" rows="3" placeholder="Paste a client message you received elsewhere, or say what the reply should change."></textarea>
+        </label>
+        <div class="actions wide"><button id="supervisor-input-save" type="submit">Record this</button></div>
+      </form>
+
+      <h3>Submit a draft for review</h3>
+      <form id="supervisor-draft-form" class="settings-grid">
+        <label class="wide">Draft, in the client's language
+          <textarea id="supervisor-draft-text" rows="6" placeholder="The exact words you intend to send."></textarea>
+        </label>
+        <label>Companion language
+          <input id="supervisor-companion-language" type="text" value="en" maxlength="12">
+        </label>
+        <label class="wide">English companion for you (optional, never sent, not reviewed for meaning)
+          <textarea id="supervisor-companion-text" rows="3"></textarea>
+        </label>
+        <div class="actions wide wrap">
+          <button id="supervisor-submit-draft" type="submit">Submit my draft for review</button>
+          <button id="supervisor-write-draft" class="secondary" type="button">Have InnerSignal write a draft</button>
+        </div>
+      </form>
+
+      <h3>Drafts</h3>
+      <ul id="supervisor-artifacts" class="supervisor-list"></ul>
     </section>
 
     <section id="case-state" class="panel" aria-labelledby="case-state-heading" hidden>

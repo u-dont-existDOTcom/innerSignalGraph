@@ -10,8 +10,10 @@ import { fileURLToPath } from "node:url";
 const execFileAsync = promisify(execFile);
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("autopilot persists a safe test summary beside local raw logs", { timeout: 30000 }, async () => {
+test("autopilot persists a safe test summary beside local raw logs", { timeout: 30000 }, async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-test-summary-"));
+  // The copy holds the whole repository, node_modules included; without this it stays in the temp directory after every run.
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.cp(sourceRoot, root, {
     recursive: true,
     filter(source) {

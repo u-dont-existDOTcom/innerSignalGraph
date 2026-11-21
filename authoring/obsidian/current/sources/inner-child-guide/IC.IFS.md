@@ -7,20 +7,20 @@ source_id: IC.IFS
 guide_id: inner-child-guide
 heading: How This Relates to IFS
 source_role: primary-framework
-source_hash: de662515b31277737eeb3529e45758411b0b0594da8f794d5cf26ed0176ef20a
+source_hash: 6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f
 section_hash: 8b697cc55bb689fb5a8ce63d55c73ce91066e3e68a3a7a0953ea8a5c3ec0a9c5
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # How This Relates to IFS
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-11-r6.txt`
+Authority path: `guides/inner-child-guide-2026-11-20-r11.txt`
 
-Locator: Lines 993–1010
+Locator: Lines 1011–1028
 
 ```text
 How This Relates to IFS

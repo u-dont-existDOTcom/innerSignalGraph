@@ -9,6 +9,7 @@ import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/lon
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { chunkExactSourceText } from "../src/storage/exact-source-artifact.mjs";
+import { validateCommunicationProjection, validateCommunicationEvents } from "../src/storage/private-case-communication.mjs";
 import { assessContinuationSafety } from "../src/storage/private-case-continuity.mjs";
 import { validatePrivateHandoffPacket } from "../src/storage/private-case-handoff.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
@@ -202,6 +203,13 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   assert.equal(packet.pending_artifacts.at(-1).exact_text, reconstruct.exact_text);
   assert.equal(packet.candidate_lifecycle.current_candidate_version, 2);
   assert.equal(packet.candidate_lifecycle.reconstruction_audit_fidelity_status, "pending_fresh_independent_audit");
+  // Neither the failed version one nor the unaudited version two reached the client, and the handoff says so.
+  assert.deepEqual(packet.communication_projection.confirmed_or_reported_client_outbound, []);
+  assert.deepEqual(
+    packet.communication_projection.supervisor_only_artifacts.map((entry) => [entry.subject.candidate_version, entry.state, entry.delivery_evidence, entry.candidate_status]),
+    [[1, "draft", "none", "superseded"], [2, "draft", "none", "reconstructed_pending_audit"]]
+  );
+  assert.deepEqual(packet.communication_projection.unresolved_delivery, []);
   await assert.rejects(() => orchestrator.execute(operation("approve_candidate_for_delivery", { candidate_id: REPAIR_ID, audit_id: AUDIT_ID }), {}), /fresh independent audit/i);
 
   const selfAudit = operation("record_candidate_audit", {
@@ -258,6 +266,59 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   const tamperedDelivery = structuredClone(deliveredHandoff);
   tamperedDelivery.delivery_completion.assistant_turn_id = "turn:synthetic:assistant-forged";
   assert.throws(() => validatePrivateHandoffPacket(tamperedDelivery), /exact transcript binding/);
+
+  // Only the exact version the application committed is client history; the failed draft keeps its own bytes and stays unsent.
+  const projection = deliveredHandoff.communication_projection;
+  assert.deepEqual(
+    projection.confirmed_or_reported_client_outbound.map((entry) => [entry.subject.candidate_version, entry.state, entry.delivery_evidence, entry.assistant_turn_id, entry.in_reply_to_turn_id]),
+    [[2, "app_committed", "application_persisted", deliveryRequest.assistant_turn_id, deliveryRequest.in_reply_to_turn_id]]
+  );
+  assert.deepEqual(projection.supervisor_only_artifacts.map((entry) => [entry.subject.candidate_version, entry.state, entry.candidate_status]), [[1, "draft", "superseded"]]);
+  assert.notEqual(projection.supervisor_only_artifacts[0].subject.text_sha256, projection.confirmed_or_reported_client_outbound[0].subject.text_sha256);
+  const forgedProjection = structuredClone(deliveredHandoff);
+  forgedProjection.communication_projection.confirmed_or_reported_client_outbound.push(structuredClone(forgedProjection.communication_projection.supervisor_only_artifacts[0]));
+  assert.throws(() => validatePrivateHandoffPacket(forgedProjection), /not client delivery that the application committed or the owner reported/);
+});
+
+test("marking a candidate sent without a transcript delivery stays status-only, cannot be upgraded and certifies no history", async (t) => {
+  const { store, orchestrator } = await makeHarness(t);
+  await orchestrator.execute(operation("record_candidate_audit", {
+    candidate_id: ORIGINAL_ID,
+    audit_id: AUDIT_ID,
+    auditor_context: { kind: "independent", context_id: "session:auditor:version-1" },
+    completed_at: NOW,
+    result: { findings: [] }
+  }), {});
+  await orchestrator.execute(operation("approve_candidate_for_delivery", { candidate_id: ORIGINAL_ID, audit_id: AUDIT_ID }), {});
+  const mark = operation("mark_candidate_sent", { candidate_id: ORIGINAL_ID });
+  const marked = await orchestrator.execute(mark, {});
+  assert.equal(marked.candidate_status, "sent");
+  assert.equal((await orchestrator.execute(mark, {})).reused, true);
+
+  const candidate = await store.getCandidateResponse(CASE_ID, ORIGINAL_ID);
+  assert.deepEqual([candidate.metadata.sent_with_audit_id, candidate.metadata.sent_status_only, candidate.metadata.sent_turn_id], [AUDIT_ID, true, undefined]);
+  const schemas = await communicationSchemas();
+  assert.equal(schemas.candidate(candidate), true, JSON.stringify(schemas.candidate.errors));
+  const context = await store.loadCaseContext(CASE_ID);
+  assert.equal(context.delivery_completion, null);
+  assert.deepEqual(context.communication_projection.confirmed_or_reported_client_outbound, []);
+  assert.deepEqual(context.communication_projection.supervisor_only_artifacts, []);
+  assert.deepEqual(
+    context.communication_projection.unresolved_delivery.map((entry) => [entry.subject.candidate_version, entry.state, entry.audience, entry.delivery_evidence, entry.source.kind, entry.source.route]),
+    [[1, "unknown", "unknown", "unknown", "legacy_status_only", "mark_candidate_sent"]]
+  );
+  assert.ok(assessContinuationSafety(context).failures.includes("sent candidate is missing exact transcript-bound delivery evidence"));
+
+  await assert.rejects(() => orchestrator.execute(operation("deliver_candidate_and_create_handoff", {
+    candidate_id: ORIGINAL_ID,
+    audit_id: AUDIT_ID,
+    assistant_turn_id: "turn:synthetic:late-assistant",
+    in_reply_to_turn_id: "turn:synthetic:user",
+    handoff_id: DELIVERED_HANDOFF_ID,
+    runtime_version: "synthetic-runtime-v3",
+    audit_version: "private-candidate-audit-v3"
+  }), {}), /replay conflicts with the immutable sent response/i);
+  assert.equal((await store.load(CASE_ID)).raw_transcript.length, 1, "no assistant turn was written for the marking");
 });
 
 test("external v2 FAIL with unavailable auditor identity reconstructs maximum-cycle v3 with an empty audit history", async (t) => {
@@ -345,7 +406,7 @@ test("external v2 FAIL with unavailable auditor identity reconstructs maximum-cy
 
 test("published private operation schemas compile strictly", async () => {
   const schemaDir = path.join(root, "schemas/private-case");
-  const names = ["transcript-amendment-v1.schema.json", "candidate-audit-v1.schema.json", "candidate-version-v1.schema.json", "therapy-turn-lifecycle-v1.schema.json", "operation-request-v1.schema.json"];
+  const names = ["transcript-amendment-v1.schema.json", "candidate-audit-v1.schema.json", "candidate-version-v1.schema.json", "therapy-turn-lifecycle-v1.schema.json", "communication-event-v1.schema.json", "communication-projection-v1.schema.json", "operation-request-v1.schema.json"];
   const schemas = await Promise.all(names.map(async (name) => JSON.parse(await fs.readFile(path.join(schemaDir, name), "utf8"))));
   const ajv = new Ajv2020({ strict: true, validateFormats: false });
   for (const schema of schemas) ajv.addSchema(schema);
@@ -391,4 +452,146 @@ test("published private operation schemas compile strictly", async () => {
     result: { findings: [] }
   })), true);
   assert.equal(validateOperation({ schema_version: 1, operation: "mutate_everything", case_id: CASE_ID }), false);
+});
+
+const SCHEMA_BASE = "https://inner-signal.local/schemas/private-case";
+
+async function communicationSchemas() {
+  const schemaDir = path.join(root, "schemas/private-case");
+  const names = ["candidate-audit-v1.schema.json", "candidate-version-v1.schema.json", "communication-event-v1.schema.json", "communication-projection-v1.schema.json"];
+  const ajv = new Ajv2020({ strict: true, validateFormats: false });
+  for (const name of names) ajv.addSchema(JSON.parse(await fs.readFile(path.join(schemaDir, name), "utf8")));
+  return {
+    candidate: ajv.getSchema(`${SCHEMA_BASE}/candidate-version-v1.schema.json`),
+    event: ajv.getSchema(`${SCHEMA_BASE}/communication-event-v1.schema.json`),
+    projection: ajv.getSchema(`${SCHEMA_BASE}/communication-projection-v1.schema.json`)
+  };
+}
+
+test("every communication event and projection the store produces conforms to the published schemas, and the forbidden shapes do not", async (t) => {
+  const { store, orchestrator } = await makeHarness(t);
+  const schemas = await communicationSchemas();
+  const failed = operation("record_candidate_audit", {
+    candidate_id: ORIGINAL_ID,
+    audit_id: AUDIT_ID,
+    auditor_context: { kind: "independent", context_id: "session:auditor:version-1" },
+    completed_at: NOW,
+    result: { findings: [{ id: "finding:synthetic:v1", code: "CAUSAL_OVERCLAIM", severity: "substantive", summary: "Synthetic version one requires repair." }] }
+  });
+  await orchestrator.execute(failed, {});
+  await orchestrator.execute(operation("reconstruct_candidate_and_create_handoff", {
+    parent_candidate_id: ORIGINAL_ID,
+    candidate_id: REPAIR_ID,
+    exact_text: "Synthetic candidate version two.",
+    producer_context_id: "session:producer:repair-version-2",
+    based_on_audit_id: AUDIT_ID,
+    handoff_id: HANDOFF_ID,
+    runtime_version: "synthetic-runtime-v2",
+    audit_version: "private-candidate-audit-v2"
+  }), {});
+
+  // One stored pair the owner reports sending, and one that nothing vouches for.
+  await store.appendTranscriptTurn(CASE_ID, turn("turn:synthetic:user-b", "user", "Synthetic earlier user turn b."));
+  await store.appendTranscriptTurn(CASE_ID, turn("turn:synthetic:assistant-b", "assistant", "Synthetic earlier reply b."));
+  await store.appendTranscriptTurn(CASE_ID, turn("turn:synthetic:user-c", "user", "Synthetic earlier user turn c."));
+  await store.appendTranscriptTurn(CASE_ID, turn("turn:synthetic:assistant-c", "assistant", "Synthetic earlier reply c."));
+  await store.appendTranscriptTurn(CASE_ID, turn("turn:synthetic:user-d", "user", "Synthetic latest user turn d."));
+
+  const v1 = { kind: "candidate", candidateId: ORIGINAL_ID, candidateVersion: 1 };
+  const v2 = { kind: "candidate", candidateId: REPAIR_ID, candidateVersion: 2 };
+  const application = { origin: "application", sourceRef: null, quote: null };
+  const owner = { origin: "owner_action", sourceRef: "message:synthetic:owner", quote: "Synthetic: I sent that." };
+  const relayed = { origin: "agent_relayed", sourceRef: "message:synthetic:relay", quote: null };
+  const companion = { kind: "companion", companionOf: { candidateId: REPAIR_ID, candidateVersion: 2 }, artifactSha256: "a".repeat(64) };
+  const events = [
+    { eventId: "comm:expose:v2", kind: "exposed", audience: "client", subject: v2, provenance: application },
+    { eventId: "comm:export:v2", kind: "exported", audience: "client", subject: v2, provenance: application },
+    { eventId: "comm:expose:translation", kind: "exposed", audience: "supervisor", subject: companion, provenance: application },
+    { eventId: "comm:export:translation", kind: "exported", audience: "supervisor", subject: companion, provenance: application },
+    { eventId: "comm:report:v1", kind: "reported_sent", audience: "client", subject: v1, provenance: owner },
+    { eventId: "comm:report:pair-b", kind: "reported_sent", audience: "client", subject: { kind: "transcript_turn", assistantTurnId: "turn:synthetic:assistant-b", inReplyToTurnId: "turn:synthetic:user-b" }, sentAt: NOW, provenance: relayed },
+    { eventId: "comm:report:ambiguous", kind: "reported_sent", audience: "client", subject: { kind: "unresolved", candidateRefs: [{ candidateId: ORIGINAL_ID, candidateVersion: 1 }, { candidateId: REPAIR_ID, candidateVersion: 2 }] }, provenance: owner },
+    { eventId: "comm:retract:v1", kind: "retraction", retractsEventId: "comm:report:v1", reason: "The owner corrected this report.", provenance: owner },
+    { eventId: "comm:report:v2", kind: "reported_sent", audience: "client", subject: v2, sentAt: NOW, provenance: owner }
+  ];
+  for (const input of events) await store.recordCommunicationEvent(CASE_ID, input);
+
+  const recorded = (await store.load(CASE_ID)).communication_events;
+  assert.equal(recorded.length, events.length);
+  for (const event of recorded) assert.equal(schemas.event(event), true, `${event.id}: ${JSON.stringify(schemas.event.errors)}`);
+  for (const candidate of (await store.load(CASE_ID)).candidate_responses) assert.equal(schemas.candidate(candidate), true, JSON.stringify(schemas.candidate.errors));
+
+  let context = await store.loadCaseContext(CASE_ID);
+  assert.equal(schemas.projection(context.communication_projection), true, JSON.stringify(schemas.projection.errors));
+  assert.equal(context.communication_projection.unresolved_delivery.some((entry) => entry.subject.kind === "unattributed_assistant_turns"), true);
+  assert.equal(context.communication_projection.unresolved_delivery.some((entry) => entry.subject.kind === "unresolved"), true);
+
+  // The delivered form: the application commits version two and the earlier reports corroborate it.
+  const passingAuditId = "audit:synthetic:fresh-version-2";
+  await orchestrator.execute(operation("record_candidate_audit", {
+    candidate_id: REPAIR_ID,
+    audit_id: passingAuditId,
+    auditor_context: { kind: "independent", context_id: "session:auditor:fresh-version-2" },
+    completed_at: NOW,
+    result: { findings: [], repair_induced_checks: [...REPAIR_INDUCED_ERROR_CHECKS] }
+  }), {});
+  await orchestrator.execute(operation("approve_candidate_for_delivery", { candidate_id: REPAIR_ID, audit_id: passingAuditId }), {});
+  await orchestrator.execute(operation("deliver_candidate_and_create_handoff", {
+    candidate_id: REPAIR_ID,
+    audit_id: passingAuditId,
+    assistant_turn_id: "turn:synthetic:assistant-delivered",
+    in_reply_to_turn_id: "turn:synthetic:user-d",
+    handoff_id: DELIVERED_HANDOFF_ID,
+    runtime_version: "synthetic-runtime-v3",
+    audit_version: "private-candidate-audit-v3"
+  }), {});
+  context = await store.loadCaseContext(CASE_ID);
+  const projection = context.communication_projection;
+  assert.equal(schemas.projection(projection), true, JSON.stringify(schemas.projection.errors));
+  const committed = projection.confirmed_or_reported_client_outbound.find((entry) => entry.state === "app_committed");
+  assert.deepEqual(committed.corroborating_event_ids, ["comm:report:v2"], "an owner's earlier report of the same version corroborates the application's record");
+  const record = await store.load(CASE_ID);
+  for (const candidate of record.candidate_responses) assert.equal(schemas.candidate(candidate), true, `${candidate.id}: ${JSON.stringify(schemas.candidate.errors)}`);
+  assert.deepEqual(
+    [record.candidate_responses[1].status, record.candidate_responses[1].metadata.sent_turn_id, record.candidate_responses[1].metadata.sent_in_reply_to_turn_id],
+    ["sent", "turn:synthetic:assistant-delivered", "turn:synthetic:user-d"]
+  );
+  validateCommunicationProjection(projection, { rawTranscript: record.raw_transcript });
+  validateCommunicationEvents(record.communication_events, record);
+
+  const reject = (validate, value, why) => assert.equal(validate(value), false, why);
+  const draftAsHistory = structuredClone(projection);
+  draftAsHistory.confirmed_or_reported_client_outbound.push(structuredClone(draftAsHistory.supervisor_only_artifacts[0]));
+  reject(schemas.projection, draftAsHistory, "a draft cannot be listed as client history");
+  assert.throws(() => validateCommunicationProjection(draftAsHistory), /not client delivery/);
+  const unknownAsSent = structuredClone(projection);
+  unknownAsSent.unresolved_delivery.find((entry) => entry.subject.kind === "unattributed_assistant_turns").state = "reported_sent";
+  reject(schemas.projection, unknownAsSent, "an unplaced item cannot claim to be reported");
+  assert.throws(() => validateCommunicationProjection(unknownAsSent), /not an unresolved delivery/);
+  const sentAsDraft = structuredClone(projection);
+  sentAsDraft.supervisor_only_artifacts[0].candidate_status = "sent";
+  reject(schemas.projection, sentAsDraft, "a candidate that reads sent cannot be listed as unsent");
+  assert.throws(() => validateCommunicationProjection(sentAsDraft), /not an artifact that only the supervisor has seen/);
+  const exportAsHistory = structuredClone(projection);
+  exportAsHistory.confirmed_or_reported_client_outbound.push({ ...structuredClone(exportAsHistory.supervisor_only_artifacts[0]), audience: "supervisor" });
+  reject(schemas.projection, exportAsHistory, "nothing addressed to the supervisor is client history");
+
+  const base = structuredClone(record.communication_events.find((event) => event.id === "comm:report:v2"));
+  assert.equal(schemas.event(base), true);
+  for (const [why, change] of [
+    ["a report addressed to the supervisor", (event) => { event.audience = "supervisor"; }],
+    ["a report the application claims the owner made", (event) => { event.provenance = { origin: "application", actor_resolution: "application", source_ref: null, quote: null }; }],
+    ["an agent relay claiming to be a verified owner event", (event) => { event.provenance.origin = "agent_relayed"; }],
+    ["a known time with no value", (event) => { event.sent_at = null; }],
+    ["an unavailable time with a value", (event) => { event.sent_at_status = "unavailable"; }],
+    ["an unexpected field", (event) => { event.delivered = true; }],
+    ["an export of a companion to the client", (event) => { event.kind = "exported"; delete event.sent_at; delete event.sent_at_status; event.subject = { kind: "companion", companion_of: { candidate_id: REPAIR_ID, candidate_version: 2 }, artifact_sha256: "b".repeat(64) }; }]
+  ]) {
+    const forged = structuredClone(base);
+    change(forged);
+    reject(schemas.event, forged, why);
+  }
+  const metadataForged = structuredClone(record.candidate_responses[0]);
+  metadataForged.metadata.sent_status_only = false;
+  reject(schemas.candidate, metadataForged, "sent_status_only is true or absent");
 });

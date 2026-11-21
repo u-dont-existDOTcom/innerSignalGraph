@@ -14,6 +14,7 @@ import {
 import { validateFocusState } from "../case-formulation/focus-discipline.mjs";
 import { validateCaseRoadmapShape } from "../case-formulation/case-roadmap.mjs";
 import { SUPPORT_MODE_PREFERENCES } from "../case-formulation/support-mode.mjs";
+import { updateSelfDirectedRiskState, validateSelfDirectedRiskState } from "./self-directed-risk.mjs";
 
 export const CASE_STATE_VERSION = 1;
 export const CASE_STATE_STATUSES = Object.freeze(["direct_report", "supervisor_report", "observed_pattern", "hypothesis", "inference", "unresolved_conflict"]);
@@ -206,6 +207,8 @@ export function validateCaseState(value) {
   if (Object.hasOwn(value, "support_mode_preference") && !SUPPORT_MODE_PREFERENCES.includes(value.support_mode_preference)) throw new ValidationError("caseState.support_mode_preference is invalid.");
   if (Object.hasOwn(value, "focus_discipline")) validateFocusState(value.focus_discipline);
   if (Object.hasOwn(value, "fresh_grief") && value.fresh_grief !== null) validateFreshGriefState(value.fresh_grief);
+  // Optional like fresh_grief and roadmap: a record without it stays valid and unchanged, so no schema version bump.
+  if (Object.hasOwn(value, "self_directed_risk") && value.self_directed_risk !== null) validateSelfDirectedRiskState(value.self_directed_risk);
   // The case's plan (issue #172) is optional: a record without one stays valid and unchanged. Only its shape is checked here,
   // so a plan this version can't read never makes the rest of the case unreadable; it is read in full where it is used.
   if (Object.hasOwn(value, "roadmap") && value.roadmap !== null) validateCaseRoadmapShape(value.roadmap);
@@ -246,6 +249,7 @@ export function applyCaseStatePatch(previous, patch = {}) {
   if (Object.hasOwn(patch, "focus_discipline")) next.focus_discipline = clone(patch.focus_discipline);
   if (Object.hasOwn(patch, "fresh_grief")) next.fresh_grief = clone(patch.fresh_grief);
   if (Object.hasOwn(patch, "roadmap")) next.roadmap = clone(patch.roadmap);
+  if (Object.hasOwn(patch, "self_directed_risk")) next.self_directed_risk = clone(patch.self_directed_risk);
   return validateCaseState(next);
 }
 
@@ -308,6 +312,14 @@ export function diffCaseStates(previous, next) {
     roadmap_changed: JSON.stringify(before.roadmap ?? null) !== JSON.stringify(after.roadmap ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
+}
+
+// The self-directed-risk record is read by the reply check inside the case and goes to nobody new, so the state a response hands
+// back to the person's own client is the stored state without it. Everything else in the stored state is returned as it was.
+export function caseStateForClient(state) {
+  if (!state || typeof state !== "object" || !Object.hasOwn(state, "self_directed_risk")) return state;
+  const { self_directed_risk: _stayingInsideTheCase, ...rest } = state;
+  return rest;
 }
 
 export function projectCaseStateForInspection(state) {
@@ -402,7 +414,11 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
         : (successSignals.length ? successSignals : ["more choice or flexibility", "observable ordinary-life transfer"]),
       switch_conditions: ["a source-bound review identifies a specific target/method mismatch or adequately tested contradiction", "meaningful harm or an independent safety restriction requires a change", "the client declines this route"],
       stop_conditions: stopConditions,
+      // Every turn of an unchanged route adds its items here. Without a bound the list passed the episode limit (about the 17th
+      // turn at six items a turn) and the merge threw, which ended the turn as THERAPY_RUNTIME_UNAVAILABLE. Keep the most recent
+      // ids and let the oldest fall away; the case-level items themselves are not touched, and nothing else reads this list.
       source_item_ids: unique([...(continuing ? previous.current_episode.source_item_ids : []), ...items.map((item) => item.id)])
+        .slice(-CASE_STATE_LIMITS.episode_list)
     };
     interventionHistory.push({
       id: `intervention:${episodeId}:${turnId}`,
@@ -426,6 +442,15 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   const protectiveCompatibility = compatibilityAssessment || previous.protective_compatibility
     ? updateProtectiveCompatibilityState(previous.protective_compatibility ?? null, compatibilityAssessment, compatibilityDecision, { turnId, recordedAt })
     : null;
+  // Derived only from fields the extraction already returns. The record is created by the first reading of ideation or worse, and
+  // from then on is kept, raised or lowered by the rule in self-directed-risk.mjs; it stays out of projectCaseStateForInspection.
+  // plannedTurns is the case's count of planned turns once this one is merged, which is how the record times its retrieval window.
+  const selfDirectedRisk = updateSelfDirectedRiskState(previous.self_directed_risk ?? null, snapshot?.variables ?? null, {
+    turnId,
+    recordedAt,
+    observationIds: items.filter((item) => item.domain === "runtime_observation").map((item) => item.id),
+    plannedTurns: (previous.intervention_history?.length ?? 0) + interventionHistory.length
+  });
   const extractedSupportMode = snapshot?.variables?.support_mode_preference;
   const supportModePreference = SUPPORT_MODE_PREFERENCES.includes(extractedSupportMode) && extractedSupportMode != "unknown"
     ? extractedSupportMode
@@ -437,6 +462,7 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
     threat_pathway: threatPathway,
     protective_compatibility: protectiveCompatibility,
     support_mode_preference: supportModePreference,
+    ...(selfDirectedRisk ? { self_directed_risk: selfDirectedRisk } : {}),
     ...(snapshot?.focus_discipline ? { focus_discipline: snapshot.focus_discipline } : {}),
     ...(["present", "absent"].includes(snapshot?.variables?.fresh_grief)
       ? { fresh_grief: nextFreshGriefState(previous.fresh_grief ?? null, snapshot.variables.fresh_grief, { turnId, recordedAt }) } : {})

@@ -65,11 +65,19 @@
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
         "AMEND.IC.WISDOM_CORE",
         "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
-        "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS"
+        "AMEND.CROSS.HUMAN_SUPPORT_VS_ROMANTIC_READINESS",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.CROSS.RELATIONAL_SEQUENCE_BOTH_SIDES_20261028",
+        "AMEND.CROSS.RELATIONAL_INTENTION_EXPECTATION_APPRAISAL_20261031",
+        "AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022",
+        "AMEND.CROSS.STRICTER_THAN_GUIDE_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
-        "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+        "Before analyzing the user's trigger, use detached observation: state what each person actually said and did, in order, including the user's own words and actions as well as the other person's, without filling in motive or diagnosis.",
+        "If the account runs from wanting acceptance, to a disagreement or confrontation, to rejection and that sequence is not yet known, ask for it before interpreting, with one specific, non-accusatory question about what each person said and did, in order, whose plausible answers would change the next step among protective action, accountability or communication work, and developmental integration (this route's next question does this). Do not decide who caused the rupture, or apply an old developmental pattern, before the sequence is known, and do not repeat a question the person has already answered.",
+        "Once that sequence is known well enough, review the completed encounter before choosing a next step: distinguish what the person was trying to achieve by communicating, the reaction they realistically anticipated at the time (including surprise or a foreseeable tradeoff), and how they now judge both their manner and what followed, then compare the three. This is not the same as defining a realistic outcome for a future interaction (below). The next step may be communication repair, a boundary, a decision about relational fit or optional developmental work. When context already suggests what the person hoped for, do not ask only that; the more useful questions are usually whether they expected the reaction and how they judge their choice now, and asking all three is not required every time. Where threats or intimidation are actually supported, keep the existing safety and accountability distinctions and do not treat the threatening and the threatened party as equally responsible.",
         "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
         "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
         "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
@@ -81,7 +89,11 @@
         "Calibrate vulnerability to demonstrated trust. Privacy with strangers or low-trust contacts is not fakery and total disclosure is not required; when closeness deepens beyond the level at which the person can be meaningfully honest, either increase truthful contact at a safe pace or reduce the depth.",
         "Treat the relief of being accepted or not judged as important relational information without automatically calling it romantic love, compatibility or earned trust.",
         "When disclosure itself would create concrete danger through coercion, violence, serious stigma or another unsafe context, protect the person first; authenticity does not require indiscriminate disclosure.",
-        "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection."
+        "Distinguish ordinary human support, friendship, mutual intimate connection, and active romance-seeking. When current distress, urgency to be rescued, and a reported inability to relate authentically support the person's own decision to defer romance, support that bounded decision while strengthening honest, reciprocal non-romantic connection.",
+        "For shame involving social rejection, test the actual evidence and the consequences of disclosure. Correctly predicted rejection may reflect an unfair audience, not wrongdoing; do not advise disclosure to an untested or hostile person by default.",
+        "When a person’s greater happiness or independence changes a relationship, acknowledge that another person may actually resent or withdraw from the change. Observe specific conduct, limits and willingness to repair before deciding whether to invest, grieve or step back; do not promise approval from everyone.",
+        "Distrust can become a self-fulfilling prophecy: if nobody hears that the person is struggling, nobody offers help, and that can look like proof nobody cares. Keeping quiet may once have been the smartest choice; with people who are safely available now, it can keep help away.",
+        "Before calling someone out, the person can name their own part of the same problem first (the log in their own eye)."
       ],
       "avoid": [
         "Do not diagnose or automatically label another person emotionally immature, manipulative, narcissistic, or unsafe from a disagreement or a single frustrating interaction.",
@@ -90,7 +102,9 @@
         "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.",
         "Do not prescribe indiscriminate vulnerability or disclosure to people who have not demonstrated respect for boundaries and confidentiality.",
         "Do not require complete self-love or symptom resolution before social connection, and do not use another person as a diagnostic instrument, reassurance machine or proof of identity; healthy support and mutual co-regulation remain available.",
-        "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships."
+        "Do not conflate friendship and support with romantic/sexual readiness; do not promise a partner as a cure or imply that intimacy is an entitlement, a prize for completing therapy, or proof of worth. Do not make complete healing a universal precondition for relationships.",
+        "Do not assume regret, fault, satisfaction, a wish to reconcile or a fixed character after a painful disagreement: a person can stand by a position, regret the wording and grieve the loss at once. Once the sequence is known, do not keep asking for incident detail unless the missing detail would change the next step or safety.",
+        "Do not call every negative reaction jealousy, dismiss real hurt or duties, or suggest that protecting the person’s happiness requires ending relationships indiscriminately."
       ],
       "successSignals": [
         "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
@@ -123,10 +137,11 @@
           "Acceptance, attachment relief, attraction, romantic love, compatibility and trust are separable observations that should not be collapsed into one another.",
           "Support and mutual co-regulation are healthy relational functions; the restriction targets using another person as a certainty test, reassurance machine or diagnostic instrument.",
           "Where truthful disclosure itself is unsafe, protection takes precedence over increasing vulnerability.",
-          "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy."
+          "A person's ordinary need for contact does not establish readiness to pursue sex or romance now. A case-specific pause may be useful without imposing universal abstinence or denying the possibility of future mutually chosen intimacy.",
+          "In sensitive disclosure, privacy and graded trust remain legitimate: the person may begin with general information, or tell a hard thing at first as a dream narrative and see how the listener handles it. That never covers a danger that's happening now, which is not held back from people who can help; do not promise blanket secrecy or withhold protective help."
         ]
       },
-      "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
+      "defaultQuestion": "What did each of you actually say and do, in order, and what has this person shown they can do when you disagree, say no, or ask for repair?",
       "questionPolicy": {
         "purpose": "discriminate",
         "unresolvedFields": []
@@ -207,7 +222,11 @@
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
-        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028",
+        "AMEND.CROSS.DREAM_ONE_HINT_20261118",
+        "AMEND.CROSS.STRICTER_THAN_GUIDE_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -215,13 +234,17 @@
         "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent.",
         "Separate the occurrence of a thought, image, urge or sensation from the interpretation placed on it and from the action chosen next; a felt state can be completely real as an experience without being self-interpreting proof of identity, intention, endorsement, love, danger or required action.",
         "When shame is attached to intrusive material, protect against identity fusion and reassurance loops rather than asking the person to construct the feared moral verdict about what the material supposedly proves.",
-        "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance."
+        "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance.",
+        "When a thought, image, dream, memory or exposure carries shame the person believes they can't tell anyone, name what kind of material it is (feeling, fantasy, dream, uncertain memory, accidental exposure, chosen act) before routing: a dream or uncertain memory is neither confirmed nor dismissed, an accidental exposure is not seeking, and a chosen act is named as chosen. A dream can be true: like a feeling, it is one hint among others, to check against real life.",
+        "\"I feel attracted\" or \"I feel ashamed\" is real as a feeling, but it doesn't settle who the person is, or who they love. Give it time to see what patterns form more durably, and what feels authentically theirs versus something planted or manipulated into being there from society, influencers, family, friends or religion. Neither validate a passing feeling as identity nor wave a real attraction, orientation or gender identity away; the person sorts it over time."
       ],
       "avoid": [
         "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
         "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
         "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
-        "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
+        "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values.",
+        "Do not treat taboo content, a dream, a fantasy or a past accidental exposure as evidence of intent or current risk, or as a reason to send journal or conversation material for outside review.",
+        "Do not quickly validate a fleeting feeling as identity, and do not rule for the person whether a feeling is authentically theirs or pressed on them; the person sorts that over time."
       ],
       "successSignals": [
         "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -462,7 +485,8 @@
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
         "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
-        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY"
+        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -470,7 +494,8 @@
         "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action.",
         "If a concrete problem or clearly avoided inner issue later appears, route back to outward action or inward processing rather than preserving non-engagement as a dogma.",
         "Recognize behavioral checking as well as verbal rumination: repeated body scans, searches, confessions, conversations, dates, sexual or romantic encounters, or 'exposures' can all be reassurance when their primary function is to prove identity, attraction, normality, safety, worth or certainty.",
-        "When useful exposure or clinician-guided ERP is already part of the plan, keep the exposure while dropping reassurance, covert tests and repeated verdict-seeking; avoidance driven by the same doubt can maintain the loop too."
+        "When useful exposure or clinician-guided ERP is already part of the plan, keep the exposure while dropping reassurance, covert tests and repeated verdict-seeking; avoidance driven by the same doubt can maintain the loop too.",
+        "When shame demands repeated confessions, tests of worth or external verdicts after meaningful accountability is complete and no new evidence appears, apply the checking stop route rather than compulsory exposure."
       ],
       "avoid": [
         "Do not call thought suppression, denial, emotional numbing, or ignoring a medical, safety, relational, or practical problem 'leaving it alone'.",
@@ -573,7 +598,11 @@
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
         "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
         "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
-        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025"
+        "AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025",
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -593,7 +622,10 @@
         "For a repeated harmful coping choice, check recorded previous cessation attempts and why use resumed, including sleep, pain, loneliness, or an intensely valued feeling, before making withdrawal the presumed obstacle.",
         "Ask what component of an intensely valued inner state matters most and which non-harmful activities or methods have already provided some of it, without proposing a list of hidden meanings as the person's answer.",
         "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
-        "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished."
+        "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished.",
+        "When a spontaneous feeling invites an unsuitable action, help choose a consent-respecting practical boundary rather than treating the feeling itself as a diagnosis or wrongdoing.",
+        "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty.",
+        "If shame follows real harmful conduct, choose feasible repair, changed behavior and legitimate accountability rather than a numerical blame allocation or demand for another person's forgiveness."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -607,7 +639,9 @@
         "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
         "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
         "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
-        "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting."
+        "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting.",
+        "Do not collapse feelings, chosen conduct, legal restrictions, clinical categories and consent into the same question.",
+        "Do not help hold back a danger that's happening now from people who can help, whether by calling it a dream, fiction or a hypothetical, and do not coach a false denial of current intent, a plan or immediate danger. Telling a hard or past thing at first as a dream narrative is a separate, legitimate first step."
       ],
       "successSignals": [
         "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -1591,20 +1625,35 @@
       "sourceRefs": [
         "AMEND.IC.COMMUNITY_REPARENTING",
         "IC.RELATIONSHIP",
-        "IC.THREE_FUNCTIONS"
+        "IC.THREE_FUNCTIONS",
+        "AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026",
+        "AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029",
+        "AMEND.CROSS.UNTELLABLE_SHAME_AND_DISCLOSURE_20261028",
+        "AMEND.CROSS.DREAM_NARRATIVE_FIRST_STEP_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "AMEND.CROSS.AI_SIDEWAYS_AND_OWN_WORDS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Treat a current need for human contact as a real need, not failed independence. Explore several realistic sources of recurring contact with genuine commonality: trusted people already known, peer support, spiritually fitting communities, interest/activity groups, classes, clubs, volunteering, and practical or professional services.",
         "Build new routes alongside existing safe supports. Prefer a diversified mix—reciprocal relationships where possible plus peer, professional, spiritual, and practical help—rather than making one person, institution, group, service, or this app the sole support.",
         "Screen fit, practical barriers, and safety. Do not reinforce high-control groups, exploitative authorities, or unsafe/abusive relationships as support.",
-        "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language."
+        "If and only if the person already welcomes an inner-child frame, an outward act that genuinely supplies care, protection, or guidance may be named sparingly as a Nurturer/Protector/Guide or reparenting move. Otherwise use ordinary language.",
+        "For sensitive support, examine what expertise the prior professional actually offered, what the person wanted help with, and what distinct benefit, privacy limits and reported patient experience another service would add.",
+        "For chronic shame under repeated exclusion, favor communities that can combine acceptance with accountability; repeated rejection may warrant differentiation or departure instead of more attempts to earn approval.",
+        "When the person carries something they believe they can't tell anyone, help them choose whom to tell and how much. Advice to give them: a therapist they feel safe with; a friend who has shown ease with taboo subjects; the general kind of thing first, or, as a first step, telling it as a dream narrative to get the emotional content across and seeing how the listener handles that version before deciding whether to say it wasn't just a dream; asking before giving details, seeing how a smaller truth is received, and slowing down or stopping if the listener seems alarmed. Do not suggest asking a therapist what they must report. Disclosure is never a default treatment, a test of worth, or something owed to a hostile or unpredictable listener, and a danger that's happening now is never held back from people who can help.",
+        "Early in the work, after the person has been welcomed, tell them once, in plain words and without alarm, in the owner's spirit, but not as an opening warning (not at the top of a reply or announced as \"one thing up front\": weave it in after answering what the person brought): this is an AI that can go sideways at times, so use it alongside people who love them, not instead of them; and some topics may be beyond what the AI can help with, and if one is, the AI will say so and point to a person who can help. Never as a warning about the person, and not repeated as a ritual disclaimer. When a topic is beyond what the AI can help with, say as soon as it matters what it can't help with, that this is a limit of the tool and not a verdict on the person, and where a human can help. When the person feels or suspects early sexual harm, offer a therapist experienced with early sexual trauma as an option, without asserting that abuse happened.",
+        "Finding a therapist, as the owner's guide suggests: a somatic therapist first, if that resonates; IFS or Schema Therapy as licensed choices (Open Path Collective or a similar resource lists affordable ones). Before choosing, ask about the strengths and pitfalls of their approach, how they treat spiritual experiences, whether they put ideas in the person's head, whether they understand dissociation, and how they would treat early sexual trauma if the person has it.",
+        "Warmlines are there for someone to talk to when there's nobody else (hotlines only for emergencies)."
       ],
       "avoid": [
         "Do not label practical actions as reparenting when the person has not welcomed that frame or has declined it.",
         "Do not tell an isolated person that internal self-sufficiency should replace human attachment.",
         "Do not prescribe a spiritual community merely because the person is spiritual, or present a long directory when one or two realistic next contacts are more usable.",
-        "Do not advise withdrawing from an existing safe support merely to diversify."
+        "Do not advise withdrawing from an existing safe support merely to diversify.",
+        "Do not treat one consultation as sustained specialist treatment, assume concerns about sexual life require partnered intercourse, or default to an institutional prevention service without a matching present need.",
+        "Do not press for disclosure, choose the listener for the person, help hide current danger to anyone, or send journal or conversation material for outside review without evidence of current risk to someone."
       ],
       "successSignals": [
         "At least one realistic route toward recurring, safe human contact becomes available, with alternatives if the first route fails.",
@@ -1622,11 +1671,13 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [
-          "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency."
+          "Do not claim that joining a group will cure loneliness, trauma, or a mental-health condition, or that needing people proves dependency.",
+          "Do not promise that any listener will keep a disclosure confidential or receive it well; confidentiality limits and duties to report differ and can change. Do not suggest asking a therapist what they must report; if the person wants to ask, that is their choice."
         ],
         "requiredNuance": [
           "Human beings can need both inner adult capacity and real reciprocal attachment; these are complementary rather than competing goals.",
-          "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure."
+          "Diversification is additive: build several safe routes rather than replacing one safe support with another single point of failure.",
+          "Whether, when and to whom to tell is the person's choice; graded disclosure never extends to concealing current danger to anyone, which stays under the ordinary safety routing."
         ]
       },
       "defaultQuestion": "What kinds of people or communities would actually feel like your people—and what is the smallest realistic way to try one without making it your only hope?"
@@ -1766,7 +1817,10 @@
         "AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY",
         "AMEND.CROSS.CARE_TRAUMA_DISCLOSURE_AND_TRUST",
         "AMEND.CROSS.PAIN_CRISIS_TREATMENT_VS_KNOWN_HARM",
-        "AMEND.CROSS.RESPONSE_FIDELITY_20261025"
+        "AMEND.CROSS.RESPONSE_FIDELITY_20261025",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120",
+        "AMEND.CROSS.KEEP_CAREFUL_LINES_20261120",
+        "IC.LIVE_GUIDE_DECISIONS_20261120"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -1775,7 +1829,8 @@
         "Seek an individualized written plan for predictable pain flares: whom to contact, agreed treatments and which features require urgent medical triage. SAMU or emergency care is a backup for new red flags, changed or atypical symptoms, unusually severe or unmanageable attacks, not the only near-daily strategy.",
         "Preserve previous investigations and distinguish offered/prescribed from actually tried medicines and experienced effects. A specialist may evaluate structural, visceral, neuropathic and nociplastic possibilities without claiming a diagnosis from a response.",
         "Respect prior coercive or harmful care, patient agency and an appropriately chosen trusted friend/advocate without assuming family or medical institutions are automatically safe or automatically malicious.",
-        "Consider tDCS/rTMS only if a qualified pain specialist finds an appropriate condition and indication, without promising symptom relief or recommending home stimulation."
+        "Consider tDCS/rTMS only if a qualified pain specialist finds an appropriate condition and indication, without promising symptom relief or recommending home stimulation.",
+        "Pain can have an emotional side. After the medical checks, the person may consider that as one possibility among others; normal test results don't prove the pain is imaginary, and not all illness is rooted in emotional issues."
       ],
       "avoid": [
         "Do not advise routinely calling an ambulance every day just to be taken seriously or imply many visits guarantee a referral.",
@@ -1783,7 +1838,8 @@
         "Do not coach a false denial of current suicidal intent, a suicide plan, inability to remain safe, or imminent danger, inability to stay safe or another actual urgent danger; immediate protection still matters in that situation.",
         "Do not overdiagnose central sensitization or claim a PPI, antidepressant or neuromodulation response proves the pain mechanism or repairs drug-related injury.",
         "Do not confuse treatments offered, declined, actually taken and ineffective, or invent access guarantees.",
-        "Do not treat another checkup as inherently therapeutic after an already extensive unsuccessful workup; do not promise specific relief or erase the person's informed understanding of local services."
+        "Do not treat another checkup as inherently therapeutic after an already extensive unsuccessful workup; do not promise specific relief or erase the person's informed understanding of local services.",
+        "Do not present an emotional side as \"the pain isn't real\", or offer it before the medical checks."
       ],
       "successSignals": [
         "A specific specialist referral or justified priority request is submitted, or its exact current blocker and next step are identified.",
@@ -1898,7 +1954,8 @@
           "ROUTE.ALTERED_STATE_TRANSFER",
           "ROUTE.ALTERED_AFTERMATH",
           "ROUTE.ALTERED_PREPARATION",
-          "IC.CONTINUITY_TITRATION"
+          "IC.CONTINUITY_TITRATION",
+          "IC.SHAME_APPRAISAL"
         ],
         "forbiddenOverclaims": [
           "Do not claim the loss happened for a reason or was meant to teach something."
@@ -1986,7 +2043,9 @@
         "AMEND.IC.GRATITUDE_HOW_20261015",
         "AMEND.IC.GRATITUDE_FOR_EVERYONE_20261014",
         "AMEND.IC.GRATITUDE_LOVE_ACCESS_20261014",
-        "IC.SPIRITUAL_LOAN"
+        "IC.SPIRITUAL_LOAN",
+        "AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022",
+        "AMEND.IC.NEWER_GUIDE_PARTS_20261120"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -2002,13 +2061,15 @@
         "Once unconditional love is felt, gratitude goes on: for the chance to care for whoever is hurting, oneself included, and with the suffering of other beings in view, so an opening becomes a continuing relationship rather than a special episode.",
         "Notice what actually opens when gratitude is offered: a little freedom, peace, softness, or sacred love. Words of thanks or an insight are not proof that unconditional love is felt.",
         "After a fresh death or harm, gratitude comes in only sideways (ROUTE.FRESH_GRIEF_FIRST leads). With an obvious contradiction, like “I love everyone, I just hate my dad”, don’t jump to it: start from the love they feel and work toward it (IC.REALIZATION_LOVE_INTEGRATION).",
-        "In a calm altered state, gratitude can come in as it does sober. Calm is shown, not assumed: clear-headed (coherent), medically stable, safe, oriented and able to stop, the same evidence as the stable-state therapy; unknown isn’t calm. While the state is overwhelming it waits for it to settle (ROUTE.ALTERED_ACUTE_STABILIZATION leads), and it stays out when capacity is impaired or there is a medical concern."
+        "In a calm altered state, gratitude can come in as it does sober. Calm is shown, not assumed: clear-headed (coherent), medically stable, safe, oriented and able to stop, the same evidence as the stable-state therapy; unknown isn’t calm. While the state is overwhelming it waits for it to settle (ROUTE.ALTERED_ACUTE_STABILIZATION leads), and it stays out when capacity is impaired or there is a medical concern.",
+        "Divine love and gratitude are the Guide's work, after enough Nurturer and Protector; start small, never push gratitude on fresh grief, and never build it on comparing with others."
       ],
       "avoid": [
         "Do not preach, lecture or insist, and don’t bring it up in every reply. If the person keeps resisting, leave it (“we can come back to this later, now may not be the time”) and come back later from another angle.",
         "Do not demand a feeling, ask anyone to thank an abuser or endorse harm, or put thanks in place of protection, treatment, grief or practical help.",
         "Do not lead with gratitude, or gratitude for suffering, right after a fresh death or harm, and do not pile it on top of an unexamined contradiction.",
-        "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity."
+        "Do not say “every cloud has a silver lining”: the phrase is what people mean by toxic positivity.",
+        "Do not use other people's deprivation as the reason this person should feel fortunate, or treat gratitude as a social ranking. Notice concretely present good while retaining compassion for those who suffer."
       ],
       "successSignals": [
         "The person finds something they are genuinely grateful for and notices what it opens, or sees for themselves where their gratitude depends on things going their way."
@@ -2028,7 +2089,8 @@
         "requiredNuance": [
           "Ordinary love (love_access) and unconditional love (deep_love_access) are different: someone can love their pets and still feel no unconditional love or acceptance.",
           "Expressed thanks, felt softness, unconditional love, and a spiritual interpretation are distinct observations.",
-          "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care."
+          "Gratitude is offered to everyone, with or without a religion; it is a practice to return to, not a feeling on demand or a condition of care.",
+          "The owner's spiritual gratitude does not mean satisfaction with having more than someone else. Recognizing that suffering could be greater is a different reflection from ranking one's fortune against another person's hardship."
         ]
       },
       "defaultQuestion": ""

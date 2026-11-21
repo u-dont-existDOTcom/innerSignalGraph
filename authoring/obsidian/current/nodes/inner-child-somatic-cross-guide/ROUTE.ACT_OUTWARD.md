@@ -29,6 +29,10 @@ source_refs:
   - AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
   - AMEND.CROSS.RESPONSE_FIDELITY_20261025
   - AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
+  - AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026
+  - AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
+  - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
+  - AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022
 regression_refs:
   - G013
   - G014
@@ -44,9 +48,13 @@ regression_refs:
   - G099
   - G101
   - G105
-base_record_sha256: 5ca0a451c24bea175eacadda507b92d27785d35cdd723d19592891204b5da6a6
-base_graph_sha256: d145252bb6e094d5fa9198c422f41f3ea60dfb0e93fc1c92682fba10ed0c81cf
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+  - G141
+  - G142
+  - G143
+  - G144
+base_record_sha256: c0e47179ec67025524cbba7daaaeacac05637362550786bcdfe294ae62de58f3
+base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Act on the concrete problem
@@ -108,7 +116,9 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "Do not ignore known long-term harm from short-lived coping relief, infer substance dependence contrary to an established negative, or ask for facts the person already supplied.",
     "Do not use disclosure of suicidal thoughts as a bargaining chip for analgesia, and do not equate another generic psychiatric referral with a physical-pain treatment plan after coercive or ineffective prior care.",
     "Do not prescribe a generic high-effort routine or withdrawal plan when recorded stopping history and limited executive capacity point to a different problem.",
-    "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting."
+    "Do not present deleting one contact or relocating as a guaranteed solution when equivalent access remains or the person declines the setting.",
+    "Do not collapse feelings, chosen conduct, legal restrictions, clinical categories and consent into the same question.",
+    "Do not help hold back a danger that's happening now from people who can help, whether by calling it a dream, fiction or a hypothetical, and do not coach a false denial of current intent, a plan or immediate danger. Telling a hard or past thing at first as a dream narrative is a separate, legitimate first step."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -152,7 +162,10 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
     "For a repeated harmful coping choice, check recorded previous cessation attempts and why use resumed, including sleep, pain, loneliness, or an intensely valued feeling, before making withdrawal the presumed obstacle.",
     "Ask what component of an intensely valued inner state matters most and which non-harmful activities or methods have already provided some of it, without proposing a list of hidden meanings as the person's answer.",
     "Before suggesting an access barrier, test whether it changes practical access through social networks or local availability; choose only feasible and accepted protection.",
-    "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished."
+    "Where a practice produces a rapid partial body relaxation change, ask which method, how long relief lasts if continued or stopped, and how usable it is during daily demands rather than inferring all anxiety vanished.",
+    "When a spontaneous feeling invites an unsuitable action, help choose a consent-respecting practical boundary rather than treating the feeling itself as a diagnosis or wrongdoing.",
+    "Address a documented, modifiable sleep or environmental barrier and examine when an already-tested calming method works before a severe escalation; preserve causation uncertainty.",
+    "If shame follows real harmful conduct, choose feasible repair, changed behavior and legitimate accountability rather than a numerical blame allocation or demand for another person's forgiveness."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -189,3 +202,11 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/governance/amendments/AMEND.CROSS.RESPONSE_FIDELITY_20261025]]
 
 [[current/governance/amendments/AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025]]
+
+[[current/governance/amendments/AMEND.CROSS.FEELING_AGENCY_AND_REFERRAL_FIT_20261026]]
+
+[[current/governance/amendments/AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026]]
+
+[[current/governance/amendments/AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029]]
+
+[[current/governance/amendments/AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022]]

@@ -18,6 +18,7 @@ source_refs:
   - IC.REGULATION_BEFORE_DIALOGUE
   - IC.HEART_SOLAR_LOOP
   - AMEND.SOM.PREP_MODALITIES
+  - AMEND.IC.NEWER_GUIDE_PARTS_20261120
 regression_refs:
   - G002
   - G003
@@ -30,9 +31,9 @@ regression_refs:
   - G105
   - G106
   - G138
-base_record_sha256: 18763dcc2839b80e777c89163237f384df333a778f911ff19f28ccda4128d641
-base_graph_sha256: cdb752b2480f7a7181c6fbf2ef1ab97ebd060df0e4d27894db0c51fb8eac0fd9
-projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9d71ac0c40
+base_record_sha256: 45cbbaf232930d45b69df5cad030fcec37ab6a37b5710de8648259e6f4393457
+base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
+projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
 ---
 
 # Relax solar-plexus or abdominal holding before dialogue
@@ -88,7 +89,8 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
   },
   "recommendations": [
     "Use non-forced longer exhales, gentle self-massage, or another low-dose somatic method to reduce holding around the solar plexus or abdomen.",
-    "Treat softening as an opening for love or presence, not an order to enter memories."
+    "Treat softening as an opening for love or presence, not an order to enter memories.",
+    "Breathing can stay continuous and unforced: no holding or straining."
   ],
   "successSignals": [
     "The body softens without air hunger, flooding, or loss of orientation."
@@ -104,3 +106,5 @@ projection_input_sha256: 8e59760421e2be6585ad053d6b563adf7ebbd7e776bfce2e92df7e9
 [[current/sources/inner-child-guide/IC.HEART_SOLAR_LOOP]]
 
 [[current/governance/amendments/AMEND.SOM.PREP_MODALITIES]]
+
+[[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]

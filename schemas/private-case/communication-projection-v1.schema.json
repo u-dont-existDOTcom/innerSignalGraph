@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inner-signal.local/schemas/private-case/communication-projection-v1.schema.json",
+  "title": "Private communication projection",
+  "description": "What a private case can truthfully say about each piece of text. confirmed_or_reported_client_outbound lists only text the application committed to the transcript or the owner reported sending to the client. supervisor_only_artifacts lists drafts, exposures and exports that no evidence says reached the client. unresolved_delivery lists what the record cannot place: a raw sent status with no transcript proof, an ambiguous report, and assistant turns that nothing vouches for. Derived from the record on every read, never accepted from a caller. Runtime validators additionally bind every listed turn to the exact stored assistant turn.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "confirmed_or_reported_client_outbound", "supervisor_only_artifacts", "unresolved_delivery", "omitted", "retracted_event_count"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "confirmed_or_reported_client_outbound": { "type": "array", "maxItems": 25, "items": { "$ref": "#/$defs/clientOutbound" } },
+    "supervisor_only_artifacts": { "type": "array", "maxItems": 25, "items": { "$ref": "#/$defs/supervisorOnly" } },
+    "unresolved_delivery": { "type": "array", "maxItems": 25, "items": { "$ref": "#/$defs/unresolved" } },
+    "omitted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confirmed_or_reported_client_outbound", "supervisor_only_artifacts", "unresolved_delivery"],
+      "properties": {
+        "confirmed_or_reported_client_outbound": { "type": "integer", "minimum": 0 },
+        "supervisor_only_artifacts": { "type": "integer", "minimum": 0 },
+        "unresolved_delivery": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "retracted_event_count": { "type": "integer", "minimum": 0 }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,160}$" },
+    "refId": { "type": "string", "minLength": 1, "maxLength": 160, "pattern": "\\S" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "timestamp": { "type": "string", "format": "date-time", "maxLength": 80 },
+    "version": { "type": "integer", "minimum": 1 },
+    "candidateStatus": { "enum": ["pending_audit", "audit_failed", "reconstructed_pending_audit", "audited", "approved_for_delivery", "superseded", "sent"] },
+    "unsentCandidateStatus": { "enum": ["pending_audit", "audit_failed", "reconstructed_pending_audit", "audited", "approved_for_delivery", "superseded"] },
+    "nullableTurnId": { "oneOf": [{ "$ref": "#/$defs/refId" }, { "type": "null" }] },
+    "eventTime": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["at", "status"], "properties": { "at": { "$ref": "#/$defs/timestamp" }, "status": { "const": "known" } } },
+        { "type": "object", "additionalProperties": false, "required": ["at", "status"], "properties": { "at": { "type": "null" }, "status": { "const": "unavailable" } } }
+      ]
+    },
+    "corroboratingEventIds": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/id" } },
+    "candidateRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["candidate_id", "candidate_version"],
+      "properties": { "candidate_id": { "$ref": "#/$defs/refId" }, "candidate_version": { "$ref": "#/$defs/version" } }
+    },
+    "candidateSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "candidate_id", "candidate_version", "text_sha256"],
+      "properties": {
+        "kind": { "const": "candidate" },
+        "candidate_id": { "$ref": "#/$defs/refId" },
+        "candidate_version": { "$ref": "#/$defs/version" },
+        "text_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "companionSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "companion_of", "artifact_sha256"],
+      "properties": {
+        "kind": { "const": "companion" },
+        "companion_of": { "$ref": "#/$defs/candidateRef" },
+        "artifact_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "transcriptTurnSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "assistant_turn_id", "in_reply_to_turn_id", "text_sha256"],
+      "properties": {
+        "kind": { "const": "transcript_turn" },
+        "assistant_turn_id": { "$ref": "#/$defs/refId" },
+        "in_reply_to_turn_id": { "$ref": "#/$defs/refId" },
+        "text_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "unresolvedSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "reason", "candidate_refs"],
+      "properties": {
+        "kind": { "const": "unresolved" },
+        "reason": { "const": "ambiguous" },
+        "candidate_refs": { "type": "array", "maxItems": 10, "items": { "$ref": "#/$defs/candidateRef" } }
+      }
+    },
+    "unattributedTurnsSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "count", "turn_ids"],
+      "properties": {
+        "kind": { "const": "unattributed_assistant_turns" },
+        "count": { "type": "integer", "minimum": 1 },
+        "turn_ids": { "type": "array", "maxItems": 25, "items": { "$ref": "#/$defs/refId" } }
+      }
+    },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "route", "audit_id", "event_id", "origin", "actor_resolution", "source_ref"],
+      "properties": {
+        "kind": { "enum": ["application_transcript", "owner_report", "communication_event", "candidate_status", "legacy_status_only", "transcript_role_only"] },
+        "route": { "oneOf": [{ "enum": ["transcript_bound", "runtime_receipt", "runtime_discriminator", "mark_candidate_sent"] }, { "type": "null" }] },
+        "audit_id": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 200 }, { "type": "null" }] },
+        "event_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+        "origin": { "oneOf": [{ "enum": ["owner_action", "agent_relayed", "application"] }, { "type": "null" }] },
+        "actor_resolution": { "oneOf": [{ "enum": ["owner_verified", "unresolved", "application"] }, { "type": "null" }] },
+        "source_ref": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] }
+      }
+    },
+    "appCommitted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "audience", "state", "delivery_evidence", "source", "candidate_status", "in_reply_to_turn_id", "assistant_turn_id", "event_time", "corroborating_event_ids"],
+      "properties": {
+        "subject": { "oneOf": [{ "$ref": "#/$defs/candidateSubject" }, { "$ref": "#/$defs/transcriptTurnSubject" }] },
+        "audience": { "const": "client" },
+        "state": { "const": "app_committed" },
+        "delivery_evidence": { "const": "application_persisted" },
+        "source": { "$ref": "#/$defs/source" },
+        "candidate_status": { "oneOf": [{ "const": "sent" }, { "type": "null" }] },
+        "in_reply_to_turn_id": { "$ref": "#/$defs/refId" },
+        "assistant_turn_id": { "$ref": "#/$defs/refId" },
+        "event_time": { "$ref": "#/$defs/eventTime" },
+        "corroborating_event_ids": { "$ref": "#/$defs/corroboratingEventIds" }
+      }
+    },
+    "ownerReported": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "audience", "state", "delivery_evidence", "source", "candidate_status", "in_reply_to_turn_id", "assistant_turn_id", "event_time", "corroborating_event_ids"],
+      "properties": {
+        "subject": { "oneOf": [{ "$ref": "#/$defs/candidateSubject" }, { "$ref": "#/$defs/transcriptTurnSubject" }] },
+        "audience": { "const": "client" },
+        "state": { "const": "reported_sent" },
+        "delivery_evidence": { "const": "owner_reported_sent" },
+        "source": { "$ref": "#/$defs/source" },
+        "candidate_status": { "oneOf": [{ "$ref": "#/$defs/candidateStatus" }, { "type": "null" }] },
+        "in_reply_to_turn_id": { "$ref": "#/$defs/nullableTurnId" },
+        "assistant_turn_id": { "$ref": "#/$defs/nullableTurnId" },
+        "event_time": { "$ref": "#/$defs/eventTime" },
+        "corroborating_event_ids": { "$ref": "#/$defs/corroboratingEventIds" }
+      }
+    },
+    "clientOutbound": { "oneOf": [{ "$ref": "#/$defs/appCommitted" }, { "$ref": "#/$defs/ownerReported" }] },
+    "candidateArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "audience", "state", "delivery_evidence", "source", "candidate_status", "in_reply_to_turn_id", "assistant_turn_id", "event_time", "corroborating_event_ids"],
+      "properties": {
+        "subject": { "$ref": "#/$defs/candidateSubject" },
+        "audience": { "const": "client" },
+        "state": { "enum": ["draft", "exposed", "exported"] },
+        "delivery_evidence": { "const": "none" },
+        "source": { "$ref": "#/$defs/source" },
+        "candidate_status": { "$ref": "#/$defs/unsentCandidateStatus" },
+        "in_reply_to_turn_id": { "type": "null" },
+        "assistant_turn_id": { "type": "null" },
+        "event_time": { "$ref": "#/$defs/eventTime" },
+        "corroborating_event_ids": { "$ref": "#/$defs/corroboratingEventIds" }
+      }
+    },
+    "companionArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "audience", "state", "delivery_evidence", "source", "candidate_status", "in_reply_to_turn_id", "assistant_turn_id", "event_time", "corroborating_event_ids"],
+      "properties": {
+        "subject": { "$ref": "#/$defs/companionSubject" },
+        "audience": { "const": "supervisor" },
+        "state": { "enum": ["exposed", "exported"] },
+        "delivery_evidence": { "const": "none" },
+        "source": { "$ref": "#/$defs/source" },
+        "candidate_status": { "type": "null" },
+        "in_reply_to_turn_id": { "type": "null" },
+        "assistant_turn_id": { "type": "null" },
+        "event_time": { "$ref": "#/$defs/eventTime" },
+        "corroborating_event_ids": { "$ref": "#/$defs/corroboratingEventIds" }
+      }
+    },
+    "supervisorOnly": { "oneOf": [{ "$ref": "#/$defs/candidateArtifact" }, { "$ref": "#/$defs/companionArtifact" }] },
+    "unknownCandidate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "audience", "state", "delivery_evidence", "source", "candidate_status", "in_reply_to_turn_id", "assistant_turn_id", "event_time", "corroborating_event_ids"],
+      "properties": {
+        "subject": { "$ref": "#/$defs/candidateSubject" },
+        "audience": { "const": "unknown" },
+        "state": { "const": "unknown" },
+        "delivery_evidence": { "const": "unknown" },
+        "source": { "$ref": "#/$defs/source" },
+        "candidate_status": { "const": "sent" },
+        "in_reply_to_turn_id": { "type": "null" },
+        "assistant_turn_id": { "type": "null" },
+        "event_time": { "$ref": "#/$defs/eventTime" },
+        "corroborating_event_ids": { "$ref": "#/$defs/corroboratingEventIds" }
+      }
+    },
+    "unknownTurns": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "audience", "state", "delivery_evidence", "source", "candidate_status", "in_reply_to_turn_id", "assistant_turn_id", "event_time", "corroborating_event_ids"],
+      "properties": {
+        "subject": { "$ref": "#/$defs/unattributedTurnsSubject" },
+        "audience": { "const": "unknown" },
+        "state": { "const": "unknown" },
+        "delivery_evidence": { "const": "unknown" },
+        "source": { "$ref": "#/$defs/source" },
+        "candidate_status": { "type": "null" },
+        "in_reply_to_turn_id": { "type": "null" },
+        "assistant_turn_id": { "type": "null" },
+        "event_time": { "$ref": "#/$defs/eventTime" },
+        "corroborating_event_ids": { "$ref": "#/$defs/corroboratingEventIds" }
+      }
+    },
+    "ambiguousReport": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "audience", "state", "delivery_evidence", "source", "candidate_status", "in_reply_to_turn_id", "assistant_turn_id", "event_time", "corroborating_event_ids"],
+      "properties": {
+        "subject": { "$ref": "#/$defs/unresolvedSubject" },
+        "audience": { "const": "client" },
+        "state": { "const": "reported_sent" },
+        "delivery_evidence": { "const": "owner_reported_sent" },
+        "source": { "$ref": "#/$defs/source" },
+        "candidate_status": { "type": "null" },
+        "in_reply_to_turn_id": { "type": "null" },
+        "assistant_turn_id": { "type": "null" },
+        "event_time": { "$ref": "#/$defs/eventTime" },
+        "corroborating_event_ids": { "$ref": "#/$defs/corroboratingEventIds" }
+      }
+    },
+    "unresolved": { "oneOf": [{ "$ref": "#/$defs/unknownCandidate" }, { "$ref": "#/$defs/unknownTurns" }, { "$ref": "#/$defs/ambiguousReport" }] }
+  }
+}

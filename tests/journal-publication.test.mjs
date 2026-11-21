@@ -100,6 +100,32 @@ test('a new generation replaces only the active generation it names, which stays
  await assert.rejects(publish(persisted),{code:'JOURNAL_PUBLICATION_GENERATION_CONFLICT'});
 });
 
+test('a run told to replace a published corpus never creates it, and replaces the generation it names in it',async t=>{
+ const {service,sourceStore,graph,persisted,representations}=await environment(t);
+ const auth={bearerToken:WRITER};
+ const publish=(staged,options={})=>publishJournalGenerationFromStaging({service,sourceStore,persisted:staged,auth,authorize:async()=>{},...options});
+ const inspect=async()=>(await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},auth)).reference;
+ // Nothing is published under this corpus id: the run is refused and no corpus is made.
+ await assert.rejects(publish(persisted,{corpusMustExist:true}),{code:'JOURNAL_PUBLICATION_REPLACED_CORPUS_MISSING'});
+ await assert.rejects(publish(persisted,{corpusMustExist:true,supersedes:'generation-never-published'}),{code:'JOURNAL_PUBLICATION_REPLACED_CORPUS_MISSING'});
+ assert.equal(await inspect(),null);
+ // The same call on a published corpus replaces only the generation it names.
+ await publish(persisted);
+ const next=structuredClone(graph);next.generation=`${graph.generation}-next`;
+ const staged=await persistGraphGeneration({corpusStore:sourceStore,graph:next,sourceRepresentations:representations,
+  permittedUses:['archive','organize_search','session_use'],archiveReferences:persisted.manifest.archive_references});
+ await assert.rejects(publish(staged,{corpusMustExist:true}),{code:'JOURNAL_PUBLICATION_GENERATION_CONFLICT'});
+ await assert.rejects(publish(staged,{corpusMustExist:true,supersedes:'generation-published-elsewhere'}),{code:'JOURNAL_PUBLICATION_GENERATION_CONFLICT'});
+ assert.equal((await inspect()).active_generation,graph.generation);
+ await publish(staged,{corpusMustExist:true,supersedes:graph.generation});
+ const reference=await inspect();
+ assert.equal(reference.active_generation,next.generation);
+ assert.deepEqual(reference.previous_generations.at(-1),{generation:graph.generation,manifest_object_id:persisted.manifest_object_id});
+ // Publishing it again changes nothing.
+ await publish(staged,{corpusMustExist:true,supersedes:graph.generation});
+ assert.equal((await inspect()).active_generation,next.generation);
+});
+
 test('the write inspection carries no case content and needs the named scope and purpose',async t=>{
  const {service}=await environment(t);
  const inspection=await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},{bearerToken:WRITER});

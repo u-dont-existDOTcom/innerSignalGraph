@@ -32,3 +32,11 @@ npm run authoring:proposal:reconcile -- --id <id> --packet-id <exact-packet-id> 
 Proposal and decision details are documented in `docs/AUTHORING-ARCHITECTURE.md`. Every substantive decision shows exact before/after values plus explicit pros and cons of approving the new value. Approval remains in the existing Guide Packet owner-decision lifecycle; Obsidian and proposal status cannot approve anything. No authoring command calls a model.
 
 Canonical guide HTML/text is never round-tripped through Markdown. Source notes contain bounded read-only excerpts for navigation.
+
+## Cross-section concept evidence
+
+Before declaring a technique absent, establish the active guide through its manifest and inspect relevant explanations, qualifications and countercases. The developer-only ledger in `authoring/concepts/shame.json` binds exact passages across the guide to graph nodes. `npm run authoring:concepts:check` rejects stale guide hashes, unsupported quotes and orphan graph nodes. `node scripts/guide-concept-read.mjs --concept social-vs-moral` returns a source-cited read receipt. This checks citation integrity, not semantic completeness or live bot behavior. See `docs/CONCEPT-SOURCE-READING.md`. Never turn developer checks into a client questionnaire.
+
+## Cross-section concept evidence
+
+Before declaring a therapy technique absent, establish the active guide through its manifest and inspect all relevant sections, qualifications and countercases. The developer-only ledger in `authoring/concepts/shame.json` binds exact passages across the current guide to graph nodes. `npm run authoring:concepts:check` rejects stale guide hashes, unsupported quotes and orphan graph nodes. `node scripts/guide-concept-read.mjs --concept social-vs-moral` returns a source-cited read receipt. The validator checks citation integrity, not semantic completeness or live bot performance. See `docs/CONCEPT-SOURCE-READING.md`. Do not turn this developer audit into a client questionnaire or a new therapy practice.
