@@ -74,7 +74,9 @@ import {
   validateSupervisorArtifacts
 } from "./private-case-supervisor.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
-import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
+import { listPrivateArtifactLocatorsForCase, writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
+import { listPrivateCaseAliasLocatorsForCase } from "./private-case-alias-locator.mjs";
+import { privateJournalCorpusDirectory } from "./private-journal-corpus.mjs";
 import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
 import {
   TRANSCRIPT_AMENDMENT_LIMITS,
@@ -531,6 +533,12 @@ function assertAppendOnly(previous, next) {
     }
     if (before.discriminator != null && JSON.stringify(before.discriminator) !== JSON.stringify(after.discriminator)) throw new ValidationError("Private runtime discriminator is immutable.");
     if (before.delivery != null && JSON.stringify(before.delivery) !== JSON.stringify(after.delivery)) throw new ValidationError("Private runtime delivery is immutable.");
+    // The runner trial's checker levels: every audit attempt's reading is kept, so a later one never erases an earlier one.
+    const levelsBefore = before.runner_reading?.checker_levels ?? [];
+    const levelsAfter = after.runner_reading?.checker_levels ?? [];
+    if (levelsAfter.length < levelsBefore.length || levelsBefore.some((entry, levelIndex) => JSON.stringify(entry) !== JSON.stringify(levelsAfter[levelIndex]))) {
+      throw new ValidationError("Runner checker levels are append-only and immutable.");
+    }
   }
   if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
@@ -577,6 +585,29 @@ async function durableEncryptedWrite(file, envelope) {
     body.fill(0);
     if (handle) await handle.close().catch(() => {});
     await fs.unlink(temporary).catch(() => {});
+  }
+}
+
+// Removes one file; false when it was already gone.
+async function removeFile(file) {
+  try {
+    await fs.unlink(file);
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function syncDirectory(directory) {
+  let handle = null;
+  try {
+    handle = await fs.open(directory, "r");
+    await handle.sync();
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  } finally {
+    await handle?.close();
   }
 }
 
@@ -1274,6 +1305,7 @@ export function createEncryptedPrivateCaseStore({
         if (existing && added.length === 0) { stored = structuredClone(existing); return null; }
         if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no new reading.");
         runtimeTurn.runner_reading = {
+          ...(existing ?? {}),
           schema_version: 1,
           conversation_id: conversationId,
           recorded_at: existing?.recorded_at ?? now(),
@@ -1281,6 +1313,25 @@ export function createEncryptedPrivateCaseStore({
         };
         validatePrivateRuntimeTurn(runtimeTurn);
         stored = structuredClone(runtimeTurn.runner_reading);
+        return record;
+      });
+      return stored;
+    },
+    // One audit attempt's crisis level, as the level reader (the crisis checker, or the whole checker) read it, appended as soon
+    // as it answers, even when another checker gave no reading: the closing and later turns read every one of them.
+    async recordRunnerCheckerLevel(caseId, runtimeTurnId, { candidateId, candidateVersion = null, checker, level }) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (!runtimeTurn.runner_reading) throw new ValidationError("A checker level belongs to a turn the runner trial read.");
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no new reading.");
+        const levels = runtimeTurn.runner_reading.checker_levels ?? [];
+        runtimeTurn.runner_reading = {
+          ...runtimeTurn.runner_reading,
+          checker_levels: [...levels, { attempt: levels.length + 1, candidate_id: candidateId, candidate_version: candidateVersion, checker, level, recorded_at: now() }]
+        };
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(runtimeTurn.runner_reading.checker_levels);
         return record;
       });
       return stored;
@@ -2359,6 +2410,60 @@ export function createEncryptedPrivateCaseStore({
         throw new ValidationError("Encrypted private handoff export exceeds the portable-export limit.");
       }
       return body;
+    },
+    // Delete one case from this vault (the runner trial page's "Delete this case"; docs/superpowers/specs/2026-11-21-runner-trial-
+    // design.md, section 6): its encrypted case file, the handoff envelopes its locators name (each first opened with this case's
+    // key and confirmed to be this case's), the folders of the journal corpora its record names, and the locator and alias files
+    // that name it. Only paths proven to be this case's are touched: a handoff that can't be opened and confirmed is kept, with
+    // its locator, and reported. Inside the case's mutation queue, so nothing writes the case meanwhile; the caller also holds the
+    // turn controller's queue, so no turn of the case is running. Run again after an interruption, it finishes the job.
+    async deletePrivateCase(caseId) {
+      const id = safeCaseId(caseId);
+      return coordinator.run(id, async () => {
+        ensureOpen();
+        // A case file that is there but can't be opened with this case's key stops the deletion before anything is removed.
+        const existing = await readExistingWithEnvelope(id);
+        const locators = await listPrivateArtifactLocatorsForCase({ rootDir, caseId: id });
+        const keptHandoffs = [];
+        let handoffsRemoved = 0;
+        for (const locator of locators.filter((entry) => entry.kind === "handoff")) {
+          let opened;
+          try { opened = await readHandoffArtifactWithEnvelope(locator.artifactId, id); }
+          catch { keptHandoffs.push(locator.artifactId); continue; }
+          if (opened && await removeFile(handoffFileFor(locator.artifactId))) handoffsRemoved += 1;
+        }
+        let journalCorporaRemoved = 0;
+        for (const reference of existing?.record.journal_corpora ?? []) {
+          const directory = privateJournalCorpusDirectory({ rootDir, caseId: id, corpusId: reference.corpus_id });
+          const info = await fs.lstat(directory).catch((error) => (error?.code === "ENOENT" ? null : Promise.reject(error)));
+          if (!info?.isDirectory()) continue;
+          await fs.rm(directory, { recursive: true });
+          journalCorporaRemoved += 1;
+        }
+        const caseFileRemoved = await removeFile(fileFor(id));
+        await removeFile(`${fileFor(id)}.tmp`);
+        let locatorFilesRemoved = 0;
+        for (const locator of locators) {
+          if (locator.kind === "handoff" && keptHandoffs.includes(locator.artifactId)) continue;
+          if (await removeFile(locator.file)) locatorFilesRemoved += 1;
+        }
+        let aliasFilesRemoved = 0;
+        for (const alias of await listPrivateCaseAliasLocatorsForCase({ rootDir, caseId: id })) {
+          if (await removeFile(alias.file)) aliasFilesRemoved += 1;
+        }
+        for (const directory of [rootDir, handoffDirectory, path.join(rootDir, ".artifact-locators"), path.join(rootDir, ".case-alias-locators"), path.join(rootDir, ".journal-corpora")]) {
+          await syncDirectory(directory);
+        }
+        return Object.freeze({
+          case_id: id,
+          case_file_removed: caseFileRemoved,
+          handoffs_removed: handoffsRemoved,
+          journal_corpora_removed: journalCorporaRemoved,
+          locator_files_removed: locatorFilesRemoved,
+          alias_locator_files_removed: aliasFilesRemoved,
+          handoffs_kept: Object.freeze([...keptHandoffs])
+        });
+      });
     },
     async getHandoffTrackerWindow(caseId, handoffId, options = {}) {
       const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));

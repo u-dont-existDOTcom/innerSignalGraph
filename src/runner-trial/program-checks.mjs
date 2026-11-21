@@ -35,25 +35,29 @@ function digitValue(char) {
   for (const zero of DIGIT_ZEROS) if (code >= zero && code <= zero + 9) return code - zero;
   return null;
 }
-// Every run of digits (any script) as ASCII digits; a run with an unreadable digit is kept as null so it can't pass a check.
-function digitRuns(text, { joinSeparators = false } = {}) {
+// Every run of digits (any script): its digits as ASCII, or null when one of them can't be read (so it can't pass a check), and
+// how many digits it has.
+function readDigitRuns(text, { joinSeparators = false } = {}) {
   const runs = [];
   const pattern = joinSeparators
     ? /(?<![\p{Nd}])\+?\p{Nd}(?:[\p{Nd} .\-()]{0,24}\p{Nd})?(?![\p{Nd}])/gu
     : /(?<![\p{Nd}])\p{Nd}+(?![\p{Nd}])/gu;
   for (const match of text.matchAll(pattern)) {
     let digits = "";
+    let count = 0;
     let readable = true;
     for (const char of match[0]) {
       if (!/\p{Nd}/u.test(char)) continue;
+      count += 1;
       const value = digitValue(char);
-      if (value == null) { readable = false; break; }
-      digits += String(value);
+      if (value == null) readable = false;
+      else digits += String(value);
     }
-    runs.push(readable ? digits : null);
+    runs.push({ digits: readable ? digits : null, count });
   }
   return runs;
 }
+const digitRuns = (text, options) => readDigitRuns(text, options).map((run) => run.digits);
 
 export function emergencyNumbersIn(text) {
   return [...new Set(digitRuns(text).filter((run) => run != null && EMERGENCY_NUMBERS.includes(run)))];
@@ -131,7 +135,11 @@ export function provisionalProblems(text, { maxCharacters = 900 } = {}) {
   if (typeof text !== "string" || !text.trim()) return ["empty"];
   if (text.length > maxCharacters) problems.push("too_long");
   if (emergencyNumbersIn(text).length === 0) problems.push("no_emergency_number");
-  if (phoneLikeRuns(text).some((run) => !EMERGENCY_NUMBERS.includes(run))) problems.push("unknown_number");
+  // Every number is one of the emergency numbers: each run of three or more digits (a five-digit poison line an R1 invented is
+  // caught), and each phone-shaped run of digits joined by spaces, dots, dashes or brackets. One- and two-digit runs (a time,
+  // "24/7") aren't read as numbers.
+  const unknownRun = readDigitRuns(text).some((run) => run.count >= 3 && (run.digits == null || !EMERGENCY_NUMBERS.includes(run.digits)));
+  if (unknownRun || phoneLikeRuns(text).some((run) => !EMERGENCY_NUMBERS.includes(run))) problems.push("unknown_number");
   if (questionMarks(text) > 1) problems.push("more_than_one_question");
   problems.push(...shapeProblems(text));
   if (linksIn(text).some((link) => !CRISIS_LINK_KEYS.has(linkKey(link)))) problems.push("link_not_allowed");
@@ -148,9 +156,10 @@ const finding = (code, severity, summary, extra = {}) => Object.freeze({ id: `pr
  *   the provisional and the reply together);
  * - firstCrisisTurn: this is the first turn of the conversation read at a crisis level by C1, or whose provisional was shown;
  * - crisisConversation: any turn of this conversation was read at a crisis level by R1 or C1;
- * - provisional: the provisional reply shown this turn, or null.
+ * - provisional: the provisional reply shown this turn, or null;
+ * - childContactPatternHits: what the child-contact word patterns matched while the gate is HOLD or BLOCKED.
  */
-export function runProgramChecks({ reply, checkerLevel = "none", firstActedTurn = false, firstCrisisTurn = false, crisisConversation = false, provisional = null, quotes = [], quoteSources = new Map(), compatibilityViolations = [] }) {
+export function runProgramChecks({ reply, checkerLevel = "none", firstActedTurn = false, firstCrisisTurn = false, crisisConversation = false, provisional = null, quotes = [], quoteSources = new Map(), childContactPatternHits = [] }) {
   if (typeof reply !== "string" || !reply.trim()) return [finding("PROGRAM_EMPTY_REPLY", "high", "The reply is empty.")];
   const findings = [];
   if (firstActedTurn && emergencyNumbersIn(`${provisional ?? ""}\n${reply}`).length === 0) {
@@ -167,7 +176,12 @@ export function runProgramChecks({ reply, checkerLevel = "none", firstActedTurn 
   }
   const quoteIssues = quoteProblems(reply, quotes, quoteSources);
   if (quoteIssues.length) findings.push(finding("PROGRAM_QUOTE_NOT_EXACT", "substantive", `${quoteIssues.length} declared quote(s) are not word for word.`, { problems: quoteIssues }));
-  if (compatibilityViolations.length) findings.push(finding("PROGRAM_CHILD_CONTACT_GATE", "high", "Child contact while the compatibility gate is restricted."));
+  // A word pattern can't tell an invitation from a refusal ("Do not contact your inner child." matches), so a hit never blocks by
+  // itself: it is recorded at medium and listed for the box checker and the whole checker, who block any reply that invites
+  // contact while the gate is HOLD or BLOCKED, in any wording or language (design, section 5).
+  if (childContactPatternHits.length) {
+    findings.push(finding("PROGRAM_CHILD_CONTACT_PATTERN", "medium", "A child-contact word pattern matched while the compatibility gate is restricted; the checkers judge whether the reply invites contact.", { patterns: [...new Set(childContactPatternHits.map((hit) => hit.pattern))] }));
+  }
   // Over-reaction, exact part: recorded at medium, never blocking (a wrong level must never take a number away from someone
   // who acted). Counted in the comparison as a fault.
   if (!crisisConversation && !isCrisisLevel(checkerLevel)) {

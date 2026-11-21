@@ -19,7 +19,9 @@ import { loadTherapyProtocol } from "../../src/protocol/therapy-protocol.mjs";
 import { createEncryptedPrivateCaseStore } from "../../src/storage/private-case-store.mjs";
 import { createPrivateTherapyTurnController } from "../../src/supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts, rulesFrom } from "../../src/runner-trial/rule-parts.mjs";
-import { createRunnerTrialRuntime } from "../../src/runner-trial/runtime.mjs";
+import { createRunnerTrialRuntime, normalizeFindings } from "../../src/runner-trial/runtime.mjs";
+import { isSubstantiveAuditFinding } from "../../src/supervisor/private-candidate-lifecycle.mjs";
+import { SELF_DIRECTED_RISK_AUDIT_CODES } from "../../src/prompts/self-directed-risk-audit.mjs";
 import { SealedClaudeWorker } from "../../src/runner-trial/sealed-claude.mjs";
 import { SealedCodexWorker } from "../../src/runner-trial/sealed-codex.mjs";
 import { CHECKERS, CHECKER_SCHEMA, checkerPrompt } from "../../src/runner-trial/worker-prompts.mjs";
@@ -99,7 +101,7 @@ async function runConversation({ conversation, arm, provider }) {
     const caseId = `synthetic-measure-${conversation.id.toLowerCase()}`;
     await store.loadOrCreate(caseId);
     const events = [];
-    const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings: ARMS[arm].settings, workerFor: workerFactory(provider, ARMS[arm].effort, calls), onEvent: (turnId, event) => events.push({ at: Date.now(), turnId, ...event }) });
+    const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings: ARMS[arm].settings, workerFor: workerFactory(provider, ARMS[arm].effort, calls), onEvent: (_caseId, turnId, event) => events.push({ at: Date.now(), turnId, ...event }) });
     const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: runtime, maximumInvocationAttempts: 1 });
     const turns = [];
     for (const [index, text] of conversation.turns.entries()) {
@@ -210,7 +212,11 @@ async function probe() {
 
 // The checker catch rate on the 27 graded replies of the protocol-application calibration: each known reply, read by the
 // split checkers (C1 to C4) or the whole checker, against the case's request as the latest message. A known reply that fails
-// any graded rule should be blocked; one that passes all should pass.
+// any graded rule should be blocked; one that passes all should pass. Read as the runtime reads it: a finding blocks only when
+// the runtime's own rule says so (isSubstantiveAuditFinding, after the runtime's normalization), the three record-only risk codes
+// never block, and a reply that any checker gave no reading for is "incomplete" (its own count, never a pass or a block), as the
+// runtime never delivers a draft one of its checkers didn't read.
+const blocksDelivery = (finding) => !SELF_DIRECTED_RISK_AUDIT_CODES.includes(finding.code) && isSubstantiveAuditFinding(finding);
 async function catchRate() {
   const provider = args.provider ?? "codex";
   const mode = args.checkers ?? "split";
@@ -239,19 +245,31 @@ async function catchRate() {
       try { return { checker: checker.id, ...(await workerFor(checker.id).call({ ...prompt, schema: CHECKER_SCHEMA, timeoutMs: 180_000, stage: checker.id })) }; }
       catch (error) { return { checker: checker.id, error: error?.code ?? "error" }; }
     }));
-    const blocking = results.flatMap((result) => (result.value?.findings ?? []).filter((finding) => ["substantive", "high"].includes(finding.severity)).map((finding) => `${result.checker}:${finding.code}`));
+    const noReading = [];
+    const blocking = [];
+    for (const result of results) {
+      if (result.error) { noReading.push(result.checker); continue; }
+      let findings;
+      try { findings = normalizeFindings(result.checker, result.value?.findings); }
+      catch { noReading.push(result.checker); continue; }
+      blocking.push(...findings.filter(blocksDelivery).map((finding) => `${result.checker}:${finding.code}`));
+    }
     const expectFail = Object.values(item.expect).includes("fail");
-    const row = { id: item.id, case: item.case_id, expect_block: expectFail, blocked: blocking.length > 0, no_reading: results.filter((result) => result.error).map((result) => result.checker), blocking, ms: Date.now() - started };
+    const outcome = noReading.length ? "incomplete" : blocking.length ? "blocked" : "passed";
+    const row = { id: item.id, case: item.case_id, expect_block: expectFail, outcome, blocked: outcome === "blocked", no_reading: noReading, blocking, ms: Date.now() - started };
     rows.push(row);
     writeLine("catch.jsonl", row);
-    log(`${item.id}: expect ${expectFail ? "block" : "pass"}, got ${row.blocked ? "block" : "pass"}${row.no_reading.length ? ` (no reading: ${row.no_reading.join(",")})` : ""} ${blocking.join(" ")}`);
+    log(`${item.id}: expect ${expectFail ? "block" : "pass"}, got ${outcome}${noReading.length ? ` (no reading: ${noReading.join(",")})` : ""} ${blocking.join(" ")}`);
   }
-  const caught = rows.filter((row) => row.expect_block && row.blocked).length;
+  const count = (expectBlock, outcome) => rows.filter((row) => row.expect_block === expectBlock && row.outcome === outcome).length;
   const bad = rows.filter((row) => row.expect_block).length;
-  const falseBlocks = rows.filter((row) => !row.expect_block && row.blocked).length;
   const good = rows.filter((row) => !row.expect_block).length;
-  fs.writeFileSync(path.join(outDir, "summary.md"), `# Checker catch rate ${stamp}\n\nProvider ${provider}, ${mode} checkers.\n\n- Known failing replies blocked: ${caught} of ${bad}\n- Known good replies blocked (false blocks): ${falseBlocks} of ${good}\n- Calls: ${calls.length}, failed ${calls.filter((call) => !call.ok).length}\n`);
-  log(`catch: ${caught}/${bad} caught, ${falseBlocks}/${good} false blocks`);
+  const caught = count(true, "blocked");
+  const falseBlocks = count(false, "blocked");
+  const incompleteBad = count(true, "incomplete");
+  const incompleteGood = count(false, "incomplete");
+  fs.writeFileSync(path.join(outDir, "summary.md"), `# Checker catch rate ${stamp}\n\nProvider ${provider}, ${mode} checkers. Blocking as the runtime decides it; a reply any checker gave no reading for is incomplete, neither a pass nor a block.\n\n- Known failing replies blocked: ${caught} of ${bad} (${count(true, "passed")} passed, ${incompleteBad} incomplete)\n- Known good replies blocked (false blocks): ${falseBlocks} of ${good} (${count(false, "passed")} passed, ${incompleteGood} incomplete)\n- Incomplete (a checker gave no reading): ${incompleteBad + incompleteGood} of ${rows.length}\n- Calls: ${calls.length}, failed ${calls.filter((call) => !call.ok).length}\n`);
+  log(`catch: ${caught}/${bad} caught, ${falseBlocks}/${good} false blocks, ${incompleteBad + incompleteGood} incomplete`);
 }
 
 

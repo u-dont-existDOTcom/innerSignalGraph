@@ -3,6 +3,7 @@ import { ValidationError } from "../core/errors.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES } from "./private-candidate-lifecycle.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "./owner-fallback-message.mjs";
 import { CLOSING_REASONS, RUNNER_UNAVAILABLE_NOTICE } from "../runner-trial/notices.mjs";
+import { LEVELS } from "../runner-trial/program-checks.mjs";
 
 export const PRIVATE_RUNTIME_TURN_STATES = Object.freeze([
   "RECEIVED",
@@ -199,6 +200,16 @@ function validateRunnerReading(value) {
   if (value.schema_version !== 1) throw new ValidationError("runner_reading version is invalid.");
   requiredId(value.conversation_id, "runner_reading conversation_id");
   requiredTimestamp(value.recorded_at, "runner_reading recorded_at");
+  if (value.checker_levels != null) {
+    // Each audit attempt's crisis level as the level reader (C1, or the whole checker) read it, in order, appended only.
+    if (!Array.isArray(value.checker_levels) || value.checker_levels.length > 40) throw new ValidationError("runner_reading checker_levels is invalid.");
+    value.checker_levels.forEach((entry, index) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry) || entry.attempt !== index + 1) throw new ValidationError("runner_reading checker level is invalid.");
+      requiredId(entry.candidate_id, "runner_reading checker level candidate_id");
+      if (!["C1", "CW"].includes(entry.checker) || !LEVELS.includes(entry.level)) throw new ValidationError("runner_reading checker level is invalid.");
+      requiredTimestamp(entry.recorded_at, "runner_reading checker level recorded_at");
+    });
+  }
   return value;
 }
 

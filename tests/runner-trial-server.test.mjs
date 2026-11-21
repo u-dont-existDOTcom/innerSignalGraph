@@ -42,6 +42,8 @@ const serveEntry = fileURLToPath(new URL("../src/cli/serve.mjs", import.meta.url
 const parts = cutRuleParts(loadTherapyProtocol({ boxGuidance: true }));
 const CASE_ID = "synthetic-runner-server-case";
 const OLD_ANSWER_FIELDS = ["answer", "mode", "processingTier", "routingReason", "graphBundleVersion", "caseFormulation", "interventionContract", "responseContract", "processingMs", "durableCaseState", "caseState", "caseStateDiff", "privateCaseStorage", "orchestration"];
+// With the trial on, every answer also carries what its stored turn showed before the reply.
+const STORED_TURN_FIELDS = ["provisional", "emergencyLineShown"];
 
 async function withEnv(values, fn) {
   const original = {};
@@ -394,14 +396,23 @@ test("someone who has acted: the stream carries the steps and the provisional re
   assert.equal(final.answer, "Is someone in the house who could sit with you while you call?");
   assert.deepEqual(final.orchestration, { state: "DELIVERED", deliveryKind: "candidate", repairCycle: 0, lifecycleOwner: "server" });
   assert.equal(Object.hasOwn(final, "closing"), false);
-  assert.equal(trial.events.listenerCount("runtime:exchange-acted"), 0, "the subscription ended with the request");
+  assert.equal(trial.events.listenerCount(CASE_ID, "runtime:exchange-acted"), 0, "the subscription ended with the request");
+  assert.equal(final.provisional, PROVISIONAL, "the final line carries the stored provisional reply, exactly");
+  assert.equal(final.emergencyLineShown, false);
 
   // The same server answers a page that asks for JSON with one JSON answer, with the same fields as the final line.
   const plain = await respond(base, { exchangeId: "exchange-json", userMessage: "Still here." }, { stream: false });
   assert.equal(plain.status, 200);
   assert.match(plain.type, /^application\/json/u);
-  assert.deepEqual(Object.keys(plain.json), OLD_ANSWER_FIELDS);
-  assert.deepEqual(Object.keys(final).filter((key) => key !== "type"), OLD_ANSWER_FIELDS);
+  assert.deepEqual(Object.keys(plain.json), [...OLD_ANSWER_FIELDS, ...STORED_TURN_FIELDS]);
+  assert.deepEqual(Object.keys(final).filter((key) => key !== "type"), [...OLD_ANSWER_FIELDS, ...STORED_TURN_FIELDS]);
+  assert.equal(plain.json.provisional, PROVISIONAL, "this turn's own provisional reply");
+
+  // A replay of the finished acted turn, asked as JSON, carries its provisional reply too: the page shows it with its prefix.
+  const replay = await respond(base, { exchangeId: "exchange-acted", userMessage: "I took all my pills an hour ago." }, { stream: false });
+  assert.equal(replay.json.answer, final.answer);
+  assert.equal(replay.json.provisional, PROVISIONAL);
+  assert.equal(replay.json.emergencyLineShown, false);
 });
 
 test("a turn closed without a reply: the emergency line and the closing stream before a final line that carries the closing; the JSON answer carries it too", async (t) => {
@@ -420,13 +431,15 @@ test("a turn closed without a reply: the emergency line and the closing stream b
   assert.deepEqual(final.closing, { kind: "runner_unavailable", reason_code: "checks_failed" });
   assert.equal(final.orchestration.state, "UNANSWERED");
   assert.ok(Object.hasOwn(CLOSING_REASONS, final.closing.reason_code), "the page has plain words for the reason");
+  assert.deepEqual([final.provisional, final.emergencyLineShown], [null, true]);
 
-  // Asked again as JSON, the closed turn replays with its closing and no new model call.
+  // Asked again as JSON, the closed turn replays with its closing, its emergency line and no new model call.
   const replay = await respond(base, { exchangeId: "exchange-closed", userMessage: "I want to die." }, { stream: false });
   assert.equal(replay.status, 200);
   assert.equal(replay.json.answer, RUNNER_UNAVAILABLE_NOTICE);
   assert.deepEqual(replay.json.closing, { kind: "runner_unavailable", reason_code: "checks_failed" });
-  assert.deepEqual(Object.keys(replay.json), [...OLD_ANSWER_FIELDS, "closing"]);
+  assert.deepEqual(Object.keys(replay.json), [...OLD_ANSWER_FIELDS, "closing", ...STORED_TURN_FIELDS]);
+  assert.equal(replay.json.emergencyLineShown, true, "the page puts the emergency line in on a replay too");
 });
 
 test("the page's New conversation reaches the trial only as exactly true", async (t) => {
@@ -449,7 +462,7 @@ test("a failure streams one error line with a safe message, as the JSON path ans
   assert.equal(streamed.status, 200);
   assert.deepEqual(streamed.lines, [{ type: "error", error: "InnerSignal could not safely complete this request.", code: "PRIVATE_CASE_ACCESS_DENIED" }]);
   assert.equal(streamed.text.includes("Synthetic private detail"), false);
-  assert.equal(events.listenerCount("runtime:exchange-error"), 0);
+  assert.equal(events.listenerCount(CASE_ID, "runtime:exchange-error"), 0);
   const plain = await respond(base, { exchangeId: "exchange-error", userMessage: "Synthetic message." }, { stream: false });
   assert.equal(plain.status, 403);
   assert.deepEqual(plain.json, { error: "InnerSignal could not safely complete this request.", code: "PRIVATE_CASE_ACCESS_DENIED" });
@@ -462,7 +475,7 @@ test("with the switch off, the respond route is unchanged: one JSON answer whate
   const controller = {
     async run(input) {
       seen.push(input);
-      assert.equal(events.listenerCount(input.runtimeTurnId), 0, "nothing subscribes");
+      assert.equal(events.listenerCount(input.caseId, input.runtimeTurnId), 0, "nothing subscribes");
       return { answer: "A synthetic answer.", deliveryKind: "candidate", runtimeTurn: { state: "DELIVERED", repair_cycle: 0 }, runtimeMetadata: {}, durableCaseState: createEmptyCaseState({ caseId: CASE_ID }), caseStateDiff: null };
     }
   };
@@ -478,12 +491,134 @@ test("with the switch off, the respond route is unchanged: one JSON answer whate
   assert.equal((await (await fetch(`${base}/health`)).json()).runnerTrial, "off");
 });
 
+test("events are keyed by case and turn: another case's stream with the same turn id hears nothing", async (t) => {
+  const hub = createRunnerEventHub();
+  const heard = { a: [], b: [] };
+  const offA = hub.subscribe("synthetic-case-a", "runtime:shared", (event) => heard.a.push(event));
+  hub.subscribe("synthetic-case-b", "runtime:shared", (event) => heard.b.push(event));
+  hub.publish("synthetic-case-a", "runtime:shared", { type: "provisional", text: "Call 112 now." });
+  assert.deepEqual([heard.a.length, heard.b.length], [1, 0]);
+  offA();
+  assert.deepEqual([hub.listenerCount("synthetic-case-a", "runtime:shared"), hub.listenerCount("synthetic-case-b", "runtime:shared")], [0, 1]);
+  assert.throws(() => hub.subscribe(null, "runtime:shared", () => {}), /needs a case id/u);
+
+  // Through the server: a page of another case listening on the same turn id hears none of this case's provisional reply.
+  const { base, trial } = await trialServer(t, actedScript());
+  const other = [];
+  const off = trial.events.subscribe("synthetic-other-case", "runtime:exchange-shared", (event) => other.push(event));
+  t.after(off);
+  const streamed = await respond(base, { exchangeId: "exchange-shared", userMessage: "I took all my pills an hour ago." });
+  assert.ok(streamed.lines.some((line) => line.type === "provisional"), "this case's stream got it");
+  assert.deepEqual(other, [], "the other case's listener got nothing");
+});
+
 test("only the four event kinds reach the page, each with its own fields", () => {
   assert.deepEqual(runnerEventLine({ type: "status", step: "writing", extra: "x" }), { type: "status", step: "writing" });
   assert.deepEqual(runnerEventLine({ type: "provisional", text: "Call 112 now." }), { type: "provisional", text: "Call 112 now." });
   assert.deepEqual(runnerEventLine({ type: "emergency_line", reason: "no_provisional" }), { type: "emergency_line", reason: "no_provisional" });
   assert.deepEqual(runnerEventLine({ type: "closed", kind: "runner_unavailable", reason: "timeout" }), { type: "closed", kind: "runner_unavailable", reason: "timeout" });
   for (const event of [null, {}, { type: "final" }, { type: "constructor" }, { type: "debug", text: "x" }]) assert.equal(runnerEventLine(event), null, JSON.stringify(event));
+});
+
+// ---- The page's reconcile and case deletion ------------------------------------------------------------------------------------
+
+async function ownerPost(base, route, body, headers = {}) {
+  const sent = Object.fromEntries(Object.entries({ "content-type": "application/json", origin: base, ...headers }).filter(([, value]) => value != null));
+  const response = await fetch(`${base}${route}`, { method: "POST", headers: sent, body: JSON.stringify(body) });
+  return { status: response.status, json: await response.json().catch(() => null) };
+}
+
+test("the reconcile and delete routes answer only the owner's page on this machine, as JSON, with the trial on", async (t) => {
+  const { base } = await trialServer(t, baseScript());
+  for (const route of ["/v1/runner/reconcile", "/v1/case/delete"]) {
+    const body = { caseId: CASE_ID, confirmation: "DELETE" };
+    assert.equal((await ownerPost(base, route, body, { origin: null })).status, 403, `${route}: no Origin`);
+    assert.equal((await ownerPost(base, route, body, { origin: "http://evil.example" })).status, 403, `${route}: another Origin`);
+    assert.equal((await ownerPost(base, route, body, { authorization: "Bearer synthetic-agent-token" })).status, 403, `${route}: an agent's token`);
+    const form = await fetch(`${base}${route}`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", origin: base }, body: "caseId=x" });
+    assert.equal(form.status, 415, `${route}: not JSON`);
+  }
+  assert.equal((await ownerPost(base, "/v1/case/delete", { caseId: CASE_ID })).status, 400, "deleting needs the typed DELETE");
+  assert.equal((await ownerPost(base, "/v1/case/delete", { caseId: CASE_ID, confirmation: "delete" })).status, 400);
+  const offConfig = trialConfig({ runnerTrialEnabled: false });
+  const offBase = await listen(t, createInnerSignalServer({ config: offConfig, providers: createProviders(offConfig), privateCaseStore: await makeStore(t) }));
+  for (const route of ["/v1/runner/reconcile", "/v1/case/delete"]) assert.equal((await ownerPost(offBase, route, { caseId: CASE_ID, confirmation: "DELETE" })).status, 404, `${route} with the trial off`);
+});
+
+test("the page's reconcile closes a turn a restart left unfinished and returns the turns after the page's last one, with what each showed", async (t) => {
+  const { base, store } = await trialServer(t, actedScript());
+  await respond(base, { exchangeId: "exchange-r1", userMessage: "I took all my pills an hour ago." });
+  await respond(base, { exchangeId: "exchange-r2", userMessage: "Still here." });
+  // A turn begun and never finished, as after a restart.
+  await store.beginPrivateRuntimeTurn(CASE_ID, { runtimeTurnId: "runtime:exchange-r3", exchangeId: "exchange-r3", userTurnId: "exchange-r3-user", exactText: "A message whose turn was interrupted." });
+  const reconciled = await ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID, afterExchangeId: "exchange-r1" });
+  assert.equal(reconciled.status, 200);
+  assert.deepEqual(reconciled.json.turns.map((turn) => turn.exchangeId), ["exchange-r2", "exchange-r3"], "only the turns after the page's last one");
+  const closed = reconciled.json.turns[1];
+  assert.deepEqual([closed.userMessage, closed.answer, closed.closing], ["A message whose turn was interrupted.", RUNNER_UNAVAILABLE_NOTICE, { kind: "runner_unavailable", reason_code: "interrupted" }]);
+  assert.equal((await store.load(CASE_ID)).runtime_turns.find((turn) => turn.exchange_id === "exchange-r3").state, "UNANSWERED");
+  const all = await ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID, afterExchangeId: null });
+  assert.deepEqual(all.json.turns.map((turn) => turn.exchangeId), ["exchange-r1", "exchange-r2", "exchange-r3"], "a page that shows none gets the latest turns");
+  assert.deepEqual([all.json.turns[0].provisional, all.json.turns[0].emergencyLineShown], [PROVISIONAL, false], "with the provisional reply the person saw");
+  assert.deepEqual((await ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID, afterExchangeId: "exchange-r3" })).json.turns, []);
+  assert.deepEqual((await ownerPost(base, "/v1/runner/reconcile", { caseId: "synthetic-case-with-no-turns" })).json.turns, [], "a case with no turns stays as it was");
+});
+
+test("the page's reconcile delivers an approved turn a failure left undelivered, and waits for a turn still running", async (t) => {
+  const store = await makeStore(t);
+  let failDelivery = true;
+  const flaky = {
+    ...store,
+    async deliverPrivateRuntimeCandidate(...args) {
+      if (failDelivery) { failDelivery = false; throw Object.assign(new Error("synthetic"), { code: "SYNTHETIC_DELIVERY_FAILURE" }); }
+      return store.deliverPrivateRuntimeCandidate(...args);
+    }
+  };
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let writes = 0;
+  const workers = fakeWorkers(baseScript({ W: async () => { writes += 1; if (writes === 2) await held; return { reply: `A synthetic reply ${writes}.`, answered_level: "none", quotes: [] }; } }));
+  const config = trialConfig();
+  const trial = createRunnerTrialController({ privateCaseSource: flaky, config, settings: validateRunnerTrialSettings({}), parts, workerFor: workers.workerFor });
+  const base = await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseStore: store, privateTherapyController: trial.controller, runnerTrialEvents: trial.events }));
+  const failed = await respond(base, { exchangeId: "exchange-a1", userMessage: "Something synthetic." }, { stream: false });
+  assert.equal(failed.status, 500, "the delivery failed");
+  assert.equal((await store.load(CASE_ID)).runtime_turns[0].state, "APPROVED");
+  const delivered = await ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID });
+  assert.deepEqual(delivered.json.turns.map((turn) => [turn.exchangeId, turn.answer, turn.deliveryKind]), [["exchange-a1", "A synthetic reply 1.", "candidate"]]);
+  assert.equal((await store.load(CASE_ID)).runtime_turns[0].state, "DELIVERED", "delivered, not closed");
+
+  // A turn still running in this server is waited for, never closed under it.
+  const running = respond(base, { exchangeId: "exchange-a2", userMessage: "Something else synthetic." }, { stream: false });
+  try {
+    for (let waited = 0; waited < 1_000 && writes < 2; waited += 1) await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(writes, 2, "the second turn's writer is running");
+    let reconciledEarly = false;
+    const reconciling = ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID, afterExchangeId: "exchange-a1" }).then((value) => { reconciledEarly = true; return value; });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    assert.equal(reconciledEarly, false, "the reconcile waits for the running turn");
+    release();
+    assert.equal((await running).json.answer, "A synthetic reply 2.");
+    const after = await reconciling;
+    assert.deepEqual(after.json.turns.map((turn) => [turn.exchangeId, turn.answer]), [["exchange-a2", "A synthetic reply 2."]]);
+  } finally {
+    // A failed check must not leave the writer held, or the server could never close.
+    release();
+    await running.catch(() => {});
+  }
+});
+
+test("Delete this case removes the case through the route, and the next message starts an empty case", async (t) => {
+  const { base, store } = await trialServer(t, baseScript());
+  await respond(base, { exchangeId: "exchange-d1", userMessage: "Something synthetic." });
+  assert.ok(await store.load(CASE_ID));
+  const deleted = await ownerPost(base, "/v1/case/delete", { caseId: CASE_ID, confirmation: "DELETE" });
+  assert.equal(deleted.status, 200);
+  assert.deepEqual(deleted.json, { caseId: CASE_ID, deleted: true, caseFileRemoved: true, handoffsRemoved: 0, journalCorporaRemoved: 0, locatorFilesRemoved: 1, handoffsKept: 0 });
+  assert.equal(await store.load(CASE_ID), null);
+  const next = await respond(base, { exchangeId: "exchange-d2", userMessage: "Something new and synthetic." }, { stream: false });
+  assert.equal(next.json.answer, "A synthetic reply.");
+  assert.equal((await store.load(CASE_ID)).runtime_turns.length, 1, "an empty case under the same id");
 });
 
 // ---- The page ----------------------------------------------------------------------------------------------------------------
@@ -500,7 +635,7 @@ async function pageBlock() {
   const end = app.indexOf("// runner-trial-page:end");
   assert.ok(start > 0 && end > start, "the page marks its runner-trial block");
   const block = app.slice(start, end);
-  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerClosingReason, runnerProgressText })`, { TextDecoder });
+  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, runnerClosingReason, runnerProgressText })`, { TextDecoder });
   return { block, ...exports };
 }
 
@@ -556,9 +691,38 @@ test("the page reads the stream line by line across chunks, and shows the provis
   await assert.rejects(page.readRunnerStream(responseOf(`${JSON.stringify({ type: "status", step: "reading" })}\n`, []), () => {}), (error) => error.message === "The reply stream ended before the reply.");
 });
 
+test("a JSON answer, a replay or a reloaded page shows what the stored turn showed, as the live events would", async () => {
+  const page = await pageBlock();
+  const at = "2026-11-21T00:00:00.000Z";
+  const plain = (value) => JSON.parse(JSON.stringify(value));
+  const stored = { provisional: "Ruf jetzt 112 an.", emergencyLineShown: true };
+  const entries = plain(page.runnerStoredEntries(stored, "exchange-x", [], at));
+  assert.deepEqual(entries, [
+    { role: "assistant", kind: "provisional", exchangeId: "exchange-x", content: PROVISIONAL_PREFIX + "Ruf jetzt 112 an.", thinking: false, at },
+    { role: "notice", kind: "emergency_line", exchangeId: "exchange-x", content: EMERGENCY_LINE, at }
+  ]);
+  assert.deepEqual(plain(page.runnerStoredEntries(stored, "exchange-x", ["provisional"], at)).map((entry) => entry.kind), ["emergency_line"], "what the live events added isn't added twice");
+  assert.deepEqual(plain(page.runnerStoredEntries({ provisional: null, emergencyLineShown: false }, "exchange-x", [], at)), []);
+  const replay = plain(page.runnerReplayEntries({ exchangeId: "exchange-y", userMessage: "A synthetic message.", answer: RUNNER_UNAVAILABLE_NOTICE, closing: { kind: "runner_unavailable", reason_code: "interrupted" }, provisional: null, emergencyLineShown: true }, at));
+  assert.deepEqual(replay.map((entry) => [entry.role, entry.kind ?? null, entry.content]), [
+    ["user", null, "A synthetic message."],
+    ["notice", "emergency_line", EMERGENCY_LINE],
+    ["assistant", "closing", RUNNER_UNAVAILABLE_NOTICE]
+  ]);
+  assert.equal(replay[2].closingReason, CLOSING_REASONS.interrupted);
+  const { app } = await pageSource();
+  assert.match(app, /runnerTurn\?\.finish\(result\)/u, "the answer's stored fields reach the page");
+  assert.match(app, /"\/v1\/runner\/reconcile"/u);
+  assert.match(app, /if \(runnerTrial\.on\) await reconcileRunnerCase\(\);/u, "the page reconciles when it loads");
+  assert.match(app, /"\/v1\/case\/delete"/u);
+  assert.match(app, /typed\.trim\(\) !== "DELETE"/u, "deleting needs the typed DELETE");
+  assert.match(app, /confirmation: "DELETE"/u);
+});
+
 test("the page's trial parts are hidden until /health says on, send for the stream, and never set text as HTML", async () => {
   const { html, app } = await pageSource();
-  for (const id of ["runner-trial-banner", "runner-emergency-line", "runner-new-conversation", "runner-progress"]) {
+  assert.match(html, /id="runner-delete-case"[^>]*>Delete this case</u);
+  for (const id of ["runner-trial-banner", "runner-emergency-line", "runner-new-conversation", "runner-progress", "runner-delete-case"]) {
     assert.match(html, new RegExp(`<[a-z]+ id="${id}"[^>]*\\shidden[\\s>]`, "u"), `${id} is hidden by default`);
   }
   assert.match(html, /id="runner-trial-banner"[^>]*>Runner trial</u);

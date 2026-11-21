@@ -8,6 +8,9 @@ import { OWNER_FALLBACK_KIND } from "./owner-fallback-message.mjs";
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
 
+// The most finished turns the runner trial page's reconcile returns at once (when the page shows none of the case's turns yet).
+const RECONCILE_TURN_LIMIT = 10;
+
 function requiredFunction(value, name) {
   if (typeof value !== "function") throw new ValidationError(`${name} must be a function.`);
   return value;
@@ -87,6 +90,53 @@ export function createPrivateTherapyTurnController({
   const loadCase = (caseId, authContext) => typeof privateCaseSource.loadPrivateRuntimeCase === "function"
     ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext)
     : privateCaseSource.loadOrCreate(caseId);
+  // The case's record when it exists, without creating one (the runner trial page's reconcile, for a case with no turns yet).
+  const loadExistingCase = async (caseId, authContext) => {
+    if (typeof privateCaseSource.loadPrivateRuntimeCase === "function") {
+      try { return await privateCaseSource.loadPrivateRuntimeCase(caseId, authContext); }
+      catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
+    }
+    return typeof privateCaseSource.load === "function" ? privateCaseSource.load(caseId) : privateCaseSource.loadOrCreate(caseId);
+  };
+
+  // One case's work is taken one at a time, in arrival order: a turn, the trial page's reconcile after a reload, a deletion.
+  async function queued(caseId, operation) {
+    const previousTail = runTails.get(caseId) ?? Promise.resolve();
+    let release;
+    const currentTail = new Promise((resolve) => { release = resolve; });
+    runTails.set(caseId, currentTail);
+    await previousTail;
+    try { return await operation(); }
+    finally {
+      release();
+      if (runTails.get(caseId) === currentTail) runTails.delete(caseId);
+    }
+  }
+
+  // The runner trial page's recovery when it loads (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 8). The store
+  // can't list cases, so a restart can't find unfinished turns by itself: the page names its case. Inside the case's queue, so a
+  // turn still running in this server is waited for, never closed under it. Every unfinished turn is closed as interrupted, except
+  // an APPROVED one, which is delivered; then the finished turns after the last one the page shows come back, so a reply that
+  // finished while the page was gone is shown (at most RECONCILE_TURN_LIMIT, the latest, when the page shows none of them).
+  async function reconcileCase({ caseId, afterExchangeId, authContext }) {
+    let record = await loadExistingCase(caseId, authContext);
+    if (!record) return [];
+    if (record.runtime_turns.some((turn) => !isFinishedRuntimeTurn(turn))) {
+      await modelRuntime.closeUnfinishedTurns({ caseId, keepRuntimeTurnId: null, authContext });
+      record = await loadCase(caseId, authContext);
+    }
+    const finished = record.runtime_turns.filter(isFinishedRuntimeTurn);
+    const shownAt = afterExchangeId == null ? -1 : finished.findIndex((turn) => turn.exchange_id === afterExchangeId);
+    return finished.slice(shownAt + 1).slice(-RECONCILE_TURN_LIMIT).map((turn) => Object.freeze({
+      exchangeId: turn.exchange_id,
+      userMessage: turn.inbound.exact_text,
+      answer: turn.delivery?.exact_text ?? turn.closure?.exact_text ?? null,
+      deliveryKind: turn.delivery?.kind ?? turn.closure?.kind ?? null,
+      closing: turn.closure ? Object.freeze({ kind: turn.closure.kind, reason_code: turn.closure.reason_code }) : null,
+      provisional: turn.provisional?.exact_text ?? null,
+      emergencyLineShown: Boolean(turn.emergency_line_shown_at)
+    }));
+  }
 
   const freezeJournalEvidence = async ({ caseId, runtimeTurn, userInput, authContext }) => {
     if (!journalEvidenceProvider) return null;
@@ -410,17 +460,16 @@ export function createPrivateTherapyTurnController({
 
   return Object.freeze({
     async run(input) {
-      const caseId = input?.caseId;
-      const previousTail = runTails.get(caseId) ?? Promise.resolve();
-      let release;
-      const currentTail = new Promise((resolve) => { release = resolve; });
-      runTails.set(caseId, currentTail);
-      await previousTail;
-      try { return await executeRun(input); }
-      finally {
-        release();
-        if (runTails.get(caseId) === currentTail) runTails.delete(caseId);
+      return queued(input?.caseId, () => executeRun(input));
+    },
+    // Only the runner trial's controller offers these (its page's reconcile and "Delete this case"); both wait for the case's queue.
+    ...(closesTurns ? {
+      async reconcile({ caseId, afterExchangeId = null, authContext } = {}) {
+        return queued(caseId, () => reconcileCase({ caseId, afterExchangeId, authContext }));
+      },
+      async deleteCase({ caseId, authContext } = {}) {
+        return queued(caseId, () => call("deletePrivateCase", [caseId], authContext));
       }
-    }
+    } : {})
   });
 }

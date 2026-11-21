@@ -46,7 +46,9 @@ as today.
   (the runtime does its own retries per worker, never for a plan limit, a lapsed sign-in or a refusal); a turn deadline
   passed into the runtime; a branch for `UNANSWERED` that returns the stored closing on a replay (as a delivered turn
   replays); inside the per-case queue (`run`, `runTails`), before a new message, an unfinished turn of that case is closed;
-  when the server starts, every unfinished turn is closed, except an `APPROVED` one, which is delivered; when an audit fails
+  when the trial page loads, it names its case (`POST /v1/runner/reconcile`, since the store can't list cases), and inside
+  that case's queue every unfinished turn of it is closed, except an `APPROVED` one, which is delivered (a turn still running
+  in this server is waited for, never closed under it); when an audit fails
   and no repair fits in the time left, or at `DISCRIMINATING_QUESTION_REQUIRED`, the turn is closed as `UNANSWERED` instead
   of producing a discriminator; an operational failure closes it the same way.
 - `src/supervisor/private-runtime-turn-lifecycle.mjs`: a terminal state `UNANSWERED`, reachable from every unfinished state
@@ -125,9 +127,9 @@ person's message
 | R3 protection reader | `ref:PROTECTIVE-COMPATIBILITY`; this conversation; the case's current gate (a stored restriction is its business: it survives until reviewed) | `compatibility_assessment` in the existing schema (`compatibilityAssessmentSchema`) or null; its evidence IDs are this conversation's turn IDs, and the trial validates it with `validateCompatibilityAssessment` against those IDs (the extraction's observation IDs no longer exist) |
 | W writer | focused or whole rules; the runner preface; this conversation with its provisional replies and highlighted lines; up to 20 turns of earlier conversations labeled background; the journal packet when wired; a confirmed kept plan; this turn's provisional reply when one was shown; R1's reading, labeled as one reader's reading of the latest message; the child-contact gate and its route when it is HOLD or BLOCKED | `reply`; `answered_level`; `quotes` (each quote of the person or the journal, with its source id) |
 | C1 | `crisis`; this conversation; the stored risk record's digest and older risk turns (as today's audit packet); the draft; the provisional | findings and its own `level` |
-| C2, C3, C4 | their parts; this conversation and the same background as the writer; the draft; the provisional; C2 also the quoted spans the writer didn't declare (section 5) | findings |
+| C2, C3, C4 | their parts; this conversation and the same background as the writer; the draft; the provisional; C2 also the quoted spans the writer didn't declare (section 5); C3 also the child-contact gate with its route and the pattern hits (section 5). C3's boxes in play are the box advice the writer had: the picks and any boxes a checker said were missed, in the focused arm with picks; every box when the writer is whole or the picker gave none | findings |
 | C5 | the previous draft, the repaired draft, the findings that caused the repair, the eleven checks | findings, and the eleven checks in their exact order |
-| Whole checker (arm) | `whole`, everything C1 gets, the eleven checks on a repaired version | findings, `level`, the checks |
+| Whole checker (arm) | `whole`, everything C1 gets, the undeclared quoted spans, the child-contact gate with its route and the pattern hits, the eleven checks on a repaired version | findings, `level`, the checks |
 
 Every model worker is a fresh call with no tools, no files and no session (section 10). Checkers return findings, never
 replacement text (AskRigor's lesson: a step that rewrites loses things). A checker that fails, times out or refuses counts
@@ -144,7 +146,9 @@ from the checkers' own ids, which differs from the writer's.
 level (the whole checker's in that arm). When R1 or the writer read `acted_or_about_to` and C1 doesn't, C1 is told so and
 decides; a disagreement it upholds is `CRISIS_LEVEL_MISREAD`, sent to repair, never settled upward by program. "This
 conversation is a crisis conversation" (links, "detox", the fixed message, the kept plan's limits) is any turn read
-`acted_or_about_to` or `wants_to_die` by R1 or C1: those rules only hold things back, so the protective reading wins there.
+`acted_or_about_to` or `wants_to_die` by R1 or by C1 on any audit attempt (each attempt's level is stored, appended only, even
+when another checker gave no reading; a later `none` never erases an earlier crisis reading): those rules only hold things
+back, so the protective reading wins there.
 
 **The arms** (section 13): focused or whole writer, split (C1 to C5) or whole checker, plus the cheapest arm, one whole
 writer and one whole checker at a lower effort.
@@ -183,14 +187,14 @@ fullwidth and the other common decimal digits), so the number checks work whatev
 |---|---|---|---|
 | Emergency number present | the first turn of this conversation that C1 reads `acted_or_about_to`, over the provisional and the full reply together (on later turns C1 judges "come back to it") | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number. It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step). France's 15 alone doesn't pass (a reply naming only "le 15" is repaired to add 112), and 111 and 119 mean other services in some countries | blocks |
 | Provisional: a number | the provisional | at least one number from that list, as a whole number | not shown |
-| Provisional: numbers known | the provisional | every phone-like digit run is on that list (catches an invented number) | not shown |
+| Provisional: numbers known | the provisional | every run of three or more digits, and every phone-shaped run (digits joined by spaces, dots, dashes or brackets), is on that list (catches an invented number, a five-digit one included); one- and two-digit runs aren't read as numbers | not shown |
 | Provisional: shape | the provisional | at most 900 characters; at most one question mark (`?`, `？`, `؟`); no list line, heading or bold; no link other than the three of the crisis section | not shown |
 | Owner's guide links | a crisis conversation | no link to the owner's sites (`u-dont-exist.com` and its subdomains, `ibogaqueen.substack.com`) other than the Hearthwork and therapist links the crisis section names; other sites (a poison centre, a health service) are left to C1 | blocks |
 | "detox" | a crisis conversation | no word containing "detox" in Latin letters; other spellings and languages are C1's (`CRISIS_NEVER_LIST`) | blocks |
 | First crisis reply shape | the first turn of this conversation that C1 reads `acted_or_about_to` or `wants_to_die`, or whose provisional was shown, whenever it comes | no list line, heading, or bold or double-underscore emphasis | blocks |
 | Declared quotes | always | each declared quote is in the reply and in its source turn or journal entry, word for word after folding whitespace | blocks |
 | Undeclared quoted spans | always | quoted spans (any quotation marks) the writer didn't declare are listed for C2, who judges whether any is presented as the person's words | to C2 |
-| Child-contact gate | the gate (from R3 and the stored state) is HOLD or BLOCKED | `childContactViolations` (English and French patterns; C3 covers other wording and languages) | blocks |
+| Child-contact gate | the gate (from R3 and the stored state) is HOLD or BLOCKED | the `childContactViolations` patterns (English and French) only point at places to look: a pattern can't tell an invitation from a refusal ("Do not contact your inner child." matches). Their hits go to C3 and the whole checker as `child_contact_pattern_hits`, with the gate and its route; those checkers block any reply that invites contact, in any wording or language (`CHILD_CONTACT_WHILE_RESTRICTED`, high), and are told a hit alone is not an invitation | recorded as `PROGRAM_CHILD_CONTACT_PATTERN` at medium, never blocks by itself |
 | Numbers without a crisis | not a crisis conversation | any emergency number, a known crisis-line number (988, 3114, 116 123 and the like) or a phone-shaped run of six or more digits | recorded as `PROGRAM_NUMBER_WITHOUT_CRISIS`, never blocks (a wrong level must never take a number away from someone who acted) |
 
 ## 6. Storage (point 6a)
@@ -220,8 +224,11 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   text) to its 0700 temporary folder for one call; the sealed Codex mode reads its answer from the event stream instead of
   a `final.json` file, so its folder holds only the schema.
 - **Measurement** results (times, token use, verdicts) go to a folder outside Git, from synthetic conversations only.
-- **Deleting a case**: a trial-page button, after a typed confirmation, removes the case file, its handoffs and the locator
-  files that name its ID (`src/storage/private-artifact-locator.mjs`).
+- **Deleting a case**: a trial-page button, after the person types DELETE (`POST /v1/case/delete`: the owner's page on this
+  machine only, with the trial on), removes, inside the case's queues, the case file, the handoff envelopes its locators name
+  (each opened with the case's key and confirmed to be the case's first), the folders of the journal corpora its record names,
+  and the locator and alias files that name its ID (`src/storage/private-artifact-locator.mjs`,
+  `src/storage/private-case-alias-locator.mjs`). Nothing it can't prove is the case's is touched.
 
 ## 7. When no checked reply can be made (point 4a)
 
@@ -257,8 +264,13 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   length.
 - **Delivery**: `/v1/therapy/respond` streams newline-delimited JSON when the page asks (`accept: application/x-ndjson`): a
   `status` line per step, a `provisional` line, a `notice` line, the final line. A page that asks for JSON gets one answer.
-- **Restarts and reloads**: when the server starts, and before a new message, an unfinished turn is closed as `UNANSWERED`
-  (reason `interrupted`); a delivered turn replays without a model call.
+- **Restarts and reloads**: the store can't list cases, so nothing is closed when the server starts. When the trial page loads,
+  it calls `POST /v1/runner/reconcile` with its case and the last turn it shows: inside the case's queue (a turn still running
+  is waited for), every unfinished turn of the case is closed as `UNANSWERED` (reason `interrupted`), except an `APPROVED` one,
+  which is delivered, and the turns that finished after the page's last one come back, so a reply that finished while the page
+  was gone is shown, with its provisional reply and emergency line. Before a new message, an unfinished turn is closed the same
+  way. A delivered turn replays without a model call; the JSON answer and the stream's final line carry the stored provisional
+  reply and whether the emergency line was shown, so a replay shows them too.
 
 ## 9. The plan kept for next time (point 5b)
 

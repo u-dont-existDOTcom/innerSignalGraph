@@ -66,3 +66,30 @@ export async function resolvePrivateArtifactCaseId({ rootDir, kind, artifactId }
     return value.case_id;
   });
 }
+
+// The locator files that name one case, for deleting the case: every file in the locator folder that is a regular file, holds a
+// locator of a known kind for exactly this case, and sits at the very path that kind and artifact id give. Anything else (another
+// case's locator, a file of another shape, a link, a half-written temporary file) is not listed, so it is never deleted as this
+// case's.
+export async function listPrivateArtifactLocatorsForCase({ rootDir, caseId }) {
+  if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("Private locator rootDir must be absolute.");
+  if (typeof caseId !== "string" || !CASE_ID.test(caseId)) throw new ValidationError("Private locator caseId is invalid.");
+  const directory = path.join(rootDir, ".artifact-locators");
+  let names;
+  try { names = await fs.readdir(directory); }
+  catch (error) { if (error?.code === "ENOENT") return []; throw error; }
+  const found = [];
+  for (const name of names.sort()) {
+    if (!/^(?:handoff|candidate)-[a-f0-9]{64}\.json$/u.test(name)) continue;
+    const file = path.join(directory, name);
+    const info = await fs.lstat(file).catch(() => null);
+    if (!info?.isFile()) continue;
+    let value;
+    try { value = JSON.parse(await fs.readFile(file, "utf8")); } catch { continue; }
+    const kind = KINDS.find((entry) => value?.kind === `inner-signal-private-${entry}-locator`);
+    if (!kind || value.schema_version !== 1 || value.case_id !== caseId || typeof value.artifact_id !== "string" || !ARTIFACT_ID.test(value.artifact_id)) continue;
+    if (locatorPath(rootDir, kind, value.artifact_id) !== file) continue;
+    found.push(Object.freeze({ file, kind, artifactId: value.artifact_id }));
+  }
+  return found;
+}

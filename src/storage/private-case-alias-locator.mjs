@@ -83,3 +83,27 @@ export async function resolvePrivateCaseAliasCaseId({ rootDir, alias }) {
     return value.case_id;
   });
 }
+
+// The alias locator files that name one case, for deleting the case: regular files of this kind and shape, for exactly this case,
+// each at the path its own alias digest gives. Another case's locator, another shape or a link is never listed.
+export async function listPrivateCaseAliasLocatorsForCase({ rootDir, caseId }) {
+  validateRoot(rootDir);
+  validateCaseId(caseId);
+  const directory = path.join(rootDir, ".case-alias-locators");
+  let names;
+  try { names = await fs.readdir(directory); }
+  catch (error) { if (error?.code === "ENOENT") return []; throw error; }
+  const found = [];
+  for (const name of names.sort()) {
+    const match = /^case-([a-f0-9]{64})\.json$/u.exec(name);
+    if (!match) continue;
+    const file = path.join(directory, name);
+    const info = await fs.lstat(file).catch(() => null);
+    if (!info?.isFile()) continue;
+    let value;
+    try { value = JSON.parse(await fs.readFile(file, "utf8")); } catch { continue; }
+    if (value?.schema_version !== 1 || value.kind !== KIND || value.case_id !== caseId || value.alias_sha256 !== match[1]) continue;
+    found.push(Object.freeze({ file }));
+  }
+  return found;
+}

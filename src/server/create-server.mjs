@@ -218,6 +218,7 @@ async function readJson(req, maxBytes = 2_000_000) {
 // authorization; a request that carries its own bearer token is an authenticated agent acting for someone, which does not make
 // it the owner.
 const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
+const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/reconcile", "/v1/case/delete"]);
 const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
 const SUPERVISOR_STATUS = Object.freeze({
   SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
@@ -283,8 +284,11 @@ function failureResponse(error) {
 }
 
 // The answer to one private therapy turn, as JSON or as the stream's final line. A turn the runner trial closed without a reply
-// also carries its closing: the kind (the notice or the owner's fixed message) and the reason, in fixed words.
-function therapyAnswer(result) {
+// also carries its closing: the kind (the notice or the owner's fixed message) and the reason, in fixed words. With the trial on,
+// every answer also carries what the stored turn showed before its reply: the provisional reply's exact text (or null) and whether
+// the emergency line was put into the conversation, so a page that got no live events (a JSON answer, or a replay of a finished
+// turn) shows them as the stream would have.
+function therapyAnswer(result, { runnerTrial = false } = {}) {
   const metadata = result.runtimeMetadata ?? {};
   return {
     answer: result.answer,
@@ -306,7 +310,11 @@ function therapyAnswer(result) {
       repairCycle: result.runtimeTurn.repair_cycle,
       lifecycleOwner: "server"
     },
-    ...(result.closing ? { closing: { kind: result.closing.kind, reason_code: result.closing.reason_code } } : {})
+    ...(result.closing ? { closing: { kind: result.closing.kind, reason_code: result.closing.reason_code } } : {}),
+    ...(runnerTrial ? {
+      provisional: typeof result.runtimeTurn?.provisional?.exact_text === "string" ? result.runtimeTurn.provisional.exact_text : null,
+      emergencyLineShown: Boolean(result.runtimeTurn?.emergency_line_shown_at)
+    } : {})
   };
 }
 
@@ -314,19 +322,19 @@ const acceptsNdjson = (req) => /(?:^|,)\s*application\/x-ndjson\s*(?:[;,]|$)/iu.
 
 // The runner trial's page asks for newline-delimited JSON: one line per event of this request's turn as it happens (status,
 // provisional, emergency_line, closed), then one final line with the same fields as the JSON answer, or an error line. Nothing
-// is logged, and the subscription ends with the request.
-async function streamRunnerTurn(res, { events, runtimeTurnId, run }) {
+// is logged, and the subscription (to this case's turn, never another case's turn of the same id) ends with the request.
+async function streamRunnerTurn(res, { events, caseId, runtimeTurnId, run }) {
   res.writeHead(200, securityHeaders({ "content-type": "application/x-ndjson" }));
   const write = (line) => {
     if (res.writableEnded || res.destroyed) return;
     try { res.write(`${JSON.stringify(line)}\n`); } catch { /* a page that went away never stops the turn */ }
   };
-  const unsubscribe = events.subscribe(runtimeTurnId, (event) => {
+  const unsubscribe = events.subscribe(caseId, runtimeTurnId, (event) => {
     const line = runnerEventLine(event);
     if (line) write(line);
   });
   try {
-    write({ type: "final", ...therapyAnswer(await run()) });
+    write({ type: "final", ...therapyAnswer(await run(), { runnerTrial: true }) });
   } catch (error) {
     const { body } = failureResponse(error);
     write({ type: "error", error: body.error, code: body.code });
@@ -450,8 +458,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
             userInput: runnerEvents ? { ...input, newConversation: input.newConversation === true } : input,
             authContext: requestAuthContext(req)
           });
-          if (runnerEvents && acceptsNdjson(req)) return await streamRunnerTurn(res, { events: runnerEvents, runtimeTurnId, run });
-          return send(res, 200, therapyAnswer(await run()));
+          if (runnerEvents && acceptsNdjson(req)) return await streamRunnerTurn(res, { events: runnerEvents, caseId, runtimeTurnId, run });
+          return send(res, 200, therapyAnswer(await run(), { runnerTrial: Boolean(runnerEvents) }));
         }
         if (config.mode !== "mock") {
           return send(res, 503, { error: "Encrypted automatic therapy orchestration is not configured.", code: "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE" });
@@ -520,6 +528,32 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           caseState: projectCaseStateForInspection(nextCaseState),
           caseStateDiff,
           privateCaseStorage: privateCaseStore ? "encrypted" : "session_only"
+        });
+      }
+      // The runner trial page's own routes (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 6 and 8): its
+      // reconcile when it loads, and "Delete this case". Only with the trial on, only from the owner's page on this machine (no
+      // agent's bearer token, a loopback Host and a matching Origin), and only as JSON; anything else is refused.
+      if (req.method === "POST" && RUNNER_PAGE_ROUTES.has(url.pathname)) {
+        if (!runnerEvents || typeof automaticPrivateTherapy?.reconcile !== "function" || typeof automaticPrivateTherapy?.deleteCase !== "function") return send(res, 404, { error: "Not found" });
+        if (supervisorChannelFor(req) !== "owner_ui") throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+        assertOwnerChannelRequest(req);
+        const input = await readSupervisorBody(req);
+        const caseId = readCaseId(input.caseId);
+        const authContext = requestAuthContext(req);
+        if (url.pathname === "/v1/runner/reconcile") {
+          const afterExchangeId = input.afterExchangeId == null ? null : safeEntryId(input.afterExchangeId, null);
+          return send(res, 200, { caseId, turns: await automaticPrivateTherapy.reconcile({ caseId, afterExchangeId, authContext }) });
+        }
+        if (input.confirmation !== "DELETE") return send(res, 400, { error: "Type DELETE to delete this case.", code: "VALIDATION_ERROR" });
+        const deleted = await automaticPrivateTherapy.deleteCase({ caseId, authContext });
+        return send(res, 200, {
+          caseId,
+          deleted: true,
+          caseFileRemoved: deleted.case_file_removed === true,
+          handoffsRemoved: deleted.handoffs_removed ?? 0,
+          journalCorporaRemoved: deleted.journal_corpora_removed ?? 0,
+          locatorFilesRemoved: (deleted.locator_files_removed ?? 0) + (deleted.alias_locator_files_removed ?? 0),
+          handoffsKept: Array.isArray(deleted.handoffs_kept) ? deleted.handoffs_kept.length : 0
         });
       }
       if (req.method === "GET" && url.pathname === "/v1/case/state") {

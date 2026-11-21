@@ -80,6 +80,38 @@ function runnerEventEntry(event, exchangeId, at = new Date().toISOString()) {
   return null;
 }
 
+// What the stored turn showed before its reply, as conversation items, for an answer that came without live events (a JSON
+// answer, a replay of a finished turn, a turn the page gets back when it loads): the provisional reply with its prefix and the
+// highlighted emergency line, exactly as the live events add them. `shown` lists the kinds the live events already added.
+function runnerStoredEntries(result, exchangeId, shown = [], at = new Date().toISOString()) {
+  const entries = [];
+  if (typeof result?.provisional === "string" && result.provisional && !shown.includes("provisional")) {
+    entries.push({ ...runnerEventEntry({ type: "provisional", text: result.provisional }, exchangeId, at), thinking: false });
+  }
+  if (result?.emergencyLineShown === true && !shown.includes("emergency_line")) entries.push(runnerEventEntry({ type: "emergency_line" }, exchangeId, at));
+  return entries;
+}
+
+// A finished turn the page gets back when it loads (the server's reconcile): the person's message, what showed before the reply,
+// then the reply, or the closing notice with its reason outside it.
+function runnerReplayEntries(turn, at = new Date().toISOString()) {
+  if (!turn || typeof turn.exchangeId !== "string") return [];
+  const entries = [];
+  if (typeof turn.userMessage === "string") entries.push({ id: `${turn.exchangeId}-user`, exchangeId: turn.exchangeId, role: "user", content: turn.userMessage, at });
+  entries.push(...runnerStoredEntries(turn, turn.exchangeId, [], at));
+  if (typeof turn.answer === "string") {
+    entries.push({
+      id: `${turn.exchangeId}-assistant`,
+      exchangeId: turn.exchangeId,
+      role: "assistant",
+      content: turn.answer,
+      at,
+      ...(turn.closing ? { kind: "closing", closingReason: runnerClosingReason(turn.closing) } : {})
+    });
+  }
+  return entries;
+}
+
 // Why a turn closed without a reply, in plain words, shown outside the reply.
 function runnerClosingReason(closing) {
   return closing && typeof closing.reason_code === "string" && Object.hasOwn(CLOSING_REASONS, closing.reason_code) ? CLOSING_REASONS[closing.reason_code] : "";
@@ -92,6 +124,7 @@ function runnerProgressText(step, startedAt, now = Date.now()) {
 // runner-trial-page:end
 
 const runnerTrial = { on: false, newConversation: false };
+const RUNNER_RECONCILE_LABEL = "Looking for a reply that finished while this page was closed…";
 let healthChecked = Promise.resolve();
 
 function syncRunnerNewConversation() {
@@ -107,8 +140,40 @@ function applyRunnerTrial(on) {
   line.textContent = on ? EMERGENCY_LINE : "";
   line.hidden = !on;
   $("#runner-new-conversation").hidden = !on;
+  $("#runner-delete-case").hidden = !on;
   if (!on) runnerTrial.newConversation = false;
   syncRunnerNewConversation();
+}
+
+// When the page loads with the trial on (design, section 8): the server closes any turn of this case that a restart left
+// unfinished (and delivers one that was already approved), then sends back the turns that finished after the last one this page
+// showed, such as a reply that came while the page was closed. While a turn of the case is still running on the server, it waits.
+async function reconcileRunnerCase() {
+  const progress = $("#runner-progress");
+  progress.hidden = false;
+  progress.textContent = RUNNER_RECONCILE_LABEL;
+  try {
+    const response = await fetch("/v1/runner/reconcile", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ caseId: state.caseId, afterExchangeId: state.runnerShownThrough })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !Array.isArray(payload?.turns)) return;
+    for (const turn of payload.turns) {
+      state.therapy.push(...runnerReplayEntries(turn));
+      if (typeof turn?.exchangeId === "string") state.runnerShownThrough = turn.exchangeId;
+    }
+    if (payload.turns.length) {
+      saveState();
+      renderTherapy();
+    }
+  } catch {
+    // The page works without it: the next message closes what a restart left unfinished.
+  } finally {
+    progress.hidden = true;
+    progress.textContent = "";
+  }
 }
 
 // One trial turn on the page: the indicator with the step and the seconds so far, and the items its events add.
@@ -140,13 +205,16 @@ function beginRunnerTurn(exchangeId) {
       state.therapy.push(entry);
       renderTherapy();
     },
-    finish() {
+    // `result` is the answer, when there is one: what its stored turn showed and no live event brought (a JSON answer, a replay)
+    // is added here, as the stream would have added it.
+    finish(result = null) {
       if (finished) return;
       finished = true;
       clearInterval(timer);
       progress.hidden = true;
       progress.textContent = "";
       for (const entry of added) entry.thinking = false;
+      if (result) state.therapy.push(...runnerStoredEntries(result, exchangeId, added.map((entry) => entry.kind)));
       renderTherapy();
     }
   };
@@ -181,6 +249,8 @@ function loadState() {
       hypnosisHistory: [],
       settings: parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {},
       caseId: typeof parsed.caseId === "string" ? parsed.caseId : `case-${crypto.randomUUID()}`,
+      // The runner trial: the exchange of the last turn this page showed, so a reload gets back only what finished after it.
+      runnerShownThrough: typeof parsed.runnerShownThrough === "string" ? parsed.runnerShownThrough : null,
       caseSnapshot: null,
       interventionContract: null,
       priorProcessingTier: "",
@@ -195,12 +265,12 @@ function loadState() {
       legacyPrivateDataDetected: LEGACY_STORAGE_KEYS.some((key) => localStorage.getItem(key))
     };
   } catch {
-    return { therapy: [], hypnosisHistory: [], settings: {}, caseId: `case-${crypto.randomUUID()}`, caseSnapshot: null, interventionContract: null, priorProcessingTier: "", durableCaseState: null, caseStateView: null, lastStateDiff: null, trackerEntries: [], journalEntries: [], lastHandoffId: null, handoffStatus: null, privateStorageMode: "unknown", legacyPrivateDataDetected: false };
+    return { therapy: [], hypnosisHistory: [], settings: {}, caseId: `case-${crypto.randomUUID()}`, runnerShownThrough: null, caseSnapshot: null, interventionContract: null, priorProcessingTier: "", durableCaseState: null, caseStateView: null, lastStateDiff: null, trackerEntries: [], journalEntries: [], lastHandoffId: null, handoffStatus: null, privateStorageMode: "unknown", legacyPrivateDataDetected: false };
   }
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings: state.settings, caseId: state.caseId }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings: state.settings, caseId: state.caseId, ...(state.runnerShownThrough ? { runnerShownThrough: state.runnerShownThrough } : {}) }));
   renderDataSummary();
 }
 
@@ -835,6 +905,7 @@ async function checkHealth() {
     badge.className = "status ok";
     badge.textContent = `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
     applyRunnerTrial(health.runnerTrial === "on");
+    if (runnerTrial.on) await reconcileRunnerCase();
     state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
     if (health.privateCaseStorage?.available) {
       try {
@@ -892,7 +963,7 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       ...(runnerTurn?.newConversation ? { newConversation: true } : {})
     };
     const result = runnerTurn ? await postRunnerTurn(request, runnerTurn) : await postJson("/v1/therapy/respond", request);
-    runnerTurn?.finish();
+    runnerTurn?.finish(result);
     const answer = text(result.answer) || text(result.decision_summary) || "The runtime returned no answer text.";
     state.caseSnapshot = result.caseFormulation && typeof result.caseFormulation === "object" ? result.caseFormulation : state.caseSnapshot;
     state.interventionContract = result.interventionContract && typeof result.interventionContract === "object" ? result.interventionContract : state.interventionContract;
@@ -917,6 +988,7 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       // A runner-trial turn closed without a reply: its notice is the reply, and the reason shows outside it.
       ...(result.closing ? { kind: "closing", closingReason: runnerClosingReason(result.closing) } : {})
     });
+    if (runnerTurn) state.runnerShownThrough = exchangeId;
     saveState();
     renderTherapy();
     renderCaseState("diff");
@@ -938,6 +1010,45 @@ $("#runner-new-conversation").addEventListener("click", () => {
   state.therapy.push({ role: "notice", kind: "divider", content: "New conversation", at: new Date().toISOString() });
   renderTherapy();
   syncRunnerNewConversation();
+});
+
+// The runner trial's "Delete this case" (design, section 6): once the person types DELETE, the server removes this case from this
+// computer (its conversations, risk record and handoffs, and the files that name it). The page keeps its case id, so the next
+// message starts an empty case.
+$("#runner-delete-case").addEventListener("click", async () => {
+  if (!runnerTrial.on) return;
+  const typed = prompt("This deletes this case from this computer: every conversation, its risk record and its handoffs. It can't be undone. Type DELETE to delete it.");
+  if (typeof typed !== "string" || typed.trim() !== "DELETE") return;
+  const button = $("#runner-delete-case");
+  setBusy(button, true, "Deleting…");
+  try {
+    const response = await fetch("/v1/case/delete", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ caseId: state.caseId, confirmation: "DELETE" })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
+    state.therapy = [{ role: "notice", kind: "divider", content: "This case was deleted", at: new Date().toISOString() }];
+    state.caseSnapshot = null;
+    state.interventionContract = null;
+    state.priorProcessingTier = "";
+    state.durableCaseState = null;
+    state.caseStateView = null;
+    state.lastStateDiff = null;
+    state.lastHandoffId = null;
+    state.handoffStatus = null;
+    state.runnerShownThrough = null;
+    saveState();
+    renderTherapy();
+    renderCaseState();
+    renderHandoffStatus();
+    if (payload.handoffsKept) alert(`${payload.handoffsKept} handoff file(s) couldn't be confirmed as this case's and were kept.`);
+  } catch (error) {
+    alert(`The case was not deleted: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
 });
 
 $("#clear-therapy").addEventListener("click", () => {
@@ -1049,6 +1160,7 @@ $("#erase-data").addEventListener("click", () => {
   state.journalEntries = [];
   state.lastHandoffId = null;
   state.handoffStatus = null;
+  state.runnerShownThrough = null;
   state.legacyPrivateDataDetected = false;
   renderTherapy();
   renderCaseState();

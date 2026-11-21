@@ -232,6 +232,16 @@ export function childContactViolations(value) {
   return CHILD_CONTACT_PATTERNS.flatMap((pattern, index) => pattern.test(text) ? [`CHILD_CONTACT_PATTERN_${index + 1}`] : []);
 }
 
+// The same patterns, with the words each one matched, for a reader that judges what they mean (the runner trial's checkers):
+// a match is a place to look, not a verdict ("Do not contact your inner child." matches and invites nothing).
+export function childContactPatternHits(value) {
+  const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
+  return CHILD_CONTACT_PATTERNS.flatMap((pattern, index) => {
+    const match = pattern.exec(text);
+    return match ? [{ pattern: `CHILD_CONTACT_PATTERN_${index + 1}`, text: match[0].slice(0, 300) }] : [];
+  });
+}
+
 export function isChildDirectedTarget(value) {
   return /\b(?:inner child|younger self|child self|child part|young part|little (?:you|one)|childhood self|enfant intérieur|toi enfant|partie enfant|jeune toi)\b/i.test(String(value ?? ""));
 }

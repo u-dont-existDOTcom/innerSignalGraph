@@ -5,8 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
+import { listPrivateArtifactLocatorsForCase } from "../src/storage/private-artifact-locator.mjs";
+import { listPrivateCaseAliasLocatorsForCase, writePrivateCaseAliasLocator } from "../src/storage/private-case-alias-locator.mjs";
+import { privateJournalCorpusDirectory } from "../src/storage/private-journal-corpus.mjs";
+import { childContactPatternHits } from "../src/case-formulation/protective-compatibility.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
-import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
+import { REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { cutRuleParts, focusedRules, wholeRules } from "../src/runner-trial/rule-parts.mjs";
 import { CRISIS_LINKS, NAMED_EMERGENCY_NUMBERS, emergencyNumbersIn, phoneLikeRuns, provisionalProblems, runProgramChecks, shapeProblems } from "../src/runner-trial/program-checks.mjs";
@@ -50,6 +54,9 @@ test("the exact checks read numbers in any script and decide only exact things",
   assert.deepEqual(provisionalProblems("I'm here. Please call 112 now, and unlock the door if you can."), []);
   assert.ok(provisionalProblems("I'm here with you. Please get help now.").includes("no_emergency_number"));
   assert.ok(provisionalProblems("Call 112 or the poison line 0800 555 0100 now.").includes("unknown_number"), "an invented number is caught");
+  assert.deepEqual(provisionalProblems("Call 112 now, or call the poison service at 12345."), ["unknown_number"], "a number of three or more digits off the list is caught, however short");
+  assert.deepEqual(provisionalProblems("Call 112 now, or the line at ١٢٣٤٥."), ["unknown_number"], "in any script");
+  assert.deepEqual(provisionalProblems("Call 112 now. I'll stay here with you for the next 10 minutes, 24/7 if you need."), [], "one- and two-digit runs aren't numbers");
   assert.ok(provisionalProblems("Call 112. Are you alone? Is the door open?").includes("more_than_one_question"));
   assert.ok(provisionalProblems("- Call 112\n- Unlock the door").includes("list"));
   assert.ok(provisionalProblems("Call 112 now. https://detox.u-dont-exist.com").includes("link_not_allowed"));
@@ -64,6 +71,13 @@ test("the exact checks read numbers in any script and decide only exact things",
   assert.deepEqual(firstActed, [], "the provisional's number counts on the first acted turn");
   const noNumber = runProgramChecks({ reply: "Stay with me; is anyone near you?", checkerLevel: "acted_or_about_to", firstActedTurn: true });
   assert.equal(noNumber[0].code, "PROGRAM_NO_EMERGENCY_NUMBER");
+  // The child-contact patterns can't tell a refusal from an invitation: a hit is recorded, never blocking by itself.
+  const refusal = "Do not contact your inner child.";
+  const hits = childContactPatternHits(refusal);
+  assert.deepEqual(hits, [{ pattern: "CHILD_CONTACT_PATTERN_1", text: "contact your inner child" }]);
+  const pattern = runProgramChecks({ reply: refusal, childContactPatternHits: hits });
+  assert.deepEqual(pattern.map((finding) => [finding.code, finding.severity]), [["PROGRAM_CHILD_CONTACT_PATTERN", "medium"]]);
+  assert.equal(pattern.some(isSubstantiveAuditFinding), false, "it never blocks by itself");
 });
 
 test("the risk record's words are derived from the crisis reading by program", () => {
@@ -112,7 +126,7 @@ async function makeRunner(t, script, { settings = {}, ownerFallbackEnabled = fal
   await store.loadOrCreate(CASE_ID);
   const events = [];
   const workers = fakeWorkers(script);
-  const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings, workerFor: workers.workerFor, ownerFallbackEnabled, onEvent: (turnId, event) => events.push({ turnId, ...event }) });
+  const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings, workerFor: workers.workerFor, ownerFallbackEnabled, onEvent: (caseId, turnId, event) => events.push({ caseId, turnId, ...event }) });
   const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: runtime, maximumInvocationAttempts: 1 });
   let exchange = 0;
   const send = (text, userInput = {}) => {
@@ -242,15 +256,182 @@ test("a turn left unfinished is closed before the next message, inside the case'
   assert.equal(stale.closure.reason_code, "interrupted");
 });
 
-test("the turn's deadline ends a slow turn with the notice, and no repair starts when a round no longer fits", async (t) => {
-  let clock = Date.now();
+test("a failed audit with less than one round left starts no repair: the turn closes as a failed check", async (t) => {
   const runner = await makeRunner(t, baseScript());
-  // The runtime's clock moves with the slow writer; the store's stays real.
-  const late = createRunnerTrialRuntime({ privateCaseSource: runner.store, parts, settings: { deadlineMs: 60_000 }, workerFor: fakeWorkers(baseScript({ W: () => { clock += 10 * 60 * 1000; return { reply: "A late synthetic reply.", answered_level: "none", quotes: [] }; } })).workerFor, now: () => clock });
+  // The runtime's clock moves with the writer, which leaves 50 s of the 300 s turn: enough for the checkers, less than the
+  // 100 s a writer-and-checker round needs. The store's clock stays real.
+  let clock = Date.now();
+  const workers = fakeWorkers(baseScript({
+    W: () => { clock += 250_000; return { reply: "A synthetic reply that the checks stop.", answered_level: "none", quotes: [] }; },
+    C2: () => ({ findings: [{ code: "VERBOSITY", severity: "substantive", summary: "too long", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] })
+  }));
+  const late = createRunnerTrialRuntime({ privateCaseSource: runner.store, parts, settings: { deadlineMs: 300_000, roundMs: 100_000 }, workerFor: workers.workerFor, now: () => clock });
   const controller = createPrivateTherapyTurnController({ privateCaseSource: runner.store, modelRuntime: late, maximumInvocationAttempts: 1 });
-  const result = await controller.run({ caseId: CASE_ID, runtimeTurnId: "runtime:slow", exchangeId: "exchange-slow", userTurnId: "exchange-slow-user", assistantTurnId: "exchange-slow-assistant", userMessage: "Something synthetic.", userInput: {} });
+  const result = await controller.run({ caseId: CASE_ID, runtimeTurnId: "runtime:late", exchangeId: "exchange-late", userTurnId: "exchange-late-user", assistantTurnId: "exchange-late-assistant", userMessage: "Something synthetic.", userInput: {} });
+  assert.deepEqual(["C1", "C2", "C3", "C4"].map((role) => workers.calls.filter((call) => call.role === role).length), [1, 1, 1, 1], "the audit ran and failed");
+  assert.equal(workers.calls.filter((call) => call.role === "W-repair").length, 0, "no repair was started");
   assert.equal(result.answer, RUNNER_UNAVAILABLE_NOTICE);
-  assert.equal(result.closing.reason_code, "timeout");
+  assert.equal(result.closing.reason_code, "checks_failed");
+  const turn = (await runner.store.load(CASE_ID)).runtime_turns.find((entry) => entry.id === "runtime:late");
+  assert.equal(turn.state, "UNANSWERED");
+  assert.equal(turn.events.some((event) => event.stage === "repair"), false);
+
+  // A writer that overruns the whole deadline ends the turn as a timeout instead.
+  let slowClock = Date.now();
+  const slow = createRunnerTrialRuntime({ privateCaseSource: runner.store, parts, settings: { deadlineMs: 60_000 }, workerFor: fakeWorkers(baseScript({ W: () => { slowClock += 10 * 60 * 1000; return { reply: "A late synthetic reply.", answered_level: "none", quotes: [] }; } })).workerFor, now: () => slowClock });
+  const slowController = createPrivateTherapyTurnController({ privateCaseSource: runner.store, modelRuntime: slow, maximumInvocationAttempts: 1 });
+  const timedOut = await slowController.run({ caseId: CASE_ID, runtimeTurnId: "runtime:slow", exchangeId: "exchange-slow", userTurnId: "exchange-slow-user", assistantTurnId: "exchange-slow-assistant", userMessage: "Something synthetic.", userInput: {} });
+  assert.equal(timedOut.closing.reason_code, "timeout");
+});
+
+test("a checker that gives no reading can't take away the crisis checker's: the emergency line shows, and the level is kept for the closing and later turns", async (t) => {
+  const runner = await makeRunner(t, baseScript({
+    C1: (count) => ({ findings: [], level: count === 1 ? "acted_or_about_to" : "none", repair_induced_checks: [], missed_boxes: [] }),
+    C2: (count) => { if (count === 1) throw Object.assign(new Error("synthetic"), { code: "PROVIDER_FAILED" }); return passing(); }
+  }));
+  const closed = await runner.send("Something synthetic the crisis reader read as nothing.");
+  assert.equal(closed.answer, RUNNER_UNAVAILABLE_NOTICE, "no reading from one checker is never a pass");
+  assert.equal(closed.closing.reason_code, "provider_failed");
+  const lines = runner.events.filter((event) => event.type === "emergency_line");
+  assert.deepEqual(lines.map((event) => event.reason), ["checker_read_acted"], "shown once, as soon as the crisis checker read it");
+  assert.ok(runner.events.every((event) => event.caseId === CASE_ID), "every event names its case");
+  const record = await runner.store.load(CASE_ID);
+  const turn = record.runtime_turns[0];
+  assert.ok(turn.emergency_line_shown_at);
+  assert.deepEqual(turn.runner_reading.checker_levels.map((entry) => [entry.attempt, entry.checker, entry.level]), [[1, "C1", "acted_or_about_to"]]);
+  // The next turn of the conversation is a crisis conversation: the box checker gets the crisis section.
+  await runner.send("Still here.");
+  const nextBoxChecker = runner.calls.filter((call) => call.role === "C3").at(-1).request;
+  assert.ok(nextBoxChecker.system.includes("## When someone may want to die"), "the stored reading made it a crisis conversation");
+});
+
+test("every audit attempt's crisis level is kept: a repaired draft read as none doesn't erase it, so the fixed-message rule still holds", async (t) => {
+  const failing = { findings: [{ code: "VERBOSITY", severity: "substantive", summary: "too long", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] };
+  const runner = await makeRunner(t, baseScript({
+    C1: (count) => ({ findings: [], level: count === 1 ? "wants_to_die" : "none", repair_induced_checks: [], missed_boxes: [] }),
+    // Turn one: the first draft fails, the repair passes. Turn two: every version fails.
+    C2: (count) => (count === 2 ? passing() : failing)
+  }), { ownerFallbackEnabled: true });
+  const first = await runner.send("Something synthetic.");
+  assert.equal(first.answer, "A repaired synthetic reply 1.");
+  const record = await runner.store.load(CASE_ID);
+  assert.deepEqual(record.runtime_turns[0].runner_reading.checker_levels.map((entry) => entry.level), ["wants_to_die", "none"]);
+  const second = await runner.send("Something else synthetic.");
+  assert.equal(second.closing.reason_code, "checks_failed");
+  assert.equal(second.answer, OWNER_FALLBACK_MESSAGE, "the conversation stays one where someone said they want to die");
+});
+
+test("the crisis reader gets one attempt only; the other workers keep their retry", async (t) => {
+  const runner = await makeRunner(t, baseScript({
+    R1: () => { throw Object.assign(new Error("synthetic"), { code: "TIMEOUT" }); },
+    C2: (count) => { if (count === 1) throw Object.assign(new Error("synthetic"), { code: "TIMEOUT" }); return passing(); }
+  }));
+  const result = await runner.send("Something synthetic.");
+  assert.equal(result.deliveryKind, "candidate", "the turn goes on without the crisis reading");
+  assert.equal(runner.calls.filter((call) => call.role === "R1").length, 1, "no second crisis reader call");
+  assert.equal(runner.calls.filter((call) => call.role === "C2").length, 2, "a checker that timed out is tried again");
+  assert.equal((await runner.store.load(CASE_ID)).runtime_turns[0].runner_reading.readers.crisis.unread, true);
+});
+
+test("the box checker reads the box advice the writer had", async (t) => {
+  const boxesOf = (runner) => {
+    const request = runner.calls.find((call) => call.role === "C3").request;
+    return { system: request.system, inPlay: JSON.parse(request.user.slice(request.user.indexOf("{"))).boxes_in_play };
+  };
+  const all = Object.keys(parts.boxes);
+  const focused = await makeRunner(t, baseScript());
+  await focused.send("Something synthetic.");
+  assert.deepEqual(boxesOf(focused).inPlay, ["IC.SAFETY_ORIENTATION"], "the picked box (an unknown pick dropped)");
+  assert.ok(!boxesOf(focused).system.includes("### IC.SOLAR_PLEXUS_RELAXATION:"));
+  const whole = await makeRunner(t, baseScript(), { settings: { writerMode: "whole" } });
+  await whole.send("Something synthetic.");
+  assert.deepEqual(boxesOf(whole).inPlay, all, "a whole writer had every box");
+  assert.ok(boxesOf(whole).system.includes("### IC.SOLAR_PLEXUS_RELAXATION:") && boxesOf(whole).system.includes("### ROUTE.MEDICAL_RED_FLAG:"));
+  const noPicks = await makeRunner(t, baseScript({ R2: () => { throw Object.assign(new Error("synthetic"), { code: "PROVIDER_FAILED" }); } }));
+  await noPicks.send("Something synthetic.");
+  assert.ok(noPicks.calls.find((call) => call.role === "W").request.system.includes("### IC.SOLAR_PLEXUS_RELAXATION:"), "the writer got the whole box file");
+  assert.deepEqual(boxesOf(noPicks).inPlay, all, "and so does the box checker");
+});
+
+// A synthetic assessment the protection reader might give: an aim the person's words leave unclear, which holds the gate.
+const holdAssessment = (turnId) => ({
+  version: 1, issue: "synthetic unclear aim", assessment_basis: "CURRENT_TURN", subject_context: "current_client",
+  harm_intent: "materially_unclear", harm_intent_observation_ids: [turnId], help_goal: "unclear", help_goal_text: "unclear",
+  help_goal_observation_ids: [], nonharm_choice: "unknown", nonharm_choice_observation_ids: [], identity_inquiry_consent: "unknown",
+  identity_inquiry_observation_ids: [], agreed_next_job: "unknown", agreed_next_job_observation_ids: [], prior_restriction: "none",
+  prior_restriction_observation_ids: [], correction_observation_ids: [], reentry_status: "not_required", reentry_observation_ids: [],
+  human_review_required: false
+});
+
+test("while the gate is held, a pattern hit goes to the checkers to judge: a refusal is delivered, and the whole checker gets the gate too", async (t) => {
+  const refusal = "Do not contact your inner child for now; let's stay with what you need today.";
+  for (const checkerMode of ["split", "whole"]) {
+    const runner = await makeRunner(t, baseScript({
+      R3: () => ({ compatibility_assessment: holdAssessment("exchange-1-user") }),
+      W: () => ({ reply: refusal, answered_level: "none", quotes: [] })
+    }), { settings: { checkerMode } });
+    const result = await runner.send("Something synthetic about an aim that isn't clear.");
+    assert.equal(result.answer, refusal, `${checkerMode}: the checkers passed it, and the pattern alone doesn't block`);
+    const role = checkerMode === "split" ? "C3" : "CW";
+    const request = runner.calls.find((call) => call.role === role).request;
+    const packet = JSON.parse(request.user.slice(request.user.indexOf("{")));
+    assert.deepEqual(packet.child_contact_gate, { gate: "HOLD", route: "clarify_intent" }, `${role} gets the stored gate and route`);
+    assert.deepEqual(packet.child_contact_pattern_hits, [{ pattern: "CHILD_CONTACT_PATTERN_1", text: "contact your inner child" }]);
+    assert.match(request.system, /a hit is not an invitation by itself/u);
+    const audit = (await runner.store.load(CASE_ID)).candidate_responses[0].audit_history.at(-1);
+    const finding = audit.findings.find((entry) => entry.code === "PROGRAM_CHILD_CONTACT_PATTERN");
+    assert.equal(finding.severity, "medium");
+    assert.equal(audit.sufficient_for_approval, true);
+  }
+});
+
+test("deleting a case removes its file, handoffs, journal folders and the files naming it, and nothing of another case", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-runner-delete-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const store = createEncryptedPrivateCaseStore({ rootDir: root, routineKek: Buffer.alloc(32, 83), recoverySecretBytes: Buffer.alloc(32, 84), developmentExternalCredentialAuthorized: true });
+  const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, workerFor: fakeWorkers(baseScript()).workerFor });
+  const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: runtime, maximumInvocationAttempts: 1 });
+  const cases = ["synthetic-delete-a", "synthetic-delete-b"];
+  const handoffIds = { "synthetic-delete-a": "handoff:00000000-0000-4000-8000-0000000000a1", "synthetic-delete-b": "handoff:00000000-0000-4000-8000-0000000000b1" };
+  for (const caseId of cases) {
+    await controller.run({ caseId, runtimeTurnId: "runtime:exchange-1", exchangeId: "exchange-1", userTurnId: "exchange-1-user", assistantTurnId: "exchange-1-assistant", userMessage: "Something synthetic.", userInput: {} });
+    await store.createHandoff(caseId, { handoffId: handoffIds[caseId], runtimeVersion: "synthetic-runtime", auditVersion: "synthetic-audit" });
+    await writePrivateCaseAliasLocator({ rootDir: root, alias: `${caseId} alias`, caseId });
+    await store.createJournalCorpus(caseId, { corpusId: "corpus-1", manifestObjectId: "manifest-1" });
+    const corpus = privateJournalCorpusDirectory({ rootDir: root, caseId, corpusId: "corpus-1" });
+    await fs.mkdir(corpus, { recursive: true });
+    await fs.writeFile(path.join(corpus, "synthetic.journal-object.json"), "{}\n");
+  }
+  const [a, b] = cases;
+  const locatorsA = await listPrivateArtifactLocatorsForCase({ rootDir: root, caseId: a });
+  assert.deepEqual(locatorsA.map((entry) => entry.kind).sort(), ["candidate", "handoff"], "a candidate and a handoff name case a");
+  // A file that names case a but isn't at the path its own contents give is not proven to be a's locator, so it stays.
+  const stray = path.join(root, ".artifact-locators", `candidate-${"0".repeat(64)}.json`);
+  await fs.copyFile(locatorsA.find((entry) => entry.kind === "candidate").file, stray);
+  const filesOf = async (directory) => (await fs.readdir(path.join(root, directory)).catch(() => [])).sort();
+  const before = { handoffs: await filesOf(".handoffs"), corpora: await filesOf(".journal-corpora") };
+
+  const removed = await store.deletePrivateCase(a);
+  assert.deepEqual({ ...removed }, { case_id: a, case_file_removed: true, handoffs_removed: 1, journal_corpora_removed: 1, locator_files_removed: 2, alias_locator_files_removed: 1, handoffs_kept: [] });
+  assert.equal(await store.load(a), null, "case a's file is gone");
+  assert.equal((await filesOf(".handoffs")).length, before.handoffs.length - 1);
+  assert.equal((await filesOf(".journal-corpora")).length, before.corpora.length - 1);
+  assert.deepEqual(await listPrivateArtifactLocatorsForCase({ rootDir: root, caseId: a }), []);
+  assert.deepEqual(await listPrivateCaseAliasLocatorsForCase({ rootDir: root, caseId: a }), []);
+  assert.ok(await fs.stat(stray), "the unproven file is left alone");
+  await assert.rejects(() => store.loadHandoff(a, handoffIds[a]), (error) => error.code === "PRIVATE_HANDOFF_NOT_FOUND");
+
+  // Case b is whole: its record, its handoff, its locators, its alias and its journal folder.
+  assert.equal((await store.load(b)).runtime_turns[0].state, "DELIVERED");
+  assert.equal((await store.loadHandoff(b, handoffIds[b])).case_id, b);
+  assert.deepEqual((await listPrivateArtifactLocatorsForCase({ rootDir: root, caseId: b })).map((entry) => entry.kind).sort(), ["candidate", "handoff"]);
+  assert.equal((await listPrivateCaseAliasLocatorsForCase({ rootDir: root, caseId: b })).length, 1);
+  assert.deepEqual(await fs.readdir(privateJournalCorpusDirectory({ rootDir: root, caseId: b, corpusId: "corpus-1" })), ["synthetic.journal-object.json"]);
+
+  // Run again (as after an interruption), it finishes with nothing left to remove; the case's id can start an empty case.
+  const again = await store.deletePrivateCase(a);
+  assert.deepEqual([again.case_file_removed, again.handoffs_removed, again.locator_files_removed], [false, 0, 0]);
+  assert.equal((await store.loadOrCreate(a)).runtime_turns.length, 0);
 });
 
 test("a repair that returns the same reply ends the turn as a failed check, so a crisis conversation gets the owner's fixed message when it is on", async (t) => {

@@ -3,7 +3,7 @@ import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { diffCaseStates, mergeRuntimeSnapshotIntoCaseState } from "../case-state/longitudinal-state.mjs";
 import { buildTrajectoryDigest } from "../case-state/trajectory-digest.mjs";
 import {
-  childContactViolations,
+  childContactPatternHits,
   compatibilityStateBinding,
   protectiveCompatibilityDecision,
   validateCompatibilityAssessment
@@ -70,7 +70,8 @@ export class RunnerDeadlineError extends RuntimeError {
 
 function validLevel(value) { return LEVELS.includes(value) ? value : "unclear"; }
 
-function normalizeFindings(checkerId, findings) {
+// A checker's findings as the runtime stores them (exported for the measurement harness, so its catch rate reads them the same way).
+export function normalizeFindings(checkerId, findings) {
   if (!Array.isArray(findings)) throw new ValidationError(`${checkerId} returned no findings list.`, { code: "PROVIDER_MALFORMED" });
   return findings.slice(0, 24).map((finding, index) => {
     const severity = ["low", "medium", "substantive", "high"].includes(finding?.severity) ? finding.severity : "high";
@@ -86,7 +87,8 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
   if (!config.provisionalLevels.every((level) => ["acted_or_about_to", "wants_to_die"].includes(level))) throw new ValidationError("provisionalLevels is invalid.", { code: "RUNNER_SETTINGS_INVALID" });
-  const emit = (runtimeTurnId, event) => { try { onEvent(runtimeTurnId, event); } catch { /* the page's stream never stops a turn */ } };
+  // Events go to the page's stream by case and runtime turn: a turn id alone is the client's to choose and could be another case's.
+  const emit = (caseId, runtimeTurnId, event) => { try { onEvent(caseId, runtimeTurnId, event); } catch { /* the page's stream never stops a turn */ } };
 
   const load = (caseId, authContext) => typeof privateCaseSource.loadPrivateRuntimeCase === "function"
     ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext)
@@ -101,10 +103,11 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   };
 
   // One worker call, with one retry when it timed out or answered in the wrong shape and the turn's time allows; never for a
-  // plan limit, a lapsed sign-in or a refusal. Returns { value, receipts }.
-  async function callWorker(role, { kind, runtimeTurn, system, user, schema, validate = (value) => value }) {
+  // plan limit, a lapsed sign-in or a refusal. The crisis reader asks for one attempt only (design, section 4: R1 has 30 s and
+  // no retry, so a slow reading can't hold up the writer twice). Returns { value, receipts }.
+  async function callWorker(role, { kind, runtimeTurn, system, user, schema, validate = (value) => value, attempts = 2 }) {
     const receipts = [];
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
       const timeoutMs = limitFor(runtimeTurn, kind, role);
       const started = now();
       try {
@@ -114,7 +117,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       } catch (error) {
         receipts.push({ role, attempt, failed: error?.code ?? "PROVIDER_FAILED", duration_ms: now() - started });
         const retryable = ["TIMEOUT", "PROVIDER_MALFORMED", "CODEX_RECEIPT_INCOMPLETE"].includes(error?.code) || error instanceof ValidationError;
-        if (attempt === 2 || !retryable || deadlineOf(runtimeTurn) - now() < config.limits[kind] / 2) {
+        if (attempt === attempts || !retryable || deadlineOf(runtimeTurn) - now() < config.limits[kind] / 2) {
           throw Object.assign(error instanceof Error ? error : new Error(String(error)), { receipts });
         }
       }
@@ -146,22 +149,32 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     return previous.runner_reading.conversation_id;
   }
 
-  // The crisis readings of this conversation's turns, by reader, for the exact checks and the closing.
+  // Every crisis level stored for a turn by a checker: each audit attempt's (the runner reading's checker_levels, appended as the
+  // level reader answers, even when another checker gave no reading) and each completed audit's.
+  const checkerLevelsOf = (turn) => [
+    ...(turn.runner_reading?.checker_levels ?? []).map((entry) => entry.level),
+    ...turn.events.filter((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit").map((event) => event.details?.output?.value?.checker_level)
+  ].filter((level) => LEVELS.includes(level));
+
+  // The crisis readings of this conversation's turns, by reader, for the exact checks and the closing. Every stored reading
+  // counts: a later "none" never erases an earlier crisis reading (design, section 3: those rules only hold things back).
   function conversationReadings(record, conversationId) {
-    return record.runtime_turns.filter((turn) => turn.runner_reading?.conversation_id === conversationId).map((turn) => {
-      const audits = turn.events.filter((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit");
-      const checkerLevel = audits.at(-1)?.details?.output?.value?.checker_level ?? null;
-      return { turnId: turn.id, crisis: turn.runner_reading?.readers?.crisis ?? null, checkerLevel, provisional: Boolean(turn.provisional) };
-    });
+    return record.runtime_turns.filter((turn) => turn.runner_reading?.conversation_id === conversationId).map((turn) => ({
+      turnId: turn.id,
+      crisis: turn.runner_reading?.readers?.crisis ?? null,
+      checkerLevels: checkerLevelsOf(turn),
+      provisional: Boolean(turn.provisional)
+    }));
   }
-  const isCrisisConversation = (readings) => readings.some((entry) => isCrisisLevel(entry.crisis?.level) || isCrisisLevel(entry.checkerLevel));
+  const readCrisis = (entry) => isCrisisLevel(entry.crisis?.level) || entry.checkerLevels.some(isCrisisLevel);
+  const isCrisisConversation = (readings) => readings.some(readCrisis);
   // "Getting safe" or "wanting to die" (design, section 7): the readings that stand in for the owner's four routes.
-  const isFixedMessageConversation = (readings) => readings.some((entry) => isCrisisLevel(entry.crisis?.level) || isCrisisLevel(entry.checkerLevel)
+  const isFixedMessageConversation = (readings) => readings.some((entry) => readCrisis(entry)
     || entry.crisis?.in_danger_from_someone || entry.crisis?.danger_to_others || entry.crisis?.home_unsafe);
 
   async function showEmergencyLine(caseId, runtimeTurn, reason, authContext) {
     await source("recordRunnerEmergencyLine", [caseId, runtimeTurn.id, { reason }], authContext);
-    emit(runtimeTurn.id, { type: "emergency_line", reason });
+    emit(caseId, runtimeTurn.id, { type: "emergency_line", reason });
   }
 
   function readersPacket(view, runtimeTurn) {
@@ -176,7 +189,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     let reading = null;
     let receipts = [];
     try {
-      const result = await callWorker("R1", { kind: "reader", runtimeTurn, system, user: prompt.user, schema: CRISIS_READER_SCHEMA, validate: (value) => ({ ...value, level: validLevel(value?.level), reason: String(value?.reason ?? "").slice(0, 400) }) });
+      const result = await callWorker("R1", { kind: "reader", runtimeTurn, system, user: prompt.user, schema: CRISIS_READER_SCHEMA, attempts: 1, validate: (value) => ({ ...value, level: validLevel(value?.level), reason: String(value?.reason ?? "").slice(0, 400) }) });
       reading = result.value;
       receipts = result.receipts;
     } catch (error) {
@@ -188,7 +201,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const problems = provisionalProblems(reading.provisional_reply);
       if (problems.length === 0) {
         await source("recordRunnerProvisional", [caseId, runtimeTurn.id, { exactText: reading.provisional_reply.trim(), checks: ["a_number", "numbers_known", "shape", "links", "detox"] }], authContext);
-        emit(runtimeTurn.id, { type: "provisional", text: reading.provisional_reply.trim() });
+        emit(caseId, runtimeTurn.id, { type: "provisional", text: reading.provisional_reply.trim() });
       } else {
         await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { provisional_refused: { problems } } }], authContext);
         if (reading.level === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
@@ -306,7 +319,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const conversationId = conversationIdFor(record, runtimeTurn, userInput);
       const view = conversationView(record, conversationId, runtimeTurn);
       const priorCrisisConversation = isCrisisConversation(conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id));
-      emit(runtimeTurn.id, { type: "status", step: "reading" });
+      emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
       const [crisis, boxes, protection] = await Promise.all([
         runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, authContext }),
         runBoxPicker({ runtimeTurn, view }),
@@ -318,7 +331,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const freshTurn = fresh.runtime_turns.find((turn) => turn.id === runtimeTurn.id);
       const provisional = freshTurn?.provisional?.exact_text ?? null;
       const { caseState, stateDiff } = stateAfterReadings(fresh.case_state, runtimeTurn, readers);
-      emit(runtimeTurn.id, { type: "status", step: "writing" });
+      emit(caseId, runtimeTurn.id, { type: "status", step: "writing" });
       const rules = writerRules(readers.boxes?.boxes ?? null);
       const prompt = writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, provisional }) });
       const written = await callWorker("W", { kind: "writer", runtimeTurn, ...prompt, schema: WRITER_SCHEMA, validate: validateWriter });
@@ -344,7 +357,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const record = await load(caseId, authContext);
       const runtimeTurn = record.runtime_turns.find((turn) => turn.current_candidate_id === candidate.id);
       if (!runtimeTurn?.runner_reading) throw new ValidationError("The runner trial audits only its own turns.");
-      emit(runtimeTurn.id, { type: "status", step: candidate.parent_candidate_id ? "checking the repair" : "checking" });
+      emit(caseId, runtimeTurn.id, { type: "status", step: candidate.parent_candidate_id ? "checking the repair" : "checking" });
       const conversationId = runtimeTurn.runner_reading.conversation_id;
       const readers = runtimeTurn.runner_reading.readers ?? {};
       const view = conversationView(record, conversationId, runtimeTurn);
@@ -354,9 +367,19 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const parent = repaired ? record.candidate_responses.find((entry) => entry.id === candidate.parent_candidate_id) : null;
       const previousFindings = repaired ? (parent?.audit_history.at(-1)?.findings ?? []).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding)) : [];
       const missedBoxes = missedBoxesOf(runtimeTurn);
-      const boxesInPlay = config.writerMode === "focused" && readers.boxes?.boxes != null ? [...new Set([...(readers.boxes.boxes ?? []), ...missedBoxes])] : [];
+      // The box advice the checkers read is the advice the writer had (design, section 3): in the focused arm with picks, the
+      // picked boxes and any a checker said were missed (the repair writer gets those); every box when the writer had the whole
+      // protocol, or when the picker gave no picks and the focused writer got the whole box file.
+      const boxesInPlay = config.writerMode === "focused" && readers.boxes?.boxes != null
+        ? [...new Set([...readers.boxes.boxes, ...missedBoxes])].filter((id) => parts.boxes[id])
+        : Object.keys(parts.boxes);
       const readings = conversationReadings(record, conversationId);
       const crisisSoFar = isCrisisConversation(readings);
+      // The child-contact gate as stored, for the box checker and the whole checker alike, and what the word patterns matched
+      // while it is HOLD or BLOCKED: places for those checkers to look, never a block by themselves (design, section 5).
+      const gate = record.case_state?.protective_compatibility?.current ?? null;
+      const gateView = gate ? { gate: gate.gate, route: gate.route ?? null } : { gate: "NOT_BLOCKED" };
+      const patternHits = gate && gate.gate !== "NOT_BLOCKED" ? childContactPatternHits(candidate.exact_text) : [];
       const base = {
         conversation: view.turns,
         latest_message: { turn_id: runtimeTurn.user_turn_id, text: runtimeTurn.inbound.exact_text },
@@ -370,28 +393,39 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const risk = await loadRiskContext(caseId, authContext);
       const plan = [];
       if (config.checkerMode === "whole") {
-        plan.push({ checker: CHECKERS.whole, rules: wholeRules(parts), packet: { ...base, ...repairPart, ...weigh, stored_risk_record: risk, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []) }, extra: selfDirectedRiskAuditRules });
+        plan.push({ checker: CHECKERS.whole, rules: wholeRules(parts), packet: { ...base, ...repairPart, ...weigh, stored_risk_record: risk, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []), child_contact_gate: gateView, child_contact_pattern_hits: patternHits }, extra: selfDirectedRiskAuditRules });
       } else {
         plan.push({ checker: CHECKERS.crisis, rules: rulesFrom([parts.crisis], ["the crisis, chronic pain and harm-reduction sections of SKILL.md"]), packet: { ...base, ...weigh, stored_risk_record: risk }, extra: selfDirectedRiskAuditRules });
         plan.push({ checker: CHECKERS.skill, rules: rulesFrom([parts.skill, parts.references["RESPONSE-FIDELITY"], parts.references["FOCUS-DISCIPLINE"], parts.references["LONGITUDINAL-SYNTHESIS"], parts.references["GUIDE-REFERRALS"]], ["SKILL.md", "RESPONSE-FIDELITY", "FOCUS-DISCIPLINE", "LONGITUDINAL-SYNTHESIS", "GUIDE-REFERRALS"]), packet: { ...base, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []) } });
-        const boxSections = [parts.map, parts.boxIndex, parts.references["PROTECTIVE-COMPATIBILITY"], parts.references["PROTOCOL-STATE-PROVENANCE"], ...(boxesInPlay.length ? [parts.boxPreamble, ...boxesInPlay.map((id) => parts.boxes[id]).filter(Boolean)] : []), ...(crisisSoFar ? [parts.crisis] : [])];
-        const gate = record.case_state?.protective_compatibility?.current ?? null;
-        plan.push({ checker: CHECKERS.boxes, rules: rulesFrom(boxSections, boxSections.map((section) => section.label)), packet: { ...base, boxes_in_play: boxesInPlay, child_contact_gate: gate ? { gate: gate.gate, route: gate.route ?? null } : { gate: "NOT_BLOCKED" } } });
+        const boxSections = [parts.map, parts.boxIndex, parts.references["PROTECTIVE-COMPATIBILITY"], parts.references["PROTOCOL-STATE-PROVENANCE"], ...(boxesInPlay.length ? [parts.boxPreamble, ...boxesInPlay.map((id) => parts.boxes[id])] : []), ...(crisisSoFar ? [parts.crisis] : [])];
+        plan.push({ checker: CHECKERS.boxes, rules: rulesFrom(boxSections, boxSections.map((section) => section.label)), packet: { ...base, boxes_in_play: boxesInPlay, child_contact_gate: gateView, child_contact_pattern_hits: patternHits } });
         plan.push({ checker: CHECKERS.role, rules: rulesFrom([parts.references["ROLE-BELIEF-INTEGRITY"], parts.references["PHENOMENOLOGY-AND-REPRESENTATION"]], ["ROLE-BELIEF-INTEGRITY", "PHENOMENOLOGY-AND-REPRESENTATION"]), packet: base });
         if (repaired) plan.push({ checker: CHECKERS.repair, rules: rulesFrom([parts.skill], ["SKILL.md"]), packet: { ...base, ...repairPart } });
       }
-      const results = await Promise.all(plan.map(async ({ checker, rules, packet, extra = "" }) => {
+      // Every checker runs to its end: one that gives no reading can't take away another's (design, section 4).
+      const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "" }) => {
         const prompt = checkerPrompt({ checker, rules, packet, extraRules: extra });
         const result = await callWorker(checker.id, { kind: "checker", runtimeTurn, ...prompt, schema: CHECKER_SCHEMA });
         return { checker, ...result };
       }));
+      const results = settled.filter((entry) => entry.status === "fulfilled").map((entry) => entry.value);
+      // The level reader's reading (C1's, or the whole checker's) is stored and acted on before anything else, so it holds even
+      // when another checker gave no reading: the closing and later turns see it, and someone who has acted gets the emergency line.
       const levelReader = results.find((result) => ["C1", "CW"].includes(result.checker.id));
-      const checkerLevel = validLevel(levelReader?.value?.level);
-      if (checkerLevel === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
-      const earlierActed = readings.some((entry) => entry.turnId !== runtimeTurn.id && entry.checkerLevel === "acted_or_about_to");
-      const earlierCrisisTurn = readings.some((entry) => entry.turnId !== runtimeTurn.id && (isCrisisLevel(entry.checkerLevel) || entry.provisional));
+      const checkerLevel = levelReader ? validLevel(levelReader.value?.level) : null;
+      if (levelReader) {
+        await source("recordRunnerCheckerLevel", [caseId, runtimeTurn.id, { candidateId: candidate.id, candidateVersion: candidate.version, checker: levelReader.checker.id, level: checkerLevel }], authContext);
+        if (checkerLevel === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
+      }
+      // A checker that failed, timed out or refused is "no reading", never a pass: the draft can't be delivered (design, section 3).
+      const failed = settled.find((entry) => entry.status === "rejected");
+      if (failed) {
+        const receipts = settled.flatMap((entry) => (entry.status === "fulfilled" ? entry.value.receipts : (entry.reason?.receipts ?? [])));
+        throw Object.assign(failed.reason instanceof Error ? failed.reason : new Error(String(failed.reason)), { receipts });
+      }
+      const earlierActed = readings.some((entry) => entry.turnId !== runtimeTurn.id && entry.checkerLevels.includes("acted_or_about_to"));
+      const earlierCrisisTurn = readings.some((entry) => entry.turnId !== runtimeTurn.id && (entry.checkerLevels.some(isCrisisLevel) || entry.provisional));
       const quoteSources = new Map(view.turns.filter((turn) => turn.turn_id).map((turn) => [turn.turn_id, turn.text]));
-      const gate = record.case_state?.protective_compatibility?.current ?? null;
       const program = runProgramChecks({
         reply: candidate.exact_text,
         checkerLevel,
@@ -401,7 +435,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         provisional,
         quotes: written.quotes ?? [],
         quoteSources,
-        compatibilityViolations: gate && gate.gate !== "NOT_BLOCKED" ? childContactViolations(candidate.exact_text) : []
+        childContactPatternHits: patternHits
       });
       const findings = [...results.flatMap((result) => normalizeFindings(result.checker.id, result.value.findings)), ...program.map((finding, index) => ({ ...finding, id: `P:${index + 1}`, checker: "program" }))];
       let repairInducedChecks = [];
@@ -429,7 +463,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     async repairCandidate({ caseId, candidate, journalEvidence = null, authContext }) {
       const record = await load(caseId, authContext);
       const runtimeTurn = record.runtime_turns.find((turn) => turn.current_candidate_id === candidate.id);
-      emit(runtimeTurn.id, { type: "status", step: "repairing" });
+      emit(caseId, runtimeTurn.id, { type: "status", step: "repairing" });
       const readers = runtimeTurn.runner_reading?.readers ?? {};
       const view = conversationView(record, runtimeTurn.runner_reading.conversation_id, runtimeTurn);
       const failedAudit = candidate.audit_history.at(-1);
@@ -484,7 +518,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       if (isFinishedRuntimeTurn(turn)) return;
       const conversationId = turn.runner_reading?.conversation_id ?? null;
       const readings = conversationId ? conversationReadings(record, conversationId) : [];
-      const crisisNow = isCrisisLevel(turn.runner_reading?.readers?.crisis?.level) || readings.some((entry) => entry.turnId === turn.id && isCrisisLevel(entry.checkerLevel));
+      const crisisNow = isCrisisLevel(turn.runner_reading?.readers?.crisis?.level) || checkerLevelsOf(turn).some(isCrisisLevel);
       const kind = ownerFallbackEnabled && reasonCode === "checks_failed" && isFixedMessageConversation(readings) ? OWNER_FALLBACK_KIND : "runner_unavailable";
       let caseState = null;
       let stateDiff = null;
@@ -493,6 +527,6 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       }
       if (crisisNow && !turn.emergency_line_shown_at) await showEmergencyLine(caseId, turn, "turn_closed_without_reply", authContext);
       await source("closeRuntimeTurnUnanswered", [caseId, turn.id, { kind, reasonCode, assistantTurnId, caseState, stateDiff, diffId: `diff:runner:${sha256(turn.id).slice(0, 16)}`, eventId }], authContext);
-      emit(turn.id, { type: "closed", kind, reason: reasonCode });
+      emit(caseId, turn.id, { type: "closed", kind, reason: reasonCode });
   }
 }

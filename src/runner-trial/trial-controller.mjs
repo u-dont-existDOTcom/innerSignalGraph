@@ -24,32 +24,37 @@ export function runnerEventLine(event) {
   return line;
 }
 
-// Keyed by runtime turn id. Nothing is kept: an event with no listener is dropped, and a listener that throws never stops a turn.
+// Keyed by case id and runtime turn id together: the page chooses its turn id, so two cases may use the same one, and a case's
+// events must never reach another case's stream. Nothing is kept: an event with no listener is dropped, and a listener that
+// throws never stops a turn.
+const hubKey = (caseId, runtimeTurnId) => (typeof caseId === "string" && caseId && typeof runtimeTurnId === "string" && runtimeTurnId ? JSON.stringify([caseId, runtimeTurnId]) : null);
+
 export function createRunnerEventHub() {
   const listeners = new Map();
   return Object.freeze({
-    publish(runtimeTurnId, event) {
-      const current = listeners.get(runtimeTurnId);
+    publish(caseId, runtimeTurnId, event) {
+      const current = listeners.get(hubKey(caseId, runtimeTurnId));
       if (!current) return;
       for (const listener of [...current]) {
         try { listener(event); } catch { /* a page's stream never stops a turn */ }
       }
     },
-    subscribe(runtimeTurnId, listener) {
-      if (typeof runtimeTurnId !== "string" || typeof listener !== "function") throw new ValidationError("A runner event listener needs a runtime turn id and a function.");
-      let current = listeners.get(runtimeTurnId);
+    subscribe(caseId, runtimeTurnId, listener) {
+      const key = hubKey(caseId, runtimeTurnId);
+      if (!key || typeof listener !== "function") throw new ValidationError("A runner event listener needs a case id, a runtime turn id and a function.");
+      let current = listeners.get(key);
       if (!current) {
         current = new Set();
-        listeners.set(runtimeTurnId, current);
+        listeners.set(key, current);
       }
       current.add(listener);
       return () => {
         current.delete(listener);
-        if (current.size === 0 && listeners.get(runtimeTurnId) === current) listeners.delete(runtimeTurnId);
+        if (current.size === 0 && listeners.get(key) === current) listeners.delete(key);
       };
     },
-    listenerCount(runtimeTurnId) {
-      return listeners.get(runtimeTurnId)?.size ?? 0;
+    listenerCount(caseId, runtimeTurnId) {
+      return listeners.get(hubKey(caseId, runtimeTurnId))?.size ?? 0;
     }
   });
 }
