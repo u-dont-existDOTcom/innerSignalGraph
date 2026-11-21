@@ -60,9 +60,10 @@ test("387a and 388b: the people to reach are in the first reply, never as its op
   assert.match(text, /the owner's Hearthwork guide, https:\/\/hearthwork\.u-dont-exist\.com, shows a free way for two people to listen to each other; it isn't a service to call/u);
   assert.match(text, /It isn't a hotline script, it isn't repeated in later replies, and it never goes to the third level above/u);
   assert.match(text, /don't argue with it or say you can't confirm it; join what you can honestly share in it/u);
-  assert.ok(text.includes("https://hearthwork.u-dont-exist.com"));
-  assert.ok(text.includes("https://ibogaqueen.substack.com/i/189761959/finding-a-therapist"));
-  assert.ok(text.includes("https://findahelpline.com"));
+  // The three links are found as whole links in the text (a set of the links it contains), not as substrings.
+  const links = new Set([...text.matchAll(/https?:\/\/[^\s),;"]+/gu)].map((match) => match[0]));
+  for (const link of ["https://hearthwork.u-dont-exist.com", "https://ibogaqueen.substack.com/i/189761959/finding-a-therapist",
+    "https://findahelpline.com"]) assert.ok(links.has(link), link);
   assert.match(text, /or a crisis line, where even a stranger can help/u);
 });
 
