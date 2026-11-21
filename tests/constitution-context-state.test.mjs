@@ -305,7 +305,9 @@ test("web client persists only safe settings and exposes state, diff, tracker, h
   ]);
   assert.match(script, /inner-signal-settings-v1/);
   assert.doesNotMatch(script, /setItem\(STORAGE_KEY, JSON\.stringify\(state\)\)/);
-  assert.match(script, /JSON\.stringify\(\{ settings: state\.settings, caseId: state\.caseId \}\)/);
+  // 21 Nov 2026, the runner trial: the page may also keep the last exchange ID it showed (an opaque ID, never text), so a reload
+  // can fetch a reply that finished while it was gone; settings and the case ID stay the only other things kept.
+  assert.match(script, /JSON\.stringify\(\{ settings: state\.settings, caseId: state\.caseId(?:, \.\.\.\(state\.runnerShownThrough \? \{ runnerShownThrough: state\.runnerShownThrough \} : \{\}\))? \}\)/);
   for (const label of ["Current saved state", "What changed this turn", "Create Handoff", "Export Private Handoff", "Trajectory entry", "Journal or dream note"]) assert.match(html, new RegExp(label));
   assert.match(html, /Legacy browser-local therapy data was detected/);
   assert.match(script, /not complete until FRESH_SESSION_GREEN/);
