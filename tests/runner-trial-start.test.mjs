@@ -18,6 +18,7 @@ import { DEFAULT_PORT, nodeForServer, parseArguments, prepareTrialFolder, server
 const script = fileURLToPath(new URL("../scripts/runner-trial-start.mjs", import.meta.url));
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const SCOPES = ["case:read", "case:write", "case:audit"];
+const SYNTHETIC_CASE = "case-00000000-0000-4000-8000-000000000000";
 
 async function tempDir(t, label) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), `inner-signal-${label}-`));
@@ -53,9 +54,9 @@ async function authorize(credentialsPath, token, caseId, requiredScope) {
   finally { providers.close(); }
 }
 
-test("the provider must be chosen, as codex or claude; the port, the folder and the switches are checked strictly", () => {
-  assert.throws(() => parseArguments([]), refusedWith(2, /Choose the provider: --provider codex/u));
-  assert.throws(() => parseArguments(["--provider", "gemini"]), refusedWith(2, /--provider must be codex or claude\./u));
+test("the provider must be chosen, as mixed, codex or claude; the port, the folder and the switches are checked strictly", () => {
+  assert.throws(() => parseArguments([]), refusedWith(2, /Choose the provider: --provider mixed/u));
+  assert.throws(() => parseArguments(["--provider", "gemini"]), refusedWith(2, /--provider must be mixed, codex or claude\./u));
   assert.throws(() => parseArguments(["--provider"]), refusedWith(2, /--provider needs a value\./u));
   assert.throws(() => parseArguments(["--provider", "codex", "--provider", "claude"]), refusedWith(2, /given twice/u));
   assert.throws(() => parseArguments(["--provider", "codex", "--port", "80"]), refusedWith(2, /--port must be a whole number from 1024 to 65535\./u));
@@ -65,11 +66,12 @@ test("the provider must be chosen, as codex or claude; the port, the folder and 
   assert.throws(() => parseArguments(["--provider", "codex", "--synthetic-unknown"]), refusedWith(2, /Unknown argument: --synthetic-unknown/u));
   assert.throws(() => parseArguments(["--help"]), refusedWith(0, /^Usage: node scripts\/runner-trial-start\.mjs/u));
   assert.deepEqual({ ...parseArguments(["--provider", "codex"]) }, { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, feedbackLink: false, ownerFallback: false, prepareOnly: false });
+  assert.equal(parseArguments(["--provider", "mixed"]).provider, "mixed");
   assert.deepEqual({ ...parseArguments(["--provider=claude", "--port=9100", "--dir", "/synthetic/trial", "--kept-plan", "--feedback-link", "--owner-fallback", "--prepare-only"]) },
     { provider: "claude", port: 9100, dir: "/synthetic/trial", keptPlan: true, feedbackLink: true, ownerFallback: true, prepareOnly: true });
 });
 
-test("the settings are the whole writer with one whole checker, and every role's worker is on the chosen provider", () => {
+test("the settings are the whole writer with one whole checker, and every role's worker is on the provider the choice gives it", () => {
   const effort = (role) => (role.startsWith("W") ? "medium" : "low");
   const codex = trialSettings("codex");
   assert.deepEqual([codex.writerMode, codex.checkerMode], ["whole", "whole"]);
@@ -79,6 +81,13 @@ test("the settings are the whole writer with one whole checker, and every role's
   for (const role of RUNNER_ROLES) {
     const model = role.startsWith("R") ? "claude-sonnet-5-5" : "claude-opus-5-5";
     assert.deepEqual(claude.workers[role], { provider: "claude", model, effort: effort(role) }, role);
+  }
+  // mixed: every reader and checker on Claude (the models as for claude), the writer and its repair on GPT.
+  const mixed = trialSettings("mixed");
+  assert.deepEqual([mixed.writerMode, mixed.checkerMode], ["whole", "whole"]);
+  for (const role of RUNNER_ROLES) {
+    const expected = role.startsWith("W") ? { provider: "codex", effort: "medium" } : { provider: "claude", model: role.startsWith("R") ? "claude-sonnet-5-5" : "claude-opus-5-5", effort: "low" };
+    assert.deepEqual(mixed.workers[role], expected, role);
   }
 });
 
@@ -96,7 +105,7 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_MODE: "cli",
     LEDGER_MODE: "full"
   };
-  const common = { base, port: 9123, credentialsPath: "/synthetic/trial/credentials.json", settingsPath: "/synthetic/trial/settings-codex.json", token: "synthetic-token" };
+  const common = { base, port: 9123, credentialsPath: "/synthetic/trial/credentials.json", settingsPath: "/synthetic/trial/settings-codex.json", token: "synthetic-token", caseId: SYNTHETIC_CASE };
   const codex = serverEnvironment({ ...common, provider: "codex" });
   assert.deepEqual(Object.fromEntries(Object.entries(codex).filter(([key]) => key.startsWith("INNER_SIGNAL_"))), {
     INNER_SIGNAL_MODE: "mock",
@@ -105,6 +114,7 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: "synthetic-token",
     INNER_SIGNAL_RUNNER_TRIAL: "on",
     INNER_SIGNAL_RUNNER_TRIAL_SETTINGS: "/synthetic/trial/settings-codex.json",
+    INNER_SIGNAL_RUNNER_TRIAL_CASE_ID: SYNTHETIC_CASE,
     INNER_SIGNAL_RUNNER_KEPT_PLAN: "off",
     INNER_SIGNAL_RUNNER_FEEDBACK_LINK: "off",
     INNER_SIGNAL_OWNER_FALLBACK: "off"
@@ -114,6 +124,10 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
   assert.deepEqual([flagged.INNER_SIGNAL_RUNNER_KEPT_PLAN, flagged.INNER_SIGNAL_RUNNER_FEEDBACK_LINK, flagged.INNER_SIGNAL_OWNER_FALLBACK], ["on", "on", "on"]);
   assert.equal(serverEnvironment({ ...common, provider: "claude", claudeConfigDir: "/synthetic/claude-innersignal" }).INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR, "/synthetic/claude-innersignal");
   assert.equal(serverEnvironment({ ...common, provider: "claude" }).INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR, path.join(os.homedir(), ".config", "claude-innersignal"), "Claude's sign-in folder defaults to the runner's own");
+  assert.equal(serverEnvironment({ ...common, provider: "mixed", claudeConfigDir: "/synthetic/claude-innersignal" }).INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR, "/synthetic/claude-innersignal", "mixed runs Claude workers too");
+  for (const caseId of [undefined, "case-1", SYNTHETIC_CASE.toUpperCase(), `${SYNTHETIC_CASE}\n`]) {
+    assert.throws(() => serverEnvironment({ ...common, provider: "codex", caseId }), /isn't of the form the credentials hold/u, String(caseId));
+  }
 });
 
 test("the folder, the vault and the credentials are private; the case keys are made once and the token is new at every start", async (t) => {
@@ -126,6 +140,7 @@ test("the folder, the vault and the credentials are private; the case keys are m
   assert.equal(credentials.grants.length, 1);
   const [caseId] = credentials.grants[0].case_ids;
   assert.match(caseId, /^case-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u, "an id of the page's own form");
+  assert.equal(first.caseId, caseId, "the case the server is told is the one the credentials grant");
   assert.deepEqual(credentials.grants[0].scopes, SCOPES);
   assert.equal(credentials.grants[0].token_sha256, createHash("sha256").update(first.token).digest("hex"), "only the token's digest is kept");
   assert.equal(JSON.stringify(credentials).includes(first.token), false);
@@ -139,6 +154,7 @@ test("the folder, the vault and the credentials are private; the case keys are m
   const second = await prepareTrialFolder({ home, provider: "claude" });
   const after = JSON.parse(await fs.readFile(second.credentialsPath, "utf8"));
   assert.notEqual(second.token, first.token);
+  assert.equal(second.caseId, caseId);
   assert.deepEqual(after.case_keys, credentials.case_keys, "the keys never change, so the vault stays readable");
   assert.deepEqual(after.grants[0].case_ids, [caseId]);
   assert.equal(await authorize(second.credentialsPath, first.token, caseId, "case:read"), false, "the last start's token no longer works");
@@ -198,16 +214,19 @@ test("--prepare-only makes the folder and prints its place, never a key, the tok
   for (const secret of secrets) assert.equal(`${result.stdout}${result.stderr}`.includes(secret), false);
   const usage = await run(["--provider", "synthetic"]);
   assert.equal(usage.code, 2);
-  assert.match(usage.stderr, /--provider must be codex or claude\./u);
+  assert.match(usage.stderr, /--provider must be mixed, codex or claude\./u);
 });
 
-test("a real start serves the trial page on loopback in its own vault, with every switch off, and stops on a stop signal", async (t) => {
-  const home = path.join(await tempDir(t, "runner-start-serve"), "trial");
+test("a real start serves the trial page on loopback in its own vault, names its case and arrangement, keeps every switch off, and stops on a stop signal", async (t) => {
+  const dir = await tempDir(t, "runner-start-serve");
+  const home = path.join(dir, "trial");
+  const claudeHome = path.join(dir, "claude-home");
+  await fs.mkdir(claudeHome, { mode: 0o700 });
   const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
-  // A stand-in for the Codex command: the start checks that it exists, and no message is sent, so nothing ever runs it.
-  const env = { ...process.env, CODEX_COMMAND: process.execPath, INNER_SIGNAL_RUNNER_KEPT_PLAN: "on" };
-  const child = spawn(process.execPath, [script, "--provider", "codex", "--port", String(port), "--dir", home], { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
+  // Stand-ins for the Codex and Claude commands: the start checks that they exist, and no message is sent, so nothing runs them.
+  const env = { ...process.env, CODEX_COMMAND: process.execPath, CLAUDE_COMMAND: process.execPath, INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: claudeHome, INNER_SIGNAL_RUNNER_KEPT_PLAN: "on", INNER_SIGNAL_RUNNER_TRIAL_CASE_ID: SYNTHETIC_CASE };
+  const child = spawn(process.execPath, [script, "--provider", "mixed", "--port", String(port), "--dir", home], { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = "";
   let stderr = "";
   child.stdout.setEncoding("utf8");
@@ -228,6 +247,9 @@ test("a real start serves the trial page on loopback in its own vault, with ever
   assert.deepEqual([health.runnerTrial, health.runnerKeptPlan, health.runnerFeedbackLink, health.ownerFallback, health.mode], ["on", "off", "off", "off", "mock"], "a switch the shell set stays off without its flag");
   assert.deepEqual(health.privateCaseStorage, { available: true, plaintextFallback: false, automaticOrchestration: true });
   const credentials = JSON.parse(await fs.readFile(path.join(home, "credentials.json"), "utf8"));
+  assert.equal(health.runnerCaseId, credentials.grants[0].case_ids[0], "/health names the case the credentials grant, not one the shell set");
+  assert.deepEqual(health.runnerArrangement, { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] });
+  assert.equal(stderr.includes("No Claude sign-in folder"), false, stderr);
   const post = (body) => fetch(`${base}/v1/runner/reconcile`, { method: "POST", headers: { "content-type": "application/json", origin: base }, body: JSON.stringify(body) });
   const own = await post({ caseId: credentials.grants[0].case_ids[0], conversation: "current" });
   assert.equal(own.status, 200);

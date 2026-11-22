@@ -2,7 +2,7 @@
 // Starts InnerSignal's runner trial on this computer: the trial's page on loopback, in a vault of its own (docs/RUNNER-TRIAL.md;
 // design: docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 10 and 11).
 //
-//   node scripts/runner-trial-start.mjs --provider codex|claude [--port 8797] [--dir PATH]
+//   node scripts/runner-trial-start.mjs --provider mixed|codex|claude [--port 8797] [--dir PATH]
 //                                       [--kept-plan] [--feedback-link] [--owner-fallback] [--prepare-only]
 //
 // Everything the trial keeps is in one folder outside the checkout, never the app's usual vault (default
@@ -13,9 +13,12 @@
 //   settings-<provider>.json  the trial settings (INNER_SIGNAL_RUNNER_TRIAL_SETTINGS), mode 0600, written at every start
 // A new random token is made at every start. Only its SHA-256 goes into credentials.json; the token itself goes to the server
 // through its environment and nowhere else: never on a command line, into a file or into the output. Nothing here prints a key.
+// The server is told the case the credentials grant (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID), and the page takes it from /health.
 //
 // The settings are the arrangement that measured best (tasks/runner-trial-20261121): the whole writer with one whole checker,
-// readers and checkers at low effort and the writer at medium, every worker on the chosen provider.
+// readers and checkers at low effort and the writer at medium. With --provider mixed (measured fastest: replies p50 19.8 s,
+// p90 24.5 s, the provisional 5.1 s) the readers and the checker run on Claude and the writer and its repair on GPT; with codex
+// or claude, every worker runs on that one.
 
 import { spawn } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
@@ -32,6 +35,8 @@ import {
   RUNNER_CLAUDE_CONFIG_DIR,
   RUNNER_FEEDBACK_LINK_SETTING,
   RUNNER_KEPT_PLAN_SETTING,
+  RUNNER_TRIAL_CASE_ID_PATTERN,
+  RUNNER_TRIAL_CASE_ID_SETTING,
   RUNNER_TRIAL_SETTING,
   RUNNER_TRIAL_SETTINGS_FILE
 } from "../src/runner-trial/switch.mjs";
@@ -45,16 +50,23 @@ export const defaultClaudeConfigDir = () => path.join(os.homedir(), ".config", "
 const PRINCIPAL = "runner-trial-local-owner";
 // The runtime needs all three (docs/PRIVATE-CASE-CONTINUITY.md); "Delete this case" is a write.
 const SCOPES = Object.freeze(["case:read", "case:write", "case:audit"]);
-const PROVIDERS = Object.freeze(["codex", "claude"]);
+const PROVIDERS = Object.freeze(["mixed", "codex", "claude"]);
 // The efforts of the measurement's arms ("normal" in tasks/runner-trial-20261121/measure.mjs), and its Claude models. A Codex
 // worker leaves the model to Codex's own default, as the measurement did.
 const EFFORT = Object.freeze({ reader: "low", writer: "medium", checker: "low" });
 const CLAUDE_MODEL = Object.freeze({ reader: "claude-sonnet-5-5", writer: "claude-opus-5-5", checker: "claude-opus-5-5" });
 const kindOf = (role) => (role.startsWith("R") ? "reader" : role.startsWith("W") ? "writer" : "checker");
+// mixed: every reader and checker on Claude, the writer and its repair on GPT, so another company's model reads and checks what the
+// writer wrote (tasks/runner-trial-20261121/measure.mjs, --provider mixed).
+const workerProvider = (provider, role) => (provider === "mixed" ? (kindOf(role) === "writer" ? "codex" : "claude") : provider);
+const usesClaude = (provider) => provider !== "codex";
+const usesCodex = (provider) => provider !== "claude";
 
-export const USAGE = `Usage: node scripts/runner-trial-start.mjs --provider codex|claude [--port N] [--dir PATH]
+export const USAGE = `Usage: node scripts/runner-trial-start.mjs --provider mixed|codex|claude [--port N] [--dir PATH]
                                            [--kept-plan] [--feedback-link] [--owner-fallback] [--prepare-only]
 
+  --provider mixed   the readers and the checker on Claude, the writer on GPT (measured fastest); each plan pays for its own
+                     calls, and both companies see the conversation
   --provider codex   every worker on GPT, through \`codex exec\` on the ChatGPT plan Codex is signed into
   --provider claude  every worker on Claude, through \`claude -p\` signed in at ${RUNNER_CLAUDE_CONFIG_DIR}
                      (default $HOME/.config/claude-innersignal): readers on Sonnet 5.5, writer and checker on Opus 5.5
@@ -96,8 +108,8 @@ export function parseArguments(argv) {
     if (typeof value !== "string" || value === "" || (inline === null && value.startsWith("--"))) throw usageError(`${name} needs a value.`);
     options[VALUED[name]] = value;
   }
-  if (options.provider === null) throw usageError("Choose the provider: --provider codex (GPT, through Codex) or --provider claude.");
-  if (!PROVIDERS.includes(options.provider)) throw usageError("--provider must be codex or claude.");
+  if (options.provider === null) throw usageError("Choose the provider: --provider mixed (Claude reads and checks, GPT writes), codex (GPT, through Codex) or claude.");
+  if (!PROVIDERS.includes(options.provider)) throw usageError("--provider must be mixed, codex or claude.");
   if (typeof options.port === "string") {
     if (!/^[0-9]{1,5}$/u.test(options.port) || Number(options.port) < 1024 || Number(options.port) > 65535) throw usageError("--port must be a whole number from 1024 to 65535.");
     options.port = Number(options.port);
@@ -106,13 +118,14 @@ export function parseArguments(argv) {
   return Object.freeze(options);
 }
 
-// The trial settings file's content: the whole writer with one whole checker, and every role's worker on the chosen provider, so
-// no role falls back to the app's default worker of another provider. Checked with the app's own validator before it is written.
+// The trial settings file's content: the whole writer with one whole checker, and every role's worker named, on the provider the
+// choice gives it, so no role falls back to the app's default worker. Checked with the app's own validator before it is written.
 export function trialSettings(provider) {
-  if (!PROVIDERS.includes(provider)) throw new StartError("The provider must be codex or claude.");
+  if (!PROVIDERS.includes(provider)) throw new StartError("The provider must be mixed, codex or claude.");
   const workers = Object.fromEntries(RUNNER_ROLES.map((role) => {
     const kind = kindOf(role);
-    return [role, provider === "claude" ? { provider, model: CLAUDE_MODEL[kind], effort: EFFORT[kind] } : { provider, effort: EFFORT[kind] }];
+    const worker = workerProvider(provider, role);
+    return [role, worker === "claude" ? { provider: worker, model: CLAUDE_MODEL[kind], effort: EFFORT[kind] } : { provider: worker, effort: EFFORT[kind] }];
   }));
   const settings = { writerMode: "whole", checkerMode: "whole", workers };
   validateRunnerTrialSettings(settings, { root: repositoryRoot });
@@ -120,10 +133,11 @@ export function trialSettings(provider) {
 }
 
 // The server's environment: the shell's, without any InnerSignal setting it holds (the app's usual vault, another run's switches),
-// and then exactly the trial's. The rest of the page runs in mock mode, so nothing but the trial's own workers calls a model, and
-// no decision ledger is written into the checkout. The kept plan, the feedback link and the owner's fixed message are off unless
-// their flag is given.
-export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, claudeConfigDir = null, keptPlan = false, feedbackLink = false, ownerFallback = false }) {
+// and then exactly the trial's, with the case its credentials grant. The rest of the page runs in mock mode, so nothing but the
+// trial's own workers calls a model, and no decision ledger is written into the checkout. The kept plan, the feedback link and the
+// owner's fixed message are off unless their flag is given.
+export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, claudeConfigDir = null, keptPlan = false, feedbackLink = false, ownerFallback = false }) {
+  if (typeof caseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) throw new StartError("The trial's case id isn't of the form the credentials hold.");
   const environment = Object.fromEntries(Object.entries(base).filter(([key, value]) => !key.startsWith("INNER_SIGNAL_") && typeof value === "string"));
   Object.assign(environment, {
     INNER_SIGNAL_MODE: "mock",
@@ -134,11 +148,12 @@ export function serverEnvironment({ base = process.env, provider, port, credenti
     INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: token,
     [RUNNER_TRIAL_SETTING]: "on",
     [RUNNER_TRIAL_SETTINGS_FILE]: settingsPath,
+    [RUNNER_TRIAL_CASE_ID_SETTING]: caseId,
     [RUNNER_KEPT_PLAN_SETTING]: keptPlan ? "on" : "off",
     [RUNNER_FEEDBACK_LINK_SETTING]: feedbackLink ? "on" : "off",
     [OWNER_FALLBACK_SETTING]: ownerFallback ? "on" : "off"
   });
-  if (provider === "claude") environment[RUNNER_CLAUDE_CONFIG_DIR] = claudeConfigDir ?? defaultClaudeConfigDir();
+  if (usesClaude(provider)) environment[RUNNER_CLAUDE_CONFIG_DIR] = claudeConfigDir ?? defaultClaudeConfigDir();
   return environment;
 }
 
@@ -193,7 +208,7 @@ function existingCredentials(text, file, vault) {
 
 // The trial's credentials (docs/PRIVATE-CASE-CONTINUITY.md, "Encryption and key-provider model"): made on the first start, with
 // one case whose keys are random and never change afterwards; at every start only the grant's token digest is replaced, so the
-// token is new each time and is never kept. Returns the token for the server's environment.
+// token is new each time and is never kept. Returns the token for the server's environment, and the case the grant names.
 export async function prepareCredentials(file, vault) {
   const token = randomBytes(32).toString("base64url");
   const digest = createHash("sha256").update(token, "utf8").digest("hex");
@@ -216,11 +231,13 @@ export async function prepareCredentials(file, vault) {
     credentials = existingCredentials(await fsp.readFile(file, "utf8"), file, vault);
     credentials.grants[0].token_sha256 = digest;
   }
+  const caseId = credentials.grants[0].case_ids[0];
+  if (!RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) throw new StartError(`${file} names a case of another form; it was left as it is.`);
   await writePrivateFile(file, `${JSON.stringify(credentials, null, 2)}\n`);
-  return token;
+  return { token, caseId };
 }
 
-// The trial's folder, its vault, its credentials and its settings file. Returns the paths and this start's token.
+// The trial's folder, its vault, its credentials and its settings file. Returns the paths, this start's token and the case.
 export async function prepareTrialFolder({ home, provider }) {
   const resolved = path.resolve(home);
   let outside;
@@ -230,10 +247,10 @@ export async function prepareTrialFolder({ home, provider }) {
   const vault = path.join(resolved, "vault");
   await privateFolder(vault, "The trial's vault");
   const credentialsPath = path.join(resolved, "credentials.json");
-  const token = await prepareCredentials(credentialsPath, vault);
+  const { token, caseId } = await prepareCredentials(credentialsPath, vault);
   const settingsPath = path.join(resolved, `settings-${provider}.json`);
   await writePrivateFile(settingsPath, `${JSON.stringify(trialSettings(provider), null, 2)}\n`);
-  return { home: resolved, vault, credentialsPath, settingsPath, token };
+  return { home: resolved, vault, credentialsPath, settingsPath, token, caseId };
 }
 
 const executable = (file) => {
@@ -291,12 +308,21 @@ async function untilReady(port, exited, timeoutMs) {
 }
 
 const onOff = (value) => (value ? "on" : "off");
+const PROVIDER_WORDS = Object.freeze({ mixed: "Claude and GPT", codex: "GPT (Codex)", claude: "Claude" });
+const WORKER_WORDS = Object.freeze({
+  mixed: "readers and checker on Claude (Sonnet 5.5 reads, Opus 5.5 checks), the writer on GPT through Codex (Codex's own model)",
+  codex: "GPT through Codex (Codex's own model)",
+  claude: "Claude (readers Sonnet 5.5, writer and checker Opus 5.5)"
+});
 
 async function main(argv) {
   const options = parseArguments(argv);
   const home = options.dir ?? defaultTrialHome();
-  const command = options.provider === "claude" ? process.env.CLAUDE_COMMAND || "claude" : process.env.CODEX_COMMAND || "codex";
-  const claudeConfigDir = options.provider === "claude" ? process.env[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir() : null;
+  const commands = [
+    ...(usesCodex(options.provider) ? [{ name: "Codex", command: process.env.CODEX_COMMAND || "codex", help: " Install Codex and sign in with `codex login`." }] : []),
+    ...(usesClaude(options.provider) ? [{ name: "Claude", command: process.env.CLAUDE_COMMAND || "claude", help: "" }] : [])
+  ];
+  const claudeConfigDir = usesClaude(options.provider) ? process.env[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir() : null;
   if (claudeConfigDir !== null && !path.isAbsolute(claudeConfigDir)) throw new StartError(`${RUNNER_CLAUDE_CONFIG_DIR} must be an absolute path.`);
   const prepared = await prepareTrialFolder({ home, provider: options.provider });
   if (options.prepareOnly) {
@@ -304,10 +330,8 @@ async function main(argv) {
     console.log(`  vault ${prepared.vault}, credentials.json and ${path.basename(prepared.settingsPath)} (only you can read them).`);
     return 0;
   }
-  if (!onPath(command)) {
-    throw new StartError(options.provider === "claude"
-      ? `The Claude command (${command}) isn't on PATH, so the trial's workers couldn't run.`
-      : `The Codex command (${command}) isn't on PATH, so the trial's workers couldn't run. Install Codex and sign in with \`codex login\`.`);
+  for (const { name, command, help } of commands) {
+    if (!onPath(command)) throw new StartError(`The ${name} command (${command}) isn't on PATH, so the trial's workers couldn't run.${help}`);
   }
   if (claudeConfigDir !== null && !fs.existsSync(claudeConfigDir)) {
     console.warn(`No Claude sign-in folder at ${claudeConfigDir}: sign in there first with  CLAUDE_CONFIG_DIR=${claudeConfigDir} claude  then /login.`);
@@ -316,8 +340,8 @@ async function main(argv) {
   if (!(await portIsFree(options.port))) {
     throw new StartError(`Port ${options.port} on 127.0.0.1 is in use: is the trial already running? Stop it, or start with --port and another number (the page then starts with a new case).`);
   }
-  const environment = serverEnvironment({ provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, claudeConfigDir, keptPlan: options.keptPlan, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback });
-  console.log(`Starting InnerSignal's runner trial on ${options.provider === "claude" ? "Claude" : "GPT (Codex)"}, with its own vault: ${prepared.vault}`);
+  const environment = serverEnvironment({ provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, claudeConfigDir, keptPlan: options.keptPlan, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback });
+  console.log(`Starting InnerSignal's runner trial on ${PROVIDER_WORDS[options.provider]}, with its own vault: ${prepared.vault}`);
   const child = spawn(node, [serveEntry], { cwd: repositoryRoot, env: environment, stdio: ["ignore", "inherit", "inherit"] });
   const exited = new Promise((resolve) => {
     child.once("exit", (code, signal) => resolve({ code, signal }));
@@ -351,7 +375,7 @@ async function main(argv) {
   if (ready.health) {
     console.log("");
     console.log(`Runner trial ready: http://127.0.0.1:${options.port}`);
-    console.log(`  Workers: ${options.provider === "claude" ? "Claude (readers Sonnet 5.5, writer and checker Opus 5.5)" : "GPT through Codex (Codex's own model)"}; the whole writer with one whole checker.`);
+    console.log(`  Workers: ${WORKER_WORDS[options.provider]}; the whole writer with one whole checker.`);
     console.log(`  Kept plan ${onOff(options.keptPlan)}, feedback link ${onOff(options.feedbackLink)}, owner's fixed message ${onOff(options.ownerFallback)}.`);
     console.log("  Stop with Ctrl+C.");
   }
