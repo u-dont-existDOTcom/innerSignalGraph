@@ -16,7 +16,7 @@ import { OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message
 import { cutRuleParts, focusedRules, wholeRules } from "../src/runner-trial/rule-parts.mjs";
 import { CRISIS_LINKS, NAMED_EMERGENCY_NUMBERS, emergencyNumbersIn, phoneLikeRuns, provisionalProblems, runProgramChecks, shapeProblems } from "../src/runner-trial/program-checks.mjs";
 import { STORAGE_LINE, crisisReaderProvisionalOfferedNote } from "../src/runner-trial/worker-prompts.mjs";
-import { DEFAULT_RUNNER_SETTINGS, createRunnerTrialRuntime, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
+import { DEFAULT_RUNNER_SETTINGS, createRunnerTrialRuntime, normalizeFindings, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
 import { EMERGENCY_LINE, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 
 // The runner trial (docs/superpowers/specs/2026-11-21-runner-trial-design.md) with stand-in workers, through the real encrypted
@@ -224,6 +224,45 @@ test("a provisional reply that fails its exact checks isn't shown, and the appro
   assert.ok(record.runtime_turns[0].emergency_line_shown_at);
   assert.deepEqual(record.runtime_turns[0].runner_reading.readers.provisional_refused.problems, ["no_emergency_number", "unknown_number"]);
   assert.match(EMERGENCY_LINE, /^In danger right now\? Call your local emergency number: 112/u);
+});
+
+test("a provisional for wanting to die names no number, so a later acted turn still gets its provisional and the number check (Codex's review of 371a8f6f2)", async (t) => {
+  const wantsToDie = `It sounds like you want the pain to end. Are you safe right now? You could reach a friend or relative, a peer (${CRISIS_LINKS[0]}), a therapist (${CRISIS_LINKS[1]}) or a crisis line (${CRISIS_LINKS[2]}).`;
+  const acted = "I'm here with you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK.";
+  // The first turn's first audit reads acted, its repair is read wants_to_die and delivered: no number anywhere in the turn.
+  const levels = ["acted_or_about_to", "wants_to_die", "acted_or_about_to"];
+  const runner = await makeRunner(t, baseScript({
+    R1: (count) => (count === 1
+      ? { ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die", provisional_reply: wantsToDie }
+      : { ...quietReader(), level: "acted_or_about_to", reason: "says they took the pills", provisional_reply: acted }),
+    W: () => ({ reply: "I'm still here with you. What feels hardest right now?", answered_level: "wants_to_die", quotes: [] }),
+    "W-repair": () => ({ reply: "I'm here with you. Tell me what feels hardest right now.", answered_level: "wants_to_die", quotes: [] }),
+    C1: (count) => ({ findings: [], level: levels[count - 1] ?? "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] })
+  }), { settings: { provisionalLevels: ["acted_or_about_to", "wants_to_die"] } });
+  await runner.send("I just want it all to stop. I want to die.");
+  assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [wantsToDie]);
+  const first = (await runner.store.load(CASE_ID)).runtime_turns[0];
+  assert.equal(emergencyNumbersIn(`${first.provisional.exact_text}\n${first.delivery.exact_text}`).length, 0, "no number was shown in the first turn");
+  const second = await runner.send("I took all my pills an hour ago.");
+  assert.equal(second.deliveryKind, "candidate");
+  assert.deepEqual(eventsOf(runner, 2, "provisional").map((event) => event.text), [acted], "the acted provisional is given: no number was shown before");
+  const [, secondPrompt] = crisisReaderSystems(runner);
+  assert.equal(secondPrompt.includes(crisisReaderProvisionalOfferedNote()), false, "the reader isn't told one was offered");
+  assert.equal(secondPrompt.includes("provisional_reply also when the level is wants_to_die"), false, "nor asked again for one for wanting to die");
+  // Without the provisional's number, the second turn's reply would have to name one: the number check holds until a number is shown.
+  const program = runProgramChecks({ reply: "Stay with me.", checkerLevel: "acted_or_about_to", firstActedTurn: true });
+  assert.equal(program[0].code, "PROGRAM_NO_EMERGENCY_NUMBER");
+});
+
+test("STORAGE_DESCRIBED is held at medium by program, whatever severity a checker gives it (Codex's review of 371a8f6f2)", async (t) => {
+  const [finding] = normalizeFindings("C2", [{ code: "STORAGE_DESCRIBED", severity: "high", summary: "talks about the case file", evidence_turn_ids: [] }]);
+  assert.equal(finding.severity, "medium");
+  assert.match(finding.summary, /\(reported as high\)$/u);
+  assert.equal(normalizeFindings("C2", [{ code: "OTHER_CODE", severity: "high", summary: "x", evidence_turn_ids: [] }])[0].severity, "high", "other codes keep theirs");
+  const runner = await makeRunner(t, baseScript({ C2: () => ({ findings: [{ code: "STORAGE_DESCRIBED", severity: "high", summary: "talks about the case file", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] }) }));
+  const result = await runner.send("Something synthetic and ordinary.");
+  assert.equal(result.deliveryKind, "candidate", "delivered");
+  assert.equal(runner.calls.filter((call) => call.role === "W-repair").length, 0, "no repair for it");
 });
 
 test("the writer is told not to talk about InnerSignal's storage, and every checker that reads SKILL.md counts it without blocking", async (t) => {

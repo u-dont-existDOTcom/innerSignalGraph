@@ -161,19 +161,21 @@ writer and one whole checker at a lower effort.
   25.1 s, but the full reply's p90 rose from 31.1 s to 46.7 s with 3 repairs instead of 0, and 3 of 6 later-turn
   provisionals repeated the four people and links the crisis section gives once (the checker flagged it after it showed).
   The default stays `acted_or_about_to`.
-- **Which turn**: by default only the first turn of this conversation that R1 reads at a level in `provisionalLevels`, found
-  from the stored readings, whether that turn's provisional was shown or refused (`provisionalTurns`: `first`; `every`, a
-  provisional on each such turn as before 22 Nov). On a later such turn R1's prompt says one was already offered in this
-  conversation, so it gives none; nothing is shown or recorded as a provisional, whatever R1 returns, and the skip puts no
-  highlighted line into the conversation. Nor does C1's `acted_or_about_to` reading on such a later turn, once an earlier turn
-  of this conversation showed a provisional reply or the line (see "If it doesn't pass" below); the line still shows if that
-  turn ends without a reply. The writer and the checkers are unchanged: the full reply comes back to the number as the rules say, and C1
-  judges it. A new conversation's first such turn gets one again. Why, measured on 22 Nov: in the GPT test round every later
-  message read `acted_or_about_to` (F2, S4 and S5, after the person refused an ambulance or the crisis line) got a provisional
-  again, each repeating the first step almost word for word (the three numbers, "I can't know what the pills will do",
-  someone nearby), and the blind judge counted F2 as "repeating the number in every line", which the crisis section rules
-  out ("don't repeat it in every line, but come back to it"); with `wants_to_die` on, 3 of 6 later provisionals repeated the
-  four people and links the section gives once.
+- **Which turn**: with `provisionalTurns` `first` (the default), a provisional reply for someone who has acted or is about to
+  only until the conversation has shown an emergency number (a provisional or a delivered reply naming one, or the highlighted
+  line), and one for someone who wants to die (only when `provisionalLevels` allows it) only until an earlier turn was read at
+  that level; `every` gives one on each such turn, as before 22 Nov. Both go by what was actually shown, never by which levels
+  were read (Codex's review of `371a8f6f2`: a numberless provisional for someone who wants to die had counted as the number
+  shown). When no level is left, R1's prompt says one was already offered in this conversation, so it gives none; nothing is
+  shown or recorded as a provisional, whatever R1 returns, and the skip puts no highlighted line into the conversation. Nor
+  does C1's `acted_or_about_to` reading on such a later turn once the conversation has shown a number (see "If it doesn't
+  pass" below); the line still shows if that turn ends without a reply. The writer and the checkers are unchanged: the full
+  reply comes back to the number as the rules say, and C1 judges it. A new conversation starts again. Why, measured on 22
+  Nov: in the GPT test round every later message read `acted_or_about_to` (F2, S4 and S5, after the person refused an
+  ambulance or the crisis line) got a provisional again, each repeating the first step almost word for word (the three
+  numbers, "I can't know what the pills will do", someone nearby), and the blind judge counted F2 as "repeating the number in
+  every line", which the crisis section rules out ("don't repeat it in every line, but come back to it"); with `wants_to_die`
+  on, 3 of 6 later provisionals repeated the four people and links the section gives once.
 - **What it holds** (the crisis section's first step, written by R1 with only the `crisis` part): that it heard them, the
   emergency number to call now, and the next smallest thing (someone in the house, unlocking the door, keeping the packets),
   or for someone about to act, distance from the means; in their language, short, no headings, lists or bold, at most one
@@ -192,7 +194,7 @@ writer and one whole checker at a lower effort.
   new wording is needed. When it showed is stored in the runtime record (not the transcript), and later packets show it in
   its place, like the provisional. When C1 reads `acted_or_about_to` and nothing was shown this turn (R1 read another level
   or gave no reading), the line shows as soon as C1's reading arrives; with `provisionalTurns` `first`, only while no earlier
-  turn of this conversation has shown a provisional reply or the line (22 Nov: otherwise the number came back as a highlighted
+  turn of this conversation has shown an emergency number (a provisional or a delivered reply naming one, or the line) (22 Nov: otherwise the number came back as a highlighted
   line on every later acted message, the repetition the crisis section rules out; the line stays on the page and the full
   reply comes back to it).
 - **The full reply** follows it in the same turn: the writer gets the provisional and continues the first step (the next
@@ -209,7 +211,7 @@ fullwidth and the other common decimal digits), so the number checks work whatev
 
 | Check | When | Exact rule | Effect |
 |---|---|---|---|
-| Emergency number present | the first turn of this conversation that C1 reads `acted_or_about_to`, over the provisional and the full reply together (on later turns C1 judges "come back to it") | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number. It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step). France's 15 alone doesn't pass (a reply naming only "le 15" is repaired to add 112), and 111 and 119 mean other services in some countries | blocks |
+| Emergency number present | every turn C1 reads `acted_or_about_to` until the conversation has shown an emergency number (in a provisional or a delivered reply, or the highlighted line), over the provisional and the full reply together; once one was shown, C1 judges "come back to it" (22 Nov: until then it held only on the first turn read acted, so a turn read acted whose repair was read lower could leave the conversation with no number) | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number. It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step). France's 15 alone doesn't pass (a reply naming only "le 15" is repaired to add 112), and 111 and 119 mean other services in some countries | blocks |
 | Provisional: a number | the provisional of someone read `acted_or_about_to` (a provisional for `wants_to_die`, when `provisionalLevels` allows one, needs none: the first reply to someone who wants to die names no number unless they've acted) | at least one number from that list, as a whole number | not shown |
 | Provisional: numbers known | the provisional | every run of two or more digits (any script), and every phone-shaped run (digits joined by spaces, dots, dashes or brackets), is on that list (catches an invented number however short: "Call 112 now, or the poison service at 42." isn't shown); so a two-digit time or count ("10 minutes", "24/7") or a national two-digit number (France's 15) keeps it from showing too, and the highlighted line shows instead; a single digit isn't read as a number. The three crisis links' own digits (the therapist link's path holds 189761959) are set aside before any number check, here and in the rows above and below; every other link's digits are read (22 Nov: a provisional giving the section's links was refused before this) | not shown |
 | Provisional: shape | the provisional | at most 900 characters; at most one question mark (`?`, `？`, `؟`); no list line, heading or bold; no link other than the three of the crisis section | not shown |

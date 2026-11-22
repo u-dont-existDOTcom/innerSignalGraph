@@ -13,7 +13,7 @@ import { isFinishedRuntimeTurn } from "../supervisor/private-runtime-turn-lifecy
 import { OWNER_FALLBACK_KIND } from "../supervisor/owner-fallback-message.mjs";
 import { selfDirectedRiskAuditRules } from "../prompts/self-directed-risk-audit.mjs";
 import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
-import { LEVELS, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
+import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
 import { KEPT_PLAN_RULE } from "./notices.mjs";
 import {
   KEPT_PLAN_LIMITS,
@@ -106,9 +106,13 @@ function validLevel(value) { return LEVELS.includes(value) ? value : "unclear"; 
 export function normalizeFindings(checkerId, findings) {
   if (!Array.isArray(findings)) throw new ValidationError(`${checkerId} returned no findings list.`, { code: "PROVIDER_MALFORMED" });
   return findings.slice(0, 24).map((finding, index) => {
-    const severity = ["low", "medium", "substantive", "high"].includes(finding?.severity) ? finding.severity : "high";
+    const reported = ["low", "medium", "substantive", "high"].includes(finding?.severity) ? finding.severity : "high";
     const code = /^[A-Z][A-Z0-9_]{2,79}$/u.test(finding?.code ?? "") ? finding.code : "UNSPECIFIED_FINDING";
-    const summary = String(finding?.summary ?? "").trim().slice(0, 600) || "No summary given.";
+    // STORAGE_DESCRIBED (the writer's storage line) is counted, never blocking, whatever severity a checker gives it (Codex's
+    // review of 371a8f6f2): it is held at medium by program, and the summary says what the checker reported.
+    const capped = code === "STORAGE_DESCRIBED" && (reported === "substantive" || reported === "high");
+    const severity = capped ? "medium" : reported;
+    const summary = `${String(finding?.summary ?? "").trim().slice(0, 560) || "No summary given."}${capped ? ` (reported as ${reported})` : ""}`;
     const evidence = Array.isArray(finding?.evidence_turn_ids) ? finding.evidence_turn_ids.filter((id) => typeof id === "string" && id.trim()).slice(0, 8) : [];
     return { id: `${checkerId}:${index + 1}`, code, severity, summary, evidence_turn_ids: evidence, checker: checkerId };
   });
@@ -219,10 +223,21 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   // "Getting safe" or "wanting to die" (design, section 7): the readings that stand in for the owner's four routes.
   const isFixedMessageConversation = (readings) => readings.some((entry) => readCrisis(entry)
     || entry.crisis?.in_danger_from_someone || entry.crisis?.danger_to_others || entry.crisis?.home_unsafe);
-  // With provisionalTurns "first", whether a provisional reply was already offered in this conversation (design, section 4): a turn
-  // other than this one that the crisis reader read at a level in provisionalLevels, whether its provisional was shown or refused.
-  const provisionalOfferedBefore = (readings, turnId) => config.provisionalTurns === "first"
-    && readings.some((entry) => entry.turnId !== turnId && config.provisionalLevels.includes(entry.crisis?.level));
+  // Whether an earlier turn of this conversation showed the person an emergency number: a provisional reply or a delivered reply
+  // naming one (as the exact check reads numbers), or the highlighted line. The later-turn rules go by what was actually shown,
+  // never by which levels were read or which provisional replies were offered (Codex's review of 371a8f6f2: a numberless
+  // provisional reply for someone who wants to die had counted as the number shown).
+  function numberShownEarlier(record, conversationId, turnId) {
+    return record.runtime_turns.some((turn) => turn.id !== turnId && turn.runner_reading?.conversation_id === conversationId
+      && (Boolean(turn.emergency_line_shown_at)
+        || emergencyNumbersIn(turn.provisional?.exact_text ?? "").length > 0
+        || emergencyNumbersIn(turn.delivery?.exact_text ?? "").length > 0));
+  }
+  // The levels a provisional reply may be given at on this turn (design, section 4). With provisionalTurns "first": for someone who
+  // has acted or is about to, until the conversation has shown a number; for someone who wants to die (only when provisionalLevels
+  // allows it), until an earlier turn was read at that level. With "every": every level provisionalLevels allows.
+  const provisionalLevelsNow = (readings, numberShown) => config.provisionalLevels.filter((level) => config.provisionalTurns === "every"
+    || (level === "acted_or_about_to" ? !numberShown : !readings.some((entry) => entry.crisis?.level === level)));
 
   async function showEmergencyLine(caseId, runtimeTurn, reason, authContext) {
     await source("recordRunnerEmergencyLine", [caseId, runtimeTurn.id, { reason }], authContext);
@@ -233,13 +248,14 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     return { conversation: view.turns, latest_message: { turn_id: runtimeTurn.user_turn_id, text: runtimeTurn.inbound.exact_text } };
   }
 
-  // The crisis reader, and the provisional reply when its reading allows one (design, section 4). `provisionalOffered`: one was
-  // already offered in this conversation (provisionalTurns "first"), so the reader is told so and none is shown this turn.
-  async function runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, provisionalOffered = false, authContext }) {
+  // The crisis reader, and the provisional reply when its reading allows one (design, section 4). `levelsNow`: the levels a
+  // provisional reply may still be given at on this turn (provisionalLevelsNow); `numberShown`: an earlier turn of this
+  // conversation showed an emergency number. When no level is left, the reader is told one was already offered.
+  async function runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, levelsNow = config.provisionalLevels, numberShown = false, authContext }) {
     const rules = rulesFrom([parts.crisis], ["the section on someone who may want to die, the chronic pain section and the harm-reduction paragraph of SKILL.md"]);
     const prompt = crisisReaderPrompt({ rules, packet: readersPacket(view, runtimeTurn) });
-    const shown = config.provisionalLevels.includes("wants_to_die") ? prompt.system.replace("Answer only with the JSON", `${crisisReaderWantsToDieNote()}\nAnswer only with the JSON`) : prompt.system;
-    const offered = provisionalOffered ? withNoteBeforeAnswerLine(shown, crisisReaderProvisionalOfferedNote()) : shown;
+    const shown = levelsNow.includes("wants_to_die") ? prompt.system.replace("Answer only with the JSON", `${crisisReaderWantsToDieNote()}\nAnswer only with the JSON`) : prompt.system;
+    const offered = levelsNow.length === 0 ? withNoteBeforeAnswerLine(shown, crisisReaderProvisionalOfferedNote()) : shown;
     // With the kept plan on, the crisis reader also reads whether the person asks to keep the plan (or says yes to the offer) and
     // whether they ask to delete it, from this conversation's words.
     const system = keptPlanEnabled ? withNoteBeforeAnswerLine(offered, crisisReaderKeptPlanNote()) : offered;
@@ -258,7 +274,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const allowsProvisional = Boolean(reading) && config.provisionalLevels.includes(reading.level);
     // A later such turn of a conversation that was already offered one: nothing is shown or recorded as a provisional, whatever the
     // reader returned, and the skip puts no emergency line into the conversation (the line's other triggers are unchanged).
-    if (allowsProvisional && provisionalOffered) return stored;
+    if (allowsProvisional && !levelsNow.includes(reading.level)) return stored;
     if (allowsProvisional && typeof reading.provisional_reply === "string") {
       const problems = provisionalProblems(reading.provisional_reply, { level: reading.level });
       if (problems.length === 0) {
@@ -269,7 +285,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { provisional_refused: { problems } } }], authContext);
         if (reading.level === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
       }
-    } else if (reading?.level === "acted_or_about_to") {
+    } else if (reading?.level === "acted_or_about_to" && !(config.provisionalTurns === "first" && numberShown)) {
       await showEmergencyLine(caseId, runtimeTurn, "no_provisional", authContext);
     } else if (!reading && priorCrisisConversation) {
       await showEmergencyLine(caseId, runtimeTurn, "no_reading_in_crisis_conversation", authContext);
@@ -484,10 +500,11 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const view = conversationView(record, conversationId, runtimeTurn);
       const earlierReadings = conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id);
       const priorCrisisConversation = isCrisisConversation(earlierReadings);
-      const provisionalOffered = provisionalOfferedBefore(earlierReadings, runtimeTurn.id);
+      const numberShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
+      const levelsNow = provisionalLevelsNow(earlierReadings, numberShown);
       emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
       const [crisis, boxes, protection] = await Promise.all([
-        runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, provisionalOffered, authContext }),
+        runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, levelsNow, numberShown, authContext }),
         runBoxPicker({ runtimeTurn, view }),
         runProtectionReader({ runtimeTurn, view, record })
       ]);
@@ -592,9 +609,8 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         // With provisionalTurns "first", only while nothing in this conversation has shown the number yet (no provisional reply and
         // no highlighted line on an earlier turn): on a later turn the full reply comes back to it, as the rules say, and the line
         // stays on the page; the line still shows if that turn ends without a reply (22 Nov 2026).
-        const numberShownEarlier = config.provisionalTurns === "first"
-          && conversationReadings(record, conversationId).some((entry) => entry.turnId !== runtimeTurn.id && (entry.provisional || entry.emergencyLine));
-        if (level === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at && !numberShownEarlier) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
+        const shownEarlier = config.provisionalTurns === "first" && numberShownEarlier(record, conversationId, runtimeTurn.id);
+        if (level === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at && !shownEarlier) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
         if (keptPlanReadings.confirmsKeepPlanYes && keptPlan.keepAsked) await tryKeepPlan(caseId, runtimeTurn.id, written.keptPlan?.lines ?? [], authContext);
         return result;
       };
@@ -629,13 +645,15 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         const receipts = settled.flatMap((entry) => (entry.status === "fulfilled" ? entry.value.receipts : (entry.reason?.receipts ?? [])));
         throw Object.assign(failed.reason instanceof Error ? failed.reason : new Error(String(failed.reason)), { receipts });
       }
-      const earlierActed = readings.some((entry) => entry.turnId !== runtimeTurn.id && entry.checkerLevels.includes("acted_or_about_to"));
+      // The number check holds on every turn read acted until the conversation has actually shown a number (Codex's review of
+      // 371a8f6f2), not only on the first turn read acted.
+      const numberAlreadyShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
       const earlierCrisisTurn = readings.some((entry) => entry.turnId !== runtimeTurn.id && (entry.checkerLevels.some(isCrisisLevel) || entry.provisional));
       const quoteSources = new Map(view.turns.filter((turn) => turn.turn_id).map((turn) => [turn.turn_id, turn.text]));
       const program = runProgramChecks({
         reply: candidate.exact_text,
         checkerLevel,
-        firstActedTurn: checkerLevel === "acted_or_about_to" && !earlierActed,
+        firstActedTurn: checkerLevel === "acted_or_about_to" && !numberAlreadyShown,
         firstCrisisTurn: (isCrisisLevel(checkerLevel) || Boolean(provisional)) && !earlierCrisisTurn,
         crisisConversation: crisisSoFar || isCrisisLevel(checkerLevel),
         provisional,
