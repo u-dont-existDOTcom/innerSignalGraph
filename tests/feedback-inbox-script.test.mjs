@@ -25,7 +25,10 @@ async function world(t) {
   const root = path.join(base, "store");
   await fs.mkdir(root, { mode: 0o700 });
   let laptopNow = Date.parse("2026-11-22T12:00:00Z");
-  const run = (...argv) => runFeedbackInbox([...argv, "--config-dir", configDir], { now: () => laptopNow });
+  // A stand-in for the danger reader (never a real model in tests): it flags a text holding the marker [stand-in danger].
+  const checked = [];
+  const createReader = () => ({ check: async (text) => { checked.push(text); return { flag: text.includes("[stand-in danger]"), reason: null }; } });
+  const run = (...argv) => runFeedbackInbox([...argv, "--config-dir", configDir], { now: () => laptopNow, createReader });
   // The server's address is known only once it listens, so keygen runs first without it.
   const keys = await run("keygen");
   const setting = (name) => new RegExp(`^${name}=(.+)$`, "mu").exec(keys)?.[1];
@@ -57,7 +60,7 @@ async function world(t) {
     const response = await fetch(listener.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "send_feedback", arguments: { person_approved_exact_text: true, ...args } } }) });
     return (await response.json()).result.structuredContent;
   };
-  return { base, configDir, root, run, keys, server, origin, sendPage, sendChat, advance: (ms) => { clock += ms; }, laptopAdvance: (ms) => { laptopNow += ms; } };
+  return { base, configDir, root, run, keys, server, origin, sendPage, sendChat, checked, advance: (ms) => { clock += ms; }, laptopAdvance: (ms) => { laptopNow += ms; } };
 }
 
 test("keygen writes private files, prints only the two server settings, and a second run adds a key", async (t) => {
@@ -259,4 +262,37 @@ test("a fetch keeps its additions apart from its removals: a discard keeps every
   const confirmed = JSON.parse(await fs.readFile(statePath, "utf8"));
   assert.deepEqual(confirmed.imported, {}, "a confirmation applies the removals, the batch's own addition included");
   assert.equal(confirmed.after, 7);
+});
+
+test("fetch has each new message checked for danger, stores only the flag, prints counts, and stops calling after failures", async (t) => {
+  const w = await world(t);
+  await w.run("keygen", "--server", w.server);
+  await w.sendPage({ kind: "bug", text: "It froze. [stand-in danger]" });
+  await w.sendPage({ kind: "praise", text: "Lovely." });
+  const out = path.join(w.base, "danger");
+  const report = await w.run("fetch", "--out", out);
+  assert.match(report, /Danger check: 1 flagged as possibly in danger \(read those first\), 0 not checked\./u);
+  assert.equal(w.checked.length, 2, "one check per new message");
+  const docs = await Promise.all(JSON.parse(await fs.readFile(path.join(out, "plan.json"), "utf8")).batches.flat()
+    .map(async (entry) => JSON.parse(await fs.readFile(entry.file_path, "utf8"))));
+  assert.deepEqual(docs.map((doc) => doc.danger).sort(), ["flagged", "not_flagged"]);
+  assert.equal(report.includes("froze"), false, "counts only");
+  await w.run("fetch", "--confirm", out);
+
+  // Off: nothing is checked and every message says so.
+  await w.sendPage({ kind: "praise", text: "Unchecked." });
+  const off = path.join(w.base, "off");
+  assert.match(await w.run("fetch", "--out", off, "--danger-check", "off"), /Danger check: off\./u);
+  assert.equal(w.checked.length, 2);
+  await w.run("fetch", "--confirm", off);
+
+  // A reader that keeps failing is asked three times, then the rest are marked not checked at once.
+  let calls = 0;
+  const failing = () => ({ check: async () => { calls += 1; return { flag: null, reason: "CLI_FAILED" }; } });
+  w.advance(11 * 60_000);
+  for (let index = 0; index < 5; index += 1) await w.sendPage({ kind: "suggestion", text: `s${index}` });
+  const broken = path.join(w.base, "broken");
+  const brokenReport = await runFeedbackInbox(["fetch", "--out", broken, "--config-dir", w.configDir], { createReader: failing });
+  assert.equal(calls, 3);
+  assert.match(brokenReport, /0 flagged as possibly in danger \(read those first\), 5 not checked \(3 CLI_FAILED\)/u);
 });

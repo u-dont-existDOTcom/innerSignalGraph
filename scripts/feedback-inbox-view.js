@@ -11,6 +11,12 @@
 
 const KIND_LABELS = { suggestion: "Suggestion", bug: "Something isn't working", praise: "Praise", review: "Review" };
 const CHOICE_LABELS = { publish: "Shown publicly once the lane runs", hide: "Not shown", delete: "Deleted once the lane runs" };
+// The danger reader's flag (the owner's 5b): flagged messages come first, then those it couldn't check, then the rest.
+const DANGER_LINES = {
+  flagged: "An AI check says the writer, or someone they mention, may be in danger: read this first.",
+  not_checked: "Not checked for danger (the check was off or failed)."
+};
+const DANGER_ORDER = { flagged: 0, not_checked: 1 };
 
 // doc: the page's document. items: the `feedback` collection's documents ({id, kind, text, reply_address, received_at, via,
 // public_review, published}). choices: the `choices` collection as {docId: data}. write(path, data, button, okText): the page's own
@@ -23,8 +29,9 @@ function renderFeedbackView({ doc, items, choices, write }) {
     return element;
   };
   const section = node("section", "feedback-view");
+  const rank = (item) => DANGER_ORDER[item.danger] ?? 2;
   const sorted = [...items].filter((item) => item && typeof item.id === "string")
-    .sort((a, b) => String(b.received_at ?? "").localeCompare(String(a.received_at ?? "")));
+    .sort((a, b) => rank(a) - rank(b) || String(b.received_at ?? "").localeCompare(String(a.received_at ?? "")));
   if (sorted.length === 0) {
     section.appendChild(node("p", "empty", "No feedback yet."));
     return section;
@@ -40,6 +47,7 @@ function renderFeedbackView({ doc, items, choices, write }) {
       ...(item.published ? ["shown publicly now"] : [])
     ].join(" · ");
     card.appendChild(node("p", "meta", header));
+    if (DANGER_LINES[item.danger]) card.appendChild(node("p", item.danger === "flagged" ? "danger" : "unchecked", DANGER_LINES[item.danger]));
     if (item.reply_address) card.appendChild(node("p", "address", `Answer to: ${item.reply_address}`));
     card.appendChild(node("p", "feedback-text", item.text ?? ""));
     if (choice) card.appendChild(node("p", "status", CHOICE_LABELS[choice] ?? ""));

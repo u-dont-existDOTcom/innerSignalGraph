@@ -13,6 +13,10 @@
 //   unpublish ID --export DIR --confirm ID  take a public review down (and write the Inbox update)
 //   status                                the server address, key ids and cursor (no secrets)
 //
+// The danger reader (the owner's 5b): fetch has an AI with no tools read each newly opened message only to flag possible danger
+// (src/feedback/danger-reader.mjs); the Inbox shows flagged messages first, and fetch prints how many. --danger-check off skips it;
+// --danger-model, --claude-config-dir and --claude-bin choose the model, the Claude sign-in folder and the claude command.
+//
 // Options: --config-dir DIR (default ~/.config/innersignal-feedback). Files there: owner-keys.json and owner-token (0600),
 // config.json (the server address), state.json (the cursor). Keep a second copy of the first two somewhere only you can open.
 
@@ -25,9 +29,14 @@ import { fileURLToPath } from "node:url";
 import { FEEDBACK_ID_PATTERN } from "../src/feedback/codes.mjs";
 import { generateOwnerKeyPair, openSealedForOwner, readOwnerPrivateKey } from "../src/feedback/open-sealed.mjs";
 import { keyIdFor, readOwnerPublicKey } from "../src/feedback/sealed-box.mjs";
+import { DANGER_READER_DEFAULT_MODEL, createDangerReader } from "../src/feedback/danger-reader.mjs";
 
 const BATCH = 50;
 const MAX_EVENTS_PER_FETCH = 1_000;
+// With the danger reader on, each message takes one model call, so a fetch takes at most this many; the rest wait for the next one.
+const MAX_EVENTS_PER_CHECKED_FETCH = 50;
+// After this many checks in a row fail (a lapsed sign-in, a plan limit), the rest of the fetch is marked "not checked" at once.
+const MAX_FAILED_CHECKS_IN_A_ROW = 3;
 const DAY = /^\d{4}-\d{2}-\d{2}$/u;
 // The server deletes a message after this many days; the Inbox copy goes after the same time, even if no deletion record arrives.
 const RETENTION_DAYS = 365;
@@ -195,9 +204,12 @@ async function keygen(paths, options) {
 }
 
 // --- fetch ------------------------------------------------------------------------------------------------------------------
-function inboxDoc(event, opened) {
+// danger: "flagged" (the reader thinks the writer or someone they mention may be in danger: read first), "not_flagged", or
+// "not_checked" (the reader was off or failed: read these next).
+function inboxDoc(event, opened, danger) {
   return {
     id: event.id,
+    danger,
     kind: opened.kind,
     text: opened.text,
     reply_address: opened.reply_address ?? null,
@@ -231,7 +243,7 @@ function openMessage(keys, event) {
   }
 }
 
-async function fetchEvents(paths, options, now) {
+async function fetchEvents(paths, options, now, reader) {
   const out = options.out;
   if (typeof out !== "string" || !path.isAbsolute(out)) fail("fetch needs --out with an absolute path to a new, empty folder.");
   const state = (await readJson(paths.state, {})) ?? {};
@@ -260,7 +272,8 @@ async function fetchEvents(paths, options, now) {
     const keys = await loadKeys(paths);
     const after = Number.isSafeInteger(state.after) ? state.after : 0;
     const entries = [];
-    const counts = { new: 0, by_kind: {}, reviews_waiting: 0, deleted: 0, expired_here: 0, unreadable: 0, held: 0, full: {}, stored: {} };
+    const counts = { new: 0, by_kind: {}, reviews_waiting: 0, flagged: 0, not_checked: 0, check_failures: {}, deleted: 0, expired_here: 0, unreadable: 0, held: 0, full: {}, stored: {} };
+    const maxEvents = reader ? MAX_EVENTS_PER_CHECKED_FETCH : MAX_EVENTS_PER_FETCH;
     const unreadable = [];
     // Which messages the Inbox may hold, by id and day only (no words), so their Inbox copies go after a year even if a deletion record
     // never arrives. A fetch only proposes: its additions and its removals are kept apart, a discard keeps every addition (any of them
@@ -268,10 +281,28 @@ async function fetchEvents(paths, options, now) {
     const known = { ...(state.imported && typeof state.imported === "object" ? state.imported : {}) };
     const additions = {};
     const removals = new Set();
+    let failedInARow = 0;
+    const dangerOf = async (text) => {
+      if (!reader) return "not_checked";
+      if (failedInARow >= MAX_FAILED_CHECKS_IN_A_ROW) {
+        counts.not_checked += 1;
+        return "not_checked";
+      }
+      const verdict = await reader.check(text);
+      if (verdict.flag === null) {
+        failedInARow += 1;
+        counts.not_checked += 1;
+        counts.check_failures[verdict.reason] = (counts.check_failures[verdict.reason] ?? 0) + 1;
+        return "not_checked";
+      }
+      failedInARow = 0;
+      if (verdict.flag) counts.flagged += 1;
+      return verdict.flag ? "flagged" : "not_flagged";
+    };
     const add = async (event, opened) => {
       const file = path.join(out, "docs", "feedback", `${event.id}.json`);
       await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-      await fs.writeFile(file, `${JSON.stringify(inboxDoc(event, opened))}\n`, { mode: 0o600, flag: "wx" });
+      await fs.writeFile(file, `${JSON.stringify(inboxDoc(event, opened, await dangerOf(opened.text)))}\n`, { mode: 0o600, flag: "wx" });
       entries.push({ op: "set", collection: "feedback", doc_id: event.id, file_path: file });
       additions[event.id] = event.received_day;
       counts.new += 1;
@@ -293,7 +324,7 @@ async function fetchEvents(paths, options, now) {
     let read = 0;
     for (;;) {
       // `confirmed` stays at the last confirmed read while paging, so no deletion record is removed before the Inbox has it.
-      const page = await ownerRequest(base, token, "events", { query: `?after=${cursor}&confirmed=${after}&limit=100` });
+      const page = await ownerRequest(base, token, "events", { query: `?after=${cursor}&confirmed=${after}&limit=${Math.min(100, maxEvents)}` });
       for (const event of page.events) {
         if (!FEEDBACK_ID_PATTERN.test(event.id ?? "")) fail("The server sent an event with an invalid id.");
         if (event.type === "deleted") {
@@ -312,7 +343,7 @@ async function fetchEvents(paths, options, now) {
       counts.held = page.held ?? 0;
       counts.full = page.full ?? {};
       counts.stored = page.stored ?? {};
-      if (!page.more || read >= MAX_EVENTS_PER_FETCH) {
+      if (!page.more || read >= maxEvents) {
         counts.more_waiting = Boolean(page.more);
         break;
       }
@@ -334,6 +365,7 @@ async function fetchEvents(paths, options, now) {
     await save();
     return [
       `Feedback: ${counts.new} new (${Object.entries(counts.by_kind).map(([kind, count]) => `${count} ${kind}`).join(", ") || "none"}), ${counts.reviews_waiting} review(s) waiting for a yes, ${counts.deleted} deletion(s), ${counts.held} held for the first hour.`,
+      `Danger check: ${reader ? `${counts.flagged} flagged as possibly in danger (read those first), ${counts.not_checked} not checked` : "off"}${Object.keys(counts.check_failures).length ? ` (${Object.entries(counts.check_failures).map(([reason, count]) => `${count} ${reason}`).join(", ")})` : ""}.`,
       ...(counts.expired_here ? [`${counts.expired_here} Inbox cop(ies) past a year removed.`] : []),
       ...(counts.unreadable ? [`${counts.unreadable} message(s) could not be opened with the keys in ${paths.keys}; each fetch tries them again.`] : []),
       ...(Object.entries(counts.full).filter(([, full]) => full).map(([door]) => `The ${door} door is full.`)),
@@ -466,7 +498,21 @@ async function status(paths) {
   ].join("\n");
 }
 
-export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(), ".config", "innersignal-feedback"), now = Date.now } = {}) {
+// The danger reader for a fetch: on unless --danger-check off. Its model, Claude sign-in folder and command come from the options or
+// config.json ("danger_model", "claude_config_dir", "claude_bin"), else the defaults.
+async function dangerReaderFor(paths, options, createReader) {
+  const setting = options["danger-check"] ?? "on";
+  if (!["on", "off"].includes(setting)) fail("--danger-check must be on or off.");
+  if (setting === "off") return null;
+  const config = (await readJson(paths.config, {})) ?? {};
+  return createReader({
+    model: options["danger-model"] ?? config.danger_model ?? DANGER_READER_DEFAULT_MODEL,
+    configDir: options["claude-config-dir"] ?? config.claude_config_dir ?? null,
+    command: options["claude-bin"] ?? config.claude_bin ?? "claude"
+  });
+}
+
+export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(), ".config", "innersignal-feedback"), now = Date.now, createReader = createDangerReader } = {}) {
   const { command, options } = parseArgs(argv);
   const paths = configPaths(options["config-dir"] ?? configDir);
   const locked = (task) => withLock(paths, task);
@@ -475,7 +521,7 @@ export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(
     case "fetch":
       if (options.confirm) return locked(() => confirmFetch(paths, options));
       if (options.discard) return locked(() => discardFetch(paths, options));
-      return locked(() => fetchEvents(paths, options, now));
+      return locked(async () => fetchEvents(paths, options, now, await dangerReaderFor(paths, options, createReader)));
     case "delete": return locked(() => deleteOne(paths, options));
     case "delete-many": return locked(() => deleteMany(paths, options));
     case "publish": return locked(() => publish(paths, options));

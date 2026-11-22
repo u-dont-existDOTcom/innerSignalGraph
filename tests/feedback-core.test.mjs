@@ -76,15 +76,16 @@ test("owner keys are checked: wrong length, degenerate keys and a mismatched pai
   assert.match(keyIdFor(readOwnerPublicKey(a.publicKey)), /^[0-9a-f]{16}$/u);
 });
 
-test("no server module imports the code that opens sealed messages", async () => {
+test("no server module imports the code that opens sealed messages or the danger reader", async () => {
   const serverFiles = [
-    ...(await fs.readdir(path.join(repositoryRoot, "src/feedback"))).filter((name) => name !== "open-sealed.mjs").map((name) => `src/feedback/${name}`),
+    ...(await fs.readdir(path.join(repositoryRoot, "src/feedback"))).filter((name) => !["open-sealed.mjs", "danger-reader.mjs"].includes(name)).map((name) => `src/feedback/${name}`),
     ...(await fs.readdir(path.join(repositoryRoot, "src/server"))).map((name) => `src/server/${name}`),
     "src/cli/private-case-mcp.mjs"
   ];
   for (const file of serverFiles) {
     const source = await fs.readFile(path.join(repositoryRoot, file), "utf8");
     assert.equal(/["'][^"'\n]*open-sealed(?:\.mjs)?["']/u.test(source), false, `${file} must not import open-sealed.mjs`);
+    assert.equal(/["'][^"'\n]*danger-reader(?:\.mjs)?["']/u.test(source), false, `${file} must not import danger-reader.mjs`);
   }
 });
 
