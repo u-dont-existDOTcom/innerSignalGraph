@@ -44,6 +44,7 @@ test("anything but one boolean, a failure, a refusal, a timeout or missing isola
   assert.deepEqual(await check({ code: 0, stdout: JSON.stringify({ structured_output: { may_be_in_danger: "yes" } }) }), { flag: null, reason: "MALFORMED" });
   assert.deepEqual(await check({ code: 0, stdout: JSON.stringify({ structured_output: { may_be_in_danger: true, note: "x" } }) }), { flag: null, reason: "MALFORMED" });
   assert.deepEqual(await check({ code: 0, stdout: JSON.stringify({ result: "free text", stop_reason: "refusal" }) }), { flag: null, reason: "REFUSED" });
+  assert.deepEqual(await check({ code: 1, stdout: JSON.stringify({ is_error: true, stop_reason: "refusal", structured_output: { may_be_in_danger: false } }) }), { flag: null, reason: "REFUSED" }, "a refusal reported as an error is still a refusal, and its retracted answer is not used");
   assert.deepEqual(await check({ code: 1, stdout: "", stderr: "not logged in" }), { flag: null, reason: "CLI_FAILED" });
   assert.deepEqual(await check({ code: 0, stdout: "not json" }), { flag: null, reason: "CLI_FAILED" });
   assert.deepEqual(await check(() => { throw new Error("Feedback danger reader timed out after 90000 ms."); }), { flag: null, reason: "TIMEOUT" });

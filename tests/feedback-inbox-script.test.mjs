@@ -297,3 +297,36 @@ test("fetch has each new message checked for danger, stores only the flag, print
   assert.equal(calls, 3);
   assert.match(brokenReport, /0 flagged as possibly in danger, 0 the AI declined to read \(read those first too\), 5 not checked \(3 CLI_FAILED\)/u);
 });
+
+test("retried messages and new ones share one budget per checked fetch; the rest wait for the next fetch", async (t) => {
+  const w = await world(t);
+  await w.run("keygen", "--server", w.server);
+  for (let index = 0; index < 4; index += 1) await w.sendPage({ kind: "suggestion", text: `old ${index}` });
+  // The key that sealed them is missing at first: all four are kept for retry.
+  const keysPath = path.join(w.configDir, "owner-keys.json");
+  const allKeys = JSON.parse(await fs.readFile(keysPath, "utf8"));
+  await fs.writeFile(keysPath, JSON.stringify({ ...allKeys, keys: [] }), { mode: 0o600 });
+  await assert.rejects(w.run("fetch", "--out", path.join(w.base, "nokey")), /No owner keys/u, "no key at all is refused outright");
+  await w.run("keygen");
+  const second = JSON.parse(await fs.readFile(keysPath, "utf8"));
+  await fs.writeFile(keysPath, JSON.stringify({ ...allKeys, keys: second.keys.slice(-1) }), { mode: 0o600 });
+  const calls = [];
+  const counting = () => ({ check: async (text) => { calls.push(text); return { flag: false, reason: null }; } });
+  const run = (...argv) => runFeedbackInbox([...argv, "--config-dir", w.configDir], { createReader: counting, maxChecked: 3 });
+  const first = path.join(w.base, "b1");
+  assert.match(await run("fetch", "--out", first), /4 message\(s\) could not be opened/u);
+  await run("fetch", "--confirm", first);
+  // The key comes back and two new messages arrive: three retries fit the budget, one retry and the new ones wait.
+  await fs.writeFile(keysPath, JSON.stringify(allKeys), { mode: 0o600 });
+  w.advance(11 * 60_000);
+  for (let index = 0; index < 2; index += 1) await w.sendPage({ kind: "praise", text: `new ${index}` });
+  const second2 = path.join(w.base, "b2");
+  assert.match(await run("fetch", "--out", second2), /3 new .*\n.*\n1 message\(s\) could not be opened|3 new/su);
+  assert.equal(calls.length, 3, "at most the budget");
+  await run("fetch", "--confirm", second2);
+  const third = path.join(w.base, "b3");
+  assert.match(await run("fetch", "--out", third), /3 new/u);
+  assert.equal(calls.length, 6);
+  assert.deepEqual(calls.slice(3).sort(), ["new 0", "new 1", "old 3"].sort(), "the deferred retry and the new ones");
+  await run("fetch", "--confirm", third);
+});

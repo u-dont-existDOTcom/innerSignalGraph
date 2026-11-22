@@ -33,7 +33,8 @@ import { DANGER_READER_DEFAULT_MODEL, DANGER_READER_VERSION, createDangerReader 
 
 const BATCH = 50;
 const MAX_EVENTS_PER_FETCH = 1_000;
-// With the danger reader on, each message takes one model call, so a fetch takes at most this many; the rest wait for the next one.
+// With the danger reader on, each opened message takes one model call: at most this many calls per fetch (retries included); the
+// rest wait for the next one.
 const MAX_EVENTS_PER_CHECKED_FETCH = 50;
 // After this many checks in a row fail (a lapsed sign-in, a plan limit), the rest of the fetch is marked "not checked" at once.
 const MAX_FAILED_CHECKS_IN_A_ROW = 3;
@@ -245,7 +246,7 @@ function openMessage(keys, event) {
   }
 }
 
-async function fetchEvents(paths, options, now, reader) {
+async function fetchEvents(paths, options, now, reader, maxChecked = MAX_EVENTS_PER_CHECKED_FETCH) {
   const out = options.out;
   if (typeof out !== "string" || !path.isAbsolute(out)) fail("fetch needs --out with an absolute path to a new, empty folder.");
   const state = (await readJson(paths.state, {})) ?? {};
@@ -275,7 +276,8 @@ async function fetchEvents(paths, options, now, reader) {
     const after = Number.isSafeInteger(state.after) ? state.after : 0;
     const entries = [];
     const counts = { new: 0, by_kind: {}, reviews_waiting: 0, flagged: 0, refused: 0, not_checked: 0, check_failures: {}, deleted: 0, expired_here: 0, unreadable: 0, held: 0, full: {}, stored: {} };
-    const maxEvents = reader ? MAX_EVENTS_PER_CHECKED_FETCH : MAX_EVENTS_PER_FETCH;
+    // Events read per fetch; model calls have their own budget (maxChecked), so a lost key can't hold up new messages.
+    const maxEvents = MAX_EVENTS_PER_FETCH;
     const unreadable = [];
     // Which messages the Inbox may hold, by id and day only (no words), so their Inbox copies go after a year even if a deletion record
     // never arrives. A fetch only proposes: its additions and its removals are kept apart, a discard keeps every addition (any of them
@@ -284,12 +286,18 @@ async function fetchEvents(paths, options, now, reader) {
     const additions = {};
     const removals = new Set();
     let failedInARow = 0;
+    // The budget counts model calls only: an unreadable message or a deletion costs nothing, and once the calls reach the budget
+    // the fetch stops just before the next message that would need one (it waits, with its place in the cursor, for the next fetch).
+    let calls = 0;
+    const needsCall = () => Boolean(reader) && failedInARow < MAX_FAILED_CHECKS_IN_A_ROW;
+    const budgetSpent = () => needsCall() && calls >= maxChecked;
     const dangerOf = async (text) => {
       if (!reader) return "not_checked";
       if (failedInARow >= MAX_FAILED_CHECKS_IN_A_ROW) {
         counts.not_checked += 1;
         return "not_checked";
       }
+      calls += 1;
       const verdict = await reader.check(text);
       if (verdict.reason === "REFUSED") {
         failedInARow = 0;
@@ -316,9 +324,14 @@ async function fetchEvents(paths, options, now, reader) {
       counts.by_kind[opened.kind] = (counts.by_kind[opened.kind] ?? 0) + 1;
       if (event.public_review) counts.reviews_waiting += 1;
     };
-    // Messages an earlier fetch couldn't open (a missing key, say) are tried again first; one the server no longer has is dropped.
+    // Messages an earlier fetch couldn't open (a missing key, say) are tried again first, within the same budget of model calls;
+    // past it they wait, unchanged, for the next fetch. One the server no longer has is dropped.
     for (const earlier of Array.isArray(state.unreadable) ? state.unreadable : []) {
       if (!FEEDBACK_ID_PATTERN.test(earlier?.id ?? "")) continue;
+      if (budgetSpent()) {
+        unreadable.push({ id: earlier.id, seq: earlier.seq });
+        continue;
+      }
       const response = await fetch(`${base}/owner/message?id=${encodeURIComponent(earlier.id)}`, { headers: { authorization: `Bearer ${token}` } });
       if (response.status === 404) continue;
       if (!response.ok) fail(`The server refused message: HTTP ${response.status}.`);
@@ -329,9 +342,10 @@ async function fetchEvents(paths, options, now, reader) {
     }
     let cursor = after;
     let read = 0;
+    let stopped = false;
     for (;;) {
       // `confirmed` stays at the last confirmed read while paging, so no deletion record is removed before the Inbox has it.
-      const page = await ownerRequest(base, token, "events", { query: `?after=${cursor}&confirmed=${after}&limit=${Math.min(100, maxEvents)}` });
+      const page = await ownerRequest(base, token, "events", { query: `?after=${cursor}&confirmed=${after}&limit=100` });
       for (const event of page.events) {
         if (!FEEDBACK_ID_PATTERN.test(event.id ?? "")) fail("The server sent an event with an invalid id.");
         if (event.type === "deleted") {
@@ -340,16 +354,25 @@ async function fetchEvents(paths, options, now, reader) {
           counts.deleted += 1;
         } else {
           const opened = openMessage(keys, event);
+          if (opened && budgetSpent()) {
+            // This message would need a call past the budget: it and everything after it wait for the next fetch.
+            stopped = true;
+            break;
+          }
           if (opened) await add(event, opened);
           else unreadable.push({ id: event.id, seq: event.seq });
         }
         cursor = Math.max(cursor, event.seq);
         read += 1;
       }
-      cursor = Math.max(cursor, page.next_after ?? cursor);
       counts.held = page.held ?? 0;
       counts.full = page.full ?? {};
       counts.stored = page.stored ?? {};
+      if (stopped) {
+        counts.more_waiting = true;
+        break;
+      }
+      cursor = Math.max(cursor, page.next_after ?? cursor);
       if (!page.more || read >= maxEvents) {
         counts.more_waiting = Boolean(page.more);
         break;
@@ -519,7 +542,7 @@ async function dangerReaderFor(paths, options, createReader) {
   });
 }
 
-export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(), ".config", "innersignal-feedback"), now = Date.now, createReader = createDangerReader } = {}) {
+export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(), ".config", "innersignal-feedback"), now = Date.now, createReader = createDangerReader, maxChecked = MAX_EVENTS_PER_CHECKED_FETCH } = {}) {
   const { command, options } = parseArgs(argv);
   const paths = configPaths(options["config-dir"] ?? configDir);
   const locked = (task) => withLock(paths, task);
@@ -528,7 +551,7 @@ export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(
     case "fetch":
       if (options.confirm) return locked(() => confirmFetch(paths, options));
       if (options.discard) return locked(() => discardFetch(paths, options));
-      return locked(async () => fetchEvents(paths, options, now, await dangerReaderFor(paths, options, createReader)));
+      return locked(async () => fetchEvents(paths, options, now, await dangerReaderFor(paths, options, createReader), maxChecked));
     case "delete": return locked(() => deleteOne(paths, options));
     case "delete-many": return locked(() => deleteMany(paths, options));
     case "publish": return locked(() => publish(paths, options));

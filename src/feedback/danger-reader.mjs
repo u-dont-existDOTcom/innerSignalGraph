@@ -109,6 +109,9 @@ export function createDangerReader({
         }
         let envelope = null;
         try { envelope = JSON.parse(result.stdout); } catch { envelope = null; }
+        // A refusal is known only from the API's own stop reason, also when the CLI reports it as an error; any answer it carries
+        // is not used. It sorts with the flagged messages.
+        if (envelope?.stop_reason === "refusal") return { flag: null, reason: "REFUSED" };
         if (result.code !== 0 || !envelope || envelope.is_error) return { flag: null, reason: "CLI_FAILED" };
         const structured = envelope.structured_output;
         if (!structured || typeof structured !== "object" || Array.isArray(structured) || typeof structured.may_be_in_danger !== "boolean"

@@ -230,8 +230,8 @@ empty MCP configuration, an allowlisted environment, a fresh folder removed afte
 and the message only on stdin, framed as data between markers with a random code. The answer must match a JSON schema with
 one boolean. Each Inbox item records `flagged`, `not_flagged` or `not_checked` (the check was off or failed); the Feedback view
 shows flagged messages first with a line saying so, then unchecked ones, then the rest. `fetch` prints counts only ("1 flagged
-as possibly in danger"); with the check on it takes at most 50 messages per run, and after three failed checks in a row it
-marks the rest "not checked" at once. Model: `claude-sonnet-5-5` unless set; Claude sign-in folder and command settable
+as possibly in danger"); with the check on it makes at most 50 model calls per run (retries included; the rest wait for the next
+run), and after three failed checks in a row it marks the rest "not checked" at once. Model: `claude-sonnet-5-5` unless set; Claude sign-in folder and command settable
 (`--danger-model`, `--claude-config-dir`, `--claude-bin`, or `config.json`). His daily count: the lane's report each turn,
 and a daily scheduled run of the lane's feedback step if he wants the count on days without a session (the lane's to set
 up). The prompt was brainstormed and red-teamed (Appendix F). No server module imports the reader.
@@ -470,6 +470,16 @@ site so you can have GPT add to it."
   each flag names the reader's version). Two blind runs on Fable's 49 invented messages agreed with every label
   (`danger-reader-eval.md`); one live check through the real reader stays in the release kit, and two calls per message are not
   needed unless that check misses one.
+
+## Appendix G: Codex's sixth review (22 Nov 2026, the danger reader, the address and the wording; 2 should-fix)
+
+Prompt and result: `/home/joel/askrigor-releases/20261122-innersignal-feedback/codex/review-6-prompt.md` and `review-6.txt`. No
+other finding in the whole change. Fixed, each with a test:
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | A refusal the CLI reports as an error was filed as "not checked", below the flagged | A refusal is read from the API's stop reason first, whatever the exit status; its retracted answer is never used |
+| 2 | Retried messages weren't counted in the 50-call limit | One budget of model calls per fetch, retries included; past it, the fetch stops just before the next message that needs a call. The first fix counted every event, which would have let a lost key use up each fetch on unreadable retries and hold up new messages; the test caught it, and the budget now counts calls only |
 
 ## Appendix B: Codex's first review of the build (22 Nov 2026, `origin/main..7b1c6fd2f`; 1 blocking, 10 should-fix)
 
