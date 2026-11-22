@@ -42,6 +42,7 @@ import {
   checkerPrompt,
   crisisReaderKeptPlanNote,
   crisisReaderPrompt,
+  crisisReaderProvisionalOfferedNote,
   crisisReaderWantsToDieNote,
   levelCheckerKeptPlanNote,
   protectionReaderPrompt,
@@ -58,14 +59,22 @@ import {
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const contextIdOf = (receipts) => `context:${sha256(receipts.map((receipt) => `${receipt.provider}:${receipt.model}:${receipt.session_id}`).join("|"))}`;
 
+// Which turns of a conversation may get a provisional reply (design, section 4): "first", only the first turn the crisis reader
+// reads at a level in provisionalLevels; "every", each such turn.
+export const PROVISIONAL_TURNS = Object.freeze(["first", "every"]);
+
 export const DEFAULT_RUNNER_SETTINGS = Object.freeze({
   writerMode: "focused",
   checkerMode: "split",
   provisionalLevels: Object.freeze(["acted_or_about_to"]),
+  provisionalTurns: "first",
   fixedMessageOn: "failed_checks",
   deadlineMs: 300_000,
-  roundMs: 100_000,
-  limits: Object.freeze({ reader: 30_000, writer: 120_000, checker: 90_000 }),
+  // The caps and the round from the measured times (design, section 8; "Call limits, from the measured times" in
+  // /home/joel/askrigor-releases/20261121-innersignal-runner-note/results-report.md): the slowest successful call took 20.0 s
+  // (writer), 14.4 s (checker) and 14.3 s (reader); 9 of 10 writer-and-checker rounds finished within about 25 s.
+  roundMs: 30_000,
+  limits: Object.freeze({ reader: 30_000, writer: 60_000, checker: 45_000 }),
   backgroundTurns: 20,
   conversationGapMs: 12 * 60 * 60 * 1000,
   maxBoxes: 6
@@ -112,6 +121,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
   if (!config.provisionalLevels.every((level) => ["acted_or_about_to", "wants_to_die"].includes(level))) throw new ValidationError("provisionalLevels is invalid.", { code: "RUNNER_SETTINGS_INVALID" });
+  if (!PROVISIONAL_TURNS.includes(config.provisionalTurns)) throw new ValidationError("provisionalTurns is invalid.", { code: "RUNNER_SETTINGS_INVALID" });
   // Events go to the page's stream by case and runtime turn: a turn id alone is the client's to choose and could be another case's.
   const emit = (caseId, runtimeTurnId, event) => { try { onEvent(caseId, runtimeTurnId, event); } catch { /* the page's stream never stops a turn */ } };
 
@@ -208,6 +218,10 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   // "Getting safe" or "wanting to die" (design, section 7): the readings that stand in for the owner's four routes.
   const isFixedMessageConversation = (readings) => readings.some((entry) => readCrisis(entry)
     || entry.crisis?.in_danger_from_someone || entry.crisis?.danger_to_others || entry.crisis?.home_unsafe);
+  // With provisionalTurns "first", whether a provisional reply was already offered in this conversation (design, section 4): a turn
+  // other than this one that the crisis reader read at a level in provisionalLevels, whether its provisional was shown or refused.
+  const provisionalOfferedBefore = (readings, turnId) => config.provisionalTurns === "first"
+    && readings.some((entry) => entry.turnId !== turnId && config.provisionalLevels.includes(entry.crisis?.level));
 
   async function showEmergencyLine(caseId, runtimeTurn, reason, authContext) {
     await source("recordRunnerEmergencyLine", [caseId, runtimeTurn.id, { reason }], authContext);
@@ -218,14 +232,16 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     return { conversation: view.turns, latest_message: { turn_id: runtimeTurn.user_turn_id, text: runtimeTurn.inbound.exact_text } };
   }
 
-  // The crisis reader, and the provisional reply when its reading allows one (design, section 4).
-  async function runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, authContext }) {
+  // The crisis reader, and the provisional reply when its reading allows one (design, section 4). `provisionalOffered`: one was
+  // already offered in this conversation (provisionalTurns "first"), so the reader is told so and none is shown this turn.
+  async function runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, provisionalOffered = false, authContext }) {
     const rules = rulesFrom([parts.crisis], ["the section on someone who may want to die, the chronic pain section and the harm-reduction paragraph of SKILL.md"]);
     const prompt = crisisReaderPrompt({ rules, packet: readersPacket(view, runtimeTurn) });
     const shown = config.provisionalLevels.includes("wants_to_die") ? prompt.system.replace("Answer only with the JSON", `${crisisReaderWantsToDieNote()}\nAnswer only with the JSON`) : prompt.system;
+    const offered = provisionalOffered ? withNoteBeforeAnswerLine(shown, crisisReaderProvisionalOfferedNote()) : shown;
     // With the kept plan on, the crisis reader also reads whether the person asks to keep the plan (or says yes to the offer) and
     // whether they ask to delete it, from this conversation's words.
-    const system = keptPlanEnabled ? withNoteBeforeAnswerLine(shown, crisisReaderKeptPlanNote()) : shown;
+    const system = keptPlanEnabled ? withNoteBeforeAnswerLine(offered, crisisReaderKeptPlanNote()) : offered;
     const keptPlanReading = (value) => (keptPlanEnabled ? { asks_to_keep_plan: value?.asks_to_keep_plan === true, asks_to_delete_plan: value?.asks_to_delete_plan === true } : {});
     let reading = null;
     let receipts = [];
@@ -238,7 +254,11 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     }
     const stored = { ...(reading ?? { level: "unclear", unread: true }), receipts };
     await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { crisis: stored } }], authContext);
-    if (reading && config.provisionalLevels.includes(reading.level) && typeof reading.provisional_reply === "string") {
+    const allowsProvisional = Boolean(reading) && config.provisionalLevels.includes(reading.level);
+    // A later such turn of a conversation that was already offered one: nothing is shown or recorded as a provisional, whatever the
+    // reader returned, and the skip puts no emergency line into the conversation (the line's other triggers are unchanged).
+    if (allowsProvisional && provisionalOffered) return stored;
+    if (allowsProvisional && typeof reading.provisional_reply === "string") {
       const problems = provisionalProblems(reading.provisional_reply, { level: reading.level });
       if (problems.length === 0) {
         const checks = [...(reading.level === "acted_or_about_to" ? ["a_number"] : []), "numbers_known", "shape", "links", "detox"];
@@ -461,10 +481,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const record = await load(caseId, authContext);
       const conversationId = conversationIdFor(record, runtimeTurn, userInput);
       const view = conversationView(record, conversationId, runtimeTurn);
-      const priorCrisisConversation = isCrisisConversation(conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id));
+      const earlierReadings = conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id);
+      const priorCrisisConversation = isCrisisConversation(earlierReadings);
+      const provisionalOffered = provisionalOfferedBefore(earlierReadings, runtimeTurn.id);
       emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
       const [crisis, boxes, protection] = await Promise.all([
-        runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, authContext }),
+        runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, provisionalOffered, authContext }),
         runBoxPicker({ runtimeTurn, view }),
         runProtectionReader({ runtimeTurn, view, record })
       ]);

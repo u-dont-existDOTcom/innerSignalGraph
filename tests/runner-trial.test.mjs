@@ -15,8 +15,8 @@ import { REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../src/s
 import { OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { cutRuleParts, focusedRules, wholeRules } from "../src/runner-trial/rule-parts.mjs";
 import { CRISIS_LINKS, NAMED_EMERGENCY_NUMBERS, emergencyNumbersIn, phoneLikeRuns, provisionalProblems, runProgramChecks, shapeProblems } from "../src/runner-trial/program-checks.mjs";
-import { STORAGE_LINE } from "../src/runner-trial/worker-prompts.mjs";
-import { createRunnerTrialRuntime, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
+import { STORAGE_LINE, crisisReaderProvisionalOfferedNote } from "../src/runner-trial/worker-prompts.mjs";
+import { DEFAULT_RUNNER_SETTINGS, createRunnerTrialRuntime, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
 import { EMERGENCY_LINE, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 
 // The runner trial (docs/superpowers/specs/2026-11-21-runner-trial-design.md) with stand-in workers, through the real encrypted
@@ -263,6 +263,150 @@ test("with the setting for both levels, someone who wants to die gets a provisio
   await quiet.send("I just want it all to stop. I want to die.");
   assert.ok(!quiet.events.some((event) => event.type === "provisional"));
   assert.ok(!quiet.calls.find((call) => call.role === "R1").request.system.includes("provisional_reply also when the level is wants_to_die"));
+});
+
+// ---- Which turns get a provisional reply (provisionalTurns; design, section 4) ------------------------------------------------
+
+const ACTED_PROVISIONAL = "I'm here with you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK.";
+const actedReading = (provisional) => ({ ...quietReader(), level: "acted_or_about_to", reason: "says they took pills", provisional_reply: provisional });
+// Every message read as acted or about to, by the crisis reader and the crisis checker alike; the reader always writes a provisional
+// reply (a stand-in doesn't read its prompt), unless `R1` is given.
+const actedEveryTurn = (overrides = {}) => baseScript({
+  R1: () => actedReading(ACTED_PROVISIONAL),
+  W: () => ({ reply: "Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] }),
+  C1: () => ({ findings: [], level: "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] }),
+  ...overrides
+});
+const OFFERED_NOTE = crisisReaderProvisionalOfferedNote();
+const crisisReaderSystems = (runner) => runner.calls.filter((call) => call.role === "R1").map((call) => call.request.system);
+const eventsOf = (runner, exchange, type) => runner.events.filter((event) => event.turnId === `runtime:exchange-${exchange}` && event.type === type);
+// What the crisis reader's stage sent for one turn: the events before that turn's writer started.
+function readerStageEvents(runner, exchange) {
+  const ofTurn = runner.events.filter((event) => event.turnId === `runtime:exchange-${exchange}`);
+  return ofTurn.slice(0, ofTurn.findIndex((event) => event.type === "status" && event.step === "writing")).filter((event) => event.type !== "status");
+}
+
+test("the defaults: a provisional reply only on a conversation's first turn read at its level, and the caps and round from the measured times", () => {
+  assert.equal(DEFAULT_RUNNER_SETTINGS.provisionalTurns, "first");
+  assert.deepEqual({ ...DEFAULT_RUNNER_SETTINGS.limits }, { reader: 30_000, writer: 60_000, checker: 45_000 });
+  assert.equal(DEFAULT_RUNNER_SETTINGS.roundMs, 30_000);
+  assert.equal(DEFAULT_RUNNER_SETTINGS.deadlineMs, 300_000, "the turn's deadline is unchanged");
+  const make = (settings) => createRunnerTrialRuntime({ privateCaseSource: {}, parts, settings, workerFor: () => ({}) });
+  assert.deepEqual([make({}).settings.provisionalTurns, make({ provisionalTurns: "every" }).settings.provisionalTurns], ["first", "every"]);
+  assert.deepEqual(make({}).settings.limits, { reader: 30_000, writer: 60_000, checker: 45_000 });
+  for (const value of ["sometimes", "First", "", null, ["first"], 1]) {
+    assert.throws(() => make({ provisionalTurns: value }), (error) => error.code === "RUNNER_SETTINGS_INVALID" && error.message === "provisionalTurns is invalid.", JSON.stringify(value));
+  }
+});
+
+test("with provisionalTurns first, a later turn read acted gets no provisional reply: the reader is told one was offered, and the skip puts no emergency line in", async (t) => {
+  const runner = await makeRunner(t, actedEveryTurn());
+  await runner.send("I took all my pills an hour ago.");
+  const second = await runner.send("No ambulance. I just want to sleep.");
+  assert.equal(second.deliveryKind, "candidate");
+  // The first turn: the provisional reply, and no line.
+  assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [ACTED_PROVISIONAL]);
+  assert.deepEqual(eventsOf(runner, 1, "emergency_line"), []);
+  // The second: the reader's provisional (it wrote one anyway) is neither shown nor recorded, and its stage sends nothing.
+  assert.deepEqual(eventsOf(runner, 2, "provisional"), []);
+  assert.deepEqual(readerStageEvents(runner, 2), [], "no provisional and no emergency line from the crisis reader's stage");
+  const record = await runner.store.load(CASE_ID);
+  const [first, later] = record.runtime_turns;
+  assert.equal(first.provisional.exact_text, ACTED_PROVISIONAL);
+  assert.equal(later.provisional, undefined, "nothing recorded as a provisional");
+  assert.equal(Object.hasOwn(later.runner_reading.readers, "provisional_refused"), false, "nor as a refused one");
+  assert.equal(later.runner_reading.readers.crisis.level, "acted_or_about_to", "the reading itself is stored as always");
+  // The crisis checker's own trigger is unchanged (it read acted, and nothing was shown this turn), so the line shows when its
+  // reading arrives; the skip itself puts none in.
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line").map((event) => event.reason), ["checker_read_acted"]);
+  // The reader is told on the line before its answer line, and only after the first such turn.
+  const [firstPrompt, laterPrompt] = crisisReaderSystems(runner);
+  assert.equal(firstPrompt.includes(OFFERED_NOTE), false);
+  assert.ok(laterPrompt.endsWith(`\n${OFFERED_NOTE}\nAnswer only with the JSON object the schema asks for.`));
+  // The writer continues from what the person saw: the first turn's provisional reply in its place, none of its own this turn.
+  const laterWriter = runner.calls.filter((call) => call.role === "W")[1].request;
+  const packet = JSON.parse(laterWriter.user.slice(laterWriter.user.indexOf("{")));
+  assert.equal(Object.hasOwn(packet, "provisional_reply_shown"), false);
+  assert.deepEqual(packet.conversation.filter((entry) => entry.kind === "provisional reply").map((entry) => entry.text), [ACTED_PROVISIONAL]);
+  // A new conversation's first such turn gets one again.
+  await runner.send("I took them again.", { newConversation: true });
+  assert.deepEqual(eventsOf(runner, 3, "provisional").map((event) => event.text), [ACTED_PROVISIONAL]);
+  assert.equal(crisisReaderSystems(runner)[2].includes(OFFERED_NOTE), false);
+});
+
+test("with provisionalTurns every, each turn read acted gets its provisional reply, as before", async (t) => {
+  const runner = await makeRunner(t, actedEveryTurn(), { settings: { provisionalTurns: "every" } });
+  await runner.send("I took all my pills an hour ago.");
+  await runner.send("No ambulance. I just want to sleep.");
+  assert.deepEqual([1, 2].map((exchange) => eventsOf(runner, exchange, "provisional").map((event) => event.text)), [[ACTED_PROVISIONAL], [ACTED_PROVISIONAL]]);
+  assert.deepEqual([1, 2].map((exchange) => eventsOf(runner, exchange, "emergency_line").length), [0, 0]);
+  assert.deepEqual(crisisReaderSystems(runner).map((system) => system.includes(OFFERED_NOTE)), [false, false]);
+  assert.equal((await runner.store.load(CASE_ID)).runtime_turns[1].provisional.exact_text, ACTED_PROVISIONAL);
+});
+
+test("with provisionalTurns first, a refused provisional still shows the emergency line on its turn, and the next turn read acted gets none", async (t) => {
+  const runner = await makeRunner(t, actedEveryTurn({
+    // The first turn's provisional names a number off the list; the second's would pass its checks, but it isn't that turn's to give.
+    R1: (count) => actedReading(count === 1 ? "Please get help now, call 0800 555 0100." : ACTED_PROVISIONAL),
+    W: () => ({ reply: "Please call 112 now. Is anyone near you?", answered_level: "acted_or_about_to", quotes: [] })
+  }));
+  await runner.send("I swallowed a lot of tablets.");
+  await runner.send("I don't want to call anyone.");
+  assert.deepEqual(eventsOf(runner, 1, "provisional"), []);
+  assert.deepEqual(readerStageEvents(runner, 1).map((event) => [event.type, event.reason]), [["emergency_line", "provisional_not_shown"]], "the refused provisional's line, at once");
+  assert.deepEqual(eventsOf(runner, 2, "provisional"), [], "whether the first was shown or refused doesn't matter");
+  assert.deepEqual(readerStageEvents(runner, 2), []);
+  assert.ok(crisisReaderSystems(runner)[1].includes(OFFERED_NOTE));
+  const record = await runner.store.load(CASE_ID);
+  assert.deepEqual(record.runtime_turns[0].runner_reading.readers.provisional_refused.problems, ["no_emergency_number", "unknown_number"]);
+  assert.equal(record.runtime_turns[0].emergency_line_reason, "provisional_not_shown");
+  assert.equal(record.runtime_turns[1].provisional, undefined);
+});
+
+test("with provisionalTurns first, the skip changes none of the line's other triggers: no reading in a crisis conversation, and a turn closed after a crisis reading", async (t) => {
+  // The second turn's crisis reader gives no reading in a conversation already read acted: the line, as before.
+  const unread = await makeRunner(t, actedEveryTurn({ R1: (count) => { if (count === 2) throw Object.assign(new Error("synthetic"), { code: "TIMEOUT" }); return actedReading(ACTED_PROVISIONAL); } }));
+  await unread.send("I took all my pills an hour ago.");
+  await unread.send("Still here.");
+  assert.deepEqual(readerStageEvents(unread, 2).map((event) => event.reason), ["no_reading_in_crisis_conversation"]);
+  // A later turn read acted whose writer fails ends without a reply: the line goes in at the closing. The crisis checker never
+  // read it, so only the closing shows it.
+  let failing = false;
+  const closed = await makeRunner(t, actedEveryTurn({ W: () => { if (failing) throw Object.assign(new Error("synthetic"), { code: "PLAN_LIMIT" }); return { reply: "Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] }; } }));
+  await closed.send("I took all my pills an hour ago.");
+  failing = true;
+  const answer = await closed.send("No ambulance.");
+  assert.equal(answer.closing.reason_code, "plan_limit");
+  assert.deepEqual(eventsOf(closed, 2, "provisional"), []);
+  assert.deepEqual(eventsOf(closed, 2, "emergency_line").map((event) => event.reason), ["turn_closed_without_reply"]);
+});
+
+test("the crisis reader is told the provisional reply's exact checks in plain words, and each is one provisionalProblems makes", async (t) => {
+  const runner = await makeRunner(t, baseScript());
+  await runner.send("Something synthetic.");
+  const system = crisisReaderSystems(runner)[0];
+  for (const words of [
+    "no headings, lists or bold",
+    "The program shows it only when it passes exact checks, so keep to them:",
+    "at most one question in the whole reply (one question mark), and in the first step, when you don't know where they are, that one question is where they are;",
+    "every number in it is an emergency number the section names (112, 911, 999), and no other number of two or more digits, not even a time or a count such as \"10 minutes\" (the digits in the section's three links don't count);",
+    "at most 900 characters;",
+    "no link but the section's three;",
+    "never the word detox."
+  ]) assert.ok(system.includes(words), words);
+  assert.equal(system.includes("at most one question;"), false, "the old wording that left two questions open is gone");
+  // Each is a check the program makes before a provisional reply shows.
+  const ask = "I hear you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK. Where are you?";
+  assert.deepEqual(provisionalProblems(ask), []);
+  assert.deepEqual(provisionalProblems(`${ask} Is anyone near you?`), ["more_than_one_question"]);
+  assert.deepEqual(provisionalProblems("I hear you. Please call 112 now and stay on the line for 10 minutes."), ["unknown_number"]);
+  assert.deepEqual(provisionalProblems(`I hear you. Please call 112 now, or a crisis line (${CRISIS_LINKS[2]}). A therapist: ${CRISIS_LINKS[1]}`), []);
+  assert.deepEqual(provisionalProblems(`I hear you. Please call 112 now. ${"Stay with me. ".repeat(70)}`), ["too_long"]);
+  assert.deepEqual(provisionalProblems("I hear you. Please call 112 now. https://example.org/help"), ["link_not_allowed"]);
+  assert.deepEqual(provisionalProblems("I hear you. Please call 112 now, not a detox."), ["detox"]);
+  assert.deepEqual(provisionalProblems("I hear you.\n- Call 112 now.\n- Unlock the door."), ["list"]);
+  // The check also takes the national numbers on its list (000, 111, 119, 144); the reader is told only the section's three.
+  assert.deepEqual(provisionalProblems("I hear you. Please call 000 now."), []);
 });
 
 test("a blocking finding sends the draft to repair; the repaired version is checked again, the eleven repair checks included", async (t) => {

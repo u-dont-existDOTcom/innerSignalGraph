@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { RuntimeError } from "../core/errors.mjs";
 import { readOnOffSetting } from "../core/on-off-setting.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { DEFAULT_RUNNER_SETTINGS } from "./runtime.mjs";
+import { DEFAULT_RUNNER_SETTINGS, PROVISIONAL_TURNS } from "./runtime.mjs";
 import { SealedClaudeWorker } from "./sealed-claude.mjs";
 import { SealedCodexWorker } from "./sealed-codex.mjs";
 
@@ -37,7 +37,7 @@ export const DEFAULT_RUNNER_WORKERS = Object.freeze({
   C1: CHECKER, C2: CHECKER, C3: CHECKER, C4: CHECKER, C5: CHECKER, CW: CHECKER
 });
 
-const SETTINGS_FIELDS = Object.freeze(["writerMode", "checkerMode", "provisionalLevels", "deadlineMs", "roundMs", "limits", "workers", "claudeConfigDir"]);
+const SETTINGS_FIELDS = Object.freeze(["writerMode", "checkerMode", "provisionalLevels", "provisionalTurns", "deadlineMs", "roundMs", "limits", "workers", "claudeConfigDir"]);
 const LIMIT_FIELDS = Object.freeze(["reader", "writer", "checker"]);
 const WORKER_FIELDS = Object.freeze(["provider", "model", "effort"]);
 const PROVIDERS = Object.freeze(["claude", "codex"]);
@@ -99,6 +99,11 @@ export function validateRunnerTrialSettings(value, { root = repositoryRoot } = {
       throw invalid("provisionalLevels must list acted_or_about_to, and may also list wants_to_die.");
     }
     runtime.provisionalLevels = Object.freeze([...levels]);
+  }
+  if (Object.hasOwn(value, "provisionalTurns")) {
+    // first: only a conversation's first turn read at one of those levels gets a provisional reply; every: each such turn.
+    if (!PROVISIONAL_TURNS.includes(value.provisionalTurns)) throw invalid(`provisionalTurns must be ${PROVISIONAL_TURNS.join(" or ")}.`);
+    runtime.provisionalTurns = value.provisionalTurns;
   }
   if (Object.hasOwn(value, "deadlineMs")) {
     if (!wholeMs(value.deadlineMs, DEADLINE_MS)) throw invalid(`deadlineMs must be a whole number of milliseconds from ${DEADLINE_MS.min} to ${DEADLINE_MS.max}.`);

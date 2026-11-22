@@ -213,6 +213,7 @@ test("a settings file outside the repository sets the arms, the times and each r
     writerMode: "whole",
     checkerMode: "whole",
     provisionalLevels: ["acted_or_about_to", "wants_to_die"],
+    provisionalTurns: "every",
     deadlineMs: 240_000,
     roundMs: 90_000,
     limits: { reader: 20_000, checker: 60_000 },
@@ -228,6 +229,7 @@ test("a settings file outside the repository sets the arms, the times and each r
     writerMode: "whole",
     checkerMode: "whole",
     provisionalLevels: ["acted_or_about_to", "wants_to_die"],
+    provisionalTurns: "every",
     deadlineMs: 240_000,
     roundMs: 90_000,
     limits: { reader: 20_000, checker: 60_000 }
@@ -267,6 +269,11 @@ test("every field is checked strictly, and an error names the field in fixed wor
     [{ provisionalLevels: ["acted_or_about_to", "acted_or_about_to"] }, /provisionalLevels/u],
     [{ provisionalLevels: ["acted_or_about_to", BAD] }, /provisionalLevels/u],
     [{ provisionalLevels: "acted_or_about_to" }, /provisionalLevels/u],
+    [{ provisionalTurns: BAD }, "provisionalTurns must be first or every."],
+    [{ provisionalTurns: "First" }, "provisionalTurns must be first or every."],
+    [{ provisionalTurns: ["first"] }, /provisionalTurns/u],
+    [{ provisionalTurns: null }, /provisionalTurns/u],
+    [{ provisionalTurns: true }, /provisionalTurns/u],
     [{ deadlineMs: 300.5 }, /deadlineMs must be a whole number/u],
     [{ deadlineMs: 5_000 }, /deadlineMs/u],
     [{ deadlineMs: "300000" }, /deadlineMs/u],
@@ -417,11 +424,11 @@ test("/health names the trial's case only with the trial on and the setting set,
 
 // ---- The stream --------------------------------------------------------------------------------------------------------------
 
-async function trialServer(t, script, { ownerFallbackEnabled = false } = {}) {
+async function trialServer(t, script, { ownerFallbackEnabled = false, settings = {} } = {}) {
   const store = await makeStore(t);
   const config = trialConfig({ ownerFallbackEnabled });
   const workers = fakeWorkers(script);
-  const trial = createRunnerTrialController({ privateCaseSource: store, config, settings: validateRunnerTrialSettings({}), parts, workerFor: workers.workerFor });
+  const trial = createRunnerTrialController({ privateCaseSource: store, config, settings: validateRunnerTrialSettings(settings), parts, workerFor: workers.workerFor });
   const base = await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseStore: store, privateTherapyController: trial.controller, runnerTrialEvents: trial.events }));
   return { store, base, trial, calls: workers.calls };
 }
@@ -436,8 +443,13 @@ async function respond(base, body, { stream = true } = {}) {
   return { status: response.status, type: response.headers.get("content-type"), text, lines: stream && /x-ndjson/u.test(response.headers.get("content-type") ?? "") ? text.trim().split("\n").map((line) => JSON.parse(line)) : null, json: stream ? null : JSON.parse(text) };
 }
 
+// The server and page tests below whose second turn read acted shows its own provisional reply (or, refused, the emergency line)
+// run with provisionalTurns "every": since 22 Nov 2026 the default, "first", gives a later turn of a conversation none
+// (tests/runner-trial.test.mjs), and these test what the server and the page carry, not which turns get one.
+const EVERY_TURN = Object.freeze({ provisionalTurns: "every" });
+
 test("someone who has acted: the stream carries the steps and the provisional reply before the final line, which has the JSON answer's fields", async (t) => {
-  const { base, trial } = await trialServer(t, actedScript());
+  const { base, trial } = await trialServer(t, actedScript(), { settings: EVERY_TURN });
   const streamed = await respond(base, { exchangeId: "exchange-acted", userMessage: "I took all my pills an hour ago." });
   assert.equal(streamed.status, 200);
   assert.equal(streamed.type, "application/x-ndjson");
@@ -805,7 +817,7 @@ test("a reloaded page shows the current conversation again, every turn with its 
     // The new conversation's first message shows a provisional reply; its second's fails its checks, so the emergency line shows.
     R1: (count) => (count === 2 ? acted(PROVISIONAL) : count === 3 ? acted("Please get help now, call 0800 555 0100.") : quietReader()),
     W: (count) => ({ reply: `A synthetic reply ${count}.`, answered_level: "none", quotes: [] })
-  }));
+  }), { settings: EVERY_TURN });
   await respond(base, { exchangeId: "exchange-earlier", userMessage: "A synthetic message of an earlier conversation." });
   const exchanges = Array.from({ length: 11 }, (_, index) => `exchange-now-${index + 1}`);
   for (const [index, exchangeId] of exchanges.entries()) {
@@ -853,7 +865,7 @@ test("a page whose stream failed gets back what each turn missed, in its place a
     // line shows instead.
     R1: (count) => (count === 2 ? acted(PROVISIONAL) : count === 3 ? acted("Please get help now, call 0800 555 0100.") : quietReader()),
     W: (count) => ({ reply: `A synthetic reply ${count}.`, answered_level: "none", quotes: [] })
-  }));
+  }), { settings: EVERY_TURN });
   const [m1, m2, m3] = ["exchange-m1", "exchange-m2", "exchange-m3"];
   for (const [index, exchangeId] of [m1, m2, m3].entries()) assert.equal((await respond(base, { exchangeId, userMessage: `Synthetic message ${index + 1}.` })).lines.at(-1).type, "final", exchangeId);
   const stored = (await ownerPost(base, "/v1/runner/reconcile", { caseId: CASE_ID, conversation: "current" })).json.turns;

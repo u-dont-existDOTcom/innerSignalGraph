@@ -36,8 +36,13 @@ const THIRTY_DAYS = 30 * DAY;
 // The packets with the switch off. First taken from the fixture's scenario run on `git archive aa9d03112 src` (the trial's head
 // before the kept plan was built): 63d1a8108028bb0f8819562e8bea3290b466678e8946d49cd8bb9eada740afbc. Re-pinned on 22 Nov 2026 for
 // one deliberate prompt change and nothing else: the writer's line about InnerSignal's storage and the checkers' STORAGE_DESCRIBED
-// (worker-prompts.mjs, from the blind comparison's F9). A deliberate change to a worker's prompt or packet changes it again.
-const PACKETS_BEFORE_KEPT_PLAN = "228d813743acce50af16eec30be3f448a1aad8c75d1f957e1209e07fd4860f41";
+// (worker-prompts.mjs, from the blind comparison's F9): 228d813743acce50af16eec30be3f448a1aad8c75d1f957e1209e07fd4860f41.
+// Re-pinned again on 22 Nov 2026 for one deliberate prompt change and nothing else: the crisis reader's provisional_reply sentence
+// (crisisReaderPrompt in worker-prompts.mjs) now states the provisional's exact checks in plain words (one question, and where they
+// are when that isn't known; only 112, 911 and 999; no other number of two or more digits; 900 characters; the three links; no
+// "detox"). Only the 7 R1 calls change: with the earlier sentence put back in them, the digest is the one above. A deliberate change
+// to a worker's prompt or packet changes it again.
+const PACKETS_BEFORE_KEPT_PLAN = "537cedf1dff4d0a6be6a5e5e7dd67c139156e321716eb0407845ff3ce5803b02";
 
 // The plan reply of the scenarios below, and its two lines.
 const PLAN_LINES = Object.freeze([

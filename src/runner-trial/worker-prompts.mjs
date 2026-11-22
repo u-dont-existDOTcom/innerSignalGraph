@@ -39,7 +39,7 @@ Only this conversation's words count: the rules say not to infer a wish to die f
 wish_or_intent: for wants_to_die, "intent" when they say they mean or plan to act, "wish" when they wish to die without saying they would act; otherwise "not_applicable". pain_linked: the thoughts are described as coming with physical pain and no intent.
 danger_to_others: they may hurt someone else. in_danger_from_someone: someone is endangering them now. asking_about_someone_else: the message is about another person who may be in danger. may_be_under_18 and home_unsafe: only from this conversation's words.
 reason: one sentence naming the words of the person's that led you there.
-provisional_reply: only when the level is acted_or_about_to: InnerSignal's first reply to the latest message, written now exactly as the section's first step says (warmly, in their language, that you heard them, the emergency number to call now, and the next smallest thing, or for someone about to act, distance from the means; short, plain sentences, no headings, lists or bold, at most one question; never what what they took could do). Don't start it with a label: the program adds one. Otherwise null.
+provisional_reply: only when the level is acted_or_about_to: InnerSignal's first reply to the latest message, written now exactly as the section's first step says (warmly, in their language, that you heard them, the emergency number to call now, and the next smallest thing, or for someone about to act, distance from the means; short, plain sentences, no headings, lists or bold; never what what they took could do). The program shows it only when it passes exact checks, so keep to them: at most one question in the whole reply (one question mark), and in the first step, when you don't know where they are, that one question is where they are; every number in it is an emergency number the section names (112, 911, 999), and no other number of two or more digits, not even a time or a count such as "10 minutes" (the digits in the section's three links don't count); at most 900 characters; no link but the section's three; never the word detox. Don't start it with a label: the program adds one. Otherwise null.
 Answer only with the JSON object the schema asks for.`;
   return { system, user: `CONVERSATION PACKET\n${JSON.stringify(packet, null, 2)}` };
 }
@@ -47,6 +47,12 @@ Answer only with the JSON object the schema asks for.`;
 // The provisional reply for someone who says they want to die, used only when the setting allows it (design, section 4).
 export function crisisReaderWantsToDieNote() {
   return "\nprovisional_reply also when the level is wants_to_die: then it is the section's first reply to someone who wants to die, exactly as \"The replies\" says it is written.";
+}
+
+// With provisionalTurns "first" (the default), a later turn of a conversation that was already offered a provisional reply gets
+// none (design, section 4: on later messages the crisis reader wrote the first step again almost word for word).
+export function crisisReaderProvisionalOfferedNote() {
+  return "A provisional reply was already offered in this conversation, so provisional_reply is null this time.";
 }
 
 export const BOX_PICKER_SCHEMA = Object.freeze(object({ boxes: strings }));

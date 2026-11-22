@@ -161,10 +161,26 @@ writer and one whole checker at a lower effort.
   25.1 s, but the full reply's p90 rose from 31.1 s to 46.7 s with 3 repairs instead of 0, and 3 of 6 later-turn
   provisionals repeated the four people and links the crisis section gives once (the checker flagged it after it showed).
   The default stays `acted_or_about_to`.
+- **Which turn**: by default only the first turn of this conversation that R1 reads at a level in `provisionalLevels`, found
+  from the stored readings, whether that turn's provisional was shown or refused (`provisionalTurns`: `first`; `every`, a
+  provisional on each such turn as before 22 Nov). On a later such turn R1's prompt says one was already offered in this
+  conversation, so it gives none; nothing is shown or recorded as a provisional, whatever R1 returns, and the skip puts no
+  highlighted line into the conversation (the line's other triggers below stay as they are, C1's `acted_or_about_to` reading
+  included). The writer and the checkers are unchanged: the full reply comes back to the number as the rules say, and C1
+  judges it. A new conversation's first such turn gets one again. Why, measured on 22 Nov: in the GPT test round every later
+  message read `acted_or_about_to` (F2, S4 and S5, after the person refused an ambulance or the crisis line) got a provisional
+  again, each repeating the first step almost word for word (the three numbers, "I can't know what the pills will do",
+  someone nearby), and the blind judge counted F2 as "repeating the number in every line", which the crisis section rules
+  out ("don't repeat it in every line, but come back to it"); with `wants_to_die` on, 3 of 6 later provisionals repeated the
+  four people and links the section gives once.
 - **What it holds** (the crisis section's first step, written by R1 with only the `crisis` part): that it heard them, the
   emergency number to call now, and the next smallest thing (someone in the house, unlocking the door, keeping the packets),
   or for someone about to act, distance from the means; in their language, short, no headings, lists or bold, at most one
-  question. Never what what they took could do to them.
+  question in the whole reply, and when R1 doesn't know where they are, that question is where they are (the first step
+  says to ask where they are and the first reply to ask one question about now: Claude's provisionals asked both, where
+  they are and whether anyone is near, and the one-question check refused them). Never what what they took could do to
+  them. R1's prompt states the provisional's exact checks (section 5) in plain words; it names only the section's 112, 911
+  and 999, though the check also accepts the national numbers on its list.
 - **Shown** when it passes its exact checks (section 5, the provisional row), as `Provisional urgent response: ` followed by
   the text; the page then shows `Thinking more about the full response...` while the writer and checkers work. No second
   model reads it first: the owner chose that in point 3, and its exact checks are the only checks that hold.
@@ -173,8 +189,9 @@ writer and one whole checker at a lower effort.
   approved words, into the conversation as a highlighted notice: "In danger right now? Call your local emergency number: 112
   in the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK." No model writes it and no
   new wording is needed. When it showed is stored in the runtime record (not the transcript), and later packets show it in
-  its place, like the provisional. When C1's reading is the turn's first crisis reading and no provisional was shown, the
-  line shows as soon as C1's reading arrives.
+  its place, like the provisional. When C1 reads `acted_or_about_to` and nothing was shown this turn (R1 read another level
+  or gave no reading, or the turn's provisional was skipped as a later such turn), the line shows as soon as C1's reading
+  arrives.
 - **The full reply** follows it in the same turn: the writer gets the provisional and continues the first step (the next
   smallest thing, staying with them) rather than repeating it; C1 checks the provisional and the full reply together as the
   first reply the person sees (at most one question about now across both; nothing that contradicts the provisional).
@@ -269,10 +286,15 @@ fullwidth and the other common decimal digits), so the number checks work whatev
 - **While waiting**: "Writing and checking a reply…" with the seconds so far and the step (reading, writing, checking,
   repairing); in a crisis turn, after the provisional, `Thinking more about the full response...`.
 - **Deadline**: one per turn (first value 300 s, set from the timed batch), passed into the runtime. Every call's limit is
-  the smaller of its own (R1, R2 and R3 30 s, writer 120 s, each checker 90 s) and the time left. A repair starts when the
-  time left is at least the measured round time: the time within which 9 of 10 writer-and-checker rounds finished in the
-  timed batch (first value, before measuring: 100 s). The per-call limits are caps for a stuck call, not a round's expected
-  length.
+  the smaller of its own (R1, R2 and R3 30 s, writer 60 s, each checker 45 s) and the time left. A repair starts when the
+  time left is at least the round time, 30 s: the time within which 9 of 10 writer-and-checker rounds finished, rounded up.
+  The per-call limits are caps for a stuck call, not a round's expected length. Set on 22 Nov from the measured times
+  (results report, "Call limits, from the measured times"), in place of the first values (writer 120 s, each checker 90 s,
+  round 100 s): across every run (129 GPT, 24 Claude and 10 mixed writer calls) no successful call took longer than 20.0 s
+  for the writer, 14.4 s for a checker and 14.3 s for a reader; 9 of 10 writer-and-checker rounds finished within 22.7 s
+  (GPT), 23.5 s (Claude) and 24.7 s (mixed), 26.2 s at most; once a GPT writer call hung to its 120 s cap and its retry
+  answered in 11.5 s, so that reply took 152.6 s. Each cap is about two to three times the slowest call measured, so a
+  stuck call costs less.
 - **Delivery**: `/v1/therapy/respond` streams newline-delimited JSON when the page asks (`accept: application/x-ndjson`): a
   `status` line per step, a `provisional` line, a `notice` line, the final line. A page that asks for JSON gets one answer. The
   request is authorized for its case (the read, write and audit scopes, the check the turn itself makes first) before the stream
