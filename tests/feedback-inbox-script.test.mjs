@@ -271,11 +271,12 @@ test("fetch has each new message checked for danger, stores only the flag, print
   await w.sendPage({ kind: "praise", text: "Lovely." });
   const out = path.join(w.base, "danger");
   const report = await w.run("fetch", "--out", out);
-  assert.match(report, /Danger check: 1 flagged as possibly in danger \(read those first\), 0 not checked\./u);
+  assert.match(report, /Danger check: 1 flagged as possibly in danger, 0 the AI declined to read \(read those first too\), 0 not checked\./u);
   assert.equal(w.checked.length, 2, "one check per new message");
   const docs = await Promise.all(JSON.parse(await fs.readFile(path.join(out, "plan.json"), "utf8")).batches.flat()
     .map(async (entry) => JSON.parse(await fs.readFile(entry.file_path, "utf8"))));
   assert.deepEqual(docs.map((doc) => doc.danger).sort(), ["flagged", "not_flagged"]);
+  assert.ok(docs.every((doc) => doc.danger_check === "feedback-danger-reader-v2"), "each flag names the reader's version");
   assert.equal(report.includes("froze"), false, "counts only");
   await w.run("fetch", "--confirm", out);
 
@@ -294,5 +295,5 @@ test("fetch has each new message checked for danger, stores only the flag, print
   const broken = path.join(w.base, "broken");
   const brokenReport = await runFeedbackInbox(["fetch", "--out", broken, "--config-dir", w.configDir], { createReader: failing });
   assert.equal(calls, 3);
-  assert.match(brokenReport, /0 flagged as possibly in danger \(read those first\), 5 not checked \(3 CLI_FAILED\)/u);
+  assert.match(brokenReport, /0 flagged as possibly in danger, 0 the AI declined to read \(read those first too\), 5 not checked \(3 CLI_FAILED\)/u);
 });

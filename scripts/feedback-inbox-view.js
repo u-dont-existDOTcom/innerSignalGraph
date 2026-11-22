@@ -14,9 +14,10 @@ const CHOICE_LABELS = { publish: "Shown publicly once the lane runs", hide: "Not
 // The danger reader's flag (the owner's 5b): flagged messages come first, then those it couldn't check, then the rest.
 const DANGER_LINES = {
   flagged: "An AI check says the writer, or someone they mention, may be in danger: read this first.",
+  refused: "The AI check declined to read this one, which can mean it describes something serious: read this first.",
   not_checked: "Not checked for danger (the check was off or failed)."
 };
-const DANGER_ORDER = { flagged: 0, not_checked: 1 };
+const DANGER_ORDER = { flagged: 0, refused: 0, not_checked: 1 };
 
 // doc: the page's document. items: the `feedback` collection's documents ({id, kind, text, reply_address, received_at, via,
 // public_review, published}). choices: the `choices` collection as {docId: data}. write(path, data, button, okText): the page's own
@@ -47,7 +48,7 @@ function renderFeedbackView({ doc, items, choices, write }) {
       ...(item.published ? ["shown publicly now"] : [])
     ].join(" · ");
     card.appendChild(node("p", "meta", header));
-    if (DANGER_LINES[item.danger]) card.appendChild(node("p", item.danger === "flagged" ? "danger" : "unchecked", DANGER_LINES[item.danger]));
+    if (DANGER_LINES[item.danger]) card.appendChild(node("p", item.danger === "not_checked" ? "unchecked" : "danger", DANGER_LINES[item.danger]));
     if (item.reply_address) card.appendChild(node("p", "address", `Answer to: ${item.reply_address}`));
     card.appendChild(node("p", "feedback-text", item.text ?? ""));
     if (choice) card.appendChild(node("p", "status", CHOICE_LABELS[choice] ?? ""));

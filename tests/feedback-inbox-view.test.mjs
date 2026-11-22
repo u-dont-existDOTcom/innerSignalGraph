@@ -71,13 +71,15 @@ test("the view puts messages the danger check flagged first, then unchecked ones
     items: [
       { id: "fb_CCCCCCCCCCCCCCCCCCCC", kind: "praise", text: "newest, fine", received_at: "2026-11-22T09:00:00Z", via: "page", danger: "not_flagged" },
       { id: "fb_DDDDDDDDDDDDDDDDDDDD", kind: "bug", text: "older, flagged", received_at: "2026-11-22T07:00:00Z", via: "page", danger: "flagged" },
-      { id: "fb_EEEEEEEEEEEEEEEEEEEE", kind: "suggestion", text: "unchecked", received_at: "2026-11-22T08:00:00Z", via: "chat", danger: "not_checked" }
+      { id: "fb_EEEEEEEEEEEEEEEEEEEE", kind: "suggestion", text: "unchecked", received_at: "2026-11-22T08:00:00Z", via: "chat", danger: "not_checked" },
+      { id: "fb_FFFFFFFFFFFFFFFFFFFF", kind: "bug", text: "declined", received_at: "2026-11-22T06:00:00Z", via: "page", danger: "refused" }
     ],
     choices: {},
     write: () => {}
   });
   const texts = section.children.map((card) => card.children.find((child) => child.attributes.class === "feedback-text").text);
-  assert.deepEqual(texts, ["older, flagged", "unchecked", "newest, fine"]);
+  assert.deepEqual(texts, ["older, flagged", "declined", "unchecked", "newest, fine"]);
+  assert.match(section.children[1].children[1].text, /declined to read this one/u);
   assert.match(section.children[0].children[1].text, /may be in danger: read this first/u);
-  assert.match(section.children[1].children[1].text, /Not checked for danger/u);
+  assert.match(section.children[2].children[1].text, /Not checked for danger/u);
 });

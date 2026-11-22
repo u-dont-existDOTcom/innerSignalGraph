@@ -29,7 +29,7 @@ import { fileURLToPath } from "node:url";
 import { FEEDBACK_ID_PATTERN } from "../src/feedback/codes.mjs";
 import { generateOwnerKeyPair, openSealedForOwner, readOwnerPrivateKey } from "../src/feedback/open-sealed.mjs";
 import { keyIdFor, readOwnerPublicKey } from "../src/feedback/sealed-box.mjs";
-import { DANGER_READER_DEFAULT_MODEL, createDangerReader } from "../src/feedback/danger-reader.mjs";
+import { DANGER_READER_DEFAULT_MODEL, DANGER_READER_VERSION, createDangerReader } from "../src/feedback/danger-reader.mjs";
 
 const BATCH = 50;
 const MAX_EVENTS_PER_FETCH = 1_000;
@@ -204,12 +204,14 @@ async function keygen(paths, options) {
 }
 
 // --- fetch ------------------------------------------------------------------------------------------------------------------
-// danger: "flagged" (the reader thinks the writer or someone they mention may be in danger: read first), "not_flagged", or
-// "not_checked" (the reader was off or failed: read these next).
+// danger: "flagged" (the reader thinks the writer or someone they mention may be in danger: read first), "refused" (the model
+// declined to read it, which can mean it describes something serious: read first too), "not_flagged", or "not_checked" (the
+// reader was off or failed: read these next). danger_check names the reader's version that set it.
 function inboxDoc(event, opened, danger) {
   return {
     id: event.id,
     danger,
+    ...(danger === "not_checked" ? {} : { danger_check: DANGER_READER_VERSION }),
     kind: opened.kind,
     text: opened.text,
     reply_address: opened.reply_address ?? null,
@@ -272,7 +274,7 @@ async function fetchEvents(paths, options, now, reader) {
     const keys = await loadKeys(paths);
     const after = Number.isSafeInteger(state.after) ? state.after : 0;
     const entries = [];
-    const counts = { new: 0, by_kind: {}, reviews_waiting: 0, flagged: 0, not_checked: 0, check_failures: {}, deleted: 0, expired_here: 0, unreadable: 0, held: 0, full: {}, stored: {} };
+    const counts = { new: 0, by_kind: {}, reviews_waiting: 0, flagged: 0, refused: 0, not_checked: 0, check_failures: {}, deleted: 0, expired_here: 0, unreadable: 0, held: 0, full: {}, stored: {} };
     const maxEvents = reader ? MAX_EVENTS_PER_CHECKED_FETCH : MAX_EVENTS_PER_FETCH;
     const unreadable = [];
     // Which messages the Inbox may hold, by id and day only (no words), so their Inbox copies go after a year even if a deletion record
@@ -289,6 +291,11 @@ async function fetchEvents(paths, options, now, reader) {
         return "not_checked";
       }
       const verdict = await reader.check(text);
+      if (verdict.reason === "REFUSED") {
+        failedInARow = 0;
+        counts.refused += 1;
+        return "refused";
+      }
       if (verdict.flag === null) {
         failedInARow += 1;
         counts.not_checked += 1;
@@ -365,7 +372,7 @@ async function fetchEvents(paths, options, now, reader) {
     await save();
     return [
       `Feedback: ${counts.new} new (${Object.entries(counts.by_kind).map(([kind, count]) => `${count} ${kind}`).join(", ") || "none"}), ${counts.reviews_waiting} review(s) waiting for a yes, ${counts.deleted} deletion(s), ${counts.held} held for the first hour.`,
-      `Danger check: ${reader ? `${counts.flagged} flagged as possibly in danger (read those first), ${counts.not_checked} not checked` : "off"}${Object.keys(counts.check_failures).length ? ` (${Object.entries(counts.check_failures).map(([reason, count]) => `${count} ${reason}`).join(", ")})` : ""}.`,
+      `Danger check: ${reader ? `${counts.flagged} flagged as possibly in danger, ${counts.refused} the AI declined to read (read those first too), ${counts.not_checked} not checked` : "off"}${Object.keys(counts.check_failures).length ? ` (${Object.entries(counts.check_failures).map(([reason, count]) => `${count} ${reason}`).join(", ")})` : ""}.`,
       ...(counts.expired_here ? [`${counts.expired_here} Inbox cop(ies) past a year removed.`] : []),
       ...(counts.unreadable ? [`${counts.unreadable} message(s) could not be opened with the keys in ${paths.keys}; each fetch tries them again.`] : []),
       ...(Object.entries(counts.full).filter(([, full]) => full).map(([door]) => `The ${door} door is full.`)),
