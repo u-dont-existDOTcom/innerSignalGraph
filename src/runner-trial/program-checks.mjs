@@ -25,13 +25,6 @@ export const CRISIS_LINKS = Object.freeze([
 ]);
 // The owner's own sites: in a crisis conversation only the Hearthwork and therapist links of these may appear.
 const OWNER_HOSTS = [/(?:^|\.)u-dont-exist\.com$/u, /^ibogaqueen\.substack\.com$/u];
-// The number checks never read the digits of these three links: the therapist link's path holds 189761959, so a reply giving the
-// links the crisis section asks for read as one that invents a phone number (found 22 Nov 2026: such a provisional reply wasn't
-// shown). Only these exact links are set aside, with or without the scheme, "www." or a trailing slash, in any letter case; every
-// other link's digits are still read. A word, not a space, stands in for each, so numbers on either side are never joined into one.
-const escapeForPattern = (value) => value.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&");
-const CRISIS_LINK_PATTERNS = CRISIS_LINKS.map((link) => new RegExp(`(?:https?:\\/\\/)?(?:www\\.)?${escapeForPattern(link.replace(/^https?:\/\//u, ""))}\\/?`, "giu"));
-export const withoutCrisisLinks = (text) => CRISIS_LINK_PATTERNS.reduce((rest, pattern) => rest.replace(pattern, " link "), String(text));
 
 // The zero of each decimal-digit block the checks read: ASCII, Arabic-Indic, Extended Arabic-Indic, NKo, Devanagari, Bengali,
 // Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam, Sinhala, Thai, Lao, Tibetan, Myanmar, Khmer, Mongolian,
@@ -92,6 +85,27 @@ export function linksIn(text) {
 }
 const linkKey = (value) => trimLink(value).replace(/^https?:\/\//iu, "").replace(/\/+$/u, "").toLowerCase();
 const CRISIS_LINK_KEYS = new Set(CRISIS_LINKS.map(linkKey));
+
+// The number checks never read the digits of these three links: the therapist link's path holds 189761959, so a reply giving the
+// links the crisis section asks for read as one that invents a phone number (found 22 Nov 2026: such a provisional reply wasn't
+// shown). Each whole link, found as linksIn finds them, is set aside only when it is exactly one of the three as the link check
+// reads it (the scheme, letter case and a trailing slash aside). Every other link's digits are still read, a link that holds one
+// of the three inside it included (Codex's review of fd195e41f). A word, not a space, stands in for each, so numbers on either
+// side are never joined into one.
+const URL_TOKEN = /\bhttps?:\/\/[^\s<>"]+/giu;
+const BARE_LINK_TOKEN = /(?<![@\p{L}\p{Nd}.\-/])(?:[a-z0-9-]+\.)+(?:com|org|net|io|co|uk|eu|fr|de|info|app|dev|be|ch|ca|au|es|it|nl)(?:\/[^\s<>"]*)?/giu;
+const setAsideIfCrisisLink = (token) => (CRISIS_LINK_KEYS.has(linkKey(token)) ? " link " : token);
+export function withoutCrisisLinks(text) {
+  const value = String(text);
+  let result = "";
+  let last = 0;
+  // Bare links are looked for only outside whole links, as linksIn does, so a link inside another link is never set aside.
+  for (const match of value.matchAll(URL_TOKEN)) {
+    result += value.slice(last, match.index).replace(BARE_LINK_TOKEN, setAsideIfCrisisLink) + setAsideIfCrisisLink(match[0]);
+    last = match.index + match[0].length;
+  }
+  return result + value.slice(last).replace(BARE_LINK_TOKEN, setAsideIfCrisisLink);
+}
 const hostOf = (value) => linkKey(value).split("/")[0];
 
 export const hasDetox = (text) => /detox/iu.test(text);

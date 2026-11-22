@@ -75,6 +75,11 @@ test("the exact checks read numbers in any script and decide only exact things",
   assert.ok(provisionalProblems("Call 112 now. https://ibogaqueen.substack.com/i/189761959/finding-a-therapist-555-0100").includes("unknown_number"), "digits added after the link are read");
   assert.deepEqual(provisionalProblems(`Call 112 ${CRISIS_LINKS[2]} 999`), [], "setting a link aside never joins the numbers on either side");
   assert.deepEqual(phoneLikeRuns(`See ${CRISIS_LINKS[1]}`), [], "the therapist link is no phone number");
+  // Codex's review of fd195e41f: only a whole link that is exactly one of the three is set aside, never one inside another link.
+  assert.deepEqual(phoneLikeRuns(`See https://example.org/?next=${CRISIS_LINKS[1]}`), ["189761959"], "inside another link, its digits are read");
+  assert.deepEqual(phoneLikeRuns("See https://example.org/?next=ibogaqueen.substack.com/i/189761959/finding-a-therapist"), ["189761959"], "in its bare form inside another link too");
+  assert.deepEqual(phoneLikeRuns("See example.org/?next=ibogaqueen.substack.com/i/189761959/finding-a-therapist"), ["189761959"], "and inside a bare link");
+  assert.deepEqual(phoneLikeRuns(`(${CRISIS_LINKS[1]}).`), [], "the link in brackets, with a full stop after it, is still the link");
   assert.deepEqual(runProgramChecks({ reply: `A therapist could help with this: ${CRISIS_LINKS[1]}`, checkerLevel: "none" }), [], "so it isn't recorded as a number without a crisis");
   // The first reply to someone who wants to die names no number unless they've acted: a provisional for that level, when the
   // setting allows one, needs none. Any number it gives must still be on the list.
