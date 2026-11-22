@@ -165,8 +165,9 @@ writer and one whole checker at a lower effort.
   from the stored readings, whether that turn's provisional was shown or refused (`provisionalTurns`: `first`; `every`, a
   provisional on each such turn as before 22 Nov). On a later such turn R1's prompt says one was already offered in this
   conversation, so it gives none; nothing is shown or recorded as a provisional, whatever R1 returns, and the skip puts no
-  highlighted line into the conversation (the line's other triggers below stay as they are, C1's `acted_or_about_to` reading
-  included). The writer and the checkers are unchanged: the full reply comes back to the number as the rules say, and C1
+  highlighted line into the conversation. Nor does C1's `acted_or_about_to` reading on such a later turn, once an earlier turn
+  of this conversation showed a provisional reply or the line (see "If it doesn't pass" below); the line still shows if that
+  turn ends without a reply. The writer and the checkers are unchanged: the full reply comes back to the number as the rules say, and C1
   judges it. A new conversation's first such turn gets one again. Why, measured on 22 Nov: in the GPT test round every later
   message read `acted_or_about_to` (F2, S4 and S5, after the person refused an ambulance or the crisis line) got a provisional
   again, each repeating the first step almost word for word (the three numbers, "I can't know what the pills will do",
@@ -190,8 +191,10 @@ writer and one whole checker at a lower effort.
   in the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK." No model writes it and no
   new wording is needed. When it showed is stored in the runtime record (not the transcript), and later packets show it in
   its place, like the provisional. When C1 reads `acted_or_about_to` and nothing was shown this turn (R1 read another level
-  or gave no reading, or the turn's provisional was skipped as a later such turn), the line shows as soon as C1's reading
-  arrives.
+  or gave no reading), the line shows as soon as C1's reading arrives; with `provisionalTurns` `first`, only while no earlier
+  turn of this conversation has shown a provisional reply or the line (22 Nov: otherwise the number came back as a highlighted
+  line on every later acted message, the repetition the crisis section rules out; the line stays on the page and the full
+  reply comes back to it).
 - **The full reply** follows it in the same turn: the writer gets the provisional and continues the first step (the next
   smallest thing, staying with them) rather than repeating it; C1 checks the provisional and the full reply together as the
   first reply the person sees (at most one question about now across both; nothing that contradicts the provisional).

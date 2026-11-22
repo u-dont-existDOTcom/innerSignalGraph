@@ -316,9 +316,10 @@ test("with provisionalTurns first, a later turn read acted gets no provisional r
   assert.equal(later.provisional, undefined, "nothing recorded as a provisional");
   assert.equal(Object.hasOwn(later.runner_reading.readers, "provisional_refused"), false, "nor as a refused one");
   assert.equal(later.runner_reading.readers.crisis.level, "acted_or_about_to", "the reading itself is stored as always");
-  // The crisis checker's own trigger is unchanged (it read acted, and nothing was shown this turn), so the line shows when its
-  // reading arrives; the skip itself puts none in.
-  assert.deepEqual(eventsOf(runner, 2, "emergency_line").map((event) => event.reason), ["checker_read_acted"]);
+  // Nor does the crisis checker's reading: the first turn's provisional already showed the number in this conversation, so the
+  // full reply comes back to it and the line stays on the page (22 Nov 2026). With "every", or before any number was shown, the
+  // checker's trigger is as before (the tests below).
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line"), []);
   // The reader is told on the line before its answer line, and only after the first such turn.
   const [firstPrompt, laterPrompt] = crisisReaderSystems(runner);
   assert.equal(firstPrompt.includes(OFFERED_NOTE), false);

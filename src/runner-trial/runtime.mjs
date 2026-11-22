@@ -210,7 +210,8 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       turnId: turn.id,
       crisis: turn.runner_reading?.readers?.crisis ?? null,
       checkerLevels: checkerLevelsOf(turn),
-      provisional: Boolean(turn.provisional)
+      provisional: Boolean(turn.provisional),
+      emergencyLine: Boolean(turn.emergency_line_shown_at)
     }));
   }
   const readCrisis = (entry) => isCrisisLevel(entry.crisis?.level) || entry.checkerLevels.some(isCrisisLevel);
@@ -588,7 +589,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         const level = validLevel(result.value?.level);
         const keptPlanReadings = keptPlan ? { planReached: result.value?.plan_reached === true, confirmsKeepPlanYes: keptPlan.previousOffered && result.value?.confirms_keep_plan_yes === true } : {};
         await source("recordRunnerCheckerLevel", [caseId, runtimeTurn.id, { candidateId: candidate.id, candidateVersion: candidate.version, checker: result.checker.id, level, ...keptPlanReadings }], authContext);
-        if (level === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
+        // With provisionalTurns "first", only while nothing in this conversation has shown the number yet (no provisional reply and
+        // no highlighted line on an earlier turn): on a later turn the full reply comes back to it, as the rules say, and the line
+        // stays on the page; the line still shows if that turn ends without a reply (22 Nov 2026).
+        const numberShownEarlier = config.provisionalTurns === "first"
+          && conversationReadings(record, conversationId).some((entry) => entry.turnId !== runtimeTurn.id && (entry.provisional || entry.emergencyLine));
+        if (level === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at && !numberShownEarlier) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
         if (keptPlanReadings.confirmsKeepPlanYes && keptPlan.keepAsked) await tryKeepPlan(caseId, runtimeTurn.id, written.keptPlan?.lines ?? [], authContext);
         return result;
       };
