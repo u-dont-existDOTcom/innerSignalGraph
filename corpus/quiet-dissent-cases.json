@@ -1,7 +1,7 @@
 {
   "issue": 206,
   "source": "The owner's request of 29 Oct 2026 (issue #206) and his answer i70 1b of 22 Nov 2026: turn the issue's six cases into tests that fail if a later edit removes a rule they rely on.",
-  "note": "Synthetic cases only. Each case lists the served rules it relies on: chat_host for what load_therapy_protocol gives a chat host (SKILL.md and its references), app for what the app's model roles receive (their prompts and the compiled map). The tests check delivery, not that a model follows the rules.",
+  "note": "Synthetic cases only. Each case lists the served rules it relies on. chat_host: what load_therapy_protocol gives a chat host (SKILL.md and its references); box names the map box the sentence must sit in. app: what the app's model roles receive; roles names the role prompts that must carry the sentence, and node names the compiled-map node the planner hands on. The tests check delivery, not that a model follows the rules.",
   "cases": [
     {
       "id": "QD1_FLUENT_YES_BODY_NO",
@@ -20,20 +20,18 @@
         { "file": "references/ROLE-BELIEF-INTEGRITY.md", "text": "revise mistakes rather than treating disagreement as pathology or resistance" },
         { "file": "references/ROLE-BELIEF-INTEGRITY.md", "text": "Respect technique refusal." },
         { "file": "references/PHENOMENOLOGY-AND-REPRESENTATION.md", "text": "A bodily alarm or intuitive signal is phenomenological evidence." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "recheck if permission is withdrawn" },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "A task in offer phase is an invitation, not permission to perform the exercise." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Respect declining, ending, or changing the practice." }
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.MEET_GUARD", "text": "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.MEET_GUARD", "text": "recheck if permission is withdrawn" }
       ],
       "app": [
-        { "source": "sharedClinicalRules", "text": "Nonverbal is not inherently deeper, more authentic, or truer" },
-        { "source": "sharedClinicalRules", "text": "Repetition, fluent explanation, and summaries do not confirm them." },
-        { "source": "caseExtraction", "text": "Agreement accepted and capacity adequate require observation support; imagery, spiritual identity or articulate language alone establishes neither." },
-        { "source": "caseExtraction", "text": "A refusal withdraws the exercise, not care." },
-        { "source": "caseExtraction", "text": "Correct a real app misunderstanding before labeling the user's objection a protector." },
-        { "source": "realization", "text": "Treat competing internal positions symmetrically as data unless the resolved reasoning packet establishes otherwise." },
-        { "source": "compiledMap", "text": "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects." },
-        { "source": "compiledMap", "text": "A task in offer phase is an invitation, not permission to perform the exercise." }
+        { "roles": ["candidate", "critique", "adjudication", "realization", "caseAudit"], "text": "Nonverbal is not inherently deeper, more authentic, or truer" },
+        { "roles": ["caseExtraction", "candidate", "critique", "adjudication", "realization", "caseAudit"], "text": "Repetition, fluent explanation, and summaries do not confirm them." },
+        { "roles": ["caseExtraction"], "text": "Agreement accepted and capacity adequate require observation support; imagery, spiritual identity or articulate language alone establishes neither." },
+        { "roles": ["caseExtraction"], "text": "A refusal withdraws the exercise, not care." },
+        { "roles": ["caseExtraction"], "text": "Correct a real app misunderstanding before labeling the user's objection a protector." },
+        { "roles": ["realization"], "text": "Treat competing internal positions symmetrically as data unless the resolved reasoning packet establishes otherwise." },
+        { "node": "IC.MEET_GUARD", "text": "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects." },
+        { "node": "IC.MEET_GUARD", "text": "recheck if permission is withdrawn" }
       ]
     },
     {
@@ -48,16 +46,16 @@
       "chat_host": [
         { "file": "references/PROTOCOL-STATE-PROVENANCE.md", "text": "Do not infer reparenting progress from saying the right words, a vow, one moving session or one good day." },
         { "file": "references/PROTOCOL-STATE-PROVENANCE.md", "text": "Describe a person's progress only as far as reported behavior and its reported effects go, and say what remains unknown." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "In-session adult access and generalized ordinary-life capacity are different evidence states" },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly." },
-        { "file": "references/ROLE-BELIEF-INTEGRITY.md", "text": "Labels such as direct observation, explicit user facts, agreed conclusion, high confidence, or resolved reasoning do not themselves verify a proposition." }
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "In-session adult access and generalized ordinary-life capacity are different evidence states" },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.MEET_GUARD", "text": "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects." }
       ],
       "app": [
-        { "source": "sharedClinicalRules", "text": "Do not infer reparenting progress from saying the right words, a vow, one moving session or one good day." },
-        { "source": "caseExtraction", "text": "imagery, spiritual identity or articulate language alone establishes neither" },
-        { "source": "caseExtraction", "text": "Use session_only only when the transcript positively supports both sides of the mismatch" },
-        { "source": "caseExtraction", "text": "integrated only when the function is broadly available in ordinary life without depending on the exercise prompt" },
-        { "source": "compiledMap", "text": "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly." }
+        { "roles": ["caseExtraction", "candidate", "critique", "adjudication", "realization", "caseAudit"], "text": "Do not infer reparenting progress from saying the right words, a vow, one moving session or one good day." },
+        { "roles": ["caseExtraction"], "text": "imagery, spiritual identity or articulate language alone establishes neither" },
+        { "roles": ["caseExtraction"], "text": "Use session_only only when the transcript positively supports both sides of the mismatch" },
+        { "roles": ["caseExtraction"], "text": "integrated only when the function is broadly available in ordinary life without depending on the exercise prompt" },
+        { "node": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "Do not call a good inner-child meditation durable integration when ordinary life has not changed accordingly." }
       ]
     },
     {
@@ -69,18 +67,18 @@
       ],
       "expected": "Keep the session's real benefit while recording the gap in carryover; no claim of a cure, and the old response is fresh information, not proof the work failed.",
       "chat_host": [
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "a person can sound and feel genuinely caring in meditation while still lacking carryover" },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Do not claim that a successful meditation proves durable real-life change." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Do not claim that weak carryover means the meditation was fake or that the whole reparenting method failed." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "a person can sound and feel genuinely caring in meditation while still lacking carryover" },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "Do not claim that a successful meditation proves durable real-life change." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "Do not claim that weak carryover means the meditation was fake or that the whole reparenting method failed." },
         { "file": "references/PROTOCOL-STATE-PROVENANCE.md", "text": "Do not infer reparenting progress from saying the right words, a vow, one moving session or one good day." },
-        { "file": "references/RESPONSE-FIDELITY.md", "text": "RELIEF_SCOPE_OVERCLAIM" }
+        { "file": "references/RESPONSE-FIDELITY.md", "text": "RELIEF_SCOPE_OVERCLAIM: infers absent anxiety or durable relief from public appearance or a single partial bodily easing." }
       ],
       "app": [
-        { "source": "caseExtractionWithPathPerformance", "text": "A durable prediction cannot pass or fail on an immediate-only report." },
-        { "source": "caseExtractionWithPathPerformance", "text": "Relief and praise alone cannot confirm the mechanism." },
-        { "source": "caseExtraction", "text": "Not attempted is not automatically resistance." },
-        { "source": "sharedClinicalRules", "text": "can be workable without being desirable or proof of progress" },
-        { "source": "compiledMap", "text": "Do not claim that weak carryover means the meditation was fake or that the whole reparenting method failed." }
+        { "roles": ["caseExtractionWithPathPerformance"], "text": "A durable prediction cannot pass or fail on an immediate-only report." },
+        { "roles": ["caseExtractionWithPathPerformance"], "text": "Relief and praise alone cannot confirm the mechanism." },
+        { "roles": ["caseExtractionWithPathPerformance"], "text": "Preserve earlier benefit and current difficulty separately." },
+        { "roles": ["candidate", "critique", "adjudication", "realization", "caseAudit"], "text": "can be workable without being desirable or proof of progress" },
+        { "node": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "Do not claim that weak carryover means the meditation was fake or that the whole reparenting method failed." }
       ]
     },
     {
@@ -95,14 +93,15 @@
       "chat_host": [
         { "file": "references/PROTOCOL-STATE-PROVENANCE.md", "text": "Do not infer that reparenting is absent, failing or complete from absent imagery, an inability to visualize, no emotional breakthrough, no immediate relief or a flat session." },
         { "file": "references/PROTOCOL-STATE-PROVENANCE.md", "text": "Describe a person's progress only as far as reported behavior and its reported effects go, and say what remains unknown." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required" },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.EXTERNAL_EMBODIMENT", "text": "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required" },
         { "file": "SKILL.md", "text": "do not invent an inner sentence when the user reports no words" }
       ],
       "app": [
-        { "source": "caseExtraction", "text": "ordinary-life care, protection, boundaries or repair reported without any exercise are reparenting in their own right" },
-        { "source": "sharedClinicalRules", "text": "Representations may overlap, appear in different orders, or be absent." },
-        { "source": "compiledMap", "text": "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other." }
+        { "roles": ["caseExtraction"], "text": "ordinary-life care, protection, boundaries or repair reported without any exercise are reparenting in their own right" },
+        { "roles": ["candidate", "critique", "adjudication", "realization", "caseAudit"], "text": "Representations may overlap, appear in different orders, or be absent." },
+        { "roles": ["caseExtraction", "candidate", "critique", "adjudication", "realization", "caseAudit"], "text": "Do not infer that reparenting is absent, failing or complete from absent imagery, an inability to visualize, no emotional breakthrough, no immediate relief or a flat session." },
+        { "node": "ROUTE.EXTERNAL_EMBODIMENT", "text": "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other." }
       ]
     },
     {
@@ -116,18 +115,20 @@
       "chat_host": [
         { "file": "SKILL.md", "text": "If an intuition or bodily response leads to an external conclusion about another person or event, preserve the signal as reported experience while examining the observable cues, evidence, alternatives, and practical implications" },
         { "file": "references/PHENOMENOLOGY-AND-REPRESENTATION.md", "text": "A conclusion about an external person or event remains an appraisal that can be examined against observable cues and alternatives." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm" },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Ordinary wishes, habits and critical thoughts are not automatically a guard, a hidden trauma or a separate inner person; test function and context before assigning a role." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Present danger and past childhood fear are different problems." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "### ROUTE.MEDICAL_RED_FLAG:" }
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.MEET_GUARD", "text": "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm" },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.MEET_GUARD", "text": "Ordinary wishes, habits and critical thoughts are not automatically a guard, a hidden trauma or a separate inner person; test function and context before assigning a role." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.SAFETY_ORIENTATION", "text": "Present danger and past childhood fear are different problems." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.INFLUENCE_INTERNAL", "text": "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.SOLAR_PLEXUS_RELAXATION", "text": "Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.MEDICAL_RED_FLAG", "text": "Give direct, proportionate guidance for urgent medical assessment or emergency help before continuing therapeutic interpretation." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.MEDICAL_RED_FLAG", "text": "Do not delay an urgent red flag with baseline-history questions." }
       ],
       "app": [
-        { "source": "compiledMap", "text": "Present danger and past childhood fear are different problems." },
-        { "source": "compiledMap", "text": "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm" },
-        { "source": "compiledMap", "text": "Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care." },
-        { "source": "compiledMap", "text": "ROUTE.MEDICAL_RED_FLAG" }
+        { "node": "IC.SAFETY_ORIENTATION", "text": "Present danger and past childhood fear are different problems." },
+        { "node": "IC.MEET_GUARD", "text": "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm" },
+        { "node": "IC.SOLAR_PLEXUS_RELAXATION", "text": "Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care." },
+        { "node": "ROUTE.MEDICAL_RED_FLAG", "text": "Give direct, proportionate guidance for urgent medical assessment or emergency help before continuing therapeutic interpretation." },
+        { "node": "ROUTE.MEDICAL_RED_FLAG", "text": "Do not delay an urgent red flag with baseline-history questions." }
       ]
     },
     {
@@ -139,17 +140,18 @@
       ],
       "expected": "Stop the checking loop and follow the existing focus and ordinary-life route.",
       "chat_host": [
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Recognize behavioral checking as well as verbal rumination: repeated body scans" },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Do not repeatedly body-scan to test whether the external activity is working." },
-        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "text": "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.LEAVE_ALONE", "text": "Recognize behavioral checking as well as verbal rumination: repeated body scans" },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.LEAVE_ALONE", "text": "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.LEAVE_ALONE", "text": "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.EXTERNAL_EMBODIMENT", "text": "Do not repeatedly body-scan to test whether the external activity is working." },
+        { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.GO_INWARD", "text": "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse." },
         { "file": "references/ROLE-BELIEF-INTEGRITY.md", "text": "or an endless reassurance argument" }
       ],
       "app": [
-        { "source": "compiledMap", "text": "Recognize behavioral checking as well as verbal rumination: repeated body scans" },
-        { "source": "compiledMap", "text": "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop." },
-        { "source": "caseExtraction", "text": "Use worsens only for a reported pattern of poorer orientation, loss of stopping/return capacity, escalating hypermonitoring" }
+        { "node": "ROUTE.LEAVE_ALONE", "text": "Recognize behavioral checking as well as verbal rumination: repeated body scans" },
+        { "node": "ROUTE.LEAVE_ALONE", "text": "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop." },
+        { "node": "ROUTE.EXTERNAL_EMBODIMENT", "text": "Do not repeatedly body-scan to test whether the external activity is working." },
+        { "roles": ["caseExtraction"], "text": "Use worsens only for a reported pattern of poorer orientation, loss of stopping/return capacity, escalating hypermonitoring" }
       ]
     }
   ]
