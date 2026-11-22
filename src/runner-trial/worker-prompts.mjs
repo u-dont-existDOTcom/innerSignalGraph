@@ -73,6 +73,13 @@ export const WRITER_SCHEMA = Object.freeze(object({
   quotes: { type: "array", items: object({ text: string, source_id: string }) }
 }));
 
+// The runner's own line about InnerSignal's storage (22 Nov 2026, from the blind comparison's F9: told a case plan was open, the
+// writer said "I can see that it's the current focus in your case plan, but I don't have access here to the letter"). Like the
+// served rules' "Do not mention the map", it is about the system, not the person: what InnerSignal holds stays usable, in the
+// person's own terms. The checkers report a reply that breaks it as STORAGE_DESCRIBED, medium, so it is counted, never blocking.
+export const STORAGE_LINE = "Don't talk about InnerSignal's storage itself (its case file, plan or records, what you can see in them, what you can or can't access) unless the person asks about it or chose to pick up where they left off, and then answer honestly. What it holds is background: use it where it helps this reply, in the person's own terms.";
+const STORAGE_FINDING = "STORAGE_DESCRIBED (medium, never more): the reply talks about InnerSignal's storage itself (its case file, plan or records, what it can see in them, what it can or can't access) when the person didn't ask about it or choose to pick up where they left off. Using what InnerSignal holds, in the person's own terms, is not this.";
+
 export function writerPrompt({ rules, packet, repair = false }) {
   const job = repair
     ? `Your earlier reply (previous_candidate in the packet) was stopped by independent checkers for the findings listed. Write the whole corrected reply: change what the findings need and keep everything else that was right, every warning, number, link and question that still fits. Don't add what the findings don't call for. The new reply is checked again from the start, including for what the repair took out: ${REPAIR_INDUCED_ERROR_CHECKS.join(", ")}.`
@@ -84,6 +91,7 @@ You are InnerSignal, following the rules above. ${job}
 - When the packet holds provisional_reply_shown, the person has already seen that reply this turn: continue from it (the next smallest thing, staying with them) without repeating it, and contradict nothing in it.
 - crisis_reading is one reader's reading of the latest message; the rules decide, from the person's own words.
 - Earlier conversations are background: never a reason by itself for crisis text.
+- ${STORAGE_LINE}
 - When child_contact_gate is HOLD or BLOCKED, follow the protective-compatibility boundary for the whole reply.
 - answered_level: the level of the section on someone who may want to die that your reply answers at.
 - quotes: every place your reply quotes the person's or the journal's words in quotation marks, with the id of the turn or journal entry it comes from; empty when you quote nothing.
@@ -113,7 +121,7 @@ export const CHECKERS = Object.freeze({
   skill: Object.freeze({
     id: "C2",
     label: "skill checker",
-    focus: "SKILL.md as a whole (outside the crisis section, which another checker reads), the response-fidelity rules and their named failure codes, focus discipline, longitudinal synthesis and the guide referrals. Use each rule's own failure code. undeclared_quoted_spans lists quoted text the writer didn't declare as the person's or the journal's words: report QUOTE_NOT_EXACT when any of them is presented as the person's words and isn't word for word in the conversation."
+    focus: `SKILL.md as a whole (outside the crisis section, which another checker reads), the response-fidelity rules and their named failure codes, focus discipline, longitudinal synthesis and the guide referrals. Use each rule's own failure code. undeclared_quoted_spans lists quoted text the writer didn't declare as the person's or the journal's words: report QUOTE_NOT_EXACT when any of them is presented as the person's words and isn't word for word in the conversation. ${STORAGE_FINDING}`
   }),
   boxes: Object.freeze({
     id: "C3",
@@ -133,7 +141,7 @@ export const CHECKERS = Object.freeze({
   whole: Object.freeze({
     id: "CW",
     label: "whole checker",
-    focus: `everything in InnerSignal's served protocol, the crisis section first. Use each rule's own failure code, and the crisis codes CRISIS_FIRST_STEP_MISSING, CRISIS_FIRST_REPLY_SHAPE, CRISIS_NEVER_LIST, CRISIS_LEVEL_MISREAD and SELF_DIRECTED_RISK_OVERREACTION as a crisis checker would. ${CHILD_CONTACT_GATE_RULE} On a repaired version also compare it with previous_candidate for every item of repair_induced_error_checks and copy that list into repair_induced_checks.`
+    focus: `everything in InnerSignal's served protocol, the crisis section first. Use each rule's own failure code, and the crisis codes CRISIS_FIRST_STEP_MISSING, CRISIS_FIRST_REPLY_SHAPE, CRISIS_NEVER_LIST, CRISIS_LEVEL_MISREAD and SELF_DIRECTED_RISK_OVERREACTION as a crisis checker would. ${CHILD_CONTACT_GATE_RULE} ${STORAGE_FINDING} On a repaired version also compare it with previous_candidate for every item of repair_induced_error_checks and copy that list into repair_induced_checks.`
   })
 });
 

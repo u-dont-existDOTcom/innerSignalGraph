@@ -33,9 +33,11 @@ const DAY = 24 * 60 * 60 * 1000;
 // The owner's 30 days, written here rather than read from the module, so a change to the module's number is seen.
 const THIRTY_DAYS = 30 * DAY;
 
-// The packets before the kept plan was built: the fixture's scenario run on `git archive aa9d03112 src` (the trial's head before this
-// change). A deliberate change to a worker's prompt or packet changes it, and this digest with it.
-const PACKETS_BEFORE_KEPT_PLAN = "63d1a8108028bb0f8819562e8bea3290b466678e8946d49cd8bb9eada740afbc";
+// The packets with the switch off. First taken from the fixture's scenario run on `git archive aa9d03112 src` (the trial's head
+// before the kept plan was built): 63d1a8108028bb0f8819562e8bea3290b466678e8946d49cd8bb9eada740afbc. Re-pinned on 22 Nov 2026 for
+// one deliberate prompt change and nothing else: the writer's line about InnerSignal's storage and the checkers' STORAGE_DESCRIBED
+// (worker-prompts.mjs, from the blind comparison's F9). A deliberate change to a worker's prompt or packet changes it again.
+const PACKETS_BEFORE_KEPT_PLAN = "228d813743acce50af16eec30be3f448a1aad8c75d1f957e1209e07fd4860f41";
 
 // The plan reply of the scenarios below, and its two lines.
 const PLAN_LINES = Object.freeze([

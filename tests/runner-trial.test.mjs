@@ -15,6 +15,7 @@ import { REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../src/s
 import { OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { cutRuleParts, focusedRules, wholeRules } from "../src/runner-trial/rule-parts.mjs";
 import { CRISIS_LINKS, NAMED_EMERGENCY_NUMBERS, emergencyNumbersIn, phoneLikeRuns, provisionalProblems, runProgramChecks, shapeProblems } from "../src/runner-trial/program-checks.mjs";
+import { STORAGE_LINE } from "../src/runner-trial/worker-prompts.mjs";
 import { createRunnerTrialRuntime, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
 import { EMERGENCY_LINE, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 
@@ -223,6 +224,23 @@ test("a provisional reply that fails its exact checks isn't shown, and the appro
   assert.ok(record.runtime_turns[0].emergency_line_shown_at);
   assert.deepEqual(record.runtime_turns[0].runner_reading.readers.provisional_refused.problems, ["no_emergency_number", "unknown_number"]);
   assert.match(EMERGENCY_LINE, /^In danger right now\? Call your local emergency number: 112/u);
+});
+
+test("the writer is told not to talk about InnerSignal's storage, and every checker that reads SKILL.md counts it without blocking", async (t) => {
+  const runner = await makeRunner(t, baseScript());
+  await runner.send("Something synthetic and ordinary.");
+  const writer = runner.calls.find((call) => call.role === "W").request;
+  assert.ok(writer.system.includes(STORAGE_LINE), "the writer's line");
+  assert.ok(runner.calls.find((call) => call.role === "C2").request.system.includes("STORAGE_DESCRIBED (medium, never more)"), "the skill checker");
+  for (const role of ["C1", "C3", "C4"]) assert.ok(!runner.calls.find((call) => call.role === role).request.system.includes("STORAGE_DESCRIBED"), `not ${role}`);
+  const whole = await makeRunner(t, baseScript(), { settings: { writerMode: "whole", checkerMode: "whole" } });
+  await whole.send("Something synthetic and ordinary.");
+  assert.ok(whole.calls.find((call) => call.role === "CW").request.system.includes("STORAGE_DESCRIBED (medium, never more)"), "the whole checker");
+  // A medium finding never stops a reply: the reply is delivered.
+  const counted = await makeRunner(t, baseScript({ C2: () => ({ findings: [{ code: "STORAGE_DESCRIBED", severity: "medium", summary: "talks about the case file", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] }) }));
+  const result = await counted.send("Something synthetic and ordinary.");
+  assert.equal(result.deliveryKind, "candidate");
+  assert.equal(counted.calls.filter((call) => call.role === "W-repair").length, 0, "no repair for it");
 });
 
 test("with the setting for both levels, someone who wants to die gets a provisional reply without a number, and no emergency line", async (t) => {
