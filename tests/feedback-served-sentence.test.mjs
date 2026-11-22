@@ -25,5 +25,6 @@ test("the served sentence carries the approval rule, no public reviews from a ch
   assert.match(paragraph, /leave out private details of their life or therapy unless they ask to include them/u);
   assert.match(paragraph, /A review that may be shown publicly is written by the person on the page, in their own words/u);
   assert.match(paragraph, /in a conversation where someone has said they want to die or might act, don't offer it, don't send anything about that through it, and never present it as reaching a person/u);
-  assert.match(paragraph, /only InnerSignal's maker can open it, and he reads it in his private inbox, a page in his Claude account/u);
+  assert.match(paragraph, /only InnerSignal's maker can open it, an AI checks each message only for signs that someone may be in danger so that he reads those first, and he reads it in his private inbox, a page in his Claude account/u);
+  assert.doesNotMatch(FEEDBACK_PAGE_URL, /\d/u, "no digits: the rules' phone-number check passes");
 });
