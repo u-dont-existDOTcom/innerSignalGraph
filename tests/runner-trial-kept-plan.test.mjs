@@ -18,6 +18,7 @@ import { createRunnerTrialController } from "../src/runner-trial/trial-controlle
 import { RUNNER_KEPT_PLAN_SETTING, readRunnerKeptPlanSwitch, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { KEPT_PLAN_LIFETIME_MS, assertKeptPlansAppendOnly, validateKeptPlans } from "../src/runner-trial/kept-plan.mjs";
 import { KEPT_PLAN_DELETE_NOTE, KEPT_PLAN_GONE_LINE, KEPT_PLAN_KEPT_LINE, KEPT_PLAN_RULE, RESUME_FRESH, RESUME_QUESTION, RESUME_YES } from "../src/runner-trial/notices.mjs";
+import { crisisReaderNumberNowNote } from "../src/runner-trial/worker-prompts.mjs";
 import { SYNTHETIC_PROTOCOL, packetDigest, runPacketScenario } from "./fixtures/runner-kept-plan-scenario.mjs";
 
 // The plan kept for next time (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 9; the owner's 5b), behind
@@ -191,6 +192,39 @@ test("with the switch off every worker's prompt, packet and schema is byte-ident
   // The same scenario with the switch on gives other packets, so the digest above would see a change.
   const on = await runPacketScenario({ modules, root: await tempDir(t, "kept-plan-golden-on"), runtimeOptions: { keptPlanEnabled: true } });
   assert.notEqual(packetDigest(on), PACKETS_BEFORE_KEPT_PLAN);
+});
+
+// The number now (INNER_SIGNAL_RUNNER_NUMBER_NOW; design, section 9b) has its own switch, checked against the same digest: with it off,
+// every worker gets the packets from before either switch was built.
+test("with the number now's switch off every worker's prompt, packet and schema is byte-identical too; on, only the crisis reader's prompt and schema change", async (t) => {
+  const modules = { createEncryptedPrivateCaseStore, createRunnerTrialRuntime, createPrivateTherapyTurnController, cutRuleParts, REPAIR_INDUCED_ERROR_CHECKS };
+  let off = null;
+  for (const runtimeOptions of [{ numberNowEnabled: false }, { keptPlanEnabled: false, numberNowEnabled: false }]) {
+    const calls = await runPacketScenario({ modules, root: await tempDir(t, "number-now-golden"), runtimeOptions });
+    assert.equal(calls.length, 54, "both arms, every worker, a repair included");
+    assert.equal(packetDigest(calls), PACKETS_BEFORE_KEPT_PLAN, `the same bytes as before (${JSON.stringify(runtimeOptions)})`);
+    for (const call of calls) assert.equal(/number_now/u.test(`${call.system}\n${call.user}\n${JSON.stringify(call.schema)}`), false, `${call.arm} ${call.role}: nothing of the number now`);
+    off ??= calls;
+  }
+  // With the kept plan on, the number now's switch off leaves the kept plan's packets as they are.
+  const keptOnly = await runPacketScenario({ modules, root: await tempDir(t, "number-now-kept"), runtimeOptions: { keptPlanEnabled: true } });
+  const keptAndOff = await runPacketScenario({ modules, root: await tempDir(t, "number-now-kept-off"), runtimeOptions: { keptPlanEnabled: true, numberNowEnabled: false } });
+  assert.equal(packetDigest(keptAndOff), packetDigest(keptOnly));
+  // On, in a scenario where nothing is read number_now: the crisis reader's prompt gets the note and its schema the field; every
+  // packet, and every other worker's prompt and schema, is unchanged.
+  const on = await runPacketScenario({ modules, root: await tempDir(t, "number-now-golden-on"), runtimeOptions: { numberNowEnabled: true } });
+  assert.notEqual(packetDigest(on), PACKETS_BEFORE_KEPT_PLAN);
+  assert.equal(on.length, off.length);
+  for (const [index, call] of on.entries()) {
+    const before = off[index];
+    assert.deepEqual([call.arm, call.role, call.user], [before.arm, before.role, before.user], `${call.arm} ${call.role}: the same packet`);
+    if (call.role === "R1") {
+      assert.ok(call.system.includes(crisisReaderNumberNowNote()), `${call.arm} R1: the note`);
+      assert.deepEqual(Object.keys(call.schema.properties), [...Object.keys(before.schema.properties), "number_now"]);
+    } else {
+      assert.deepEqual([call.system, call.schema], [before.system, before.schema], `${call.arm} ${call.role}: the same prompt and schema`);
+    }
+  }
 });
 
 test("with the switch off, a reader that says the person asks to keep or delete a plan keeps and deletes nothing, and the record gains nothing", async (t) => {

@@ -11,6 +11,11 @@ export const RUNNER_CLAUDE_CONFIG_DIR = "INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR";
 // It means something only while INNER_SIGNAL_RUNNER_TRIAL is on; with the trial off it changes nothing.
 export const RUNNER_KEPT_PLAN_SETTING = "INNER_SIGNAL_RUNNER_KEPT_PLAN";
 
+// The emergency number at once for a message the crisis section sends there now though the person hasn't said they've acted or are
+// about to (design, section 9b): its own switch, off by default and off until the owner says. Meaningful only while
+// INNER_SIGNAL_RUNNER_TRIAL is on.
+export const RUNNER_NUMBER_NOW_SETTING = "INNER_SIGNAL_RUNNER_NUMBER_NOW";
+
 // The "Send feedback about InnerSignal" link (feedback place design, section 14, branch claude/feedback-place-20261122): its own
 // switch, off until the feedback page is released, so the trial never links to a page that isn't there. Meaningful only while
 // INNER_SIGNAL_RUNNER_TRIAL is on.
@@ -37,6 +42,11 @@ export function readRunnerTrialSwitch(raw) {
 // Read the same way as the trial's switch.
 export function readRunnerKeptPlanSwitch(raw) {
   return readSwitch(raw, RUNNER_KEPT_PLAN_SETTING);
+}
+
+// Read the same way as the trial's switch.
+export function readRunnerNumberNowSwitch(raw) {
+  return readSwitch(raw, RUNNER_NUMBER_NOW_SETTING);
 }
 
 // Read the same way as the trial's switch.

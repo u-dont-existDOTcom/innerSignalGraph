@@ -24,12 +24,14 @@ import { SealedCodexWorker } from "../src/runner-trial/sealed-codex.mjs";
 import {
   DEFAULT_RUNNER_WORKERS,
   RUNNER_CLAUDE_CONFIG_DIR,
+  RUNNER_NUMBER_NOW_SETTING,
   RUNNER_ROLES,
   RUNNER_TRIAL_CASE_ID_SETTING,
   RUNNER_TRIAL_SETTING,
   RUNNER_TRIAL_SETTINGS_FILE,
   createRunnerWorkerFactory,
   loadRunnerTrialSettings,
+  readRunnerNumberNowSwitch,
   readRunnerTrialSwitch,
   validateRunnerTrialSettings
 } from "../src/runner-trial/settings.mjs";
@@ -152,6 +154,22 @@ test("the switch is off when absent, blank or off, on when on, and any other val
   }
   const defaults = await withEnv({ [RUNNER_TRIAL_SETTING]: undefined, [RUNNER_TRIAL_SETTINGS_FILE]: undefined, [RUNNER_CLAUDE_CONFIG_DIR]: undefined }, () => loadConfig({ mode: "mock" }));
   assert.deepEqual([defaults.runnerTrialEnabled, defaults.runnerTrialSettingsPath, defaults.runnerClaudeConfigDir], [false, null, null], "off by default, and no paths");
+});
+
+test("the number now's switch is off when absent, blank or off, on when on, and any other value stops loadConfig naming the setting, never the value", async () => {
+  assert.equal(RUNNER_NUMBER_NOW_SETTING, "INNER_SIGNAL_RUNNER_NUMBER_NOW");
+  const configReading = (value) => withEnv({ [RUNNER_NUMBER_NOW_SETTING]: value }, () => loadConfig({ mode: "mock" }).runnerNumberNowEnabled);
+  for (const [values, expected] of [[OFF_VALUES, false], [ON_VALUES, true]]) {
+    for (const value of values) {
+      assert.equal(readRunnerNumberNowSwitch(value), expected, JSON.stringify(value));
+      assert.equal(await configReading(value), expected, `${JSON.stringify(value)} through loadConfig`);
+    }
+  }
+  for (const value of INVALID_VALUES) {
+    const refused = (error) => error?.code === "BAD_CONFIG" && error.message === `${RUNNER_NUMBER_NOW_SETTING} must be on or off.` && !error.message.includes(value);
+    assert.throws(() => readRunnerNumberNowSwitch(value), refused, value);
+    await assert.rejects(async () => configReading(value), refused, value);
+  }
 });
 
 test("an invalid switch value stops the server's startup before it listens, and the value is never printed", async () => {
@@ -419,6 +437,34 @@ test("/health names the trial's case only with the trial on and the setting set,
     }
   } finally {
     await listener.close();
+  }
+});
+
+test("/health says runnerNumberNow on only with the trial and the number now both on, and the switch reaches the crisis reader through the trial's controller", async (t) => {
+  const store = await makeStore(t);
+  const health = async (config) => (await (await fetch(`${await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseStore: store }))}/health`)).json()).runnerNumberNow;
+  assert.equal(await health(trialConfig({ runnerTrialEnabled: false, runnerNumberNowEnabled: true })), "off", "it means nothing with the trial off");
+  assert.equal(await health(trialConfig()), "off", "off unless switched on");
+  // Built the real way: settings, rule parts and sealed workers are made, and nothing calls a model.
+  const config = trialConfig({ runnerNumberNowEnabled: true });
+  assert.equal(await health(config), "on");
+  const listener = await listenInnerSignalLoopback({ config, providers: createProviders(config), privateCaseStore: store, port: 0 });
+  try {
+    for (const base of [listener.url, listener.ipv4Url]) assert.equal((await (await fetch(`${base}/health`)).json()).runnerNumberNow, "on", base);
+  } finally {
+    await listener.close();
+  }
+  // From the config to the crisis reader: the trial's controller gives its runtime the switch, so the reader's schema has number_now
+  // only with it on.
+  for (const on of [false, true]) {
+    const workers = fakeWorkers(baseScript());
+    const trial = createRunnerTrialController({ privateCaseSource: store, config: trialConfig({ runnerNumberNowEnabled: on }), settings: validateRunnerTrialSettings({}), parts, workerFor: workers.workerFor });
+    const exchangeId = `exchange-number-now-${on}`;
+    const result = await trial.controller.run({ caseId: CASE_ID, runtimeTurnId: `runtime:${exchangeId}`, exchangeId, userTurnId: `${exchangeId}-user`, assistantTurnId: `${exchangeId}-assistant`, userMessage: "Something synthetic.", userInput: {} });
+    assert.equal(result.deliveryKind, "candidate");
+    const reader = workers.calls.find((call) => call.role === "R1").request;
+    assert.equal(Object.hasOwn(reader.schema.properties, "number_now"), on, `switch ${on ? "on" : "off"}`);
+    assert.equal(reader.system.includes("number_now"), on);
   }
 });
 

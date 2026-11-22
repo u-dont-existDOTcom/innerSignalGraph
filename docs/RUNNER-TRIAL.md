@@ -48,7 +48,8 @@ the company that runs it (design, section 6).
 
 ## Switches
 
-Off unless a flag turns them on: `--kept-plan` (`INNER_SIGNAL_RUNNER_KEPT_PLAN`), `--feedback-link`
+Off unless a flag turns them on: `--kept-plan` (`INNER_SIGNAL_RUNNER_KEPT_PLAN`), `--number-now`
+(`INNER_SIGNAL_RUNNER_NUMBER_NOW`, off until the owner says; design, section 9b), `--feedback-link`
 (`INNER_SIGNAL_RUNNER_FEEDBACK_LINK`) and `--owner-fallback` (`INNER_SIGNAL_OWNER_FALLBACK`). No `INNER_SIGNAL_` setting of the shell
 reaches the trial's server, so one set for the usual app can't turn anything on or point the trial at another vault.
 

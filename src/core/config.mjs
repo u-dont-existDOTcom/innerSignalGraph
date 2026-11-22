@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
 import { readOnOffSetting } from "./on-off-setting.mjs";
-import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerKeptPlanSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
+import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_NUMBER_NOW_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerKeptPlanSwitch, readRunnerNumberNowSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -87,6 +87,10 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     // The plan kept for next time (src/runner-trial/kept-plan.mjs): its own switch, off unless switched on, and meaningful only
     // while the runner trial is on.
     runnerKeptPlanEnabled: readRunnerKeptPlanSwitch(process.env[RUNNER_KEPT_PLAN_SETTING]),
+    // The emergency number at once for what the crisis section sends there now though the person hasn't said they've acted
+    // (src/runner-trial/runtime.mjs, design section 9b): its own switch, off unless switched on, and meaningful only while the
+    // runner trial is on.
+    runnerNumberNowEnabled: readRunnerNumberNowSwitch(process.env[RUNNER_NUMBER_NOW_SETTING]),
     // The trial page's link to the feedback page: its own switch, off until that page is released.
     runnerFeedbackLinkEnabled: readRunnerFeedbackLinkSwitch(process.env[RUNNER_FEEDBACK_LINK_SETTING]),
     // The case the trial's page uses (the one the trial vault's credentials grant), or null; a value of another form stops startup.

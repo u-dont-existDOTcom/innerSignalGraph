@@ -229,3 +229,30 @@ export function levelCheckerKeptPlanNote({ rule = null } = {}) {
     ...(rule ? [`kept_plan: when the packet holds it, the person chose to pick up where they left off, and this is the plan they kept on that date; judge the candidate with this rule too: ${rule}`] : [])
   ].join("\n");
 }
+
+// ---- The number now (design, section 9b) ------------------------------------------------------------------------------------------
+// Everything below is used only while INNER_SIGNAL_RUNNER_NUMBER_NOW is on. With it off, every worker gets exactly the prompt and the
+// schema above, byte for byte (tests/runner-trial-kept-plan.test.mjs compares them with the packets from before it was built).
+// Measured on 22 Nov 2026: a message the crisis section sends to the emergency number now, though the person hasn't said they've
+// acted or are about to (C3, a body sign after stopping daily drinking, read wants_to_die; T14 and F17, a friend who may act now),
+// got its number only with the full reply. Whether a message is one of these is a meaning judgment, so it is the crisis reader's.
+
+export const CRISIS_READER_NUMBER_NOW_SCHEMA = Object.freeze(object({ ...CRISIS_READER_SCHEMA.properties, number_now: bool }));
+export const CRISIS_READER_KEPT_PLAN_NUMBER_NOW_SCHEMA = Object.freeze(object({ ...CRISIS_READER_KEPT_PLAN_SCHEMA.properties, number_now: bool }));
+
+// The crisis reader's schema for the switches that are on: with both off, exactly CRISIS_READER_SCHEMA.
+export function crisisReaderSchema({ keptPlan = false, numberNow = false } = {}) {
+  if (numberNow) return keptPlan ? CRISIS_READER_KEPT_PLAN_NUMBER_NOW_SCHEMA : CRISIS_READER_NUMBER_NOW_SCHEMA;
+  return keptPlan ? CRISIS_READER_KEPT_PLAN_SCHEMA : CRISIS_READER_SCHEMA;
+}
+
+// number_now, in the crisis section's own words (its step 3, the body, and "Someone else"), and the provisional reply for it.
+export const NUMBER_NOW_FIELD = "number_now: true when the section sends the latest message to the emergency number now although the person hasn't said they've acted or are about to act themselves: a sign the section's step 3 (the body) names for it (after stopping heavy daily drinking or a daily sedative: confusion, seeing or hearing things that aren't there, or a seizure; after taking something, even by accident: they may have taken too much, or are very drowsy, hard to wake, keep vomiting or breathe oddly), or someone they're asking about who may act now or is in danger now (\"Someone else\": the emergency number where they are). Otherwise false, and false for a means at hand with no word of having acted or being about to act: that is the section's step about now (its questions, and distance from the means), not the number.";
+const NUMBER_NOW_PROVISIONAL = "provisional_reply also when number_now is true, whatever the level and in place of any other: then it is the section's step for it, short and in their language: for a sign in the body, the emergency number now and one sentence why, in the section's own terms (stopping suddenly can be dangerous; after taking something, that you can't know what it will do and some medicines do their harm hours later), never what it could do to their body; for someone else, the emergency number where that person is, now (with their address, if the asker is far away). The program shows it only when it passes the same exact checks as one for acted_or_about_to, an emergency number in it included.";
+// With provisionalTurns "first", after the conversation has shown an emergency number: the later-turn rule for acted_or_about_to
+// (crisisReaderNumberShownNote) holds for number_now too.
+const NUMBER_NOW_AFTER_NUMBER_SHOWN = "With a number already shown, the same holds for number_now: provisional_reply for it only when the latest message tells of something new and urgent, and null when it answers what was said before.";
+
+export function crisisReaderNumberNowNote({ numberShown = false } = {}) {
+  return [NUMBER_NOW_FIELD, NUMBER_NOW_PROVISIONAL, ...(numberShown ? [NUMBER_NOW_AFTER_NUMBER_SHOWN] : [])].join("\n");
+}

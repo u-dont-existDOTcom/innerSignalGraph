@@ -466,6 +466,10 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // Whether the trial keeps a plan for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN): on only with the trial on. The page shows the
           // "Pick up where we left off?" question and the "Delete the kept plan" button from it.
           runnerKeptPlan: runnerKeptPlan ? "on" : "off",
+          // Whether the trial gives the emergency number at once for what the crisis section sends there now though the person
+          // hasn't said they've acted (INNER_SIGNAL_RUNNER_NUMBER_NOW; design, section 9b): on only with the trial on. The trial built
+          // here, or by the loopback launcher, reads it from the same config; the page needs nothing new for it.
+          runnerNumberNow: runnerEvents && config.runnerNumberNowEnabled === true ? "on" : "off",
           // Whether the trial page shows its "Send feedback about InnerSignal" link (INNER_SIGNAL_RUNNER_FEEDBACK_LINK): on only with
           // the trial on, and then with the page's one address (src/feedback/address.mjs), so the link and the served rules agree.
           runnerFeedbackLink: runnerEvents && config.runnerFeedbackLinkEnabled === true ? "on" : "off",

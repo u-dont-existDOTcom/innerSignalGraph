@@ -4,7 +4,7 @@
 // token use, verdicts and the synthetic replies) go to a folder outside Git. Not part of npm test.
 //
 //   node tasks/runner-trial-20261121/measure.mjs probe  --provider codex|claude [--claude-config-dir /abs/path]
-//   node tasks/runner-trial-20261121/measure.mjs batch  --provider codex|claude --arms focused-split,whole-whole,... --set timed|round [--ids T1,T2] [--provisional-levels acted_or_about_to,wants_to_die]
+//   node tasks/runner-trial-20261121/measure.mjs batch  --provider codex|claude --arms focused-split,whole-whole,... --set timed|round [--ids T1,T2] [--provisional-levels acted_or_about_to,wants_to_die] [--number-now]
 //   node tasks/runner-trial-20261121/measure.mjs catch  --provider codex|claude --checkers split|whole
 //   node tasks/runner-trial-20261121/measure.mjs crisis-catch --provider codex|claude|mixed [--claude-config-dir /abs/path] [--cases FILE]   (the whole checker on seeded crisis replies)
 //   node tasks/runner-trial-20261121/measure.mjs plain  --provider codex|claude [--ids T1,T2]   (plain InnerSignal, no runner)
@@ -33,6 +33,7 @@ import { runSubprocess, sealedInferenceEnvironment } from "../../src/core/subpro
 import { CODEX_ISOLATION_CONFIG } from "../../src/evals/protocol-application.mjs";
 import { wholeProtocolText } from "../../src/runner-trial/rule-parts.mjs";
 import { PROVISIONAL_PREFIX } from "../../src/runner-trial/notices.mjs";
+import { batchRuntimeOptions, crisisReadingResult, parseHarnessArgs } from "./measure-options.mjs";
 
 const RESULTS_ROOT = "/home/joel/askrigor-releases/20261121-innersignal-runner-note/measure";
 // --conversations names another copy of the test conversations (the trial's copy, with lists corrected where a test contradicted the
@@ -42,7 +43,7 @@ const crisisSetPath = () => args.conversations ?? DEFAULT_CRISIS_SET;
 const I61_DIR = "/home/joel/askrigor-releases/20261121-innersignal-split-delivery/tests/in";
 const TIMED_CRISIS_IDS = ["T1", "F1", "S2", "F8"];
 
-const args = Object.fromEntries(process.argv.slice(3).reduce((pairs, value, index, all) => (value.startsWith("--") ? [...pairs, [value.slice(2), all[index + 1]]] : pairs), []));
+const args = parseHarnessArgs(process.argv.slice(3));
 const command = process.argv[2];
 const stamp = new Date().toISOString().replace(/[:.]/gu, "-");
 const outDir = path.join(RESULTS_ROOT, `${stamp}-${command}-${args.provider ?? "x"}`);
@@ -112,10 +113,10 @@ async function runConversation({ conversation, arm, provider }) {
     const caseId = `synthetic-measure-${conversation.id.toLowerCase()}`;
     await store.loadOrCreate(caseId);
     const events = [];
-    // --provisional-levels acted_or_about_to,wants_to_die measures the setting that also gives someone who wants to die a
-    // provisional reply (design, section 4); without it, each arm's default (acted_or_about_to only).
-    const provisionalLevels = args["provisional-levels"] ? { provisionalLevels: args["provisional-levels"].split(",") } : {};
-    const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings: { ...ARMS[arm].settings, ...provisionalLevels }, workerFor: workerFactory(provider, ARMS[arm].effort, calls), onEvent: (_caseId, turnId, event) => events.push({ at: Date.now(), turnId, ...event }) });
+    // The arm's settings with the command line's (measure-options.mjs): --provisional-levels measures the setting that also gives
+    // someone who wants to die a provisional reply (design, section 4), --number-now the crisis reader's number_now (section 9b).
+    const runtimeOptions = batchRuntimeOptions(args, ARMS[arm].settings);
+    const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, ...runtimeOptions, workerFor: workerFactory(provider, ARMS[arm].effort, calls), onEvent: (_caseId, turnId, event) => events.push({ at: Date.now(), turnId, ...event }) });
     const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: runtime, maximumInvocationAttempts: 1 });
     const turns = [];
     for (const [index, text] of conversation.turns.entries()) {
@@ -146,7 +147,7 @@ async function runConversation({ conversation, arm, provider }) {
         closing: result?.closing ?? null,
         error,
         state: turn?.state ?? null,
-        crisis_reading: turn?.runner_reading?.readers?.crisis ? { level: turn.runner_reading.readers.crisis.level, reason: turn.runner_reading.readers.crisis.reason } : null,
+        crisis_reading: crisisReadingResult(turn?.runner_reading?.readers?.crisis, runtimeOptions),
         boxes: turn?.runner_reading?.readers?.boxes?.boxes ?? null,
         repairs: Math.max(0, drafts.length - 1),
         first_draft: drafts[0]?.exact_text ?? null,
@@ -190,7 +191,8 @@ async function batch() {
   const arms = (args.arms ?? "focused-split").split(",");
   for (const arm of arms) if (!ARMS[arm]) throw new Error(`Unknown arm ${arm}`);
   const list = conversations(args.set ?? "timed", args.ids);
-  log(`batch provider=${provider} arms=${arms.join(",")} conversations=${list.length}`);
+  const numberNow = batchRuntimeOptions(args).numberNowEnabled;
+  log(`batch provider=${provider} arms=${arms.join(",")} conversations=${list.length}${numberNow ? " number-now=on" : ""}`);
   const results = [];
   for (const arm of arms) {
     for (const conversation of list) {
@@ -207,7 +209,7 @@ async function batch() {
       log(`${arm} ${conversation.id}: ${result.turns.map((turn) => `${(turn.ms_to_reply / 1000).toFixed(1)}s${turn.ms_to_provisional != null ? ` (provisional ${(turn.ms_to_provisional / 1000).toFixed(1)}s)` : ""} ${turn.delivery ?? turn.closing?.reason_code ?? turn.error}`).join(" | ")} repairs=${result.turns.reduce((total, turn) => total + turn.repairs, 0)} last=${last?.state}`);
     }
   }
-  fs.writeFileSync(path.join(outDir, "summary.md"), `# Runner trial batch ${stamp}\n\nProvider ${provider}; arms ${arms.join(", ")}; ${list.length} conversations.\n\n${summarize(results)}\n`);
+  fs.writeFileSync(path.join(outDir, "summary.md"), `# Runner trial batch ${stamp}\n\nProvider ${provider}; arms ${arms.join(", ")}; ${list.length} conversations${numberNow ? "; number now on" : ""}.\n\n${summarize(results)}\n`);
   log(`summary written to ${path.join(outDir, "summary.md")}`);
 }
 

@@ -32,8 +32,6 @@ import {
   BOX_PICKER_SCHEMA,
   CHECKERS,
   CHECKER_SCHEMA,
-  CRISIS_READER_KEPT_PLAN_SCHEMA,
-  CRISIS_READER_SCHEMA,
   LEVEL_CHECKER_KEPT_PLAN_SCHEMA,
   PROTECTION_READER_SCHEMA,
   WRITER_KEPT_PLAN_SCHEMA,
@@ -41,8 +39,10 @@ import {
   boxPickerPrompt,
   checkerPrompt,
   crisisReaderKeptPlanNote,
+  crisisReaderNumberNowNote,
   crisisReaderNumberShownNote,
   crisisReaderPrompt,
+  crisisReaderSchema,
   crisisReaderWantsToDieNote,
   levelCheckerKeptPlanNote,
   protectionReaderPrompt,
@@ -124,8 +124,9 @@ export function normalizeFindings(checkerId, findings) {
 }
 
 // `keptPlanEnabled` is INNER_SIGNAL_RUNNER_KEPT_PLAN (design, section 9): off by default, and with it off every packet, prompt and
-// schema is exactly what it was before the kept plan was built.
-export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, ownerFallbackEnabled = false, keptPlanEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
+// schema is exactly what it was before the kept plan was built. `numberNowEnabled` is INNER_SIGNAL_RUNNER_NUMBER_NOW (design,
+// section 9b), the same way: on only when exactly true.
+export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
   if (!privateCaseSource || !parts || typeof workerFor !== "function") throw new ValidationError("The runner trial needs its case source, rule parts and workers.");
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
@@ -228,6 +229,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     }));
   }
   const readCrisis = (entry) => isCrisisLevel(entry.crisis?.level) || entry.checkerLevels.some(isCrisisLevel);
+  // A crisis reading that sends the turn to the emergency number now though the person hasn't said they've acted or are about to
+  // (the crisis reader's number_now; design, section 9b): only with the switch on, and only from a reading the reader gave. Such a
+  // turn gets what a turn read acted gets for its first words: the provisional reply under the acted checks, the line at once
+  // when none is shown, the later-turn rule, the timed line, the line before a delivery that shows no number, and the line at a
+  // closing. The program's number check, on the crisis checker's level, is unchanged.
+  const numberNowRead = (crisis) => numberNowEnabled === true && Boolean(crisis) && crisis.unread !== true && crisis.number_now === true;
   const isCrisisConversation = (readings) => readings.some(readCrisis);
   // "Getting safe" or "wanting to die" (design, section 7): the readings that stand in for the owner's four routes.
   const isFixedMessageConversation = (readings) => readings.some((entry) => readCrisis(entry)
@@ -311,14 +318,19 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const shown = levelsNow.includes("wants_to_die") ? prompt.system.replace("Answer only with the JSON", `${crisisReaderWantsToDieNote()}\nAnswer only with the JSON`) : prompt.system;
     const laterTurn = config.provisionalTurns === "first" && numberShown && levelsNow.includes("acted_or_about_to");
     const told = laterTurn ? withNoteBeforeAnswerLine(shown, crisisReaderNumberShownNote()) : shown;
+    // With the number now on, the crisis reader also reads number_now and gives the provisional reply for it, under the later-turn
+    // rule once the conversation has shown a number.
+    const numberNow = numberNowEnabled === true;
+    const read = numberNow ? withNoteBeforeAnswerLine(told, crisisReaderNumberNowNote({ numberShown: laterTurn })) : told;
     // With the kept plan on, the crisis reader also reads whether the person asks to keep the plan (or says yes to the offer) and
     // whether they ask to delete it, from this conversation's words.
-    const system = keptPlanEnabled ? withNoteBeforeAnswerLine(told, crisisReaderKeptPlanNote()) : told;
+    const system = keptPlanEnabled ? withNoteBeforeAnswerLine(read, crisisReaderKeptPlanNote()) : read;
     const keptPlanReading = (value) => (keptPlanEnabled ? { asks_to_keep_plan: value?.asks_to_keep_plan === true, asks_to_delete_plan: value?.asks_to_delete_plan === true } : {});
+    const numberNowReading = (value) => (numberNow ? { number_now: value?.number_now === true } : {});
     let reading = null;
     let receipts = [];
     try {
-      const result = await callWorker("R1", { kind: "reader", runtimeTurn, system, user: prompt.user, schema: keptPlanEnabled ? CRISIS_READER_KEPT_PLAN_SCHEMA : CRISIS_READER_SCHEMA, attempts: 1, validate: (value) => ({ ...value, level: validLevel(value?.level), reason: String(value?.reason ?? "").slice(0, 400), ...keptPlanReading(value) }) });
+      const result = await callWorker("R1", { kind: "reader", runtimeTurn, system, user: prompt.user, schema: crisisReaderSchema({ keptPlan: keptPlanEnabled, numberNow }), attempts: 1, validate: (value) => ({ ...value, level: validLevel(value?.level), reason: String(value?.reason ?? "").slice(0, 400), ...keptPlanReading(value), ...numberNowReading(value) }) });
       reading = result.value;
       receipts = result.receipts;
     } catch (error) {
@@ -326,30 +338,32 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     }
     const stored = { ...(reading ?? { level: "unclear", unread: true }), receipts };
     await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { crisis: stored } }], authContext);
-    const allowsProvisional = Boolean(reading) && config.provisionalLevels.includes(reading.level);
+    // The level the first words go by: the reading's own, or, for a turn read number_now (switch on), acted or about to.
+    const firstWordsLevel = numberNowRead(reading) ? "acted_or_about_to" : reading?.level;
+    const allowsProvisional = Boolean(reading) && config.provisionalLevels.includes(firstWordsLevel);
     // A level no longer given one on this turn (with provisionalTurns "first", wanting to die after an earlier turn read at that
     // level): nothing is shown or recorded as a provisional, whatever the reader returned, and the skip puts no emergency line into
     // the conversation (the line's other triggers are unchanged). A provisional reply for someone who has acted or is about to is
     // shown on a later turn too when the reader gives one and it passes its exact checks, a number included, as on a first turn.
-    if (allowsProvisional && !levelsNow.includes(reading.level)) return stored;
+    if (allowsProvisional && !levelsNow.includes(firstWordsLevel)) return stored;
     if (allowsProvisional && typeof reading.provisional_reply === "string") {
-      const problems = provisionalProblems(reading.provisional_reply, { level: reading.level });
+      const problems = provisionalProblems(reading.provisional_reply, { level: firstWordsLevel });
       if (problems.length === 0) {
-        const checks = [...(reading.level === "acted_or_about_to" ? ["a_number"] : []), "numbers_known", "shape", "links", "detox"];
+        const checks = [...(firstWordsLevel === "acted_or_about_to" ? ["a_number"] : []), "numbers_known", "shape", "links", "detox"];
         await source("recordRunnerProvisional", [caseId, runtimeTurn.id, { exactText: reading.provisional_reply.trim(), checks }], authContext);
         emit(caseId, runtimeTurn.id, { type: "provisional", text: reading.provisional_reply.trim() });
       } else {
         await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { provisional_refused: { problems } } }], authContext);
-        if (reading.level === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
+        if (firstWordsLevel === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
       }
-    } else if (reading?.level === "acted_or_about_to" && !(config.provisionalTurns === "first" && numberShown)) {
+    } else if (firstWordsLevel === "acted_or_about_to" && !(config.provisionalTurns === "first" && numberShown)) {
       await showEmergencyLine(caseId, runtimeTurn, "no_provisional", authContext);
     } else if (!reading && priorCrisisConversation) {
       await showEmergencyLine(caseId, runtimeTurn, "no_reading_in_crisis_conversation", authContext);
     }
-    // Read acted with nothing shown this turn (with provisionalTurns "first", a later turn whose message answers what was said
-    // before): the highlighted line if the turn has no reply 30 s after the message arrived.
-    if (reading?.level === "acted_or_about_to") await armFallbackLine(caseId, runtimeTurn, authContext);
+    // Read acted (or number_now) with nothing shown this turn (with provisionalTurns "first", a later turn whose message answers
+    // what was said before): the highlighted line if the turn has no reply 30 s after the message arrived.
+    if (firstWordsLevel === "acted_or_about_to") await armFallbackLine(caseId, runtimeTurn, authContext);
     return stored;
   }
 
@@ -736,7 +750,8 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // delivery. It never asks the writer to repeat the number (Codex's review of e17c949a2).
       const passes = !findings.some((finding) => !RECORD_ONLY_AUDIT_CODES.includes(finding.code) && isSubstantiveAuditFinding(finding));
       const readActedThisTurn = readers.crisis?.level === "acted_or_about_to" || checkerLevel === "acted_or_about_to" || checkerLevelsOf(runtimeTurn).includes("acted_or_about_to");
-      if (passes && readActedThisTurn && emergencyNumbersIn(candidate.exact_text).length === 0) {
+      // With the number now on, a turn the crisis reader read number_now too (design, section 9b).
+      if (passes && (readActedThisTurn || numberNowRead(readers.crisis)) && emergencyNumbersIn(candidate.exact_text).length === 0) {
         const fresh = (await load(caseId, authContext)).runtime_turns.find((turn) => turn.id === runtimeTurn.id);
         if (fresh && !isFinishedRuntimeTurn(fresh) && !showsNumber(fresh)) await showEmergencyLine(caseId, fresh, "reply_without_number", authContext);
       }
@@ -875,7 +890,8 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       if (!record.raw_transcript.some((entry) => entry.id === turn.user_turn_id)) {
         ({ caseState, stateDiff } = stateAfterReadings(record.case_state, turn, turn.runner_reading?.readers ?? {}));
       }
-      if ((crisisNow || crisisUnread) && !turn.emergency_line_shown_at) await showEmergencyLine(caseId, turn, "turn_closed_without_reply", authContext);
+      // A turn read number_now (switch on) closes with the line too, as one read acted does (design, section 9b).
+      if ((crisisNow || crisisUnread || numberNowRead(crisisReading)) && !turn.emergency_line_shown_at) await showEmergencyLine(caseId, turn, "turn_closed_without_reply", authContext);
       await source("closeRuntimeTurnUnanswered", [caseId, turn.id, { kind, reasonCode, assistantTurnId, caseState, stateDiff, diffId: `diff:runner:${sha256(turn.id).slice(0, 16)}`, eventId }], authContext);
       emit(caseId, turn.id, { type: "closed", kind, reason: reasonCode });
   }
