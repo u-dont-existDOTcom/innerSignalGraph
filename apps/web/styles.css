@@ -112,6 +112,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 }
 
 .dev-automation { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line, #ccc); border-radius: .75rem; display:flex; gap:1rem; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+.dev-automation[hidden] { display: none; }
 .dev-automation strong { margin-right:.6rem; }
 .dev-automation span { font-size:.9rem; }
 .dev-human-decision { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }

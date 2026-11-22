@@ -290,6 +290,9 @@ function applyRunnerTrial(on) {
   // The usual app's pipeline sentences and its reasoning-depth menu don't apply to the trial; "not emergency care" stays.
   $("#therapy-pipeline-description").hidden = on;
   $("#therapy-processing-mode-label").hidden = on;
+  // Nor does the usual app's development panel, whose "Approve candidate" and "Keep current" buttons belong to its own worker
+  // (the 22 Nov page check: it showed in the trial).
+  $("#dev-automation").hidden = on;
   if (!on) runnerTrial.newConversation = false;
   syncRunnerNewConversation();
 }

@@ -1164,6 +1164,7 @@ test("with the trial on, the page hides the usual app's pipeline sentences and i
   const { html, app } = await pageSource();
   const css = await fs.readFile(path.join(repositoryRoot, "apps/web/styles.css"), "utf8");
   assert.match(css, /\.therapy-controls label\[hidden\] \{ display: none; \}/u, "a hidden label stays hidden whatever .composer label sets");
+  assert.match(css, /\.dev-automation\[hidden\] \{ display: none; \}/u, "the hidden development panel stays hidden whatever .dev-automation sets");
   const dom = new JSDOM(html, { url: "http://127.0.0.1/" });
   t.after(() => dom.window.close());
   const { document } = dom.window;
@@ -1177,13 +1178,14 @@ test("with the trial on, the page hides the usual app's pipeline sentences and i
   const depth = document.querySelector("#therapy-processing-mode-label");
   assert.match(description.textContent, /fast Sonnet/u);
   assert.ok(depth.contains(document.querySelector("#therapy-processing-mode")));
-  assert.deepEqual([description.hidden, depth.hidden], [false, false], "the usual app shows them");
+  const development = document.querySelector("#dev-automation");
+  assert.deepEqual([description.hidden, depth.hidden, development.hidden], [false, false, false], "the usual app shows them");
   vm.runInContext("applyRunnerTrial(true)", context);
-  assert.deepEqual([description.hidden, depth.hidden], [true, true]);
+  assert.deepEqual([description.hidden, depth.hidden, development.hidden], [true, true, true], "the development panel too");
   assert.equal(description.parentElement.firstChild.textContent, "This is a reflective companion, not emergency care.", "that sentence stays");
   assert.equal(document.querySelector("#therapy-processing-mode").value, "auto", "a message still sends the default");
   vm.runInContext("applyRunnerTrial(false)", context);
-  assert.deepEqual([description.hidden, depth.hidden], [false, false]);
+  assert.deepEqual([description.hidden, depth.hidden, development.hidden], [false, false, false]);
 });
 
 test("after Delete this case the page holds nothing of the case: not in its state (so not in its backup export), not on screen, not in its forms", async (t) => {
