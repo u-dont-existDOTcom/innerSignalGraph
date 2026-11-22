@@ -1,6 +1,8 @@
 # InnerSignal's feedback place (owner's i63b): design
 
-Status: draft 2, 22 Nov 2026, by the session building it (Claude Opus 5.5). Draft 1 (`20017c7b4`) was red-teamed by Fable
+Status: draft 2 as built, 22 Nov 2026, by the session building it (Claude Opus 5.5). Three things changed while building, each
+marked "(built)": the read's two cursors and the one-message read (section 7), the trace line's hour (section 12), and the runner
+link's switch (section 14). Draft 1 (`20017c7b4`) was red-teamed by Fable
 (`/home/joel/askrigor-releases/20261122-innersignal-feedback/fable-redteam-design-20261122.md`: 3 blocking, 12 should-fix,
 8 minor); every finding is answered in the appendix, and this draft is what gets built. Branch
 `claude/feedback-place-20261122` from `origin/main` (`22a2a2901`). Not released: nothing goes to `main`'s served rules,
@@ -167,10 +169,12 @@ arrive, never stored ones.
 …`). The server keeps only the token's SHA-256 (`INNER_SIGNAL_FEEDBACK_OWNER_TOKEN_SHA256`) and compares in constant
 time; a correct token always works; wrong ones are counted and, past the limits, answered 429.
 
-- `GET /feedback/owner/events?after=<seq>&limit=100`: the stored messages (sealed) and deletion records with an arrival
-  number above `after`, in order, stopping before the first chat message still held; with counts (stored per door, full
-  per door, sends refused for limits, hidden-field hits). Asking with `after=N` confirms everything up to N, so deletion
-  records up to N are removed.
+- `GET /feedback/owner/events?after=<seq>&confirmed=<seq>&limit=100`: the stored messages (sealed) and deletion records
+  with an arrival number above `after`, in order, stopping before the first chat message still held; with counts (stored
+  per door, full per door, sends refused for limits, hidden-field hits). `confirmed` is his last confirmed read: deletion
+  records up to it are removed, never a later one, so paging through a long read removes nothing early (built: one cursor
+  for both would have dropped deletion records before his Inbox took them in).
+- `GET /feedback/owner/message?id=<id>`: one stored message, sealed, for `publish`; it confirms nothing (built).
 - `POST /feedback/owner/delete {id}`; `POST /feedback/owner/delete-many {via, from_day, to_day}`;
   `POST /feedback/owner/publish {id, text, publish_key}`; `POST /feedback/owner/unpublish {id}`.
 
@@ -327,7 +331,8 @@ on). With it off, `tools/list`, `initialize` and `/health` are byte-identical to
 - Inputs: `kind` (`suggestion`, `bug`, `praise`, `review`), `text` (1 to 5,000 characters), `reply_address` (optional,
   at most 200), `person_approved_exact_text` (required, must be `true`). No public tick (section 8).
 - No sign-in (`securitySchemes: noauth`), like the protocol tools; a bearer token sent with the call is ignored, nothing
-  about any account is kept, and the call's trace line leaves out whether a token came with it. Annotations:
+  about any account is kept, and the call's trace line leaves out whether a token came with it and gives the hour only, not
+  the time (built). Annotations:
   `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: true` (it sends a person's
   words outside the chat). Hosts that ask before such a tool show the person the call with its text; InnerSignal can't
   make a host ask, so nothing depends on it.
@@ -371,11 +376,13 @@ or closed, and the ready line says the same; otherwise both are unchanged.
 ## 14. The runner's button
 
 The runner trial's page (`apps/web`, branch `claude/runner-trial-20261121`, owned by the runner trial session) gets a
-"Send feedback about InnerSignal" link, opening the page in a new tab, shown with the "Runner trial" banner. Its address
-is `FEEDBACK_PAGE_URL`. The local app checks once at start, with a short time limit, whether that address answers 200,
-and the link shows only then (the local app's `/health` says so); the page itself can't check, since its policy allows
-requests to its own origin only. The runner session adds it (asked on 22 Nov 2026, 00:44 UTC). InnerSignal's older local
-pipeline reads an older copy of the rules and gets no sentence (section 16).
+"Send feedback about InnerSignal" link, opening the page in a new tab with no referrer, shown with the "Runner trial"
+banner. Its address is `FEEDBACK_PAGE_URL`, given by the local app's `/health` (the page itself holds no address).
+**Built differently from draft 2:** instead of the local app checking at start whether the address answers, the link has
+its own switch, `INNER_SIGNAL_RUNNER_FEEDBACK_LINK`, off until the page is released and turned on by that release: no
+network call from the local app and none in its tests, and the trial never links to a page that isn't there. The patch
+was handed to the runner session on 22 Nov 2026 (notes folder, `innersignal-feedback-runner-link.patch`); it applies it
+on its branch. InnerSignal's older local pipeline reads an older copy of the rules and gets no sentence (section 16).
 
 ## 15. Release (later, with the owner's yes; nothing here is done by this branch)
 
@@ -385,8 +392,9 @@ pipeline reads an older copy of the rules and gets no sentence (section 16).
   dependent sentences of section 11 follow from what is found.
 - **Page:** the address settled (owner point 1; DNS and proxy route if a new one); image with this code; volume
   `/srv/inner-signal-private/feedback` (0700, uid 1000); the settings; `INNER_SIGNAL_FEEDBACK=on`; the served sentence
-  merged and released in the same step (stable skill and server). Checks after: the address the served rules name
-  answers 200; a synthetic send and its deletion; the owner's read; `tools/list` unchanged; `/health`.
+  merged and released in the same step (stable skill and server); on his laptop, `INNER_SIGNAL_RUNNER_FEEDBACK_LINK=on` for
+  the runner trial's link. Checks after: the address the served rules name answers 200; a synthetic send and its deletion;
+  the owner's read; `tools/list` unchanged; `/health`.
 - **The tool** with the release that changes the tool list anyway (pull request 232): `INNER_SIGNAL_FEEDBACK_TOOL=on`, 20
   tools instead of 19, one refresh in ChatGPT and one in Claude. That release also updates the texts that call every
   tool read-only (`plugins/inner-signal-therapy/.codex-plugin/plugin.json` capabilities, `docs/CLAUDE-CONNECTOR.md`).
