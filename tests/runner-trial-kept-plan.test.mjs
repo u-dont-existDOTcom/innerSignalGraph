@@ -228,8 +228,9 @@ test("with the number now's switch off every worker's prompt, packet and schema 
 });
 
 // The owner's fixed message after the plan's limit, a lapsed sign-in or the time (INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE; design,
-// section 7) changes only which closing a turn gets, never a worker's call: off, or on with the fixed message on, every worker gets the
-// packets from before.
+// section 7) changes only which closing a turn gets: no prompt, schema or packet field. In this scenario, which closes no turn, every
+// worker gets the packets from before, off or on (with the fixed message on). After a closing that showed his message, a later
+// turn's packet holds it where the notice would have stood, as it holds whatever the person was shown.
 test("the fixed message's switch for failures, off or on, leaves every worker's prompt, packet and schema byte-identical", async (t) => {
   const modules = { createEncryptedPrivateCaseStore, createRunnerTrialRuntime, createPrivateTherapyTurnController, cutRuleParts, REPAIR_INDUCED_ERROR_CHECKS };
   for (const runtimeOptions of [{ fixedMessageOnFailureEnabled: false }, { ownerFallbackEnabled: true, fixedMessageOnFailureEnabled: true }]) {

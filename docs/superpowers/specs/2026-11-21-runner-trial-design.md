@@ -27,9 +27,9 @@ response..." as it continues 4a 5b 6a".
 
 Two points his words leave open are put to him in the start-using-it question: whether the provisional reply is for both
 crisis levels or only for someone who has acted or is about to (section 4: a setting with a default, measured both ways), and
-whether, in a crisis conversation, every failure shows his fixed message or only failed checks. He answered the second on 22 Nov
-(question i67, part 3: 3b): failed checks, and also the plan's limit, the sign-in and the time, built behind a switch of its own,
-off by default (section 7).
+whether, in a crisis conversation, every failure shows his fixed message or only failed checks. He answered the second on 22
+Nov (question i67, part 3: 3b): failed checks, and also the plan's limit, the sign-in and the time, built behind a switch of
+its own, off by default (section 7).
 
 ## 1. What the trial keeps, changes and drops
 
@@ -332,8 +332,10 @@ their own; "112 911" with only a space between is read as one grouped number.
   notice, and the highlighted emergency line goes in as before on every closing that shows it (the last bullet).
 - **The switch**: on/off like the trial's, off by default, any other value stops startup; meaningful only with the trial and
   `INNER_SIGNAL_OWNER_FALLBACK` on, since it extends that message: `/health` says `runnerFixedMessageOnFailure: "on"` only
-  then, and the start script's `--fixed-message-on-failure` is refused without `--owner-fallback`. With it off, every closing
-  is as before; on or off, every worker's prompt, packet and schema is byte-identical (the kept plan's digest). The store
+  then, and the start script's `--fixed-message-on-failure` is refused without `--owner-fallback`. With it off, every
+  closing is as before. It gives no worker anything new: on or off, every prompt and schema and every packet field is the
+  same, and the kept plan's scenario, which closes no turn, gives the same digest; a later turn's packet holds what the
+  person was shown, so after a closing that showed his message, his message stands where the notice would have. The store
   creates his message as the closing of any of the four reasons whatever the switches say now, and reads a closing back by
   shape, so a case closed with the switch on stays readable, replays and goes on after it is turned off. It is a switch of
   the server, not a trial setting: the `fixedMessageOn` default that stood in the runtime with no code reading it was taken
