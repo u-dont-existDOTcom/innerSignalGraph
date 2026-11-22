@@ -38,6 +38,7 @@ import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
 import { createRunnerTrialController, isRunnerEventHub, runnerEventLine } from "../runner-trial/trial-controller.mjs";
+import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -454,6 +455,10 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // Whether the trial keeps a plan for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN): on only with the trial on. The page shows the
           // "Pick up where we left off?" question and the "Delete the kept plan" button from it.
           runnerKeptPlan: runnerKeptPlan ? "on" : "off",
+          // Whether the trial page shows its "Send feedback about InnerSignal" link (INNER_SIGNAL_RUNNER_FEEDBACK_LINK): on only with
+          // the trial on, and then with the page's one address (src/feedback/address.mjs), so the link and the served rules agree.
+          runnerFeedbackLink: runnerEvents && config.runnerFeedbackLinkEnabled === true ? "on" : "off",
+          ...(runnerEvents && config.runnerFeedbackLinkEnabled === true ? { feedbackPageUrl: FEEDBACK_PAGE_URL } : {}),
           endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }

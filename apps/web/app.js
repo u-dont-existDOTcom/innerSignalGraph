@@ -258,6 +258,17 @@ function applyRunnerTrial(on) {
   syncRunnerNewConversation();
 }
 
+// The trial page's link to InnerSignal's feedback page (feedback place design, section 14): shown only while /health says
+// runnerFeedbackLink is on and the runner trial is on, with the one address the server gives, and only an https address whose path
+// is /feedback. It opens in a new tab and sends no referrer.
+function applyRunnerFeedbackLink(address) {
+  const valid = runnerTrial.on && typeof address === "string" && /^https:\/\/[A-Za-z0-9.-]+(?::\d{1,5})?\/feedback$/u.test(address);
+  const link = $("#runner-feedback-link");
+  if (valid) link.setAttribute("href", address);
+  else link.removeAttribute("href");
+  $("#runner-feedback").hidden = !valid;
+}
+
 // The plan kept for next time (design, section 9): the question a new conversation opens with, its two answers, the line that says
 // what happened to the kept plan, and the button that deletes it. Every word is fixed and set with textContent.
 function applyRunnerKeptPlan(on) {
@@ -1082,6 +1093,7 @@ async function checkHealth() {
     badge.textContent = `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
     applyRunnerTrial(health.runnerTrial === "on");
     applyRunnerKeptPlan(health.runnerKeptPlan === "on");
+    applyRunnerFeedbackLink(health.runnerFeedbackLink === "on" ? health.feedbackPageUrl : null);
     if (runnerTrial.on) await reconcileRunnerCase();
     state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
     if (health.privateCaseStorage?.available) {
