@@ -2,24 +2,29 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { feedbackIdForCode, newDeletionCode, FEEDBACK_ID_PATTERN } from "./codes.mjs";
-import { sealForOwner } from "./sealed-box.mjs";
+import { keyIdFor, sealForOwner } from "./sealed-box.mjs";
 import { readFeedbackInput } from "./validate.mjs";
 
-// The feedback store (design section 4): one sealed file per message under items/, approved reviews under published/, deletions
-// (no content) under deleted/. Files are written to tmp/ and linked into place, so a reader never sees half a file and an existing
-// name is never overwritten. The store opens nothing: it seals to the owner's public key and keeps the clear record the server
-// needs (id, time, page or chat, whether it is a review the sender let be shown, and that review's publish check).
+// The feedback store (design section 4): one sealed file per message under items/, approved reviews under published/, deletion
+// records (no content) under deleted/, and counter.json with the next arrival number. Files are written to tmp/ and linked or
+// renamed into place, so a reader never sees half a file and a message's name is never overwritten. The store opens nothing: it
+// seals to the owner's public key and keeps in clear only what the server needs: the id, the arrival number, the day, which door
+// (page or chat), which key sealed it, a chat message's hold, and for a page review the sender let be shown, its publish check.
+// Every change goes through one queue, so arrival numbers are strictly increasing and the counts stay right.
 
 export const FEEDBACK_FORMAT = "inner-signal-feedback-v1";
+export const FEEDBACK_DOORS = Object.freeze(["page", "chat"]);
 export const FEEDBACK_STORE_DEFAULTS = Object.freeze({
   maxItems: 5_000,
   maxBytes: 50 * 1024 * 1024,
+  doorShares: Object.freeze({ page: 3_500, chat: 1_500 }),
   retentionDays: 365,
-  tombstoneDays: 90
+  deletionRecordMaxDays: 400,
+  chatHoldMs: 3_600_000
 });
 const DAY_MS = 24 * 3_600_000;
-const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u;
-const CURSOR = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)~(fb_[0-9A-HJKMNP-TV-Z]{20})$/u;
+const DAY = /^\d{4}-\d{2}-\d{2}$/u;
+const HOUR = /^\d{4}-\d{2}-\d{2}T\d{2}:00:00Z$/u;
 const DIRECTORIES = Object.freeze(["items", "published", "deleted", "tmp"]);
 
 export class FeedbackStoreError extends Error {
@@ -31,24 +36,21 @@ export class FeedbackStoreError extends Error {
 }
 
 const secondsTimestamp = (date) => date.toISOString().replace(/\.\d{3}Z$/u, "Z");
-const cursorOf = (time, id) => `${time}~${id}`;
-const compareByTime = (a, b) => (a.time === b.time ? (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : a.time < b.time ? -1 : 1);
-
-function readCursor(value) {
-  if (value == null || value === "") return null;
-  const match = typeof value === "string" ? CURSOR.exec(value) : null;
-  if (!match) throw new FeedbackStoreError("FEEDBACK_CURSOR_INVALID");
-  return { time: match[1], id: match[2] };
-}
-
-const after = (entry, cursor) => !cursor || compareByTime(entry, cursor) > 0;
+const dayOf = (date) => date.toISOString().slice(0, 10);
+const dayStart = (day) => new Date(`${day}T00:00:00Z`);
+// The full hour after one hour from arrival: the owner's read returns a chat message only from then on.
+const holdUntil = (date, holdMs) => {
+  const later = new Date(date.getTime() + holdMs);
+  const hour = new Date(Date.UTC(later.getUTCFullYear(), later.getUTCMonth(), later.getUTCDate(), later.getUTCHours()));
+  if (hour.getTime() < later.getTime()) hour.setUTCHours(hour.getUTCHours() + 1);
+  return hour.toISOString().replace(/\.\d{3}Z$/u, "Z");
+};
 
 async function readJsonFile(file) {
   try {
     return JSON.parse(await fs.readFile(file, "utf8"));
   } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    if (error instanceof SyntaxError) return null;
+    if (error?.code === "ENOENT" || error instanceof SyntaxError) return null;
     throw error;
   }
 }
@@ -66,37 +68,22 @@ export async function openFeedbackStore({
 } = {}) {
   if (typeof root !== "string" || !path.isAbsolute(root)) throw new TypeError("The feedback store needs an absolute root.");
   if (!ownerPublicKey) throw new TypeError("The feedback store needs the owner's public key.");
-  const settings = { ...FEEDBACK_STORE_DEFAULTS, ...limits };
+  const settings = { ...FEEDBACK_STORE_DEFAULTS, ...limits, doorShares: { ...FEEDBACK_STORE_DEFAULTS.doorShares, ...(limits.doorShares ?? {}) } };
+  const keyId = keyIdFor(ownerPublicKey);
   for (const name of DIRECTORIES) await fs.mkdir(path.join(root, name), { recursive: true, mode: 0o700 });
   const dir = (name) => path.join(root, name);
   const fileFor = (name, id) => path.join(dir(name), `${id}.json`);
+  const counterFile = path.join(root, "counter.json");
 
-  // Every stored message's time and size, kept in memory and rebuilt at open, so the owner's read opens only the files it returns.
-  const index = new Map();
-  let storedBytes = 0;
-  async function rebuildIndex() {
-    index.clear();
-    storedBytes = 0;
-    for (const name of await fs.readdir(dir("items"))) {
-      const id = name.replace(/\.json$/u, "");
-      if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
-      const file = path.join(dir("items"), name);
-      const value = await readJsonFile(file);
-      if (!value || value.id !== id || !TIMESTAMP.test(value.received_at ?? "")) continue;
-      try {
-        const size = (await fs.stat(file)).size;
-        index.set(id, { receivedAt: value.received_at, size });
-        storedBytes += size;
-      } catch (error) {
-        if (error?.code !== "ENOENT") throw error;
-      }
-    }
-  }
-  await rebuildIndex();
-  const isFull = () => index.size >= settings.maxItems || storedBytes >= settings.maxBytes;
+  // Every change runs after the one before it.
+  let queue = Promise.resolve();
+  const exclusive = (task) => {
+    const run = queue.then(task, task);
+    queue = run.then(() => {}, () => {});
+    return run;
+  };
 
-  // Writes `value` as `<name>/<id>.json`. With `exclusive`, an existing file is never replaced (EEXIST is thrown).
-  async function writeRecord(name, id, value, { exclusive }) {
+  async function writeAtomically(target, value, { exclusive: noOverwrite = false } = {}) {
     const body = `${JSON.stringify(value)}\n`;
     const temporary = path.join(dir("tmp"), `${random(12).toString("hex")}.json`);
     const handle = await fs.open(temporary, "wx", 0o600);
@@ -107,10 +94,10 @@ export async function openFeedbackStore({
       await handle.close();
     }
     try {
-      if (exclusive) await fs.link(temporary, fileFor(name, id));
-      else await fs.rename(temporary, fileFor(name, id));
+      if (noOverwrite) await fs.link(temporary, target);
+      else await fs.rename(temporary, target);
     } finally {
-      if (exclusive) await fs.unlink(temporary).catch(() => {});
+      if (noOverwrite) await fs.unlink(temporary).catch(() => {});
     }
     return Buffer.byteLength(body);
   }
@@ -125,151 +112,259 @@ export async function openFeedbackStore({
     }
   }
 
-  async function deleteById(id, by) {
+  // What is stored, kept in memory and rebuilt at open: each message's arrival number, day, door, hold and size.
+  const index = new Map();
+  let storedBytes = 0;
+  let highestSeq = 0;
+  for (const name of await fs.readdir(dir("items"))) {
+    const id = name.replace(/\.json$/u, "");
+    if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
+    const file = path.join(dir("items"), name);
+    const value = await readJsonFile(file);
+    if (!value || value.id !== id || !Number.isSafeInteger(value.seq) || !DAY.test(value.received_day ?? "") || !FEEDBACK_DOORS.includes(value.via)) continue;
+    const size = (await fs.stat(file)).size;
+    index.set(id, { seq: value.seq, day: value.received_day, via: value.via, heldUntil: HOUR.test(value.held_until ?? "") ? value.held_until : null, size });
+    storedBytes += size;
+    highestSeq = Math.max(highestSeq, value.seq);
+  }
+  for (const name of await fs.readdir(dir("deleted"))) {
+    const value = await readJsonFile(path.join(dir("deleted"), name));
+    if (Number.isSafeInteger(value?.seq)) highestSeq = Math.max(highestSeq, value.seq);
+  }
+  const counter = await readJsonFile(counterFile);
+  let nextSeq = Math.max(Number.isSafeInteger(counter?.next) ? counter.next : 1, highestSeq + 1);
+
+  // The next arrival number, saved before it is used, so a number is never given twice.
+  async function takeSeq() {
+    const seq = nextSeq;
+    await writeAtomically(counterFile, { next: seq + 1 });
+    nextSeq = seq + 1;
+    return seq;
+  }
+
+  const doorCount = (via) => {
+    let count = 0;
+    for (const entry of index.values()) if (entry.via === via) count += 1;
+    return count;
+  };
+  const doorFull = (via) => doorCount(via) >= settings.doorShares[via] || index.size >= settings.maxItems || storedBytes >= settings.maxBytes;
+
+  async function writeDeletionRecord(id, by) {
+    const seq = await takeSeq();
+    await writeAtomically(fileFor("deleted", id), { format: FEEDBACK_FORMAT, id, seq, day: dayOf(now()), by });
+  }
+
+  // Removes a message and any public copy. A public copy whose message already expired is removed too (its record went out then).
+  async function deleteNow(id, by) {
     if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) return false;
-    await removeIfPresent(fileFor("published", id));
-    if (!(await removeIfPresent(fileFor("items", id)))) return false;
-    const entry = index.get(id);
-    if (entry) {
-      index.delete(id);
-      storedBytes = Math.max(0, storedBytes - entry.size);
+    const hadPublic = await removeIfPresent(fileFor("published", id));
+    const hadItem = await removeIfPresent(fileFor("items", id));
+    if (hadItem) {
+      const entry = index.get(id);
+      if (entry) {
+        index.delete(id);
+        storedBytes = Math.max(0, storedBytes - entry.size);
+      }
+      await writeDeletionRecord(id, by);
     }
-    await writeRecord("deleted", id, { format: FEEDBACK_FORMAT, id, deleted_at: secondsTimestamp(now()), by }, { exclusive: false });
-    return true;
+    return hadItem || hadPublic;
   }
 
   return Object.freeze({
-    // Seals and keeps one message. Returns its id, deletion code and time; the code is never kept.
-    async add(input, { via }) {
-      if (!["page", "chat"].includes(via)) throw new TypeError("via must be page or chat.");
-      const read = readFeedbackInput(input);
-      if (!read.ok) throw new FeedbackStoreError(read.code);
-      if (isFull()) throw new FeedbackStoreError("FEEDBACK_FULL");
-      const value = read.value;
-      const publicReview = value.kind === "review" && value.mayShowPublicly === true;
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        const code = newDeletionCode(random);
-        const id = feedbackIdForCode(code);
-        const receivedAt = secondsTimestamp(now());
-        const publishKey = publicReview ? random(32) : null;
-        const record = {
+    keyId,
+
+    // Seals and keeps one message. Returns its id, deletion code, arrival time and number, its hold (chat), and what was stored.
+    add(input, { via }) {
+      return exclusive(async () => {
+        if (!FEEDBACK_DOORS.includes(via)) throw new TypeError("via must be page or chat.");
+        const read = readFeedbackInput(input);
+        if (!read.ok) throw new FeedbackStoreError(read.code);
+        const value = read.value;
+        if (via === "chat" && value.mayShowPublicly) throw new FeedbackStoreError("FEEDBACK_PUBLIC_ONLY_ON_PAGE");
+        if (doorFull(via)) throw new FeedbackStoreError("FEEDBACK_FULL");
+        const publicReview = value.kind === "review" && value.mayShowPublicly === true;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const code = newDeletionCode(random);
+          const id = feedbackIdForCode(code);
+          if (index.has(id)) continue;
+          const arrived = now();
+          const seq = await takeSeq();
+          const receivedDay = dayOf(arrived);
+          const heldUntil = via === "chat" ? holdUntil(arrived, settings.chatHoldMs) : null;
+          const publishKey = publicReview ? random(32) : null;
+          const record = {
+            format: FEEDBACK_FORMAT,
+            id,
+            seq,
+            received_day: receivedDay,
+            via,
+            key_id: keyId,
+            public_review: publicReview,
+            ...(heldUntil ? { held_until: heldUntil } : {}),
+            ...(publicReview ? { publish_mac: publishMac(publishKey, value.text) } : {})
+          };
+          const sealed = sealForOwner({
+            ownerPublicKey,
+            id,
+            record,
+            random,
+            plaintext: {
+              kind: value.kind,
+              text: value.text,
+              reply_address: value.replyAddress,
+              may_show_publicly: value.mayShowPublicly,
+              received_at: secondsTimestamp(arrived),
+              via,
+              ...(publicReview ? { publish_key: publishKey.toString("base64url") } : {})
+            }
+          });
+          publishKey?.fill(0);
+          let bytes;
+          try {
+            bytes = await writeAtomically(fileFor("items", id), { ...record, sealed }, { exclusive: true });
+          } catch (error) {
+            if (error?.code === "EEXIST") continue;
+            throw error;
+          }
+          const start = dayStart(receivedDay);
+          await fs.utimes(fileFor("items", id), start, start).catch(() => {});
+          index.set(id, { seq, day: receivedDay, via, heldUntil, size: bytes });
+          storedBytes += bytes;
+          return Object.freeze({
+            id,
+            code,
+            seq,
+            receivedAt: secondsTimestamp(arrived),
+            heldUntil,
+            stored: Object.freeze({ kind: value.kind, text: value.text, replyAddress: value.replyAddress, mayShowPublicly: value.mayShowPublicly })
+          });
+        }
+        throw new FeedbackStoreError("FEEDBACK_UNAVAILABLE");
+      });
+    },
+
+    deleteByCode(code, by = "sender") {
+      const id = feedbackIdForCode(code);
+      if (!id) return Promise.resolve({ deleted: false, reason: "FEEDBACK_CODE_INVALID" });
+      return exclusive(async () => ((await deleteNow(id, by)) ? { deleted: true, id } : { deleted: false, reason: "FEEDBACK_CODE_UNKNOWN" }));
+    },
+
+    deleteById(id, by = "owner") {
+      return exclusive(() => deleteNow(id, by));
+    },
+
+    // The owner's bulk delete, for a flood: every message from one door received on the days from..to (UTC dates).
+    deleteMany({ via, fromDay, toDay }) {
+      return exclusive(async () => {
+        if (!FEEDBACK_DOORS.includes(via) || !DAY.test(fromDay ?? "") || !DAY.test(toDay ?? "") || fromDay > toDay) {
+          throw new FeedbackStoreError("FEEDBACK_RANGE_INVALID");
+        }
+        let deleted = 0;
+        for (const [id, entry] of [...index]) {
+          if (entry.via === via && entry.day >= fromDay && entry.day <= toDay && (await deleteNow(id, "owner"))) deleted += 1;
+        }
+        return { deleted };
+      });
+    },
+
+    // The owner's read: messages (sealed) and deletion records with an arrival number above `after`, in order, at most `limit`,
+    // stopping before the first chat message still held. `confirmed` is the arrival number up to which his Inbox has taken in
+    // everything (his last confirmed read): deletion records up to it are removed, and never any later one.
+    listEvents({ after = 0, confirmed = 0, limit = 100 } = {}) {
+      return exclusive(async () => {
+        if (!Number.isSafeInteger(after) || after < 0 || !Number.isSafeInteger(confirmed) || confirmed < 0 || confirmed > after) {
+          throw new FeedbackStoreError("FEEDBACK_CURSOR_INVALID");
+        }
+        const size = Number.isInteger(limit) && limit >= 1 && limit <= 200 ? limit : 100;
+        const at = now();
+        const deletions = [];
+        for (const name of await fs.readdir(dir("deleted"))) {
+          const file = path.join(dir("deleted"), name);
+          const value = await readJsonFile(file);
+          if (!value || !FEEDBACK_ID_PATTERN.test(value.id ?? "") || !Number.isSafeInteger(value.seq)) continue;
+          if (value.seq <= confirmed) await removeIfPresent(file);
+          else if (value.seq > after) deletions.push({ seq: value.seq, kind: "deleted", value });
+        }
+        const items = [...index].filter(([, entry]) => entry.seq > after).map(([id, entry]) => ({ seq: entry.seq, kind: "item", id, entry }));
+        const events = [...items, ...deletions].sort((a, b) => a.seq - b.seq);
+        const isHeld = (event) => event.kind === "item" && event.entry.heldUntil !== null && Date.parse(event.entry.heldUntil) > at.getTime();
+        const out = [];
+        let next = after;
+        let stoppedForSize = false;
+        for (const event of events) {
+          if (out.length >= size) {
+            stoppedForSize = true;
+            break;
+          }
+          if (isHeld(event)) break;
+          if (event.kind === "item") {
+            const value = await readJsonFile(fileFor("items", event.id));
+            if (!value) continue;
+            out.push({
+              type: "message",
+              seq: value.seq,
+              id: value.id,
+              received_day: value.received_day,
+              via: value.via,
+              key_id: value.key_id,
+              public_review: value.public_review === true,
+              ...(value.held_until ? { held_until: value.held_until } : {}),
+              ...(value.publish_mac ? { publish_mac: value.publish_mac } : {}),
+              format: value.format,
+              sealed: value.sealed
+            });
+          } else {
+            out.push({ type: "deleted", seq: event.value.seq, id: event.value.id, day: event.value.day, by: event.value.by });
+          }
+          next = event.seq;
+        }
+        return {
+          events: out,
+          next_after: next,
+          more: stoppedForSize,
+          held: events.filter(isHeld).length,
+          stored: { page: doorCount("page"), chat: doorCount("chat") },
+          full: { page: doorFull("page"), chat: doorFull("chat") }
+        };
+      });
+    },
+
+    // One stored message, sealed, by id (for publishing), or null; confirms nothing.
+    async getMessage(id) {
+      if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id) || !index.has(id)) return null;
+      const value = await readJsonFile(fileFor("items", id));
+      return value?.id === id ? value : null;
+    },
+
+    // Shows a review publicly: only a page review the sender let be shown, and only its exact words (design section 8).
+    publish({ id, text, publishKey }) {
+      return exclusive(async () => {
+        if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id) || !index.has(id)) throw new FeedbackStoreError("FEEDBACK_NOT_FOUND");
+        const value = await readJsonFile(fileFor("items", id));
+        if (!value) throw new FeedbackStoreError("FEEDBACK_NOT_FOUND");
+        if (value.public_review !== true || typeof value.publish_mac !== "string") throw new FeedbackStoreError("FEEDBACK_NOT_PUBLISHABLE");
+        if (typeof text !== "string" || typeof publishKey !== "string" || !/^[A-Za-z0-9_-]{43}$/u.test(publishKey)) {
+          throw new FeedbackStoreError("FEEDBACK_PUBLISH_MISMATCH");
+        }
+        const expected = Buffer.from(value.publish_mac, "utf8");
+        const actual = Buffer.from(publishMac(Buffer.from(publishKey, "base64url"), text), "utf8");
+        if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) throw new FeedbackStoreError("FEEDBACK_PUBLISH_MISMATCH");
+        await writeAtomically(fileFor("published", id), {
           format: FEEDBACK_FORMAT,
           id,
-          received_at: receivedAt,
-          via,
-          public_review: publicReview,
-          ...(publicReview ? { publish_mac: publishMac(publishKey, value.text) } : {})
-        };
-        const sealed = sealForOwner({
-          ownerPublicKey,
-          id,
-          record,
-          random,
-          plaintext: {
-            kind: value.kind,
-            text: value.text,
-            reply_address: value.replyAddress,
-            may_show_publicly: value.mayShowPublicly,
-            received_at: receivedAt,
-            via,
-            ...(publicReview ? { publish_key: publishKey.toString("base64url") } : {})
-          }
+          text,
+          month: value.received_day.slice(0, 7),
+          published_at: secondsTimestamp(now())
         });
-        publishKey?.fill(0);
-        try {
-          const bytes = await writeRecord("items", id, { ...record, sealed }, { exclusive: true });
-          index.set(id, { receivedAt, size: bytes });
-          storedBytes += bytes;
-          return Object.freeze({ id, code, receivedAt });
-        } catch (error) {
-          if (error?.code !== "EEXIST") throw error;
-        }
-      }
-      throw new FeedbackStoreError("FEEDBACK_UNAVAILABLE");
+        return { published: true, id };
+      });
     },
 
-    async deleteByCode(code, by = "sender") {
-      const id = feedbackIdForCode(code);
-      if (!id) return { deleted: false, reason: "FEEDBACK_CODE_INVALID" };
-      return (await deleteById(id, by)) ? { deleted: true, id } : { deleted: false, reason: "FEEDBACK_CODE_UNKNOWN" };
-    },
-
-    deleteById,
-
-    // The owner's read: sealed messages and deletions after the cursors, oldest first, at most `limit` of each.
-    async listForOwner({ itemsAfter = null, deletedAfter = null, limit = 100 } = {}) {
-      const itemsCursor = readCursor(itemsAfter);
-      const deletedCursor = readCursor(deletedAfter);
-      const size = Number.isInteger(limit) && limit >= 1 && limit <= 200 ? limit : 100;
-      const items = [];
-      for (const [id, entry] of index) {
-        if (after({ time: entry.receivedAt, id }, itemsCursor)) items.push({ time: entry.receivedAt, id });
-      }
-      items.sort(compareByTime);
-      const deleted = [];
-      for (const name of await fs.readdir(dir("deleted"))) {
-        const id = name.replace(/\.json$/u, "");
-        if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
-        const value = await readJsonFile(path.join(dir("deleted"), name));
-        if (!value || value.id !== id || !TIMESTAMP.test(value.deleted_at ?? "")) continue;
-        if (after({ time: value.deleted_at, id }, deletedCursor)) deleted.push({ time: value.deleted_at, id, value });
-      }
-      deleted.sort(compareByTime);
-      const pageItems = [];
-      for (const entry of items) {
-        if (pageItems.length >= size) break;
-        const value = await readJsonFile(fileFor("items", entry.id));
-        if (value && value.id === entry.id) pageItems.push({ ...entry, value });
-      }
-      const pageDeleted = deleted.slice(0, size);
-      const published = new Set((await fs.readdir(dir("published"))).map((name) => name.replace(/\.json$/u, "")));
-      return {
-        items: pageItems.map(({ value }) => ({
-          id: value.id,
-          received_at: value.received_at,
-          via: value.via,
-          public_review: value.public_review === true,
-          published: published.has(value.id),
-          ...(value.publish_mac ? { publish_mac: value.publish_mac } : {}),
-          format: value.format,
-          sealed: value.sealed
-        })),
-        deleted: pageDeleted.map(({ value }) => ({ id: value.id, deleted_at: value.deleted_at, by: value.by })),
-        next: {
-          items_after: pageItems.length ? cursorOf(pageItems.at(-1).time, pageItems.at(-1).id) : itemsAfter ?? null,
-          deleted_after: pageDeleted.length ? cursorOf(pageDeleted.at(-1).time, pageDeleted.at(-1).id) : deletedAfter ?? null
-        },
-        more: items.length > size || deleted.length > size,
-        stored: index.size,
-        full: isFull()
-      };
-    },
-
-    // Shows a review publicly: only one the sender let be shown, and only its exact words (the publish check of design section 8).
-    async publish({ id, text, publishKey }) {
-      if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) throw new FeedbackStoreError("FEEDBACK_NOT_FOUND");
-      const value = await readJsonFile(fileFor("items", id));
-      if (!value) throw new FeedbackStoreError("FEEDBACK_NOT_FOUND");
-      if (value.public_review !== true || typeof value.publish_mac !== "string") throw new FeedbackStoreError("FEEDBACK_NOT_PUBLISHABLE");
-      if (typeof text !== "string" || typeof publishKey !== "string" || !/^[A-Za-z0-9_-]{43}$/u.test(publishKey)) {
-        throw new FeedbackStoreError("FEEDBACK_PUBLISH_MISMATCH");
-      }
-      const expected = Buffer.from(value.publish_mac, "utf8");
-      const actual = Buffer.from(publishMac(Buffer.from(publishKey, "base64url"), text), "utf8");
-      if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) throw new FeedbackStoreError("FEEDBACK_PUBLISH_MISMATCH");
-      await writeRecord("published", id, {
-        format: FEEDBACK_FORMAT,
-        id,
-        text,
-        month: value.received_at.slice(0, 7),
-        published_at: secondsTimestamp(now())
-      }, { exclusive: false });
-      return { published: true, id };
-    },
-
-    async unpublish(id) {
-      if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) return { unpublished: false };
-      return { unpublished: await removeIfPresent(fileFor("published", id)) };
+    unpublish(id) {
+      return exclusive(async () => {
+        if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) return { unpublished: false };
+        return { unpublished: await removeIfPresent(fileFor("published", id)) };
+      });
     },
 
     // Published reviews, newest first: their text and month only.
@@ -280,39 +375,51 @@ export async function openFeedbackStore({
         if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
         const value = await readJsonFile(path.join(dir("published"), name));
         if (value?.id === id && typeof value.text === "string" && /^\d{4}-\d{2}$/u.test(value.month ?? "")) {
-          reviews.push({ id, text: value.text, month: value.month, published_at: value.published_at ?? "" });
+          reviews.push({ text: value.text, month: value.month, publishedAt: String(value.published_at ?? "") });
         }
       }
-      return reviews.sort((a, b) => (a.published_at < b.published_at ? 1 : a.published_at > b.published_at ? -1 : 0))
-        .map(({ text, month }) => ({ text, month }));
+      return reviews.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).map(({ text, month }) => ({ text, month }));
     },
 
-    // Deletes messages past their keeping time, deletion records past theirs, and temporary files an interrupted write left.
-    async sweep() {
-      const at = now().getTime();
-      let expired = 0;
-      for (const [id, entry] of [...index]) {
-        const received = Date.parse(entry.receivedAt);
-        if (Number.isFinite(received) && at - received >= settings.retentionDays * DAY_MS && (await deleteById(id, "expiry"))) expired += 1;
-      }
-      for (const name of await fs.readdir(dir("deleted"))) {
-        const value = await readJsonFile(path.join(dir("deleted"), name));
-        const deletedAt = Date.parse(value?.deleted_at ?? "");
-        if (Number.isFinite(deletedAt) && at - deletedAt >= settings.tombstoneDays * DAY_MS) await removeIfPresent(path.join(dir("deleted"), name));
-      }
-      for (const name of await fs.readdir(dir("tmp"))) {
-        const file = path.join(dir("tmp"), name);
-        try {
-          if (at - (await fs.stat(file)).mtimeMs >= 3_600_000) await removeIfPresent(file);
-        } catch (error) {
-          if (error?.code !== "ENOENT") throw error;
+    // Deletes messages past their keeping time (a public copy stays), deletion records past theirs, and temporary files an
+    // interrupted write left.
+    sweep() {
+      return exclusive(async () => {
+        const at = now().getTime();
+        let expired = 0;
+        for (const [id, entry] of [...index]) {
+          if (at - dayStart(entry.day).getTime() >= settings.retentionDays * DAY_MS) {
+            if (await removeIfPresent(fileFor("items", id))) {
+              index.delete(id);
+              storedBytes = Math.max(0, storedBytes - entry.size);
+              await writeDeletionRecord(id, "expiry");
+              expired += 1;
+            }
+          }
         }
-      }
-      return { expired };
+        for (const name of await fs.readdir(dir("deleted"))) {
+          const file = path.join(dir("deleted"), name);
+          const value = await readJsonFile(file);
+          if (DAY.test(value?.day ?? "") && at - dayStart(value.day).getTime() >= settings.deletionRecordMaxDays * DAY_MS) await removeIfPresent(file);
+        }
+        for (const name of await fs.readdir(dir("tmp"))) {
+          const file = path.join(dir("tmp"), name);
+          try {
+            if (at - (await fs.stat(file)).mtimeMs >= 3_600_000) await removeIfPresent(file);
+          } catch (error) {
+            if (error?.code !== "ENOENT") throw error;
+          }
+        }
+        return { expired };
+      });
     },
 
     stats() {
-      return { stored: index.size, bytes: storedBytes, full: isFull() };
+      return {
+        stored: { page: doorCount("page"), chat: doorCount("chat") },
+        bytes: storedBytes,
+        full: { page: doorFull("page"), chat: doorFull("chat") }
+      };
     }
   });
 }

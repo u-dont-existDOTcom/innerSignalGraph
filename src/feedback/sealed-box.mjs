@@ -1,4 +1,4 @@
-import { createCipheriv, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes } from "node:crypto";
+import { createCipheriv, createHash, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes } from "node:crypto";
 
 // Sealing a feedback message to the owner's public key (design section 4). The server holds only the owner's X25519 public key, so
 // it can seal but never open what it stores: opening needs the private key, which only the owner's laptop holds, and the code
@@ -40,6 +40,20 @@ export function readOwnerPublicKey(text) {
     throw new FeedbackSealError("FEEDBACK_OWNER_KEY_INVALID");
   }
   return key;
+}
+
+// A short id for a public key, kept in clear with each message, so the owner's laptop knows which of his keys opens it.
+export function keyIdFor(keyObject) {
+  return createHash("sha256").update(rawPublicKey(keyObject)).digest("hex").slice(0, 16);
+}
+
+// The sealed JSON is padded with spaces (which JSON ignores) to the next size step: 512 bytes, then doubling. A file's size then
+// shows only the step, not the message's length.
+export function paddedJson(value) {
+  const json = Buffer.from(JSON.stringify(value), "utf8");
+  let step = 512;
+  while (step < json.length) step *= 2;
+  return Buffer.concat([json, Buffer.alloc(step - json.length, 0x20)]);
 }
 
 export function rawPublicKey(keyObject) {
@@ -84,7 +98,7 @@ export function sealForOwner({ ownerPublicKey, id, record, plaintext, random = r
   const iv = random(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   cipher.setAAD(Buffer.from(canonicalJson(record), "utf8"));
-  const ciphertext = Buffer.concat([cipher.update(Buffer.from(JSON.stringify(plaintext), "utf8")), cipher.final()]);
+  const ciphertext = Buffer.concat([cipher.update(paddedJson(plaintext)), cipher.final()]);
   key.fill(0);
   return {
     suite: FEEDBACK_SEAL_SUITE,

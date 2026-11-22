@@ -8,8 +8,12 @@ export const FEEDBACK_ADDRESS_MAX = 200;
 const codePoints = (value) => [...value].length;
 
 // Control characters other than newline and tab are removed; line breaks become "\n"; the text is put in Unicode's composed form.
+// Direction embeddings, overrides and isolates (U+202A to U+202E, U+2066 to U+2069) and invisible characters (soft hyphen,
+// zero-width space, word joiner, byte-order mark) are removed too, so a text can't display as something other than what it
+// holds. The joiners that emoji and some scripts need (U+200C, U+200D) and the plain direction marks (U+200E, U+200F) stay.
+const INVISIBLE = /[\u00AD\u200B\u2060\uFEFF\u202A-\u202E\u2066-\u2069]/gu;
 function cleanText(value, { singleLine }) {
-  let text = value.normalize("NFC").replace(/\r\n?/gu, "\n").replace(/[\u2028\u2029]/gu, "\n");
+  let text = value.normalize("NFC").replace(/\r\n?/gu, "\n").replace(/[\u2028\u2029]/gu, "\n").replace(INVISIBLE, "");
   text = text.replace(singleLine ? /[\u0000-\u001F\u007F-\u009F]/gu : /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/gu, singleLine ? " " : "");
   return text.trim();
 }
