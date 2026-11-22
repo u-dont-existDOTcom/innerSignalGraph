@@ -444,6 +444,22 @@ Prompt and result: `/home/joel/askrigor-releases/20261122-innersignal-feedback/c
 | 10 | Some startup errors printed the root's path | **Fixed.** Every root failure becomes fixed words with the setting's name and at most an error code (test) |
 | 11 | The startup test conflicted with the held sentence | **Fixed.** The test reads which address the packaged rules name and expects the closed page then |
 
+## Appendix C: Codex's second review (22 Nov 2026, `7b1c6fd2f..ee1802b21` and the whole change; 7 should-fix, 1 minor)
+
+Prompt and result: `/home/joel/askrigor-releases/20261122-innersignal-feedback/codex/review-2-prompt.md` and `review-2.txt`. It found
+seven of the first review's fixes complete; these eight are fixed, each with a test:
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | A deletion whose file couldn't be removed could lose its record at confirmation | A record goes only once nothing of its message is left; the message leaves the index at once and is never shown or published again |
+| 2 | Finishing an interrupted expiry removed the review's public copy | Recovery follows the record's `by`: an expiry removes only the sealed message |
+| 3 | Two runs of the owner's script could overwrite each other's folders | One command at a time (a lock file with its process id); a finished batch is confirmed or discarded explicitly (`fetch --discard`), never removed by another fetch |
+| 4 | Two processes on one store could give out the same arrival number | The counter is read and written under a lock file; every owner's read rebuilds its view from the disk. One process stays the expected setup; with two, numbering and reads are safe and the caps approximate |
+| 5 | A GET or HEAD that declares a body escaped the early close | Any request that declares a body and isn't fully read when refused closes the connection, whatever its method |
+| 6 | A refund after a window restarted could free a newer send's place | A refund gives back only the window generation it was counted in |
+| 7 | The laptop never removed Inbox copies past a year by itself | The script keeps a content-free inventory (ids and days) and removes Inbox copies past 365 days at any fetch |
+| 8 | Deleting a message already gone on the server failed before its Inbox write | A 404 there is the same as deleted: the Inbox write still comes |
+
 ## Appendix: the red team's findings and what changed
 
 | # | Finding | Severity | Outcome |

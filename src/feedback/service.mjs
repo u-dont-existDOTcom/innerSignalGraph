@@ -135,7 +135,10 @@ function createFormTokens({ now, secret = randomBytes(32) }) {
 // the feedback routes' size and time limits.
 function respond(res, status, body, headers, { close: asked = false } = {}) {
   const request = res.req;
-  const close = asked || Boolean(request && !["GET", "HEAD"].includes(request.method) && request.complete !== true);
+  // A request carries a body when it declares one (a length above zero or a transfer encoding), whatever its method.
+  const declared = Number.parseInt(request?.headers?.["content-length"] ?? "0", 10);
+  const hasBody = Boolean(request) && ((Number.isFinite(declared) && declared > 0) || request.headers["transfer-encoding"] !== undefined);
+  const close = asked || (hasBody && request.complete !== true);
   const bytes = Buffer.from(body, "utf8");
   res.writeHead(status, { ...headers, "content-length": String(bytes.length), ...(close ? { connection: "close" } : {}) });
   if (close) res.once("finish", () => res.socket?.destroySoon?.());
@@ -194,20 +197,22 @@ export function createFeedbackService({
     const all = via === "page" ? "page_all" : "chat_all";
     // Places are reserved before anything is awaited, so parallel sends can't all slip under a limit; a send that stores nothing
     // gives its places back.
-    if (!limiter.take(own, key)) {
+    const ownPlace = limiter.reserve(own, key);
+    if (!ownPlace) {
       counts.limit_refusals[via] += 1;
       throw new FeedbackStoreError("FEEDBACK_BUSY");
     }
-    if (!limiter.take(all)) {
-      limiter.refund(own, key);
+    const doorPlace = limiter.reserve(all);
+    if (!doorPlace) {
+      limiter.refund(ownPlace);
       counts.limit_refusals[via] += 1;
       throw new FeedbackStoreError("FEEDBACK_BUSY");
     }
     try {
       return await store.add(value, { via });
     } catch (error) {
-      limiter.refund(own, key);
-      limiter.refund(all);
+      limiter.refund(ownPlace);
+      limiter.refund(doorPlace);
       if (error instanceof FeedbackStoreError) {
         if (error.code === "FEEDBACK_FULL") counts.full_refusals[via] += 1;
         throw error;

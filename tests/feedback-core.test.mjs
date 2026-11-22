@@ -372,11 +372,63 @@ test("the one-message read keeps a chat message's hold, and each door has its ow
   await store.add({ kind: "praise", text: big }, { via: "page" });
 });
 
-test("a refused send gives its counted places back", () => {
-  const limiter = createRateLimiter({ rules: { r: [{ windowMs: 1_000, max: 1 }] }, now: () => 0 });
-  assert.equal(limiter.take("r", "a"), true);
-  assert.equal(limiter.take("r", "a"), false);
-  limiter.refund("r", "a");
-  assert.equal(limiter.take("r", "a"), true);
-  limiter.refund("r", "unknown-key");
+test("a deletion whose file can't be removed keeps its record until it is, and an interrupted expiry keeps the public copy", async (t) => {
+  const root = await temporaryRoot(t);
+  const keys = ownerKeys();
+  let clock = new Date("2026-11-22T08:00:00Z");
+  const store = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  const sent = await store.add({ kind: "bug", text: "stuck" }, { via: "page" });
+  const items = path.join(root, "items");
+  await fs.chmod(items, 0o500);
+  t.after(() => fs.chmod(items, 0o700).catch(() => {}));
+  assert.deepEqual(await store.deleteByCode(sent.code), { deleted: true, id: sent.id });
+  const read = await store.listEvents();
+  assert.deepEqual(read.events.map((event) => [event.type, event.id]), [["deleted", sent.id]], "never shown as a message again");
+  assert.equal(await store.getMessage(sent.id), null);
+  await store.listEvents({ after: read.next_after, confirmed: read.next_after });
+  assert.ok((await fs.readdir(path.join(root, "deleted"))).includes(`${sent.id}.json`), "the record stays while the file is there");
+  await fs.chmod(items, 0o700);
+  await store.listEvents({ after: read.next_after, confirmed: read.next_after });
+  assert.deepEqual(await fs.readdir(path.join(root, "deleted")), [], "then the deletion finishes and the record goes");
+  assert.deepEqual(await fs.readdir(items), []);
+
+  // An expiry cut short after its record: the next open removes the message and keeps the review's public copy.
+  const review = await store.add({ kind: "review", text: "Kind.", mayShowPublicly: true }, { via: "page" });
+  const event = (await store.listEvents({ after: read.next_after, confirmed: read.next_after })).events.find((entry) => entry.id === review.id);
+  const opened = open(keys, event);
+  await store.publish({ id: review.id, text: opened.text, publishKey: opened.publish_key });
+  await fs.writeFile(path.join(root, "deleted", `${review.id}.json`), JSON.stringify({ format: "inner-signal-feedback-v1", id: review.id, seq: 500, day: "2027-11-22", by: "expiry" }));
+  const reopened = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  await assert.rejects(fs.stat(path.join(items, `${review.id}.json`)), { code: "ENOENT" });
+  assert.deepEqual(await reopened.publishedReviews(), [{ text: "Kind.", month: "2026-11" }]);
+});
+
+test("two processes sharing one store never give out the same arrival number, and each owner's read sees both", async (t) => {
+  const root = await temporaryRoot(t);
+  const keys = ownerKeys();
+  const clock = new Date("2026-11-22T09:00:00Z");
+  const a = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  const b = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  const sent = await Promise.all([
+    ...Array.from({ length: 5 }, (_, index) => a.add({ kind: "praise", text: `a${index}` }, { via: "page" })),
+    ...Array.from({ length: 5 }, (_, index) => b.add({ kind: "praise", text: `b${index}` }, { via: "page" }))
+  ]);
+  assert.equal(new Set(sent.map((entry) => entry.seq)).size, 10, "ten different numbers");
+  const fromA = await a.listEvents();
+  assert.equal(fromA.events.length, 10, "a's read sees b's messages too");
+});
+
+test("a refund gives back only the window it was counted in", () => {
+  let clock = 0;
+  const limiter = createRateLimiter({ rules: { r: [{ windowMs: 1_000, max: 1 }] }, now: () => clock });
+  const early = limiter.reserve("r", "a");
+  assert.ok(early);
+  assert.equal(limiter.reserve("r", "a"), null);
+  clock = 1_000;
+  const later = limiter.reserve("r", "a");
+  assert.ok(later, "a new window");
+  limiter.refund(early);
+  assert.equal(limiter.reserve("r", "a"), null, "the old refund didn't free the new window's place");
+  limiter.refund(later);
+  assert.ok(limiter.reserve("r", "a"));
 });

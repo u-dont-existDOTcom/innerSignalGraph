@@ -6,6 +6,7 @@
 //   keygen [--server URL]                 make the key and the token (never overwrites; again adds a key); print the two settings
 //   fetch --out DIR                       read new messages and deletions; write DIR/plan.json and DIR/docs/; print counts
 //   fetch --confirm DIR                   after the batch was sent: move the cursor on and delete DIR
+//   fetch --discard DIR                   an earlier batch that wasn't sent (or not fully): delete DIR; the next fetch reads it again
 //   delete ID --export DIR --confirm ID   delete one message; needs his "Delete" choice for it in the Inbox export
 //   delete-many --via chat|page --from DAY --to DAY --confirm "VIA FROM TO"   bulk delete, for a flood
 //   publish ID --export DIR --confirm ID  show a review publicly; needs his "Show publicly" choice for it in the Inbox export
@@ -27,6 +28,8 @@ import { keyIdFor, readOwnerPublicKey } from "../src/feedback/sealed-box.mjs";
 const BATCH = 50;
 const MAX_EVENTS_PER_FETCH = 1_000;
 const DAY = /^\d{4}-\d{2}-\d{2}$/u;
+// The server deletes a message after this many days; the Inbox copy goes after the same time, even if no deletion record arrives.
+const RETENTION_DAYS = 365;
 
 export class FeedbackInboxError extends Error {
   constructor(message) {
@@ -87,6 +90,40 @@ function configPaths(configDir) {
 async function ensureConfigDir(dir) {
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   await fs.chmod(dir, 0o700);
+}
+
+// One command at a time changes the state and the folders: a lock file holding the running command's process id. A lock whose
+// process is gone is taken over.
+async function withLock(paths, task) {
+  await ensureConfigDir(paths.dir);
+  const lock = path.join(paths.dir, "lock");
+  let held = false;
+  for (let attempt = 0; attempt < 3 && !held; attempt += 1) {
+    try {
+      await fs.writeFile(lock, `${process.pid}\n`, { mode: 0o600, flag: "wx" });
+      held = true;
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      const pid = Number.parseInt(await fs.readFile(lock, "utf8").catch(() => ""), 10);
+      let alive = false;
+      if (Number.isSafeInteger(pid) && pid > 0) {
+        try {
+          process.kill(pid, 0);
+          alive = true;
+        } catch (probe) {
+          alive = probe?.code === "EPERM";
+        }
+      }
+      if (alive) fail(`Another feedback-inbox command is running (process ${pid}); run this one when it has ended.`);
+      await fs.unlink(lock).catch(() => {});
+    }
+  }
+  if (!held) fail("Could not take the feedback-inbox lock.");
+  try {
+    return await task();
+  } finally {
+    await fs.unlink(lock).catch(() => {});
+  }
 }
 
 async function loadKeys(paths) {
@@ -187,12 +224,17 @@ function openMessage(keys, event) {
   }
 }
 
-async function fetchEvents(paths, options) {
+async function fetchEvents(paths, options, now) {
   const out = options.out;
   if (typeof out !== "string" || !path.isAbsolute(out)) fail("fetch needs --out with an absolute path to a new, empty folder.");
   const state = (await readJson(paths.state, {})) ?? {};
   const save = () => writePrivate(paths.state, `${JSON.stringify(state)}\n`);
-  // A folder an interrupted or unconfirmed turn left: its batch was never confirmed, so it goes, and the same messages are read again.
+  // A finished batch not yet confirmed belongs to the turn that made it (it may be sending it now): it is confirmed or discarded
+  // explicitly, never removed by another fetch.
+  if (state.pending?.complete) {
+    fail(`An earlier batch is waiting in ${state.pending.folder}: if its batches were sent, run fetch --confirm ${state.pending.folder}; if not, run fetch --discard ${state.pending.folder}.`);
+  }
+  // A folder an interrupted fetch left (never finished): it goes, and the same messages are read again.
   if (state.pending?.folder) {
     await fs.rm(state.pending.folder, { recursive: true, force: true });
     state.pending = null;
@@ -211,13 +253,17 @@ async function fetchEvents(paths, options) {
     const keys = await loadKeys(paths);
     const after = Number.isSafeInteger(state.after) ? state.after : 0;
     const entries = [];
-    const counts = { new: 0, by_kind: {}, reviews_waiting: 0, deleted: 0, unreadable: 0, held: 0, full: {}, stored: {} };
+    const counts = { new: 0, by_kind: {}, reviews_waiting: 0, deleted: 0, expired_here: 0, unreadable: 0, held: 0, full: {}, stored: {} };
     const unreadable = [];
+    // Which messages the Inbox holds, by id and day only (no words), so their Inbox copies go after a year even if a deletion record
+    // never arrives.
+    const imported = { ...(state.imported && typeof state.imported === "object" ? state.imported : {}) };
     const add = async (event, opened) => {
       const file = path.join(out, "docs", "feedback", `${event.id}.json`);
       await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
       await fs.writeFile(file, `${JSON.stringify(inboxDoc(event, opened))}\n`, { mode: 0o600, flag: "wx" });
       entries.push({ op: "set", collection: "feedback", doc_id: event.id, file_path: file });
+      imported[event.id] = event.received_day;
       counts.new += 1;
       counts.by_kind[opened.kind] = (counts.by_kind[opened.kind] ?? 0) + 1;
       if (event.public_review) counts.reviews_waiting += 1;
@@ -242,6 +288,7 @@ async function fetchEvents(paths, options) {
         if (!FEEDBACK_ID_PATTERN.test(event.id ?? "")) fail("The server sent an event with an invalid id.");
         if (event.type === "deleted") {
           entries.push({ op: "delete", collection: "feedback", doc_id: event.id });
+          delete imported[event.id];
           counts.deleted += 1;
         } else {
           const opened = openMessage(keys, event);
@@ -261,13 +308,22 @@ async function fetchEvents(paths, options) {
       }
     }
     counts.unreadable = unreadable.length;
+    const today = now();
+    for (const [id, day] of Object.entries(imported)) {
+      if (!DAY.test(day) || today - Date.parse(`${day}T00:00:00Z`) >= RETENTION_DAYS * 24 * 3_600_000) {
+        entries.push({ op: "delete", collection: "feedback", doc_id: id });
+        delete imported[id];
+        counts.expired_here += 1;
+      }
+    }
     const batches = [];
     for (let index = 0; index < entries.length; index += BATCH) batches.push(entries.slice(index, index + BATCH));
     await fs.writeFile(path.join(out, "plan.json"), `${JSON.stringify({ batches, counts }, null, 1)}\n`, { mode: 0o600 });
-    state.pending = { folder: out, complete: true, next_after: cursor, unreadable, at: new Date().toISOString() };
+    state.pending = { folder: out, complete: true, next_after: cursor, unreadable, imported, at: new Date().toISOString() };
     await save();
     return [
       `Feedback: ${counts.new} new (${Object.entries(counts.by_kind).map(([kind, count]) => `${count} ${kind}`).join(", ") || "none"}), ${counts.reviews_waiting} review(s) waiting for a yes, ${counts.deleted} deletion(s), ${counts.held} held for the first hour.`,
+      ...(counts.expired_here ? [`${counts.expired_here} Inbox cop(ies) past a year removed.`] : []),
       ...(counts.unreadable ? [`${counts.unreadable} message(s) could not be opened with the keys in ${paths.keys}; each fetch tries them again.`] : []),
       ...(Object.entries(counts.full).filter(([, full]) => full).map(([door]) => `The ${door} door is full.`)),
       ...(counts.more_waiting ? ["More are waiting: fetch again after confirming."] : []),
@@ -281,6 +337,16 @@ async function fetchEvents(paths, options) {
   }
 }
 
+async function discardFetch(paths, options) {
+  const folder = options.discard;
+  const state = (await readJson(paths.state, {})) ?? {};
+  if (!state.pending || state.pending.folder !== folder) fail(`No unconfirmed fetch for ${folder}.`);
+  await fs.rm(folder, { recursive: true, force: true });
+  state.pending = null;
+  await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
+  return `Discarded ${folder}; the next fetch reads the same messages again.`;
+}
+
 async function confirmFetch(paths, options) {
   const folder = options.confirm;
   const state = (await readJson(paths.state, {})) ?? {};
@@ -289,6 +355,7 @@ async function confirmFetch(paths, options) {
   await fs.rm(folder, { recursive: true, force: true });
   state.after = state.pending.next_after;
   state.unreadable = state.pending.unreadable ?? [];
+  state.imported = state.pending.imported ?? state.imported ?? {};
   state.pending = null;
   await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
   return `Confirmed: the cursor is at ${state.after}; ${folder} deleted.`;
@@ -318,9 +385,21 @@ async function deleteOne(paths, options) {
   if (!FEEDBACK_ID_PATTERN.test(id ?? "")) fail("delete needs a message id (fb_…).");
   requireConfirm(options, id);
   if ((await ownerChoice(options.export, id)) !== "delete") fail(`The Inbox export has no "Delete" choice from the owner for ${id}.`);
-  const result = await ownerRequest(await serverUrl(paths, options), await loadToken(paths), "delete", { method: "POST", body: { id } });
+  const base = await serverUrl(paths, options);
+  const response = await fetch(`${base}/owner/delete`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${await loadToken(paths)}`, "content-type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+  // Already gone on the server (the sender deleted it, say): the Inbox copy still goes.
+  if (response.status !== 200 && response.status !== 404) fail(`The server refused delete: HTTP ${response.status}.`);
   const plan = await inboxUpdatePlan(options.export, id, { op: "delete" });
-  return `${result.deleted ? "Deleted" : "Not found on the server (already deleted)"}: ${id}. Inbox write: ${plan}`;
+  const state = (await readJson(paths.state, {})) ?? {};
+  if (state.imported && Object.hasOwn(state.imported, id)) {
+    delete state.imported[id];
+    await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
+  }
+  return `${response.status === 200 ? "Deleted" : "Already gone on the server"}: ${id}. Inbox write: ${plan}`;
 }
 
 async function deleteMany(paths, options) {
@@ -371,16 +450,20 @@ async function status(paths) {
   ].join("\n");
 }
 
-export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(), ".config", "innersignal-feedback") } = {}) {
+export async function runFeedbackInbox(argv, { configDir = path.join(os.homedir(), ".config", "innersignal-feedback"), now = Date.now } = {}) {
   const { command, options } = parseArgs(argv);
   const paths = configPaths(options["config-dir"] ?? configDir);
+  const locked = (task) => withLock(paths, task);
   switch (command) {
-    case "keygen": return keygen(paths, options);
-    case "fetch": return options.confirm ? confirmFetch(paths, options) : fetchEvents(paths, options);
-    case "delete": return deleteOne(paths, options);
-    case "delete-many": return deleteMany(paths, options);
-    case "publish": return publish(paths, options);
-    case "unpublish": return unpublish(paths, options);
+    case "keygen": return locked(() => keygen(paths, options));
+    case "fetch":
+      if (options.confirm) return locked(() => confirmFetch(paths, options));
+      if (options.discard) return locked(() => discardFetch(paths, options));
+      return locked(() => fetchEvents(paths, options, now));
+    case "delete": return locked(() => deleteOne(paths, options));
+    case "delete-many": return locked(() => deleteMany(paths, options));
+    case "publish": return locked(() => publish(paths, options));
+    case "unpublish": return locked(() => unpublish(paths, options));
     case "status": return status(paths);
     default: return fail("Commands: keygen, fetch, delete, delete-many, publish, unpublish, status (see the top of scripts/feedback-inbox.mjs).");
   }

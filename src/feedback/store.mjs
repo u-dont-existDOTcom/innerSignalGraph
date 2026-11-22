@@ -120,34 +120,101 @@ export async function openFeedbackStore({
     }
   }
 
-  // What is stored, kept in memory and rebuilt at open: each message's arrival number, day, door, hold and size.
+  // A deletion whose record is written is finished here: the message always, the public copy unless the message only expired.
+  // True when nothing of it is left; a file that can't be removed keeps its record, so the deletion is tried again.
+  async function finishDeletion(id, by) {
+    let done = true;
+    for (const file of [fileFor("items", id), ...(by === "expiry" ? [] : [fileFor("published", id)])]) {
+      try {
+        await fs.unlink(file);
+      } catch (error) {
+        if (error?.code !== "ENOENT") done = false;
+      }
+    }
+    return done;
+  }
+
+  async function readDeletionRecords() {
+    const records = new Map();
+    for (const name of await fs.readdir(dir("deleted"))) {
+      const id = name.replace(/\.json$/u, "");
+      if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
+      const value = await readJsonFile(path.join(dir("deleted"), name));
+      if (value?.id === id && Number.isSafeInteger(value.seq)) records.set(id, value);
+    }
+    return records;
+  }
+
+  // What is stored, read from the disk at open and before every owner's read (so a read also sees what another process wrote):
+  // each message's arrival number, day, door, hold and size. A message with a deletion record is never indexed; its deletion is
+  // finished instead (a crash or a failed removal part-way).
   const index = new Map();
   let storedBytes = 0;
-  let highestSeq = 0;
-  for (const name of await fs.readdir(dir("items"))) {
-    const id = name.replace(/\.json$/u, "");
-    if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
-    const file = path.join(dir("items"), name);
-    const value = await readJsonFile(file);
-    if (!value || value.id !== id || !Number.isSafeInteger(value.seq) || !DAY.test(value.received_day ?? "") || !FEEDBACK_DOORS.includes(value.via)) continue;
-    const size = (await fs.stat(file)).size;
-    index.set(id, { seq: value.seq, day: value.received_day, via: value.via, heldUntil: HOUR.test(value.held_until ?? "") ? value.held_until : null, size });
-    storedBytes += size;
-    highestSeq = Math.max(highestSeq, value.seq);
+  async function rebuildIndex() {
+    const records = await readDeletionRecords();
+    const fresh = new Map();
+    let bytes = 0;
+    let highest = 0;
+    for (const value of records.values()) highest = Math.max(highest, value.seq);
+    for (const name of await fs.readdir(dir("items"))) {
+      const id = name.replace(/\.json$/u, "");
+      if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
+      if (records.has(id)) {
+        await finishDeletion(id, records.get(id).by);
+        continue;
+      }
+      const file = path.join(dir("items"), name);
+      const value = await readJsonFile(file);
+      if (!value || value.id !== id || !Number.isSafeInteger(value.seq) || !DAY.test(value.received_day ?? "") || !FEEDBACK_DOORS.includes(value.via)) continue;
+      let size;
+      try {
+        size = (await fs.stat(file)).size;
+      } catch (error) {
+        if (error?.code === "ENOENT") continue;
+        throw error;
+      }
+      fresh.set(id, { seq: value.seq, day: value.received_day, via: value.via, heldUntil: HOUR.test(value.held_until ?? "") ? value.held_until : null, size });
+      bytes += size;
+      highest = Math.max(highest, value.seq);
+    }
+    index.clear();
+    for (const [id, entry] of fresh) index.set(id, entry);
+    storedBytes = bytes;
+    return { records, highest };
   }
-  for (const name of await fs.readdir(dir("deleted"))) {
-    const value = await readJsonFile(path.join(dir("deleted"), name));
-    if (Number.isSafeInteger(value?.seq)) highestSeq = Math.max(highestSeq, value.seq);
-  }
+  const opened = await rebuildIndex();
   const counter = await readJsonFile(counterFile);
-  let nextSeq = Math.max(Number.isSafeInteger(counter?.next) ? counter.next : 1, highestSeq + 1);
+  let nextSeq = Math.max(Number.isSafeInteger(counter?.next) ? counter.next : 1, opened.highest + 1);
 
-  // The next arrival number, saved before it is used, so a number is never given twice.
+  // The next arrival number, saved before it is used, so a number is never given twice, also by two processes sharing the store
+  // (one process is the expected setup): the counter is read and written under a lock file, which a holder that died leaves
+  // stale after 10 seconds.
+  const counterLock = path.join(root, "counter.lock");
   async function takeSeq() {
-    const seq = nextSeq;
-    await writeAtomically(counterFile, { next: seq + 1 });
-    nextSeq = seq + 1;
-    return seq;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        await (await fs.open(counterLock, "wx", 0o600)).close();
+        break;
+      } catch (error) {
+        if (error?.code !== "EEXIST") throw error;
+        const info = await fs.stat(counterLock).catch(() => null);
+        if (info && Date.now() - info.mtimeMs > 10_000) {
+          await fs.unlink(counterLock).catch(() => {});
+          continue;
+        }
+        if (attempt >= 200) throw new FeedbackStoreError("FEEDBACK_UNAVAILABLE");
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    }
+    try {
+      const saved = await readJsonFile(counterFile);
+      const seq = Math.max(nextSeq, Number.isSafeInteger(saved?.next) ? saved.next : 1);
+      await writeAtomically(counterFile, { next: seq + 1 });
+      nextSeq = seq + 1;
+      return seq;
+    } finally {
+      await fs.unlink(counterLock).catch(() => {});
+    }
   }
 
   const doorCount = (via) => {
@@ -178,29 +245,26 @@ export async function openFeedbackStore({
     }
   }
 
-  // Removes a message and any public copy. The deletion record is written first, so a crash part-way leaves a record and a message
-  // that the next open finishes deleting, never a deleted message without the record that removes the owner's Inbox copy. A public
-  // copy whose message already expired is removed too (its record went out then).
+  // Removes a message (and, unless it only expired, its public copy). The deletion record is written first and the message leaves
+  // the index at once, so a crash or a failed removal part-way leaves a record that finishes the deletion later (at the next open
+  // or owner's read), never a deleted message without the record that removes the owner's Inbox copy. A public copy whose message
+  // already expired is removed too (its record went out then).
   async function deleteNow(id, by) {
     if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) return false;
     const hasItem = index.has(id);
-    if (hasItem) await writeDeletionRecord(id, by);
-    const hadPublic = await removeIfPresent(fileFor("published", id));
     if (hasItem) {
-      await removeIfPresent(fileFor("items", id));
+      await writeDeletionRecord(id, by);
       forget(id);
+      await finishDeletion(id, by);
+      return true;
     }
-    return hasItem || hadPublic;
-  }
-
-  // Deletions a crash interrupted: a deletion record whose message (or public copy) is still there is finished now.
-  for (const name of await fs.readdir(dir("deleted"))) {
-    const id = name.replace(/\.json$/u, "");
-    if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
-    if (index.has(id)) {
-      await removeIfPresent(fileFor("published", id));
-      await removeIfPresent(fileFor("items", id));
-      forget(id);
+    if (by === "expiry") return false;
+    try {
+      await fs.unlink(fileFor("published", id));
+      return true;
+    } catch (error) {
+      if (error?.code === "ENOENT") return false;
+      throw error;
     }
   }
 
@@ -313,13 +377,15 @@ export async function openFeedbackStore({
         }
         const size = Number.isInteger(limit) && limit >= 1 && limit <= 200 ? limit : 100;
         const at = now();
+        const { records } = await rebuildIndex();
         const deletions = [];
-        for (const name of await fs.readdir(dir("deleted"))) {
-          const file = path.join(dir("deleted"), name);
-          const value = await readJsonFile(file);
-          if (!value || !FEEDBACK_ID_PATTERN.test(value.id ?? "") || !Number.isSafeInteger(value.seq)) continue;
-          if (value.seq <= confirmed) await removeIfPresent(file);
-          else if (value.seq > after) deletions.push({ seq: value.seq, kind: "deleted", value });
+        for (const value of records.values()) {
+          // A confirmed record goes only once nothing of its message is left; otherwise it stays to finish the deletion.
+          if (value.seq <= confirmed) {
+            if (await finishDeletion(value.id, value.by)) await removeIfPresent(fileFor("deleted", value.id));
+          } else if (value.seq > after) {
+            deletions.push({ seq: value.seq, kind: "deleted", value });
+          }
         }
         const items = [...index].filter(([, entry]) => entry.seq > after).map(([id, entry]) => ({ seq: entry.seq, kind: "item", id, entry }));
         const events = [...items, ...deletions].sort((a, b) => a.seq - b.seq);
@@ -427,18 +493,14 @@ export async function openFeedbackStore({
         const at = now().getTime();
         let expired = 0;
         for (const [id, entry] of [...index]) {
-          if (at - dayStart(entry.day).getTime() >= settings.retentionDays * DAY_MS) {
-            // The record first, as in deleteNow; the public copy of a review stays (design section 4).
-            await writeDeletionRecord(id, "expiry");
-            await removeIfPresent(fileFor("items", id));
-            forget(id);
-            expired += 1;
-          }
+          // The public copy of a review stays (design section 4).
+          if (at - dayStart(entry.day).getTime() >= settings.retentionDays * DAY_MS && (await deleteNow(id, "expiry"))) expired += 1;
         }
         for (const name of await fs.readdir(dir("deleted"))) {
           const file = path.join(dir("deleted"), name);
           const value = await readJsonFile(file);
-          if (DAY.test(value?.day ?? "") && at - dayStart(value.day).getTime() >= settings.deletionRecordMaxDays * DAY_MS) await removeIfPresent(file);
+          if (DAY.test(value?.day ?? "") && at - dayStart(value.day).getTime() >= settings.deletionRecordMaxDays * DAY_MS
+              && (await finishDeletion(value.id, value.by))) await removeIfPresent(file);
         }
         for (const name of await fs.readdir(dir("tmp"))) {
           const file = path.join(dir("tmp"), name);

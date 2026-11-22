@@ -49,6 +49,8 @@ A missing or wrong setting stops startup with the setting's name, never its valu
      open them);
    - `node scripts/feedback-inbox.mjs fetch --confirm <folder>`;
    - tell the owner the counts.
+   If `fetch` says an earlier batch is waiting, confirm it if its batches were sent, or `fetch --discard <folder>` if not (the
+   next fetch reads the same messages again). One command runs at a time; a second one says so and stops.
    The lane never reads a message's words: it doesn't open the batch files, doesn't export or list the Inbox's `feedback`
    collection, and never hands this step to Codex or another model.
 3. His choices in the Inbox's Feedback view (`choices/feedback-<id>`) are acted on with `publish <id>` or `delete <id>`, each with
@@ -67,6 +69,11 @@ A missing or wrong setting stops startup with the setting's name, never its valu
 - Messages are deleted after 365 days; a published review stays until the sender or the owner removes it.
 - No meaning check on the server. The page carries the crisis lines on every page; in a conversation where someone has said
   they want to die or might act, the rules say feedback isn't offered and is never presented as reaching a person.
+
+## One process per store
+
+The store expects one connector process. With two on the same volume, arrival numbers stay unique (a lock file around the
+counter) and every owner's read sees both processes' messages (it reads the disk), but the caps are only approximate.
 
 ## Release and rollback
 

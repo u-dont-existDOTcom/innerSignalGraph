@@ -24,7 +24,8 @@ async function world(t) {
   const configDir = path.join(base, "config");
   const root = path.join(base, "store");
   await fs.mkdir(root, { mode: 0o700 });
-  const run = (...argv) => runFeedbackInbox([...argv, "--config-dir", configDir]);
+  let laptopNow = Date.parse("2026-11-22T12:00:00Z");
+  const run = (...argv) => runFeedbackInbox([...argv, "--config-dir", configDir], { now: () => laptopNow });
   // The server's address is known only once it listens, so keygen runs first without it.
   const keys = await run("keygen");
   const setting = (name) => new RegExp(`^${name}=(.+)$`, "mu").exec(keys)?.[1];
@@ -56,7 +57,7 @@ async function world(t) {
     const response = await fetch(listener.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "send_feedback", arguments: { person_approved_exact_text: true, ...args } } }) });
     return (await response.json()).result.structuredContent;
   };
-  return { base, configDir, root, run, keys, server, origin, sendPage, sendChat, advance: (ms) => { clock += ms; } };
+  return { base, configDir, root, run, keys, server, origin, sendPage, sendChat, advance: (ms) => { clock += ms; }, laptopAdvance: (ms) => { laptopNow += ms; } };
 }
 
 test("keygen writes private files, prints only the two server settings, and a second run adds a key", async (t) => {
@@ -96,10 +97,12 @@ test("fetch writes an Inbox batch, prints counts only, holds chat messages for t
   assert.equal((await fs.stat(sets[0].file_path)).mode & 0o777, 0o600);
   assert.equal(JSON.stringify(plan1).includes(MARKER), false, "the plan holds ids and paths, never words");
 
-  // Not confirmed: the next fetch drops the folder and reads the same messages again.
+  // A finished batch that isn't confirmed is never removed by another fetch: it is confirmed or discarded explicitly.
   const out2 = path.join(w.base, "fetch-2");
-  await w.run("fetch", "--out", out2);
-  await assert.rejects(fs.stat(out1), { code: "ENOENT" }, "the unconfirmed folder is gone");
+  await assert.rejects(w.run("fetch", "--out", out2), /An earlier batch is waiting/u);
+  assert.match(await w.run("fetch", "--discard", out1), /Discarded/u);
+  await assert.rejects(fs.stat(out1), { code: "ENOENT" }, "the discarded folder is gone");
+  assert.match(await w.run("fetch", "--out", out2), /2 new/u, "the same messages are read again");
   assert.match(await w.run("fetch", "--confirm", out2), /Confirmed/u);
   await assert.rejects(fs.stat(out2), { code: "ENOENT" });
 
@@ -178,4 +181,38 @@ test("a message no key opens is kept and tried again, and a fetch that fails lea
   await assert.rejects(fs.stat(out4), { code: "ENOENT" });
   assert.doesNotMatch(await w.run("status"), /unconfirmed fetch/u);
   await fs.writeFile(tokenPath, token, { mode: 0o600 });
+});
+
+test("one command at a time, an Inbox copy goes after a year even without a deletion record, and deleting twice is fine", async (t) => {
+  const w = await world(t);
+  await w.run("keygen", "--server", w.server);
+  await w.sendPage({ kind: "praise", text: "Thank you." });
+  const [first, second] = await Promise.allSettled([w.run("fetch", "--out", path.join(w.base, "c1")), w.run("fetch", "--out", path.join(w.base, "c2"))]);
+  assert.equal([first, second].filter((result) => result.status === "fulfilled").length, 1, "only one runs");
+  assert.match([first, second].find((result) => result.status === "rejected").reason.message, /Another feedback-inbox command is running/u);
+  const done = first.status === "fulfilled" ? path.join(w.base, "c1") : path.join(w.base, "c2");
+  const plan = JSON.parse(await fs.readFile(path.join(done, "plan.json"), "utf8"));
+  const id = plan.batches.flat()[0].doc_id;
+  await w.run("fetch", "--confirm", done);
+
+  // A year on, with no record from the server, the laptop removes the Inbox copy itself.
+  w.laptopAdvance(366 * 24 * 3_600_000);
+  const late = path.join(w.base, "late");
+  assert.match(await w.run("fetch", "--out", late), /1 Inbox cop\(ies\) past a year removed/u);
+  const latePlan = JSON.parse(await fs.readFile(path.join(late, "plan.json"), "utf8"));
+  assert.deepEqual(latePlan.batches.flat(), [{ op: "delete", collection: "feedback", doc_id: id }]);
+  await w.run("fetch", "--confirm", late);
+
+  // The owner deletes a message the sender already deleted: the Inbox write still comes.
+  await w.sendPage({ kind: "bug", text: "Gone already." });
+  const out = path.join(w.base, "again");
+  await w.run("fetch", "--out", out);
+  const docs = JSON.parse(await fs.readFile(path.join(out, "plan.json"), "utf8")).batches.flat();
+  await w.run("fetch", "--confirm", out);
+  const target = docs[0].doc_id;
+  const exportDir = path.join(w.base, "export");
+  await fs.mkdir(path.join(exportDir, "choices"), { recursive: true });
+  await fs.writeFile(path.join(exportDir, "choices", `feedback-${target}.json`), JSON.stringify({ choice: "delete" }));
+  assert.match(await w.run("delete", target, "--export", exportDir, "--confirm", target), /^Deleted/u);
+  assert.match(await w.run("delete", target, "--export", exportDir, "--confirm", target), /^Already gone on the server: .*Inbox write:/su);
 });

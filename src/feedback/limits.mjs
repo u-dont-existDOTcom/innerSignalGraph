@@ -66,11 +66,23 @@ export function createRateLimiter({ rules = FEEDBACK_LIMIT_RULES, now = Date.now
       entry.lastSeen = at;
       return true;
     },
-    // Gives back one counted take (a send that was refused after its place was reserved).
-    refund(rule, key = "*") {
-      const entry = counters.get(`${rule}\u0000${key}`);
+    // Like take, but returns the reservation (or null), which refund can give back: only to the windows it was counted in, so a
+    // refund after a window has started again never gives back a newer send's place.
+    reserve(rule, key = "*") {
+      const at = now();
+      const entry = entryFor(rule, key, at);
+      if (!entry || entry.windows.some((window) => window.count >= window.max)) return null;
+      for (const window of entry.windows) window.count += 1;
+      entry.lastSeen = at;
+      return Object.freeze({ rule, key, starts: entry.windows.map((window) => window.start) });
+    },
+    refund(reservation) {
+      if (!reservation) return;
+      const entry = counters.get(`${reservation.rule}\u0000${reservation.key}`);
       if (!entry) return;
-      for (const window of entry.windows) if (window.count > 0) window.count -= 1;
+      entry.windows.forEach((window, position) => {
+        if (window.start === reservation.starts[position] && window.count > 0) window.count -= 1;
+      });
     },
     // Whether the next take would be refused, without counting.
     full(rule, key = "*") {

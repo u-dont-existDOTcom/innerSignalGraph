@@ -298,3 +298,21 @@ test("a root that can't be read stops startup with the setting's name, never its
     return true;
   });
 });
+
+test("a GET that declares a body and is refused closes the connection too", async (t) => {
+  const environment = await feedbackEnvironment(t);
+  const server = await listen(t, { feedback: environment.feedback });
+  const http = await import("node:http");
+  const { origin } = server;
+  const target = new URL(`${origin}/feedback/owner/events`);
+  const result = await new Promise((resolve, reject) => {
+    const request = http.request({ host: target.hostname, port: target.port, path: target.pathname, method: "GET", headers: { "content-length": "1000000" } }, (response) => {
+      response.resume();
+      resolve({ status: response.statusCode, connection: response.headers.connection });
+    });
+    request.on("error", reject);
+    request.write("x".repeat(1_000));
+  });
+  assert.equal(result.status, 401);
+  assert.equal(result.connection, "close");
+});
