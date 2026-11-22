@@ -25,6 +25,7 @@ import {
   DEFAULT_RUNNER_WORKERS,
   RUNNER_CLAUDE_CONFIG_DIR,
   RUNNER_ROLES,
+  RUNNER_TRIAL_CASE_ID_SETTING,
   RUNNER_TRIAL_SETTING,
   RUNNER_TRIAL_SETTINGS_FILE,
   createRunnerWorkerFactory,
@@ -43,6 +44,9 @@ const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const serveEntry = fileURLToPath(new URL("../src/cli/serve.mjs", import.meta.url));
 const parts = cutRuleParts(loadTherapyProtocol({ boxGuidance: true }));
 const CASE_ID = "synthetic-runner-server-case";
+// A case id of the form the start script makes (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID), and one a fresh page might have made up.
+const SYNTHETIC_TRIAL_CASE = "case-00000000-0000-4000-8000-000000000000";
+const SYNTHETIC_PAGE_CASE = "case-11111111-1111-4111-8111-111111111111";
 const OLD_ANSWER_FIELDS = ["answer", "mode", "processingTier", "routingReason", "graphBundleVersion", "caseFormulation", "interventionContract", "responseContract", "processingMs", "durableCaseState", "caseState", "caseStateDiff", "privateCaseStorage", "orchestration"];
 // With the trial on, every answer also carries what its stored turn showed before the reply.
 const STORED_TURN_FIELDS = ["provisional", "emergencyLineShown"];
@@ -174,6 +178,18 @@ test("an invalid switch value stops the server's startup before it listens, and 
   assert.match(stderr, /INNER_SIGNAL_RUNNER_TRIAL must be on or off\./u);
   assert.equal(stderr.includes("synthetic-invalid-value"), false);
   assert.equal(stdout.includes("listening"), false);
+});
+
+test("the trial's case id is none when absent or blank, the start script's form when set, and any other value stops loadConfig with a message naming the setting and never the value", async () => {
+  assert.equal(RUNNER_TRIAL_CASE_ID_SETTING, "INNER_SIGNAL_RUNNER_TRIAL_CASE_ID");
+  const reading = (value) => withEnv({ [RUNNER_TRIAL_CASE_ID_SETTING]: value }, () => loadConfig({ mode: "mock" }).runnerTrialCaseId);
+  for (const value of [undefined, "", "   "]) assert.equal(await reading(value), null, JSON.stringify(value));
+  assert.equal(await reading(SYNTHETIC_TRIAL_CASE), SYNTHETIC_TRIAL_CASE);
+  assert.equal(await reading(` ${SYNTHETIC_TRIAL_CASE} `), SYNTHETIC_TRIAL_CASE, "surrounding spaces don't matter");
+  for (const value of ["synthetic-invalid-value", "case-1", SYNTHETIC_TRIAL_CASE.toUpperCase(), `${SYNTHETIC_TRIAL_CASE}0`, "case-00000000-0000-1000-8000-000000000000", CASE_ID, "../case-00000000-0000-4000-8000-000000000000"]) {
+    const refused = (error) => error?.code === "BAD_CONFIG" && error.message === `${RUNNER_TRIAL_CASE_ID_SETTING} must be a case id of the form case-<random UUID>, as scripts/runner-trial-start.mjs makes it.`;
+    await assert.rejects(async () => reading(value), refused, value);
+  }
 });
 
 // ---- The settings file -------------------------------------------------------------------------------------------------------
@@ -361,6 +377,44 @@ test("/health reports runnerTrial on or off, and the switch on with no vault sto
   assert.throws(() => createInnerSignalServer({ config: onConfig, providers: createProviders(onConfig), privateCaseStore: store, privateTherapyController: { async run() {} }, runnerTrialEvents: events }), /needs its turn authorization/u);
 });
 
+test("/health names the trial's case only with the trial on and the setting set, and the trial's arrangement (null with the trial off)", async (t) => {
+  const store = await makeStore(t);
+  const health = async (config, extra = {}) => (await fetch(`${await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseStore: store, ...extra }))}/health`)).json();
+  const off = await health(trialConfig({ runnerTrialEnabled: false, runnerTrialCaseId: SYNTHETIC_TRIAL_CASE }));
+  assert.equal(Object.hasOwn(off, "runnerCaseId"), false, "not with the trial off");
+  assert.equal(off.runnerArrangement, null);
+  const unset = await health(trialConfig());
+  assert.equal(Object.hasOwn(unset, "runnerCaseId"), false, "not without the setting");
+  // Built the real way without a settings file: the runtime's own arms (focused writer, split checkers), Claude for every role.
+  assert.deepEqual(unset.runnerArrangement, { writerMode: "focused", checkerMode: "split", readers: ["claude"], writer: ["claude"], checkers: ["claude"] });
+  assert.equal((await health(trialConfig({ runnerTrialCaseId: SYNTHETIC_TRIAL_CASE }))).runnerCaseId, SYNTHETIC_TRIAL_CASE);
+
+  // A controller brought in with its settings, as the loopback launcher brings it: the arrangement is read from them, and only the
+  // providers of the roles the arms call count (no box picker for the whole writer, the whole checker alone).
+  const config = trialConfig({ runnerTrialCaseId: SYNTHETIC_TRIAL_CASE });
+  const settings = validateRunnerTrialSettings({ writerMode: "whole", checkerMode: "whole", workers: { W: { provider: "codex", effort: "medium" }, "W-repair": { provider: "codex", effort: "medium" }, R2: { provider: "codex", effort: "low" }, C1: { provider: "codex", effort: "low" } } });
+  const trial = createRunnerTrialController({ privateCaseSource: store, config, settings, parts, workerFor: fakeWorkers(baseScript()).workerFor });
+  const brought = await health(config, { privateTherapyController: trial.controller, runnerTrialEvents: trial.events, runnerTrialSettings: trial.settings });
+  assert.deepEqual(brought.runnerArrangement, { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] });
+  assert.equal(brought.runnerCaseId, SYNTHETIC_TRIAL_CASE);
+  const unknown = await health(config, { privateTherapyController: trial.controller, runnerTrialEvents: trial.events });
+  assert.equal(unknown.runnerArrangement, null, "a controller brought in without its settings shows no arrangement");
+
+  // A value given to the server directly is checked as loadConfig checks it.
+  assert.throws(() => createInnerSignalServer({ config: trialConfig({ runnerTrialCaseId: "synthetic-invalid-value" }), providers: createProviders(config), privateCaseStore: store }),
+    (error) => error?.code === "BAD_CONFIG" && error.message.startsWith(`${RUNNER_TRIAL_CASE_ID_SETTING} must be a case id`) && !error.message.includes("synthetic-invalid-value"));
+  // The loopback launcher passes its trial's settings to both listeners.
+  const listener = await listenInnerSignalLoopback({ config, providers: createProviders(config), privateCaseStore: store, port: 0 });
+  try {
+    for (const base of [listener.url, listener.ipv4Url]) {
+      const value = await (await fetch(`${base}/health`)).json();
+      assert.deepEqual([value.runnerCaseId, value.runnerArrangement?.writerMode, value.runnerArrangement?.checkerMode], [SYNTHETIC_TRIAL_CASE, "focused", "split"], base);
+    }
+  } finally {
+    await listener.close();
+  }
+});
+
 // ---- The stream --------------------------------------------------------------------------------------------------------------
 
 async function trialServer(t, script, { ownerFallbackEnabled = false } = {}) {
@@ -493,6 +547,18 @@ test("with the switch off, the respond route is unchanged: one JSON answer whate
   assert.deepEqual(value.orchestration, { state: "DELIVERED", deliveryKind: "candidate", repairCycle: 0, lifecycleOwner: "server" });
   assert.deepEqual(seen[0].userInput, body, "the input is passed on exactly as sent");
   assert.equal((await (await fetch(`${base}/health`)).json()).runnerTrial, "off");
+});
+
+test("the reply's label names one whole checker in the whole arm and split checkers in the split arm", async (t) => {
+  for (const [value, label] of [[{}, "runner trial: focused writer, split checkers"], [{ writerMode: "whole", checkerMode: "whole" }, "runner trial: whole writer, one whole checker"]]) {
+    const store = await makeStore(t);
+    const config = trialConfig();
+    const trial = createRunnerTrialController({ privateCaseSource: store, config, settings: validateRunnerTrialSettings(value), parts, workerFor: fakeWorkers(baseScript()).workerFor });
+    const base = await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseStore: store, privateTherapyController: trial.controller, runnerTrialEvents: trial.events }));
+    const answer = await respond(base, { exchangeId: "exchange-label", userMessage: "A synthetic message." }, { stream: false });
+    assert.equal(answer.status, 200, answer.text);
+    assert.equal(answer.json.routingReason, label);
+  }
 });
 
 test("events are keyed by case and turn: another case's stream with the same turn id hears nothing", async (t) => {
@@ -893,7 +959,7 @@ async function pageBlock() {
   const end = app.indexOf("// runner-trial-page:end");
   assert.ok(start > 0 && end > start, "the page marks its runner-trial block");
   const block = app.slice(start, end);
-  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, mergeRunnerTurn, showRunnerTurns, runnerRepliesShownAfter, runnerClosingReason, runnerProgressText, runnerReconcileRequest, forgetDeletedCase, PAGE_STATE_KEPT_AFTER_DELETION })`, { TextDecoder });
+  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, mergeRunnerTurn, showRunnerTurns, runnerRepliesShownAfter, runnerClosingReason, runnerProgressText, runnerReconcileRequest, forgetDeletedCase, PAGE_STATE_KEPT_AFTER_DELETION, runnerCaseToAdopt, adoptRunnerCase, PAGE_STATE_KEPT_ON_ADOPTION, runnerArrangementText })`, { TextDecoder });
   return { block, ...exports };
 }
 
@@ -994,6 +1060,117 @@ test("the page's trial parts are hidden until /health says on, send for the stre
   const trialCode = app.slice(app.indexOf("// ---- Runner trial"), app.indexOf("function loadState()"));
   assert.ok(trialCode.length > 1_000);
   assert.equal(/innerHTML|outerHTML|insertAdjacentHTML/u.test(trialCode), false, "text goes in with textContent");
+});
+
+test("a page holding another case than the trial's takes the trial's: its settings stay, and every other field is a fresh page's for that case", async () => {
+  const page = await pageBlock();
+  const health = { runnerTrial: "on", runnerCaseId: SYNTHETIC_TRIAL_CASE };
+  assert.equal(page.runnerCaseToAdopt(health, SYNTHETIC_PAGE_CASE), SYNTHETIC_TRIAL_CASE);
+  assert.equal(page.runnerCaseToAdopt(health, SYNTHETIC_TRIAL_CASE), null, "the page's own case stays");
+  assert.equal(page.runnerCaseToAdopt({ ...health, runnerTrial: "off" }, SYNTHETIC_PAGE_CASE), null, "only with the trial on");
+  assert.equal(page.runnerCaseToAdopt({ runnerTrial: "on" }, SYNTHETIC_PAGE_CASE), null, "only a case /health names");
+  for (const named of ["synthetic-invalid-value", SYNTHETIC_TRIAL_CASE.toUpperCase(), "constructor", 42, null, [SYNTHETIC_TRIAL_CASE]]) {
+    assert.equal(page.runnerCaseToAdopt({ runnerTrial: "on", runnerCaseId: named }, SYNTHETIC_PAGE_CASE), null, JSON.stringify(named));
+  }
+  assert.deepEqual([...page.PAGE_STATE_KEPT_ON_ADOPTION], ["settings", "legacyPrivateDataDetected"]);
+  const empty = { therapy: [], settings: {}, caseId: "case-fresh", runnerShownThrough: null, privateStorageMode: "unknown", legacyPrivateDataDetected: false, trackerEntries: [], lastHandoffId: null };
+  const state = { therapy: [{ role: "user", content: "A synthetic message." }], settings: { synthetic: "kept" }, caseId: SYNTHETIC_PAGE_CASE, runnerShownThrough: "exchange-old", privateStorageMode: "encrypted", legacyPrivateDataDetected: true, trackerEntries: [{ synthetic: true }], lastHandoffId: "handoff:synthetic", fieldAddedLater: "synthetic" };
+  page.adoptRunnerCase(state, empty, SYNTHETIC_TRIAL_CASE);
+  assert.deepEqual(JSON.parse(JSON.stringify(state)), { ...empty, settings: { synthetic: "kept" }, legacyPrivateDataDetected: true, caseId: SYNTHETIC_TRIAL_CASE });
+});
+
+test("with the trial on, the badge shows who reads, writes and checks, from /health's arrangement, in fixed words", async () => {
+  const page = await pageBlock();
+  const mixed = { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] };
+  assert.equal(page.runnerArrangementText(mixed), "Runner trial: readers on Claude · whole writer on GPT · one whole checker on Claude");
+  assert.equal(page.runnerArrangementText({ writerMode: "focused", checkerMode: "split", readers: ["claude", "codex"], writer: ["claude"], checkers: ["codex"] }), "Runner trial: readers on Claude + GPT · focused writer on Claude · split checkers on GPT");
+  for (const unreadable of [null, undefined, {}, { ...mixed, writerMode: "constructor" }, { ...mixed, checkerMode: "__proto__" }, { ...mixed, readers: ["<b>synthetic</b>"] }, { ...mixed, writer: [] }, { ...mixed, checkers: "claude" }]) {
+    assert.equal(page.runnerArrangementText(unreadable), "Runner trial", JSON.stringify(unreadable));
+  }
+});
+
+// The page's health check (checkHealth), run on its own with the runner-trial block and the page's empty state, and the rest of the
+// page stood in for: what it shows on its badge, and whether it takes /health's case before its reconcile.
+async function healthCheckingPage(health, initial) {
+  const { app } = await pageSource();
+  const block = app.slice(app.indexOf("// runner-trial-page:start"), app.indexOf("// runner-trial-page:end"));
+  const emptyStart = app.indexOf("function emptyPageState()");
+  const emptyEnd = app.indexOf("function loadState()", emptyStart);
+  const start = app.indexOf("async function checkHealth()");
+  const end = app.indexOf("for (const button of $$(\".tab\"))", start);
+  assert.ok(emptyStart > 0 && emptyEnd > emptyStart && start > 0 && end > start, "the page has its empty state and its health check");
+  const calls = [];
+  const elements = { "#runtime-status": { className: "", textContent: "" }, "#runtime-version": { textContent: "" } };
+  const runnerTrial = { on: false };
+  const context = vm.createContext({
+    TextDecoder,
+    crypto: globalThis.crypto,
+    state: {},
+    runnerTrial,
+    $: (selector) => elements[selector] ?? null,
+    fetch: async (url) => ({ ok: true, json: async () => (url === "/health" ? structuredClone(health) : {}) }),
+    applyRunnerTrial: (on) => { runnerTrial.on = on; },
+    applyRunnerKeptPlan: () => {},
+    applyRunnerFeedbackLink: () => {},
+    reconcileRunnerCase: async () => { calls.push(["reconcile", context.state.caseId, JSON.stringify(context.state.settings), context.state.therapy.length, context.state.runnerShownThrough]); },
+    supervisorPanel: { clear: () => calls.push(["supervisorPanel.clear"]) },
+    saveState: () => calls.push(["saveState", context.state.caseId]),
+    renderTherapy: () => calls.push(["renderTherapy"]),
+    getJson: async (url) => { calls.push(["getJson", url]); return {}; },
+    renderCaseState: () => {},
+    renderHandoffStatus: () => {}
+  });
+  vm.runInContext(`${block}\n${app.slice(emptyStart, emptyEnd)}\n${app.slice(start, end)}`, context);
+  Object.assign(context.state, vm.runInContext("emptyPageState()", context), initial);
+  await vm.runInContext("checkHealth()", context);
+  return { state: context.state, calls, badge: elements["#runtime-status"].textContent };
+}
+
+test("when it loads with the trial on, the page takes the case /health names before its reconcile, and its badge shows the arrangement", async () => {
+  const arrangement = { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] };
+  const health = { ok: true, version: "0.0.0", models: { anthropic: "mock-anthropic", openai: "mock-openai" }, therapy: { graphBundleVersion: "synthetic-graph" }, runnerTrial: "on", runnerKeptPlan: "off", runnerFeedbackLink: "off", runnerCaseId: SYNTHETIC_TRIAL_CASE, runnerArrangement: arrangement, privateCaseStorage: { available: true } };
+  // A fresh browser: the page made up its own case; its settings stay.
+  const fresh = await healthCheckingPage(health, { caseId: SYNTHETIC_PAGE_CASE, settings: { synthetic: "kept" }, runnerShownThrough: "exchange-of-another-case" });
+  assert.equal(fresh.badge, "Runner trial: readers on Claude · whole writer on GPT · one whole checker on Claude");
+  assert.deepEqual(fresh.calls.map(([name]) => name), ["supervisorPanel.clear", "saveState", "renderTherapy", "reconcile", "getJson"]);
+  assert.deepEqual(fresh.calls.find(([name]) => name === "saveState"), ["saveState", SYNTHETIC_TRIAL_CASE], "the case is saved before the reconcile");
+  assert.deepEqual(fresh.calls.find(([name]) => name === "reconcile"), ["reconcile", SYNTHETIC_TRIAL_CASE, JSON.stringify({ synthetic: "kept" }), 0, null], "the reconcile asks for the trial's case, with the settings and nothing of the other case");
+  assert.deepEqual(fresh.calls.at(-1), ["getJson", `/v1/case/state?caseId=${SYNTHETIC_TRIAL_CASE}`]);
+  // A page that already holds the trial's case keeps everything.
+  const same = await healthCheckingPage(health, { caseId: SYNTHETIC_TRIAL_CASE, settings: { synthetic: "kept" }, runnerShownThrough: "exchange-shown" });
+  assert.deepEqual(same.calls.map(([name]) => name), ["reconcile", "getJson"]);
+  assert.equal(same.state.runnerShownThrough, "exchange-shown");
+  // With the trial off, nothing is taken and the badge shows the usual app's models.
+  const off = await healthCheckingPage({ ...health, runnerTrial: "off" }, { caseId: SYNTHETIC_PAGE_CASE });
+  assert.equal(off.badge, "mock-anthropic + mock-openai · synthetic-graph");
+  assert.deepEqual(off.calls.map(([name]) => name), ["getJson"]);
+  assert.equal(off.state.caseId, SYNTHETIC_PAGE_CASE);
+});
+
+test("with the trial on, the page hides the usual app's pipeline sentences and its reasoning-depth menu, and keeps \"not emergency care\"", async (t) => {
+  const { html, app } = await pageSource();
+  const css = await fs.readFile(path.join(repositoryRoot, "apps/web/styles.css"), "utf8");
+  assert.match(css, /\.therapy-controls label\[hidden\] \{ display: none; \}/u, "a hidden label stays hidden whatever .composer label sets");
+  const dom = new JSDOM(html, { url: "http://127.0.0.1/" });
+  t.after(() => dom.window.close());
+  const { document } = dom.window;
+  const block = app.slice(app.indexOf("// runner-trial-page:start"), app.indexOf("// runner-trial-page:end"));
+  const start = app.indexOf("const runnerTrial = {");
+  const end = app.indexOf("// The trial page's link to InnerSignal's feedback page", start);
+  assert.ok(start > 0 && end > start, "the page has its trial switch");
+  const context = vm.createContext({ TextDecoder, $: (selector) => document.querySelector(selector) });
+  vm.runInContext(`${block}\n${app.slice(start, end)}`, context);
+  const description = document.querySelector("#therapy-pipeline-description");
+  const depth = document.querySelector("#therapy-processing-mode-label");
+  assert.match(description.textContent, /fast Sonnet/u);
+  assert.ok(depth.contains(document.querySelector("#therapy-processing-mode")));
+  assert.deepEqual([description.hidden, depth.hidden], [false, false], "the usual app shows them");
+  vm.runInContext("applyRunnerTrial(true)", context);
+  assert.deepEqual([description.hidden, depth.hidden], [true, true]);
+  assert.equal(description.parentElement.firstChild.textContent, "This is a reflective companion, not emergency care.", "that sentence stays");
+  assert.equal(document.querySelector("#therapy-processing-mode").value, "auto", "a message still sends the default");
+  vm.runInContext("applyRunnerTrial(false)", context);
+  assert.deepEqual([description.hidden, depth.hidden], [false, false]);
 });
 
 test("after Delete this case the page holds nothing of the case: not in its state (so not in its backup export), not on screen, not in its forms", async (t) => {

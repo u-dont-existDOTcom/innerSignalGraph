@@ -38,6 +38,8 @@ import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
 import { createRunnerTrialController, isRunnerEventHub, runnerEventLine } from "../runner-trial/trial-controller.mjs";
+import { runnerArrangement } from "../runner-trial/settings.mjs";
+import { RUNNER_TRIAL_CASE_ID_PATTERN, RUNNER_TRIAL_CASE_ID_SETTING } from "../runner-trial/switch.mjs";
 import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -362,7 +364,7 @@ async function readSupervisorBody(req) {
   return input;
 }
 
-export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null, privateSupervisorService = null, runnerTrialEvents = null }) {
+export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null, privateSupervisorService = null, runnerTrialEvents = null, runnerTrialSettings = null }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
   // The runner trial (INNER_SIGNAL_RUNNER_TRIAL): its controller and the hub that carries its events to the page. A caller that
   // brings its own controller (the loopback launcher, which shares one between its listeners, or a test) brings the hub too.
@@ -386,6 +388,15 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       })
     : null);
   const runnerEvents = runnerTrial?.events ?? null;
+  // With the trial on: what the page's badge shows of its arrangement (from the settings of the trial built here, or those a caller
+  // that brings its own controller passes along), and the case its page uses (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID), checked again
+  // here so a value given to the server directly can't bypass the form loadConfig requires.
+  const trialSettings = runnerTrial ? runnerTrial.settings ?? runnerTrialSettings : null;
+  const runnerArrangementView = trialSettings ? runnerArrangement(trialSettings) : null;
+  const runnerCaseId = runnerTrial && config.runnerTrialCaseId != null ? config.runnerTrialCaseId : null;
+  if (runnerCaseId !== null && (typeof runnerCaseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(runnerCaseId))) {
+    throw new RuntimeError(`${RUNNER_TRIAL_CASE_ID_SETTING} must be a case id of the form case-<random UUID>, as scripts/runner-trial-start.mjs makes it.`, { code: "BAD_CONFIG" });
+  }
   // The plan kept for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN; design, section 9): on only with the trial on. A controller brought in
   // with it on must offer the page's two kept-plan methods; the trial built here offers them exactly when the switch is on.
   let runnerKeptPlan = false;
@@ -459,6 +470,12 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // the trial on, and then with the page's one address (src/feedback/address.mjs), so the link and the served rules agree.
           runnerFeedbackLink: runnerEvents && config.runnerFeedbackLinkEnabled === true ? "on" : "off",
           ...(runnerEvents && config.runnerFeedbackLinkEnabled === true ? { feedbackPageUrl: FEEDBACK_PAGE_URL } : {}),
+          // The trial's arrangement, for the page's badge: the writer's and the checkers' modes and the providers of the readers, the
+          // writer and the checkers. Null with the trial off, or when a controller was brought in without its settings.
+          runnerArrangement: runnerEvents ? runnerArrangementView : null,
+          // The case the trial's page uses, only with the trial on and INNER_SIGNAL_RUNNER_TRIAL_CASE_ID set: a page that holds another
+          // case (a fresh browser makes up its own) takes this one before its reconcile.
+          ...(runnerEvents && runnerCaseId ? { runnerCaseId } : {}),
           endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }

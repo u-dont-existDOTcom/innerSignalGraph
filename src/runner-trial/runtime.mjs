@@ -503,7 +503,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         result: {
           mode: "runner-trial",
           processingTier: "runner-trial",
-          routingReason: `runner trial: ${config.writerMode} writer, ${config.checkerMode} checkers`,
+          routingReason: `runner trial: ${config.writerMode} writer, ${config.checkerMode === "whole" ? "one whole checker" : "split checkers"}`,
           answeredLevel: written.value.answered_level,
           quotes: written.value.quotes,
           rules: { parts: rules.parts, boxes: rules.boxIds },

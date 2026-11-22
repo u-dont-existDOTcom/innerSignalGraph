@@ -73,7 +73,9 @@ export async function listenInnerSignalLoopback({
     privateAuthContext,
     privateTherapyController: sharedPrivateTherapyController,
     privateSupervisorService: sharedPrivateSupervisorService,
-    runnerTrialEvents: sharedRunnerTrialEvents
+    runnerTrialEvents: sharedRunnerTrialEvents,
+    // The trial's settings, so /health can show the page its arrangement.
+    runnerTrialSettings: runnerTrial?.settings ?? null
   };
   const ipv4 = createInnerSignalServer(serverOptions);
   await listen(ipv4, port, "127.0.0.1");

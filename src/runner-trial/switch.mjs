@@ -16,6 +16,13 @@ export const RUNNER_KEPT_PLAN_SETTING = "INNER_SIGNAL_RUNNER_KEPT_PLAN";
 // INNER_SIGNAL_RUNNER_TRIAL is on.
 export const RUNNER_FEEDBACK_LINK_SETTING = "INNER_SIGNAL_RUNNER_FEEDBACK_LINK";
 
+// The case the trial's page uses: the one the trial vault's credentials grant (scripts/runner-trial-start.mjs passes it). With the
+// trial on, /health names it, and a page holding another case (a fresh browser makes up its own) takes it before its reconcile.
+// Meaningful only while INNER_SIGNAL_RUNNER_TRIAL is on.
+export const RUNNER_TRIAL_CASE_ID_SETTING = "INNER_SIGNAL_RUNNER_TRIAL_CASE_ID";
+// The form the start script makes, which is also the page's own: "case-" and a random (version 4) UUID, in lowercase.
+export const RUNNER_TRIAL_CASE_ID_PATTERN = /^case-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+
 function readSwitch(raw, name) {
   const reading = readOnOffSetting(raw);
   if (reading === null) throw new RuntimeError(`${name} must be on or off.`, { code: "BAD_CONFIG" });
@@ -35,4 +42,15 @@ export function readRunnerKeptPlanSwitch(raw) {
 // Read the same way as the trial's switch.
 export function readRunnerFeedbackLinkSwitch(raw) {
   return readSwitch(raw, RUNNER_FEEDBACK_LINK_SETTING);
+}
+
+// Absent or blank is none. Any other value must be a case id of the start script's form, or startup stops with a message that
+// names the setting and never the value.
+export function readRunnerTrialCaseId(raw) {
+  if (raw == null || raw.trim() === "") return null;
+  const value = raw.trim();
+  if (!RUNNER_TRIAL_CASE_ID_PATTERN.test(value)) {
+    throw new RuntimeError(`${RUNNER_TRIAL_CASE_ID_SETTING} must be a case id of the form case-<random UUID>, as scripts/runner-trial-start.mjs makes it.`, { code: "BAD_CONFIG" });
+  }
+  return value;
 }

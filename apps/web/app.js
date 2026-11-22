@@ -231,6 +231,39 @@ function forgetDeletedCase(pageState, empty) {
   for (const key of Object.keys(pageState)) delete pageState[key];
   return Object.assign(pageState, empty, kept);
 }
+
+// The case the page takes when it loads with the trial on: the one /health names (the case the trial vault's credentials grant,
+// INNER_SIGNAL_RUNNER_TRIAL_CASE_ID) when it isn't the page's own, and null otherwise. Only an id of the start script's form, which
+// is also the page's own (scripts/runner-trial-start.mjs).
+const RUNNER_CASE_ID = /^case-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+function runnerCaseToAdopt(health, caseId) {
+  if (health?.runnerTrial !== "on" || typeof health.runnerCaseId !== "string" || !RUNNER_CASE_ID.test(health.runnerCaseId)) return null;
+  return health.runnerCaseId === caseId ? null : health.runnerCaseId;
+}
+
+// The fields a page that takes the trial's case keeps: what the person set, and whether this browser holds data of older versions
+// (the browser's, not a case's). Every other field takes a fresh page's value (`empty`), with the trial's case id. The page keeps no
+// transcript of its own, so the reconcile that follows brings the case's conversation back.
+const PAGE_STATE_KEPT_ON_ADOPTION = Object.freeze(["settings", "legacyPrivateDataDetected"]);
+function adoptRunnerCase(pageState, empty, caseId) {
+  const kept = Object.fromEntries(PAGE_STATE_KEPT_ON_ADOPTION.filter((key) => Object.hasOwn(pageState, key)).map((key) => [key, pageState[key]]));
+  for (const key of Object.keys(pageState)) delete pageState[key];
+  return Object.assign(pageState, empty, kept, { caseId });
+}
+
+// The badge's words for the trial's arrangement (/health's runnerArrangement): who reads, writes and checks. Fixed words only;
+// an arrangement it can't read gives "Runner trial" alone, never the usual app's models.
+const RUNNER_PROVIDER_NAMES = Object.freeze({ claude: "Claude", codex: "GPT" });
+const RUNNER_WRITER_WORDS = Object.freeze({ focused: "focused writer", whole: "whole writer" });
+const RUNNER_CHECKER_WORDS = Object.freeze({ whole: "one whole checker", split: "split checkers" });
+function runnerArrangementText(arrangement) {
+  const word = (words, key) => (typeof key === "string" && Object.hasOwn(words, key) ? words[key] : null);
+  const names = (list) => (Array.isArray(list) && list.length > 0 && list.every((provider) => word(RUNNER_PROVIDER_NAMES, provider)) ? list.map((provider) => RUNNER_PROVIDER_NAMES[provider]).join(" + ") : null);
+  const parts = [names(arrangement?.readers), word(RUNNER_WRITER_WORDS, arrangement?.writerMode), names(arrangement?.writer), word(RUNNER_CHECKER_WORDS, arrangement?.checkerMode), names(arrangement?.checkers)];
+  if (parts.some((part) => part === null)) return "Runner trial";
+  const [readers, writer, writes, checkers, checks] = parts;
+  return `Runner trial: readers on ${readers} · ${writer} on ${writes} · ${checkers} on ${checks}`;
+}
 // runner-trial-page:end
 
 // `inFlight`: the exchanges of the trial turns this page is still receiving, which a reconcile leaves to their own stream.
@@ -254,6 +287,9 @@ function applyRunnerTrial(on) {
   line.hidden = !on;
   $("#runner-new-conversation").hidden = !on;
   $("#runner-delete-case").hidden = !on;
+  // The usual app's pipeline sentences and its reasoning-depth menu don't apply to the trial; "not emergency care" stays.
+  $("#therapy-pipeline-description").hidden = on;
+  $("#therapy-processing-mode-label").hidden = on;
   if (!on) runnerTrial.newConversation = false;
   syncRunnerNewConversation();
 }
@@ -1090,10 +1126,20 @@ async function checkHealth() {
       versionLabel.textContent = `Inner Signal runtime v${health.version}${repair}`;
     }
     badge.className = "status ok";
-    badge.textContent = `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
+    // With the trial on, the badge shows who reads, writes and checks, not the usual app's models (the trial doesn't use them).
+    badge.textContent = health.runnerTrial === "on" ? runnerArrangementText(health.runnerArrangement) : `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
     applyRunnerTrial(health.runnerTrial === "on");
     applyRunnerKeptPlan(health.runnerKeptPlan === "on");
     applyRunnerFeedbackLink(health.runnerFeedbackLink === "on" ? health.feedbackPageUrl : null);
+    // A page holding another case than the trial's (a fresh browser makes up its own) takes the trial's before its reconcile, as a
+    // fresh page for that case: its settings stay, and what it showed of the other case goes.
+    const adoptedCaseId = runnerTrial.on ? runnerCaseToAdopt(health, state.caseId) : null;
+    if (adoptedCaseId) {
+      adoptRunnerCase(state, emptyPageState(), adoptedCaseId);
+      supervisorPanel?.clear();
+      saveState();
+      renderTherapy();
+    }
     if (runnerTrial.on) await reconcileRunnerCase();
     state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
     if (health.privateCaseStorage?.available) {

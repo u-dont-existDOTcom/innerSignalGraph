@@ -23,7 +23,7 @@ import { SealedCodexWorker } from "./sealed-codex.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-export { RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, RUNNER_CLAUDE_CONFIG_DIR, RUNNER_KEPT_PLAN_SETTING, readRunnerTrialSwitch, readRunnerKeptPlanSwitch } from "./switch.mjs";
+export { RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, RUNNER_CLAUDE_CONFIG_DIR, RUNNER_KEPT_PLAN_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, readRunnerTrialSwitch, readRunnerKeptPlanSwitch, readRunnerTrialCaseId } from "./switch.mjs";
 import { RUNNER_TRIAL_SETTINGS_FILE, RUNNER_CLAUDE_CONFIG_DIR } from "./switch.mjs";
 
 export const RUNNER_ROLES = Object.freeze(["R1", "R2", "R3", "W", "W-repair", "C1", "C2", "C3", "C4", "C5", "CW"]);
@@ -148,6 +148,23 @@ export function loadRunnerTrialSettings({ settingsPath = null, claudeConfigDir =
   const settings = validateRunnerTrialSettings(value, { root });
   const override = claudeConfigDir == null ? null : outsidePath(claudeConfigDir, RUNNER_CLAUDE_CONFIG_DIR, root);
   return Object.freeze({ ...settings, claudeConfigDir: override ?? settings.claudeConfigDir });
+}
+
+// What the trial's page shows of its arrangement (/health's runnerArrangement): the writer's and the checkers' modes, and which
+// providers run the readers, the writer and the checkers that the arms call. The box picker reads only for the focused writer,
+// and the whole checker (CW) or the split checkers (C1 to C5) check, not both. Providers only: no model, effort or path.
+export function runnerArrangement(settings) {
+  if (!plainObject(settings?.runtime) || !plainObject(settings?.workers)) throw invalid("The runner's arrangement needs the loaded trial settings.");
+  const writerMode = settings.runtime.writerMode ?? DEFAULT_RUNNER_SETTINGS.writerMode;
+  const checkerMode = settings.runtime.checkerMode ?? DEFAULT_RUNNER_SETTINGS.checkerMode;
+  const providersOf = (roles) => [...new Set(roles.map((role) => settings.workers[role]?.provider))].filter((provider) => PROVIDERS.includes(provider)).sort();
+  return Object.freeze({
+    writerMode,
+    checkerMode,
+    readers: providersOf(writerMode === "focused" ? ["R1", "R2", "R3"] : ["R1", "R3"]),
+    writer: providersOf(["W", "W-repair"]),
+    checkers: providersOf(checkerMode === "whole" ? ["CW"] : ["C1", "C2", "C3", "C4", "C5"])
+  });
 }
 
 // One sealed worker per role, made on first use and kept: Claude workers through `claude -p`, Codex workers through `codex exec`

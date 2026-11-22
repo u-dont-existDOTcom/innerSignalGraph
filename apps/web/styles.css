@@ -85,6 +85,8 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 @media (max-width: 620px) { .plan-trace dl { grid-template-columns: 1fr; } .plan-trace dd { margin-bottom: .4rem; } }
 .therapy-controls { display: flex; gap: .75rem; align-items: end; justify-content: space-between; }
 .therapy-controls label { min-width: 12rem; }
+/* The runner trial hides the reasoning-depth menu; `.composer label` sets a display, so hidden needs its own rule. */
+.therapy-controls label[hidden] { display: none; }
 .processing-tier { display: inline-block; margin-top: .55rem; font-size: .76rem; color: var(--muted); }
 @media (max-width: 620px) { .therapy-controls { align-items: stretch; flex-direction: column; } .therapy-controls label { min-width: 0; } }
 
