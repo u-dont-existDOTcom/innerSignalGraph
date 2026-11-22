@@ -216,3 +216,18 @@ test("one command at a time, an Inbox copy goes after a year even without a dele
   assert.match(await w.run("delete", target, "--export", exportDir, "--confirm", target), /^Deleted/u);
   assert.match(await w.run("delete", target, "--export", exportDir, "--confirm", target), /^Already gone on the server: .*Inbox write:/su);
 });
+
+test("discarding a batch keeps the ids it held in the inventory, and a refused command leaves the lock free", async (t) => {
+  const w = await world(t);
+  await w.run("keygen", "--server", w.server);
+  await w.sendPage({ kind: "praise", text: "Kept in the inventory." });
+  const out = path.join(w.base, "d1");
+  await w.run("fetch", "--out", out);
+  const id = JSON.parse(await fs.readFile(path.join(out, "plan.json"), "utf8")).batches.flat()[0].doc_id;
+  await w.run("fetch", "--discard", out);
+  const state = JSON.parse(await fs.readFile(path.join(w.configDir, "state.json"), "utf8"));
+  assert.deepEqual(Object.keys(state.imported), [id], "the id stays (ids and days only)");
+  assert.equal(JSON.stringify(state).includes("Kept in the inventory"), false, "no words in the state");
+  await assert.rejects(w.run("fetch", "--confirm", out), /No unconfirmed fetch/u);
+  assert.match(await w.run("status"), /Cursor: 0/u, "the lock was freed after the refusal");
+});

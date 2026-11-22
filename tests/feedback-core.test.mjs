@@ -432,3 +432,24 @@ test("a refund gives back only the window it was counted in", () => {
   limiter.refund(later);
   assert.ok(limiter.reserve("r", "a"));
 });
+
+test("a deleted review's public copy is hidden at once even when its file can't be removed, and removed later", async (t) => {
+  const root = await temporaryRoot(t);
+  const keys = ownerKeys();
+  const clock = new Date("2026-11-22T10:00:00Z");
+  const store = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  const review = await store.add({ kind: "review", text: "Gentle and useful.", mayShowPublicly: true }, { via: "page" });
+  const event = (await store.listEvents()).events[0];
+  const opened = open(keys, event);
+  await store.publish({ id: review.id, text: opened.text, publishKey: opened.publish_key });
+  const published = path.join(root, "published");
+  await fs.chmod(published, 0o500);
+  t.after(() => fs.chmod(published, 0o700).catch(() => {}));
+  assert.deepEqual(await store.deleteByCode(review.code), { deleted: true, id: review.id });
+  assert.ok((await fs.readdir(published)).includes(`${review.id}.json`), "the file is still there");
+  assert.deepEqual(await store.publishedReviews(), [], "but it isn't shown");
+  await fs.chmod(published, 0o700);
+  const reopened = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  assert.deepEqual(await fs.readdir(published), [], "the next open removes it");
+  assert.deepEqual(await reopened.publishedReviews(), []);
+});

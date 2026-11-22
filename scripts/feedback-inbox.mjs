@@ -18,6 +18,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -92,33 +93,39 @@ async function ensureConfigDir(dir) {
   await fs.chmod(dir, 0o700);
 }
 
-// One command at a time changes the state and the folders: a lock file holding the running command's process id. A lock whose
-// process is gone is taken over.
+// One command at a time changes the state and the folders. On Linux (the owner's laptop) the lock is an abstract Unix socket held
+// by the running command: the kernel lets only one process hold the name and frees it when that process ends, so there is no stale
+// lock to judge and no take-over to race. Elsewhere it is a lock file created exclusively, which a crash leaves for the owner to
+// remove by hand (the message says where).
 async function withLock(paths, task) {
   await ensureConfigDir(paths.dir);
-  const lock = path.join(paths.dir, "lock");
-  let held = false;
-  for (let attempt = 0; attempt < 3 && !held; attempt += 1) {
+  const busy = () => fail("Another feedback-inbox command is running; run this one when it has ended.");
+  if (process.platform === "linux") {
+    const name = `\0innersignal-feedback-${createHash("sha256").update(path.resolve(paths.dir)).digest("hex").slice(0, 32)}`;
+    const server = net.createServer();
     try {
-      await fs.writeFile(lock, `${process.pid}\n`, { mode: 0o600, flag: "wx" });
-      held = true;
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen({ path: name, exclusive: true }, resolve);
+      });
     } catch (error) {
-      if (error?.code !== "EEXIST") throw error;
-      const pid = Number.parseInt(await fs.readFile(lock, "utf8").catch(() => ""), 10);
-      let alive = false;
-      if (Number.isSafeInteger(pid) && pid > 0) {
-        try {
-          process.kill(pid, 0);
-          alive = true;
-        } catch (probe) {
-          alive = probe?.code === "EPERM";
-        }
-      }
-      if (alive) fail(`Another feedback-inbox command is running (process ${pid}); run this one when it has ended.`);
-      await fs.unlink(lock).catch(() => {});
+      if (error?.code === "EADDRINUSE") busy();
+      throw error;
+    }
+    server.unref();
+    try {
+      return await task();
+    } finally {
+      await new Promise((resolve) => server.close(() => resolve()));
     }
   }
-  if (!held) fail("Could not take the feedback-inbox lock.");
+  const lock = path.join(paths.dir, "lock");
+  try {
+    await (await fs.open(lock, "wx", 0o600)).close();
+  } catch (error) {
+    if (error?.code === "EEXIST") fail(`Another feedback-inbox command is running, or one stopped without finishing: if none is running, remove ${lock}.`);
+    throw error;
+  }
   try {
     return await task();
   } finally {
@@ -342,6 +349,9 @@ async function discardFetch(paths, options) {
   const state = (await readJson(paths.state, {})) ?? {};
   if (!state.pending || state.pending.folder !== folder) fail(`No unconfirmed fetch for ${folder}.`);
   await fs.rm(folder, { recursive: true, force: true });
+  // Some of the batch may already be in the Inbox: every id it held stays in the inventory (ids and days only), so a copy that
+  // reached the Inbox is still removed after a year. Only a confirmed removal takes an id out.
+  state.imported = { ...(state.pending.imported ?? {}), ...(state.imported ?? {}) };
   state.pending = null;
   await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
   return `Discarded ${folder}; the next fetch reads the same messages again.`;

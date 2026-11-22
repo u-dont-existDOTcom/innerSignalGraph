@@ -460,6 +460,28 @@ seven of the first review's fixes complete; these eight are fixed, each with a t
 | 7 | The laptop never removed Inbox copies past a year by itself | The script keeps a content-free inventory (ids and days) and removes Inbox copies past 365 days at any fetch |
 | 8 | Deleting a message already gone on the server failed before its Inbox write | A 404 there is the same as deleted: the Inbox write still comes |
 
+## Appendix D: Codex's third review, and the recurring class it showed (22 Nov 2026, `ee1802b21..c09e5f45c` and the whole change)
+
+Prompt and result: `/home/joel/askrigor-releases/20261122-innersignal-feedback/codex/review-3-prompt.md` and `review-3.txt`. Five of
+the second review's fixes were complete; three were not: a deleted review's public copy could stay visible when its file couldn't
+be removed, the laptop's lock could be shared through a lock file read while still empty, and discarding a batch forgot which ids
+it may already have put in the Inbox.
+
+**The class, named:** every review since the first found another partial-failure state in hand-built file state (a crash or a
+failed removal part-way, two commands at once, a batch dropped half-sent). Patching each state one at a time kept leaving the
+next one. So the fix changes the mechanism, not the cases:
+
+- **Deletion records are the truth.** Any deletion of something that exists writes its record first; from then on the message is
+  out of the index, the public list hides its copy, and every rebuild (each owner's read and each open) removes again whatever of it
+  is left. A record goes only once nothing of its message remains. No reader decides from which files happen to remain.
+- **The kernel holds the laptop's lock.** On Linux (the owner's laptop) the lock is an abstract Unix socket: only one process can
+  hold the name, and it is freed when that process ends, so there is no stale lock to judge and no take-over to race. Elsewhere an
+  exclusive lock file, removed by hand after a crash.
+- **The inventory only shrinks on a confirmed removal.** A discarded batch's ids stay in it, so an Inbox copy that may already
+  exist is still removed after a year.
+
+Each with a test.
+
 ## Appendix: the red team's findings and what changed
 
 | # | Finding | Severity | Outcome |

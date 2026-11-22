@@ -50,7 +50,8 @@ A missing or wrong setting stops startup with the setting's name, never its valu
    - `node scripts/feedback-inbox.mjs fetch --confirm <folder>`;
    - tell the owner the counts.
    If `fetch` says an earlier batch is waiting, confirm it if its batches were sent, or `fetch --discard <folder>` if not (the
-   next fetch reads the same messages again). One command runs at a time; a second one says so and stops.
+   next fetch reads the same messages again). One command runs at a time; a second one says so and stops (on Linux the kernel holds
+   the lock and frees it when a command ends, even by a crash).
    The lane never reads a message's words: it doesn't open the batch files, doesn't export or list the Inbox's `feedback`
    collection, and never hands this step to Codex or another model.
 3. His choices in the Inbox's Feedback view (`choices/feedback-<id>`) are acted on with `publish <id>` or `delete <id>`, each with

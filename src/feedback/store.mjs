@@ -155,14 +155,16 @@ export async function openFeedbackStore({
     const fresh = new Map();
     let bytes = 0;
     let highest = 0;
-    for (const value of records.values()) highest = Math.max(highest, value.seq);
+    // Every deletion record is the truth about its message: what is left of it (the sealed message, and unless it only expired,
+    // its public copy) is removed again on every rebuild until nothing is left.
+    for (const value of records.values()) {
+      highest = Math.max(highest, value.seq);
+      await finishDeletion(value.id, value.by);
+    }
     for (const name of await fs.readdir(dir("items"))) {
       const id = name.replace(/\.json$/u, "");
       if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
-      if (records.has(id)) {
-        await finishDeletion(id, records.get(id).by);
-        continue;
-      }
+      if (records.has(id)) continue;
       const file = path.join(dir("items"), name);
       const value = await readJsonFile(file);
       if (!value || value.id !== id || !Number.isSafeInteger(value.seq) || !DAY.test(value.received_day ?? "") || !FEEDBACK_DOORS.includes(value.via)) continue;
@@ -245,27 +247,29 @@ export async function openFeedbackStore({
     }
   }
 
-  // Removes a message (and, unless it only expired, its public copy). The deletion record is written first and the message leaves
-  // the index at once, so a crash or a failed removal part-way leaves a record that finishes the deletion later (at the next open
-  // or owner's read), never a deleted message without the record that removes the owner's Inbox copy. A public copy whose message
-  // already expired is removed too (its record went out then).
-  async function deleteNow(id, by) {
-    if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) return false;
-    const hasItem = index.has(id);
-    if (hasItem) {
-      await writeDeletionRecord(id, by);
-      forget(id);
-      await finishDeletion(id, by);
-      return true;
-    }
-    if (by === "expiry") return false;
+  async function present(file) {
     try {
-      await fs.unlink(fileFor("published", id));
+      await fs.access(file);
       return true;
     } catch (error) {
       if (error?.code === "ENOENT") return false;
-      throw error;
+      return true;
     }
+  }
+
+  // Removes a message and, unless it only expired, its public copy (also a public copy whose message already expired). The deletion
+  // record is written first and is the truth from then on: the message leaves the index at once, the public list hides the copy at
+  // once, and whatever a crash or a failed removal leaves is removed again at the next owner's read or open, never a deleted message
+  // without the record that removes the owner's Inbox copy.
+  async function deleteNow(id, by) {
+    if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) return false;
+    const hasItem = index.has(id);
+    const hasPublic = by !== "expiry" && (await present(fileFor("published", id)));
+    if (!hasItem && !hasPublic) return false;
+    await writeDeletionRecord(id, by);
+    forget(id);
+    await finishDeletion(id, by);
+    return true;
   }
 
   return Object.freeze({
@@ -472,12 +476,14 @@ export async function openFeedbackStore({
       });
     },
 
-    // Published reviews, newest first: their text and month only.
+    // Published reviews, newest first: their text and month only. A review a sender or the owner deleted is never shown, even while
+    // a failed removal leaves its file behind.
     async publishedReviews() {
+      const hidden = new Set([...(await readDeletionRecords()).values()].filter((value) => value.by !== "expiry").map((value) => value.id));
       const reviews = [];
       for (const name of await fs.readdir(dir("published"))) {
         const id = name.replace(/\.json$/u, "");
-        if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
+        if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id) || hidden.has(id)) continue;
         const value = await readJsonFile(path.join(dir("published"), name));
         if (value?.id === id && typeof value.text === "string" && /^\d{4}-\d{2}$/u.test(value.month ?? "")) {
           reviews.push({ text: value.text, month: value.month, publishedAt: String(value.published_at ?? "") });
