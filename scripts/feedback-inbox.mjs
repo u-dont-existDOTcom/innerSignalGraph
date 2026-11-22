@@ -165,93 +165,132 @@ function inboxDoc(event, opened) {
   };
 }
 
+// The clear record a message was sealed with, rebuilt from what the server returns.
+function recordOf(event) {
+  return {
+    format: event.format, id: event.id, seq: event.seq, received_day: event.received_day, via: event.via, key_id: event.key_id,
+    public_review: event.public_review,
+    ...(event.held_until ? { held_until: event.held_until } : {}),
+    ...(event.publish_mac ? { publish_mac: event.publish_mac } : {})
+  };
+}
+
+// Opens one message, or returns null when no key opens it or its sealed part disagrees with its clear record.
+function openMessage(keys, event) {
+  const key = keys.get(event.key_id);
+  if (!key) return null;
+  try {
+    const opened = openSealedForOwner({ ownerPrivateKey: key, id: event.id, record: recordOf(event), sealed: event.sealed });
+    return opened.via === event.via && String(opened.received_at ?? "").slice(0, 10) === event.received_day ? opened : null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchEvents(paths, options) {
   const out = options.out;
   if (typeof out !== "string" || !path.isAbsolute(out)) fail("fetch needs --out with an absolute path to a new, empty folder.");
   const state = (await readJson(paths.state, {})) ?? {};
-  // A folder an interrupted turn left: its batch was never confirmed, so it goes, and the same messages are read again.
+  const save = () => writePrivate(paths.state, `${JSON.stringify(state)}\n`);
+  // A folder an interrupted or unconfirmed turn left: its batch was never confirmed, so it goes, and the same messages are read again.
   if (state.pending?.folder) {
     await fs.rm(state.pending.folder, { recursive: true, force: true });
     state.pending = null;
+    await save();
   }
   await fs.mkdir(out, { mode: 0o700 }).catch((error) => {
     if (error?.code === "EEXIST") fail(`${out} already exists: give a new, empty folder.`);
     throw error;
   });
-  const base = await serverUrl(paths, options);
-  const token = await loadToken(paths);
-  const keys = await loadKeys(paths);
-  const after = Number.isSafeInteger(state.after) ? state.after : 0;
-  const entries = [];
-  const counts = { new: 0, by_kind: {}, reviews_waiting: 0, deleted: 0, unreadable: 0, held: 0, full: {}, stored: {} };
-  let cursor = after;
-  let read = 0;
-  for (;;) {
-    // `confirmed` stays at the last confirmed read while paging, so no deletion record is removed before the Inbox has it.
-    const page = await ownerRequest(base, token, "events", { query: `?after=${cursor}&confirmed=${after}&limit=100` });
-    for (const event of page.events) {
-      if (!FEEDBACK_ID_PATTERN.test(event.id ?? "")) fail("The server sent an event with an invalid id.");
-      if (event.type === "deleted") {
-        entries.push({ op: "delete", collection: "feedback", doc_id: event.id });
-        counts.deleted += 1;
-      } else {
-        const key = keys.get(event.key_id);
-        const record = {
-          format: event.format, id: event.id, seq: event.seq, received_day: event.received_day, via: event.via, key_id: event.key_id,
-          public_review: event.public_review,
-          ...(event.held_until ? { held_until: event.held_until } : {}),
-          ...(event.publish_mac ? { publish_mac: event.publish_mac } : {})
-        };
-        let opened = null;
-        try {
-          if (key) opened = openSealedForOwner({ ownerPrivateKey: key, id: event.id, record, sealed: event.sealed });
-        } catch { opened = null; }
-        if (!opened || opened.via !== event.via || String(opened.received_at ?? "").slice(0, 10) !== event.received_day) {
-          counts.unreadable += 1;
+  // The folder is on record before any opened message is written into it, so a failure anywhere below can't leave words behind.
+  state.pending = { folder: out, complete: false, at: new Date().toISOString() };
+  await save();
+  try {
+    const base = await serverUrl(paths, options);
+    const token = await loadToken(paths);
+    const keys = await loadKeys(paths);
+    const after = Number.isSafeInteger(state.after) ? state.after : 0;
+    const entries = [];
+    const counts = { new: 0, by_kind: {}, reviews_waiting: 0, deleted: 0, unreadable: 0, held: 0, full: {}, stored: {} };
+    const unreadable = [];
+    const add = async (event, opened) => {
+      const file = path.join(out, "docs", "feedback", `${event.id}.json`);
+      await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
+      await fs.writeFile(file, `${JSON.stringify(inboxDoc(event, opened))}\n`, { mode: 0o600, flag: "wx" });
+      entries.push({ op: "set", collection: "feedback", doc_id: event.id, file_path: file });
+      counts.new += 1;
+      counts.by_kind[opened.kind] = (counts.by_kind[opened.kind] ?? 0) + 1;
+      if (event.public_review) counts.reviews_waiting += 1;
+    };
+    // Messages an earlier fetch couldn't open (a missing key, say) are tried again first; one the server no longer has is dropped.
+    for (const earlier of Array.isArray(state.unreadable) ? state.unreadable : []) {
+      if (!FEEDBACK_ID_PATTERN.test(earlier?.id ?? "")) continue;
+      const response = await fetch(`${base}/owner/message?id=${encodeURIComponent(earlier.id)}`, { headers: { authorization: `Bearer ${token}` } });
+      if (response.status === 404) continue;
+      if (!response.ok) fail(`The server refused message: HTTP ${response.status}.`);
+      const event = (await response.json()).message;
+      const opened = openMessage(keys, event);
+      if (opened) await add(event, opened);
+      else unreadable.push({ id: earlier.id, seq: earlier.seq });
+    }
+    let cursor = after;
+    let read = 0;
+    for (;;) {
+      // `confirmed` stays at the last confirmed read while paging, so no deletion record is removed before the Inbox has it.
+      const page = await ownerRequest(base, token, "events", { query: `?after=${cursor}&confirmed=${after}&limit=100` });
+      for (const event of page.events) {
+        if (!FEEDBACK_ID_PATTERN.test(event.id ?? "")) fail("The server sent an event with an invalid id.");
+        if (event.type === "deleted") {
+          entries.push({ op: "delete", collection: "feedback", doc_id: event.id });
+          counts.deleted += 1;
         } else {
-          const file = path.join(out, "docs", "feedback", `${event.id}.json`);
-          await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-          await fs.writeFile(file, `${JSON.stringify(inboxDoc(event, opened))}\n`, { mode: 0o600, flag: "wx" });
-          entries.push({ op: "set", collection: "feedback", doc_id: event.id, file_path: file });
-          counts.new += 1;
-          counts.by_kind[opened.kind] = (counts.by_kind[opened.kind] ?? 0) + 1;
-          if (event.public_review) counts.reviews_waiting += 1;
+          const opened = openMessage(keys, event);
+          if (opened) await add(event, opened);
+          else unreadable.push({ id: event.id, seq: event.seq });
         }
+        cursor = Math.max(cursor, event.seq);
+        read += 1;
       }
-      cursor = Math.max(cursor, event.seq);
-      read += 1;
+      cursor = Math.max(cursor, page.next_after ?? cursor);
+      counts.held = page.held ?? 0;
+      counts.full = page.full ?? {};
+      counts.stored = page.stored ?? {};
+      if (!page.more || read >= MAX_EVENTS_PER_FETCH) {
+        counts.more_waiting = Boolean(page.more);
+        break;
+      }
     }
-    cursor = Math.max(cursor, page.next_after ?? cursor);
-    counts.held = page.held ?? 0;
-    counts.full = page.full ?? {};
-    counts.stored = page.stored ?? {};
-    if (!page.more || read >= MAX_EVENTS_PER_FETCH) {
-      counts.more_waiting = Boolean(page.more);
-      break;
-    }
+    counts.unreadable = unreadable.length;
+    const batches = [];
+    for (let index = 0; index < entries.length; index += BATCH) batches.push(entries.slice(index, index + BATCH));
+    await fs.writeFile(path.join(out, "plan.json"), `${JSON.stringify({ batches, counts }, null, 1)}\n`, { mode: 0o600 });
+    state.pending = { folder: out, complete: true, next_after: cursor, unreadable, at: new Date().toISOString() };
+    await save();
+    return [
+      `Feedback: ${counts.new} new (${Object.entries(counts.by_kind).map(([kind, count]) => `${count} ${kind}`).join(", ") || "none"}), ${counts.reviews_waiting} review(s) waiting for a yes, ${counts.deleted} deletion(s), ${counts.held} held for the first hour.`,
+      ...(counts.unreadable ? [`${counts.unreadable} message(s) could not be opened with the keys in ${paths.keys}; each fetch tries them again.`] : []),
+      ...(Object.entries(counts.full).filter(([, full]) => full).map(([door]) => `The ${door} door is full.`)),
+      ...(counts.more_waiting ? ["More are waiting: fetch again after confirming."] : []),
+      `Batches: ${batches.length} in ${path.join(out, "plan.json")} (send each with ArtifactData batch to the Inbox, then fetch --confirm ${out}).`
+    ].join("\n");
+  } catch (error) {
+    await fs.rm(out, { recursive: true, force: true });
+    state.pending = null;
+    await save();
+    throw error;
   }
-  const batches = [];
-  for (let index = 0; index < entries.length; index += BATCH) batches.push(entries.slice(index, index + BATCH));
-  await fs.writeFile(path.join(out, "plan.json"), `${JSON.stringify({ batches, counts }, null, 1)}\n`, { mode: 0o600 });
-  state.pending = { folder: out, next_after: cursor, at: new Date().toISOString() };
-  await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
-  return [
-    `Feedback: ${counts.new} new (${Object.entries(counts.by_kind).map(([kind, count]) => `${count} ${kind}`).join(", ") || "none"}), ${counts.reviews_waiting} review(s) waiting for a yes, ${counts.deleted} deletion(s), ${counts.held} held for the first hour.`,
-    ...(counts.unreadable ? [`${counts.unreadable} message(s) could not be opened with the keys in ${paths.keys}.`] : []),
-    ...(Object.entries(counts.full).filter(([, full]) => full).map(([door]) => `The ${door} door is full.`)),
-    ...(counts.more_waiting ? ["More are waiting: fetch again after confirming."] : []),
-    `Batches: ${batches.length} in ${path.join(out, "plan.json")} (send each with ArtifactData batch to the Inbox, then fetch --confirm ${out}).`
-  ].join("\n");
 }
 
 async function confirmFetch(paths, options) {
   const folder = options.confirm;
   const state = (await readJson(paths.state, {})) ?? {};
-  if (!state.pending || state.pending.folder !== folder) fail(`No unconfirmed fetch for ${folder}.`);
+  if (!state.pending?.complete || state.pending.folder !== folder) fail(`No unconfirmed fetch for ${folder}.`);
+  // The folder goes first: if it can't be removed, the record of it stays, and the next fetch removes it.
+  await fs.rm(folder, { recursive: true, force: true });
   state.after = state.pending.next_after;
+  state.unreadable = state.pending.unreadable ?? [];
   state.pending = null;
   await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
-  await fs.rm(folder, { recursive: true, force: true });
   return `Confirmed: the cursor is at ${state.after}; ${folder} deleted.`;
 }
 
@@ -306,12 +345,8 @@ async function publish(paths, options) {
   if (!response.ok) fail(`The server refused message: HTTP ${response.status}.`);
   const found = (await response.json()).message;
   if (!found.public_review) fail(`${id} is not a review its sender let be shown.`);
-  const record = {
-    format: found.format, id: found.id, seq: found.seq, received_day: found.received_day, via: found.via, key_id: found.key_id,
-    public_review: found.public_review, ...(found.held_until ? { held_until: found.held_until } : {}), ...(found.publish_mac ? { publish_mac: found.publish_mac } : {})
-  };
   const key = keys.get(found.key_id) ?? fail(`No key ${found.key_id} in ${paths.keys}.`);
-  const opened = openSealedForOwner({ ownerPrivateKey: key, id, record, sealed: found.sealed });
+  const opened = openSealedForOwner({ ownerPrivateKey: key, id, record: recordOf(found), sealed: found.sealed });
   await ownerRequest(base, token, "publish", { method: "POST", body: { id, text: opened.text, publish_key: opened.publish_key } });
   const plan = await inboxUpdatePlan(options.export, id, { op: "update", data: { published: true, updatedAt: new Date().toISOString() } });
   return `Published: ${id}. Inbox write: ${plan}`;

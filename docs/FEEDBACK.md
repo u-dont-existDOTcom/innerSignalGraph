@@ -59,6 +59,8 @@ A missing or wrong setting stops startup with the setting's name, never its valu
 
 - What's kept: the message, its kind, whether a review may be shown, the time, and an optional reply address. Sealed on the
   server; opened only on the owner's laptop; shown to him in his private Inbox (a page in his Claude account that Anthropic hosts).
+  The clear record holds the day only, but the disk's own change time on each file shows when it was written: whoever has the
+  server's disk sees when messages arrived, never what they say.
 - Deletion by the sender's code removes the message and any public copy from the server at once, and from his Inbox at its next
   update. An answer he already sent, the sender's own chat copy and (if any) sealed copies in server backups are out of its reach;
   the page says so.

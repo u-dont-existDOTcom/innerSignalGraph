@@ -149,3 +149,33 @@ test("publish and delete need the owner's own choice in the Inbox export and the
   await assert.rejects(w.run("delete-many", "--via", "chat", "--from", "2026-11-22", "--to", "2026-11-22", "--confirm", "yes"), /--confirm chat 2026-11-22 2026-11-22/u);
   assert.match(await w.run("delete-many", "--via", "chat", "--from", "2026-11-22", "--to", "2026-11-22", "--confirm", "chat 2026-11-22 2026-11-22"), /Deleted 0 chat/u);
 });
+
+test("a message no key opens is kept and tried again, and a fetch that fails leaves no folder behind", async (t) => {
+  const w = await world(t);
+  await w.run("keygen", "--server", w.server);
+  await w.sendPage({ kind: "suggestion", text: `Needs the first key ${MARKER}` });
+  // The key file without the key that sealed it (the first one): the message can't be opened.
+  const keysPath = path.join(w.configDir, "owner-keys.json");
+  const allKeys = JSON.parse(await fs.readFile(keysPath, "utf8"));
+  await fs.writeFile(keysPath, JSON.stringify({ ...allKeys, keys: allKeys.keys.slice(1) }), { mode: 0o600 });
+  const out1 = path.join(w.base, "f1");
+  assert.match(await w.run("fetch", "--out", out1), /0 new.*\n1 message\(s\) could not be opened/su);
+  await w.run("fetch", "--confirm", out1);
+  // The key comes back: the next fetch, past the cursor, still brings the message.
+  await fs.writeFile(keysPath, JSON.stringify(allKeys), { mode: 0o600 });
+  const out2 = path.join(w.base, "f2");
+  assert.match(await w.run("fetch", "--out", out2), /1 new \(1 suggestion\)/u);
+  await w.run("fetch", "--confirm", out2);
+  assert.doesNotMatch(await w.run("fetch", "--out", path.join(w.base, "f3")), /could not be opened/u);
+  await w.run("fetch", "--confirm", path.join(w.base, "f3"));
+
+  // The server refuses mid-fetch (a wrong token): the folder is removed and nothing is left pending.
+  const tokenPath = path.join(w.configDir, "owner-token");
+  const token = await fs.readFile(tokenPath, "utf8");
+  await fs.writeFile(tokenPath, `${"A".repeat(43)}\n`, { mode: 0o600 });
+  const out4 = path.join(w.base, "f4");
+  await assert.rejects(w.run("fetch", "--out", out4), /The server refused events/u);
+  await assert.rejects(fs.stat(out4), { code: "ENOENT" });
+  assert.doesNotMatch(await w.run("status"), /unconfirmed fetch/u);
+  await fs.writeFile(tokenPath, token, { mode: 0o600 });
+});

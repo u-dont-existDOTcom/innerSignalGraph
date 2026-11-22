@@ -7,10 +7,15 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateOwnerKeyPair } from "../src/feedback/open-sealed.mjs";
+import { feedbackAddressInRules } from "../src/feedback/address.mjs";
+import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 
 // The hosted connector's real entry point with the feedback switches: off as before, on with its settings, and refused to start
-// when a setting is missing or wrong (naming the setting, never its value). Synthetic data only.
+// when a setting is missing or wrong (naming the setting, never its value). Synthetic data only. The connector serves the
+// packaged rules: once they name the feedback address (the held served sentence), the page's address must be that one, and with
+// the page off /feedback is the closed page instead of a 404.
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const NAMED = feedbackAddressInRules(loadTherapyProtocol());
 const SETTINGS = ["INNER_SIGNAL_FEEDBACK", "INNER_SIGNAL_FEEDBACK_TOOL", "INNER_SIGNAL_FEEDBACK_ROOT", "INNER_SIGNAL_FEEDBACK_OWNER_PUBLIC_KEY",
   "INNER_SIGNAL_FEEDBACK_OWNER_TOKEN_SHA256", "INNER_SIGNAL_FEEDBACK_PUBLIC_URL", "INNER_SIGNAL_FEEDBACK_TRUST_FORWARDED_FOR",
   "INNER_SIGNAL_MCP_SUPERVISOR_DRAFTS", "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT", "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64",
@@ -36,7 +41,7 @@ async function setup(t) {
     INNER_SIGNAL_FEEDBACK_ROOT: root,
     INNER_SIGNAL_FEEDBACK_OWNER_PUBLIC_KEY: pair.publicKey,
     INNER_SIGNAL_FEEDBACK_OWNER_TOKEN_SHA256: createHash("sha256").update(randomBytes(32).toString("base64url")).digest("hex"),
-    INNER_SIGNAL_FEEDBACK_PUBLIC_URL: "https://feedback.synthetic.example/feedback"
+    INNER_SIGNAL_FEEDBACK_PUBLIC_URL: NAMED ?? "https://feedback.synthetic.example/feedback"
   };
   return { base, credentialsPath, settings };
 }
@@ -75,7 +80,13 @@ test("off: the ready line and /feedback are as before; on: the page answers and 
   assert.ok(off.ready, off.stderr?.());
   assert.deepEqual(Object.keys(off.ready), ["ready", "mcpUrl", "provider", "productionReady", "journalEnabled", "journalWork"]);
   const offOrigin = off.ready.mcpUrl.replace(/\/mcp$/u, "");
-  assert.equal((await fetch(`${offOrigin}/feedback`)).status, 404);
+  const offPage = await fetch(`${offOrigin}/feedback`);
+  if (NAMED) {
+    assert.equal(offPage.status, 503, "the rules name the address: the closed page answers");
+    assert.match(await offPage.text(), /Feedback is closed for now/u);
+  } else {
+    assert.equal(offPage.status, 404);
+  }
 
   const on = await start(t, environment, environment.settings);
   assert.ok(on.ready, on.stderr?.());

@@ -336,3 +336,47 @@ test("rate limits count per key and window, refuse without counting, refuse new 
   assert.equal(trusted(req("10.0.0.2", "1.1.1.1, 198.51.100.7")), trusted(req("10.0.0.2", "198.51.100.7")), "the last address, the one our proxy appends");
   assert.equal(trusted(req("10.0.0.2", "198.51.100.7")).includes("198.51"), false, "the key is not the address");
 });
+
+test("a deletion writes its record before removing anything, and a crash in between is finished at the next open", async (t) => {
+  const root = await temporaryRoot(t);
+  const keys = ownerKeys();
+  const clock = new Date("2026-11-22T06:00:00Z");
+  const store = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  const sent = await store.add({ kind: "praise", text: "kept, then deleted" }, { via: "page" });
+  const read = await store.listEvents();
+  // A crash after the deletion record was written but before the message was removed.
+  await fs.writeFile(path.join(root, "deleted", `${sent.id}.json`), JSON.stringify({ format: "inner-signal-feedback-v1", id: sent.id, seq: 99, day: "2026-11-22", by: "sender" }));
+  const reopened = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock });
+  await assert.rejects(fs.stat(path.join(root, "items", `${sent.id}.json`)), { code: "ENOENT" }, "the open finished the deletion");
+  const after = await reopened.listEvents({ after: read.next_after, confirmed: read.next_after });
+  assert.deepEqual(after.events.map((event) => [event.type, event.id]), [["deleted", sent.id]], "the Inbox still gets the removal");
+  const next = await reopened.add({ kind: "praise", text: "later" }, { via: "page" });
+  assert.ok(next.seq > 99, "numbers continue after the record's");
+});
+
+test("the one-message read keeps a chat message's hold, and each door has its own share of the bytes", async (t) => {
+  const root = await temporaryRoot(t);
+  const keys = ownerKeys();
+  let clock = new Date("2026-11-22T07:10:00Z");
+  const store = await openFeedbackStore({ root, ownerPublicKey: keys.publicKey, now: () => clock, limits: { doorByteShares: { page: 100_000, chat: 3_000 } } });
+  const chat = await store.add({ kind: "bug", text: "held" }, { via: "chat" });
+  assert.equal(await store.getMessage(chat.id), null, "held: not returned by id either");
+  clock = new Date("2026-11-22T09:00:00Z");
+  assert.equal((await store.getMessage(chat.id)).id, chat.id);
+  // A message bigger than the chat's remaining share is refused there; small ones fill it; the page door stays open throughout.
+  const big = "\u{1F600}".repeat(5_000);
+  await assert.rejects(store.add({ kind: "bug", text: big }, { via: "chat" }), { code: "FEEDBACK_FULL" });
+  await assert.rejects(async () => { for (let index = 0; index < 5; index += 1) await store.add({ kind: "bug", text: "small" }, { via: "chat" }); }, { code: "FEEDBACK_FULL" });
+  assert.equal(store.stats().full.chat, true);
+  assert.equal(store.stats().full.page, false);
+  await store.add({ kind: "praise", text: big }, { via: "page" });
+});
+
+test("a refused send gives its counted places back", () => {
+  const limiter = createRateLimiter({ rules: { r: [{ windowMs: 1_000, max: 1 }] }, now: () => 0 });
+  assert.equal(limiter.take("r", "a"), true);
+  assert.equal(limiter.take("r", "a"), false);
+  limiter.refund("r", "a");
+  assert.equal(limiter.take("r", "a"), true);
+  limiter.refund("r", "unknown-key");
+});

@@ -20,14 +20,20 @@ const ROOT_PROBLEMS = Object.freeze({
 export async function createFeedbackFromEnvironment({ environment = process.env, repositoryRoot, log = () => {}, rootOwner = undefined, now = undefined } = {}) {
   const settings = readFeedbackSettings(environment);
   if (!settings) return null;
+  // Every failure about the root becomes fixed words naming the setting, with at most an allowlisted error code: a file system
+  // error's own message would carry the configured path.
+  const rootError = (error) => {
+    const problem = ROOT_PROBLEMS[error?.code];
+    if (problem) return new Error(`${FEEDBACK_SETTINGS.root} ${problem}.`);
+    const code = typeof error?.code === "string" && /^E[A-Z]{2,12}$/u.test(error.code) ? ` (${error.code})` : "";
+    return new Error(`${FEEDBACK_SETTINGS.root} could not be used${code}.`);
+  };
   let root;
   try {
     root = await resolveJournalWorkExchangeRoot(settings.root, { outside: repositoryRoot });
     await assertJournalWorkExchangeRoot(root, rootOwner === undefined ? {} : { owner: rootOwner });
   } catch (error) {
-    const problem = ROOT_PROBLEMS[error?.code];
-    if (!problem) throw error;
-    throw new Error(`${FEEDBACK_SETTINGS.root} ${problem}.`);
+    throw rootError(error);
   }
   let ownerPublicKey;
   try {
@@ -35,7 +41,12 @@ export async function createFeedbackFromEnvironment({ environment = process.env,
   } catch {
     throw new Error(`${FEEDBACK_SETTINGS.ownerPublicKey} must be an X25519 public key in base64url (43 characters).`);
   }
-  const store = await openFeedbackStore({ root, ownerPublicKey, ...(now ? { now: () => new Date(now()) } : {}) });
+  let store;
+  try {
+    store = await openFeedbackStore({ root, ownerPublicKey, ...(now ? { now: () => new Date(now()) } : {}) });
+  } catch (error) {
+    throw rootError(error);
+  }
   const service = createFeedbackService({
     store,
     ownerTokenSha256: settings.ownerTokenSha256,

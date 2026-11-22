@@ -66,6 +66,12 @@ export function createRateLimiter({ rules = FEEDBACK_LIMIT_RULES, now = Date.now
       entry.lastSeen = at;
       return true;
     },
+    // Gives back one counted take (a send that was refused after its place was reserved).
+    refund(rule, key = "*") {
+      const entry = counters.get(`${rule}\u0000${key}`);
+      if (!entry) return;
+      for (const window of entry.windows) if (window.count > 0) window.count -= 1;
+    },
     // Whether the next take would be refused, without counting.
     full(rule, key = "*") {
       const entry = entryFor(rule, key, now());

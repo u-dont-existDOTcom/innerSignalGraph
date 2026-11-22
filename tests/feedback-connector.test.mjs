@@ -250,3 +250,51 @@ test("the chat tool: off by default, on behind its switch, no sign-in, the yes r
   assert.equal(released.events.length, 1);
   assert.equal(released.events[0].via, "chat");
 });
+
+test("parallel sends can't slip under the limits, one form can't store two messages, and an early refusal closes the connection", async (t) => {
+  const environment = await feedbackEnvironment(t, { tool: true });
+  const server = await listen(t, { feedback: environment.feedback });
+  const calls = await Promise.all(Array.from({ length: 15 }, (_, index) => rpc(server.url, "tools/call", {
+    name: "send_feedback", arguments: { kind: "praise", text: `parallel ${index}`, person_approved_exact_text: true }
+  })));
+  const accepted = calls.filter((call) => call.body.result.isError === false).length;
+  assert.equal(accepted, 10, "the chat's ten per ten minutes per client, even all at once");
+  assert.equal(calls.filter((call) => call.body.result.structuredContent?.code === "FEEDBACK_BUSY").length, 5);
+  assert.equal((await fs.readdir(path.join(environment.root, "items"))).length, 10);
+
+  const html = await (await fetch(`${server.origin}/feedback`)).text();
+  environment.advance(3_000);
+  const fields = { form_token: tokenIn(html), kind: "bug", text: "twice at once", extra: "" };
+  const [first, second] = await Promise.all([postForm(`${server.origin}/feedback`, fields), postForm(`${server.origin}/feedback`, fields)]);
+  const codes = [codeIn(await first.text()), codeIn(await second.text())];
+  assert.ok(codes[0]);
+  assert.equal(codes[0], codes[1], "both answers show the one code");
+  assert.equal((await fs.readdir(path.join(environment.root, "items"))).length, 11, "one message stored");
+
+  const refused = await fetch(`${server.origin}/feedback/owner/delete`, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer wrong-token-of-enough-length" }, body: JSON.stringify({ id: "x" }) });
+  assert.equal(refused.status, 401);
+  assert.equal(refused.headers.get("connection"), "close", "a body-bearing request refused before its body is read closes the connection");
+  const page = await fetch(`${server.origin}/feedback`);
+  assert.notEqual(page.headers.get("connection"), "close", "a GET keeps the connection");
+});
+
+test("a root that can't be read stops startup with the setting's name, never its path", async (t) => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "feedback-root-"));
+  const locked = path.join(base, "locked-secret-path-name");
+  t.after(async () => { await fs.chmod(locked, 0o700).catch(() => {}); await fs.rm(base, { recursive: true, force: true }); });
+  await fs.mkdir(path.join(locked, "store"), { recursive: true, mode: 0o700 });
+  await fs.chmod(locked, 0o000);
+  const pair = generateOwnerKeyPair();
+  const attempt = createFeedbackFromEnvironment({ repositoryRoot, environment: {
+    INNER_SIGNAL_FEEDBACK: "on",
+    INNER_SIGNAL_FEEDBACK_ROOT: path.join(locked, "store"),
+    INNER_SIGNAL_FEEDBACK_OWNER_PUBLIC_KEY: pair.publicKey,
+    INNER_SIGNAL_FEEDBACK_OWNER_TOKEN_SHA256: "0".repeat(64),
+    INNER_SIGNAL_FEEDBACK_PUBLIC_URL: PUBLIC_URL
+  } });
+  await assert.rejects(attempt, (error) => {
+    assert.match(error.message, /^INNER_SIGNAL_FEEDBACK_ROOT /u);
+    assert.equal(error.message.includes("locked-secret-path-name"), false, error.message);
+    return true;
+  });
+});

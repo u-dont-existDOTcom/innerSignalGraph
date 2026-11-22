@@ -88,7 +88,10 @@ is sealed. Each message:
    the step, not the message's length.
 
 One file per message, `items/<id>.json`, written to a temporary file and linked into place (an existing name is never
-overwritten), mode 0600, its file times set to the start of its day:
+overwritten), mode 0600, its file times set to the start of its day. (That hides the time from the file's modified and accessed
+times and from copies that keep them, not from the disk itself: its change time, and a creation time where the file system
+keeps one, still show when the file was written. Whoever has the server's disk can see when messages arrived, never what they
+say. Found by Codex; stated rather than engineered around.)
 
 - **in clear (what the server needs):** `format`, `id`, `seq` (a strictly increasing arrival number from a counter file,
   so the owner's read never skips one), `received_day` (the date only), `via` (`page` or `chat`, for the per-door caps
@@ -422,6 +425,24 @@ older local pipeline, which reads its own older copy of the rules.
    "Someone gave this address on InnerSignal's feedback page; if that wasn't you, ignore this and I won't write again."
 8. The new page lines (the two crisis lines after his i62 line) and every word of section 11.
 9. What the approval rule can and can't guarantee in a chat (section 12).
+
+## Appendix B: Codex's first review of the build (22 Nov 2026, `origin/main..7b1c6fd2f`; 1 blocking, 10 should-fix)
+
+Prompt and result: `/home/joel/askrigor-releases/20261122-innersignal-feedback/codex/review-1-prompt.md` and `review-1.txt`.
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | A deletion removed the message before writing its record: a crash between left the Inbox copy for good | **Fixed.** The record is written first; at open, a record whose message is still there finishes the deletion (test) |
+| 2 | A message the laptop couldn't open was skipped for good | **Fixed.** Kept in the script's state and tried again by id at every fetch (test) |
+| 3 | An interrupted fetch could leave opened messages in an untracked folder | **Fixed.** The folder is on record before anything is written, removed on any failure, and the record goes only after the folder (test) |
+| 4 | The one-message read bypassed the chat hold | **Fixed.** It keeps the hold (test) |
+| 5 | Parallel sends slipped under the limits | **Fixed.** Places are reserved before anything is awaited and given back on refusal (test: 15 at once, 10 accepted) |
+| 6 | One form token could store two messages at once | **Fixed.** The token is claimed at once; a second send waits for the first's result and shows the same code (test) |
+| 7 | Chat could fill the page's storage with bytes | **Fixed.** Each door has its own byte share (35 MB page, 15 MB chat) and a message's size is checked before it is written (test) |
+| 8 | Early refusals didn't read or close the body | **Fixed.** Any reply to a body-bearing request sent before its body was read closes the connection (test) |
+| 9 | The disk's change time still shows arrival times | **Stated** (section 4); not engineered around: hiding it would mean holding messages in memory, which loses them in a crash |
+| 10 | Some startup errors printed the root's path | **Fixed.** Every root failure becomes fixed words with the setting's name and at most an error code (test) |
+| 11 | The startup test conflicted with the held sentence | **Fixed.** The test reads which address the packaged rules name and expects the closed page then |
 
 ## Appendix: the red team's findings and what changed
 

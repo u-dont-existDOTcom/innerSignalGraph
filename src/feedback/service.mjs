@@ -91,7 +91,9 @@ function createFormTokens({ now, secret = randomBytes(32) }) {
       const payload = `${now()}.${randomBytes(12).toString("base64url")}`;
       return `${payload}.${mac(payload)}`;
     },
-    check(token) {
+    // Checks a token and, when it is good, claims it at once (before anything is awaited), so two sends of one form can't both
+    // store a message: a second send while the first is still running waits for the first one's result.
+    claim(token) {
       const match = typeof token === "string" ? /^(\d{1,16})\.([A-Za-z0-9_-]{16})\.([A-Za-z0-9_-]{32})$/u.exec(token) : null;
       if (!match) return { ok: false, reason: "invalid" };
       const expected = Buffer.from(mac(`${match[1]}.${match[2]}`), "utf8");
@@ -100,21 +102,40 @@ function createFormTokens({ now, secret = randomBytes(32) }) {
       const at = now();
       forget(at);
       const previous = used.get(match[2]);
+      if (previous?.pending) return { ok: false, reason: "pending", wait: previous.pending };
       if (previous) return { ok: false, reason: "used", code: previous.code };
       const age = at - Number(match[1]);
       if (age < TOKEN_MIN_AGE_MS) return { ok: false, reason: "too_fast" };
       if (age > TOKEN_MAX_AGE_MS) return { ok: false, reason: "invalid" };
-      return { ok: true, nonce: match[2], issuedAt: Number(match[1]) };
-    },
-    markUsed(nonce, issuedAt, code) {
-      const at = now();
-      used.set(nonce, { until: issuedAt + TOKEN_MAX_AGE_MS, code, codeUntil: at + CODE_MEMORY_MS });
-      forget(at);
+      const nonce = match[2];
+      const issuedAt = Number(match[1]);
+      let settle;
+      const pending = new Promise((resolve) => { settle = resolve; });
+      used.set(nonce, { until: issuedAt + TOKEN_MAX_AGE_MS, code: null, codeUntil: 0, pending });
+      return {
+        ok: true,
+        // The send stored a message: the token is used, and its code is kept for 30 minutes.
+        done(code) {
+          const when = now();
+          used.set(nonce, { until: issuedAt + TOKEN_MAX_AGE_MS, code, codeUntil: when + CODE_MEMORY_MS });
+          settle({ code });
+          forget(when);
+        },
+        // Nothing was stored (a refusal the person can correct): the token can be sent again.
+        release() {
+          used.delete(nonce);
+          settle({ code: null });
+        }
+      };
     }
   });
 }
 
-function respond(res, status, body, headers, { close = false } = {}) {
+// A reply sent before the request's body was read (a refusal) closes the connection, so a client can't keep streaming a body past
+// the feedback routes' size and time limits.
+function respond(res, status, body, headers, { close: asked = false } = {}) {
+  const request = res.req;
+  const close = asked || Boolean(request && !["GET", "HEAD"].includes(request.method) && request.complete !== true);
   const bytes = Buffer.from(body, "utf8");
   res.writeHead(status, { ...headers, "content-length": String(bytes.length), ...(close ? { connection: "close" } : {}) });
   if (close) res.once("finish", () => res.socket?.destroySoon?.());
@@ -171,16 +192,22 @@ export function createFeedbackService({
   async function send(value, { via, key }) {
     const own = via === "page" ? "page_send" : "chat_send";
     const all = via === "page" ? "page_all" : "chat_all";
-    if (limiter.full(own, key) || limiter.full(all)) {
+    // Places are reserved before anything is awaited, so parallel sends can't all slip under a limit; a send that stores nothing
+    // gives its places back.
+    if (!limiter.take(own, key)) {
+      counts.limit_refusals[via] += 1;
+      throw new FeedbackStoreError("FEEDBACK_BUSY");
+    }
+    if (!limiter.take(all)) {
+      limiter.refund(own, key);
       counts.limit_refusals[via] += 1;
       throw new FeedbackStoreError("FEEDBACK_BUSY");
     }
     try {
-      const result = await store.add(value, { via });
-      limiter.take(own, key);
-      limiter.take(all);
-      return result;
+      return await store.add(value, { via });
     } catch (error) {
+      limiter.refund(own, key);
+      limiter.refund(all);
       if (error instanceof FeedbackStoreError) {
         if (error.code === "FEEDBACK_FULL") counts.full_refusals[via] += 1;
         throw error;
@@ -205,21 +232,26 @@ export function createFeedbackService({
       return sendHtml(res, 400, renderFormPage({ token: tokens.issue(), values, error: "FEEDBACK_SEND_AGAIN" }));
     }
     const token = form.get("form_token") ?? "";
-    const checked = tokens.check(token);
-    if (!checked.ok) {
-      if (checked.reason === "used") return sendHtml(res, 200, checked.code ? renderThanksPage({ code: checked.code }) : renderAlreadySentPage({}));
+    const claimed = tokens.claim(token);
+    if (!claimed.ok) {
+      if (claimed.reason === "pending") {
+        const first = await claimed.wait;
+        return first.code ? sendHtml(res, 200, renderThanksPage({ code: first.code })) : sendHtml(res, 400, renderFormPage({ token, values, error: "FEEDBACK_SEND_AGAIN" }));
+      }
+      if (claimed.reason === "used") return sendHtml(res, 200, claimed.code ? renderThanksPage({ code: claimed.code }) : renderAlreadySentPage({}));
       return sendHtml(res, 400, renderFormPage({
-        token: checked.reason === "too_fast" ? token : tokens.issue(),
+        token: claimed.reason === "too_fast" ? token : tokens.issue(),
         values,
-        error: checked.reason === "too_fast" ? "FEEDBACK_SEND_AGAIN" : "FEEDBACK_FORM_EXPIRED"
+        error: claimed.reason === "too_fast" ? "FEEDBACK_SEND_AGAIN" : "FEEDBACK_FORM_EXPIRED"
       }));
     }
     try {
       const sent = await send({ kind: values.kind, text: values.text, replyAddress: values.replyAddress, mayShowPublicly: values.mayShowPublicly },
         { via: "page", key: clientKey(req) });
-      tokens.markUsed(checked.nonce, checked.issuedAt, sent.code);
+      claimed.done(sent.code);
       return sendHtml(res, 200, renderThanksPage({ code: sent.code }));
     } catch (error) {
+      claimed.release();
       const code = error instanceof FeedbackStoreError ? error.code : "FEEDBACK_UNAVAILABLE";
       const status = code === "FEEDBACK_BUSY" ? 429 : ["FEEDBACK_FULL", "FEEDBACK_UNAVAILABLE"].includes(code) ? 503 : 400;
       return sendHtml(res, status, renderFormPage({ token, values, error: code }), status === 429 ? { "retry-after": "600" } : {});

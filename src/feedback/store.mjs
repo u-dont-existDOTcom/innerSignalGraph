@@ -18,11 +18,14 @@ export const FEEDBACK_STORE_DEFAULTS = Object.freeze({
   maxItems: 5_000,
   maxBytes: 50 * 1024 * 1024,
   doorShares: Object.freeze({ page: 3_500, chat: 1_500 }),
+  doorByteShares: Object.freeze({ page: 35 * 1024 * 1024, chat: 15 * 1024 * 1024 }),
   retentionDays: 365,
   deletionRecordMaxDays: 400,
   chatHoldMs: 3_600_000
 });
 const DAY_MS = 24 * 3_600_000;
+// The smallest stored message (a record with the first 512-byte step of sealed text): a door with less room than this is full.
+const MIN_MESSAGE_BYTES = 1_024;
 const DAY = /^\d{4}-\d{2}-\d{2}$/u;
 const HOUR = /^\d{4}-\d{2}-\d{2}T\d{2}:00:00Z$/u;
 const DIRECTORIES = Object.freeze(["items", "published", "deleted", "tmp"]);
@@ -68,7 +71,12 @@ export async function openFeedbackStore({
 } = {}) {
   if (typeof root !== "string" || !path.isAbsolute(root)) throw new TypeError("The feedback store needs an absolute root.");
   if (!ownerPublicKey) throw new TypeError("The feedback store needs the owner's public key.");
-  const settings = { ...FEEDBACK_STORE_DEFAULTS, ...limits, doorShares: { ...FEEDBACK_STORE_DEFAULTS.doorShares, ...(limits.doorShares ?? {}) } };
+  const settings = {
+    ...FEEDBACK_STORE_DEFAULTS,
+    ...limits,
+    doorShares: { ...FEEDBACK_STORE_DEFAULTS.doorShares, ...(limits.doorShares ?? {}) },
+    doorByteShares: { ...FEEDBACK_STORE_DEFAULTS.doorByteShares, ...(limits.doorByteShares ?? {}) }
+  };
   const keyId = keyIdFor(ownerPublicKey);
   for (const name of DIRECTORIES) await fs.mkdir(path.join(root, name), { recursive: true, mode: 0o700 });
   const dir = (name) => path.join(root, name);
@@ -147,27 +155,53 @@ export async function openFeedbackStore({
     for (const entry of index.values()) if (entry.via === via) count += 1;
     return count;
   };
-  const doorFull = (via) => doorCount(via) >= settings.doorShares[via] || index.size >= settings.maxItems || storedBytes >= settings.maxBytes;
+  const doorBytes = (via) => {
+    let bytes = 0;
+    for (const entry of index.values()) if (entry.via === via) bytes += entry.size;
+    return bytes;
+  };
+  // A door is full when its own count or its own share of the bytes is used up (so one door can't fill the other's room), or
+  // when the store as a whole is. `adding` is the size of a message about to be written.
+  const doorFull = (via, adding = 0) => doorCount(via) >= settings.doorShares[via] || doorBytes(via) + adding > settings.doorByteShares[via]
+    || index.size >= settings.maxItems || storedBytes + adding > settings.maxBytes;
 
   async function writeDeletionRecord(id, by) {
     const seq = await takeSeq();
     await writeAtomically(fileFor("deleted", id), { format: FEEDBACK_FORMAT, id, seq, day: dayOf(now()), by });
   }
 
-  // Removes a message and any public copy. A public copy whose message already expired is removed too (its record went out then).
+  function forget(id) {
+    const entry = index.get(id);
+    if (entry) {
+      index.delete(id);
+      storedBytes = Math.max(0, storedBytes - entry.size);
+    }
+  }
+
+  // Removes a message and any public copy. The deletion record is written first, so a crash part-way leaves a record and a message
+  // that the next open finishes deleting, never a deleted message without the record that removes the owner's Inbox copy. A public
+  // copy whose message already expired is removed too (its record went out then).
   async function deleteNow(id, by) {
     if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id)) return false;
+    const hasItem = index.has(id);
+    if (hasItem) await writeDeletionRecord(id, by);
     const hadPublic = await removeIfPresent(fileFor("published", id));
-    const hadItem = await removeIfPresent(fileFor("items", id));
-    if (hadItem) {
-      const entry = index.get(id);
-      if (entry) {
-        index.delete(id);
-        storedBytes = Math.max(0, storedBytes - entry.size);
-      }
-      await writeDeletionRecord(id, by);
+    if (hasItem) {
+      await removeIfPresent(fileFor("items", id));
+      forget(id);
     }
-    return hadItem || hadPublic;
+    return hasItem || hadPublic;
+  }
+
+  // Deletions a crash interrupted: a deletion record whose message (or public copy) is still there is finished now.
+  for (const name of await fs.readdir(dir("deleted"))) {
+    const id = name.replace(/\.json$/u, "");
+    if (!name.endsWith(".json") || !FEEDBACK_ID_PATTERN.test(id)) continue;
+    if (index.has(id)) {
+      await removeIfPresent(fileFor("published", id));
+      await removeIfPresent(fileFor("items", id));
+      forget(id);
+    }
   }
 
   return Object.freeze({
@@ -181,7 +215,7 @@ export async function openFeedbackStore({
         if (!read.ok) throw new FeedbackStoreError(read.code);
         const value = read.value;
         if (via === "chat" && value.mayShowPublicly) throw new FeedbackStoreError("FEEDBACK_PUBLIC_ONLY_ON_PAGE");
-        if (doorFull(via)) throw new FeedbackStoreError("FEEDBACK_FULL");
+        if (doorFull(via, MIN_MESSAGE_BYTES)) throw new FeedbackStoreError("FEEDBACK_FULL");
         const publicReview = value.kind === "review" && value.mayShowPublicly === true;
         for (let attempt = 0; attempt < 3; attempt += 1) {
           const code = newDeletionCode(random);
@@ -219,6 +253,8 @@ export async function openFeedbackStore({
             }
           });
           publishKey?.fill(0);
+          const prospective = Buffer.byteLength(`${JSON.stringify({ ...record, sealed })}\n`);
+          if (doorFull(via, prospective)) throw new FeedbackStoreError("FEEDBACK_FULL");
           let bytes;
           try {
             bytes = await writeAtomically(fileFor("items", id), { ...record, sealed }, { exclusive: true });
@@ -324,14 +360,17 @@ export async function openFeedbackStore({
           more: stoppedForSize,
           held: events.filter(isHeld).length,
           stored: { page: doorCount("page"), chat: doorCount("chat") },
-          full: { page: doorFull("page"), chat: doorFull("chat") }
+          full: { page: doorFull("page", MIN_MESSAGE_BYTES), chat: doorFull("chat", MIN_MESSAGE_BYTES) }
         };
       });
     },
 
-    // One stored message, sealed, by id (for publishing), or null; confirms nothing.
+    // One stored message, sealed, by id (for publishing and for retrying one the owner's laptop couldn't open), or null; confirms
+    // nothing, and keeps a chat message's hold like the owner's read does.
     async getMessage(id) {
       if (typeof id !== "string" || !FEEDBACK_ID_PATTERN.test(id) || !index.has(id)) return null;
+      const held = index.get(id).heldUntil;
+      if (held && Date.parse(held) > now().getTime()) return null;
       const value = await readJsonFile(fileFor("items", id));
       return value?.id === id ? value : null;
     },
@@ -389,12 +428,11 @@ export async function openFeedbackStore({
         let expired = 0;
         for (const [id, entry] of [...index]) {
           if (at - dayStart(entry.day).getTime() >= settings.retentionDays * DAY_MS) {
-            if (await removeIfPresent(fileFor("items", id))) {
-              index.delete(id);
-              storedBytes = Math.max(0, storedBytes - entry.size);
-              await writeDeletionRecord(id, "expiry");
-              expired += 1;
-            }
+            // The record first, as in deleteNow; the public copy of a review stays (design section 4).
+            await writeDeletionRecord(id, "expiry");
+            await removeIfPresent(fileFor("items", id));
+            forget(id);
+            expired += 1;
           }
         }
         for (const name of await fs.readdir(dir("deleted"))) {
@@ -418,7 +456,8 @@ export async function openFeedbackStore({
       return {
         stored: { page: doorCount("page"), chat: doorCount("chat") },
         bytes: storedBytes,
-        full: { page: doorFull("page"), chat: doorFull("chat") }
+        doorBytes: { page: doorBytes("page"), chat: doorBytes("chat") },
+        full: { page: doorFull("page", MIN_MESSAGE_BYTES), chat: doorFull("chat", MIN_MESSAGE_BYTES) }
       };
     }
   });
