@@ -241,12 +241,14 @@ function validateClosure(value) {
 }
 
 // Only the fixed texts can be created as a closing; a stored one is read back by shape, as the owner fallback is. The owner fallback
-// closes a turn whose checks failed, or one the plan's limit, a lapsed sign-in or the time ended (OWNER_FALLBACK_CLOSING_REASONS:
-// the owner's 3b, question i67, 22 Nov 2026). Which of these the runtime shows it for is the switches' choice (design, section 7);
-// the record accepts all of them, whatever the switches say now.
+// may close a turn for every reason a turn closes for (OWNER_FALLBACK_CLOSING_REASONS, every reason in CLOSING_REASONS): failed
+// checks, the plan's limit, a lapsed sign-in and the time (the owner's 3b, question i67, 22 Nov 2026), and a refusal, a failed call
+// and an interruption (his question i68, part 2, still open). Which of these the runtime shows it for is the switches' choice
+// (design, section 7); the record accepts all of them, whatever the switches say now, so a case closed with a switch on stays
+// readable after it is turned off.
 export function createRunnerClosure({ kind, reasonCode, assistantTurnId, closedAt }) {
   if (!RUNNER_CLOSURE_KINDS.includes(kind)) throw new ValidationError("Runtime closing kind is invalid.");
-  if (kind === OWNER_FALLBACK_KIND && !OWNER_FALLBACK_CLOSING_REASONS.includes(reasonCode)) throw new ValidationError("The owner fallback closes only a turn whose checks failed, or that the plan's limit, a lapsed sign-in or the time ended.");
+  if (kind === OWNER_FALLBACK_KIND && !OWNER_FALLBACK_CLOSING_REASONS.includes(reasonCode)) throw new ValidationError("Runtime closing reason is invalid.");
   const exactText = kind === OWNER_FALLBACK_KIND ? OWNER_FALLBACK_MESSAGE : RUNNER_UNAVAILABLE_NOTICE;
   return validateClosure({ kind, reason_code: reasonCode, exact_text: exactText, sha256: sha256ExactText(exactText), assistant_turn_id: assistantTurnId, closed_at: closedAt });
 }

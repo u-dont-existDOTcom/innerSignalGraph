@@ -29,7 +29,8 @@ Two points his words leave open are put to him in the start-using-it question: w
 crisis levels or only for someone who has acted or is about to (section 4: a setting with a default, measured both ways), and
 whether, in a crisis conversation, every failure shows his fixed message or only failed checks. He answered the second on 22
 Nov (question i67, part 3: 3b): failed checks, and also the plan's limit, the sign-in and the time, built behind a switch of
-its own, off by default (section 7).
+its own, off by default (section 7). Whether every other failure there shows it too is his question i68, part 2, built behind a
+further switch, off until he says (section 7).
 
 ## 1. What the trial keeps, changes and drops
 
@@ -315,7 +316,7 @@ their own; "112 911" with only a space between is read as one grouped number.
   `home_unsafe` (the safety-orientation route's "outside safety ... first"); "wanting to die", one read `wants_to_die`. The
   question tells him these readings stand in for the four routes.
 - **Operational failures** give the notice, not the fixed message, as the 1 Nov page says ("not used for operational
-  failures"), except the three below while their switch is on.
+  failures"), except the three below while their switch is on, and every one while the switch after it is on too.
 - **After the plan's limit, a lapsed sign-in or the time** (`INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE`, built on 22 Nov
   2026). The start-using-it question asked whether every failure in such a conversation should show his message. He answered
   on 22 Nov 2026 at 12:10 UTC (question i67, part 3: 3b): "On, and also when the plan's limit, the sign-in or the time ends a
@@ -326,24 +327,55 @@ their own; "112 911" with only a space between is read as one grouped number.
   `owner_fallback`, that reason). `timeout` is the runtime's one code for the time: a call that ran past its limit (its own
   cap, or the time left in the turn) and the turn's deadline (under a second left when a call would start) both close with
   it. A failed check with no time left for a repair is `checks_failed`, as before.
-- **Not covered**, so they keep the notice with the switch on: a refusal (`refused`), any other failed call
-  (`provider_failed`) and an interruption or restart (`interrupted`), since his words named only the limit, the sign-in and
-  the time; and every failure in any other conversation. The page shows the reason beside his message as beside the
-  notice, and the highlighted emergency line goes in as before on every closing that shows it (the last bullet).
+- **Not covered**, so they keep the notice with the switch on (unless the switch for every failure, below, is on too): a
+  refusal (`refused`), any other failed call (`provider_failed`) and an interruption or restart (`interrupted`), since his
+  words named only the limit, the sign-in and the time; and every failure in any other conversation. The page shows the
+  reason beside his message as beside the notice, and the highlighted emergency line goes in as before on every closing that
+  shows it (the last bullet).
 - **The switch**: on/off like the trial's, off by default, any other value stops startup; meaningful only with the trial and
   `INNER_SIGNAL_OWNER_FALLBACK` on, since it extends that message: `/health` says `runnerFixedMessageOnFailure: "on"` only
   then, and the start script's `--fixed-message-on-failure` is refused without `--owner-fallback`. With it off, every
   closing is as before. It gives no worker anything new: on or off, every prompt and schema and every packet field is the
   same, and the kept plan's scenario, which closes no turn, gives the same digest; a later turn's packet holds what the
   person was shown, so after a closing that showed his message, his message stands where the notice would have. The store
-  creates his message as the closing of any of the four reasons whatever the switches say now, and reads a closing back by
-  shape, so a case closed with the switch on stays readable, replays and goes on after it is turned off. It is a switch of
-  the server, not a trial setting: the `fixedMessageOn` default that stood in the runtime with no code reading it was taken
-  out on 22 Nov (Fable's recheck, finding 14) and stays out. Code: `FIXED_MESSAGE_FAILURE_REASONS` in
-  `src/runner-trial/notices.mjs`, `closeTurn` in `src/runner-trial/runtime.mjs`, `createRunnerClosure` in
-  `src/supervisor/private-runtime-turn-lifecycle.mjs`. Tests: `tests/runner-trial.test.mjs` (stand-in workers), `/health`
-  and the config in `tests/runner-trial-server.test.mjs`, the flag in `tests/runner-trial-start.test.mjs`, the digest in
-  `tests/runner-trial-kept-plan.test.mjs`. Not yet run through models.
+  creates his message as the closing of any of the four reasons (of every reason since the switch below was built) whatever
+  the switches say now, and reads a closing back by shape, so a case closed with the switch on stays readable, replays and
+  goes on after it is turned off. It is a switch of the server, not a trial setting: the `fixedMessageOn` default that stood
+  in the runtime with no code reading it was taken out on 22 Nov (Fable's recheck, finding 14) and stays out. Code:
+  `FIXED_MESSAGE_FAILURE_REASONS` in `src/runner-trial/notices.mjs`, `closeTurn` in `src/runner-trial/runtime.mjs`,
+  `createRunnerClosure` in `src/supervisor/private-runtime-turn-lifecycle.mjs`. Tests: `tests/runner-trial.test.mjs`
+  (stand-in workers), `/health` and the config in `tests/runner-trial-server.test.mjs`, the flag in
+  `tests/runner-trial-start.test.mjs`, the digest in `tests/runner-trial-kept-plan.test.mjs`. Not yet run through models.
+- **After every failure** (`INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE`, built on 22 Nov 2026, off until he says). His
+  question i68, part 2, asks whether his message should show after every other failure in such a conversation too; its
+  option b, recommended, is "Every failure in such a conversation, so no one there gets only the bare notice". With this
+  switch on, on top of the switch above and `INNER_SIGNAL_OWNER_FALLBACK`, a turn of a conversation about wanting to die or
+  getting safe closes with his fixed message whatever closed it: every reason in `CLOSING_REASONS`, that is `checks_failed`,
+  `plan_limit`, `sign_in_needed`, `timeout`, `refused`, `provider_failed` and `interrupted` (`UNANSWERED`, kind
+  `owner_fallback`, that reason). It adds the last three (`FIXED_MESSAGE_ANY_FAILURE_REASONS`, taken from `CLOSING_REASONS`,
+  so a reason added there is covered too). In any other conversation, the notice as always. The page shows the reason beside
+  his message, and the highlighted emergency line goes in exactly as with the switch off (the last bullet).
+- **A turn closed before it was read**, with that switch on: an interruption in a turn's first seconds, or a failure before
+  its readings could be stored, leaves a turn with no reading and so no conversation in the record, and before this switch it
+  closed with the notice whatever came before it. With the switch on it is taken to be in the conversation it would have been
+  read into: the latest read turn's, when it came within the conversation gap (12 hours) of it; otherwise a new conversation,
+  of which nothing was read, so the notice. The person's choice of a new conversation
+  isn't stored before the reading, so a message sent as a new conversation within 12 hours of one about wanting to die or
+  getting safe, and closed before it was read, gets his message too. With the switch off, such a turn is in no conversation
+  and gets the notice, as before; the line goes in either way, as on every turn without the crisis reader's reading.
+- **That switch**: on/off like the others, off by default, any other value stops startup. It extends the switch above, so with
+  that switch or `INNER_SIGNAL_OWNER_FALLBACK` off it does nothing: `/health` says `runnerFixedMessageOnAnyFailure: "on"` only
+  with the trial, the fixed message, the switch above and this one all on, and the start script's
+  `--fixed-message-on-any-failure` is refused without `--fixed-message-on-failure` and `--owner-fallback`. Off: every closing
+  as before. On or off, no worker gets a new prompt, schema or packet field, and the kept plan's scenario gives the same
+  digest; after a closing that showed his message, a later turn's packet holds it where the notice would have stood. The
+  store creates his message as the closing of every reason whatever the switches say now (`OWNER_FALLBACK_CLOSING_REASONS`;
+  before this switch it refused `refused`, `provider_failed` and `interrupted`), so a case closed with it on stays readable,
+  replays and goes on after it is turned off. Code: `FIXED_MESSAGE_ANY_FAILURE_REASONS` in `src/runner-trial/notices.mjs`,
+  `fixedMessageReasons` and `closeTurn` in `src/runner-trial/runtime.mjs`. Tests: `tests/runner-trial.test.mjs` (stand-in
+  workers: every reason, the time two ways, in a conversation about wanting to die, one about getting safe and an ordinary
+  one; a turn closed before it was read), `/health` and the config in `tests/runner-trial-server.test.mjs`, the flag in
+  `tests/runner-trial-start.test.mjs`, the digest in `tests/runner-trial-kept-plan.test.mjs`. Not yet run through models.
 - **In a crisis turn, or one R1 gave no reading**, whatever ends it, the highlighted emergency line of section 4 is in the
   conversation: the closing puts it in when nothing else has (since Fable's recheck of 22 Nov, finding 7, for a turn without
   R1's reading too).

@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
 import { readOnOffSetting } from "./on-off-setting.mjs";
-import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_NUMBER_NOW_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerFixedMessageOnFailureSwitch, readRunnerKeptPlanSwitch, readRunnerNumberNowSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
+import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_NUMBER_NOW_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerFixedMessageOnAnyFailureSwitch, readRunnerFixedMessageOnFailureSwitch, readRunnerKeptPlanSwitch, readRunnerNumberNowSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -95,6 +95,10 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     // to die or getting safe (src/runner-trial/runtime.mjs, design section 7): its own switch, off unless switched on, and meaningful
     // only while the runner trial and INNER_SIGNAL_OWNER_FALLBACK are both on.
     runnerFixedMessageOnFailureEnabled: readRunnerFixedMessageOnFailureSwitch(process.env[RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING]),
+    // The owner's fixed message after every failure in such a conversation (a refusal, any other failed call and an interruption
+    // too; his question i68, part 2; design, section 7): its own switch, off unless switched on, and meaningful only while the runner
+    // trial, INNER_SIGNAL_OWNER_FALLBACK and INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE are all on.
+    runnerFixedMessageOnAnyFailureEnabled: readRunnerFixedMessageOnAnyFailureSwitch(process.env[RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING]),
     // The trial page's link to the feedback page: its own switch, off until that page is released.
     runnerFeedbackLinkEnabled: readRunnerFeedbackLinkSwitch(process.env[RUNNER_FEEDBACK_LINK_SETTING]),
     // The case the trial's page uses (the one the trial vault's credentials grant), or null; a value of another form stops startup.

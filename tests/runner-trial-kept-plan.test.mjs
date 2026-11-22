@@ -240,6 +240,18 @@ test("the fixed message's switch for failures, off or on, leaves every worker's 
   }
 });
 
+// The owner's fixed message after every failure (INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE; design, section 7) changes, like the
+// 3b switch, only which closing a turn gets: off, or on with the 3b switch and the fixed message on, every worker gets the packets from
+// before in this scenario, which closes no turn.
+test("the fixed message's switch for every failure, off or on, leaves every worker's prompt, packet and schema byte-identical", async (t) => {
+  const modules = { createEncryptedPrivateCaseStore, createRunnerTrialRuntime, createPrivateTherapyTurnController, cutRuleParts, REPAIR_INDUCED_ERROR_CHECKS };
+  for (const runtimeOptions of [{ fixedMessageOnAnyFailureEnabled: false }, { ownerFallbackEnabled: true, fixedMessageOnFailureEnabled: true, fixedMessageOnAnyFailureEnabled: true }]) {
+    const calls = await runPacketScenario({ modules, root: await tempDir(t, "any-failure-golden"), runtimeOptions });
+    assert.equal(calls.length, 54, "both arms, every worker, a repair included");
+    assert.equal(packetDigest(calls), PACKETS_BEFORE_KEPT_PLAN, `the same bytes as before (${JSON.stringify(runtimeOptions)})`);
+  }
+});
+
 test("with the switch off, a reader that says the person asks to keep or delete a plan keeps and deletes nothing, and the record gains nothing", async (t) => {
   const runner = await makeRunner(t, keptPlanScript(), { keptPlanEnabled: false });
   await reachPlan(runner);

@@ -14,7 +14,7 @@ import { OWNER_FALLBACK_KIND } from "../supervisor/owner-fallback-message.mjs";
 import { selfDirectedRiskAuditRules } from "../prompts/self-directed-risk-audit.mjs";
 import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
 import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
-import { FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
+import { FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
 import {
   KEPT_PLAN_LIMITS,
   crisisReadingOf,
@@ -127,8 +127,9 @@ export function normalizeFindings(checkerId, findings) {
 // schema is exactly what it was before the kept plan was built. `numberNowEnabled` is INNER_SIGNAL_RUNNER_NUMBER_NOW (design,
 // section 9b), the same way: on only when exactly true. `fixedMessageOnFailureEnabled` is INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE
 // (design, section 7), on only when exactly true: it changes nothing but which closings show the owner's fixed message, and only
-// while `ownerFallbackEnabled` is on too.
-export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
+// while `ownerFallbackEnabled` is on too. `fixedMessageOnAnyFailureEnabled` is INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE (the
+// same section), on only when exactly true, and only on top of both: then every closing reason shows his message in such a conversation.
+export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, fixedMessageOnAnyFailureEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
   if (!privateCaseSource || !parts || typeof workerFor !== "function") throw new ValidationError("The runner trial needs its case source, rule parts and workers.");
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
@@ -242,10 +243,18 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   const isFixedMessageConversation = (readings) => readings.some((entry) => readCrisis(entry)
     || entry.crisis?.in_danger_from_someone || entry.crisis?.danger_to_others || entry.crisis?.home_unsafe);
   // The reasons whose closing shows the owner's fixed message in such a conversation, while INNER_SIGNAL_OWNER_FALLBACK is on
-  // (design, section 7): failed checks; and, with INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE on too, the plan's limit, a lapsed
-  // sign-in and the time (plan_limit, sign_in_needed, timeout: his 3b, question i67, 22 Nov 2026). Every other reason (a refusal,
-  // a failed call, an interruption) keeps the notice.
-  const fixedMessageReasons = Object.freeze(["checks_failed", ...(fixedMessageOnFailureEnabled === true ? FIXED_MESSAGE_FAILURE_REASONS : [])]);
+  // (design, section 7): failed checks; with INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE on too, the plan's limit, a lapsed
+  // sign-in and the time (plan_limit, sign_in_needed, timeout: his 3b, question i67, 22 Nov 2026); and with
+  // INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE on as well, every other reason (refused, provider_failed, interrupted: his
+  // question i68, part 2), so every reason in CLOSING_REASONS. Without the 3b switch, the last does nothing. Any reason not
+  // switched on keeps the notice.
+  const fixedMessageOnFailure = fixedMessageOnFailureEnabled === true;
+  const fixedMessageOnAnyFailure = fixedMessageOnFailure && fixedMessageOnAnyFailureEnabled === true;
+  const fixedMessageReasons = Object.freeze([
+    "checks_failed",
+    ...(fixedMessageOnFailure ? FIXED_MESSAGE_FAILURE_REASONS : []),
+    ...(fixedMessageOnAnyFailure ? FIXED_MESSAGE_ANY_FAILURE_REASONS : [])
+  ]);
   // Whether an earlier turn of this conversation showed the person an emergency number: a provisional reply or a delivered reply
   // naming one (as the exact check reads numbers), or the highlighted line. The later-turn rules go by what was actually shown,
   // never by which levels were read or which provisional replies were offered (Codex's review of 371a8f6f2: a numberless
@@ -883,7 +892,13 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const turn = record.runtime_turns.find((entry) => entry.id === runtimeTurn.id);
       if (isFinishedRuntimeTurn(turn)) return;
       const conversationId = turn.runner_reading?.conversation_id ?? null;
-      const readings = conversationId ? conversationReadings(record, conversationId) : [];
+      // With every failure covered (INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE on, with the 3b switch and the fixed message),
+      // a turn closed before any reading of it was stored (an interruption in its first seconds, or a failure before its readings
+      // could be stored) is taken to be in the conversation it would have been read into (conversationIdFor): the latest read
+      // turn's, when it came within the conversation gap of it. The person's choice of a new conversation isn't stored before the
+      // reading, so it can't count. Otherwise, as before, such a turn is in no conversation, and its closing is the notice.
+      const closingConversationId = conversationId ?? (ownerFallbackEnabled && fixedMessageOnAnyFailure ? conversationIdFor(record, turn, {}) : null);
+      const readings = closingConversationId ? conversationReadings(record, closingConversationId) : [];
       const crisisNow = isCrisisLevel(turn.runner_reading?.readers?.crisis?.level) || checkerLevelsOf(turn).some(isCrisisLevel);
       // The crisis reader gave no reading this turn: nothing says it isn't a crisis, so a closing shows the line as after a crisis
       // reading (Fable's recheck of 22 Nov 2026, finding 7: a first message with the reader out had closed with no line).

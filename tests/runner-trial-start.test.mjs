@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RUNNER_ROLES, loadRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
-import { DEFAULT_PORT, nodeForServer, parseArguments, prepareTrialFolder, serverEnvironment, trialSettings } from "../scripts/runner-trial-start.mjs";
+import { DEFAULT_PORT, USAGE, nodeForServer, parseArguments, prepareTrialFolder, serverEnvironment, trialSettings } from "../scripts/runner-trial-start.mjs";
 
 // The runner trial's start command (scripts/runner-trial-start.mjs, docs/RUNNER-TRIAL.md): its arguments, the settings and the
 // environment it gives the server, the folder, vault and credentials it makes, and one real start on loopback. No model is called:
@@ -71,12 +71,35 @@ test("the provider must be chosen, as mixed, codex or claude; the port, the fold
   assert.throws(() => parseArguments(["--provider", "codex", "--owner-fallback", "--fixed-message-on-failure=on"]), refusedWith(2, /--fixed-message-on-failure takes no value/u));
   assert.throws(() => parseArguments(["--provider", "codex", "--owner-fallback", "--fixed-message-on-failure", "--fixed-message-on-failure"]), refusedWith(2, /--fixed-message-on-failure is given twice/u));
   assert.throws(() => parseArguments(["--help"]), refusedWith(0, /^Usage: node scripts\/runner-trial-start\.mjs/u));
-  assert.deepEqual({ ...parseArguments(["--provider", "codex"]) }, { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, fixedMessageOnFailure: false, prepareOnly: false });
+  assert.deepEqual({ ...parseArguments(["--provider", "codex"]) }, { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, prepareOnly: false });
   assert.equal(parseArguments(["--provider", "mixed"]).provider, "mixed");
   assert.deepEqual({ ...parseArguments(["--provider=claude", "--port=9100", "--dir", "/synthetic/trial", "--kept-plan", "--number-now", "--feedback-link", "--owner-fallback", "--prepare-only"]) },
-    { provider: "claude", port: 9100, dir: "/synthetic/trial", keptPlan: true, numberNow: true, feedbackLink: true, ownerFallback: true, fixedMessageOnFailure: false, prepareOnly: true });
+    { provider: "claude", port: 9100, dir: "/synthetic/trial", keptPlan: true, numberNow: true, feedbackLink: true, ownerFallback: true, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, prepareOnly: true });
   assert.deepEqual({ ...parseArguments(["--provider", "codex", "--fixed-message-on-failure", "--owner-fallback"]) },
-    { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: true, fixedMessageOnFailure: true, prepareOnly: false }, "in either order");
+    { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: true, fixedMessageOnFailure: true, fixedMessageOnAnyFailure: false, prepareOnly: false }, "in either order");
+});
+
+test("--fixed-message-on-any-failure is refused without --fixed-message-on-failure and --owner-fallback, takes no value, and is off unless given", () => {
+  const refusal = /--fixed-message-on-any-failure extends the owner's fixed message after the plan's limit, the sign-in or the time: give --fixed-message-on-failure and --owner-fallback too\./u;
+  for (const flags of [[], ["--owner-fallback"], ["--fixed-message-on-failure"]]) {
+    assert.throws(() => parseArguments(["--provider", "codex", ...flags, "--fixed-message-on-any-failure"]), refusedWith(2, refusal), flags.join(" ") || "alone");
+  }
+  const both = ["--owner-fallback", "--fixed-message-on-failure"];
+  assert.throws(() => parseArguments(["--provider", "codex", ...both, "--fixed-message-on-any-failure=on"]), refusedWith(2, /--fixed-message-on-any-failure takes no value/u));
+  assert.throws(() => parseArguments(["--provider", "codex", ...both, "--fixed-message-on-any-failure", "--fixed-message-on-any-failure"]), refusedWith(2, /--fixed-message-on-any-failure is given twice/u));
+  assert.equal(parseArguments(["--provider", "codex", ...both]).fixedMessageOnAnyFailure, false, "off unless given");
+  assert.deepEqual({ ...parseArguments(["--provider", "codex", "--fixed-message-on-any-failure", "--fixed-message-on-failure", "--owner-fallback"]) },
+    { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: true, fixedMessageOnFailure: true, fixedMessageOnAnyFailure: true, prepareOnly: false }, "in any order");
+  assert.match(USAGE, /--fixed-message-on-any-failure\n {21}turn on INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE \(off unless given; only with\n {21}--fixed-message-on-failure and --owner-fallback\)/u);
+
+  const common = { base: { PATH: "/synthetic/bin", INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "on" }, port: 9123, credentialsPath: "/synthetic/trial/credentials.json", settingsPath: "/synthetic/trial/settings-codex.json", token: "synthetic-token", caseId: SYNTHETIC_CASE, provider: "codex" };
+  const switches = (environment) => [environment.INNER_SIGNAL_OWNER_FALLBACK, environment.INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE, environment.INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE];
+  assert.deepEqual(switches(serverEnvironment(common)), ["off", "off", "off"], "the shell's copy never reaches the server");
+  assert.deepEqual(switches(serverEnvironment({ ...common, ownerFallback: true, fixedMessageOnFailure: true })), ["on", "on", "off"], "the switches it extends leave it off");
+  assert.deepEqual(switches(serverEnvironment({ ...common, ownerFallback: true, fixedMessageOnFailure: true, fixedMessageOnAnyFailure: true })), ["on", "on", "on"]);
+  for (const without of [{ ownerFallback: true }, { fixedMessageOnFailure: true }, {}]) {
+    assert.throws(() => serverEnvironment({ ...common, ...without, fixedMessageOnAnyFailure: true }), (error) => /needs the owner's fixed message on/u.test(error.message), JSON.stringify(without));
+  }
 });
 
 test("the settings are the whole writer with one whole checker, and every role's worker is on the provider the choice gives it", () => {
@@ -111,6 +134,7 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_RUNNER_FEEDBACK_LINK: "on",
     INNER_SIGNAL_OWNER_FALLBACK: "true",
     INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE: "on",
+    INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "on",
     INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: "/synthetic/inherited-claude",
     INNER_SIGNAL_MODE: "cli",
     LEDGER_MODE: "full"
@@ -129,7 +153,8 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_RUNNER_NUMBER_NOW: "off",
     INNER_SIGNAL_RUNNER_FEEDBACK_LINK: "off",
     INNER_SIGNAL_OWNER_FALLBACK: "off",
-    INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE: "off"
+    INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE: "off",
+    INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "off"
   }, "the usual app's vault and the shell's switches never reach the trial's server, and a Codex run names no Claude folder");
   assert.deepEqual([codex.PORT, codex.LEDGER_MODE, codex.PATH, codex.HOME, codex.CODEX_COMMAND], ["9123", "off", "/synthetic/bin", "/synthetic/home", "/synthetic/bin/codex"]);
   const flagged = serverEnvironment({ ...common, provider: "codex", keptPlan: true, numberNow: true, feedbackLink: true, ownerFallback: true, fixedMessageOnFailure: true });
@@ -242,7 +267,7 @@ test("a real start serves the trial page on loopback in its own vault, names its
   const base = `http://127.0.0.1:${port}`;
   // Stand-ins for the Codex and Claude commands: the start checks that they exist, and no message is sent, so nothing runs them.
   const env = { ...process.env, CODEX_COMMAND: process.execPath, CLAUDE_COMMAND: process.execPath, INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: claudeHome, INNER_SIGNAL_RUNNER_KEPT_PLAN: "on", INNER_SIGNAL_RUNNER_TRIAL_CASE_ID: SYNTHETIC_CASE };
-  const child = spawn(process.execPath, [script, "--provider", "mixed", "--port", String(port), "--dir", home, "--number-now", "--owner-fallback", "--fixed-message-on-failure"], { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [script, "--provider", "mixed", "--port", String(port), "--dir", home, "--number-now", "--owner-fallback", "--fixed-message-on-failure", "--fixed-message-on-any-failure"], { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = "";
   let stderr = "";
   child.stdout.setEncoding("utf8");
@@ -262,6 +287,8 @@ test("a real start serves the trial page on loopback in its own vault, names its
   const health = await (await fetch(`${base}/health`)).json();
   assert.deepEqual([health.runnerTrial, health.runnerKeptPlan, health.runnerNumberNow, health.runnerFeedbackLink, health.ownerFallback, health.runnerFixedMessageOnFailure, health.mode], ["on", "off", "on", "off", "on", "on", "mock"], "a switch the shell set stays off without its flag, and each flag turns on its own");
   assert.match(stdout, /Kept plan off, number now on, feedback link off, owner's fixed message on, also after a plan limit, sign-in or timeout on\./u);
+  assert.equal(health.runnerFixedMessageOnAnyFailure, "on", "--fixed-message-on-any-failure turns on its own");
+  assert.match(stdout, /The owner's fixed message after every other failure too \(a refusal, a failed call, an interruption\): on\./u);
   assert.deepEqual(health.privateCaseStorage, { available: true, plaintextFallback: false, automaticOrchestration: true });
   const credentials = JSON.parse(await fs.readFile(path.join(home, "credentials.json"), "utf8"));
   assert.equal(health.runnerCaseId, credentials.grants[0].case_ids[0], "/health names the case the credentials grant, not one the shell set");

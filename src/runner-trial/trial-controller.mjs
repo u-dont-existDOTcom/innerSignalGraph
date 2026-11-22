@@ -68,7 +68,8 @@ export function isRunnerEventHub(value) {
 // next time is on only when INNER_SIGNAL_RUNNER_KEPT_PLAN is (config.runnerKeptPlanEnabled; design, section 9), the crisis
 // reader's number_now only when INNER_SIGNAL_RUNNER_NUMBER_NOW is (config.runnerNumberNowEnabled; design, section 9b), and the
 // owner's fixed message after the plan's limit, a lapsed sign-in or the time only when INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE
-// is (config.runnerFixedMessageOnFailureEnabled; design, section 7), with INNER_SIGNAL_OWNER_FALLBACK on too.
+// is (config.runnerFixedMessageOnFailureEnabled; design, section 7), with INNER_SIGNAL_OWNER_FALLBACK on too, and after every other
+// failure as well only when INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE is too (config.runnerFixedMessageOnAnyFailureEnabled).
 export function createRunnerTrialController({ privateCaseSource, config = {}, settings = null, parts = null, workerFor = null, events = null, now = undefined } = {}) {
   if (!privateCaseSource) {
     throw new RuntimeError(`${RUNNER_TRIAL_SETTING} is on, but encrypted private case storage isn't configured: the runner trial needs a vault of its own.`, { code: "BAD_CONFIG" });
@@ -85,6 +86,7 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, se
     keptPlanEnabled: config.runnerKeptPlanEnabled === true,
     numberNowEnabled: config.runnerNumberNowEnabled === true,
     fixedMessageOnFailureEnabled: config.runnerFixedMessageOnFailureEnabled === true,
+    fixedMessageOnAnyFailureEnabled: config.runnerFixedMessageOnAnyFailureEnabled === true,
     onEvent: hub.publish,
     now
   });

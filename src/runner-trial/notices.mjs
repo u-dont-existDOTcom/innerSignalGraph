@@ -49,7 +49,16 @@ export const CLOSING_REASONS = Object.freeze({
 // a turn in such a conversation". The time is one reason code: a call that ran past its limit and the turn's deadline both close
 // as timeout. A refusal, a failed call and an interruption keep the notice: his words named only these three.
 export const FIXED_MESSAGE_FAILURE_REASONS = Object.freeze(["plan_limit", "sign_in_needed", "timeout"]);
-// Every reason a closing may show his fixed message for: failed checks (switched on by INNER_SIGNAL_OWNER_FALLBACK alone) and the
-// three above. The store creates such a closing for any of them whatever the switches say now, and reads one back by shape, so a
-// record written with a switch on stays readable after it is turned off.
-export const OWNER_FALLBACK_CLOSING_REASONS = Object.freeze(["checks_failed", ...FIXED_MESSAGE_FAILURE_REASONS]);
+// Every other reason a turn can close for: a refusal (refused), any other failed call (provider_failed) and an interruption or
+// restart (interrupted), the reasons of CLOSING_REASONS that failed checks and the three above leave, in their order. With
+// INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE on as well, on top of INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE and
+// INNER_SIGNAL_OWNER_FALLBACK (design, section 7), his fixed message is shown after these too, so after every reason in
+// CLOSING_REASONS, in a conversation about wanting to die or getting safe: his question i68, part 2 (22 Nov 2026), option b,
+// "Every failure in such a conversation, so no one there gets only the bare notice", off until he says. Taken from
+// CLOSING_REASONS, so a reason added there is covered too.
+export const FIXED_MESSAGE_ANY_FAILURE_REASONS = Object.freeze(Object.keys(CLOSING_REASONS).filter((code) => code !== "checks_failed" && !FIXED_MESSAGE_FAILURE_REASONS.includes(code)));
+// Every reason a closing may show his fixed message for: failed checks (switched on by INNER_SIGNAL_OWNER_FALLBACK alone), the
+// three above (with INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE) and the rest (with INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE
+// too): every reason in CLOSING_REASONS. The store creates such a closing for any of them whatever the switches say now, and reads
+// one back by shape, so a record written with a switch on stays readable after it is turned off.
+export const OWNER_FALLBACK_CLOSING_REASONS = Object.freeze(["checks_failed", ...FIXED_MESSAGE_FAILURE_REASONS, ...FIXED_MESSAGE_ANY_FAILURE_REASONS]);

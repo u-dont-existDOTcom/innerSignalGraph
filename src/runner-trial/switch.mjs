@@ -21,6 +21,12 @@ export const RUNNER_NUMBER_NOW_SETTING = "INNER_SIGNAL_RUNNER_NUMBER_NOW";
 // message, so it means something only while INNER_SIGNAL_RUNNER_TRIAL and INNER_SIGNAL_OWNER_FALLBACK are both on.
 export const RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING = "INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE";
 
+// The owner's fixed message after every failure in such a conversation: also a refusal, any other failed call and an interruption
+// (his question i68, part 2, 22 Nov 2026, still open; design, section 7): its own switch, off by default and off until he says. It
+// extends the switch above, so it means something only while INNER_SIGNAL_RUNNER_TRIAL, INNER_SIGNAL_OWNER_FALLBACK and
+// INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE are all on.
+export const RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING = "INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE";
+
 // The "Send feedback about InnerSignal" link (feedback place design, section 14, branch claude/feedback-place-20261122): its own
 // switch, off until the feedback page is released, so the trial never links to a page that isn't there. Meaningful only while
 // INNER_SIGNAL_RUNNER_TRIAL is on.
@@ -57,6 +63,11 @@ export function readRunnerNumberNowSwitch(raw) {
 // Read the same way as the trial's switch.
 export function readRunnerFixedMessageOnFailureSwitch(raw) {
   return readSwitch(raw, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING);
+}
+
+// Read the same way as the trial's switch.
+export function readRunnerFixedMessageOnAnyFailureSwitch(raw) {
+  return readSwitch(raw, RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING);
 }
 
 // Read the same way as the trial's switch.

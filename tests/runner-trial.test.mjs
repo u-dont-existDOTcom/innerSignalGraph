@@ -18,7 +18,7 @@ import { cutRuleParts, focusedRules, wholeRules } from "../src/runner-trial/rule
 import { CRISIS_LINKS, NAMED_EMERGENCY_NUMBERS, emergencyNumbersIn, phoneLikeRuns, provisionalProblems, runProgramChecks, shapeProblems } from "../src/runner-trial/program-checks.mjs";
 import { NUMBER_NOW_FIELD, STORAGE_FACTS, STORAGE_LINE, crisisReaderNumberNowNote, crisisReaderNumberShownNote, crisisReaderSchema, crisisReaderWantsToDieNote } from "../src/runner-trial/worker-prompts.mjs";
 import { DEFAULT_RUNNER_SETTINGS, EMERGENCY_LINE_FALLBACK_MS, createRunnerTrialRuntime, normalizeFindings, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
-import { CLOSING_REASONS, EMERGENCY_LINE, FIXED_MESSAGE_FAILURE_REASONS, OWNER_FALLBACK_CLOSING_REASONS, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
+import { CLOSING_REASONS, EMERGENCY_LINE, FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, OWNER_FALLBACK_CLOSING_REASONS, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 import { batchRuntimeOptions, crisisReadingResult, parseHarnessArgs } from "../tasks/runner-trial-20261121/measure-options.mjs";
 
 // The runner trial (docs/superpowers/specs/2026-11-21-runner-trial-design.md) with stand-in workers, through the real encrypted
@@ -1438,16 +1438,14 @@ test("his fixed message after a failure: with the fixed message itself off, this
 
 test("the record takes his fixed message as the closing of failed checks, the plan's limit, a lapsed sign-in or the time, whatever the switches; a case closed so with the switch on replays unchanged and goes on with both switches off", async (t) => {
   assert.deepEqual([...FIXED_MESSAGE_FAILURE_REASONS], ["plan_limit", "sign_in_needed", "timeout"]);
-  assert.deepEqual([...OWNER_FALLBACK_CLOSING_REASONS], ["checks_failed", "plan_limit", "sign_in_needed", "timeout"]);
+  // Since the switch for every failure (his question i68, part 2) the record takes his message for the other three reasons too
+  // (the record test after these); before it, it refused them.
+  assert.deepEqual([...OWNER_FALLBACK_CLOSING_REASONS].slice(0, 4), ["checks_failed", "plan_limit", "sign_in_needed", "timeout"]);
   const closing = (kind, reasonCode) => createRunnerClosure({ kind, reasonCode, assistantTurnId: "exchange-1-assistant", closedAt: "2026-11-22T12:10:00.000Z" });
-  for (const reasonCode of Object.keys(CLOSING_REASONS)) {
+  for (const reasonCode of ["checks_failed", ...FIXED_MESSAGE_FAILURE_REASONS]) {
     assert.equal(closing("runner_unavailable", reasonCode).exact_text, RUNNER_UNAVAILABLE_NOTICE, `the notice for ${reasonCode}, as before`);
-    if (OWNER_FALLBACK_CLOSING_REASONS.includes(reasonCode)) {
-      const made = closing(OWNER_FALLBACK_KIND, reasonCode);
-      assert.deepEqual([made.kind, made.reason_code, made.exact_text], [OWNER_FALLBACK_KIND, reasonCode, OWNER_FALLBACK_MESSAGE]);
-    } else {
-      assert.throws(() => closing(OWNER_FALLBACK_KIND, reasonCode), /^ValidationError: The owner fallback closes only a turn whose checks failed, or that the plan's limit, a lapsed sign-in or the time ended\.$/u, reasonCode);
-    }
+    const made = closing(OWNER_FALLBACK_KIND, reasonCode);
+    assert.deepEqual([made.kind, made.reason_code, made.exact_text], [OWNER_FALLBACK_KIND, reasonCode, OWNER_FALLBACK_MESSAGE]);
   }
 
   // Closed with both switches on; then read, replayed and continued over the same store with both off.
@@ -1466,4 +1464,211 @@ test("the record takes his fixed message as the closing of failed checks, the pl
   assert.doesNotThrow(() => validatePrivateRuntimeTurn(stored));
   on.clock.now += 1_000;
   assert.equal((await off.run(turnInput(2, "Synthetic: still here."))).deliveryKind, "candidate", "the case goes on");
+});
+
+// ---- His fixed message after every failure -------------------------------------------------------------------------------------
+// The owner's question i68, part 2 (22 Nov 2026, open), "Your fixed message on other failures too?", option b: "Every failure in such
+// a conversation, so no one there gets only the bare notice" (design, section 7). Behind INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE
+// (the runtime's fixedMessageOnAnyFailureEnabled), off by default and until he says, and only on top of the 3b switch
+// (fixedMessageOnFailureEnabled) and the fixed message itself (ownerFallbackEnabled).
+
+const NAMED_ONLY = Object.freeze({ fixedMessageOnFailureEnabled: true });
+const EVERY_FAILURE_ON = Object.freeze({ fixedMessageOnFailureEnabled: true, fixedMessageOnAnyFailureEnabled: true });
+const blockingCheck = () => ({ findings: [{ code: "SYNTHETIC_BLOCK", severity: "high", summary: "blocked", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] });
+// Every way the [fail] message's turn can close, at least one per reason code: the writer's failures above (the time twice), failed
+// checks (a checker blocks every version of the reply to the [fail] message; it reads level none, so an ordinary conversation stays
+// ordinary), and an interruption (the turn is left unfinished, with the readings its message gets, and the next message closes it).
+const EVERY_FAILURE = Object.freeze([
+  ...[...NAMED_FAILURES, ...UNNAMED_FAILURES].map((failure) => Object.freeze({ ...failure, way: "writer" })),
+  Object.freeze({ name: "failed checks", reason: "checks_failed", way: "checks" }),
+  Object.freeze({ name: "an interruption", reason: "interrupted", way: "interrupted" })
+]);
+const EVERY_FAILURE_CONVERSATIONS = Object.freeze({
+  ...FAILURE_CONVERSATIONS,
+  // Read wanting to die on its first turn; the [fail] message comes after it.
+  "wanting to die, a later message": Object.freeze(["[want] Synthetic: I want to die.", "[fail] Synthetic: nothing helps."])
+});
+// What the stand-in crisis reader reads in a message of these conversations (failureScript's R1).
+const crisisReadingOf = (text) => (text.includes("[want]") ? { ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die" }
+  : text.includes("[danger]") ? { ...quietReader(), in_danger_from_someone: true, reason: "someone threatens them" } : quietReader());
+
+function everyFailureScript(failure, clock) {
+  const script = failureScript(failure.way === "writer" ? failure : { fail: () => {} }, clock);
+  return failure.way === "checks" ? { ...script, C2: (count, request) => (request.user.includes("[fail]") ? blockingCheck() : passing()) } : script;
+}
+
+// One conversation through a fresh runner, its [fail] message's turn closed by `failure`: closeWith, for every way a turn can close.
+// An interruption: that message's turn is begun and, unless `read` is false, given the readings its message gets (in the
+// conversation's id, or a new one when it is the first turn), then left unfinished, `gapMs` after the turn before it; the next
+// message closes it (`closer` "message"), or the page's reconcile does ("reconcile"). `source` wraps the store, as makeRunner's.
+async function closeEvery(t, failure, conversation, { ownerFallbackEnabled = true, runtimeOptions = {}, read = true, gapMs = 0, closer = "message", source = undefined } = {}) {
+  const messages = EVERY_FAILURE_CONVERSATIONS[conversation];
+  const clock = { now: Date.parse("2026-11-22T13:30:00.000Z") };
+  const runner = await makeRunner(t, everyFailureScript(failure, clock), { ownerFallbackEnabled, clock, runtimeOptions, ...(source ? { source } : {}) });
+  for (const message of messages.slice(0, -1)) assert.equal((await runner.send(message)).deliveryKind, "candidate", message);
+  let turnId = `runtime:exchange-${messages.length}`;
+  let sent = null;
+  let reconciled = null;
+  if (failure.way === "interrupted") {
+    turnId = "runtime:interrupted";
+    clock.now += 1_000 + gapMs;
+    await runner.store.beginPrivateRuntimeTurn(CASE_ID, { runtimeTurnId: turnId, exchangeId: "exchange-interrupted", userTurnId: "exchange-interrupted-user", exactText: messages.at(-1) });
+    if (read) {
+      const conversationId = (await runner.store.load(CASE_ID)).runtime_turns.find((turn) => turn.runner_reading)?.runner_reading.conversation_id ?? "conversation:synthetic-interrupted";
+      await runner.store.recordRunnerReading(CASE_ID, turnId, { conversationId, readers: { crisis: { ...crisisReadingOf(messages.at(-1)), receipts: [] } } });
+    }
+    if (closer === "reconcile") reconciled = await runner.controller.reconcile({ caseId: CASE_ID, currentConversation: true });
+    else assert.equal((await runner.send("Synthetic: still here.")).deliveryKind, "candidate", "the next message is answered");
+  } else {
+    sent = await runner.send(messages.at(-1));
+  }
+  const record = await runner.store.load(CASE_ID);
+  const turn = record.runtime_turns.find((entry) => entry.id === turnId);
+  const result = {
+    runner,
+    clock,
+    turn,
+    sent,
+    reconciled,
+    closing: turn.closure ? { kind: turn.closure.kind, reason_code: turn.closure.reason_code } : null,
+    transcript: record.raw_transcript.find((entry) => entry.id === `${turn.exchange_id}-assistant`)?.text ?? null,
+    closedEvents: runner.events.filter((event) => event.turnId === turnId && event.type === "closed").map(({ kind, reason }) => ({ kind, reason })),
+    lines: runner.events.filter((event) => event.turnId === turnId && event.type === "emergency_line").map((event) => event.reason)
+  };
+  if (sent) assert.deepEqual([sent.answer, sent.deliveryKind, sent.closing], [turn.closure?.exact_text, turn.closure?.kind, result.closing], "the answer is the stored closing");
+  return result;
+}
+
+const closesWith = (result, kind, reason, label) => {
+  const text = kind === OWNER_FALLBACK_KIND ? OWNER_FALLBACK_MESSAGE : RUNNER_UNAVAILABLE_NOTICE;
+  assert.deepEqual([result.turn.state, result.closing, result.turn.closure.exact_text, result.transcript], ["UNANSWERED", { kind, reason_code: reason }, text, text], `${label}: the record holds what the person saw`);
+  assert.deepEqual(result.closedEvents, [{ kind, reason }], label);
+};
+const showsHisMessage = (result, reason, label) => closesWith(result, OWNER_FALLBACK_KIND, reason, label);
+const showsTheNoticeOnly = (result, reason, label) => closesWith(result, "runner_unavailable", reason, label);
+const lineOf = (result) => [result.lines, Boolean(result.turn.emergency_line_shown_at), result.turn.emergency_line_reason ?? null];
+
+test("his fixed message after every failure: every reason a turn can close for is tried, and the switch adds the three his 3b left", () => {
+  assert.deepEqual([...new Set(EVERY_FAILURE.map((failure) => failure.reason))].sort(), Object.keys(CLOSING_REASONS).sort(), "each reason in CLOSING_REASONS");
+  assert.deepEqual(Object.keys(CLOSING_REASONS), ["checks_failed", "plan_limit", "sign_in_needed", "timeout", "refused", "provider_failed", "interrupted"]);
+  assert.deepEqual([...FIXED_MESSAGE_ANY_FAILURE_REASONS], ["refused", "provider_failed", "interrupted"]);
+  assert.deepEqual([...OWNER_FALLBACK_CLOSING_REASONS], Object.keys(CLOSING_REASONS), "his message may close a turn for every reason");
+});
+
+test("his fixed message after every failure, switch off (the default): with the 3b switch on, a refusal, a failed call and an interruption keep the notice in a conversation about wanting to die or getting safe, and every other reason gives his message, as before", async (t) => {
+  for (const failure of EVERY_FAILURE) {
+    for (const conversation of SUCH_CONVERSATIONS) {
+      const label = `${failure.name}, ${conversation}`;
+      const result = await closeEvery(t, failure, conversation, { runtimeOptions: NAMED_ONLY });
+      if (FIXED_MESSAGE_ANY_FAILURE_REASONS.includes(failure.reason)) showsTheNoticeOnly(result, failure.reason, label);
+      else showsHisMessage(result, failure.reason, label);
+    }
+  }
+  // Off when false, and on only when exactly true.
+  for (const fixedMessageOnAnyFailureEnabled of [false, "on"]) {
+    for (const failure of EVERY_FAILURE.filter((entry) => FIXED_MESSAGE_ANY_FAILURE_REASONS.includes(entry.reason))) {
+      showsTheNoticeOnly(await closeEvery(t, failure, "wanting to die", { runtimeOptions: { ...NAMED_ONLY, fixedMessageOnAnyFailureEnabled } }), failure.reason, `${failure.name}, ${JSON.stringify(fixedMessageOnAnyFailureEnabled)}`);
+    }
+  }
+});
+
+test("his fixed message after every failure, switch on: every closing reason (failed checks, the plan's limit, a lapsed sign-in, the time, a refusal, a failed call, an interruption) gives his fixed message in a conversation about wanting to die or getting safe; the emergency line goes in as with the switch off", async (t) => {
+  for (const failure of EVERY_FAILURE) {
+    for (const conversation of [...SUCH_CONVERSATIONS, "wanting to die, a later message"]) {
+      const label = `${failure.name}, ${conversation}`;
+      const on = await closeEvery(t, failure, conversation, { runtimeOptions: EVERY_FAILURE_ON });
+      showsHisMessage(on, failure.reason, label);
+      const off = await closeEvery(t, failure, conversation, { runtimeOptions: NAMED_ONLY });
+      assert.deepEqual(lineOf(on), lineOf(off), `${label}: the line as with the switch off`);
+      // The turn read wants_to_die closes with the line; the getting-safe turn, and the later message, read as nothing, don't.
+      assert.deepEqual(on.lines, conversation === "wanting to die" ? ["turn_closed_without_reply"] : [], label);
+    }
+  }
+});
+
+test("his fixed message after every failure, switch on: every closing reason in an ordinary conversation gives the notice", async (t) => {
+  for (const failure of EVERY_FAILURE) showsTheNoticeOnly(await closeEvery(t, failure, "ordinary", { runtimeOptions: EVERY_FAILURE_ON }), failure.reason, failure.name);
+});
+
+test("his fixed message after every failure: on without the 3b switch, or without the fixed message itself, it changes nothing", async (t) => {
+  for (const failure of EVERY_FAILURE) {
+    for (const conversation of SUCH_CONVERSATIONS) {
+      const label = `${failure.name}, ${conversation}`;
+      // The fixed message on, the 3b switch off: failed checks give his message, every other reason the notice, as with this switch off.
+      const without3b = await closeEvery(t, failure, conversation, { runtimeOptions: { fixedMessageOnAnyFailureEnabled: true } });
+      if (failure.reason === "checks_failed") showsHisMessage(without3b, failure.reason, `${label}, without the 3b switch`);
+      else showsTheNoticeOnly(without3b, failure.reason, `${label}, without the 3b switch`);
+      // The fixed message off: the notice for every reason.
+      showsTheNoticeOnly(await closeEvery(t, failure, conversation, { ownerFallbackEnabled: false, runtimeOptions: EVERY_FAILURE_ON }), failure.reason, `${label}, without the fixed message`);
+    }
+  }
+  // Nor is a turn closed before its reading placed in a conversation (the test after this one).
+  const interruption = EVERY_FAILURE.find((failure) => failure.way === "interrupted");
+  showsTheNoticeOnly(await closeEvery(t, interruption, "getting safe", { read: false, runtimeOptions: { fixedMessageOnAnyFailureEnabled: true } }), "interrupted", "unread, without the 3b switch");
+  showsTheNoticeOnly(await closeEvery(t, interruption, "getting safe", { read: false, ownerFallbackEnabled: false, runtimeOptions: EVERY_FAILURE_ON }), "interrupted", "unread, without the fixed message");
+});
+
+test("his fixed message after every failure, switch on: a turn closed before any reading of it was stored is in the conversation it would have been read into: his message there within the conversation gap, the notice after the gap, in an ordinary conversation, on a case's first message or with the switch off; the line as before", async (t) => {
+  const interruption = EVERY_FAILURE.find((failure) => failure.way === "interrupted");
+  for (const conversation of ["getting safe", "wanting to die, a later message"]) {
+    const on = await closeEvery(t, interruption, conversation, { read: false, runtimeOptions: EVERY_FAILURE_ON });
+    assert.equal(on.turn.runner_reading, undefined, `${conversation}: no reading was stored`);
+    showsHisMessage(on, "interrupted", conversation);
+    const off = await closeEvery(t, interruption, conversation, { read: false, runtimeOptions: NAMED_ONLY });
+    showsTheNoticeOnly(off, "interrupted", `${conversation}, switch off`);
+    // An unread turn closes with the line, whatever its conversation, as before.
+    assert.deepEqual([lineOf(on), lineOf(off)], [[["turn_closed_without_reply"], true, "turn_closed_without_reply"], [["turn_closed_without_reply"], true, "turn_closed_without_reply"]], conversation);
+  }
+  // More than the conversation gap (12 hours) after the turn before it: a new conversation, of which nothing was read.
+  showsTheNoticeOnly(await closeEvery(t, interruption, "getting safe", { read: false, gapMs: DEFAULT_RUNNER_SETTINGS.conversationGapMs + 60_000, runtimeOptions: EVERY_FAILURE_ON }), "interrupted", "after the gap");
+  showsTheNoticeOnly(await closeEvery(t, interruption, "ordinary", { read: false, runtimeOptions: EVERY_FAILURE_ON }), "interrupted", "ordinary");
+  showsTheNoticeOnly(await closeEvery(t, interruption, "wanting to die", { read: false, runtimeOptions: EVERY_FAILURE_ON }), "interrupted", "the case's first message, unread");
+
+  // The page's reconcile closes it the same way, and shows it in that conversation.
+  const page = await closeEvery(t, interruption, "wanting to die, a later message", { read: false, closer: "reconcile", runtimeOptions: EVERY_FAILURE_ON });
+  showsHisMessage(page, "interrupted", "closed by the page's reconcile");
+  assert.deepEqual(page.reconciled.map((entry) => [entry.exchangeId, entry.answer, entry.closing]), [["exchange-1", "A synthetic reply.", null], ["exchange-interrupted", OWNER_FALLBACK_MESSAGE, { kind: OWNER_FALLBACK_KIND, reason_code: "interrupted" }]]);
+
+  // A failure before the readings could be stored (here, the store refuses them): a failed call, placed the same way.
+  const refusingReadings = (store) => ({ ...store, async recordRunnerReading(caseId, runtimeTurnId, ...rest) {
+    if (runtimeTurnId === "runtime:exchange-2") throw Object.assign(new Error("synthetic storage failure"), { code: "STORAGE_FAILED" });
+    return store.recordRunnerReading(caseId, runtimeTurnId, ...rest);
+  } });
+  const unstored = Object.freeze({ name: "readings not stored", reason: "provider_failed", way: "writer", fail: () => {} });
+  for (const [runtimeOptions, kind] of [[EVERY_FAILURE_ON, OWNER_FALLBACK_KIND], [NAMED_ONLY, "runner_unavailable"]]) {
+    const result = await closeEvery(t, unstored, "wanting to die, a later message", { source: refusingReadings, runtimeOptions });
+    assert.equal(result.turn.runner_reading, undefined, "no reading was stored");
+    closesWith(result, kind, "provider_failed", JSON.stringify(runtimeOptions));
+    assert.deepEqual(lineOf(result), [["turn_closed_without_reply"], true, "turn_closed_without_reply"]);
+  }
+});
+
+test("the record takes his fixed message as the closing of every reason, whatever the switches; a case closed so with every switch on replays unchanged and goes on with every switch off", async (t) => {
+  const closing = (kind, reasonCode) => createRunnerClosure({ kind, reasonCode, assistantTurnId: "exchange-1-assistant", closedAt: "2026-11-22T13:30:00.000Z" });
+  for (const reasonCode of Object.keys(CLOSING_REASONS)) {
+    assert.equal(closing("runner_unavailable", reasonCode).exact_text, RUNNER_UNAVAILABLE_NOTICE, `the notice for ${reasonCode}`);
+    const made = closing(OWNER_FALLBACK_KIND, reasonCode);
+    assert.deepEqual([made.kind, made.reason_code, made.exact_text], [OWNER_FALLBACK_KIND, reasonCode, OWNER_FALLBACK_MESSAGE], `his message for ${reasonCode}`);
+  }
+  for (const kind of ["runner_unavailable", OWNER_FALLBACK_KIND]) {
+    assert.throws(() => closing(kind, "synthetic_unknown_reason"), /^ValidationError: Runtime closing reason is invalid\.$/u, `${kind}: a reason that isn't one is refused`);
+  }
+
+  // Closed with every switch on, after a refusal and after an interruption; then read, replayed and continued with every switch off.
+  for (const failure of EVERY_FAILURE.filter((entry) => entry.reason === "refused" || entry.reason === "interrupted")) {
+    const on = await closeEvery(t, failure, "wanting to die", { runtimeOptions: EVERY_FAILURE_ON });
+    showsHisMessage(on, failure.reason, failure.name);
+    const workers = fakeWorkers(baseScript());
+    const offRuntime = createRunnerTrialRuntime({ privateCaseSource: on.runner.store, parts, workerFor: workers.workerFor, now: () => on.clock.now });
+    const off = createPrivateTherapyTurnController({ privateCaseSource: on.runner.store, modelRuntime: offRuntime, maximumInvocationAttempts: 1 });
+    const replay = await off.run({ caseId: CASE_ID, runtimeTurnId: on.turn.id, exchangeId: on.turn.exchange_id, userTurnId: on.turn.user_turn_id, assistantTurnId: `${on.turn.exchange_id}-assistant`, userMessage: on.turn.inbound.exact_text, userInput: {} });
+    assert.deepEqual([replay.answer, replay.deliveryKind, replay.closing], [OWNER_FALLBACK_MESSAGE, OWNER_FALLBACK_KIND, { kind: OWNER_FALLBACK_KIND, reason_code: failure.reason }], `${failure.name}: the stored closing, as it was`);
+    assert.equal(workers.calls.length, 0, "a replay calls no model");
+    const reconciled = (await off.reconcile({ caseId: CASE_ID, currentConversation: true })).find((entry) => entry.exchangeId === on.turn.exchange_id);
+    assert.deepEqual([reconciled.answer, reconciled.deliveryKind, reconciled.closing], [OWNER_FALLBACK_MESSAGE, OWNER_FALLBACK_KIND, { kind: OWNER_FALLBACK_KIND, reason_code: failure.reason }], `${failure.name}: the page's reconcile shows it`);
+    const stored = (await on.runner.store.load(CASE_ID)).runtime_turns.find((turn) => turn.id === on.turn.id);
+    assert.doesNotThrow(() => validatePrivateRuntimeTurn(stored));
+    on.clock.now += 1_000;
+    assert.equal((await off.run({ caseId: CASE_ID, runtimeTurnId: "runtime:exchange-after", exchangeId: "exchange-after", userTurnId: "exchange-after-user", assistantTurnId: "exchange-after-assistant", userMessage: "Synthetic: still here, later.", userInput: {} })).deliveryKind, "candidate", `${failure.name}: the case goes on`);
+  }
 });
