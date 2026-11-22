@@ -109,7 +109,9 @@ export function errorText(code) {
   return ERROR_TEXT[code] ?? ERROR_TEXT.FEEDBACK_UNAVAILABLE;
 }
 
-// The form. `values` echoes what the person wrote when the form comes back with a message; `token` is the form token.
+// The form. `values` echoes what the person wrote when the form comes back with a message; `token` is the form token. A browser's
+// maxlength counts UTF-16 units, in which an emoji takes two, while the server counts characters (code points): the form allows
+// twice the server's limits so a message the server accepts can always be typed in full; the server's check decides.
 export function renderFormPage({ token, values = {}, error = null, basePath = "/feedback" }) {
   const kind = values.kind ?? "";
   const radio = (value) => `<label><input type="radio" name="kind" value="${value}"${kind === value ? " checked" : ""} required> ${escapeHtml(KIND_LABELS[value])}</label>`;
@@ -124,9 +126,9 @@ ${error ? `<p class="error" role="alert">${escapeHtml(errorText(error))}</p>` : 
 ${["suggestion", "bug", "praise", "review"].map(radio).join("\n")}
 </fieldset>
 <label for="text">Your message</label>
-<textarea id="text" name="text" maxlength="${FEEDBACK_TEXT_MAX}" required>${escapeHtml(values.text ?? "")}</textarea>
+<textarea id="text" name="text" maxlength="${FEEDBACK_TEXT_MAX * 2}" required>${escapeHtml(values.text ?? "")}</textarea>
 <label for="reply_address">How can he answer you? (optional: an email address or another way to reach you)</label>
-<input type="text" id="reply_address" name="reply_address" maxlength="${FEEDBACK_ADDRESS_MAX}" value="${escapeHtml(values.replyAddress ?? "")}">
+<input type="text" id="reply_address" name="reply_address" maxlength="${FEEDBACK_ADDRESS_MAX * 2}" value="${escapeHtml(values.replyAddress ?? "")}">
 <label><input type="checkbox" name="may_show_publicly" value="yes"${values.mayShowPublicly ? " checked" : ""}> You may show this review publicly (reviews only: shown exactly as you wrote it, without your address, only if he agrees; it stays until you or he removes it)</label>
 <div class="trap" aria-hidden="true"><label for="extra">Leave this empty</label><input type="text" id="extra" name="extra" value="" tabindex="-1" autocomplete="off"></div>
 <p><button type="submit">Send</button></p>

@@ -123,6 +123,9 @@ test("the page: a send, a repeat, the hidden field, early and late tokens, sizes
   assert.ok(html.includes(EMERGENCY_LINE.replace(/^In danger right now\? /u, "")));
   assert.match(html, /findahelpline\.com/u);
   assert.match(html, /What&#39;s kept:/u);
+  // The browser counts UTF-16 units: 5,000 emoji (10,000 units) must fit the form, as they fit the server's 5,000 characters.
+  assert.match(html, /<textarea id="text" name="text" maxlength="10000" required>/u);
+  assert.match(html, /name="reply_address" maxlength="400"/u);
   assert.doesNotMatch(html, /<script/u);
   const token = tokenIn(html);
   assert.ok(token);
