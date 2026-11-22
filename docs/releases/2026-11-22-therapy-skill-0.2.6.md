@@ -31,7 +31,7 @@ Kit: `/home/joel/askrigor-releases/20261122-innersignal-0.2.6/`. Evidence paths 
 - Package/build and repository audit result:
   - `npm run verify` ends `PASS` on the stable release tree (`tmp-release/stable-gate-real-20261122T163137Z.log`).
   - Verify, CodeQL and Repository workflow policy succeeded on `45c0f906e` and on `45759cb26` (`gh run list`).
-  - On the host: `backend image built`, the plugin layer built, and the candidate image's offline check passed (`real-run/activate-20261122T164041Z.log`). That check found 430 files, 0 unreadable, uid 1000, modules that load, the draft path, the owner fallback and the feedback place off by default, and code equal to `45c0f906e`'s.
+  - On the host: `backend image built`, the plugin layer built, and the candidate image's offline check passed (`real-run/activate-20261122T164041Z.log`). That check found 430 files, 0 unreadable, uid 1000, modules that load, and the draft path, the owner fallback and the feedback place off by default. Its three sentinel files (`src/feedback/setup.mjs`, `src/server/private-case-mcp.mjs`, `src/protocol/therapy-protocol.mjs`) hashed the same as at `45c0f906e`; the rest of the image's code was not compared file by file.
   - The host's `backend-build.log` and `plugin-layer-build.log` are **Not in the local release kit**.
 - Immutable archive result: reported in the stable gate's verify run (`tmp-release/stable-gate-real-20261122T163137Z.log`). Archive checksums bound to this release are **Not in the local release kit**.
 - Clean-worktree result: on the host, `check` and the activation required the stable checkout and the backend source tree to be clean, and found 0 entries to repair (`real-run/check-20261122T164021Z.log`, `real-run/activate-20261122T164041Z.log`). The final `git status` of the laptop release checkout is **Not in the local release kit** (lane record).
@@ -45,7 +45,10 @@ Kit: `/home/joel/askrigor-releases/20261122-innersignal-0.2.6/`. Evidence paths 
   - Codex reviewed the release kit in eight rounds; the last ended "No findings. VERDICT: ready" (`codex/review-r8.md`).
   - Fable red-teamed the feedback design (`/home/joel/askrigor-releases/20261122-innersignal-feedback/fable-redteam-design-20261122.md`); each finding is answered in the design's appendix.
   - A direct review of the published squash commit `45759cb26` is **Not in the local release kit**. Its tree is the reviewed head merged onto `a7550955` with no other change (`git diff --name-only` above).
-- Finding repairs and re-review: Codex's first seven reviews of #236 found 28 findings, each fixed with a test (design Appendices B to G). CodeQL's three high alerts were fixed in `26c904055`. Five medium alerts in the owner's laptop script were dismissed with reasons, and checking one of them led to a real fix in `34508369d` (#236's merge statement). The kit's review rounds found 10, 4, 1, 1, 1, 3, 1 and 0 findings, each fixed before the next round (`codex/review-r1.md` to `codex/review-r8.md`, `README.md` Results 5).
+- Finding repairs and re-review:
+  - #236: Codex's first seven reviews found 28 findings; #236's merge statement reports them fixed with tests, with the design's Appendices B to G as the record. Not every one is a code fix: Appendix B keeps one as a documented limit (the disk's own change time on each stored file shows when it arrived; `docs/FEEDBACK.md` says so). Its eleventh review found nothing.
+  - CodeQL: the three high alerts were fixed in `26c904055`; five medium alerts in the owner's laptop script were dismissed with reasons, and checking one of them led to a real fix in `34508369d` (#236's merge statement).
+  - The release kit: Codex's rounds found 10, 4, 1, 1, 1, 3, 1 and 0 findings (`codex/review-r1.md` to `codex/review-r8.md`). Each round's findings were answered before the next round, which re-reviewed them; two answers needed a second pass (round 2 found step 2b's guard still did not stop, round 3 that it still printed STOP and continued), fixed by `check-reviewed.sh`. Round 8 found nothing (`README.md` Results 5).
 
 Deterministic or mock evidence cannot satisfy live-model entitlement or a required live stage.
 
@@ -98,6 +101,6 @@ Deterministic or mock evidence cannot satisfy live-model entitlement or a requir
 - Durable issue: pull request 232 (split delivery, plus the chat tool's switch and its tool-list change) stays open for its own release. ChatGPT's incomplete delivery of the long first result (owner question i60) is unchanged by this release.
 - Other limits or exceptions:
   - The release check's own test message passed through the store and was deleted by its code. The owner's first fetch showed 0 new messages and 1 deletion (that message), and was confirmed (lane record, 22 Nov 2026).
-  - The host copy of the two key settings (`/srv/inner-signal-private/feedback-owner.env`, mode 600) is the only copy outside the owner's laptop. The owner keeps a second copy of his private key and read token.
+  - The host keeps the two key settings in `/srv/inner-signal-private/feedback-owner.env`, mode 600 (`real-run/check-20261122T164021Z.log`: "feedback settings: mode 600, owner joel …"). Whether other copies exist, and whether the owner has made the second copy of his private key and read token that README step 8 asks for, is **Not in the local release kit**; the owner's or the lane's confirmation would hold it.
   - After the release, the Inbox's Feedback view was published, the runner trial was restarted with its feedback link (16:42:59 UTC), and GPT was asked to add the site's footer link (innerself issue 3, comment 7082291659) (lane record, 22 Nov 2026).
   - Missing required evidence remains unverified under the release contract.
