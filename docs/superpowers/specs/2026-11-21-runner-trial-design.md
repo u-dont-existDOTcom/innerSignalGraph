@@ -156,7 +156,11 @@ writer and one whole checker at a lower effort.
 ## 4. The provisional reply (point 3)
 
 - **When**: by default only when R1 reads `acted_or_about_to`, where seconds matter. A setting (`provisionalLevels`) also
-  allows `wants_to_die`; the timed batch measures both and the start-using-it question asks the owner.
+  allows `wants_to_die`; the start-using-it question asks the owner. Measured on 22 Nov (GPT, the 12 conversations read
+  `wants_to_die`, 21 turns, against the same turns with the default): first words at p50 9.2 s instead of the full reply's
+  25.1 s, but the full reply's p90 rose from 31.1 s to 46.7 s with 3 repairs instead of 0, and 3 of 6 later-turn
+  provisionals repeated the four people and links the crisis section gives once (the checker flagged it after it showed).
+  The default stays `acted_or_about_to`.
 - **What it holds** (the crisis section's first step, written by R1 with only the `crisis` part): that it heard them, the
   emergency number to call now, and the next smallest thing (someone in the house, unlocking the door, keeping the packets),
   or for someone about to act, distance from the means; in their language, short, no headings, lists or bold, at most one
@@ -346,8 +350,12 @@ ones again before it keeps anything, so no caller can keep a plan they don't all
 ## 10. Providers (point 2)
 
 - **Claude**: `ClaudeCliProvider` in sealed mode (existing): `claude -p`, `--tools ""`, no session persistence,
-  `--safe-mode`, `--strict-mcp-config`, an allowlisted environment, a fresh temporary folder; case text only on stdin. It
-  bills whatever account the laptop's `claude` command is signed into.
+  `--safe-mode`, `--strict-mcp-config`, an allowlisted environment, a fresh temporary folder; case text only on stdin. As
+  built it is the trial's own `SealedClaudeWorker` (`src/runner-trial/sealed-claude.mjs`), with the same isolation. It bills
+  the account of the sign-in folder the settings name (`claudeConfigDir`, or `INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR`: the
+  owner's i64a gave the runner a sign-in of its own), or else the laptop's default `claude`. Claude Code adds lines about
+  its environment (the working folder, the date) to the system prompt even with `--system-prompt-file` (the 22 Nov probe);
+  no case text goes there.
 - **GPT**: a sealed Codex mode (`src/runner-trial/sealed-codex.mjs`): an empty 0700 temporary folder as the working
   directory, `--ephemeral`, `--json`, `--sandbox read-only`, `--ask-for-approval never`, `--ignore-user-config`,
   `--ignore-rules`, the protocol-application eval's `CODEX_ISOLATION_CONFIG` (web search, apps, plugins, browser and
@@ -402,9 +410,11 @@ checker's "no reading" or wrong block; a whole turn has a writer and a checker s
 provider can cache within a turn. Generating the reply, not reading the rules, may be most of a call's time. Which arm is
 faster and better is what the batch decides; the default after it is the arm the numbers favour.
 
-**Which account.** At 18:37 UTC on 21 Nov the laptop's `claude` command was signed into an account other than this
-session's, whose weekly limit is reached until Mon 24 Nov 14:00 UTC. Claude measurement waits for that or for the owner to
-sign `claude` into the other account; GPT measurement through Codex can start now.
+**Which account.** At 18:37 UTC on 21 Nov the laptop's `claude` command was signed into an account whose weekly limit was
+reached until Mon 24 Nov 14:00 UTC. The owner answered i64a: the runner got a Claude sign-in of its own
+(`~/.config/claude-innersignal`), checked at 01:20 UTC on 22 Nov to be the account with room. The Claude timed batch, catch
+rate and blind judging ran on it (64% to 67% of its week, 01:24 to 01:51 UTC). Claude's test round and the plain-Claude
+baseline wait for the InnerSignal lane's choice of account. Results: `/home/joel/askrigor-releases/20261121-innersignal-runner-note/results-report.md`.
 
 ## 14. Not in this trial
 
