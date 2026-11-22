@@ -95,7 +95,7 @@
         { "file": "references/PROTOCOL-STATE-PROVENANCE.md", "text": "Describe a person's progress only as far as reported behavior and its reported effects go, and say what remains unknown." },
         { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "ROUTE.EXTERNAL_EMBODIMENT", "text": "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other." },
         { "file": "references/INNER-CHILD-BOX-GUIDANCE.md", "box": "IC.PRACTICE_TO_LIFE_TRANSFER", "text": "Reliable everyday nurturing, protection and guidance are central reparenting outcomes. Ease and automaticity are not required" },
-        { "file": "SKILL.md", "text": "do not invent an inner sentence when the user reports no words" }
+        { "file": "references/PHENOMENOLOGY-AND-REPRESENTATION.md", "text": "asks what the person reports actually noticing in a particular moment: body sensation, affect, image/scene, literal inner words, urge/action tendency, memory, sound/music, or something hard to categorize. These can overlap, occur in different orders, or be absent." }
       ],
       "app": [
         { "roles": ["caseExtraction"], "text": "ordinary-life care, protection, boundaries or repair reported without any exercise are reparenting in their own right" },
