@@ -1,10 +1,11 @@
 // The feedback page's address (design section 3). One constant: the served sentence, the runner's button and the setting
 // INNER_SIGNAL_FEEDBACK_PUBLIC_URL must equal it. Tests check the first two; the connector refuses to start with the page on when
 // the packaged rules name an address the setting doesn't match. The owner settles the address before the first release that
-// names it (design owner point 1). On this held branch it is the recommended address on his own domain, which needs one DNS
-// record from him; if he picks another, change it here and in the served sentence together. (The server's own sslip.io address
-// can't go into the served rules: its digits read as a phone number to the rules' check, tests/crisis-rules-and-guards-20261121.)
-export const FEEDBACK_PAGE_URL = "https://feedback.u-dont-exist.com/feedback";
+// names it. He chose his site's address (answer i66 2a, with his note of 22 Nov 2026: InnerSignal's website is innerself.love):
+// the page is a path on that site, routed to the connector by the server's proxy, so the site's own app is untouched (design
+// section 3). Change it only together with the served sentence. (The server's own sslip.io address can't go into the served
+// rules: its digits read as a phone number to the rules' check, tests/crisis-rules-and-guards-20261121.)
+export const FEEDBACK_PAGE_URL = "https://innerself.love/feedback";
 
 // An https address whose path is exactly /feedback: a structural match on the served text, no judgment of meaning.
 const NAMED_ADDRESS = /https:\/\/[A-Za-z0-9.-]+(?::\d{1,5})?\/feedback(?![A-Za-z0-9/_-])/u;
