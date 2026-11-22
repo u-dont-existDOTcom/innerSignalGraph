@@ -4,7 +4,7 @@
 // token use, verdicts and the synthetic replies) go to a folder outside Git. Not part of npm test.
 //
 //   node tasks/runner-trial-20261121/measure.mjs probe  --provider codex|claude [--claude-config-dir /abs/path]
-//   node tasks/runner-trial-20261121/measure.mjs batch  --provider codex|claude --arms focused-split,whole-whole,... --set timed|round [--ids T1,T2]
+//   node tasks/runner-trial-20261121/measure.mjs batch  --provider codex|claude --arms focused-split,whole-whole,... --set timed|round [--ids T1,T2] [--provisional-levels acted_or_about_to,wants_to_die]
 //   node tasks/runner-trial-20261121/measure.mjs catch  --provider codex|claude --checkers split|whole
 //   node tasks/runner-trial-20261121/measure.mjs plain  --provider codex|claude [--ids T1,T2]   (plain InnerSignal, no runner)
 //   node tasks/runner-trial-20261121/measure.mjs judge  --provider codex|claude --runs <dir>,<dir>,...   (blind, labels hidden)
@@ -101,7 +101,10 @@ async function runConversation({ conversation, arm, provider }) {
     const caseId = `synthetic-measure-${conversation.id.toLowerCase()}`;
     await store.loadOrCreate(caseId);
     const events = [];
-    const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings: ARMS[arm].settings, workerFor: workerFactory(provider, ARMS[arm].effort, calls), onEvent: (_caseId, turnId, event) => events.push({ at: Date.now(), turnId, ...event }) });
+    // --provisional-levels acted_or_about_to,wants_to_die measures the setting that also gives someone who wants to die a
+    // provisional reply (design, section 4); without it, each arm's default (acted_or_about_to only).
+    const provisionalLevels = args["provisional-levels"] ? { provisionalLevels: args["provisional-levels"].split(",") } : {};
+    const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings: { ...ARMS[arm].settings, ...provisionalLevels }, workerFor: workerFactory(provider, ARMS[arm].effort, calls), onEvent: (_caseId, turnId, event) => events.push({ at: Date.now(), turnId, ...event }) });
     const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: runtime, maximumInvocationAttempts: 1 });
     const turns = [];
     for (const [index, text] of conversation.turns.entries()) {
@@ -126,6 +129,7 @@ async function runConversation({ conversation, arm, provider }) {
         ms_to_provisional: provisionalEvent ? provisionalEvent.at - sent : null,
         ms_to_emergency_line: lineEvent ? lineEvent.at - sent : null,
         provisional: turn?.provisional?.exact_text ?? null,
+        provisional_refused: turn?.runner_reading?.readers?.provisional_refused?.problems ?? null,
         reply: result?.answer ?? null,
         delivery: result?.deliveryKind ?? null,
         closing: result?.closing ?? null,
