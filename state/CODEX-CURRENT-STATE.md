@@ -6,6 +6,13 @@ Therapy skill 0.2.5 was released on `stable` at `a7550955` (kit: `InnerSignal_0.
 
 Updated: 2026-11-21
 
+## Feedback place (IS8, owner answer i63b) — 22 November 2026 (pull request 236, draft; branch `claude/feedback-place-20261122`; held sentence on `claude/feedback-place-sentence-20261122`; not merged, not released, not installed)
+
+- **Owner outcome and authority:** his request of 20 Nov 2026 (23:45 UTC) for "a place where people can send InnerSignal suggestions, bugs, praise and reviews", and his answer i63b (chat, 22 Nov 2026, 00:37 UTC): a private feedback page, and sending from inside a chat with the person's yes to the exact text.
+- **Change:** `src/feedback/` (page, sealed store, owner's routes, chat tool `send_feedback` behind `INNER_SIGNAL_FEEDBACK_TOOL`), wired into the hosted connector behind `INNER_SIGNAL_FEEDBACK` (both off); the owner's laptop script `scripts/feedback-inbox.mjs`; the Inbox view `scripts/feedback-inbox-view.js`; `docs/FEEDBACK.md`. With both switches off nothing the connector serves or logs changes. The served-rules sentence naming the page waits on its own branch for the release that turns the page on.
+- **Reviews and tests:** design `docs/superpowers/specs/2026-11-22-feedback-place-design.md` with Fable's red team (23 findings) and five Codex reviews (25 findings in the first four, all fixed with tests; the fifth, on `93458e118`, found nothing). Full suite on `93458e118`: 3,141 of 3,141.
+- **Next safe action:** the release question goes to the owner through the InnerSignal lane (open points: the page's address on his domain, how long messages are kept, the page's words, where he reads them). On his yes: rebase on main, Codex's review of the final commit, merge, then the release with the sentence branch. The chat tool turns on only with the release that changes the tool list (#232).
+
 ## The owner's 19 Oct 2026 symptom line (IS7) — 21 November 2026 (branch `claude/is7-symptom-causal-humility-20261121`; not released, not installed)
 
 - **Authority:** the owner approved two clarifications on 19 Oct 2026 (pull request 185's body). Pull request 185 was closed on 21 Nov 2026 as replaced by pull request 229, which carried his own words on both into guide r11 and the ordinary-want point into IC.MEET_GUARD, but not the map line on symptoms.
