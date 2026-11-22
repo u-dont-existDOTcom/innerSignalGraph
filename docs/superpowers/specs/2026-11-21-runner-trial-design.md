@@ -27,8 +27,9 @@ response..." as it continues 4a 5b 6a".
 
 Two points his words leave open are put to him in the start-using-it question: whether the provisional reply is for both
 crisis levels or only for someone who has acted or is about to (section 4: a setting with a default, measured both ways), and
-whether, in a crisis conversation, every failure shows his fixed message or only failed checks (section 7: only failed checks
-as built; a setting for every failure is not built).
+whether, in a crisis conversation, every failure shows his fixed message or only failed checks. He answered the second on 22 Nov
+(question i67, part 3: 3b): failed checks, and also the plan's limit, the sign-in and the time, built behind a switch of its own,
+off by default (section 7).
 
 ## 1. What the trial keeps, changes and drops
 
@@ -54,7 +55,8 @@ as today.
   of producing a discriminator; an operational failure closes it the same way.
 - `src/supervisor/private-runtime-turn-lifecycle.mjs`: a terminal state `UNANSWERED`, reachable from every unfinished state
   except `APPROVED`, whose closing holds its kind (`runner_unavailable`, the fixed notice, or `owner_fallback`, his fixed
-  message, only after failed checks), a reason code, the exact text and the time; a `runner_reading` record and a
+  message, only after failed checks or, since his 3b of 22 Nov, the plan's limit, a lapsed sign-in or the time: section 7), a
+  reason code, the exact text and the time; a `runner_reading` record and a
   `provisional` record on the runtime turn.
 - `src/storage/private-case-store.mjs`: `recordRunnerReading` (stores the readers' results once per turn, before anything is
   shown, and returns the stored one on a rerun); `recordRunnerProvisional` and `recordRunnerEmergencyLine` (once each per
@@ -313,9 +315,33 @@ their own; "112 911" with only a space between is read as one grouped number.
   `home_unsafe` (the safety-orientation route's "outside safety ... first"); "wanting to die", one read `wants_to_die`. The
   question tells him these readings stand in for the four routes.
 - **Operational failures** give the notice, not the fixed message, as the 1 Nov page says ("not used for operational
-  failures"). Whether every failure in a crisis conversation should show his message instead is a question in the
-  start-using-it draft; a setting for it is not built (a `fixedMessageOn` default stood in the runtime with no code reading
-  it, and was taken out on 22 Nov: Fable's recheck, finding 14).
+  failures"), except the three below while their switch is on.
+- **After the plan's limit, a lapsed sign-in or the time** (`INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE`, built on 22 Nov
+  2026). The start-using-it question asked whether every failure in such a conversation should show his message. He answered
+  on 22 Nov 2026 at 12:10 UTC (question i67, part 3: 3b): "On, and also when the plan's limit, the sign-in or the time ends a
+  turn in such a conversation". That changes his 1 Nov "not used for operational failures" for the trial, for these three
+  failures only. With this switch and `INNER_SIGNAL_OWNER_FALLBACK` both on, a turn of a conversation about wanting to die or
+  getting safe (the readings above, on any turn of it) that closes with reason `plan_limit` (a worker's plan limit),
+  `sign_in_needed` (a lapsed sign-in) or `timeout` closes with his fixed message instead of the notice (`UNANSWERED`, kind
+  `owner_fallback`, that reason). `timeout` is the runtime's one code for the time: a call that ran past its limit (its own
+  cap, or the time left in the turn) and the turn's deadline (under a second left when a call would start) both close with
+  it. A failed check with no time left for a repair is `checks_failed`, as before.
+- **Not covered**, so they keep the notice with the switch on: a refusal (`refused`), any other failed call
+  (`provider_failed`) and an interruption or restart (`interrupted`), since his words named only the limit, the sign-in and
+  the time; and every failure in any other conversation. The page shows the reason beside his message as beside the
+  notice, and the highlighted emergency line goes in as before on every closing that shows it (the last bullet).
+- **The switch**: on/off like the trial's, off by default, any other value stops startup; meaningful only with the trial and
+  `INNER_SIGNAL_OWNER_FALLBACK` on, since it extends that message: `/health` says `runnerFixedMessageOnFailure: "on"` only
+  then, and the start script's `--fixed-message-on-failure` is refused without `--owner-fallback`. With it off, every closing
+  is as before; on or off, every worker's prompt, packet and schema is byte-identical (the kept plan's digest). The store
+  creates his message as the closing of any of the four reasons whatever the switches say now, and reads a closing back by
+  shape, so a case closed with the switch on stays readable, replays and goes on after it is turned off. It is a switch of
+  the server, not a trial setting: the `fixedMessageOn` default that stood in the runtime with no code reading it was taken
+  out on 22 Nov (Fable's recheck, finding 14) and stays out. Code: `FIXED_MESSAGE_FAILURE_REASONS` in
+  `src/runner-trial/notices.mjs`, `closeTurn` in `src/runner-trial/runtime.mjs`, `createRunnerClosure` in
+  `src/supervisor/private-runtime-turn-lifecycle.mjs`. Tests: `tests/runner-trial.test.mjs` (stand-in workers), `/health`
+  and the config in `tests/runner-trial-server.test.mjs`, the flag in `tests/runner-trial-start.test.mjs`, the digest in
+  `tests/runner-trial-kept-plan.test.mjs`. Not yet run through models.
 - **In a crisis turn, or one R1 gave no reading**, whatever ends it, the highlighted emergency line of section 4 is in the
   conversation: the closing puts it in when nothing else has (since Fable's recheck of 22 Nov, finding 7, for a turn without
   R1's reading too).

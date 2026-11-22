@@ -12,12 +12,13 @@ import { createCaseMutationCoordinator } from "../src/storage/shared-case-coordi
 import { childContactPatternHits } from "../src/case-formulation/protective-compatibility.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
+import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
+import { createRunnerClosure, validatePrivateRuntimeTurn } from "../src/supervisor/private-runtime-turn-lifecycle.mjs";
 import { cutRuleParts, focusedRules, wholeRules } from "../src/runner-trial/rule-parts.mjs";
 import { CRISIS_LINKS, NAMED_EMERGENCY_NUMBERS, emergencyNumbersIn, phoneLikeRuns, provisionalProblems, runProgramChecks, shapeProblems } from "../src/runner-trial/program-checks.mjs";
 import { NUMBER_NOW_FIELD, STORAGE_FACTS, STORAGE_LINE, crisisReaderNumberNowNote, crisisReaderNumberShownNote, crisisReaderSchema, crisisReaderWantsToDieNote } from "../src/runner-trial/worker-prompts.mjs";
 import { DEFAULT_RUNNER_SETTINGS, EMERGENCY_LINE_FALLBACK_MS, createRunnerTrialRuntime, normalizeFindings, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
-import { EMERGENCY_LINE, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
+import { CLOSING_REASONS, EMERGENCY_LINE, FIXED_MESSAGE_FAILURE_REASONS, OWNER_FALLBACK_CLOSING_REASONS, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 import { batchRuntimeOptions, crisisReadingResult, parseHarnessArgs } from "../tasks/runner-trial-20261121/measure-options.mjs";
 
 // The runner trial (docs/superpowers/specs/2026-11-21-runner-trial-design.md) with stand-in workers, through the real encrypted
@@ -1295,4 +1296,174 @@ test("a repair that returns the same reply ends the turn as a failed check, so a
   const closed = await runner.send("I want to die.");
   assert.equal(closed.closing.reason_code, "checks_failed");
   assert.equal(closed.answer, OWNER_FALLBACK_MESSAGE);
+});
+
+// ---- His fixed message after the plan's limit, a lapsed sign-in or the time ------------------------------------------------------
+// The owner's 3b (question i67, part 3, 22 Nov 2026): "On, and also when the plan's limit, the sign-in or the time ends a turn in such
+// a conversation" (design, section 7). Behind INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE (the runtime's fixedMessageOnFailureEnabled),
+// off by default, and only with INNER_SIGNAL_OWNER_FALLBACK (ownerFallbackEnabled) on too.
+
+const syntheticFailure = (code) => Object.assign(new Error("synthetic"), { code });
+// What the writer does for the message marked [fail], and the reason code the turn's closing gets. His words named the plan's limit,
+// the sign-in and the time. The time is two failures with one reason code: a call that ran past its time limit (the worker's TIMEOUT,
+// retried once as any timeout is) and the turn's deadline (the writer's call takes the turn past it, so no checker can start).
+const NAMED_FAILURES = Object.freeze([
+  Object.freeze({ name: "the plan's limit", reason: "plan_limit", fail: () => { throw syntheticFailure("PLAN_LIMIT"); } }),
+  Object.freeze({ name: "a lapsed sign-in", reason: "sign_in_needed", fail: () => { throw syntheticFailure("SIGN_IN_NEEDED"); } }),
+  Object.freeze({ name: "a call past its time limit", reason: "timeout", fail: () => { throw syntheticFailure("TIMEOUT"); } }),
+  Object.freeze({ name: "the turn's deadline", reason: "timeout", fail: (clock) => { clock.now += 10 * 60 * 1000; } })
+]);
+// Failures his words didn't name.
+const UNNAMED_FAILURES = Object.freeze([
+  Object.freeze({ name: "a refusal", reason: "refused", fail: () => { throw syntheticFailure("REFUSED"); } }),
+  Object.freeze({ name: "a failed call", reason: "provider_failed", fail: () => { throw syntheticFailure("PROVIDER_FAILED"); } })
+]);
+// Each conversation ends with the message marked [fail]. Wanting to die: its one turn, read wants_to_die. Getting safe: a first turn
+// read in danger from someone (at level none), then a turn read as nothing. Ordinary: every turn read as nothing.
+const FAILURE_CONVERSATIONS = Object.freeze({
+  "wanting to die": Object.freeze(["[want] [fail] Synthetic: I want to die."]),
+  "getting safe": Object.freeze(["[danger] Synthetic: he is shouting at my door again.", "[fail] Synthetic: he went quiet."]),
+  ordinary: Object.freeze(["Synthetic: an ordinary first message.", "[fail] Synthetic: an ordinary second message."])
+});
+const SUCH_CONVERSATIONS = Object.freeze(["wanting to die", "getting safe"]);
+
+function failureScript(failure, clock) {
+  const latest = (request) => packetOf(request).latest_message?.text ?? "";
+  return baseScript({
+    R1: (count, request) => {
+      const text = latest(request);
+      if (text.includes("[want]")) return { ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die" };
+      if (text.includes("[danger]")) return { ...quietReader(), in_danger_from_someone: true, reason: "someone threatens them" };
+      return quietReader();
+    },
+    W: (count, request) => {
+      if (latest(request).includes("[fail]")) failure.fail(clock);
+      return { reply: "A synthetic reply.", answered_level: "none", quotes: [] };
+    }
+  });
+}
+
+// One conversation through a fresh runner: every message delivered but the last, which the failure ends. What its closing showed.
+async function closeWith(t, failure, conversation, { ownerFallbackEnabled = true, runtimeOptions = {} } = {}) {
+  const messages = FAILURE_CONVERSATIONS[conversation];
+  const clock = { now: Date.parse("2026-11-22T12:10:00.000Z") };
+  const runner = await makeRunner(t, failureScript(failure, clock), { ownerFallbackEnabled, clock, runtimeOptions });
+  for (const message of messages.slice(0, -1)) assert.equal((await runner.send(message)).deliveryKind, "candidate", message);
+  const closed = await runner.send(messages.at(-1));
+  const record = await runner.store.load(CASE_ID);
+  return {
+    runner,
+    clock,
+    closed,
+    turn: record.runtime_turns.at(-1),
+    transcript: record.raw_transcript.at(-1).text,
+    closedEvents: eventsOf(runner, messages.length, "closed").map(({ kind, reason }) => ({ kind, reason })),
+    lines: eventsOf(runner, messages.length, "emergency_line").map((event) => event.reason)
+  };
+}
+
+const showsNotice = (result, reason, label) => {
+  assert.deepEqual([result.closed.answer, result.closed.deliveryKind, result.closed.closing], [RUNNER_UNAVAILABLE_NOTICE, "runner_unavailable", { kind: "runner_unavailable", reason_code: reason }], label);
+  assert.deepEqual([result.turn.state, result.turn.closure.exact_text, result.transcript], ["UNANSWERED", RUNNER_UNAVAILABLE_NOTICE, RUNNER_UNAVAILABLE_NOTICE], label);
+  assert.deepEqual(result.closedEvents, [{ kind: "runner_unavailable", reason }], label);
+};
+
+test("his fixed message after a failure, switch off (the default): the plan's limit, a lapsed sign-in and the time close a turn of a conversation about wanting to die or getting safe with the notice, as before", async (t) => {
+  for (const failure of NAMED_FAILURES) {
+    for (const conversation of SUCH_CONVERSATIONS) {
+      for (const runtimeOptions of [{}, { fixedMessageOnFailureEnabled: false }]) {
+        showsNotice(await closeWith(t, failure, conversation, { runtimeOptions }), failure.reason, `${failure.name}, ${conversation}, ${JSON.stringify(runtimeOptions)}`);
+      }
+    }
+  }
+  // On only when exactly true.
+  showsNotice(await closeWith(t, NAMED_FAILURES[0], "wanting to die", { runtimeOptions: { fixedMessageOnFailureEnabled: "on" } }), "plan_limit", "a value other than true");
+});
+
+test("his fixed message after a failure, switch on: the plan's limit, a lapsed sign-in, a call past its time limit and the turn's deadline close a turn of a conversation about wanting to die or getting safe with his fixed message; the emergency line goes in as with the switch off", async (t) => {
+  for (const failure of NAMED_FAILURES) {
+    for (const conversation of SUCH_CONVERSATIONS) {
+      const label = `${failure.name}, ${conversation}`;
+      const on = await closeWith(t, failure, conversation, { runtimeOptions: { fixedMessageOnFailureEnabled: true } });
+      assert.deepEqual([on.closed.answer, on.closed.deliveryKind, on.closed.closing], [OWNER_FALLBACK_MESSAGE, OWNER_FALLBACK_KIND, { kind: OWNER_FALLBACK_KIND, reason_code: failure.reason }], label);
+      assert.deepEqual([on.turn.state, on.turn.closure.exact_text, on.transcript], ["UNANSWERED", OWNER_FALLBACK_MESSAGE, OWNER_FALLBACK_MESSAGE], `${label}: the record holds what the person saw`);
+      assert.deepEqual(on.closedEvents, [{ kind: OWNER_FALLBACK_KIND, reason: failure.reason }], label);
+      // The highlighted line: with the closing of the turn read wants_to_die; none on the getting-safe turn read as nothing. Exactly as
+      // with the switch off.
+      assert.deepEqual(on.lines, conversation === "wanting to die" ? ["turn_closed_without_reply"] : [], label);
+      const off = await closeWith(t, failure, conversation);
+      assert.deepEqual([on.lines, Boolean(on.turn.emergency_line_shown_at), on.turn.emergency_line_reason ?? null], [off.lines, Boolean(off.turn.emergency_line_shown_at), off.turn.emergency_line_reason ?? null], `${label}: the line as with the switch off`);
+    }
+  }
+});
+
+test("his fixed message after a failure, switch on: the same failures in an ordinary conversation close with the notice", async (t) => {
+  for (const failure of NAMED_FAILURES) showsNotice(await closeWith(t, failure, "ordinary", { runtimeOptions: { fixedMessageOnFailureEnabled: true } }), failure.reason, failure.name);
+});
+
+test("his fixed message after a failure, switch on: a refusal, a failed call and an interruption keep the notice in a conversation about wanting to die or getting safe; failed checks still give his message", async (t) => {
+  for (const failure of UNNAMED_FAILURES) {
+    for (const conversation of SUCH_CONVERSATIONS) {
+      showsNotice(await closeWith(t, failure, conversation, { runtimeOptions: { fixedMessageOnFailureEnabled: true } }), failure.reason, `${failure.name}, ${conversation}`);
+    }
+  }
+  // An interruption: a turn of a conversation about wanting to die, read so, is left unfinished, and the next message closes it.
+  const clock = { now: Date.parse("2026-11-22T12:10:00.000Z") };
+  const runner = await makeRunner(t, failureScript(NAMED_FAILURES[0], clock), { ownerFallbackEnabled: true, clock, runtimeOptions: { fixedMessageOnFailureEnabled: true } });
+  assert.equal((await runner.send("[want] Synthetic: I want to die.")).deliveryKind, "candidate");
+  const conversationId = (await runner.store.load(CASE_ID)).runtime_turns[0].runner_reading.conversation_id;
+  await runner.store.beginPrivateRuntimeTurn(CASE_ID, { runtimeTurnId: "runtime:stale", exchangeId: "exchange-stale", userTurnId: "exchange-stale-user", exactText: "[want] Synthetic: a message whose turn was interrupted." });
+  await runner.store.recordRunnerReading(CASE_ID, "runtime:stale", { conversationId, readers: { crisis: { ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die", receipts: [] } } });
+  assert.equal((await runner.send("Synthetic: still here.")).deliveryKind, "candidate");
+  const stale = (await runner.store.load(CASE_ID)).runtime_turns.find((turn) => turn.id === "runtime:stale");
+  assert.deepEqual([stale.state, stale.closure.kind, stale.closure.reason_code, stale.closure.exact_text], ["UNANSWERED", "runner_unavailable", "interrupted", RUNNER_UNAVAILABLE_NOTICE]);
+  // Failed checks give his message with this switch on, as with it off.
+  const failing = () => ({ findings: [{ code: "CRISIS_FIRST_REPLY_SHAPE", severity: "high", summary: "missing", evidence_turn_ids: [] }], level: "wants_to_die", repair_induced_checks: [...REPAIR_INDUCED_ERROR_CHECKS], missed_boxes: [] });
+  const wants = () => ({ ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die" });
+  const checks = await makeRunner(t, baseScript({ R1: wants, C1: failing, C5: failing }), { ownerFallbackEnabled: true, runtimeOptions: { fixedMessageOnFailureEnabled: true } });
+  assert.deepEqual((await checks.send("I want to die.")).closing, { kind: OWNER_FALLBACK_KIND, reason_code: "checks_failed" });
+});
+
+test("his fixed message after a failure: with the fixed message itself off, this switch on changes nothing, and every closing is the notice", async (t) => {
+  for (const failure of NAMED_FAILURES) {
+    for (const conversation of SUCH_CONVERSATIONS) {
+      showsNotice(await closeWith(t, failure, conversation, { ownerFallbackEnabled: false, runtimeOptions: { fixedMessageOnFailureEnabled: true } }), failure.reason, `${failure.name}, ${conversation}`);
+    }
+  }
+  const failing = () => ({ findings: [{ code: "CRISIS_FIRST_REPLY_SHAPE", severity: "high", summary: "missing", evidence_turn_ids: [] }], level: "wants_to_die", repair_induced_checks: [...REPAIR_INDUCED_ERROR_CHECKS], missed_boxes: [] });
+  const wants = () => ({ ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die" });
+  const checks = await makeRunner(t, baseScript({ R1: wants, C1: failing, C5: failing }), { runtimeOptions: { fixedMessageOnFailureEnabled: true } });
+  assert.deepEqual((await checks.send("I want to die.")).closing, { kind: "runner_unavailable", reason_code: "checks_failed" }, "failed checks too");
+});
+
+test("the record takes his fixed message as the closing of failed checks, the plan's limit, a lapsed sign-in or the time, whatever the switches; a case closed so with the switch on replays unchanged and goes on with both switches off", async (t) => {
+  assert.deepEqual([...FIXED_MESSAGE_FAILURE_REASONS], ["plan_limit", "sign_in_needed", "timeout"]);
+  assert.deepEqual([...OWNER_FALLBACK_CLOSING_REASONS], ["checks_failed", "plan_limit", "sign_in_needed", "timeout"]);
+  const closing = (kind, reasonCode) => createRunnerClosure({ kind, reasonCode, assistantTurnId: "exchange-1-assistant", closedAt: "2026-11-22T12:10:00.000Z" });
+  for (const reasonCode of Object.keys(CLOSING_REASONS)) {
+    assert.equal(closing("runner_unavailable", reasonCode).exact_text, RUNNER_UNAVAILABLE_NOTICE, `the notice for ${reasonCode}, as before`);
+    if (OWNER_FALLBACK_CLOSING_REASONS.includes(reasonCode)) {
+      const made = closing(OWNER_FALLBACK_KIND, reasonCode);
+      assert.deepEqual([made.kind, made.reason_code, made.exact_text], [OWNER_FALLBACK_KIND, reasonCode, OWNER_FALLBACK_MESSAGE]);
+    } else {
+      assert.throws(() => closing(OWNER_FALLBACK_KIND, reasonCode), /^ValidationError: The owner fallback closes only a turn whose checks failed, or that the plan's limit, a lapsed sign-in or the time ended\.$/u, reasonCode);
+    }
+  }
+
+  // Closed with both switches on; then read, replayed and continued over the same store with both off.
+  const on = await closeWith(t, NAMED_FAILURES[0], "wanting to die", { runtimeOptions: { fixedMessageOnFailureEnabled: true } });
+  assert.deepEqual(on.closed.closing, { kind: OWNER_FALLBACK_KIND, reason_code: "plan_limit" });
+  const workers = fakeWorkers(baseScript());
+  const offRuntime = createRunnerTrialRuntime({ privateCaseSource: on.runner.store, parts, workerFor: workers.workerFor, now: () => on.clock.now });
+  const off = createPrivateTherapyTurnController({ privateCaseSource: on.runner.store, modelRuntime: offRuntime, maximumInvocationAttempts: 1 });
+  const turnInput = (exchange, userMessage) => ({ caseId: CASE_ID, runtimeTurnId: `runtime:exchange-${exchange}`, exchangeId: `exchange-${exchange}`, userTurnId: `exchange-${exchange}-user`, assistantTurnId: `exchange-${exchange}-assistant`, userMessage, userInput: {} });
+  const replay = await off.run(turnInput(1, FAILURE_CONVERSATIONS["wanting to die"][0]));
+  assert.deepEqual([replay.answer, replay.deliveryKind, replay.closing], [OWNER_FALLBACK_MESSAGE, OWNER_FALLBACK_KIND, { kind: OWNER_FALLBACK_KIND, reason_code: "plan_limit" }], "the stored closing, as it was");
+  assert.equal(workers.calls.length, 0, "a replay calls no model");
+  const [reconciled] = await off.reconcile({ caseId: CASE_ID, currentConversation: true });
+  assert.deepEqual([reconciled.answer, reconciled.deliveryKind, reconciled.closing], [OWNER_FALLBACK_MESSAGE, OWNER_FALLBACK_KIND, { kind: OWNER_FALLBACK_KIND, reason_code: "plan_limit" }], "the page's reconcile shows it");
+  const stored = (await on.runner.store.load(CASE_ID)).runtime_turns[0];
+  assert.doesNotThrow(() => validatePrivateRuntimeTurn(stored));
+  on.clock.now += 1_000;
+  assert.equal((await off.run(turnInput(2, "Synthetic: still here."))).deliveryKind, "candidate", "the case goes on");
 });

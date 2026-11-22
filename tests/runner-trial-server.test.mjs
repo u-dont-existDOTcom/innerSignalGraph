@@ -19,11 +19,13 @@ import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService } from "../src/stor
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { CLOSING_REASONS, EMERGENCY_LINE, PROVISIONAL_PREFIX, RUNNER_UNAVAILABLE_NOTICE, THINKING_LINE } from "../src/runner-trial/notices.mjs";
+import { OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { SealedClaudeWorker } from "../src/runner-trial/sealed-claude.mjs";
 import { SealedCodexWorker } from "../src/runner-trial/sealed-codex.mjs";
 import {
   DEFAULT_RUNNER_WORKERS,
   RUNNER_CLAUDE_CONFIG_DIR,
+  RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING,
   RUNNER_NUMBER_NOW_SETTING,
   RUNNER_ROLES,
   RUNNER_TRIAL_CASE_ID_SETTING,
@@ -31,6 +33,7 @@ import {
   RUNNER_TRIAL_SETTINGS_FILE,
   createRunnerWorkerFactory,
   loadRunnerTrialSettings,
+  readRunnerFixedMessageOnFailureSwitch,
   readRunnerNumberNowSwitch,
   readRunnerTrialSwitch,
   validateRunnerTrialSettings
@@ -168,6 +171,22 @@ test("the number now's switch is off when absent, blank or off, on when on, and 
   for (const value of INVALID_VALUES) {
     const refused = (error) => error?.code === "BAD_CONFIG" && error.message === `${RUNNER_NUMBER_NOW_SETTING} must be on or off.` && !error.message.includes(value);
     assert.throws(() => readRunnerNumberNowSwitch(value), refused, value);
+    await assert.rejects(async () => configReading(value), refused, value);
+  }
+});
+
+test("the fixed message's switch for failures is off when absent, blank or off, on when on, and any other value stops loadConfig naming the setting, never the value", async () => {
+  assert.equal(RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING, "INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE");
+  const configReading = (value) => withEnv({ [RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING]: value }, () => loadConfig({ mode: "mock" }).runnerFixedMessageOnFailureEnabled);
+  for (const [values, expected] of [[OFF_VALUES, false], [ON_VALUES, true]]) {
+    for (const value of values) {
+      assert.equal(readRunnerFixedMessageOnFailureSwitch(value), expected, JSON.stringify(value));
+      assert.equal(await configReading(value), expected, `${JSON.stringify(value)} through loadConfig`);
+    }
+  }
+  for (const value of INVALID_VALUES) {
+    const refused = (error) => error?.code === "BAD_CONFIG" && error.message === `${RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING} must be on or off.` && !error.message.includes(value);
+    assert.throws(() => readRunnerFixedMessageOnFailureSwitch(value), refused, value);
     await assert.rejects(async () => configReading(value), refused, value);
   }
 });
@@ -465,6 +484,35 @@ test("/health says runnerNumberNow on only with the trial and the number now bot
     const reader = workers.calls.find((call) => call.role === "R1").request;
     assert.equal(Object.hasOwn(reader.schema.properties, "number_now"), on, `switch ${on ? "on" : "off"}`);
     assert.equal(reader.system.includes("number_now"), on);
+  }
+});
+
+test("/health says runnerFixedMessageOnFailure on only with the trial, the owner's fixed message and this switch all on, and the switch reaches the closing through the trial's controller", async (t) => {
+  const store = await makeStore(t);
+  const health = async (config) => (await (await fetch(`${await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseStore: store }))}/health`)).json()).runnerFixedMessageOnFailure;
+  assert.equal(await health(trialConfig({ runnerTrialEnabled: false, ownerFallbackEnabled: true, runnerFixedMessageOnFailureEnabled: true })), "off", "it means nothing with the trial off");
+  assert.equal(await health(trialConfig({ ownerFallbackEnabled: false, runnerFixedMessageOnFailureEnabled: true })), "off", "nor with the owner's fixed message off: it extends that message");
+  assert.equal(await health(trialConfig({ ownerFallbackEnabled: true })), "off", "off unless switched on");
+  // Built the real way: settings, rule parts and sealed workers are made, and nothing calls a model.
+  const config = trialConfig({ ownerFallbackEnabled: true, runnerFixedMessageOnFailureEnabled: true });
+  assert.equal(await health(config), "on");
+  const listener = await listenInnerSignalLoopback({ config, providers: createProviders(config), privateCaseStore: store, port: 0 });
+  try {
+    for (const base of [listener.url, listener.ipv4Url]) assert.equal((await (await fetch(`${base}/health`)).json()).runnerFixedMessageOnFailure, "on", base);
+  } finally {
+    await listener.close();
+  }
+  // From the config to the closing: the trial's controller gives its runtime the switch, so a plan limit in a conversation about
+  // wanting to die closes with the owner's fixed message only with it on.
+  const script = baseScript({
+    R1: () => ({ ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die" }),
+    W: () => { throw Object.assign(new Error("synthetic"), { code: "PLAN_LIMIT" }); }
+  });
+  for (const on of [false, true]) {
+    const trial = createRunnerTrialController({ privateCaseSource: store, config: trialConfig({ ownerFallbackEnabled: true, runnerFixedMessageOnFailureEnabled: on }), settings: validateRunnerTrialSettings({}), parts, workerFor: fakeWorkers(script).workerFor });
+    const exchangeId = `exchange-fixed-message-${on}`;
+    const result = await trial.controller.run({ caseId: CASE_ID, runtimeTurnId: `runtime:${exchangeId}`, exchangeId, userTurnId: `${exchangeId}-user`, assistantTurnId: `${exchangeId}-assistant`, userMessage: "Synthetic: I want to die.", userInput: {} });
+    assert.deepEqual([result.answer, result.closing], [on ? OWNER_FALLBACK_MESSAGE : RUNNER_UNAVAILABLE_NOTICE, { kind: on ? "owner_fallback" : "runner_unavailable", reason_code: "plan_limit" }], `switch ${on ? "on" : "off"}`);
   }
 });
 

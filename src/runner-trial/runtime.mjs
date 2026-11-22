@@ -14,7 +14,7 @@ import { OWNER_FALLBACK_KIND } from "../supervisor/owner-fallback-message.mjs";
 import { selfDirectedRiskAuditRules } from "../prompts/self-directed-risk-audit.mjs";
 import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
 import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
-import { KEPT_PLAN_RULE } from "./notices.mjs";
+import { FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
 import {
   KEPT_PLAN_LIMITS,
   crisisReadingOf,
@@ -125,8 +125,10 @@ export function normalizeFindings(checkerId, findings) {
 
 // `keptPlanEnabled` is INNER_SIGNAL_RUNNER_KEPT_PLAN (design, section 9): off by default, and with it off every packet, prompt and
 // schema is exactly what it was before the kept plan was built. `numberNowEnabled` is INNER_SIGNAL_RUNNER_NUMBER_NOW (design,
-// section 9b), the same way: on only when exactly true.
-export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
+// section 9b), the same way: on only when exactly true. `fixedMessageOnFailureEnabled` is INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE
+// (design, section 7), on only when exactly true: it changes nothing but which closings show the owner's fixed message, and only
+// while `ownerFallbackEnabled` is on too.
+export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
   if (!privateCaseSource || !parts || typeof workerFor !== "function") throw new ValidationError("The runner trial needs its case source, rule parts and workers.");
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
@@ -239,6 +241,11 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   // "Getting safe" or "wanting to die" (design, section 7): the readings that stand in for the owner's four routes.
   const isFixedMessageConversation = (readings) => readings.some((entry) => readCrisis(entry)
     || entry.crisis?.in_danger_from_someone || entry.crisis?.danger_to_others || entry.crisis?.home_unsafe);
+  // The reasons whose closing shows the owner's fixed message in such a conversation, while INNER_SIGNAL_OWNER_FALLBACK is on
+  // (design, section 7): failed checks; and, with INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE on too, the plan's limit, a lapsed
+  // sign-in and the time (plan_limit, sign_in_needed, timeout: his 3b, question i67, 22 Nov 2026). Every other reason (a refusal,
+  // a failed call, an interruption) keeps the notice.
+  const fixedMessageReasons = Object.freeze(["checks_failed", ...(fixedMessageOnFailureEnabled === true ? FIXED_MESSAGE_FAILURE_REASONS : [])]);
   // Whether an earlier turn of this conversation showed the person an emergency number: a provisional reply or a delivered reply
   // naming one (as the exact check reads numbers), or the highlighted line. The later-turn rules go by what was actually shown,
   // never by which levels were read or which provisional replies were offered (Codex's review of 371a8f6f2: a numberless
@@ -884,7 +891,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // e17c949a2).
       const crisisReading = turn.runner_reading?.readers?.crisis;
       const crisisUnread = !crisisReading || crisisReading.unread === true;
-      const kind = ownerFallbackEnabled && reasonCode === "checks_failed" && isFixedMessageConversation(readings) ? OWNER_FALLBACK_KIND : "runner_unavailable";
+      const kind = ownerFallbackEnabled && fixedMessageReasons.includes(reasonCode) && isFixedMessageConversation(readings) ? OWNER_FALLBACK_KIND : "runner_unavailable";
       let caseState = null;
       let stateDiff = null;
       if (!record.raw_transcript.some((entry) => entry.id === turn.user_turn_id)) {

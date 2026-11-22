@@ -227,6 +227,18 @@ test("with the number now's switch off every worker's prompt, packet and schema 
   }
 });
 
+// The owner's fixed message after the plan's limit, a lapsed sign-in or the time (INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE; design,
+// section 7) changes only which closing a turn gets, never a worker's call: off, or on with the fixed message on, every worker gets the
+// packets from before.
+test("the fixed message's switch for failures, off or on, leaves every worker's prompt, packet and schema byte-identical", async (t) => {
+  const modules = { createEncryptedPrivateCaseStore, createRunnerTrialRuntime, createPrivateTherapyTurnController, cutRuleParts, REPAIR_INDUCED_ERROR_CHECKS };
+  for (const runtimeOptions of [{ fixedMessageOnFailureEnabled: false }, { ownerFallbackEnabled: true, fixedMessageOnFailureEnabled: true }]) {
+    const calls = await runPacketScenario({ modules, root: await tempDir(t, "fixed-message-golden"), runtimeOptions });
+    assert.equal(calls.length, 54, "both arms, every worker, a repair included");
+    assert.equal(packetDigest(calls), PACKETS_BEFORE_KEPT_PLAN, `the same bytes as before (${JSON.stringify(runtimeOptions)})`);
+  }
+});
+
 test("with the switch off, a reader that says the person asks to keep or delete a plan keeps and deletes nothing, and the record gains nothing", async (t) => {
   const runner = await makeRunner(t, keptPlanScript(), { keptPlanEnabled: false });
   await reachPlan(runner);

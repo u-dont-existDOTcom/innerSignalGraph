@@ -3,7 +3,8 @@
 // design: docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 10 and 11).
 //
 //   node scripts/runner-trial-start.mjs --provider mixed|codex|claude [--port 8797] [--dir PATH]
-//                                       [--kept-plan] [--number-now] [--feedback-link] [--owner-fallback] [--prepare-only]
+//                                       [--kept-plan] [--number-now] [--feedback-link] [--owner-fallback]
+//                                       [--fixed-message-on-failure] [--prepare-only]
 //
 // Everything the trial keeps is in one folder outside the checkout, never the app's usual vault (default
 // $HOME/.local/share/inner-signal-runner-trial, or --dir), mode 0700:
@@ -34,6 +35,7 @@ import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/s
 import {
   RUNNER_CLAUDE_CONFIG_DIR,
   RUNNER_FEEDBACK_LINK_SETTING,
+  RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING,
   RUNNER_KEPT_PLAN_SETTING,
   RUNNER_NUMBER_NOW_SETTING,
   RUNNER_TRIAL_CASE_ID_PATTERN,
@@ -64,7 +66,8 @@ const usesClaude = (provider) => provider !== "codex";
 const usesCodex = (provider) => provider !== "claude";
 
 export const USAGE = `Usage: node scripts/runner-trial-start.mjs --provider mixed|codex|claude [--port N] [--dir PATH]
-                                           [--kept-plan] [--number-now] [--feedback-link] [--owner-fallback] [--prepare-only]
+                                           [--kept-plan] [--number-now] [--feedback-link] [--owner-fallback]
+                                           [--fixed-message-on-failure] [--prepare-only]
 
   --provider mixed   the readers and the checker on Claude, the writer on GPT (measured fastest); each plan pays for its own
                      calls, and both companies see the conversation
@@ -77,6 +80,10 @@ export const USAGE = `Usage: node scripts/runner-trial-start.mjs --provider mixe
   --number-now       turn on ${RUNNER_NUMBER_NOW_SETTING} (off unless given)
   --feedback-link    turn on ${RUNNER_FEEDBACK_LINK_SETTING} (off unless given)
   --owner-fallback   turn on ${OWNER_FALLBACK_SETTING} (off unless given)
+  --fixed-message-on-failure
+                     turn on ${RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING} (off unless given; only with --owner-fallback):
+                     the owner's fixed message also when the plan's limit, the sign-in or the time ends a turn in a
+                     conversation about wanting to die or getting safe
   --prepare-only     make or check the folder, the credentials and the settings, and stop without starting the server`;
 
 class StartError extends Error {
@@ -87,11 +94,11 @@ class StartError extends Error {
 }
 const usageError = (message) => new StartError(`${message}\n\n${USAGE}`, 2);
 
-const FLAGS = Object.freeze({ "--kept-plan": "keptPlan", "--number-now": "numberNow", "--feedback-link": "feedbackLink", "--owner-fallback": "ownerFallback", "--prepare-only": "prepareOnly" });
+const FLAGS = Object.freeze({ "--kept-plan": "keptPlan", "--number-now": "numberNow", "--feedback-link": "feedbackLink", "--owner-fallback": "ownerFallback", "--fixed-message-on-failure": "fixedMessageOnFailure", "--prepare-only": "prepareOnly" });
 const VALUED = Object.freeze({ "--provider": "provider", "--port": "port", "--dir": "dir" });
 
 export function parseArguments(argv) {
-  const options = { provider: null, port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, prepareOnly: false };
+  const options = { provider: null, port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, fixedMessageOnFailure: false, prepareOnly: false };
   const seen = new Set();
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -117,6 +124,8 @@ export function parseArguments(argv) {
     options.port = Number(options.port);
   }
   if (options.dir !== null && !path.isAbsolute(options.dir)) throw usageError("--dir must be an absolute path.");
+  // It extends the owner's fixed message, so it is refused without the switch that turns that message on (design, section 7).
+  if (options.fixedMessageOnFailure && !options.ownerFallback) throw usageError("--fixed-message-on-failure extends the owner's fixed message: give --owner-fallback too.");
   return Object.freeze(options);
 }
 
@@ -137,9 +146,11 @@ export function trialSettings(provider) {
 // The server's environment: the shell's, without any InnerSignal setting it holds (the app's usual vault, another run's switches),
 // and then exactly the trial's, with the case its credentials grant. The rest of the page runs in mock mode, so nothing but the
 // trial's own workers calls a model, and no decision ledger is written into the checkout. The kept plan, the number now, the
-// feedback link and the owner's fixed message are off unless their flag is given.
-export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false }) {
+// feedback link, the owner's fixed message and that message after the plan's limit, the sign-in or the time are off unless their
+// flag is given; the last only with the owner's fixed message.
+export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false, fixedMessageOnFailure = false }) {
   if (typeof caseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) throw new StartError("The trial's case id isn't of the form the credentials hold.");
+  if (fixedMessageOnFailure && !ownerFallback) throw new StartError("The fixed message after the plan's limit, the sign-in or the time needs the owner's fixed message on too.");
   const environment = Object.fromEntries(Object.entries(base).filter(([key, value]) => !key.startsWith("INNER_SIGNAL_") && typeof value === "string"));
   Object.assign(environment, {
     INNER_SIGNAL_MODE: "mock",
@@ -154,7 +165,8 @@ export function serverEnvironment({ base = process.env, provider, port, credenti
     [RUNNER_KEPT_PLAN_SETTING]: keptPlan ? "on" : "off",
     [RUNNER_NUMBER_NOW_SETTING]: numberNow ? "on" : "off",
     [RUNNER_FEEDBACK_LINK_SETTING]: feedbackLink ? "on" : "off",
-    [OWNER_FALLBACK_SETTING]: ownerFallback ? "on" : "off"
+    [OWNER_FALLBACK_SETTING]: ownerFallback ? "on" : "off",
+    [RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING]: fixedMessageOnFailure ? "on" : "off"
   });
   if (usesClaude(provider)) environment[RUNNER_CLAUDE_CONFIG_DIR] = claudeConfigDir ?? defaultClaudeConfigDir();
   return environment;
@@ -343,7 +355,7 @@ async function main(argv) {
   if (!(await portIsFree(options.port))) {
     throw new StartError(`Port ${options.port} on 127.0.0.1 is in use: is the trial already running? Stop it, or start with --port and another number (the page then starts with a new case).`);
   }
-  const environment = serverEnvironment({ provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback });
+  const environment = serverEnvironment({ provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback, fixedMessageOnFailure: options.fixedMessageOnFailure });
   console.log(`Starting InnerSignal's runner trial on ${PROVIDER_WORDS[options.provider]}, with its own vault: ${prepared.vault}`);
   const child = spawn(node, [serveEntry], { cwd: repositoryRoot, env: environment, stdio: ["ignore", "inherit", "inherit"] });
   const exited = new Promise((resolve) => {
@@ -379,7 +391,7 @@ async function main(argv) {
     console.log("");
     console.log(`Runner trial ready: http://127.0.0.1:${options.port}`);
     console.log(`  Workers: ${WORKER_WORDS[options.provider]}; the whole writer with one whole checker.`);
-    console.log(`  Kept plan ${onOff(options.keptPlan)}, number now ${onOff(options.numberNow)}, feedback link ${onOff(options.feedbackLink)}, owner's fixed message ${onOff(options.ownerFallback)}.`);
+    console.log(`  Kept plan ${onOff(options.keptPlan)}, number now ${onOff(options.numberNow)}, feedback link ${onOff(options.feedbackLink)}, owner's fixed message ${onOff(options.ownerFallback)}, also after a plan limit, sign-in or timeout ${onOff(options.fixedMessageOnFailure)}.`);
     console.log("  Stop with Ctrl+C.");
   }
   const { code } = await exited;

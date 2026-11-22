@@ -50,8 +50,11 @@ the company that runs it (design, section 6).
 
 Off unless a flag turns them on: `--kept-plan` (`INNER_SIGNAL_RUNNER_KEPT_PLAN`), `--number-now`
 (`INNER_SIGNAL_RUNNER_NUMBER_NOW`, off until the owner says; design, section 9b), `--feedback-link`
-(`INNER_SIGNAL_RUNNER_FEEDBACK_LINK`) and `--owner-fallback` (`INNER_SIGNAL_OWNER_FALLBACK`). No `INNER_SIGNAL_` setting of the shell
-reaches the trial's server, so one set for the usual app can't turn anything on or point the trial at another vault.
+(`INNER_SIGNAL_RUNNER_FEEDBACK_LINK`), `--owner-fallback` (`INNER_SIGNAL_OWNER_FALLBACK`) and `--fixed-message-on-failure`
+(`INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE`, only with `--owner-fallback`: the owner's fixed message also when the plan's
+limit, a lapsed sign-in or the time ends a turn of a conversation about wanting to die or getting safe; design, section 7). No
+`INNER_SIGNAL_` setting of the shell reaches the trial's server, so one set for the usual app can't turn anything on or point the
+trial at another vault.
 
 The rest of the page runs in mock mode: its other tabs call no model, and no decision ledger is written into the checkout. With the
 trial on, the badge at the top shows who reads, writes and checks, and the page hides the usual app's "Reasoning depth" menu and

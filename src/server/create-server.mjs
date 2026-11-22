@@ -470,6 +470,11 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // hasn't said they've acted (INNER_SIGNAL_RUNNER_NUMBER_NOW; design, section 9b): on only with the trial on. The trial built
           // here, or by the loopback launcher, reads it from the same config; the page needs nothing new for it.
           runnerNumberNow: runnerEvents && config.runnerNumberNowEnabled === true ? "on" : "off",
+          // Whether a turn the plan's limit, a lapsed sign-in or the time ends, in a conversation about wanting to die or getting safe,
+          // closes with the owner's fixed message instead of the notice (INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE; design, section 7):
+          // on only with the trial on and INNER_SIGNAL_OWNER_FALLBACK on, since it extends that message. The trial built here, or by
+          // the loopback launcher, reads it from the same config; the page shows the closing it gets as before.
+          runnerFixedMessageOnFailure: runnerEvents && config.ownerFallbackEnabled === true && config.runnerFixedMessageOnFailureEnabled === true ? "on" : "off",
           // Whether the trial page shows its "Send feedback about InnerSignal" link (INNER_SIGNAL_RUNNER_FEEDBACK_LINK): on only with
           // the trial on, and then with the page's one address (src/feedback/address.mjs), so the link and the served rules agree.
           runnerFeedbackLink: runnerEvents && config.runnerFeedbackLinkEnabled === true ? "on" : "off",

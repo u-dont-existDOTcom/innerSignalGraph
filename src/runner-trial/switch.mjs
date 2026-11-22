@@ -16,6 +16,11 @@ export const RUNNER_KEPT_PLAN_SETTING = "INNER_SIGNAL_RUNNER_KEPT_PLAN";
 // INNER_SIGNAL_RUNNER_TRIAL is on.
 export const RUNNER_NUMBER_NOW_SETTING = "INNER_SIGNAL_RUNNER_NUMBER_NOW";
 
+// The owner's fixed message also when the plan's limit, a lapsed sign-in or the time ends a turn in a conversation about wanting to
+// die or getting safe (his 3b, question i67, 22 Nov 2026; design, section 7): its own switch, off by default. It extends the fixed
+// message, so it means something only while INNER_SIGNAL_RUNNER_TRIAL and INNER_SIGNAL_OWNER_FALLBACK are both on.
+export const RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING = "INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE";
+
 // The "Send feedback about InnerSignal" link (feedback place design, section 14, branch claude/feedback-place-20261122): its own
 // switch, off until the feedback page is released, so the trial never links to a page that isn't there. Meaningful only while
 // INNER_SIGNAL_RUNNER_TRIAL is on.
@@ -47,6 +52,11 @@ export function readRunnerKeptPlanSwitch(raw) {
 // Read the same way as the trial's switch.
 export function readRunnerNumberNowSwitch(raw) {
   return readSwitch(raw, RUNNER_NUMBER_NOW_SETTING);
+}
+
+// Read the same way as the trial's switch.
+export function readRunnerFixedMessageOnFailureSwitch(raw) {
+  return readSwitch(raw, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING);
 }
 
 // Read the same way as the trial's switch.
