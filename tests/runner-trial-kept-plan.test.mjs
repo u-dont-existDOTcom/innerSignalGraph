@@ -40,9 +40,16 @@ const THIRTY_DAYS = 30 * DAY;
 // Re-pinned again on 22 Nov 2026 for one deliberate prompt change and nothing else: the crisis reader's provisional_reply sentence
 // (crisisReaderPrompt in worker-prompts.mjs) now states the provisional's exact checks in plain words (one question, and where they
 // are when that isn't known; only 112, 911 and 999; no other number of two or more digits; 900 characters; the three links; no
-// "detox"). Only the 7 R1 calls change: with the earlier sentence put back in them, the digest is the one above. A deliberate change
-// to a worker's prompt or packet changes it again.
-const PACKETS_BEFORE_KEPT_PLAN = "537cedf1dff4d0a6be6a5e5e7dd67c139156e321716eb0407845ff3ce5803b02";
+// "detox"). Only the 7 R1 calls change: with the earlier sentence put back in them, the digest is the one above:
+// 537cedf1dff4d0a6be6a5e5e7dd67c139156e321716eb0407845ff3ce5803b02.
+// Re-pinned on 22 Nov 2026 for three deliberate prompt changes from Fable's recheck of that day and nothing else (worker-prompts.mjs):
+// in crisisReaderPrompt, the provisional's question limit now reads "at most two questions in the whole reply (two question marks):
+// where they are, when you don't know, and one about now;" (finding 4); in writerPrompt, STORAGE_LINE is reworded and STORAGE_FACTS
+// (what InnerSignal keeps) follows it (finding 9); and STORAGE_FINDING, in the skill checker's and the whole checker's focus, is
+// reworded to the same meaning. So the system prompts of the 7 R1 calls, the 7 W calls and the W-repair call change, and those of
+// the 6 C2 and 2 CW calls; no packet or schema changes. With the earlier wording put back in those calls, the digest is the one
+// just above. A deliberate change to a worker's prompt or packet changes it again.
+const PACKETS_BEFORE_KEPT_PLAN = "095b140d166da6a6276e6c916411f61e5e40e0593335552e9d5f9533e2ae8939";
 
 // The plan reply of the scenarios below, and its two lines.
 const PLAN_LINES = Object.freeze([

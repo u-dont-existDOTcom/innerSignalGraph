@@ -15,8 +15,8 @@ import { REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../src/s
 import { OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { cutRuleParts, focusedRules, wholeRules } from "../src/runner-trial/rule-parts.mjs";
 import { CRISIS_LINKS, NAMED_EMERGENCY_NUMBERS, emergencyNumbersIn, phoneLikeRuns, provisionalProblems, runProgramChecks, shapeProblems } from "../src/runner-trial/program-checks.mjs";
-import { STORAGE_LINE, crisisReaderProvisionalOfferedNote } from "../src/runner-trial/worker-prompts.mjs";
-import { DEFAULT_RUNNER_SETTINGS, createRunnerTrialRuntime, normalizeFindings, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
+import { STORAGE_FACTS, STORAGE_LINE, crisisReaderNumberShownNote, crisisReaderWantsToDieNote } from "../src/runner-trial/worker-prompts.mjs";
+import { DEFAULT_RUNNER_SETTINGS, EMERGENCY_LINE_FALLBACK_MS, createRunnerTrialRuntime, normalizeFindings, riskVariablesFrom } from "../src/runner-trial/runtime.mjs";
 import { EMERGENCY_LINE, RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 
 // The runner trial (docs/superpowers/specs/2026-11-21-runner-trial-design.md) with stand-in workers, through the real encrypted
@@ -52,6 +52,16 @@ test("the exact checks read numbers in any script and decide only exact things",
   assert.deepEqual(emergencyNumbersIn("call १११"), ["111"], "Devanagari digits");
   assert.deepEqual(emergencyNumbersIn("I took 1120 mg"), [], "a number inside a longer one is not an emergency number");
   assert.deepEqual(emergencyNumbersIn("appelle le 15"), [], "two-digit numbers are left out");
+  // A three-digit group of a grouped number is no emergency number (Fable's recheck of 22 Nov 2026, finding 12), with the group
+  // separators of other languages too; a list of numbers is still numbers.
+  for (const text of ["It costs 1,000 euros.", "10 000 steps", "1.000 Menschen", "112,000 people", "10\u00a0000", "10\u202f000", "1'000 Franken", "١٬٠٠٠"]) {
+    assert.deepEqual(emergencyNumbersIn(text), [], text);
+  }
+  assert.deepEqual(emergencyNumbersIn("Call 112, 911 or 999."), ["112", "911", "999"]);
+  assert.deepEqual(emergencyNumbersIn("Call 112 or 000."), ["112", "000"]);
+  assert.deepEqual(phoneLikeRuns("It costs 1,000 euros."), [], "nor is it a number for the over-reaction record");
+  assert.deepEqual(runProgramChecks({ reply: "Over 1,000 people a day get through this.", checkerLevel: "acted_or_about_to", firstActedTurn: true }).map((finding) => finding.code), ["PROGRAM_NO_EMERGENCY_NUMBER"], "nor for the number check");
+  assert.deepEqual(provisionalProblems("Call 112 now. 1,000 people a day get help."), ["unknown_number"], "in a provisional it is a number off the list");
   assert.ok(phoneLikeRuns("ring 0800 123 456").includes("0800123456"));
   assert.deepEqual(provisionalProblems("I'm here. Please call 112 now, and unlock the door if you can."), []);
   assert.ok(provisionalProblems("I'm here with you. Please get help now.").includes("no_emergency_number"));
@@ -63,7 +73,11 @@ test("the exact checks read numbers in any script and decide only exact things",
   assert.deepEqual(provisionalProblems("Call 112 now, or the poison service at ٤٢."), ["unknown_number"], "a two-digit number in another script too");
   assert.deepEqual(provisionalProblems("Call 112 now. I'll stay here with you for the next 10 minutes."), ["unknown_number"], "a two-digit count is read as a number: the provisional isn't shown");
   assert.deepEqual(provisionalProblems("Call 112 now. I'll stay here with you for the next 5 minutes."), [], "a single digit isn't read as a number");
-  assert.ok(provisionalProblems("Call 112. Are you alone? Is the door open?").includes("more_than_one_question"));
+  // Two questions for someone who has acted or is about to (where they are, and one about now); one for someone who wants to die
+  // (Fable's recheck of 22 Nov 2026, finding 4).
+  assert.deepEqual(provisionalProblems("Call 112. Where are you? Is anyone with you?"), []);
+  assert.deepEqual(provisionalProblems("Call 112. Where are you? Are you alone? Is the door open?"), ["more_than_two_questions"]);
+  assert.deepEqual(provisionalProblems("It sounds like you want the pain to end. Are you safe right now? Is anyone near?", { level: "wants_to_die" }), ["more_than_one_question"]);
   assert.ok(provisionalProblems("- Call 112\n- Unlock the door").includes("list"));
   assert.ok(provisionalProblems("Call 112 now. https://detox.u-dont-exist.com").includes("link_not_allowed"));
   assert.deepEqual(shapeProblems(`See ${CRISIS_LINKS[1]} or ${CRISIS_LINKS[0]}`), [], "the allowed links don't read as emphasis");
@@ -146,18 +160,22 @@ const baseScript = (overrides = {}) => ({
   ...overrides
 });
 
-async function makeRunner(t, script, { settings = {}, ownerFallbackEnabled = false } = {}) {
+// `clock`, when given ({ now }), is the store's and the runtime's clock alike; it moves a second per message and otherwise only when
+// a test moves it. `source`, when given, wraps the store as the runtime's and controller's case source.
+async function makeRunner(t, script, { settings = {}, ownerFallbackEnabled = false, clock = null, source = (store) => store } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-runner-trial-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  const store = createEncryptedPrivateCaseStore({ rootDir: root, routineKek: Buffer.alloc(32, 81), recoverySecretBytes: Buffer.alloc(32, 82), developmentExternalCredentialAuthorized: true });
+  const store = createEncryptedPrivateCaseStore({ rootDir: root, routineKek: Buffer.alloc(32, 81), recoverySecretBytes: Buffer.alloc(32, 82), developmentExternalCredentialAuthorized: true, ...(clock ? { now: () => new Date(clock.now).toISOString() } : {}) });
   await store.loadOrCreate(CASE_ID);
   const events = [];
   const workers = fakeWorkers(script);
-  const runtime = createRunnerTrialRuntime({ privateCaseSource: store, parts, settings, workerFor: workers.workerFor, ownerFallbackEnabled, onEvent: (caseId, turnId, event) => events.push({ caseId, turnId, ...event }) });
-  const controller = createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: runtime, maximumInvocationAttempts: 1 });
+  const privateCaseSource = source(store);
+  const runtime = createRunnerTrialRuntime({ privateCaseSource, parts, settings, workerFor: workers.workerFor, ownerFallbackEnabled, onEvent: (caseId, turnId, event) => events.push({ caseId, turnId, ...event }), ...(clock ? { now: () => clock.now } : {}) });
+  const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, maximumInvocationAttempts: 1 });
   let exchange = 0;
   const send = (text, userInput = {}) => {
     exchange += 1;
+    if (clock) clock.now += 1_000;
     return controller.run({ caseId: CASE_ID, runtimeTurnId: `runtime:exchange-${exchange}`, exchangeId: `exchange-${exchange}`, userTurnId: `exchange-${exchange}-user`, assistantTurnId: `exchange-${exchange}-assistant`, userMessage: text, userInput });
   };
   return { store, controller, runtime, events, calls: workers.calls, send };
@@ -246,7 +264,7 @@ test("a numberless provisional for wanting to die isn't a number shown: a later 
   assert.equal(second.deliveryKind, "candidate");
   assert.deepEqual(eventsOf(runner, 2, "provisional").map((event) => event.text), [ACTED_WITH_NUMBER], "no number was shown before, so the acted provisional is given");
   const [, secondPrompt] = crisisReaderSystems(runner);
-  assert.equal(secondPrompt.includes(crisisReaderProvisionalOfferedNote()), false, "the reader isn't told one was offered");
+  assert.equal(secondPrompt.includes(NUMBER_SHOWN_NOTE), false, "the reader isn't told a number was shown");
   assert.equal(secondPrompt.includes("provisional_reply also when the level is wants_to_die"), false, "nor asked again for one for wanting to die");
 });
 
@@ -259,9 +277,11 @@ test("in the same turn, a numberless provisional doesn't keep the crisis checker
   assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [WANTS_TO_DIE_PROVISIONAL]);
   assert.deepEqual(eventsOf(runner, 1, "emergency_line").map((event) => event.reason), ["checker_read_acted"]);
   assert.equal(runner.calls.filter((call) => call.role === "W-repair").length, 1, "the number check sent the acted-read draft to repair");
-  // The number was shown (the line): a later acted turn gets no provisional and no second line; its reply comes back to it.
+  // The number was shown (the line): the later acted turn's reader is told so, and its provisional reply for the new act (the
+  // stand-in writes one) is shown after its exact checks; no second line.
   await runner.send("I took all my pills an hour ago.");
-  assert.deepEqual(eventsOf(runner, 2, "provisional"), []);
+  assert.ok(crisisReaderSystems(runner)[1].includes(NUMBER_SHOWN_NOTE));
+  assert.deepEqual(eventsOf(runner, 2, "provisional").map((event) => event.text), [ACTED_WITH_NUMBER]);
   assert.deepEqual(eventsOf(runner, 2, "emergency_line"), []);
   // Without any number shown, the number check holds on every turn read acted.
   const program = runProgramChecks({ reply: "Stay with me.", checkerLevel: "acted_or_about_to", firstActedTurn: true });
@@ -279,16 +299,25 @@ test("STORAGE_DESCRIBED is held at medium by program, whatever severity a checke
   assert.equal(runner.calls.filter((call) => call.role === "W-repair").length, 0, "no repair for it");
 });
 
-test("the writer is told not to talk about InnerSignal's storage, and every checker that reads SKILL.md counts it without blocking", async (t) => {
+test("the writer is told not to bring up what InnerSignal stores, and what it keeps; every checker that reads SKILL.md counts it without blocking", async (t) => {
   const runner = await makeRunner(t, baseScript());
   await runner.send("Something synthetic and ordinary.");
   const writer = runner.calls.find((call) => call.role === "W").request;
-  assert.ok(writer.system.includes(STORAGE_LINE), "the writer's line");
-  assert.ok(runner.calls.find((call) => call.role === "C2").request.system.includes("STORAGE_DESCRIBED (medium, never more)"), "the skill checker");
+  assert.ok(writer.system.includes(`\n- ${STORAGE_LINE}\n- ${STORAGE_FACTS}\n`), "the writer's line, and what InnerSignal keeps beside it");
+  // Fable's recheck of 22 Nov 2026, finding 9: the first wording forbade saying what the writer can't access, the honest sentence
+  // that keeps it from pretending to hold something it doesn't have.
+  assert.match(STORAGE_LINE, /If they refer to something you don't have, say so plainly\.$/u);
+  assert.equal(writer.system.includes("what you can or can't access"), false);
+  // What it keeps, as the design's section 6 and the packet say: the earlier messages given as background are the runtime's own.
+  assert.match(STORAGE_FACTS, /^What InnerSignal keeps: the case's conversations and its risk record, encrypted on this computer until the case is deleted; /u);
+  assert.ok(STORAGE_FACTS.includes(`up to ${DEFAULT_RUNNER_SETTINGS.backgroundTurns} earlier messages of the case`));
+  assert.ok(Object.hasOwn(JSON.parse(writer.user.slice(writer.user.indexOf("{"))), "earlier_conversations"), "named as the packet names them");
+  const finding = "STORAGE_DESCRIBED (medium, never more): the reply brings up what InnerSignal has stored about the person, or how it stores it, when they didn't ask about it or choose to pick up where they left off. Saying plainly that InnerSignal doesn't have something they refer to is not this.";
+  assert.ok(runner.calls.find((call) => call.role === "C2").request.system.includes(finding), "the skill checker");
   for (const role of ["C1", "C3", "C4"]) assert.ok(!runner.calls.find((call) => call.role === role).request.system.includes("STORAGE_DESCRIBED"), `not ${role}`);
   const whole = await makeRunner(t, baseScript(), { settings: { writerMode: "whole", checkerMode: "whole" } });
   await whole.send("Something synthetic and ordinary.");
-  assert.ok(whole.calls.find((call) => call.role === "CW").request.system.includes("STORAGE_DESCRIBED (medium, never more)"), "the whole checker");
+  assert.ok(whole.calls.find((call) => call.role === "CW").request.system.includes(finding), "the whole checker");
   // A medium finding never stops a reply: the reply is delivered.
   const counted = await makeRunner(t, baseScript({ C2: () => ({ findings: [{ code: "STORAGE_DESCRIBED", severity: "medium", summary: "talks about the case file", evidence_turn_ids: [] }], level: "none", repair_induced_checks: [], missed_boxes: [] }) }));
   const result = await counted.send("Something synthetic and ordinary.");
@@ -305,7 +334,8 @@ test("with the setting for both levels, someone who wants to die gets a provisio
   });
   const runner = await makeRunner(t, script, { settings: { provisionalLevels: ["acted_or_about_to", "wants_to_die"] } });
   await runner.send("I just want it all to stop. I want to die.");
-  assert.ok(runner.calls.find((call) => call.role === "R1").request.system.includes("provisional_reply also when the level is wants_to_die"), "the reader is asked for one at this level");
+  assert.ok(runner.calls.find((call) => call.role === "R1").request.system.includes(crisisReaderWantsToDieNote()), "the reader is asked for one at this level");
+  assert.ok(crisisReaderWantsToDieNote().endsWith("and its one question about now is its only question (one question mark)."), "with the one question its check allows");
   const provisional = runner.events.find((event) => event.type === "provisional");
   assert.equal(provisional?.text, provisionalText);
   assert.ok(!runner.events.some((event) => event.type === "emergency_line"), "no emergency line for someone who hasn't acted");
@@ -330,7 +360,7 @@ const actedEveryTurn = (overrides = {}) => baseScript({
   C1: () => ({ findings: [], level: "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] }),
   ...overrides
 });
-const OFFERED_NOTE = crisisReaderProvisionalOfferedNote();
+const NUMBER_SHOWN_NOTE = crisisReaderNumberShownNote();
 const crisisReaderSystems = (runner) => runner.calls.filter((call) => call.role === "R1").map((call) => call.request.system);
 const eventsOf = (runner, exchange, type) => runner.events.filter((event) => event.turnId === `runtime:exchange-${exchange}` && event.type === type);
 // What the crisis reader's stage sent for one turn: the events before that turn's writer started.
@@ -338,12 +368,17 @@ function readerStageEvents(runner, exchange) {
   const ofTurn = runner.events.filter((event) => event.turnId === `runtime:exchange-${exchange}`);
   return ofTurn.slice(0, ofTurn.findIndex((event) => event.type === "status" && event.step === "writing")).filter((event) => event.type !== "status");
 }
+const packetOf = (request) => JSON.parse(request.user.slice(request.user.indexOf("{")));
+const writerPackets = (runner) => runner.calls.filter((call) => call.role === "W").map((call) => packetOf(call.request));
 
 test("the defaults: a provisional reply only on a conversation's first turn read at its level, and the caps and round from the measured times", () => {
   assert.equal(DEFAULT_RUNNER_SETTINGS.provisionalTurns, "first");
   assert.deepEqual({ ...DEFAULT_RUNNER_SETTINGS.limits }, { reader: 30_000, writer: 60_000, checker: 45_000 });
   assert.equal(DEFAULT_RUNNER_SETTINGS.roundMs, 30_000);
   assert.equal(DEFAULT_RUNNER_SETTINGS.deadlineMs, 300_000, "the turn's deadline is unchanged");
+  assert.equal(EMERGENCY_LINE_FALLBACK_MS, 30_000, "the timed emergency line, 30 s after the message");
+  // Fable's recheck of 22 Nov 2026, finding 14: no code read it, so it isn't a setting (design, section 7: not built).
+  assert.equal(Object.hasOwn(DEFAULT_RUNNER_SETTINGS, "fixedMessageOn"), false);
   const make = (settings) => createRunnerTrialRuntime({ privateCaseSource: {}, parts, settings, workerFor: () => ({}) });
   assert.deepEqual([make({}).settings.provisionalTurns, make({ provisionalTurns: "every" }).settings.provisionalTurns], ["first", "every"]);
   assert.deepEqual(make({}).settings.limits, { reader: 30_000, writer: 60_000, checker: 45_000 });
@@ -352,16 +387,16 @@ test("the defaults: a provisional reply only on a conversation's first turn read
   }
 });
 
-test("with provisionalTurns first, a later turn read acted gets no provisional reply: the reader is told one was offered, and the skip puts no emergency line in", async (t) => {
-  const runner = await makeRunner(t, actedEveryTurn());
+test("with provisionalTurns first, a later turn read acted is told a number was shown; when its message answers what was said before, the reader gives no provisional and nothing is shown at once", async (t) => {
+  // The second message says no to the ambulance: the reader, told the conversation has shown a number, gives no provisional reply.
+  const runner = await makeRunner(t, actedEveryTurn({ R1: (count) => actedReading(count === 2 ? null : ACTED_PROVISIONAL) }));
   await runner.send("I took all my pills an hour ago.");
   const second = await runner.send("No ambulance. I just want to sleep.");
   assert.equal(second.deliveryKind, "candidate");
   // The first turn: the provisional reply, and no line.
   assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [ACTED_PROVISIONAL]);
   assert.deepEqual(eventsOf(runner, 1, "emergency_line"), []);
-  // The second: the reader's provisional (it wrote one anyway) is neither shown nor recorded, and its stage sends nothing.
-  assert.deepEqual(eventsOf(runner, 2, "provisional"), []);
+  // The second: nothing from the crisis reader's stage, nothing recorded as a provisional (shown or refused).
   assert.deepEqual(readerStageEvents(runner, 2), [], "no provisional and no emergency line from the crisis reader's stage");
   const record = await runner.store.load(CASE_ID);
   const [first, later] = record.runtime_turns;
@@ -371,21 +406,49 @@ test("with provisionalTurns first, a later turn read acted gets no provisional r
   assert.equal(later.runner_reading.readers.crisis.level, "acted_or_about_to", "the reading itself is stored as always");
   // Nor does the crisis checker's reading: the first turn's provisional already showed the number in this conversation, so the
   // full reply comes back to it and the line stays on the page (22 Nov 2026). With "every", or before any number was shown, the
-  // checker's trigger is as before (the tests below).
+  // checker's trigger is as before (the tests below). The reply came at once, so the timed line never went in.
   assert.deepEqual(eventsOf(runner, 2, "emergency_line"), []);
-  // The reader is told on the line before its answer line, and only after the first such turn.
+  // The reader is told on the line before its answer line, and only once the conversation has shown a number.
   const [firstPrompt, laterPrompt] = crisisReaderSystems(runner);
-  assert.equal(firstPrompt.includes(OFFERED_NOTE), false);
-  assert.ok(laterPrompt.endsWith(`\n${OFFERED_NOTE}\nAnswer only with the JSON object the schema asks for.`));
+  assert.equal(firstPrompt.includes(NUMBER_SHOWN_NOTE), false);
+  assert.ok(laterPrompt.endsWith(`\n${NUMBER_SHOWN_NOTE}\nAnswer only with the JSON object the schema asks for.`));
+  for (const words of ["An emergency number was already shown in this conversation.", "only when the latest message tells of something new and urgent", "come back to the emergency number in one sentence that names it, without repeating the whole first step, and give the next smallest thing.", "When the latest message answers what was said before (for example, saying no to an ambulance or to calling, or explaining why), provisional_reply is null."]) {
+    assert.ok(NUMBER_SHOWN_NOTE.includes(words), words);
+  }
+  assert.equal(laterPrompt.includes("already offered"), false, "never that a provisional reply was offered (Fable's recheck, finding 13)");
   // The writer continues from what the person saw: the first turn's provisional reply in its place, none of its own this turn.
-  const laterWriter = runner.calls.filter((call) => call.role === "W")[1].request;
-  const packet = JSON.parse(laterWriter.user.slice(laterWriter.user.indexOf("{")));
+  const packet = writerPackets(runner)[1];
   assert.equal(Object.hasOwn(packet, "provisional_reply_shown"), false);
   assert.deepEqual(packet.conversation.filter((entry) => entry.kind === "provisional reply").map((entry) => entry.text), [ACTED_PROVISIONAL]);
-  // A new conversation's first such turn gets one again.
+  // A new conversation's first such turn gets one again, and its reader isn't told a number was shown.
   await runner.send("I took them again.", { newConversation: true });
   assert.deepEqual(eventsOf(runner, 3, "provisional").map((event) => event.text), [ACTED_PROVISIONAL]);
-  assert.equal(crisisReaderSystems(runner)[2].includes(OFFERED_NOTE), false);
+  assert.equal(crisisReaderSystems(runner)[2].includes(NUMBER_SHOWN_NOTE), false);
+});
+
+test("about to, then has taken them: the later turn's reader gives a short provisional reply for the new act, shown after the acted-level checks, a number included (Fable's recheck of 22 Nov 2026, finding 3)", async (t) => {
+  const ABOUT_TO = "I hear you, and I'm glad you told me. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK. Can you put the pills in another room?";
+  const NEW_ACT = "Please call 112 now, or 911 or 999 where you are. Can you unlock the front door for the paramedics?";
+  const runner = await makeRunner(t, actedEveryTurn({
+    // The third message tells of another new act, and the reader's provisional names no number: refused, so the line at once.
+    R1: (count) => actedReading([ABOUT_TO, NEW_ACT, "Please stay with me and unlock the door."][count - 1])
+  }));
+  await runner.send("I'm going to take all my pills tonight.");
+  const second = await runner.send("I've taken them.");
+  assert.equal(second.deliveryKind, "candidate");
+  assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [ABOUT_TO]);
+  assert.deepEqual(eventsOf(runner, 2, "provisional").map((event) => event.text), [NEW_ACT], "the new act gets its first words");
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line"), [], "a provisional reply naming the number needs no line");
+  const [firstPrompt, laterPrompt] = crisisReaderSystems(runner);
+  assert.equal(firstPrompt.includes(NUMBER_SHOWN_NOTE), false);
+  assert.ok(laterPrompt.includes(NUMBER_SHOWN_NOTE), "the reader was told the number was shown, and judged the message new and urgent");
+  const record = await runner.store.load(CASE_ID);
+  assert.deepEqual(record.runtime_turns[1].provisional.checks, ["a_number", "numbers_known", "shape", "links", "detox"]);
+  assert.equal(writerPackets(runner)[1].provisional_reply_shown, NEW_ACT, "the writer continues from it");
+  await runner.send("I took the rest of the box too.");
+  assert.deepEqual(eventsOf(runner, 3, "provisional"), []);
+  assert.deepEqual(readerStageEvents(runner, 3).map((event) => [event.type, event.reason]), [["emergency_line", "provisional_not_shown"]], "as on a first turn");
+  assert.deepEqual((await runner.store.load(CASE_ID)).runtime_turns[2].runner_reading.readers.provisional_refused.problems, ["no_emergency_number"]);
 });
 
 test("with provisionalTurns every, each turn read acted gets its provisional reply, as before", async (t) => {
@@ -394,30 +457,31 @@ test("with provisionalTurns every, each turn read acted gets its provisional rep
   await runner.send("No ambulance. I just want to sleep.");
   assert.deepEqual([1, 2].map((exchange) => eventsOf(runner, exchange, "provisional").map((event) => event.text)), [[ACTED_PROVISIONAL], [ACTED_PROVISIONAL]]);
   assert.deepEqual([1, 2].map((exchange) => eventsOf(runner, exchange, "emergency_line").length), [0, 0]);
-  assert.deepEqual(crisisReaderSystems(runner).map((system) => system.includes(OFFERED_NOTE)), [false, false]);
+  assert.deepEqual(crisisReaderSystems(runner).map((system) => system.includes(NUMBER_SHOWN_NOTE)), [false, false]);
   assert.equal((await runner.store.load(CASE_ID)).runtime_turns[1].provisional.exact_text, ACTED_PROVISIONAL);
 });
 
-test("with provisionalTurns first, a refused provisional still shows the emergency line on its turn, and the next turn read acted gets none", async (t) => {
+test("with provisionalTurns first, a refused provisional still shows the emergency line on its turn, and the line counts as the number shown for the next turn", async (t) => {
   const runner = await makeRunner(t, actedEveryTurn({
-    // The first turn's provisional names a number off the list; the second's would pass its checks, but it isn't that turn's to give.
-    R1: (count) => actedReading(count === 1 ? "Please get help now, call 0800 555 0100." : ACTED_PROVISIONAL),
+    // The first turn's provisional names a number off the list; the second message answers what was said before, so its reader
+    // gives none.
+    R1: (count) => actedReading(count === 1 ? "Please get help now, call 0800 555 0100." : null),
     W: () => ({ reply: "Please call 112 now. Is anyone near you?", answered_level: "acted_or_about_to", quotes: [] })
   }));
   await runner.send("I swallowed a lot of tablets.");
   await runner.send("I don't want to call anyone.");
   assert.deepEqual(eventsOf(runner, 1, "provisional"), []);
   assert.deepEqual(readerStageEvents(runner, 1).map((event) => [event.type, event.reason]), [["emergency_line", "provisional_not_shown"]], "the refused provisional's line, at once");
-  assert.deepEqual(eventsOf(runner, 2, "provisional"), [], "whether the first was shown or refused doesn't matter");
+  assert.deepEqual(eventsOf(runner, 2, "provisional"), []);
   assert.deepEqual(readerStageEvents(runner, 2), []);
-  assert.ok(crisisReaderSystems(runner)[1].includes(OFFERED_NOTE));
+  assert.ok(crisisReaderSystems(runner)[1].includes(NUMBER_SHOWN_NOTE), "the line showed the number");
   const record = await runner.store.load(CASE_ID);
   assert.deepEqual(record.runtime_turns[0].runner_reading.readers.provisional_refused.problems, ["no_emergency_number", "unknown_number"]);
   assert.equal(record.runtime_turns[0].emergency_line_reason, "provisional_not_shown");
   assert.equal(record.runtime_turns[1].provisional, undefined);
 });
 
-test("with provisionalTurns first, the skip changes none of the line's other triggers: no reading in a crisis conversation, and a turn closed after a crisis reading", async (t) => {
+test("with provisionalTurns first, the later-turn rule changes none of the line's other triggers: no reading in a crisis conversation, and a turn closed after a crisis reading", async (t) => {
   // The second turn's crisis reader gives no reading in a conversation already read acted: the line, as before.
   const unread = await makeRunner(t, actedEveryTurn({ R1: (count) => { if (count === 2) throw Object.assign(new Error("synthetic"), { code: "TIMEOUT" }); return actedReading(ACTED_PROVISIONAL); } }));
   await unread.send("I took all my pills an hour ago.");
@@ -426,13 +490,160 @@ test("with provisionalTurns first, the skip changes none of the line's other tri
   // A later turn read acted whose writer fails ends without a reply: the line goes in at the closing. The crisis checker never
   // read it, so only the closing shows it.
   let failing = false;
-  const closed = await makeRunner(t, actedEveryTurn({ W: () => { if (failing) throw Object.assign(new Error("synthetic"), { code: "PLAN_LIMIT" }); return { reply: "Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] }; } }));
+  const closed = await makeRunner(t, actedEveryTurn({
+    R1: (count) => actedReading(count === 1 ? ACTED_PROVISIONAL : null),
+    W: () => { if (failing) throw Object.assign(new Error("synthetic"), { code: "PLAN_LIMIT" }); return { reply: "Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] }; }
+  }));
   await closed.send("I took all my pills an hour ago.");
   failing = true;
   const answer = await closed.send("No ambulance.");
   assert.equal(answer.closing.reason_code, "plan_limit");
   assert.deepEqual(eventsOf(closed, 2, "provisional"), []);
   assert.deepEqual(eventsOf(closed, 2, "emergency_line").map((event) => event.reason), ["turn_closed_without_reply"]);
+});
+
+// Turns of the event loop until `condition` holds (setImmediate, which the mock timers below leave real), for up to 10 s.
+async function until(condition, what) {
+  const started = performance.now();
+  while (!(await condition())) {
+    if (performance.now() - started > 10_000) assert.fail(`still waiting for ${what}`);
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+}
+// A stand-in writer whose `held`-th call waits until released.
+function heldWriter(held = 2) {
+  const writer = { started: false, release: null };
+  writer.W = async (count) => {
+    if (count === held) {
+      writer.started = true;
+      await new Promise((resolve) => { writer.release = resolve; });
+    }
+    return { reply: "Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] };
+  };
+  return writer;
+}
+
+test("has taken them, then says no to the ambulance: nothing is shown at once, and the highlighted line goes in when there is still no reply 30 s after the message (Fable's recheck of 22 Nov 2026, finding 3)", async (t) => {
+  const clock = { now: Date.parse("2026-11-22T03:00:00.000Z") };
+  const writer = heldWriter();
+  const runner = await makeRunner(t, actedEveryTurn({
+    // The second turn's reader takes 10 s and gives no provisional reply: the person is answering what was said before.
+    R1: (count) => { if (count === 2) clock.now += 10_000; return actedReading(count === 1 ? ACTED_PROVISIONAL : null); },
+    W: writer.W
+  }), { clock });
+  await runner.send("I took all my pills an hour ago.");
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const sending = runner.send("No, I don't want an ambulance here.");
+  await until(() => writer.started, "the writer");
+  assert.deepEqual(readerStageEvents(runner, 2), [], "nothing shown at once");
+  // The 30 s run from the message's arrival (the turn's created_at, by the runtime's clock), not from the end of the reader's 10 s.
+  t.mock.timers.tick(EMERGENCY_LINE_FALLBACK_MS - 10_000 - 1);
+  for (let turn = 0; turn < 50; turn += 1) await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line"), [], "not before 30 s");
+  assert.equal((await runner.store.load(CASE_ID)).runtime_turns[1].emergency_line_shown_at, undefined);
+  t.mock.timers.tick(1);
+  await until(() => eventsOf(runner, 2, "emergency_line").length > 0, "the timed line");
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line").map((event) => event.reason), ["no_reply_yet"]);
+  const stored = (await runner.store.load(CASE_ID)).runtime_turns[1];
+  assert.equal(stored.emergency_line_reason, "no_reply_yet");
+  assert.equal(stored.emergency_line_shown_at, new Date(clock.now).toISOString(), "stored when it was put in");
+  // The reply then comes, after the line, which shows once.
+  writer.release();
+  const result = await sending;
+  assert.equal(result.deliveryKind, "candidate");
+  assert.equal(result.runtimeTurn.emergency_line_reason, "no_reply_yet", "the answer's turn carries it, so a replay shows it");
+  assert.equal(eventsOf(runner, 2, "emergency_line").length, 1);
+});
+
+test("the timed line goes in only while the turn is unfinished: a reply that came first wins, even one delivered between the timer's read and its write, and the timer's failures are caught", async (t) => {
+  const unhandled = [];
+  const onUnhandled = (reason) => unhandled.push(reason);
+  process.on("unhandledRejection", onUnhandled);
+  t.after(() => process.off("unhandledRejection", onUnhandled));
+  // The case source as the timer sees it: `onRead`, when set, runs once after the next read, before it returns.
+  let onRead = null;
+  const source = (store) => ({ ...store, async load(caseId) { const record = await store.load(caseId); const hook = onRead; onRead = null; if (hook) await hook(); return record; } });
+  const script = (writer) => actedEveryTurn({ R1: (count) => actedReading(count === 1 ? ACTED_PROVISIONAL : null), W: writer.W });
+
+  // The reply came before 30 s: when the timer fires, the turn is finished, and nothing is put in.
+  const quick = await makeRunner(t, script(heldWriter(0)), { clock: { now: Date.parse("2026-11-22T03:00:00.000Z") }, source });
+  await quick.send("I took all my pills an hour ago.");
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  assert.equal((await quick.send("No ambulance.")).deliveryKind, "candidate");
+  let fired = false;
+  onRead = () => { fired = true; };
+  t.mock.timers.tick(EMERGENCY_LINE_FALLBACK_MS);
+  await until(() => fired, "the timer's read");
+  for (let turn = 0; turn < 50; turn += 1) await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(eventsOf(quick, 2, "emergency_line"), []);
+  assert.equal((await quick.store.load(CASE_ID)).runtime_turns[1].emergency_line_shown_at, undefined);
+
+  // The reply is delivered after the timer read the turn as unfinished and before it writes: the store refuses the line for the
+  // finished turn, inside the case's queue, and the timer sends nothing.
+  const writer = heldWriter();
+  const race = await makeRunner(t, script(writer), { clock: { now: Date.parse("2026-11-22T04:00:00.000Z") }, source });
+  await race.send("I took all my pills an hour ago.");
+  const sending = race.send("No ambulance.");
+  await until(() => writer.started, "the writer");
+  let delivered = null;
+  onRead = async () => { writer.release(); delivered = await sending; };
+  t.mock.timers.tick(EMERGENCY_LINE_FALLBACK_MS);
+  await until(() => delivered != null, "the reply");
+  for (let turn = 0; turn < 50; turn += 1) await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(delivered.deliveryKind, "candidate");
+  assert.deepEqual(eventsOf(race, 2, "emergency_line"), []);
+  const turn = (await race.store.load(CASE_ID)).runtime_turns[1];
+  assert.deepEqual([turn.state, turn.emergency_line_shown_at], ["DELIVERED", undefined]);
+  await assert.rejects(() => race.store.recordRunnerEmergencyLine(CASE_ID, turn.id, { reason: "no_reply_yet" }), /A finished runtime turn takes no emergency line\./u);
+
+  // The timer's read fails: caught, never an unhandled rejection, and the turn goes on to its reply.
+  const failing = heldWriter();
+  const broken = await makeRunner(t, script(failing), { clock: { now: Date.parse("2026-11-22T05:00:00.000Z") }, source });
+  await broken.send("I took all my pills an hour ago.");
+  const pending = broken.send("No ambulance.");
+  await until(() => failing.started, "the writer");
+  let thrown = false;
+  onRead = () => { thrown = true; throw Object.assign(new Error("synthetic read failure"), { code: "SYNTHETIC" }); };
+  t.mock.timers.tick(EMERGENCY_LINE_FALLBACK_MS);
+  await until(() => thrown, "the failing read");
+  for (let turn = 0; turn < 50; turn += 1) await new Promise((resolve) => setImmediate(resolve));
+  failing.release();
+  assert.equal((await pending).deliveryKind, "candidate");
+  assert.deepEqual(eventsOf(broken, 2, "emergency_line"), []);
+  assert.deepEqual(unhandled, [], "no unhandled rejection");
+});
+
+test("a grouped number in a delivered reply isn't an emergency number shown: the next turn read acted is still the conversation's first (Fable's recheck of 22 Nov 2026, finding 12)", async (t) => {
+  const runner = await makeRunner(t, baseScript({
+    R1: (count) => (count === 1 ? quietReader() : actedReading(null)),
+    W: (count) => (count === 1
+      ? { reply: "Over 1,000 people a day write something like this to someone.", answered_level: "none", quotes: [] }
+      : { reply: "Please call 112 now. Is anyone near you?", answered_level: "acted_or_about_to", quotes: [] }),
+    C1: (count) => ({ findings: [], level: count === 1 ? "none" : "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] })
+  }));
+  await runner.send("Something synthetic.");
+  await runner.send("I took all my pills an hour ago.");
+  assert.equal(crisisReaderSystems(runner)[1].includes(NUMBER_SHOWN_NOTE), false, "the reader isn't told a number was shown");
+  assert.deepEqual(readerStageEvents(runner, 2).map((event) => [event.type, event.reason]), [["emergency_line", "no_provisional"]], "no provisional reply: the line at once, as on a first turn");
+  const audit = (await runner.store.load(CASE_ID)).candidate_responses[0].audit_history.at(-1);
+  assert.equal(audit.findings.some((finding) => finding.code === "PROGRAM_NUMBER_WITHOUT_CRISIS"), false, "nor an over-reaction");
+});
+
+test("a turn the crisis reader gave no reading closes with the highlighted line, as after a crisis reading (Fable's recheck of 22 Nov 2026, finding 7)", async (t) => {
+  const planLimit = () => { throw Object.assign(new Error("synthetic"), { code: "PLAN_LIMIT" }); };
+  const runner = await makeRunner(t, baseScript({ R1: () => { throw Object.assign(new Error("synthetic"), { code: "TIMEOUT" }); }, W: planLimit }));
+  const closed = await runner.send("Something synthetic.");
+  assert.equal(closed.closing.reason_code, "plan_limit");
+  assert.ok(closed.runtimeTurn.emergency_line_shown_at);
+  assert.deepEqual(eventsOf(runner, 1, "emergency_line").map((event) => event.reason), ["turn_closed_without_reply"]);
+  const turn = (await runner.store.load(CASE_ID)).runtime_turns[0];
+  assert.equal(turn.runner_reading.readers.crisis.unread, true);
+  assert.equal(turn.emergency_line_reason, "turn_closed_without_reply");
+  // Read as nothing, the same closing shows no line, as before.
+  const quiet = await makeRunner(t, baseScript({ W: planLimit }));
+  const quietClosed = await quiet.send("Something synthetic.");
+  assert.equal(quietClosed.closing.reason_code, "plan_limit");
+  assert.deepEqual(eventsOf(quiet, 1, "emergency_line"), []);
 });
 
 test("the crisis reader is told the provisional reply's exact checks in plain words, and each is one provisionalProblems makes", async (t) => {
@@ -442,17 +653,19 @@ test("the crisis reader is told the provisional reply's exact checks in plain wo
   for (const words of [
     "no headings, lists or bold",
     "The program shows it only when it passes exact checks, so keep to them:",
-    "at most one question in the whole reply (one question mark), and in the first step, when you don't know where they are, that one question is where they are;",
+    "at most two questions in the whole reply (two question marks): where they are, when you don't know, and one about now;",
     "every number in it is an emergency number the section names (112, 911, 999), and no other number of two or more digits, not even a time or a count such as \"10 minutes\" (the digits in the section's three links don't count);",
     "at most 900 characters;",
     "no link but the section's three;",
     "never the word detox."
   ]) assert.ok(system.includes(words), words);
   assert.equal(system.includes("at most one question;"), false, "the old wording that left two questions open is gone");
+  assert.equal(system.includes("at most one question in the whole reply"), false, "and the one-question limit for someone who has acted (Fable's recheck, finding 4)");
   // Each is a check the program makes before a provisional reply shows.
   const ask = "I hear you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK. Where are you?";
   assert.deepEqual(provisionalProblems(ask), []);
-  assert.deepEqual(provisionalProblems(`${ask} Is anyone near you?`), ["more_than_one_question"]);
+  assert.deepEqual(provisionalProblems(`${ask} Is anyone near you?`), [], "where they are, and one question about now");
+  assert.deepEqual(provisionalProblems(`${ask} Is anyone near you? Is the door unlocked?`), ["more_than_two_questions"]);
   assert.deepEqual(provisionalProblems("I hear you. Please call 112 now and stay on the line for 10 minutes."), ["unknown_number"]);
   assert.deepEqual(provisionalProblems(`I hear you. Please call 112 now, or a crisis line (${CRISIS_LINKS[2]}). A therapist: ${CRISIS_LINKS[1]}`), []);
   assert.deepEqual(provisionalProblems(`I hear you. Please call 112 now. ${"Stay with me. ".repeat(70)}`), ["too_long"]);

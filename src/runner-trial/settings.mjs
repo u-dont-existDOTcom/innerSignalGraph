@@ -101,7 +101,9 @@ export function validateRunnerTrialSettings(value, { root = repositoryRoot } = {
     runtime.provisionalLevels = Object.freeze([...levels]);
   }
   if (Object.hasOwn(value, "provisionalTurns")) {
-    // first: only a conversation's first turn read at one of those levels gets a provisional reply; every: each such turn.
+    // first: for someone who has acted or is about to, a conversation's first such turn gets a provisional reply, and a later one
+    // only when the crisis reader reads something new and urgent after a number was shown; for wanting to die, the first turn read
+    // at that level; every: each such turn.
     if (!PROVISIONAL_TURNS.includes(value.provisionalTurns)) throw invalid(`provisionalTurns must be ${PROVISIONAL_TURNS.join(" or ")}.`);
     runtime.provisionalTurns = value.provisionalTurns;
   }

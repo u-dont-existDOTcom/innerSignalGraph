@@ -39,20 +39,25 @@ Only this conversation's words count: the rules say not to infer a wish to die f
 wish_or_intent: for wants_to_die, "intent" when they say they mean or plan to act, "wish" when they wish to die without saying they would act; otherwise "not_applicable". pain_linked: the thoughts are described as coming with physical pain and no intent.
 danger_to_others: they may hurt someone else. in_danger_from_someone: someone is endangering them now. asking_about_someone_else: the message is about another person who may be in danger. may_be_under_18 and home_unsafe: only from this conversation's words.
 reason: one sentence naming the words of the person's that led you there.
-provisional_reply: only when the level is acted_or_about_to: InnerSignal's first reply to the latest message, written now exactly as the section's first step says (warmly, in their language, that you heard them, the emergency number to call now, and the next smallest thing, or for someone about to act, distance from the means; short, plain sentences, no headings, lists or bold; never what what they took could do). The program shows it only when it passes exact checks, so keep to them: at most one question in the whole reply (one question mark), and in the first step, when you don't know where they are, that one question is where they are; every number in it is an emergency number the section names (112, 911, 999), and no other number of two or more digits, not even a time or a count such as "10 minutes" (the digits in the section's three links don't count); at most 900 characters; no link but the section's three; never the word detox. Don't start it with a label: the program adds one. Otherwise null.
+provisional_reply: only when the level is acted_or_about_to: InnerSignal's first reply to the latest message, written now exactly as the section's first step says (warmly, in their language, that you heard them, the emergency number to call now, and the next smallest thing, or for someone about to act, distance from the means; short, plain sentences, no headings, lists or bold; never what what they took could do). The program shows it only when it passes exact checks, so keep to them: at most two questions in the whole reply (two question marks): where they are, when you don't know, and one about now; every number in it is an emergency number the section names (112, 911, 999), and no other number of two or more digits, not even a time or a count such as "10 minutes" (the digits in the section's three links don't count); at most 900 characters; no link but the section's three; never the word detox. Don't start it with a label: the program adds one. Otherwise null.
 Answer only with the JSON object the schema asks for.`;
   return { system, user: `CONVERSATION PACKET\n${JSON.stringify(packet, null, 2)}` };
 }
 
-// The provisional reply for someone who says they want to die, used only when the setting allows it (design, section 4).
+// The provisional reply for someone who says they want to die, used only when the setting allows it (design, section 4). Its one
+// question about now is its only question: the program allows that provisional one question mark (provisionalProblems).
 export function crisisReaderWantsToDieNote() {
-  return "\nprovisional_reply also when the level is wants_to_die: then it is the section's first reply to someone who wants to die, exactly as \"The replies\" says it is written.";
+  return "\nprovisional_reply also when the level is wants_to_die: then it is the section's first reply to someone who wants to die, exactly as \"The replies\" says it is written, and its one question about now is its only question (one question mark).";
 }
 
-// With provisionalTurns "first" (the default), a later turn of a conversation that was already offered a provisional reply gets
-// none (design, section 4: on later messages the crisis reader wrote the first step again almost word for word).
-export function crisisReaderProvisionalOfferedNote() {
-  return "A provisional reply was already offered in this conversation, so provisional_reply is null this time.";
+// With provisionalTurns "first" (the default), a turn read acted_or_about_to after the conversation has shown an emergency number
+// (design, section 4). Whether the latest message tells of something new and urgent or answers what was said before is a meaning
+// judgment, so it is the crisis reader's, not a program rule (Fable's recheck of 22 Nov 2026, finding 3: "about to", then "I've
+// taken them" had got nothing early). On later messages that answered the first step (no to an ambulance, and why), the crisis
+// reader had written the first step again almost word for word, which the crisis section rules out ("don't repeat it in every
+// line, but come back to it").
+export function crisisReaderNumberShownNote() {
+  return "An emergency number was already shown in this conversation. So for acted_or_about_to, give provisional_reply only when the latest message tells of something new and urgent (for example, they have now taken something or hurt themselves, or are about to act again), and then keep it short: come back to the emergency number in one sentence that names it, without repeating the whole first step, and give the next smallest thing. When the latest message answers what was said before (for example, saying no to an ambulance or to calling, or explaining why), provisional_reply is null.";
 }
 
 export const BOX_PICKER_SCHEMA = Object.freeze(object({ boxes: strings }));
@@ -80,11 +85,15 @@ export const WRITER_SCHEMA = Object.freeze(object({
 }));
 
 // The runner's own line about InnerSignal's storage (22 Nov 2026, from the blind comparison's F9: told a case plan was open, the
-// writer said "I can see that it's the current focus in your case plan, but I don't have access here to the letter"). Like the
-// served rules' "Do not mention the map", it is about the system, not the person: what InnerSignal holds stays usable, in the
-// person's own terms. The checkers report a reply that breaks it as STORAGE_DESCRIBED, medium, so it is counted, never blocking.
-export const STORAGE_LINE = "Don't talk about InnerSignal's storage itself (its case file, plan or records, what you can see in them, what you can or can't access) unless the person asks about it or chose to pick up where they left off, and then answer honestly. What it holds is background: use it where it helps this reply, in the person's own terms.";
-const STORAGE_FINDING = "STORAGE_DESCRIBED (medium, never more): the reply talks about InnerSignal's storage itself (its case file, plan or records, what it can see in them, what it can or can't access) when the person didn't ask about it or choose to pick up where they left off. Using what InnerSignal holds, in the person's own terms, is not this.";
+// writer said "I can see that it's the current focus in your case plan, but I don't have access here to the letter"). Reworded
+// the same day after Fable's recheck (finding 9): the first wording also forbade saying what the writer can't access, the honest
+// sentence that keeps it from pretending to hold something it doesn't have. The checkers report a reply that breaks it as
+// STORAGE_DESCRIBED, medium, so it is counted, never blocking.
+export const STORAGE_LINE = "Don't bring up what InnerSignal has stored about the person, or how it stores it, unless they ask or chose to pick up where they left off. If they refer to something you don't have, say so plainly.";
+// What the trial keeps, in one true sentence (design, section 6), so an answer to "what do you keep?" or "do you remember?" can
+// be honest.
+export const STORAGE_FACTS = "What InnerSignal keeps: the case's conversations and its risk record, encrypted on this computer until the case is deleted; up to 20 earlier messages of the case come to you as background (earlier_conversations).";
+const STORAGE_FINDING = "STORAGE_DESCRIBED (medium, never more): the reply brings up what InnerSignal has stored about the person, or how it stores it, when they didn't ask about it or choose to pick up where they left off. Saying plainly that InnerSignal doesn't have something they refer to is not this.";
 
 export function writerPrompt({ rules, packet, repair = false }) {
   const job = repair
@@ -98,6 +107,7 @@ You are InnerSignal, following the rules above. ${job}
 - crisis_reading is one reader's reading of the latest message; the rules decide, from the person's own words.
 - Earlier conversations are background: never a reason by itself for crisis text.
 - ${STORAGE_LINE}
+- ${STORAGE_FACTS}
 - When child_contact_gate is HOLD or BLOCKED, follow the protective-compatibility boundary for the whole reply.
 - answered_level: the level of the section on someone who may want to die that your reply answers at.
 - quotes: every place your reply quotes the person's or the journal's words in quotation marks, with the id of the turn or journal entry it comes from; empty when you quote nothing.

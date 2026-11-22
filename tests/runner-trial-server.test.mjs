@@ -444,8 +444,9 @@ async function respond(base, body, { stream = true } = {}) {
 }
 
 // The server and page tests below whose second turn read acted shows its own provisional reply (or, refused, the emergency line)
-// run with provisionalTurns "every": since 22 Nov 2026 the default, "first", gives a later turn of a conversation none
-// (tests/runner-trial.test.mjs), and these test what the server and the page carry, not which turns get one.
+// run with provisionalTurns "every": since 22 Nov 2026 the default, "first", gives a later turn of a conversation one only when
+// the crisis reader, told a number was shown, reads something new and urgent (tests/runner-trial.test.mjs), and these test what
+// the server and the page carry, not which turns get one.
 const EVERY_TURN = Object.freeze({ provisionalTurns: "every" });
 
 test("someone who has acted: the stream carries the steps and the provisional reply before the final line, which has the JSON answer's fields", async (t) => {

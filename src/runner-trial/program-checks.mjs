@@ -35,8 +35,23 @@ function digitValue(char) {
   for (const zero of DIGIT_ZEROS) if (code >= zero && code <= zero + 9) return code - zero;
   return null;
 }
-// Every run of digits (any script): its digits as ASCII, or null when one of them can't be read (so it can't pass a check), and
-// how many digits it has.
+// A run of three digits that is one group of a grouped number isn't a number of its own (Fable's recheck of 22 Nov 2026, finding
+// 12: "1,000" or "10 000" had counted as the emergency number 000): a digit and exactly one group separator just before it
+// ("1,000", "10 000"), or exactly one group separator and three digits just after it ("112,000"). "112, 911 or 999" and "112 or
+// 000" are numbers of their own. The separators: a comma, a full stop, a space, a no-break or a narrow no-break space, and, so the
+// check holds in other languages too, the apostrophes of Swiss grouping ("1'000") and the Arabic thousands and decimal separators.
+const GROUP_SEPARATOR = "[,. \\u00a0\\u202f'\\u2019\\u066b\\u066c]";
+const GROUP_BEFORE = new RegExp(`(?<=\\p{Nd}${GROUP_SEPARATOR})`, "uy");
+const GROUP_AFTER = new RegExp(`(?=${GROUP_SEPARATOR}\\p{Nd}{3}(?!\\p{Nd}))`, "uy");
+function inGroupedNumber(text, start, end) {
+  GROUP_BEFORE.lastIndex = start;
+  if (GROUP_BEFORE.test(text)) return true;
+  GROUP_AFTER.lastIndex = end;
+  return GROUP_AFTER.test(text);
+}
+
+// Every run of digits (any script): its digits as ASCII, or null when one of them can't be read (so it can't pass a check), how
+// many digits it has, and (for a run of three digits read alone) whether it is one group of a grouped number.
 function readDigitRuns(text, { joinSeparators = false } = {}) {
   const runs = [];
   const pattern = joinSeparators
@@ -53,21 +68,25 @@ function readDigitRuns(text, { joinSeparators = false } = {}) {
       if (value == null) readable = false;
       else digits += String(value);
     }
-    runs.push({ digits: readable ? digits : null, count });
+    const grouped = !joinSeparators && count === 3 && inGroupedNumber(text, match.index, match.index + match[0].length);
+    runs.push({ digits: readable ? digits : null, count, grouped });
   }
   return runs;
 }
 const digitRuns = (text, options) => readDigitRuns(text, options).map((run) => run.digits);
+// A run that is one of the emergency numbers: on the list, and not one group of a grouped number.
+const isEmergencyNumberRun = (run) => run.digits != null && !run.grouped && EMERGENCY_NUMBERS.includes(run.digits);
 
 export function emergencyNumbersIn(text) {
-  return [...new Set(digitRuns(withoutCrisisLinks(text)).filter((run) => run != null && EMERGENCY_NUMBERS.includes(run)))];
+  return [...new Set(readDigitRuns(withoutCrisisLinks(text)).filter(isEmergencyNumberRun).map((run) => run.digits))];
 }
 
-// Phone-like runs: a number on the emergency or crisis-line list, or a run of six or more digits with optional separators.
+// Phone-like runs: an emergency number (not one group of a grouped number, so "1,000 euros" holds none) or a number on the
+// crisis-line list, or a run of six or more digits with optional separators.
 export function phoneLikeRuns(original) {
   const text = withoutCrisisLinks(original);
   const found = new Set();
-  for (const run of digitRuns(text)) if (run != null && (EMERGENCY_NUMBERS.includes(run) || KNOWN_CRISIS_LINE_NUMBERS.includes(run))) found.add(run);
+  for (const run of readDigitRuns(text)) if (isEmergencyNumberRun(run) || (run.digits != null && KNOWN_CRISIS_LINE_NUMBERS.includes(run.digits))) found.add(run.digits);
   for (const run of digitRuns(text, { joinSeparators: true })) {
     if (run == null) { found.add("unreadable"); continue; }
     if (run.length >= 6 || KNOWN_CRISIS_LINE_NUMBERS.includes(run)) found.add(run);
@@ -166,11 +185,15 @@ export function provisionalProblems(text, { maxCharacters = 900, level = "acted_
   if (level === "acted_or_about_to" && emergencyNumbersIn(text).length === 0) problems.push("no_emergency_number");
   // Every number is one of the emergency numbers: each run of two or more digits, in any script (a poison line an R1 invented is
   // caught however short, "42" included), and each phone-shaped run of digits joined by spaces, dots, dashes or brackets. So a
-  // two-digit time or count ("10 minutes", "24/7") or a national two-digit number keeps a provisional from showing too, and the
-  // highlighted emergency line shows instead. A single digit isn't read as a number.
-  const unknownRun = readDigitRuns(withoutCrisisLinks(text)).some((run) => run.count >= 2 && (run.digits == null || !EMERGENCY_NUMBERS.includes(run.digits)));
+  // two-digit time or count ("10 minutes", "24/7"), a grouped number ("1,000": its "000" is no emergency number) or a national
+  // two-digit number keeps a provisional from showing too, and the highlighted emergency line shows instead. A single digit isn't
+  // read as a number.
+  const unknownRun = readDigitRuns(withoutCrisisLinks(text)).some((run) => run.count >= 2 && !isEmergencyNumberRun(run));
   if (unknownRun || phoneLikeRuns(text).some((run) => !EMERGENCY_NUMBERS.includes(run))) problems.push("unknown_number");
-  if (questionMarks(text) > 1) problems.push("more_than_one_question");
+  // The questions (Fable's recheck of 22 Nov 2026, finding 4): the crisis section's first step asks where they are when that isn't
+  // known, and its replies ask one question about now, so a provisional for someone who has acted or is about to may ask both (two
+  // question marks); the first reply to someone who wants to die asks only its one question about now.
+  if (level === "acted_or_about_to" ? questionMarks(text) > 2 : questionMarks(text) > 1) problems.push(level === "acted_or_about_to" ? "more_than_two_questions" : "more_than_one_question");
   problems.push(...shapeProblems(text));
   if (linksIn(text).some((link) => !CRISIS_LINK_KEYS.has(linkKey(link)))) problems.push("link_not_allowed");
   if (hasDetox(text)) problems.push("detox");

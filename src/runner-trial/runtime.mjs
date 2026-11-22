@@ -41,8 +41,8 @@ import {
   boxPickerPrompt,
   checkerPrompt,
   crisisReaderKeptPlanNote,
+  crisisReaderNumberShownNote,
   crisisReaderPrompt,
-  crisisReaderProvisionalOfferedNote,
   crisisReaderWantsToDieNote,
   levelCheckerKeptPlanNote,
   protectionReaderPrompt,
@@ -59,16 +59,21 @@ import {
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const contextIdOf = (receipts) => `context:${sha256(receipts.map((receipt) => `${receipt.provider}:${receipt.model}:${receipt.session_id}`).join("|"))}`;
 
-// Which turns of a conversation may get a provisional reply (design, section 4): "first", only the first turn the crisis reader
-// reads at a level in provisionalLevels; "every", each such turn.
+// Which turns of a conversation may get a provisional reply (design, section 4): "first", for someone who has acted or is about to,
+// the first such turn, and a later one only when the crisis reader, told that the conversation has shown an emergency number,
+// reads something new and urgent in it; for someone who wants to die, the first turn read at that level; "every", each such turn.
 export const PROVISIONAL_TURNS = Object.freeze(["first", "every"]);
+
+// How long after a message arrives the highlighted emergency line goes in, on a turn the crisis reader read as acted or about to
+// that has shown no number and has no reply yet (design, section 4; Fable's recheck of 22 Nov 2026, finding 3).
+export const EMERGENCY_LINE_FALLBACK_MS = 30_000;
+const FALLBACK_LINE_REASON = "no_reply_yet";
 
 export const DEFAULT_RUNNER_SETTINGS = Object.freeze({
   writerMode: "focused",
   checkerMode: "split",
   provisionalLevels: Object.freeze(["acted_or_about_to"]),
   provisionalTurns: "first",
-  fixedMessageOn: "failed_checks",
   deadlineMs: 300_000,
   // The caps and the round from the measured times (design, section 8; "Call limits, from the measured times" in
   // /home/joel/askrigor-releases/20261121-innersignal-runner-note/results-report.md): the slowest successful call took 20.0 s
@@ -142,6 +147,10 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     return loadRecord(caseId, authContext);
   }
   const load = async (caseId, authContext) => deleteExpiredKeptPlans(caseId, await loadRecord(caseId, authContext), authContext);
+  // A read that never creates a case or changes it, for the emergency line's timer below, which may fire after the case was deleted.
+  const readRecord = async (caseId, authContext) => (typeof privateCaseSource.loadPrivateRuntimeCase === "function"
+    ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext)
+    : privateCaseSource.load(caseId));
 
   const deadlineOf = (runtimeTurn) => Date.parse(runtimeTurn.created_at) + config.deadlineMs;
   const limitFor = (runtimeTurn, kind, stage) => {
@@ -236,14 +245,54 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     return record.runtime_turns.some((turn) => turn.id !== turnId && turn.runner_reading?.conversation_id === conversationId && showsNumber(turn));
   }
   // The levels a provisional reply may be given at on this turn (design, section 4). With provisionalTurns "first": for someone who
-  // has acted or is about to, until the conversation has shown a number; for someone who wants to die (only when provisionalLevels
-  // allows it), until an earlier turn was read at that level. With "every": every level provisionalLevels allows.
-  const provisionalLevelsNow = (readings, numberShown) => config.provisionalLevels.filter((level) => config.provisionalTurns === "every"
-    || (level === "acted_or_about_to" ? !numberShown : !readings.some((entry) => entry.crisis?.level === level)));
+  // has acted or is about to, every turn read at that level, but once the conversation has shown a number the crisis reader is
+  // told so and gives one only for something new and urgent (runCrisisReader); for someone who wants to die (only when
+  // provisionalLevels allows it), until an earlier turn was read at that level. With "every": every level provisionalLevels allows.
+  const provisionalLevelsNow = (readings) => config.provisionalLevels.filter((level) => config.provisionalTurns === "every"
+    || level === "acted_or_about_to" || !readings.some((entry) => entry.crisis?.level === level));
 
   async function showEmergencyLine(caseId, runtimeTurn, reason, authContext) {
     await source("recordRunnerEmergencyLine", [caseId, runtimeTurn.id, { reason }], authContext);
     emit(caseId, runtimeTurn.id, { type: "emergency_line", reason });
+  }
+
+  // The highlighted line for a turn the crisis reader read as acted or about to that has shown no number once the reader's stage
+  // is done (a later turn whose message answers what was said before, so no provisional reply and no line at once): if the turn
+  // still has no reply EMERGENCY_LINE_FALLBACK_MS after the message arrived, the line goes in (reason no_reply_yet), so a slow or
+  // stalled reply never leaves the person with nothing new about getting help (design, section 4; Fable's recheck of 22 Nov
+  // 2026, finding 3). The timer never holds the process open and never throws. Its write goes through the store, which runs each
+  // write of a case in that case's queue on the record as it then stands (the store's mutate and shared coordinator), so it can't
+  // undo the turn's own writes; and the store refuses a line for a finished turn, so a reply or closing that came after the
+  // timer's read wins. One timer per turn, so the line is sent to the page once.
+  const fallbackTimers = new Set();
+  async function armFallbackLine(caseId, runtimeTurn, authContext) {
+    const key = JSON.stringify([caseId, runtimeTurn.id]);
+    if (fallbackTimers.has(key)) return;
+    fallbackTimers.add(key);
+    let armed = false;
+    try {
+      const turn = (await readRecord(caseId, authContext))?.runtime_turns?.find((entry) => entry.id === runtimeTurn.id);
+      if (!turn || isFinishedRuntimeTurn(turn) || showsNumber(turn)) return;
+      const arrived = Date.parse(runtimeTurn.created_at);
+      const delay = Number.isFinite(arrived) ? Math.max(0, arrived + EMERGENCY_LINE_FALLBACK_MS - now()) : EMERGENCY_LINE_FALLBACK_MS;
+      const timer = setTimeout(() => {
+        fallbackLine(caseId, runtimeTurn.id, authContext).catch(() => {}).finally(() => fallbackTimers.delete(key));
+      }, delay);
+      timer?.unref?.();
+      armed = true;
+    } catch {
+      // The fallback line never stops a turn; the closing still puts the line in if the turn ends without a reply.
+    } finally {
+      if (!armed) fallbackTimers.delete(key);
+    }
+  }
+  async function fallbackLine(caseId, runtimeTurnId, authContext) {
+    const turn = (await readRecord(caseId, authContext))?.runtime_turns?.find((entry) => entry.id === runtimeTurnId);
+    if (!turn || isFinishedRuntimeTurn(turn) || showsNumber(turn)) return;
+    const stored = await source("recordRunnerEmergencyLine", [caseId, runtimeTurnId, { reason: FALLBACK_LINE_REASON }], authContext);
+    // Sent to the page only when this write put the line in (not when another path had just put it in).
+    if (stored?.runtime_turns?.find((entry) => entry.id === runtimeTurnId)?.emergency_line_reason !== FALLBACK_LINE_REASON) return;
+    emit(caseId, runtimeTurnId, { type: "emergency_line", reason: FALLBACK_LINE_REASON });
   }
 
   function readersPacket(view, runtimeTurn) {
@@ -252,15 +301,17 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
 
   // The crisis reader, and the provisional reply when its reading allows one (design, section 4). `levelsNow`: the levels a
   // provisional reply may still be given at on this turn (provisionalLevelsNow); `numberShown`: an earlier turn of this
-  // conversation showed an emergency number. When no level is left, the reader is told one was already offered.
+  // conversation showed an emergency number. With provisionalTurns "first", once one was shown, the reader is told so and gives a
+  // provisional reply for someone who has acted or is about to only when the latest message tells of something new and urgent.
   async function runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, levelsNow = config.provisionalLevels, numberShown = false, authContext }) {
     const rules = rulesFrom([parts.crisis], ["the section on someone who may want to die, the chronic pain section and the harm-reduction paragraph of SKILL.md"]);
     const prompt = crisisReaderPrompt({ rules, packet: readersPacket(view, runtimeTurn) });
     const shown = levelsNow.includes("wants_to_die") ? prompt.system.replace("Answer only with the JSON", `${crisisReaderWantsToDieNote()}\nAnswer only with the JSON`) : prompt.system;
-    const offered = levelsNow.length === 0 ? withNoteBeforeAnswerLine(shown, crisisReaderProvisionalOfferedNote()) : shown;
+    const laterTurn = config.provisionalTurns === "first" && numberShown && levelsNow.includes("acted_or_about_to");
+    const told = laterTurn ? withNoteBeforeAnswerLine(shown, crisisReaderNumberShownNote()) : shown;
     // With the kept plan on, the crisis reader also reads whether the person asks to keep the plan (or says yes to the offer) and
     // whether they ask to delete it, from this conversation's words.
-    const system = keptPlanEnabled ? withNoteBeforeAnswerLine(offered, crisisReaderKeptPlanNote()) : offered;
+    const system = keptPlanEnabled ? withNoteBeforeAnswerLine(told, crisisReaderKeptPlanNote()) : told;
     const keptPlanReading = (value) => (keptPlanEnabled ? { asks_to_keep_plan: value?.asks_to_keep_plan === true, asks_to_delete_plan: value?.asks_to_delete_plan === true } : {});
     let reading = null;
     let receipts = [];
@@ -274,8 +325,10 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const stored = { ...(reading ?? { level: "unclear", unread: true }), receipts };
     await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { crisis: stored } }], authContext);
     const allowsProvisional = Boolean(reading) && config.provisionalLevels.includes(reading.level);
-    // A later such turn of a conversation that was already offered one: nothing is shown or recorded as a provisional, whatever the
-    // reader returned, and the skip puts no emergency line into the conversation (the line's other triggers are unchanged).
+    // A level no longer given one on this turn (with provisionalTurns "first", wanting to die after an earlier turn read at that
+    // level): nothing is shown or recorded as a provisional, whatever the reader returned, and the skip puts no emergency line into
+    // the conversation (the line's other triggers are unchanged). A provisional reply for someone who has acted or is about to is
+    // shown on a later turn too when the reader gives one and it passes its exact checks, a number included, as on a first turn.
     if (allowsProvisional && !levelsNow.includes(reading.level)) return stored;
     if (allowsProvisional && typeof reading.provisional_reply === "string") {
       const problems = provisionalProblems(reading.provisional_reply, { level: reading.level });
@@ -292,6 +345,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     } else if (!reading && priorCrisisConversation) {
       await showEmergencyLine(caseId, runtimeTurn, "no_reading_in_crisis_conversation", authContext);
     }
+    // Read acted with nothing shown this turn (with provisionalTurns "first", a later turn whose message answers what was said
+    // before): the highlighted line if the turn has no reply 30 s after the message arrived.
+    if (reading?.level === "acted_or_about_to") await armFallbackLine(caseId, runtimeTurn, authContext);
     return stored;
   }
 
@@ -503,7 +559,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const earlierReadings = conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id);
       const priorCrisisConversation = isCrisisConversation(earlierReadings);
       const numberShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
-      const levelsNow = provisionalLevelsNow(earlierReadings, numberShown);
+      const levelsNow = provisionalLevelsNow(earlierReadings);
       emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
       const [crisis, boxes, protection] = await Promise.all([
         runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, levelsNow, numberShown, authContext }),
@@ -795,13 +851,16 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const conversationId = turn.runner_reading?.conversation_id ?? null;
       const readings = conversationId ? conversationReadings(record, conversationId) : [];
       const crisisNow = isCrisisLevel(turn.runner_reading?.readers?.crisis?.level) || checkerLevelsOf(turn).some(isCrisisLevel);
+      // The crisis reader gave no reading this turn: nothing says it isn't a crisis, so a closing shows the line as after a crisis
+      // reading (Fable's recheck of 22 Nov 2026, finding 7: a first message with the reader out had closed with no line).
+      const crisisUnread = turn.runner_reading?.readers?.crisis?.unread === true;
       const kind = ownerFallbackEnabled && reasonCode === "checks_failed" && isFixedMessageConversation(readings) ? OWNER_FALLBACK_KIND : "runner_unavailable";
       let caseState = null;
       let stateDiff = null;
       if (!record.raw_transcript.some((entry) => entry.id === turn.user_turn_id)) {
         ({ caseState, stateDiff } = stateAfterReadings(record.case_state, turn, turn.runner_reading?.readers ?? {}));
       }
-      if (crisisNow && !turn.emergency_line_shown_at) await showEmergencyLine(caseId, turn, "turn_closed_without_reply", authContext);
+      if ((crisisNow || crisisUnread) && !turn.emergency_line_shown_at) await showEmergencyLine(caseId, turn, "turn_closed_without_reply", authContext);
       await source("closeRuntimeTurnUnanswered", [caseId, turn.id, { kind, reasonCode, assistantTurnId, caseState, stateDiff, diffId: `diff:runner:${sha256(turn.id).slice(0, 16)}`, eventId }], authContext);
       emit(caseId, turn.id, { type: "closed", kind, reason: reasonCode });
   }
