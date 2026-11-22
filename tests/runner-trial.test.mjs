@@ -741,7 +741,10 @@ test("number_now is described in the crisis section's own words: each sign and s
     assert.ok(parts.crisis.text.includes(words), `the served crisis section still says: ${words}`);
   }
   assert.ok(NUMBER_NOW_FIELD.startsWith("number_now: true when the section sends the latest message to the emergency number now although the person hasn't said they've acted or are about to act themselves: "));
-  assert.ok(NUMBER_NOW_FIELD.endsWith("Otherwise false, and false for a means at hand with no word of having acted or being about to act: that is the section's step about now (its questions, and distance from the means), not the number."));
+  assert.ok(NUMBER_NOW_FIELD.includes("Otherwise false, and false for a means at hand with no word of having acted or being about to act: that is the section's step about now (its questions, and distance from the means), not the number."));
+  // 22 Nov 2026 measurement: with the field, GPT's reader stopped reading four acted messages (C2, C3, T14, F17) as acted; the
+  // level feeds the risk record, so the field says it never changes the level.
+  assert.ok(NUMBER_NOW_FIELD.endsWith("number_now never changes your level: read the level exactly as you would without this field (someone who has taken something to die, or is about to, is still acted_or_about_to, whatever number_now says)."));
   const note = crisisReaderNumberNowNote();
   assert.equal(note.split("\n")[0], NUMBER_NOW_FIELD);
   for (const words of [
