@@ -404,10 +404,11 @@ test("with provisionalTurns first, a later turn read acted is told a number was 
   assert.equal(later.provisional, undefined, "nothing recorded as a provisional");
   assert.equal(Object.hasOwn(later.runner_reading.readers, "provisional_refused"), false, "nor as a refused one");
   assert.equal(later.runner_reading.readers.crisis.level, "acted_or_about_to", "the reading itself is stored as always");
-  // Nor does the crisis checker's reading: the first turn's provisional already showed the number in this conversation, so the
-  // full reply comes back to it and the line stays on the page (22 Nov 2026). With "every", or before any number was shown, the
-  // checker's trigger is as before (the tests below). The reply came at once, so the timed line never went in.
-  assert.deepEqual(eventsOf(runner, 2, "emergency_line"), []);
+  // Nor does the crisis checker's reading at once: the first turn's provisional already showed the number in this conversation
+  // (22 Nov 2026). But this reply names no number, so the program puts the line in before it is delivered (Codex's review of
+  // e17c949a2): no turn read acted is delivered without a number shown in it. The reply came at once, so no timed line.
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line").map((event) => event.reason), ["reply_without_number"]);
+  assert.ok(runner.events.indexOf(eventsOf(runner, 2, "emergency_line")[0]) < runner.events.findIndex((event) => event.turnId === "runtime:exchange-2" && event.type === "final") || !runner.events.some((event) => event.type === "final"), "before the reply");
   // The reader is told on the line before its answer line, and only once the conversation has shown a number.
   const [firstPrompt, laterPrompt] = crisisReaderSystems(runner);
   assert.equal(firstPrompt.includes(NUMBER_SHOWN_NOTE), false);
@@ -518,7 +519,9 @@ function heldWriter(held = 2) {
       writer.started = true;
       await new Promise((resolve) => { writer.release = resolve; });
     }
-    return { reply: "Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] };
+    // The reply names the number, so these tests see the timer alone: a reply naming none to someone read as acted gets the line
+    // before delivery (Codex's review of e17c949a2; the test after the next one).
+    return { reply: "Please still call 112 now. Is someone in the house who could sit with you while you call?", answered_level: "acted_or_about_to", quotes: [] };
   };
   return writer;
 }
@@ -553,6 +556,35 @@ test("has taken them, then says no to the ambulance: nothing is shown at once, a
   assert.equal(result.deliveryKind, "candidate");
   assert.equal(result.runtimeTurn.emergency_line_reason, "no_reply_yet", "the answer's turn carries it, so a replay shows it");
   assert.equal(eventsOf(runner, 2, "emergency_line").length, 1);
+});
+
+test("a later reply naming a number gets no line; the store answers whether it stored the line, so it is sent once (Codex's review of e17c949a2)", async (t) => {
+  const writer = heldWriter();
+  const runner = await makeRunner(t, actedEveryTurn({ R1: (count) => actedReading(count === 1 ? ACTED_PROVISIONAL : null), W: writer.W }));
+  await runner.send("I took all my pills an hour ago.");
+  const sending = runner.send("No ambulance.");
+  await until(() => writer.started, "the writer");
+  // While the turn is unfinished: the first call stores the line, a second stores nothing and says so.
+  const turnId = "runtime:exchange-2";
+  assert.deepEqual(await runner.store.recordRunnerEmergencyLine(CASE_ID, turnId, { reason: "no_reply_yet" }), { inserted: true });
+  assert.deepEqual(await runner.store.recordRunnerEmergencyLine(CASE_ID, turnId, { reason: "turn_closed_without_reply" }), { inserted: false });
+  writer.release();
+  assert.equal((await sending).deliveryKind, "candidate");
+  // The held writer's reply names the number, and the line was already stored: no line event for this turn from the runtime.
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line"), []);
+  assert.equal((await runner.store.load(CASE_ID)).runtime_turns[1].emergency_line_reason, "no_reply_yet");
+});
+
+test("a turn closed before the crisis reader's reading was stored shows the line with its closing (Codex's review of e17c949a2)", async (t) => {
+  // The readers' results can't be stored (a failing disk, say): the turn ends with no runner reading at all.
+  let failing = true;
+  const source = (store) => ({ ...store, async recordRunnerReading(...args) { if (failing) { failing = false; throw Object.assign(new Error("synthetic storage failure"), { code: "STORAGE_FAILED" }); } return store.recordRunnerReading(...args); } });
+  const runner = await makeRunner(t, baseScript(), { source });
+  await runner.send("Something synthetic.").catch(() => null);
+  const turn = (await runner.store.load(CASE_ID)).runtime_turns[0];
+  assert.equal(turn.runner_reading?.readers?.crisis, undefined, "no crisis reading was stored");
+  assert.equal(turn.state, "UNANSWERED");
+  assert.deepEqual(eventsOf(runner, 1, "emergency_line").map((event) => event.reason), ["turn_closed_without_reply"]);
 });
 
 test("the timed line goes in only while the turn is unfinished: a reply that came first wins, even one delivered between the timer's read and its write, and the timer's failures are caught", async (t) => {

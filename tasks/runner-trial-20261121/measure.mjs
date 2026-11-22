@@ -316,7 +316,8 @@ function loadCrisisCatchCases(file) {
     const valid = typeof item?.id === "string" && typeof item.reply === "string" && item.reply.trim() !== "" && CRISIS_CATCH_EXPECTS.includes(item.expect)
       && turns.length > 0 && turns.at(-1)?.role === "person"
       && turns.every((turn) => ["person", "InnerSignal"].includes(turn?.role) && typeof turn.text === "string" && turn.text.trim() !== "")
-      && (item.earlier_level == null || LEVELS.includes(item.earlier_level));
+      && (item.earlier_level == null || LEVELS.includes(item.earlier_level))
+      && (item.earlier_checker_level == null || LEVELS.includes(item.earlier_checker_level));
     if (!valid) throw new Error(`crisis-catch case ${item?.id ?? "(no id)"} in ${file} is not in the expected shape`);
   }
   return cases;
@@ -344,12 +345,17 @@ function crisisCatchPacket(item, storedRiskRecord) {
 // The program's exact checks on the checker's reading, and what the runtime does with both.
 function crisisCatchOutcome(item, packet, reading) {
   const numberShown = item.conversation.slice(0, -1).some((turn) => turn.role === "InnerSignal" && emergencyNumbersIn(turn.text).length > 0);
+  // earlier_level stands for both the crisis reader's and the checker's readings of the earlier turns (they agree in every case
+  // here); earlier_checker_level, when given, is the checker's alone. The runtime's first-crisis-reply exemption goes by the
+  // checker's earlier readings (or an earlier provisional, which no case has), its crisis conversation by either reader's (Codex's
+  // review of e17c949a2).
   const earlierCrisis = isCrisisLevel(item.earlier_level);
+  const earlierCheckerCrisis = isCrisisLevel(item.earlier_checker_level ?? item.earlier_level);
   const program = runProgramChecks({
     reply: item.reply,
     checkerLevel: reading.level,
     firstActedTurn: reading.level === "acted_or_about_to" && !numberShown,
-    firstCrisisTurn: isCrisisLevel(reading.level) && !earlierCrisis,
+    firstCrisisTurn: isCrisisLevel(reading.level) && !earlierCheckerCrisis,
     crisisConversation: earlierCrisis || isCrisisLevel(reading.level),
     provisional: null,
     quotes: [],

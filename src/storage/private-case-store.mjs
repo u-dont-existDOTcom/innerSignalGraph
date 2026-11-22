@@ -1391,16 +1391,21 @@ export function createEncryptedPrivateCaseStore({
     // When the page put the always-visible emergency line into the conversation for this turn (section 4 of the design). Once per
     // turn, and only while the turn is unfinished: the runner trial's timed line (no reply 30 s after the message) may come just
     // after the turn's reply or closing, which then wins. A case that has no file is left as it is (never created here).
+    // Once per turn. It answers whether this call stored it, so a caller sends the page the line only once (Codex's review of
+    // e17c949a2: a timer and a closing had each sent it).
     async recordRunnerEmergencyLine(caseId, runtimeTurnId, { reason }) {
-      return mutate(caseId, (record) => {
+      let inserted = false;
+      await mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.emergency_line_shown_at) return null;
         if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no emergency line.");
         runtimeTurn.emergency_line_shown_at = now();
         runtimeTurn.emergency_line_reason = String(reason ?? "crisis").slice(0, 80);
         validatePrivateRuntimeTurn(runtimeTurn);
+        inserted = true;
         return record;
       }, { requireExisting: true });
+      return { inserted };
     },
     // The plan kept for next time (the runner trial's kept plan, design section 9; rules in src/runner-trial/kept-plan.mjs). Kept for
     // one turn, once: only when the case's stored readings and this turn's allow it (the crisis reader read that the person asks;

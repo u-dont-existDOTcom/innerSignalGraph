@@ -8,7 +8,7 @@ import {
   protectiveCompatibilityDecision,
   validateCompatibilityAssessment
 } from "../case-formulation/protective-compatibility.mjs";
-import { REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../supervisor/private-candidate-lifecycle.mjs";
+import { RECORD_ONLY_AUDIT_CODES, REPAIR_INDUCED_ERROR_CHECKS, isSubstantiveAuditFinding } from "../supervisor/private-candidate-lifecycle.mjs";
 import { isFinishedRuntimeTurn } from "../supervisor/private-runtime-turn-lifecycle.mjs";
 import { OWNER_FALLBACK_KIND } from "../supervisor/owner-fallback-message.mjs";
 import { selfDirectedRiskAuditRules } from "../prompts/self-directed-risk-audit.mjs";
@@ -252,7 +252,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     || level === "acted_or_about_to" || !readings.some((entry) => entry.crisis?.level === level));
 
   async function showEmergencyLine(caseId, runtimeTurn, reason, authContext) {
-    await source("recordRunnerEmergencyLine", [caseId, runtimeTurn.id, { reason }], authContext);
+    const result = await source("recordRunnerEmergencyLine", [caseId, runtimeTurn.id, { reason }], authContext);
+    // Once per turn: a call that stored nothing (the line was already shown) sends the page nothing.
+    if (result?.inserted === false) return;
     emit(caseId, runtimeTurn.id, { type: "emergency_line", reason });
   }
 
@@ -290,8 +292,8 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const turn = (await readRecord(caseId, authContext))?.runtime_turns?.find((entry) => entry.id === runtimeTurnId);
     if (!turn || isFinishedRuntimeTurn(turn) || showsNumber(turn)) return;
     const stored = await source("recordRunnerEmergencyLine", [caseId, runtimeTurnId, { reason: FALLBACK_LINE_REASON }], authContext);
-    // Sent to the page only when this write put the line in (not when another path had just put it in).
-    if (stored?.runtime_turns?.find((entry) => entry.id === runtimeTurnId)?.emergency_line_reason !== FALLBACK_LINE_REASON) return;
+    // Sent to the page only when this write put the line in (not when another path had just put it in): the store answers.
+    if (stored?.inserted !== true) return;
     emit(caseId, runtimeTurnId, { type: "emergency_line", reason: FALLBACK_LINE_REASON });
   }
 
@@ -728,6 +730,16 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         }
         repairInducedChecks = [...REPAIR_INDUCED_ERROR_CHECKS];
       }
+      // A turn read acted or about to that would be delivered with no emergency number anywhere in it (its provisional reply, the
+      // reply or the line): on a later turn the number check no longer requires one in the reply (the conversation showed it
+      // before) and the crisis reader may have read the message as an answer, so the program puts the highlighted line in before
+      // delivery. It never asks the writer to repeat the number (Codex's review of e17c949a2).
+      const passes = !findings.some((finding) => !RECORD_ONLY_AUDIT_CODES.includes(finding.code) && isSubstantiveAuditFinding(finding));
+      const readActedThisTurn = readers.crisis?.level === "acted_or_about_to" || checkerLevel === "acted_or_about_to" || checkerLevelsOf(runtimeTurn).includes("acted_or_about_to");
+      if (passes && readActedThisTurn && emergencyNumbersIn(candidate.exact_text).length === 0) {
+        const fresh = (await load(caseId, authContext)).runtime_turns.find((turn) => turn.id === runtimeTurn.id);
+        if (fresh && !isFinishedRuntimeTurn(fresh) && !showsNumber(fresh)) await showEmergencyLine(caseId, fresh, "reply_without_number", authContext);
+      }
       const receipts = results.flatMap((result) => result.receipts);
       return {
         value: {
@@ -853,7 +865,10 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const crisisNow = isCrisisLevel(turn.runner_reading?.readers?.crisis?.level) || checkerLevelsOf(turn).some(isCrisisLevel);
       // The crisis reader gave no reading this turn: nothing says it isn't a crisis, so a closing shows the line as after a crisis
       // reading (Fable's recheck of 22 Nov 2026, finding 7: a first message with the reader out had closed with no line).
-      const crisisUnread = turn.runner_reading?.readers?.crisis?.unread === true;
+      // A turn closed before the crisis reader stored anything (an interruption, say) counts as unread too (Codex's review of
+      // e17c949a2).
+      const crisisReading = turn.runner_reading?.readers?.crisis;
+      const crisisUnread = !crisisReading || crisisReading.unread === true;
       const kind = ownerFallbackEnabled && reasonCode === "checks_failed" && isFixedMessageConversation(readings) ? OWNER_FALLBACK_KIND : "runner_unavailable";
       let caseState = null;
       let stateDiff = null;
