@@ -463,8 +463,13 @@ site so you can have GPT add to it."
   privacy words change in three places, shown to him before the release: the page's "Who reads it" (section 11), the served
   sentence (section 12) and the tool's description, plus the Inbox view's two lines ("An AI check says the writer, or
   someone they mention, may be in danger: read this first." and "Not checked for danger (the check was off or failed).").
-  The flag prompt: brainstormed, red-teamed by Fable and checked on a synthetic test set (see the release folder:
-  `danger-reader-redteam.md`, `danger-reader-testset.json`).
+  The flag prompt: brainstormed, then red-teamed by Fable (2 blocking, 11 should-fix, 6 minor:
+  `danger-reader-redteam.md` in the release folder); version 2 adopts its revised prompt and wrapper (kinds of danger, never
+  phrases; one sign anywhere is enough; a part of the writer speaking is about the writer; reassurance cancels nothing; when not
+  confident, true; always answer), and three of its four code changes (a refusal sorts with the flagged; whitespace isn't sent;
+  each flag names the reader's version). Two blind runs on Fable's 49 invented messages agreed with every label
+  (`danger-reader-eval.md`); one live check through the real reader stays in the release kit, and two calls per message are not
+  needed unless that check misses one.
 
 ## Appendix B: Codex's first review of the build (22 Nov 2026, `origin/main..7b1c6fd2f`; 1 blocking, 10 should-fix)
 
