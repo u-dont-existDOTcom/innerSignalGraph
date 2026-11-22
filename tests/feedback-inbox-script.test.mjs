@@ -8,6 +8,8 @@ import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { createFeedbackFromEnvironment } from "../src/feedback/setup.mjs";
 import { runFeedbackInbox } from "../scripts/feedback-inbox.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
+import { openSealedForOwner, readOwnerPrivateKey } from "../src/feedback/open-sealed.mjs";
+import { readOwnerPublicKey, sealForOwner } from "../src/feedback/sealed-box.mjs";
 
 // The owner's laptop script against a real local connector: keys, fetching into an Inbox batch, the hour's hold, deletions, and
 // publishing only with his own choice in the Inbox export. Synthetic texts only; the script's output never holds a message's words.
@@ -186,6 +188,52 @@ test("a message no key opens is kept and tried again, and a fetch that fails lea
   await assert.rejects(fs.stat(out4), { code: "ENOENT" });
   assert.doesNotMatch(await w.run("status"), /unconfirmed fetch/u);
   await fs.writeFile(tokenPath, token, { mode: 0o600 });
+});
+
+test("a message tried again must come back under the id asked for, so a server can't name a file outside the batch", async (t) => {
+  const w = await world(t);
+  await w.run("keygen", "--server", w.server);
+  await w.sendPage({ kind: "suggestion", text: `Tried again ${MARKER}` });
+  const keysPath = path.join(w.configDir, "owner-keys.json");
+  const allKeys = JSON.parse(await fs.readFile(keysPath, "utf8"));
+  await fs.writeFile(keysPath, JSON.stringify({ ...allKeys, keys: allKeys.keys.slice(1) }), { mode: 0o600 });
+  const out1 = path.join(w.base, "r1");
+  assert.match(await w.run("fetch", "--out", out1), /1 message\(s\) could not be opened/u);
+  await w.run("fetch", "--confirm", out1);
+  await fs.writeFile(keysPath, JSON.stringify(allKeys), { mode: 0o600 });
+  // A server gone wrong answers the retry with the same words sealed afresh, under an id that climbs out of the batch folder. It
+  // holds the owner's public key, so its seal opens.
+  const first = allKeys.keys[0];
+  const ownerPrivateKey = readOwnerPrivateKey({ privateKey: first.private_key, publicKey: first.public_key });
+  const recordOf = (event) => ({
+    format: event.format, id: event.id, seq: event.seq, received_day: event.received_day, via: event.via, key_id: event.key_id,
+    public_review: event.public_review,
+    ...(event.held_until ? { held_until: event.held_until } : {}),
+    ...(event.publish_mac ? { publish_mac: event.publish_mac } : {})
+  });
+  const realFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = realFetch; });
+  let forgedSent = 0;
+  globalThis.fetch = async (url, init) => {
+    const response = await realFetch(url, init);
+    if (!String(url).includes("/owner/message?id=")) return response;
+    const { message } = await response.json();
+    const plaintext = openSealedForOwner({ ownerPrivateKey, id: message.id, record: recordOf(message), sealed: message.sealed });
+    const forged = { ...message, id: "../../../escaped" };
+    forged.sealed = sealForOwner({ ownerPublicKey: readOwnerPublicKey(first.public_key), id: forged.id, record: recordOf(forged), plaintext });
+    forgedSent += 1;
+    return new Response(JSON.stringify({ message: forged }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const out2 = path.join(w.base, "r2");
+  await assert.rejects(w.run("fetch", "--out", out2), /The server sent a different message than the one asked for/u);
+  assert.equal(forgedSent, 1, "the retry asked the server for the message");
+  await assert.rejects(fs.stat(path.join(w.base, "escaped.json")), { code: "ENOENT" });
+  await assert.rejects(fs.stat(out2), { code: "ENOENT" });
+  globalThis.fetch = realFetch;
+  // The honest answer still opens it.
+  const out3 = path.join(w.base, "r3");
+  assert.match(await w.run("fetch", "--out", out3), /1 new \(1 suggestion\)/u);
+  await w.run("fetch", "--confirm", out3);
 });
 
 test("one command at a time, an Inbox copy goes after a year even without a deletion record, and deleting twice is fine", async (t) => {

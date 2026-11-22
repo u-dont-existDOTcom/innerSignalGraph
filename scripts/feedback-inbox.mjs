@@ -336,6 +336,8 @@ async function fetchEvents(paths, options, now, reader, maxChecked = MAX_EVENTS_
       if (response.status === 404) continue;
       if (!response.ok) fail(`The server refused message: HTTP ${response.status}.`);
       const event = (await response.json()).message;
+      // The message's id names its Inbox file: it must be the checked id asked for, never one the server picked.
+      if (event?.id !== earlier.id) fail("The server sent a different message than the one asked for.");
       const opened = openMessage(keys, event);
       if (opened) await add(event, opened);
       else unreadable.push({ id: earlier.id, seq: earlier.seq });
