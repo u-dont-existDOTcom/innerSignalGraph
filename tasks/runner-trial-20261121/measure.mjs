@@ -51,6 +51,10 @@ const EFFORTS = {
 };
 const CLAUDE_MODELS = { reader: "claude-sonnet-5-5", writer: "claude-opus-5-5", checker: "claude-opus-5-5" };
 const kindOf = (role) => (role.startsWith("R") ? "reader" : role.startsWith("W") ? "writer" : "checker");
+// --provider mixed: the roles in --claude-roles (by default every reader and checker) run on Claude and the rest (the writer
+// and its repair) on GPT, so another company's AI reads and checks what the writer wrote.
+const CLAUDE_ROLES_WHEN_MIXED = new Set((args["claude-roles"] ?? "R1,R2,R3,C1,C2,C3,C4,C5,CW").split(","));
+const providerFor = (provider, role) => (provider === "mixed" ? (CLAUDE_ROLES_WHEN_MIXED.has(role) ? "claude" : "codex") : provider);
 
 function workerFactory(provider, effortSet, calls) {
   const cache = new Map();
@@ -58,7 +62,7 @@ function workerFactory(provider, effortSet, calls) {
     if (!cache.has(role)) {
       const kind = kindOf(role);
       const effort = EFFORTS[effortSet][kind];
-      const worker = provider === "claude" ? new SealedClaudeWorker({ model: CLAUDE_MODELS[kind], effort, configDir: args["claude-config-dir"] ?? null }) : new SealedCodexWorker({ effort });
+      const worker = providerFor(provider, role) === "claude" ? new SealedClaudeWorker({ model: CLAUDE_MODELS[kind], effort, configDir: args["claude-config-dir"] ?? null }) : new SealedCodexWorker({ effort });
       cache.set(role, {
         async call(request) {
           const started = Date.now();
