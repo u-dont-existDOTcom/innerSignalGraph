@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexCliProvider } from "../src/providers/codex-cli.mjs";
 import { ClaudeCliProvider } from "../src/providers/claude-cli.mjs";
+import { detectClaudeCapabilities } from "../src/core/cli-capabilities.mjs";
 import { entitlementSchema } from "../src/schemas/json-schemas.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -233,4 +234,52 @@ test("Claude CLI provider falls back to inline system prompt and omits unsupport
   const result = await provider.generate(prompt);
   assert.deepEqual(JSON.parse(result.text), { ok: true });
   assert.equal(result.responseId, "minimal-claude-session");
+});
+
+test("Claude CLI capabilities count the system-prompt flags listed on their own or named in the --system-prompt[-file] form", async (t) => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-claude-help-"));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const systemPromptFlags = async (name, helpText) => {
+    const fake = path.join(dir, `${name}.mjs`);
+    await fsp.writeFile(fake, `process.stdout.write(${JSON.stringify(helpText)});\n`);
+    const { flags } = await detectClaudeCapabilities(process.execPath, [fake]);
+    return { systemPromptFile: flags.systemPromptFile, systemPrompt: flags.systemPrompt };
+  };
+  const both = { systemPromptFile: true, systemPrompt: true };
+  // Each flag on an option line of its own.
+  assert.deepEqual(await systemPromptFlags("own-lines", `Usage: claude [options] [command] [prompt]
+  --system-prompt <prompt>              System prompt to use for the session
+  --system-prompt-file <file>           Read the system prompt from a file
+`), both);
+  // Claude Code 2.1.330: --system-prompt has its line, --system-prompt-file is named only inside --bare's text, at the start of a
+  // wrapped line.
+  assert.deepEqual(await systemPromptFlags("claude-2.1.330", `Usage: claude [options] [command] [prompt]
+  --bare                                Minimal mode: skip hooks, LSP, plugin
+                                        sync and CLAUDE.md auto-discovery.
+                                        Explicitly provide context via:
+                                        --system-prompt[-file],
+                                        --append-system-prompt[-file], --add-dir
+                                        (CLAUDE.md dirs), --mcp-config,
+                                        --settings, --agents, --plugin-dir.
+  --system-prompt <prompt>              System prompt to use for the session
+  --system-prompt-snapshot <on|off>     Record the system prompt once per
+                                        conversation
+`), both);
+  // Claude Code 2.1.323 wraps it mid-line; the bracketed form alone counts for both flags.
+  assert.deepEqual(await systemPromptFlags("bracketed-only", `Usage: claude [options] [command] [prompt]
+  --bare                                Minimal mode. Explicitly provide context
+                                        via: --system-prompt[-file],
+                                        --append-system-prompt[-file], --add-dir
+`), both);
+  // Look-alikes count for neither: the append flag's bracketed form, and other flags whose names contain system-prompt.
+  assert.deepEqual(await systemPromptFlags("look-alikes", `Usage: claude [options] [command] [prompt]
+  --append-system-prompt <prompt>       Add text to the end of the default
+                                        system prompt
+  --bare                                Minimal mode. Explicitly provide context
+                                        via: --append-system-prompt[-file],
+                                        --add-dir (CLAUDE.md dirs)
+  --exclude-dynamic-system-prompt-sections
+  --system-prompt-snapshot <on|off>     Record the system prompt once per
+                                        conversation
+`), { systemPromptFile: false, systemPrompt: false });
 });
