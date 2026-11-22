@@ -122,6 +122,9 @@ test("the page: a send, a repeat, the hidden field, early and late tokens, sizes
   const html = await page.text();
   assert.ok(html.includes(EMERGENCY_LINE.replace(/^In danger right now\? /u, "")));
   assert.equal(html.split(crisisLines()).length - 1, 2, "the crisis lines, with the crisis-line directory, above the form and at the end");
+  // Checked apart from crisisLines() too, so a directory dropped from that function fails here.
+  const linkTargets = [...html.matchAll(/<a href="([^"]*)">/gu)].map((match) => match[1]);
+  assert.equal(linkTargets.filter((target) => target === "https://findahelpline.com").length, 2, "the crisis-line directory's link, twice");
   assert.match(html, /What&#39;s kept:/u);
   // The browser counts UTF-16 units: 5,000 emoji (10,000 units) must fit the form, as they fit the server's 5,000 characters.
   assert.match(html, /<textarea id="text" name="text" maxlength="10000" required>/u);
