@@ -9,7 +9,7 @@ import { createPrivateCaseMcpServer, listenPrivateCaseMcp } from "../src/server/
 import { createFeedbackFromEnvironment } from "../src/feedback/setup.mjs";
 import { FEEDBACK_PAGE_URL, feedbackAddressInRules } from "../src/feedback/address.mjs";
 import { generateOwnerKeyPair, openSealedForOwner, readOwnerPrivateKey } from "../src/feedback/open-sealed.mjs";
-import { EMERGENCY_LINE } from "../src/feedback/page.mjs";
+import { EMERGENCY_LINE, crisisLines } from "../src/feedback/page.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
 
 // The feedback place through the real connector server: switches off, the closed page, the page, the owner's routes and the chat
@@ -121,7 +121,7 @@ test("the page: a send, a repeat, the hidden field, early and late tokens, sizes
   }
   const html = await page.text();
   assert.ok(html.includes(EMERGENCY_LINE.replace(/^In danger right now\? /u, "")));
-  assert.match(html, /findahelpline\.com/u);
+  assert.equal(html.split(crisisLines()).length - 1, 2, "the crisis lines, with the crisis-line directory, above the form and at the end");
   assert.match(html, /What&#39;s kept:/u);
   // The browser counts UTF-16 units: 5,000 emoji (10,000 units) must fit the form, as they fit the server's 5,000 characters.
   assert.match(html, /<textarea id="text" name="text" maxlength="10000" required>/u);
@@ -226,7 +226,7 @@ test("the chat tool: off by default, on behind its switch, no sign-in, the yes r
   assert.equal(notApproved.body.result.structuredContent.code, "FEEDBACK_NOT_APPROVED");
   const publicReview = await call({ kind: "review", text: "x", may_show_publicly: true, person_approved_exact_text: true });
   assert.equal(publicReview.body.result.structuredContent.code, "FEEDBACK_PUBLIC_ONLY_ON_PAGE");
-  assert.ok(publicReview.body.result.content[0].text.includes(PUBLIC_URL));
+  assert.equal(publicReview.body.result.content[0].text, `Not sent. A review that may be shown publicly is written by the person on the feedback page (${PUBLIC_URL}) in their own words; from a chat, a review can be sent only privately.`);
   const empty = await call({ kind: "praise", text: "   ", person_approved_exact_text: true });
   assert.equal(empty.body.result.structuredContent.code, "FEEDBACK_TEXT_INVALID");
 

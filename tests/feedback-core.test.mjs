@@ -139,7 +139,11 @@ test("the store keeps one sealed file per message: the day, the door and an arri
   assert.deepEqual({ ...sent.stored }, { kind: "bug", text: `The page froze ${MARKER}`, replyAddress: `reply-${MARKER}@example.invalid`, mayShowPublicly: false });
 
   const file = path.join(root, "items", `${sent.id}.json`);
-  const info = await fs.stat(file);
+  // One open handle for the file's details and its content, so both describe the same file.
+  const handle = await fs.open(file, "r");
+  const info = await handle.stat();
+  const stored = JSON.parse(await handle.readFile("utf8"));
+  await handle.close();
   assert.equal(info.mode & 0o777, 0o600);
   assert.equal(info.mtime.toISOString(), "2026-11-22T00:00:00.000Z", "the file's time shows the day only");
   for (const name of await listFiles(root)) {
@@ -148,7 +152,6 @@ test("the store keeps one sealed file per message: the day, the door and an arri
     assert.equal(body.includes(sent.code.replaceAll("-", "")), false, "the code is never kept");
     assert.equal(body.includes("13:02"), false, "no time of day in clear");
   }
-  const stored = JSON.parse(await fs.readFile(file, "utf8"));
   assert.deepEqual(Object.keys(stored).sort(), ["format", "id", "key_id", "public_review", "received_day", "sealed", "seq", "via"]);
 
   const listed = await store.listEvents();
