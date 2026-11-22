@@ -226,30 +226,44 @@ test("a provisional reply that fails its exact checks isn't shown, and the appro
   assert.match(EMERGENCY_LINE, /^In danger right now\? Call your local emergency number: 112/u);
 });
 
-test("a provisional for wanting to die names no number, so a later acted turn still gets its provisional and the number check (Codex's review of 371a8f6f2)", async (t) => {
-  const wantsToDie = `It sounds like you want the pain to end. Are you safe right now? You could reach a friend or relative, a peer (${CRISIS_LINKS[0]}), a therapist (${CRISIS_LINKS[1]}) or a crisis line (${CRISIS_LINKS[2]}).`;
-  const acted = "I'm here with you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK.";
-  // The first turn's first audit reads acted, its repair is read wants_to_die and delivered: no number anywhere in the turn.
-  const levels = ["acted_or_about_to", "wants_to_die", "acted_or_about_to"];
-  const runner = await makeRunner(t, baseScript({
-    R1: (count) => (count === 1
-      ? { ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die", provisional_reply: wantsToDie }
-      : { ...quietReader(), level: "acted_or_about_to", reason: "says they took the pills", provisional_reply: acted }),
-    W: () => ({ reply: "I'm still here with you. What feels hardest right now?", answered_level: "wants_to_die", quotes: [] }),
-    "W-repair": () => ({ reply: "I'm here with you. Tell me what feels hardest right now.", answered_level: "wants_to_die", quotes: [] }),
-    C1: (count) => ({ findings: [], level: levels[count - 1] ?? "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] })
-  }), { settings: { provisionalLevels: ["acted_or_about_to", "wants_to_die"] } });
+const WANTS_TO_DIE_PROVISIONAL = `It sounds like you want the pain to end. Are you safe right now? You could reach a friend or relative, a peer (${CRISIS_LINKS[0]}), a therapist (${CRISIS_LINKS[1]}) or a crisis line (${CRISIS_LINKS[2]}).`;
+const ACTED_WITH_NUMBER = "I'm here with you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK.";
+const bothLevelsScript = (levels) => baseScript({
+  R1: (count) => (count === 1
+    ? { ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die", provisional_reply: WANTS_TO_DIE_PROVISIONAL }
+    : { ...quietReader(), level: "acted_or_about_to", reason: "says they took the pills", provisional_reply: ACTED_WITH_NUMBER }),
+  W: () => ({ reply: "I'm still here with you. What feels hardest right now?", answered_level: "wants_to_die", quotes: [] }),
+  "W-repair": () => ({ reply: "I'm here with you. Tell me what feels hardest right now.", answered_level: "wants_to_die", quotes: [] }),
+  C1: (count) => ({ findings: [], level: levels[count - 1] ?? "acted_or_about_to", repair_induced_checks: [], missed_boxes: [] })
+});
+
+test("a numberless provisional for wanting to die isn't a number shown: a later acted turn still gets its provisional (Codex's review of 371a8f6f2)", async (t) => {
+  const runner = await makeRunner(t, bothLevelsScript(["wants_to_die", "acted_or_about_to"]), { settings: { provisionalLevels: ["acted_or_about_to", "wants_to_die"] } });
   await runner.send("I just want it all to stop. I want to die.");
-  assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [wantsToDie]);
-  const first = (await runner.store.load(CASE_ID)).runtime_turns[0];
-  assert.equal(emergencyNumbersIn(`${first.provisional.exact_text}\n${first.delivery.exact_text}`).length, 0, "no number was shown in the first turn");
+  assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [WANTS_TO_DIE_PROVISIONAL]);
+  assert.deepEqual(eventsOf(runner, 1, "emergency_line"), [], "no acted reading in the first turn: no line");
   const second = await runner.send("I took all my pills an hour ago.");
   assert.equal(second.deliveryKind, "candidate");
-  assert.deepEqual(eventsOf(runner, 2, "provisional").map((event) => event.text), [acted], "the acted provisional is given: no number was shown before");
+  assert.deepEqual(eventsOf(runner, 2, "provisional").map((event) => event.text), [ACTED_WITH_NUMBER], "no number was shown before, so the acted provisional is given");
   const [, secondPrompt] = crisisReaderSystems(runner);
   assert.equal(secondPrompt.includes(crisisReaderProvisionalOfferedNote()), false, "the reader isn't told one was offered");
   assert.equal(secondPrompt.includes("provisional_reply also when the level is wants_to_die"), false, "nor asked again for one for wanting to die");
-  // Without the provisional's number, the second turn's reply would have to name one: the number check holds until a number is shown.
+});
+
+test("in the same turn, a numberless provisional doesn't keep the crisis checker's line out when it reads acted (Codex's review of ae9f09d62)", async (t) => {
+  // The first audit reads acted: the line shows at once though a (numberless) provisional was shown, and the number check sends the
+  // draft to repair; the repair is read wants_to_die and delivered.
+  const runner = await makeRunner(t, bothLevelsScript(["acted_or_about_to", "wants_to_die", "acted_or_about_to"]), { settings: { provisionalLevels: ["acted_or_about_to", "wants_to_die"] } });
+  const first = await runner.send("I just want it all to stop. I want to die.");
+  assert.equal(first.deliveryKind, "candidate");
+  assert.deepEqual(eventsOf(runner, 1, "provisional").map((event) => event.text), [WANTS_TO_DIE_PROVISIONAL]);
+  assert.deepEqual(eventsOf(runner, 1, "emergency_line").map((event) => event.reason), ["checker_read_acted"]);
+  assert.equal(runner.calls.filter((call) => call.role === "W-repair").length, 1, "the number check sent the acted-read draft to repair");
+  // The number was shown (the line): a later acted turn gets no provisional and no second line; its reply comes back to it.
+  await runner.send("I took all my pills an hour ago.");
+  assert.deepEqual(eventsOf(runner, 2, "provisional"), []);
+  assert.deepEqual(eventsOf(runner, 2, "emergency_line"), []);
+  // Without any number shown, the number check holds on every turn read acted.
   const program = runProgramChecks({ reply: "Stay with me.", checkerLevel: "acted_or_about_to", firstActedTurn: true });
   assert.equal(program[0].code, "PROGRAM_NO_EMERGENCY_NUMBER");
 });

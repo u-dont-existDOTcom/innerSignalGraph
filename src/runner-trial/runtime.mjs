@@ -227,11 +227,13 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   // naming one (as the exact check reads numbers), or the highlighted line. The later-turn rules go by what was actually shown,
   // never by which levels were read or which provisional replies were offered (Codex's review of 371a8f6f2: a numberless
   // provisional reply for someone who wants to die had counted as the number shown).
+  // showsNumber is the one test of "a number was shown" for every rule that depends on it, on the turn itself as on earlier ones
+  // (Codex's review of ae9f09d62: a numberless provisional reply shown this turn still kept the crisis checker's line out).
+  const showsNumber = (turn) => Boolean(turn.emergency_line_shown_at)
+    || emergencyNumbersIn(turn.provisional?.exact_text ?? "").length > 0
+    || emergencyNumbersIn(turn.delivery?.exact_text ?? "").length > 0;
   function numberShownEarlier(record, conversationId, turnId) {
-    return record.runtime_turns.some((turn) => turn.id !== turnId && turn.runner_reading?.conversation_id === conversationId
-      && (Boolean(turn.emergency_line_shown_at)
-        || emergencyNumbersIn(turn.provisional?.exact_text ?? "").length > 0
-        || emergencyNumbersIn(turn.delivery?.exact_text ?? "").length > 0));
+    return record.runtime_turns.some((turn) => turn.id !== turnId && turn.runner_reading?.conversation_id === conversationId && showsNumber(turn));
   }
   // The levels a provisional reply may be given at on this turn (design, section 4). With provisionalTurns "first": for someone who
   // has acted or is about to, until the conversation has shown a number; for someone who wants to die (only when provisionalLevels
@@ -610,7 +612,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         // no highlighted line on an earlier turn): on a later turn the full reply comes back to it, as the rules say, and the line
         // stays on the page; the line still shows if that turn ends without a reply (22 Nov 2026).
         const shownEarlier = config.provisionalTurns === "first" && numberShownEarlier(record, conversationId, runtimeTurn.id);
-        if (level === "acted_or_about_to" && !runtimeTurn.provisional && !runtimeTurn.emergency_line_shown_at && !shownEarlier) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
+        if (level === "acted_or_about_to" && !showsNumber(runtimeTurn) && !shownEarlier) await showEmergencyLine(caseId, runtimeTurn, "checker_read_acted", authContext);
         if (keptPlanReadings.confirmsKeepPlanYes && keptPlan.keepAsked) await tryKeepPlan(caseId, runtimeTurn.id, written.keptPlan?.lines ?? [], authContext);
         return result;
       };
