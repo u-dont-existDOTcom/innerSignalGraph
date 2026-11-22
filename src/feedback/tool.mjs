@@ -15,7 +15,7 @@ export function sendFeedbackDefinition({ publicUrl }) {
     name: SEND_FEEDBACK_TOOL,
     title: "Send feedback to InnerSignal's maker",
     description: [
-      "Send the person's feedback about InnerSignal (a suggestion, a problem, praise or a review) privately to InnerSignal's maker: it's sealed so that only he can open it, and he reads it in his private inbox, a page in his Claude account.",
+      "Send the person's feedback about InnerSignal (a suggestion, a problem, praise or a review) privately to InnerSignal's maker: it's sealed so that only he can open it, an AI checks each message only for signs that someone may be in danger so that he reads those first, and he reads it in his private inbox, a page in his Claude account.",
       "Call it only after you have shown the person, in the chat, the exact text you will send, its kind and any reply address, and they have said yes to exactly that; send that text unchanged.",
       "Write it from what they told you and leave out private details of their life or therapy unless they ask to include them.",
       "Before they agree, tell them what is kept: the text, its kind, the time and the reply address if they give one, nothing else.",

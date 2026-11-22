@@ -21,7 +21,7 @@ export const KIND_LABELS = Object.freeze({
 
 export const PRIVACY_SECTIONS = Object.freeze([
   ["What's kept:", "your message, what kind it is, whether a review may be shown, the time you sent it and, if you give one, your address for an answer. Nothing else: no account, no name unless you write one, no IP address."],
-  ["Who reads it:", "only the person who makes InnerSignal. It's sealed on InnerSignal's server so that only he can open it, and he reads it in his private inbox, a page in his Claude account that Anthropic hosts. No one else is given it. Nothing from it goes into InnerSignal's rules or into anyone's case unless he decides so."],
+  ["Who reads it:", "only the person who makes InnerSignal. It's sealed on InnerSignal's server so that only he can open it. Once it's opened on his computer, an AI (Claude, made by Anthropic) reads it for one thing only: whether you, or someone you mention, may be in danger, so that he reads those messages first. It gives back only that yes or no. He reads your message in his private inbox, a page in his Claude account that Anthropic hosts. No one else is given it. Nothing from it goes into InnerSignal's rules or into anyone's case unless he decides so."],
   ["Deleting:", "after sending you get a code. It deletes your message from the server at once, and from his inbox the next time he opens it. Messages are deleted after a year anyway; a review he shows publicly stays until you or he removes it."]
 ]);
 

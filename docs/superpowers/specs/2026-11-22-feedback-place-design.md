@@ -1,6 +1,8 @@
 # InnerSignal's feedback place (owner's i63b): design
 
-Status: draft 2 as built, 22 Nov 2026, by the session building it (Claude Opus 5.5). Three things changed while building, each
+Status: draft 3, 22 Nov 2026: the owner answered the release question (i66: `1a 2a 3a 4a 5b 6a 7a`, with his note on 2a), and
+the changes it brings are in Appendix F (the address on innerself.love, the danger reader, the wording). Before that, draft 2 as
+built, by the session building it (Claude Opus 5.5). Three things changed while building, each
 marked "(built)": the read's two cursors and the one-message read (section 7), the trace line's hour (section 12), and the runner
 link's switch (section 14). Draft 1 (`20017c7b4`) was red-teamed by Fable
 (`/home/joel/askrigor-releases/20261122-innersignal-feedback/fable-redteam-design-20261122.md`: 3 blocking, 12 should-fix,
@@ -63,14 +65,19 @@ size limits and a time limit that ends the connection, and never a file name tak
 owner wants the stronger separation now (owner point 5). **Third-party forms and email** add a third party that reads
 every message, and email draws spam; not what he chose.
 
-**The address must be settled before the first release that names it** (owner point 1). The server's own address
-(`https://private-mcp.185-233-106-15.sslip.io/feedback`) works with no DNS change, but it is a bare IP address through a
-free DNS service with "private-mcp" in the name, which looks like phishing on a page that asks for personal words, and
-it would be written into the served rules, installed plugin copies and people's chat histories. Recommended: an address
-on his own domain, for example `feedback.u-dont-exist.com`: one DNS record from him and one proxy route to the same
-container. Whatever address ships first keeps answering (or redirecting) for as long as copies of the rules name it.
-One constant, `FEEDBACK_PAGE_URL` in `src/feedback/address.mjs`, holds the address the rules name; tests keep the served
-sentence, the runner's button and the setting equal to it.
+**The address: `https://innerself.love/feedback`** (his answer 2a with his note: "the website for innersignal is
+innerself.love and it's hosted on the netcup vps"; Appendix F). The server's own sslip.io address can't go into the served
+rules (its digits read as a phone number to the rules' check) and looks like phishing. innerself.love is served on the same
+server by Coolify's Traefik, which forwards to the site's own container (Caddy on port 8080); its source is
+`u-dont-existDOTcom/innerself` (`DEPLOYMENT.md`, `Caddyfile`), which serves files only (no fallback that would take
+`/feedback`, no scripts, no analytics, no cookies, no access log). The page is a path on the site: one Traefik router on the
+connector's container, `Host(innerself.love) && (Path(/feedback) || PathPrefix(/feedback/))`, with a priority above the
+site's router, sends those paths to the connector; the site's own app and its container are untouched, and no DNS record is
+needed. The alternative, `feedback.innerself.love`, needs a DNS record from him and gives an address that says "feedback"
+twice; kept as the fallback if the release's read-only check finds that the site's router can't be outranked. Whatever
+address ships keeps answering (or redirecting) for as long as copies of the rules name it. One constant,
+`FEEDBACK_PAGE_URL` in `src/feedback/address.mjs`, holds the address the rules name; tests keep the served sentence, the
+runner's link and the setting equal to it.
 
 ## 4. Storage and encryption
 
@@ -211,13 +218,23 @@ page; links in a message are not made clickable. Its only controls are fixed cho
 with the tick), "Don't show", "Delete". No replies or comments are typed on a feedback item, so no feedback words reach
 the `replies` or `comments` collections that `sync.py` mirrors to Git.
 
-**"Only he reads it", as it now holds:** the words are sealed on the server, opened on his laptop by a program, and
-shown to him in his private Inbox, a page in his Claude account that Anthropic hosts. No model and no other person is
-given them. The page, the served sentence and the tool say it in the same words (section 11).
+**"Only he reads it", as it now holds:** the words are sealed on the server, opened on his laptop by a program, checked by
+one AI call for possible danger (below), and shown to him in his private Inbox, a page in his Claude account that Anthropic
+hosts. No other person is given them, and no other model: not the lane, not Codex. The page, the served sentence and the
+tool say it in the same words (section 11).
 
-**Danger-first reading:** no model reads the texts, so nothing sorts them by danger; he reads every new message when he
-opens the Inbox, which the page tells senders is not every day. A tool-less reader that only flags possible danger would
-put each text through one more model call; not built (owner point 6).
+**Danger-first reading (his answer 5b):** on his laptop, `fetch` has an AI with no tools read each newly opened message only to
+flag whether the writer, or someone they mention, may be in danger (`src/feedback/danger-reader.mjs`). One sealed
+`claude -p` call per message, as the runner trial's workers make them: no tools, no session kept on disk, safe mode, a strict
+empty MCP configuration, an allowlisted environment, a fresh folder removed after the call, the rules in a system prompt file
+and the message only on stdin, framed as data between markers with a random code. The answer must match a JSON schema with
+one boolean. Each Inbox item records `flagged`, `not_flagged` or `not_checked` (the check was off or failed); the Feedback view
+shows flagged messages first with a line saying so, then unchecked ones, then the rest. `fetch` prints counts only ("1 flagged
+as possibly in danger"); with the check on it takes at most 50 messages per run, and after three failed checks in a row it
+marks the rest "not checked" at once. Model: `claude-sonnet-5-5` unless set; Claude sign-in folder and command settable
+(`--danger-model`, `--claude-config-dir`, `--claude-bin`, or `config.json`). His daily count: the lane's report each turn,
+and a daily scheduled run of the lane's feedback step if he wants the count on days without a session (the lane's to set
+up). The prompt was brainstormed and red-teamed (Appendix F). No server module imports the reader.
 
 **In-chat hold:** a chat message is returned to the owner's read only after `held_until` (the full hour after one hour
 from its arrival). The person can delete it with the code before he can see it. This is what the server can guarantee
@@ -293,7 +310,9 @@ shown exactly as you wrote it, without your address, only if he agrees; it stays
 > one, your address for an answer. Nothing else: no account, no name unless you write one, no IP address.
 >
 > **Who reads it:** only the person who makes InnerSignal. It's sealed on InnerSignal's server so that only he can open
-> it, and he reads it in his private inbox, a page in his Claude account that Anthropic hosts. No one else is given it.
+> it. Once it's opened on his computer, an AI (Claude, made by Anthropic) reads it for one thing only: whether you, or
+> someone you mention, may be in danger, so that he reads those messages first. It gives back only that yes or no. He
+> reads your message in his private inbox, a page in his Claude account that Anthropic hosts. No one else is given it.
 > Nothing from it goes into InnerSignal's rules or into anyone's case unless he decides so.
 >
 > **Deleting:** after sending you get a code. It deletes your message from the server at once, and from his inbox the
@@ -315,8 +334,9 @@ backup sentence is added if `/srv` is backed up ("Server backups keep only the s
 **Served sentence** (SKILL.md, after the guide-comment sentence, which stays word for word):
 
 > To send InnerSignal a suggestion, a problem, praise or a review privately, without an account, there is its feedback
-> page (ADDRESS): it's sealed so that only InnerSignal's maker can open it, and he reads it in his private inbox, a page
-> in his Claude account; the page says what is kept and how to have it deleted. Where the host offers `send_feedback`,
+> page (https://innerself.love/feedback): it's sealed so that only InnerSignal's maker can open it, an AI checks each
+> message only for signs that someone may be in danger so that he reads those first, and he reads it in his private inbox,
+> a page in his Claude account; the page says what is kept and how to have it deleted. Where the host offers `send_feedback`,
 > you can offer to write it up instead: show the person the exact text, its kind and any reply address, and send it
 > unchanged only after they say yes to that text; leave out private details of their life or therapy unless they ask to
 > include them. A review that may be shown publicly is written by the person on the page, in their own words. Feedback
@@ -393,7 +413,8 @@ on its branch. InnerSignal's older local pipeline reads an older copy of the rul
   fronts the container and whether its port is reachable other than through it (for `TRUST_FORWARDED_FOR`), whether the
   proxy or Docker keeps visit records for `/feedback` and for how long, and whether `/srv` is backed up. The two
   dependent sentences of section 11 follow from what is found.
-- **Page:** the address settled (owner point 1; DNS and proxy route if a new one); image with this code; volume
+- **Page:** the Traefik router for `innerself.love/feedback` on the connector's container (section 3; the release kit has the
+  exact labels, written from the read-only check of the real ones); image with this code; volume
   `/srv/inner-signal-private/feedback` (0700, uid 1000); the settings; `INNER_SIGNAL_FEEDBACK=on`; the served sentence
   merged and released in the same step (stable skill and server); on his laptop, `INNER_SIGNAL_RUNNER_FEEDBACK_LINK=on` for
   the runner trial's link. Checks after: the address the served rules name answers 200; a synthetic send and its deletion;
@@ -411,7 +432,7 @@ counts daily: owner point 6); replies sent from the server; screenshots or other
 chat (the page does it); pages in other languages; a separate feedback service (section 3); the sentence in InnerSignal's
 older local pipeline, which reads its own older copy of the rules.
 
-## 17. Owner points for the release question
+## 17. Owner points for the release question (answered 22 Nov 2026 as i66: `1a 2a 3a 4a 5b 6a 7a`; Appendix F)
 
 1. The address: his own domain (recommended; one DNS record) or the server's own. Settled before the first release.
 2. How long messages are kept: a year (proposed), or another period.
@@ -425,6 +446,25 @@ older local pipeline, which reads its own older copy of the rules.
    "Someone gave this address on InnerSignal's feedback page; if that wasn't you, ignore this and I won't write again."
 8. The new page lines (the two crisis lines after his i62 line) and every word of section 11.
 9. What the approval rule can and can't guarantee in a chat (section 12).
+
+## Appendix F: the owner's answers (i66, 22 Nov 2026) and what they changed
+
+His answers, verified by the InnerSignal lane (his Inbox at 12:08 UTC and his chat at 12:14 UTC): `1a 2a 3a 4a 5b 6a 7a`, with
+his note on 2a: "the website for innersignal is innerself.love and it's hosted on the netcup vps. GPT is the one managing the
+site so you can have GPT add to it."
+
+- **1a, release:** prepared; nothing goes to the server, `main` or a switch until the lane sends his go.
+- **2a, his own address, on innerself.love:** `https://innerself.love/feedback` (section 3). His site needs no change for the
+  route; GPT, which manages the site, is asked only to confirm its router's rule and priority and, after the release, to add
+  a "Feedback" link (`/home/joel/askrigor-releases/20261122-innersignal-feedback/gpt-request-draft.md`). The address has no
+  digits, so the rules' phone-number check passes (`tests/feedback-served-sentence.test.mjs`).
+- **3a** (a year), **4a** (his Inbox), **6a** (the connector's server) and **7a** (the page's words): as built.
+- **5b, the danger reader:** built on the laptop side (section 7). Because "no AI reads the messages" stops being true, the
+  privacy words change in three places, shown to him before the release: the page's "Who reads it" (section 11), the served
+  sentence (section 12) and the tool's description, plus the Inbox view's two lines ("An AI check says the writer, or
+  someone they mention, may be in danger: read this first." and "Not checked for danger (the check was off or failed).").
+  The flag prompt: brainstormed, red-teamed by Fable and checked on a synthetic test set (see the release folder:
+  `danger-reader-redteam.md`, `danger-reader-testset.json`).
 
 ## Appendix B: Codex's first review of the build (22 Nov 2026, `origin/main..7b1c6fd2f`; 1 blocking, 10 should-fix)
 

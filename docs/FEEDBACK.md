@@ -11,7 +11,7 @@ field in `/health` or the ready line. When the packaged rules name the feedback 
 
 ## What it is
 
-- **The page** at `<address>/feedback` on the hosted connector: kind (suggestion, something isn't working, praise, review), the
+- **The page** at `https://innerself.love/feedback` (a path on InnerSignal's site, routed to the hosted connector): kind (suggestion, something isn't working, praise, review), the
   message, an optional address for an answer, and for a review a tick that lets it be shown publicly. Plain HTML, no
   JavaScript. A deletion page (`/feedback/delete`) and a reviews page (`/feedback/reviews`).
 - **The chat tool** `send_feedback`, behind its own switch `INNER_SIGNAL_FEEDBACK_TOOL`: the AI writes the feedback up and sends it
@@ -61,7 +61,9 @@ A missing or wrong setting stops startup with the setting's name, never its valu
 ## Privacy, as it holds
 
 - What's kept: the message, its kind, whether a review may be shown, the time, and an optional reply address. Sealed on the
-  server; opened only on the owner's laptop; shown to him in his private Inbox (a page in his Claude account that Anthropic hosts).
+  server; opened only on the owner's laptop, where one AI call (Claude, no tools, the message only on stdin) reads it only to flag
+  possible danger (`src/feedback/danger-reader.mjs`, the owner's 5b); shown to him in his private Inbox (a page in his Claude
+  account that Anthropic hosts), flagged messages first.
   The clear record holds the day only, but the disk's own change time on each file shows when it was written: whoever has the
   server's disk sees when messages arrived, never what they say.
 - Deletion by the sender's code removes the message and any public copy from the server at once, and from his Inbox at its next
