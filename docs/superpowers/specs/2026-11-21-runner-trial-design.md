@@ -25,9 +25,10 @@ response..." as it continues 4a 5b 6a".
 | 5b | The plan for next time is kept when the person asks, and also offered once at the end of a crisis plan, with the limits in section 9. |
 | 6a | Each conversation and its risk record are kept encrypted on his laptop until he deletes the case. |
 
-Two points his words leave open are settings with a default, measured both ways and put to him in the start-using-it
-question: whether the provisional reply is for both crisis levels or only for someone who has acted or is about to
-(section 4), and whether, in a crisis conversation, every failure shows his fixed message or only failed checks (section 7).
+Two points his words leave open are put to him in the start-using-it question: whether the provisional reply is for both
+crisis levels or only for someone who has acted or is about to (section 4: a setting with a default, measured both ways), and
+whether, in a crisis conversation, every failure shows his fixed message or only failed checks (section 7: only failed checks
+as built; a setting for every failure is not built).
 
 ## 1. What the trial keeps, changes and drops
 
@@ -161,42 +162,64 @@ writer and one whole checker at a lower effort.
   25.1 s, but the full reply's p90 rose from 31.1 s to 46.7 s with 3 repairs instead of 0, and 3 of 6 later-turn
   provisionals repeated the four people and links the crisis section gives once (the checker flagged it after it showed).
   The default stays `acted_or_about_to`.
-- **Which turn**: with `provisionalTurns` `first` (the default), a provisional reply for someone who has acted or is about to
-  only until the conversation has shown an emergency number (a provisional or a delivered reply naming one, or the highlighted
-  line), and one for someone who wants to die (only when `provisionalLevels` allows it) only until an earlier turn was read at
-  that level; `every` gives one on each such turn, as before 22 Nov. Both go by what was actually shown, never by which levels
-  were read (Codex's review of `371a8f6f2`: a numberless provisional for someone who wants to die had counted as the number
-  shown). When no level is left, R1's prompt says one was already offered in this conversation, so it gives none; nothing is
-  shown or recorded as a provisional, whatever R1 returns, and the skip puts no highlighted line into the conversation. Nor
-  does C1's `acted_or_about_to` reading on such a later turn once the conversation has shown a number (see "If it doesn't
+- **Which turn**: with `provisionalTurns` `first` (the default), someone who has acted or is about to gets a provisional reply
+  on the conversation's first turn read `acted_or_about_to`, as before. Once the conversation has shown an emergency number (a
+  provisional or a delivered reply naming one, or the highlighted line), R1 is told so on every later turn, and gives one only
+  when the latest message tells of something new and urgent (they have now taken something or hurt themselves, or are about to
+  act again): a short reply that comes back to the emergency number in one sentence naming it, without repeating the whole
+  first step, and the next smallest thing. When the message answers what was said before (no to an ambulance or to calling,
+  and why), `provisional_reply` is null: nothing is shown at once (the timed line below covers a slow reply), and the full
+  reply comes back to the number as the rules say. New and urgent or an answer is a meaning judgment, so it is R1's, never a
+  program rule (Fable's recheck of 22 Nov, finding 3: built first as "none once a number was shown", the rule gave "about to",
+  then "I've taken them" nothing early). Such a later provisional is shown when it passes the same exact checks as a first
+  one, a number included; refused, the highlighted line shows at once. One for someone who wants to die (only when
+  `provisionalLevels` allows it) comes only until an earlier turn was read at that level; after that nothing is shown or
+  recorded as a provisional for that level, whatever R1 returns, and the skip puts no highlighted line in. `every` gives one on
+  each such turn, as before 22 Nov, and R1 is told nothing. Both go by what was actually shown, never by which levels were read
+  (Codex's review of `371a8f6f2`: a numberless provisional for someone who wants to die had counted as the number shown). C1's
+  `acted_or_about_to` reading on a later turn puts no line in once the conversation has shown a number (see "If it doesn't
   pass" below); the line still shows if that turn ends without a reply. The writer and the checkers are unchanged: the full
-  reply comes back to the number as the rules say, and C1 judges it. A new conversation starts again. Why, measured on 22
-  Nov: in the GPT test round every later message read `acted_or_about_to` (F2, S4 and S5, after the person refused an
-  ambulance or the crisis line) got a provisional again, each repeating the first step almost word for word (the three
-  numbers, "I can't know what the pills will do", someone nearby), and the blind judge counted F2 as "repeating the number in
-  every line", which the crisis section rules out ("don't repeat it in every line, but come back to it"); with `wants_to_die`
-  on, 3 of 6 later provisionals repeated the four people and links the section gives once.
+  reply comes back to the number as the rules say, and C1 judges it. A new conversation starts again. Why later turns are
+  held back at all, measured on 22 Nov: in the GPT test round every later message read `acted_or_about_to` (F2, S4 and S5,
+  after the person refused an ambulance or the crisis line) got a provisional again, each repeating the first step almost
+  word for word (the three numbers, "I can't know what the pills will do", someone nearby), and the blind judge counted F2 as
+  "repeating the number in every line", which the crisis section rules out ("don't repeat it in every line, but come back to
+  it"); with `wants_to_die` on, 3 of 6 later provisionals repeated the four people and links the section gives once. Through
+  models, holding later turns back ran on three later turns only (F2, S4 and S5 in the mixed run of 22 Nov, before
+  `ae9f09d62`; none a new act); the rule as now built, with R1 judging what is new and urgent, has run with stand-in workers
+  only.
 - **What it holds** (the crisis section's first step, written by R1 with only the `crisis` part): that it heard them, the
   emergency number to call now, and the next smallest thing (someone in the house, unlocking the door, keeping the packets),
-  or for someone about to act, distance from the means; in their language, short, no headings, lists or bold, at most one
-  question in the whole reply, and when R1 doesn't know where they are, that question is where they are (the first step
-  says to ask where they are and the first reply to ask one question about now: Claude's provisionals asked both, where
-  they are and whether anyone is near, and the one-question check refused them). Never what what they took could do to
-  them. R1's prompt states the provisional's exact checks (section 5) in plain words; it names only the section's 112, 911
-  and 999, though the check also accepts the national numbers on its list.
+  or for someone about to act, distance from the means; in their language, short, no headings, lists or bold, at most two
+  questions in the whole reply: where they are, when R1 doesn't know, and one about now (the first step says to ask where
+  they are and the replies one question about now; Claude's provisionals asked both, where they are and whether anyone is
+  near, and a one-question check refused them, so the highlighted line showed instead: Fable's recheck of 22 Nov, finding 4).
+  A provisional for someone who wants to die keeps its one question about now. Never what what they took could do to them.
+  R1's prompt states the provisional's exact checks (section 5) in plain words; it names only the section's 112, 911 and 999,
+  though the check also accepts the national numbers on its list.
 - **Shown** when it passes its exact checks (section 5, the provisional row), as `Provisional urgent response: ` followed by
   the text; the page then shows `Thinking more about the full response...` while the writer and checkers work. No second
   model reads it first: the owner chose that in point 3, and its exact checks are the only checks that hold.
-- **If it doesn't pass**, or the turn later ends without a reply after a crisis reading (R1's, or C1's on the draft), or R1
-  gives no reading in a conversation that is already a crisis conversation: the page puts the always-visible line, in his
-  approved words, into the conversation as a highlighted notice: "In danger right now? Call your local emergency number: 112
-  in the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK." No model writes it and no
-  new wording is needed. When it showed is stored in the runtime record (not the transcript), and later packets show it in
-  its place, like the provisional. When C1 reads `acted_or_about_to` and nothing was shown this turn (R1 read another level
-  or gave no reading), the line shows as soon as C1's reading arrives; with `provisionalTurns` `first`, only while no earlier
-  turn of this conversation has shown an emergency number (a provisional or a delivered reply naming one, or the line) (22 Nov: otherwise the number came back as a highlighted
-  line on every later acted message, the repetition the crisis section rules out; the line stays on the page and the full
-  reply comes back to it).
+- **If it doesn't pass**, or the turn later ends without a reply after a crisis reading (R1's, or C1's on the draft) or with no
+  reading from R1 (Fable's recheck of 22 Nov, finding 7: a first message with R1 out had closed with no line), or R1 gives no
+  reading in a conversation that is already a crisis conversation: the page puts the always-visible line, in his approved
+  words, into the conversation as a highlighted notice: "In danger right now? Call your local emergency number: 112 in the EU
+  (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK." No model writes it and no new wording
+  is needed. When it showed is stored in the runtime record (not the transcript), and later packets show it in its place, like
+  the provisional. When C1 reads `acted_or_about_to` and nothing was shown this turn (R1 read another level or gave no
+  reading), the line shows as soon as C1's reading arrives; with `provisionalTurns` `first`, only while no earlier turn of this
+  conversation has shown an emergency number (a provisional or a delivered reply naming one, or the line) (22 Nov: otherwise
+  the number came back as a highlighted line on every later acted message, the repetition the crisis section rules out; the
+  line stays on the page and the full reply comes back to it).
+- **The timed line**: on a turn R1 read `acted_or_about_to` where nothing showed a number once R1's stage was done (with
+  `first`, a later turn whose message answers what was said before), the line goes in if the turn still has no reply 30 s
+  after the message arrived (from the turn's `created_at`, by the runtime's clock; reason `no_reply_yet`). Fable's recheck of
+  22 Nov (finding 3): such a turn showed only "reading, writing, checking" until the full reply, 15 to 25 s and as long as a
+  stalled call takes. A timer, unref'd so it never holds the server open, whose errors are caught, reads the case (never
+  creating it) and writes the line only while the turn is unfinished and has shown no number, through the store's
+  `recordRunnerEmergencyLine`: the store runs each write of a case in that case's queue on the record as it then stands, so
+  the timer can't undo the turn's own writes, and it refuses a line for a finished turn, so a reply or closing that came
+  between the timer's read and its write wins. The page is sent the line once, and only when that write put it in.
 - **The full reply** follows it in the same turn: the writer gets the provisional and continues the first step (the next
   smallest thing, staying with them) rather than repeating it; C1 checks the provisional and the full reply together as the
   first reply the person sees (at most one question about now across both; nothing that contradicts the provisional).
@@ -209,19 +232,27 @@ writer and one whole checker at a lower effort.
 Pattern lists decide only exact things; meaning is a checker's. Digits are read in any script (Arabic-Indic, Devanagari,
 fullwidth and the other common decimal digits), so the number checks work whatever the reply's language.
 
+**A whole number** below is a run of digits with no digit beside it, and not one group of a grouped number (Fable's recheck of
+22 Nov, finding 12: "1,000" and "10 000" had counted as the emergency number 000, which could pass the number check and count
+as the number shown): a three-digit run with a digit and exactly one group separator just before it ("1,000",
+"10 000"), or exactly one group separator and three digits just after it ("112,000"), is part of a grouped number. The group
+separators: a comma, a full stop, a space, a no-break or narrow no-break space, and, for other languages, the apostrophes of
+Swiss grouping ("1'000") and the Arabic thousands and decimal separators. "112, 911 or 999" and "112 or 000" are numbers of
+their own; "112 911" with only a space between is read as one grouped number.
+
 | Check | When | Exact rule | Effect |
 |---|---|---|---|
-| Emergency number present | every turn C1 reads `acted_or_about_to` until the conversation has shown an emergency number (in a provisional or a delivered reply, or the highlighted line), over the provisional and the full reply together; once one was shown, C1 judges "come back to it" (22 Nov: until then it held only on the first turn read acted, so a turn read acted whose repair was read lower could leave the conversation with no number) | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number. It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step). France's 15 alone doesn't pass (a reply naming only "le 15" is repaired to add 112), and 111 and 119 mean other services in some countries | blocks |
+| Emergency number present | every turn C1 reads `acted_or_about_to` until the conversation has shown an emergency number (in a provisional or a delivered reply, or the highlighted line), over the provisional and the full reply together; once one was shown, C1 judges "come back to it" (22 Nov: until then it held only on the first turn read acted, so a turn read acted whose repair was read lower could leave the conversation with no number) | at least one of 112, 911, 999, 000, 111, 119, 144 as a whole number (not a group of a grouped number). It proves a number is present, nothing more ("I can't call 911" passes it; C1 judges the first step). France's 15 alone doesn't pass (a reply naming only "le 15" is repaired to add 112), and 111 and 119 mean other services in some countries | blocks |
 | Provisional: a number | the provisional of someone read `acted_or_about_to` (a provisional for `wants_to_die`, when `provisionalLevels` allows one, needs none: the first reply to someone who wants to die names no number unless they've acted) | at least one number from that list, as a whole number | not shown |
-| Provisional: numbers known | the provisional | every run of two or more digits (any script), and every phone-shaped run (digits joined by spaces, dots, dashes or brackets), is on that list (catches an invented number however short: "Call 112 now, or the poison service at 42." isn't shown); so a two-digit time or count ("10 minutes", "24/7") or a national two-digit number (France's 15) keeps it from showing too, and the highlighted line shows instead; a single digit isn't read as a number. The three crisis links' own digits (the therapist link's path holds 189761959) are set aside before any number check, here and in the rows above and below; every other link's digits are read (22 Nov: a provisional giving the section's links was refused before this) | not shown |
-| Provisional: shape | the provisional | at most 900 characters; at most one question mark (`?`, `？`, `؟`); no list line, heading or bold; no link other than the three of the crisis section | not shown |
+| Provisional: numbers known | the provisional | every run of two or more digits (any script), and every phone-shaped run (digits joined by spaces, dots, dashes or brackets), is on that list as a whole number (catches an invented number however short: "Call 112 now, or the poison service at 42." isn't shown); so a two-digit time or count ("10 minutes", "24/7"), a grouped number ("1,000": its 000 is no emergency number) or a national two-digit number (France's 15) keeps it from showing too, and the highlighted line shows instead; a single digit isn't read as a number. The three crisis links' own digits (the therapist link's path holds 189761959) are set aside before any number check, here and in the rows above and below; every other link's digits are read (22 Nov: a provisional giving the section's links was refused before this) | not shown |
+| Provisional: shape | the provisional | at most 900 characters; at most two question marks (`?`, `？`, `؟`) for someone read `acted_or_about_to` (where they are, when that isn't known, and one about now: Fable's recheck of 22 Nov, finding 4) and one for `wants_to_die`; no list line, heading or bold; no link other than the three of the crisis section | not shown |
 | Owner's guide links | a crisis conversation | no link to the owner's sites (`u-dont-exist.com` and its subdomains, `ibogaqueen.substack.com`) other than the Hearthwork and therapist links the crisis section names; other sites (a poison centre, a health service) are left to C1 | blocks |
 | "detox" | a crisis conversation | no word containing "detox" in Latin letters; other spellings and languages are C1's (`CRISIS_NEVER_LIST`) | blocks |
 | First crisis reply shape | the first turn of this conversation that C1 reads `acted_or_about_to` or `wants_to_die`, or whose provisional was shown, whenever it comes | no list line, heading, or bold or double-underscore emphasis | blocks |
 | Declared quotes | always | each declared quote is in the reply and in its source turn or journal entry, word for word after folding whitespace | blocks |
 | Undeclared quoted spans | always | quoted spans (any quotation marks) the writer didn't declare are listed for C2, who judges whether any is presented as the person's words | to C2 |
 | Child-contact gate | the gate (from R3 and the stored state) is HOLD or BLOCKED | the `childContactViolations` patterns (English and French) only point at places to look: a pattern can't tell an invitation from a refusal ("Do not contact your inner child." matches). Their hits go to C3 and the whole checker as `child_contact_pattern_hits`, with the gate and its route; those checkers block any reply that invites contact, in any wording or language (`CHILD_CONTACT_WHILE_RESTRICTED`, high), and are told a hit alone is not an invitation | recorded as `PROGRAM_CHILD_CONTACT_PATTERN` at medium, never blocks by itself |
-| Numbers without a crisis | not a crisis conversation | any emergency number, a known crisis-line number (988, 3114, 116 123 and the like) or a phone-shaped run of six or more digits | recorded as `PROGRAM_NUMBER_WITHOUT_CRISIS`, never blocks (a wrong level must never take a number away from someone who acted) |
+| Numbers without a crisis | not a crisis conversation | any emergency number as a whole number ("1,000 euros" holds none), a known crisis-line number (988, 3114, 116 123 and the like) or a phone-shaped run of six or more digits | recorded as `PROGRAM_NUMBER_WITHOUT_CRISIS`, never blocks (a wrong level must never take a number away from someone who acted) |
 
 ## 6. Storage (point 6a)
 
@@ -280,16 +311,22 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   `home_unsafe` (the safety-orientation route's "outside safety ... first"); "wanting to die", one read `wants_to_die`. The
   question tells him these readings stand in for the four routes.
 - **Operational failures** give the notice, not the fixed message, as the 1 Nov page says ("not used for operational
-  failures"). Whether every failure in a crisis conversation should show his message instead is a setting
-  (`fixedMessageOn`), off, and a question in the start-using-it draft.
-- **In a crisis turn**, whatever ends it, the highlighted emergency line of section 4 is in the conversation.
+  failures"). Whether every failure in a crisis conversation should show his message instead is a question in the
+  start-using-it draft; a setting for it is not built (a `fixedMessageOn` default stood in the runtime with no code reading
+  it, and was taken out on 22 Nov: Fable's recheck, finding 14).
+- **In a crisis turn, or one R1 gave no reading**, whatever ends it, the highlighted emergency line of section 4 is in the
+  conversation: the closing puts it in when nothing else has (since Fable's recheck of 22 Nov, finding 7, for a turn without
+  R1's reading too).
 
 ## 8. Time and what the page shows
 
 - **Always on the trial page**, from before the first message: "In danger right now? Call your local emergency number: 112 in
   the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK."
 - **While waiting**: "Writing and checking a reply…" with the seconds so far and the step (reading, writing, checking,
-  repairing); in a crisis turn, after the provisional, `Thinking more about the full response...`.
+  repairing); in a crisis turn, after the provisional, `Thinking more about the full response...`. On a turn R1 read as acted
+  or about to that has shown no number (with `provisionalTurns` `first`, a later turn whose message answers what was said
+  before), the highlighted emergency line comes in at 30 s from the message if the reply hasn't (section 4, "The timed
+  line").
 - **Deadline**: one per turn (first value 300 s, set from the timed batch), passed into the runtime. Every call's limit is
   the smaller of its own (R1, R2 and R3 30 s, writer 60 s, each checker 45 s) and the time left. A repair starts when the
   time left is at least the round time, 30 s: the time within which 9 of 10 writer-and-checker rounds finished, rounded up.
@@ -299,7 +336,8 @@ fullwidth and the other common decimal digits), so the number checks work whatev
   for the writer, 14.4 s for a checker and 14.3 s for a reader; 9 of 10 writer-and-checker rounds finished within 22.7 s
   (GPT), 23.5 s (Claude) and 24.7 s (mixed), 26.2 s at most; once a GPT writer call hung to its 120 s cap and its retry
   answered in 11.5 s, so that reply took 152.6 s. Each cap is about two to three times the slowest call measured, so a
-  stuck call costs less.
+  stuck call costs less: a hung writer call now costs 60 s, and its retry more. On a turn read acted with nothing shown,
+  the timed line comes at 30 s whatever the calls take.
 - **Delivery**: `/v1/therapy/respond` streams newline-delimited JSON when the page asks (`accept: application/x-ndjson`): a
   `status` line per step, a `provisional` line, a `notice` line, the final line. A page that asks for JSON gets one answer. The
   request is authorized for its case (the read, write and audit scopes, the check the turn itself makes first) before the stream
@@ -410,6 +448,22 @@ code; turning it off leaves that vault alone.
 No real case or journal text in Git, logs or reports: tests and measurement use the synthetic conversations only. The
 owner's phone number appears nowhere (his public Signal username is in the served rules already). Case text never goes into
 a system prompt or onto a command line.
+
+- **What each company receives** (Fable's recheck of 22 Nov, finding 8): with both providers in use (`--provider mixed`:
+  readers and checker on Claude, the writer on GPT), each company receives the conversation so far and up to 20 earlier
+  messages of the case, not one message: the writer's packet and the checkers' packets hold the same background, and the
+  crisis checker (the whole checker in its arm) also gets the stored risk record's digest; only the readers get this
+  conversation alone. Both companies keep conversations for a time whatever an account's training setting says: that setting
+  is about training, not keeping (section 6, "What goes where").
+- **The vault's keys** are in `credentials.json` beside the vault, mode 0600: the development file provider, not OS-backed
+  security, so whoever can read the owner's files can open the vault (`docs/RUNNER-TRIAL.md`, "What it sets up").
+- **What the writer says about storage**: it doesn't bring up what InnerSignal has stored about the person, or how it stores
+  it, unless they ask or chose to pick up where they left off, and says so plainly when they refer to something it doesn't
+  have; it is told in one sentence what the trial keeps (the case's conversations and its risk record, encrypted on this
+  computer until the case is deleted; up to 20 earlier messages of the case come to it as background), so its answer, when
+  asked, is true. Reworded on 22 Nov after Fable's recheck (finding 9): the first wording also forbade saying what it can't
+  access, the sentence that keeps it from pretending to hold something. The skill checker and the whole checker count a reply
+  that breaks it (`STORAGE_DESCRIBED`, held at medium by program, never blocking).
 
 ## 13. Measuring it
 
