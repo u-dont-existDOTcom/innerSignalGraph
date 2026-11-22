@@ -66,6 +66,22 @@ test("the exact checks read numbers in any script and decide only exact things",
   assert.ok(provisionalProblems("- Call 112\n- Unlock the door").includes("list"));
   assert.ok(provisionalProblems("Call 112 now. https://detox.u-dont-exist.com").includes("link_not_allowed"));
   assert.deepEqual(shapeProblems(`See ${CRISIS_LINKS[1]} or ${CRISIS_LINKS[0]}`), [], "the allowed links don't read as emphasis");
+  // 22 Nov 2026: the therapist link's path holds 189761959, so a provisional reply giving the links the crisis section asks for
+  // was refused as one inventing a number. The three links' own digits are never read; every other link's digits still are.
+  const withLinks = `I hear you. Please call 112 now. You could also reach a peer (${CRISIS_LINKS[0]}), a therapist (${CRISIS_LINKS[1]}) or a crisis line (${CRISIS_LINKS[2]}).`;
+  assert.deepEqual(provisionalProblems(withLinks), [], "the crisis section's own links aren't read as numbers");
+  assert.deepEqual(provisionalProblems("Call 112 now. A therapist: IBOGAQUEEN.substack.com/i/189761959/finding-a-therapist/"), [], "without the scheme, in capitals, with a trailing slash");
+  assert.ok(provisionalProblems("Call 112 now. https://example.org/0800555010").includes("unknown_number"), "another link's digits are still read");
+  assert.ok(provisionalProblems("Call 112 now. https://ibogaqueen.substack.com/i/189761959/finding-a-therapist-555-0100").includes("unknown_number"), "digits added after the link are read");
+  assert.deepEqual(provisionalProblems(`Call 112 ${CRISIS_LINKS[2]} 999`), [], "setting a link aside never joins the numbers on either side");
+  assert.deepEqual(phoneLikeRuns(`See ${CRISIS_LINKS[1]}`), [], "the therapist link is no phone number");
+  assert.deepEqual(runProgramChecks({ reply: `A therapist could help with this: ${CRISIS_LINKS[1]}`, checkerLevel: "none" }), [], "so it isn't recorded as a number without a crisis");
+  // The first reply to someone who wants to die names no number unless they've acted: a provisional for that level, when the
+  // setting allows one, needs none. Any number it gives must still be on the list.
+  const wantsToDie = `It sounds like you want the pain to end, and I'm taking that seriously. Are you safe right now? You could reach a friend or relative, a peer to take turns listening with (${CRISIS_LINKS[0]}), a therapist (${CRISIS_LINKS[1]}), or a crisis line, where even a stranger can help (${CRISIS_LINKS[2]}).`;
+  assert.deepEqual(provisionalProblems(wantsToDie, { level: "wants_to_die" }), []);
+  assert.deepEqual(provisionalProblems(wantsToDie), ["no_emergency_number"], "someone who has acted gets a number");
+  assert.deepEqual(provisionalProblems("I hear you. The line at 0800 555 0100 is open.", { level: "wants_to_die" }), ["unknown_number"]);
   const findings = runProgramChecks({ reply: "Read https://detox.u-dont-exist.com and do a detox.", crisisConversation: true, checkerLevel: "wants_to_die" });
   assert.deepEqual(findings.map((finding) => finding.code).sort(), ["PROGRAM_DETOX_WORD", "PROGRAM_OWNER_LINK_NOT_ALLOWED"]);
   assert.deepEqual(runProgramChecks({ reply: "A health service: https://www.has-sante.fr", crisisConversation: true, checkerLevel: "wants_to_die" }), [], "other sites are the crisis checker's");
@@ -202,6 +218,28 @@ test("a provisional reply that fails its exact checks isn't shown, and the appro
   assert.ok(record.runtime_turns[0].emergency_line_shown_at);
   assert.deepEqual(record.runtime_turns[0].runner_reading.readers.provisional_refused.problems, ["no_emergency_number", "unknown_number"]);
   assert.match(EMERGENCY_LINE, /^In danger right now\? Call your local emergency number: 112/u);
+});
+
+test("with the setting for both levels, someone who wants to die gets a provisional reply without a number, and no emergency line", async (t) => {
+  const provisionalText = `It sounds like you want the pain to end. Are you safe right now? You could reach a friend or relative, a peer (${CRISIS_LINKS[0]}), a therapist (${CRISIS_LINKS[1]}) or a crisis line (${CRISIS_LINKS[2]}).`;
+  const script = baseScript({
+    R1: () => ({ ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die", provisional_reply: provisionalText }),
+    W: () => ({ reply: "I'm still here with you. What feels hardest about tonight?", answered_level: "wants_to_die", quotes: [] }),
+    C1: () => ({ findings: [], level: "wants_to_die", repair_induced_checks: [], missed_boxes: [] })
+  });
+  const runner = await makeRunner(t, script, { settings: { provisionalLevels: ["acted_or_about_to", "wants_to_die"] } });
+  await runner.send("I just want it all to stop. I want to die.");
+  assert.ok(runner.calls.find((call) => call.role === "R1").request.system.includes("provisional_reply also when the level is wants_to_die"), "the reader is asked for one at this level");
+  const provisional = runner.events.find((event) => event.type === "provisional");
+  assert.equal(provisional?.text, provisionalText);
+  assert.ok(!runner.events.some((event) => event.type === "emergency_line"), "no emergency line for someone who hasn't acted");
+  const record = await runner.store.load(CASE_ID);
+  assert.deepEqual(record.runtime_turns[0].provisional.checks, ["numbers_known", "shape", "links", "detox"], "no number check at this level");
+  // With the default setting the same reading gives no provisional reply.
+  const quiet = await makeRunner(t, script);
+  await quiet.send("I just want it all to stop. I want to die.");
+  assert.ok(!quiet.events.some((event) => event.type === "provisional"));
+  assert.ok(!quiet.calls.find((call) => call.role === "R1").request.system.includes("provisional_reply also when the level is wants_to_die"));
 });
 
 test("a blocking finding sends the draft to repair; the repaired version is checked again, the eleven repair checks included", async (t) => {

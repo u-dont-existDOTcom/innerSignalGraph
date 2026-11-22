@@ -25,6 +25,13 @@ export const CRISIS_LINKS = Object.freeze([
 ]);
 // The owner's own sites: in a crisis conversation only the Hearthwork and therapist links of these may appear.
 const OWNER_HOSTS = [/(?:^|\.)u-dont-exist\.com$/u, /^ibogaqueen\.substack\.com$/u];
+// The number checks never read the digits of these three links: the therapist link's path holds 189761959, so a reply giving the
+// links the crisis section asks for read as one that invents a phone number (found 22 Nov 2026: such a provisional reply wasn't
+// shown). Only these exact links are set aside, with or without the scheme, "www." or a trailing slash, in any letter case; every
+// other link's digits are still read. A word, not a space, stands in for each, so numbers on either side are never joined into one.
+const escapeForPattern = (value) => value.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&");
+const CRISIS_LINK_PATTERNS = CRISIS_LINKS.map((link) => new RegExp(`(?:https?:\\/\\/)?(?:www\\.)?${escapeForPattern(link.replace(/^https?:\/\//u, ""))}\\/?`, "giu"));
+export const withoutCrisisLinks = (text) => CRISIS_LINK_PATTERNS.reduce((rest, pattern) => rest.replace(pattern, " link "), String(text));
 
 // The zero of each decimal-digit block the checks read: ASCII, Arabic-Indic, Extended Arabic-Indic, NKo, Devanagari, Bengali,
 // Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam, Sinhala, Thai, Lao, Tibetan, Myanmar, Khmer, Mongolian,
@@ -60,11 +67,12 @@ function readDigitRuns(text, { joinSeparators = false } = {}) {
 const digitRuns = (text, options) => readDigitRuns(text, options).map((run) => run.digits);
 
 export function emergencyNumbersIn(text) {
-  return [...new Set(digitRuns(text).filter((run) => run != null && EMERGENCY_NUMBERS.includes(run)))];
+  return [...new Set(digitRuns(withoutCrisisLinks(text)).filter((run) => run != null && EMERGENCY_NUMBERS.includes(run)))];
 }
 
 // Phone-like runs: a number on the emergency or crisis-line list, or a run of six or more digits with optional separators.
-export function phoneLikeRuns(text) {
+export function phoneLikeRuns(original) {
+  const text = withoutCrisisLinks(original);
   const found = new Set();
   for (const run of digitRuns(text)) if (run != null && (EMERGENCY_NUMBERS.includes(run) || KNOWN_CRISIS_LINE_NUMBERS.includes(run))) found.add(run);
   for (const run of digitRuns(text, { joinSeparators: true })) {
@@ -131,17 +139,22 @@ export function undeclaredQuotedSpans(reply, quotes = []) {
   return quotedSpans(reply).map(fold).filter((span) => !declared.some((quote) => quote.includes(span) || span.includes(quote)));
 }
 
-/** The provisional reply's checks: it is shown only when this returns no problem. */
-export function provisionalProblems(text, { maxCharacters = 900 } = {}) {
+/**
+ * The provisional reply's checks: it is shown only when this returns no problem. `level` is the crisis reader's: an emergency
+ * number is required only for someone who has acted or is about to (the crisis section's first step). The first reply to someone
+ * who wants to die, with the setting that allows one for that level, names no number unless they've acted ("The replies"), so
+ * none is required there; any number it does give must still be on the list.
+ */
+export function provisionalProblems(text, { maxCharacters = 900, level = "acted_or_about_to" } = {}) {
   const problems = [];
   if (typeof text !== "string" || !text.trim()) return ["empty"];
   if (text.length > maxCharacters) problems.push("too_long");
-  if (emergencyNumbersIn(text).length === 0) problems.push("no_emergency_number");
+  if (level === "acted_or_about_to" && emergencyNumbersIn(text).length === 0) problems.push("no_emergency_number");
   // Every number is one of the emergency numbers: each run of two or more digits, in any script (a poison line an R1 invented is
   // caught however short, "42" included), and each phone-shaped run of digits joined by spaces, dots, dashes or brackets. So a
   // two-digit time or count ("10 minutes", "24/7") or a national two-digit number keeps a provisional from showing too, and the
   // highlighted emergency line shows instead. A single digit isn't read as a number.
-  const unknownRun = readDigitRuns(text).some((run) => run.count >= 2 && (run.digits == null || !EMERGENCY_NUMBERS.includes(run.digits)));
+  const unknownRun = readDigitRuns(withoutCrisisLinks(text)).some((run) => run.count >= 2 && (run.digits == null || !EMERGENCY_NUMBERS.includes(run.digits)));
   if (unknownRun || phoneLikeRuns(text).some((run) => !EMERGENCY_NUMBERS.includes(run))) problems.push("unknown_number");
   if (questionMarks(text) > 1) problems.push("more_than_one_question");
   problems.push(...shapeProblems(text));

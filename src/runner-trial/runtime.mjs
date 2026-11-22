@@ -239,9 +239,10 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const stored = { ...(reading ?? { level: "unclear", unread: true }), receipts };
     await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { crisis: stored } }], authContext);
     if (reading && config.provisionalLevels.includes(reading.level) && typeof reading.provisional_reply === "string") {
-      const problems = provisionalProblems(reading.provisional_reply);
+      const problems = provisionalProblems(reading.provisional_reply, { level: reading.level });
       if (problems.length === 0) {
-        await source("recordRunnerProvisional", [caseId, runtimeTurn.id, { exactText: reading.provisional_reply.trim(), checks: ["a_number", "numbers_known", "shape", "links", "detox"] }], authContext);
+        const checks = [...(reading.level === "acted_or_about_to" ? ["a_number"] : []), "numbers_known", "shape", "links", "detox"];
+        await source("recordRunnerProvisional", [caseId, runtimeTurn.id, { exactText: reading.provisional_reply.trim(), checks }], authContext);
         emit(caseId, runtimeTurn.id, { type: "provisional", text: reading.provisional_reply.trim() });
       } else {
         await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { provisional_refused: { problems } } }], authContext);
