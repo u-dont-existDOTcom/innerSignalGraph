@@ -482,6 +482,17 @@ next one. So the fix changes the mechanism, not the cases:
 
 Each with a test.
 
+## Appendix E: Codex's fourth review (22 Nov 2026, `13fdcc97a..97f8a4502` and the whole change; 2 should-fix, 1 minor)
+
+Prompt and result: `/home/joel/askrigor-releases/20261122-innersignal-feedback/codex/review-4-prompt.md` and `review-4.txt`. It found
+the deletion-record mechanism and the kernel-held lock correct, and nothing else in the whole change. Fixed, each with a test:
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | A message added on one page of a fetch and deleted before a later page could drop out of the inventory on a discard | A fetch keeps its additions and its removals apart; a discard keeps every addition and applies no removal; a confirmation applies both |
+| 2 | A direct delete took the id out of the inventory before the Inbox removal was confirmed | It no longer touches the inventory: the server's deletion record removes it at a confirmed fetch, or the year's removal does |
+| 3 | Unpublishing left the Inbox saying "shown publicly" | `unpublish` writes the Inbox update (`published: false`), as `publish` writes `true` |
+
 ## Appendix: the red team's findings and what changed
 
 | # | Finding | Severity | Outcome |

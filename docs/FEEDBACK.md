@@ -56,7 +56,7 @@ A missing or wrong setting stops startup with the setting's name, never its valu
    collection, and never hands this step to Codex or another model.
 3. His choices in the Inbox's Feedback view (`choices/feedback-<id>`) are acted on with `publish <id>` or `delete <id>`, each with
    `--export <this turn's Inbox export> --confirm <id>`; both refuse without his own choice for that id. `delete-many` clears a
-   flood from one door; `unpublish` takes a review down.
+   flood from one door; `unpublish <id> --export <folder> --confirm <id>` takes a review down. Each prints the Inbox write to send.
 
 ## Privacy, as it holds
 

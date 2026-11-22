@@ -147,7 +147,9 @@ test("publish and delete need the owner's own choice in the Inbox export and the
   await assert.rejects(w.run("delete", praise.id, "--export", exportDir, "--confirm", praise.id), /no "Delete" choice/u);
   await fs.writeFile(path.join(exportDir, "choices", `feedback-${praise.id}.json`), JSON.stringify({ at: "2026-11-22T10:01:00Z", choice: "delete" }));
   assert.match(await w.run("delete", praise.id, "--export", exportDir, "--confirm", praise.id), /Deleted/u);
-  assert.match(await w.run("unpublish", review.id, "--confirm", review.id), /Taken down/u);
+  const unpublished = await w.run("unpublish", review.id, "--export", exportDir, "--confirm", review.id);
+  assert.match(unpublished, /^Taken down: .*Inbox write: /su);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(exportDir, `feedback-${review.id}-update.json`), "utf8")).published, false, "the Inbox is told too");
   assert.doesNotMatch(await (await fetch(`${w.server}/reviews`)).text(), /Plain and kind\./u);
   await assert.rejects(w.run("delete-many", "--via", "chat", "--from", "2026-11-22", "--to", "2026-11-22", "--confirm", "yes"), /--confirm chat 2026-11-22 2026-11-22/u);
   assert.match(await w.run("delete-many", "--via", "chat", "--from", "2026-11-22", "--to", "2026-11-22", "--confirm", "chat 2026-11-22 2026-11-22"), /Deleted 0 chat/u);
@@ -230,4 +232,31 @@ test("discarding a batch keeps the ids it held in the inventory, and a refused c
   assert.equal(JSON.stringify(state).includes("Kept in the inventory"), false, "no words in the state");
   await assert.rejects(w.run("fetch", "--confirm", out), /No unconfirmed fetch/u);
   assert.match(await w.run("status"), /Cursor: 0/u, "the lock was freed after the refusal");
+});
+
+test("a fetch keeps its additions apart from its removals: a discard keeps every addition, a confirmation applies the removals", async (t) => {
+  const w = await world(t);
+  await w.run("keygen", "--server", w.server);
+  // The state a multi-page fetch leaves when a message it added on one page was deleted by its sender before a later page: the
+  // same id among the additions and the removals. Ids and days only.
+  const statePath = path.join(w.configDir, "state.json");
+  const pendingState = async (folder) => {
+    await fs.mkdir(folder, { mode: 0o700 });
+    await fs.writeFile(statePath, JSON.stringify({
+      after: 0,
+      imported: { fb_OLD00000000000000000: "2026-11-01" },
+      pending: { folder, complete: true, next_after: 7, unreadable: [], additions: { fb_ADDED00000000000000: "2026-11-22" }, removals: ["fb_ADDED00000000000000", "fb_OLD00000000000000000"] }
+    }), { mode: 0o600 });
+  };
+  await pendingState(path.join(w.base, "p1"));
+  await w.run("fetch", "--discard", path.join(w.base, "p1"));
+  const discarded = JSON.parse(await fs.readFile(statePath, "utf8"));
+  assert.deepEqual(Object.keys(discarded.imported).sort(), ["fb_ADDED00000000000000", "fb_OLD00000000000000000"], "a discard keeps every addition and applies no removal");
+  assert.equal(discarded.after, 0, "and doesn't move the cursor");
+
+  await pendingState(path.join(w.base, "p2"));
+  await w.run("fetch", "--confirm", path.join(w.base, "p2"));
+  const confirmed = JSON.parse(await fs.readFile(statePath, "utf8"));
+  assert.deepEqual(confirmed.imported, {}, "a confirmation applies the removals, the batch's own addition included");
+  assert.equal(confirmed.after, 7);
 });

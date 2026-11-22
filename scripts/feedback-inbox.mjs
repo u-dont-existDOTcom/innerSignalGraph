@@ -10,7 +10,7 @@
 //   delete ID --export DIR --confirm ID   delete one message; needs his "Delete" choice for it in the Inbox export
 //   delete-many --via chat|page --from DAY --to DAY --confirm "VIA FROM TO"   bulk delete, for a flood
 //   publish ID --export DIR --confirm ID  show a review publicly; needs his "Show publicly" choice for it in the Inbox export
-//   unpublish ID --confirm ID             take a public review down
+//   unpublish ID --export DIR --confirm ID  take a public review down (and write the Inbox update)
 //   status                                the server address, key ids and cursor (no secrets)
 //
 // Options: --config-dir DIR (default ~/.config/innersignal-feedback). Files there: owner-keys.json and owner-token (0600),
@@ -262,15 +262,18 @@ async function fetchEvents(paths, options, now) {
     const entries = [];
     const counts = { new: 0, by_kind: {}, reviews_waiting: 0, deleted: 0, expired_here: 0, unreadable: 0, held: 0, full: {}, stored: {} };
     const unreadable = [];
-    // Which messages the Inbox holds, by id and day only (no words), so their Inbox copies go after a year even if a deletion record
-    // never arrives.
-    const imported = { ...(state.imported && typeof state.imported === "object" ? state.imported : {}) };
+    // Which messages the Inbox may hold, by id and day only (no words), so their Inbox copies go after a year even if a deletion record
+    // never arrives. A fetch only proposes: its additions and its removals are kept apart, a discard keeps every addition (any of them
+    // may have reached the Inbox), and only a confirmation applies the removals.
+    const known = { ...(state.imported && typeof state.imported === "object" ? state.imported : {}) };
+    const additions = {};
+    const removals = new Set();
     const add = async (event, opened) => {
       const file = path.join(out, "docs", "feedback", `${event.id}.json`);
       await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
       await fs.writeFile(file, `${JSON.stringify(inboxDoc(event, opened))}\n`, { mode: 0o600, flag: "wx" });
       entries.push({ op: "set", collection: "feedback", doc_id: event.id, file_path: file });
-      imported[event.id] = event.received_day;
+      additions[event.id] = event.received_day;
       counts.new += 1;
       counts.by_kind[opened.kind] = (counts.by_kind[opened.kind] ?? 0) + 1;
       if (event.public_review) counts.reviews_waiting += 1;
@@ -295,7 +298,7 @@ async function fetchEvents(paths, options, now) {
         if (!FEEDBACK_ID_PATTERN.test(event.id ?? "")) fail("The server sent an event with an invalid id.");
         if (event.type === "deleted") {
           entries.push({ op: "delete", collection: "feedback", doc_id: event.id });
-          delete imported[event.id];
+          removals.add(event.id);
           counts.deleted += 1;
         } else {
           const opened = openMessage(keys, event);
@@ -316,17 +319,18 @@ async function fetchEvents(paths, options, now) {
     }
     counts.unreadable = unreadable.length;
     const today = now();
-    for (const [id, day] of Object.entries(imported)) {
+    for (const [id, day] of Object.entries({ ...known, ...additions })) {
+      if (removals.has(id)) continue;
       if (!DAY.test(day) || today - Date.parse(`${day}T00:00:00Z`) >= RETENTION_DAYS * 24 * 3_600_000) {
         entries.push({ op: "delete", collection: "feedback", doc_id: id });
-        delete imported[id];
+        removals.add(id);
         counts.expired_here += 1;
       }
     }
     const batches = [];
     for (let index = 0; index < entries.length; index += BATCH) batches.push(entries.slice(index, index + BATCH));
     await fs.writeFile(path.join(out, "plan.json"), `${JSON.stringify({ batches, counts }, null, 1)}\n`, { mode: 0o600 });
-    state.pending = { folder: out, complete: true, next_after: cursor, unreadable, imported, at: new Date().toISOString() };
+    state.pending = { folder: out, complete: true, next_after: cursor, unreadable, additions, removals: [...removals], at: new Date().toISOString() };
     await save();
     return [
       `Feedback: ${counts.new} new (${Object.entries(counts.by_kind).map(([kind, count]) => `${count} ${kind}`).join(", ") || "none"}), ${counts.reviews_waiting} review(s) waiting for a yes, ${counts.deleted} deletion(s), ${counts.held} held for the first hour.`,
@@ -349,9 +353,9 @@ async function discardFetch(paths, options) {
   const state = (await readJson(paths.state, {})) ?? {};
   if (!state.pending || state.pending.folder !== folder) fail(`No unconfirmed fetch for ${folder}.`);
   await fs.rm(folder, { recursive: true, force: true });
-  // Some of the batch may already be in the Inbox: every id it held stays in the inventory (ids and days only), so a copy that
-  // reached the Inbox is still removed after a year. Only a confirmed removal takes an id out.
-  state.imported = { ...(state.pending.imported ?? {}), ...(state.imported ?? {}) };
+  // Some of the batch may already be in the Inbox: every id it added stays in the inventory (ids and days only), so a copy that
+  // reached the Inbox is still removed after a year; none of its removals is applied. Only a confirmation takes an id out.
+  state.imported = { ...(state.imported ?? {}), ...(state.pending.additions ?? {}) };
   state.pending = null;
   await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
   return `Discarded ${folder}; the next fetch reads the same messages again.`;
@@ -365,7 +369,9 @@ async function confirmFetch(paths, options) {
   await fs.rm(folder, { recursive: true, force: true });
   state.after = state.pending.next_after;
   state.unreadable = state.pending.unreadable ?? [];
-  state.imported = state.pending.imported ?? state.imported ?? {};
+  const inventory = { ...(state.imported ?? {}), ...(state.pending.additions ?? {}) };
+  for (const id of state.pending.removals ?? []) delete inventory[id];
+  state.imported = inventory;
   state.pending = null;
   await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
   return `Confirmed: the cursor is at ${state.after}; ${folder} deleted.`;
@@ -403,12 +409,9 @@ async function deleteOne(paths, options) {
   });
   // Already gone on the server (the sender deleted it, say): the Inbox copy still goes.
   if (response.status !== 200 && response.status !== 404) fail(`The server refused delete: HTTP ${response.status}.`);
+  // The inventory keeps the id: the server's deletion record takes it out at a confirmed fetch, and if that record is long gone, the
+  // year's removal does (removing an Inbox copy that is already gone changes nothing).
   const plan = await inboxUpdatePlan(options.export, id, { op: "delete" });
-  const state = (await readJson(paths.state, {})) ?? {};
-  if (state.imported && Object.hasOwn(state.imported, id)) {
-    delete state.imported[id];
-    await writePrivate(paths.state, `${JSON.stringify(state)}\n`);
-  }
   return `${response.status === 200 ? "Deleted" : "Already gone on the server"}: ${id}. Inbox write: ${plan}`;
 }
 
@@ -445,8 +448,11 @@ async function unpublish(paths, options) {
   const id = options._[0];
   if (!FEEDBACK_ID_PATTERN.test(id ?? "")) fail("unpublish needs a message id (fb_…).");
   requireConfirm(options, id);
+  if (typeof options.export !== "string" || !path.isAbsolute(options.export)) fail("Pass --export with this turn's Inbox export folder (the Inbox write goes there).");
   const result = await ownerRequest(await serverUrl(paths, options), await loadToken(paths), "unpublish", { method: "POST", body: { id } });
-  return result.unpublished ? `Taken down: ${id}.` : `${id} was not shown publicly.`;
+  // As publish writes published: true to the Inbox, this writes false, so the view offers "Show publicly" again.
+  const plan = await inboxUpdatePlan(options.export, id, { op: "update", data: { published: false, updatedAt: new Date().toISOString() } });
+  return `${result.unpublished ? "Taken down" : "Was not shown publicly"}: ${id}. Inbox write: ${plan}`;
 }
 
 async function status(paths) {
