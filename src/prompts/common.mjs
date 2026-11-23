@@ -53,6 +53,10 @@ export function durableCaseContextBlock(context) {
 
 AUTHORIZED JOURNAL EVIDENCE (the user's own saved journal, retrieved and frozen for this turn; bounded, so absence is not proof; supplemental to the current episode, which stays authoritative):
 ${JSON.stringify(context.journal_evidence, null, 2)}`;
+  const responseEvidence = context?.response_evidence == null ? "" : `
+
+VERIFIED DELIVERY AND SOURCE EVIDENCE (what was actually delivered, reported, drafted, and which sources exist; drafts and supervisor instructions are not client history)
+${JSON.stringify(context.response_evidence, null, 2)}`;
   return `DURABLE CASE STATE (structured evidence; never hidden reasoning):
 ${state ? JSON.stringify(state, null, 2) : "(none supplied)"}
 
@@ -66,7 +70,7 @@ TARGETED OLDER-EVIDENCE RETRIEVAL REQUESTS:
 ${retrieval.length ? JSON.stringify(retrieval, null, 2) : "(none)"}
 
 TARGETED OLDER VERBATIM EVIDENCE (null means the referenced exact turn is not available in this context):
-${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}${journal}`;
+${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}${journal}${responseEvidence}`;
 }
 
 export const longitudinalClinicalRules = `

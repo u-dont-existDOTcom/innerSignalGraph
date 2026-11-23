@@ -4,7 +4,7 @@ import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import {
   RESPONSE_EVIDENCE_POLICY_VERSION, RESPONSE_EVIDENCE_BUDGETS, assessResponseEvidenceAdmission,
-  buildResponseEvidenceSnapshot, computeEvidenceDependencyBinding, normalizeResponseEvidenceJournal,
+  buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeEvidenceReview, normalizeResponseEvidenceJournal,
   responseEvidenceCandidateSchema, responseEvidenceSnapshotSchema, validateEvidenceShape, validateResponseEvidenceAudit, validateResponseEvidenceSnapshot
 } from "../supervisor/response-evidence-contract.mjs";
 import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
@@ -33,6 +33,7 @@ import {
   createPrivateRuntimeDiscriminator,
   createPrivateRuntimeTurn,
   sha256ExactText,
+  validatePrivateRuntimeDiscriminatorReview,
   validatePrivateRuntimeTurn
 } from "../supervisor/private-runtime-turn-lifecycle.mjs";
 import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
@@ -554,6 +555,7 @@ function assertAppendOnly(previous, next) {
       throw new ValidationError("Private runtime turn events are append-only and immutable.");
     }
     if (before.discriminator != null && JSON.stringify(before.discriminator) !== JSON.stringify(after.discriminator)) throw new ValidationError("Private runtime discriminator is immutable.");
+    if (before.discriminator_review != null && JSON.stringify(before.discriminator_review) !== JSON.stringify(after.discriminator_review)) throw new ValidationError("Private runtime discriminator review is immutable.");
     if (before.delivery != null && JSON.stringify(before.delivery) !== JSON.stringify(after.delivery)) throw new ValidationError("Private runtime delivery is immutable.");
   }
   if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
@@ -746,6 +748,25 @@ export function createEncryptedPrivateCaseStore({
     const assessment = assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point });
     if (!assessment.admissible) throw new ValidationError("Response evidence admission refused.", { code: assessment.code, details: { reasons: assessment.reasons } });
     return assessment;
+  };
+  const requireDiscriminatorReview = (record, runtimeTurn, discriminator, review) => {
+    const snapshot = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id).at(-1);
+    if (!snapshot || discriminator.kind === OWNER_FALLBACK_KIND) return;
+    const blocked = () => { throw new ValidationError("Discriminating question evidence review required.", { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" }); };
+    if (!review) blocked();
+    validateResponseEvidenceSnapshot(snapshot);
+    validatePrivateRuntimeDiscriminatorReview(review, { exactText: discriminator.exact_text, snapshot });
+    const invocation = runtimeTurn.events.find((entry) => entry.event_type === "INVOCATION_COMPLETED" && entry.stage === "discriminator_review"
+      && entry.details?.actual_context_id === review.auditor_context_id
+      && entry.input_sha256 === sha256Text(JSON.stringify({ runtime_turn_id: runtimeTurn.id, sha256: discriminator.sha256, snapshot_sha256: snapshot.snapshot_sha256 })));
+    const output = invocation?.details?.output, inclusion = output?.responseEvidenceInclusion;
+    if (!inclusion || output.contextId !== review.auditor_context_id || discriminator.producer_context_id === review.auditor_context_id
+      || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== review.auditor_inclusion_sha256
+      || !sameJson(output.value?.findings, review.findings)
+      || !sameJson(normalizeEvidenceReview(output.value?.evidence_review, { candidateText: discriminator.exact_text, snapshot }), review.review)) blocked();
+    const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
+    const rootCandidate = record.candidate_responses.find((entry) => entry.id === candidate?.root_candidate_id);
+    if (!responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) blocked();
   };
   // Delivery approval of the exact current candidate on a fresh independent audit that certifies that exact ID and version.
   const approveCandidateInRecord = (record, candidateId, auditId) => {
@@ -1025,7 +1046,8 @@ export function createEncryptedPrivateCaseStore({
         const parent = owned.at(-1);
         if (revision !== owned.length + 1 || revision > 3 || (revision > 1 && input.parentSnapshotId !== parent?.id)
             || (input.revisionReason === "evidence_expansion" && owned.some((entry) => entry.revision_reason === "evidence_expansion"))
-            || (runtime && runtime.state !== (revision === 1 ? "RECEIVED" : "RECONSTRUCTING"))) {
+            || (runtime?.state === "DISCRIMINATING_QUESTION_REQUIRED" && input.revisionReason !== "dependency_refresh")
+            || (runtime && !(revision === 1 ? ["RECEIVED"] : ["RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]).includes(runtime.state))) {
           throw new ValidationError("Response evidence revision invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
         }
         frozen = buildResponseEvidenceSnapshot(record, { ...input, lineageRootId: root }, { createdAt: now(), priorJournalItems });
@@ -1148,12 +1170,11 @@ export function createEncryptedPrivateCaseStore({
           validateResponseEvidenceSnapshot(snapshot);
           const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
           const root = parent ? record.candidate_responses.find((entry) => entry.id === parent.root_candidate_id) : null;
-          const dependencies = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256, lineageRootId: root?.id ?? candidateId });
-          const current = sha256Json(dependencies) === sha256Json(snapshot.dependency_binding);
+          const current = responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate: root });
           evidenceBinding = {
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
             candidate_origin: snapshot.candidate_origin, writer_inclusion: "verified", writer_inclusion_sha256: responseEvidence.writerInclusionSha256,
-            established_context_after_commit_sha256: root?.metadata.response_evidence?.established_context_after_commit_sha256 ?? null,
+            established_context_after_commit_sha256: root ? (snapshot.revision >= 2 ? snapshot.dependency_binding.established_context_digest : root.metadata.response_evidence?.established_context_after_commit_sha256 ?? null) : null,
             dependency_status: current ? "current_at_commit" : "stale_at_commit"
           };
         } else if (record.response_evidence_snapshots.some((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurnId) || (parentCandidateId != null && record.candidate_responses.find((entry) => entry.id === parentCandidateId)?.metadata.response_evidence)) {
@@ -1265,6 +1286,10 @@ export function createEncryptedPrivateCaseStore({
         if (candidate.audit_history.some((entry) => entry.id === audit.id)) throw new ValidationError(`Candidate audit ${audit.id} already exists.`);
         candidate.audit_history.push(audit);
         const admission = assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point: "commitPrivateRuntimeAudit" });
+        if (admission.admissible && audit.verdict === "pass" && candidate.metadata.response_evidence) {
+          const snapshot = record.response_evidence_snapshots.find((entry) => entry.id === candidate.metadata.response_evidence.snapshot_id);
+          if (!responseEvidenceDependenciesCurrent(record, candidate, snapshot)) Object.assign(admission, { admissible: false, code: "RESPONSE_EVIDENCE_STALE" });
+        }
         if (!admission.admissible) {
           if (audit.verdict === "pass" && admission.code === "RESPONSE_EVIDENCE_STALE") {
             let staleId = "evidence:dependencies";
@@ -1299,11 +1324,12 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
-    async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, { exactText, producerContextId, kind = null }) {
+    async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, { exactText, producerContextId, kind = null, review = null }) {
       return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED") throw new ValidationError("Runtime discriminator requires its explicit terminal-uncertainty state.");
         const discriminator = createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt: now(), kind });
+        requireDiscriminatorReview(record, runtimeTurn, discriminator, review);
         if (runtimeTurn.discriminator) {
           if (!sameJson(runtimeTurn.discriminator, discriminator)) throw new ValidationError("Private runtime discriminator conflicts with immutable bytes.");
           return null;
@@ -1314,6 +1340,7 @@ export function createEncryptedPrivateCaseStore({
           && entry.stage === "discriminator" && entry.details?.actual_context_id === producerContextId);
         if (!sealedAttempt || forbiddenContexts.has(producerContextId)) throw new ValidationError("Runtime discriminator requires a separate sealed producer context.");
         runtimeTurn.discriminator = structuredClone(discriminator);
+        if (review != null) runtimeTurn.discriminator_review = structuredClone(review);
         runtimeTurn.updated_at = now();
         return record;
       });
@@ -1383,6 +1410,7 @@ export function createEncryptedPrivateCaseStore({
           throw new ValidationError("Private runtime delivery conflicts with an existing immutable delivery.");
         }
         if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED" || !runtimeTurn.discriminator) throw new ValidationError("Runtime discriminator delivery is not ready.");
+        requireDiscriminatorReview(record, runtimeTurn, runtimeTurn.discriminator, runtimeTurn.discriminator_review);
         // The owner fallback is delivered through the same terminal state as a question but is recorded as its own kind.
         const deliveryKind = runtimeTurn.discriminator.kind === OWNER_FALLBACK_KIND ? OWNER_FALLBACK_KIND : "discriminator";
         if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");

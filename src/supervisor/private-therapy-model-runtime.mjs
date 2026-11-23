@@ -1,6 +1,6 @@
 import { ROLE_BELIEF_BLOCKING_CODES } from "../prompts/role-belief-integrity.mjs";
 import { createHash } from "node:crypto";
-import { ValidationError } from "../core/errors.mjs";
+import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { parseModelJson } from "../core/json.mjs";
 import { buildContext } from "../orchestrator/context-builder.mjs";
 import { runTieredTherapyPipeline } from "../orchestrator/run-tiered-pipeline.mjs";
@@ -17,13 +17,16 @@ import {
 } from "./owner-fallback-message.mjs";
 import {
   privateRuntimeAuditResultSchema,
+  privateRuntimeEvidenceAuditResultSchema,
   privateRuntimeRepairResultSchema,
   validatePrivateRuntimeAuditResult,
+  validatePrivateRuntimeEvidenceAuditResult,
   validatePrivateRuntimeRepairResult
 } from "../schemas/private-runtime.mjs";
 import { privateRuntimeAuditPrompt } from "../prompts/private-runtime-audit.mjs";
 import { privateRuntimeRepairPrompt } from "../prompts/private-runtime-repair.mjs";
 import { assembleCanonicalCandidateText } from "./canonical-candidate-text.mjs";
+import { sha256Json } from "./response-evidence-contract.mjs";
 import {
   childContactViolations,
   compatibilityStateBinding,
@@ -64,7 +67,27 @@ async function generatePacketOnly(provider, { prompt, outputSchema, metadata, va
   };
 }
 
-function sealAuditPacket(input, journalEvidence = null) {
+function evidenceInclusion(responseEvidence) {
+  if (!responseEvidence) return {};
+  if (sha256Json(responseEvidence.view) !== responseEvidence.viewSha256
+      || responseEvidence.view.snapshot_id !== responseEvidence.snapshot.id
+      || responseEvidence.view.snapshot_sha256 !== responseEvidence.snapshot.snapshot_sha256) {
+    throw new ValidationError("Response evidence inclusion invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+  }
+  return { responseEvidenceInclusion: { snapshot_id: responseEvidence.snapshot.id, snapshot_sha256: responseEvidence.snapshot.snapshot_sha256, view_sha256: responseEvidence.viewSha256 } };
+}
+
+export function responseEvidenceFailures(audit) {
+  const review = audit?.response_evidence?.review;
+  if (!review) return [];
+  return [
+    ...review.items.filter((item) => item.source_incompatible || ["unsupported", "contradicted"].includes(item.assessment))
+      .map((item) => ({ dimension: item.dimension, candidate_quote: item.candidate_quote, assessment: item.assessment, reason: item.reason, source_ids: item.source_ids })),
+    ...review.missing_material_history.map((item) => structuredClone(item))
+  ];
+}
+
+function sealAuditPacket(input, journalEvidence = null, responseEvidence = null) {
   return Object.freeze({
     schema_version: 1,
     role: "AUTHORIZED_PRIVATE_CANDIDATE_AUDIT",
@@ -86,7 +109,8 @@ function sealAuditPacket(input, journalEvidence = null) {
     reconstruction_audit_required: input.reconstruction_audit_required,
     repair_induced_error_checks: input.repair_induced_error_checks,
     instructions: input.instructions,
-    ...(journalEvidence ? { journal_evidence: structuredClone(journalEvidence.packet), journal_evidence_sha256: journalEvidence.sha256 } : {}),
+    ...(responseEvidence ? { response_evidence: structuredClone(responseEvidence.view) }
+      : journalEvidence ? { journal_evidence: structuredClone(journalEvidence.packet), journal_evidence_sha256: journalEvidence.sha256 } : {}),
     disclosure_manifest: Object.freeze({
       exact_candidate_included: true,
       authorized_case_context_included: true,
@@ -100,7 +124,8 @@ function sealAuditPacket(input, journalEvidence = null) {
       // packet and go to no recipient that did not already receive it.
       trajectory_digest_included: input.trajectory_digest != null,
       trajectory_digest_computed_in_code_without_model: true,
-      self_directed_risk_record_included: input.trajectory_digest?.self_directed_risk != null
+      self_directed_risk_record_included: input.trajectory_digest?.self_directed_risk != null,
+      ...(responseEvidence ? { response_evidence_snapshot_sha256: responseEvidence.snapshot.snapshot_sha256, response_evidence_view_sha256: responseEvidence.viewSha256 } : {})
     })
   });
 }
@@ -142,7 +167,8 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
   return Object.freeze({
     // `inboundAlreadyRecorded` is for a caller whose inbound client message is already the newest stored user turn, as it is when a
     // supervisor asks for a draft; the runtime's own turns commit their inbound later, so they leave it off.
-    async produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence = null, authContext, attemptContextId, inboundAlreadyRecorded = false }) {
+    async produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence = null, responseEvidence = null, authContext, attemptContextId, inboundAlreadyRecorded = false }) {
+      const inclusion = evidenceInclusion(responseEvidence);
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
       const previousCaseState = record.case_state;
       const context = await buildContext({
@@ -153,7 +179,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         trackerEntries: record.tracker_entries
       }, { ...config, ledgerMode: "off", devAutomationEnabled: false }, { currentTurnAt: runtimeTurn.inbound.received_at });
       const result = await runTieredTherapyPipeline({
-        context: journalEvidence ? {
+        context: responseEvidence ? { ...context, response_evidence: structuredClone(responseEvidence.view) } : journalEvidence ? {
           ...context,
           journal_evidence: structuredClone(journalEvidence.packet),
           journal_evidence_sha256: journalEvidence.sha256
@@ -170,6 +196,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         interventionContract: result.interventionContract
       });
       return {
+        ...inclusion,
         exactText: assembleCanonicalCandidateText(result),
         contextId: producerContextId,
         caseState,
@@ -189,21 +216,25 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       };
     },
 
-    async auditCandidate({ caseId, candidateId, journalEvidence = null, authContext, attemptContextId }) {
+    async auditCandidate({ caseId, candidateId, journalEvidence = null, responseEvidence = null, authContext, attemptContextId }) {
+      const inclusion = evidenceInclusion(responseEvidence);
       const auditInput = await buildPrivateCandidateAuditInput({
         caseAccessService: directAuditAccess(privateCaseSource),
         caseId,
         candidateId,
         authContext
       });
-      const packet = sealAuditPacket(auditInput, journalEvidence);
+      const packet = sealAuditPacket(auditInput, journalEvidence, responseEvidence);
       const generated = await generatePacketOnly(auditProvider, {
         prompt: privateRuntimeAuditPrompt(packet),
-        outputSchema: privateRuntimeAuditResultSchema,
+        outputSchema: responseEvidence ? privateRuntimeEvidenceAuditResultSchema : privateRuntimeAuditResultSchema,
         metadata: { stage: "private_candidate_audit", fixtureKey: "private_candidate_audit", attemptContextId },
-        validate: (value) => validatePrivateRuntimeAuditResult(value, { reconstructed: auditInput.reconstruction_audit_required })
+        validate: (value) => responseEvidence
+          ? validatePrivateRuntimeEvidenceAuditResult(value, { reconstructed: auditInput.reconstruction_audit_required, candidateText: auditInput.candidate_response, snapshot: responseEvidence.snapshot })
+          : validatePrivateRuntimeAuditResult(value, { reconstructed: auditInput.reconstruction_audit_required })
       });
       return {
+        ...inclusion,
         value: generated.value,
         contextId: generated.contextId,
         providerReceipt: generated.providerReceipt,
@@ -211,7 +242,8 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       };
     },
 
-    async repairCandidate({ caseId, candidate, journalEvidence = null, authContext, attemptContextId }) {
+    async repairCandidate({ caseId, candidate, journalEvidence = null, responseEvidence = null, authContext, attemptContextId }) {
+      const inclusion = evidenceInclusion(responseEvidence);
       const context = await directAuditAccess(privateCaseSource).loadCaseContext(caseId, authContext, {
         candidateId: candidate.id,
         requireContinuationSafe: true,
@@ -235,7 +267,8 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         targeted_older_evidence: context.targeted_older_evidence,
         current_episode: context.current_episode,
         repair_induced_error_checks: REPAIR_INDUCED_ERROR_CHECKS,
-        ...(journalEvidence ? { journal_evidence: structuredClone(journalEvidence.packet), journal_evidence_sha256: journalEvidence.sha256 } : {}),
+        ...(responseEvidence ? { response_evidence: structuredClone(responseEvidence.view), response_evidence_failures: responseEvidenceFailures(failedAudit) }
+          : journalEvidence ? { journal_evidence: structuredClone(journalEvidence.packet), journal_evidence_sha256: journalEvidence.sha256 } : {}),
         disclosure_manifest: { producer_hidden_reasoning_included: false, provider_trace_included: false, tools_available: false, filesystem_available: false }
       });
       const generated = await generatePacketOnly(repairProvider, {
@@ -248,10 +281,30 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       if (compatibility.gate !== "NOT_BLOCKED" && childContactViolations(generated.value.exact_text).length) {
         throw new ValidationError("Private repair attempted to reintroduce child contact while the compatibility gate is restricted.", { code: "PROTECTIVE_COMPATIBILITY_REPAIR_BLOCKED" });
       }
-      return { exactText: generated.value.exact_text, contextId: generated.contextId, providerReceipt: generated.providerReceipt };
+      return { exactText: generated.value.exact_text, contextId: generated.contextId, providerReceipt: generated.providerReceipt, ...inclusion };
     },
 
-    async produceDiscriminator({ caseId, runtimeTurn, authContext, attemptContextId }) {
+    async reviewFallbackQuestion({ caseId, runtimeTurn, exactText, responseEvidence, authContext, attemptContextId }) {
+      const inclusion = evidenceInclusion(responseEvidence);
+      if (!responseEvidence) throw new ValidationError("Response evidence required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
+      // Reuse the same authorized packet builder, substituting only the exact question and its binding.
+      const access = directAuditAccess(privateCaseSource);
+      const input = await buildPrivateCandidateAuditInput({ caseAccessService: {
+        async loadCaseContext(...args) {
+          const context = await access.loadCaseContext(...args);
+          return { ...context, candidate_response: { id: runtimeTurn.id, version: 1, status: "pending_audit", parent_candidate_id: null, exact_text: exactText } };
+        }
+      }, caseId, candidateId: runtimeTurn.current_candidate_id, authContext });
+      const packet = { ...sealAuditPacket(input, null, responseEvidence), candidate_binding: { kind: "fallback_question", runtime_turn_id: runtimeTurn.id, sha256: hash(exactText) } };
+      const generated = await generatePacketOnly(auditProvider, {
+        prompt: privateRuntimeAuditPrompt(packet), outputSchema: privateRuntimeEvidenceAuditResultSchema,
+        metadata: { stage: "private_discriminator_review", fixtureKey: "private_candidate_audit", attemptContextId },
+        validate: (value) => validatePrivateRuntimeEvidenceAuditResult(value, { candidateText: exactText, snapshot: responseEvidence.snapshot })
+      });
+      return { ...generated, ...inclusion };
+    },
+
+    async produceDiscriminator({ caseId, runtimeTurn, authContext, attemptContextId, evidenceReviewFailed = false }) {
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
       const currentCandidate = record.candidate_responses?.find((candidate) => candidate.id === runtimeTurn.current_candidate_id);
       const unresolved = currentCandidate?.audit_history?.at(-1)?.findings ?? [];
@@ -264,6 +317,10 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       // and every line below is what it was before the fallback existed.
       const route = ownerFallbackEnabled ? (record.case_state?.current_episode?.active_step ?? record.case_state?.current_episode?.route ?? null) : null;
       const ownerFallbackRoute = ownerFallbackEnabled && OWNER_FALLBACK_ROUTE_IDS.includes(route);
+      if (evidenceReviewFailed) {
+        if (ownerFallbackRoute) return ownerFallbackDiscriminator({ attemptContextId, runtimeTurn });
+        throw new RuntimeError("The discriminating question could not pass response evidence review. Nothing was delivered.", { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
+      }
       if (roleBeliefHold) {
         // On the four risk routes the fixed text is delivered instead of leaving the turn unfinished: it carries no claim about a role or
         // a belief, so the finding cannot reach the person through it. On every other route, and with the setting off, the block is as it was.

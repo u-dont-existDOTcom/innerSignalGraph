@@ -74,6 +74,38 @@ async function sealedAudit(env, evidenceReview = review(), findings = []) {
   return audit;
 }
 const ordinaryFail = [{ id: "ordinary:failure", code: "SYNTHETIC_FAILURE", severity: "substantive", summary: "Synthetic failure." }];
+
+for (const changed of [false, true]) test(`repair snapshot revision stays current after root commit (state changed: ${changed})`, async (t) => {
+  const env = await governed(t), { store } = env;
+  const audit = await sealedAudit(env, review(), ordinaryFail);
+  await store.commitPrivateRuntimeAudit(CASE, "runtime:one", audit, { eventId: "root:failed" });
+  await store.transitionPrivateRuntimeTurn(CASE, "runtime:one", { eventId: "repair:started", toState: "RECONSTRUCTING" });
+  let snapshot = env.snapshot;
+  if (changed) {
+    const state = await store.getCaseState(CASE); state.updated_at = "2026-11-23T14:00:00.000Z";
+    await store.saveCaseState(CASE, state);
+    snapshot = await store.freezeResponseEvidence(CASE, freezeInput({ snapshotId: "snapshot:refresh", revision: 2, parentSnapshotId: snapshot.id, revisionReason: "dependency_refresh" }));
+  }
+  const inclusion = { snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256, view_sha256: buildEvidenceModelView(await store.load(CASE), snapshot).view_sha256 };
+  await seal(store, { stage: "repair", contextId: "writer:repair", output: { exactText: "Repaired synthetic reply.", responseEvidenceInclusion: inclusion } });
+  await store.commitPrivateRuntimeCandidate(CASE, { runtimeTurnId: "runtime:one", candidateId: "candidate:repair", parentCandidateId: env.candidate.id, basedOnAuditId: audit.id, exactText: "Repaired synthetic reply.", producerContextId: "writer:repair", responseEvidence: { snapshotId: snapshot.id, writerInclusionSha256: inclusion.view_sha256 }, eventId: "repair:committed" });
+  const candidate = await store.getCandidateResponse(CASE, "candidate:repair");
+  assert.equal(candidate.metadata.response_evidence.dependency_status, "current_at_commit");
+  assert.equal(candidate.metadata.response_evidence.established_context_after_commit_sha256, sha256Json((await store.load(CASE)).case_state));
+  const passing = await sealedAudit({ ...env, candidate, snapshot });
+  await store.commitPrivateRuntimeAudit(CASE, "runtime:one", passing, { eventId: "repair:passed" });
+  await store.deliverPrivateRuntimeCandidate(CASE, "runtime:one", { candidateId: candidate.id, assistantTurnId: "turn:repair", eventId: "repair:delivered" });
+});
+
+test("ordinary audit recording preserves a valid snapshot PASS after dependencies change", async (t) => {
+  const env = await governed(t);
+  const audit = await sealedAudit(env);
+  const state = await env.store.getCaseState(CASE); state.updated_at = "2026-11-23T15:00:00.000Z";
+  await env.store.saveCaseState(CASE, state);
+  await env.store.recordCandidateAudit(CASE, env.candidate.id, audit);
+  assert.equal((await env.store.getCandidateResponse(CASE, env.candidate.id)).audit_history.at(-1).verdict, "pass");
+  await assert.rejects(env.store.approveCandidateForDelivery(CASE, env.candidate.id), errorCode("RESPONSE_EVIDENCE_STALE"));
+});
 const unsupportedReview = () => ({ ...review(), items: [{ id: "unsupported", dimension: "personal_history", kind: "claim", candidate_quote: "Synthetic reply.", source_ids: [], assessment: "unsupported", reason: "No source." }] });
 
 function journalItem(id, exactExcerpt) {
@@ -518,4 +550,33 @@ test("empty evidence extensions preserve existing non-journal publication digest
   assert.equal((await inspect()).non_journal_state_sha256, sha256Text(JSON.stringify(legacy)));
   await env.store.freezeResponseEvidence(CASE, freezeInput());
   assert.notEqual((await inspect()).non_journal_state_sha256, sha256Text(JSON.stringify(legacy)));
+});
+
+test("the encrypted store freezes a long case with full usable journal budget and bounded whole drafts and inputs", async (t) => {
+  const env = await environment(t), { store } = env; await corpus(store);
+  await store.saveCandidateResponse(CASE, "template:draft", "d".repeat(4000), { producer_context_id: "writer:template" });
+  await store.recordSupervisorInputs(CASE, { inputs: [{ inputId: "template:input", inputType: "supervisor_revision", text: "s".repeat(2000) }], channel: "owner_ui" });
+  const record = await store.load(CASE), template = record.candidate_responses[0], inputTemplate = record.supervisor_artifacts[0];
+  record.raw_transcript = Array.from({ length: 400 }, (_, n) => turn(`older:${n}`, "x".repeat(400)));
+  record.case_state.items = record.raw_transcript.map((entry, n) => ({ id: `observation:${n}`, domain: "runtime_observation", statement: "Synthetic direct account.", status: "direct_report", confidence: "high", source: { kind: "synthetic_turn", ref: entry.id, turn_id: entry.id, recorded_at: NOW }, still_current: true, supersedes: [], decision_relevance: "high" }));
+  record.candidate_responses = Array.from({ length: 60 }, (_, n) => ({ ...structuredClone(template), id: `foreign:draft:${n}`, root_candidate_id: `foreign:draft:${n}`, version: n + 1, status: "superseded" }));
+  record.supervisor_artifacts = Array.from({ length: 40 }, (_, n) => ({ ...structuredClone(inputTemplate), id: `owner:input:${n}` }));
+  await env.seed(record);
+  // 24,000 serialized bytes also fill the conservative 8,000-token allowance (bytes / 3).
+  const snapshot = await store.freezeResponseEvidence(CASE, freezeInput({ journal: journal([journalItem("full", "j".repeat(23998))]) }));
+  assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) <= 192000);
+  assert.equal(snapshot.journal.budget.used_tokens, 8000);
+  assert.equal(snapshot.journal.budget.used_bytes, 24000);
+  assert.equal(snapshot.source_items.filter((item) => item.locator.kind === "transcript_turn").length, 120);
+  assert.equal(snapshot.source_items.filter((item) => item.kind === "unsent_draft").length, 6);
+  assert.equal(snapshot.source_items.filter((item) => item.kind === "supervisor_instruction").length, 8);
+  assert.ok(snapshot.communication_projection.omitted.source_items.some((item) => item.reason === "draft_budget"));
+});
+
+test("recordSupervisorAudit records a valid exact PASS despite later state changes, while approval refuses it", async (t) => {
+  const env = await supervisorGoverned(t), { audit, receipt } = await supervisorAudit(env);
+  const state = await env.store.getCaseState(CASE); state.updated_at = "2026-11-23T18:00:00.000Z"; await env.store.saveCaseState(CASE, state);
+  await env.store.recordSupervisorAudit(CASE, env.candidate.id, audit, receipt);
+  assert.equal((await env.store.getCandidateResponse(CASE, env.candidate.id)).audit_history.at(-1).verdict, "pass");
+  await assert.rejects(env.store.approveSupervisorDraft(CASE, env.candidate.id, audit.id), errorCode("RESPONSE_EVIDENCE_STALE"));
 });

@@ -18,6 +18,28 @@ const coverage = () => RESPONSE_EVIDENCE_DIMENSIONS.map((dimension) => ({ dimens
 const review = () => ({ coverage: coverage(), items: [{ id: "claim", dimension: "personal_history", kind: "claim", candidate_quote: "é🙂", source_ids: ["src:turn:older"], assessment: "supported", reason: "Synthetic source." }], missing_material_history: [] });
 const malformed = (fn) => assert.throws(fn, { name: "ValidationError", code: "RESPONSE_EVIDENCE_INVALID" });
 
+test("derived findings carry the quoted defect, reason and only transcript source turn ids", () => {
+  const item = { id: "defect", dimension: "personal_history", candidate_quote: "q".repeat(400), reason: "No supplied account supports this.", assessment: "unsupported", source_ids: ["src:turn:older", "src:input:instruction"] };
+  const findings = deriveEvidenceFindings({ items: [item], missing_material_history: [] });
+  assert.equal(findings[0].summary, `RESPONSE_EVIDENCE_UNSUPPORTED (personal_history): "${"q".repeat(300)}" - ${item.reason}`);
+  assert.deepEqual(findings[0].evidence_turn_ids, ["older"]);
+});
+
+test("long case freezes with whole-item limits and excludes the reviewed lineage's drafts", () => {
+  const r = record(); r.raw_transcript = Array.from({ length: 400 }, (_, n) => turn(`turn:${n}`, "user", "x".repeat(400)));
+  r.case_state.items = r.raw_transcript.map((entry) => ({ source: { turn_id: entry.id } }));
+  r.candidate_responses = Array.from({ length: 60 }, (_, n) => ({ id: `draft:${n}`, root_candidate_id: n < 30 ? "reviewed" : `draft:${n}`, version: n + 1, status: "pending_audit", exact_text: "d".repeat(4000), created_at: NOW, metadata: {}, audit_history: [] }));
+  r.supervisor_artifacts = Array.from({ length: 40 }, (_, n) => ({ id: `input:${n}`, kind: "input", input_type: "supervisor_revision", text: "s".repeat(2000), recorded_at: NOW, supplied_by: { channel: "owner_ui", actor_resolution: "owner_verified" } }));
+  const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), lineageRootId: "reviewed" }, { createdAt: NOW });
+  assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) <= 192000);
+  assert.ok(snapshot.source_items.filter((s) => s.locator.kind === "transcript_turn").length <= 120);
+  const drafts = snapshot.source_items.filter((s) => s.kind === "unsent_draft");
+  assert.ok(drafts.length <= 10);
+  assert.ok(drafts.reduce((sum, s) => sum + s.excerpt_bytes, 0) <= 24000);
+  assert.ok(drafts.every((s) => Number(s.locator.candidate_id.split(":")[1]) >= 30));
+  assert.ok(snapshot.communication_projection.omitted.source_items.length > 0);
+});
+
 test("snapshot canonical hashing, source resolution and validation reject altered fields and stale excerpts", () => {
   const r = record(), snapshot = freeze(r);
   assert.equal(validateResponseEvidenceSnapshot(snapshot), snapshot);
@@ -101,16 +123,18 @@ test("incompatible source kinds are downgraded and every blocking review yields 
   assert.equal(normalized.items[0].source_incompatible, true);
   assert.deepEqual(deriveEvidenceFindings(normalized), [
     ["claim", "SOURCE_INCOMPATIBLE"], ["unsupported", "UNSUPPORTED"], ["contradiction", "CONTRADICTED"], ["history", "MISSING_HISTORY"]
-  ].map(([id, code]) => ({ id: `evidence:${id}`, code: `RESPONSE_EVIDENCE_${code}`, severity: "substantive", summary: "Response evidence requires repair.", unresolved: true })));
+  ].map(([id, code]) => ({ id: `evidence:${id}`, code: `RESPONSE_EVIDENCE_${code}`, severity: "substantive",
+    summary: `RESPONSE_EVIDENCE_${code} (${id === "history" ? "missing_material_history" : "prior_delivery"}): "é🙂" - ${id === "history" ? "Changes the suggestion." : "Synthetic source."}`,
+    evidence_turn_ids: ["claim", "contradiction"].includes(id) ? ["older"] : [], unresolved: true })));
 });
 
 test("source selection includes old referenced turns and records whole-item omissions", () => {
   const r = record(); r.raw_transcript = Array.from({ length: 240 }, (_, n) => turn(`turn:${n}`));
   r.case_state.items = r.raw_transcript.map((entry) => ({ id: entry.id, source: { turn_id: entry.id } }));
   const snapshot = freeze(r);
-  assert.equal(snapshot.source_items.length, 200);
+  assert.equal(snapshot.source_items.length, 120);
   assert.ok(snapshot.communication_projection.omitted.source_items.length);
-  assert.ok(snapshot.source_items.some((entry) => entry.locator.turn_id === "turn:42"));
+  assert.ok(snapshot.source_items.some((entry) => entry.locator.turn_id === "turn:121"));
   assert.ok(snapshot.source_items.every((entry) => entry.exact_excerpt === null));
 });
 
@@ -144,13 +168,13 @@ test("reports, unsent drafts, unattributed turns and supplied owner inputs retai
 });
 
 
-test("the shared source-item cap omits the oldest item across source kinds", () => {
+test("the transcript cap preserves the bounded inventory of other source kinds", () => {
   const r = record(); r.raw_transcript = Array.from({ length: 200 }, (_, n) => turn(`turn:${n}`));
   r.case_state.items = r.raw_transcript.map((entry) => ({ id: entry.id, statement: "A model proposal is not a source.", source: { turn_id: entry.id } }));
   r.candidate_responses.push({ id: "old-draft", version: 1, root_candidate_id: "old-draft", status: "pending_audit", exact_text: "Older unsent draft.", created_at: "2020-01-01T00:00:00.000Z", metadata: {}, audit_history: [] });
   const snapshot = freeze(r);
-  assert.equal(snapshot.source_items.length, 200);
-  assert.equal(snapshot.source_items.some((item) => item.id === "src:draft:old-draft:v1"), false);
+  assert.equal(snapshot.source_items.length, 121);
+  assert.equal(snapshot.source_items.some((item) => item.id === "src:draft:old-draft:v1"), true);
   assert.equal(snapshot.source_items.some((item) => item.id === "src:turn:inbound"), true);
   assert.equal(JSON.stringify(snapshot.source_items).includes("A model proposal is not a source."), false);
 });
@@ -173,4 +197,36 @@ test("an amended assistant turn cannot inherit delivery evidence for different o
   assert.equal(snapshot.source_items.find((item) => item.id === "src:turn:sent-assistant").kind, "unattributed_assistant_turn");
   assert.equal(snapshot.source_items.some((item) => item.id === "src:report:report:sent"), false);
   assert.ok(snapshot.communication_projection.omitted.source_items.some((entry) => entry.reason === "report_text_changed"));
+});
+
+test("serialized byte pressure omits the oldest transcript items whole and records every removal", () => {
+  const r = record(); r.raw_transcript = Array.from({ length: 120 }, (_, n) => turn(`turn:${String(n).padStart(3, "0")}:${"t".repeat(100)}`));
+  r.case_state.items = r.raw_transcript.map((entry) => ({ source: { turn_id: entry.id } }));
+  for (let n = 0; n < 20; n++) {
+    const candidate = { id: `reported:${n}`, version: n + 1, root_candidate_id: `reported:${n}`, exact_text: "r".repeat(6000), status: "pending_audit", metadata: {}, audit_history: [], created_at: NOW };
+    r.candidate_responses.push(candidate);
+    r.communication_events.push({ id: `report:${n}`, kind: "reported_sent", audience: "client", subject: { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version, text_sha256: sha256Text(candidate.exact_text) }, provenance: { origin: "owner_action", actor_resolution: "owner_verified", source_ref: null, quote: null }, sent_at: NOW, sent_at_status: "known", recorded_at: NOW });
+  }
+  const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), historyRequirements: Array.from({ length: 20 }, (_, n) => ({ id: `history:${n}`, topic: "q".repeat(1000), why_material: "w".repeat(1000), source_ids: [], disposition: "open" })) }, { createdAt: NOW });
+  const selected = snapshot.source_items.filter((item) => item.id.startsWith("src:turn:"));
+  assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) <= 192000);
+  assert.ok(selected.length < 120);
+  const omissions = snapshot.communication_projection.omitted.source_items;
+  assert.equal(omissions.find((item) => item.reason === "snapshot_byte_budget").count, 120 - selected.length);
+  assert.ok(selected.every((item) => item.exact_excerpt === null));
+});
+
+test("large reports also fit by whole-item omission after transcript and draft inventories are exhausted", () => {
+  const r = record();
+  for (let n = 0; n < 20; n++) {
+    const candidate = { id: `reported:${n}`, version: n + 1, root_candidate_id: `reported:${n}`, exact_text: "r".repeat(100000), status: "pending_audit", metadata: {}, audit_history: [], created_at: NOW };
+    r.candidate_responses.push(candidate);
+    r.communication_events.push({ id: `report:${n}`, kind: "reported_sent", audience: "client", subject: { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version, text_sha256: sha256Text(candidate.exact_text) }, provenance: { origin: "owner_action", actor_resolution: "owner_verified", source_ref: null, quote: null }, sent_at: NOW, sent_at_status: "known", recorded_at: NOW });
+  }
+  const snapshot = freeze(r);
+  assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) <= 192000);
+  const reports = snapshot.source_items.filter((item) => item.id.startsWith("src:report:"));
+  assert.ok(reports.length < 20);
+  assert.ok(reports.every((item) => item.exact_excerpt === "r".repeat(100000)));
+  assert.equal(snapshot.communication_projection.omitted.source_items.find((item) => item.reason === "report_snapshot_budget").count, 20 - reports.length);
 });

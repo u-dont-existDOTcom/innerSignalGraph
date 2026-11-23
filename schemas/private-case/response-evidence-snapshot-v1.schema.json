@@ -566,12 +566,12 @@
           "topic": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 2000
+            "maxLength": 1000
           },
           "why_material": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 2000
+            "maxLength": 1000
           },
           "source_ids": {
             "type": "array",
@@ -601,7 +601,7 @@
         ]
       },
       "minItems": 0,
-      "maxItems": 200
+      "maxItems": 20
     },
     "journal": {
       "type": "object",
@@ -817,5 +817,95 @@
     "history_requirements",
     "journal",
     "snapshot_sha256"
+  ],
+  "description": "A response evidence snapshot: at most 192,000 serialized UTF-8 bytes, 120 transcript items, 10 foreign-lineage drafts and 24,000 draft excerpt bytes, 20 supervisor inputs and 16,000 input excerpt bytes, 20 reports, and 20 history requirements. Whole-item omissions are recorded.",
+  "allOf": [
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "pattern": "^src:turn:",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 120,
+          "type": "array"
+        }
+      }
+    },
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "unsent_draft",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 10,
+          "type": "array"
+        }
+      }
+    },
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "relayed_client_message",
+                  "supervisor_instruction"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 20,
+          "type": "array"
+        }
+      }
+    },
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "pattern": "^src:report:",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 20,
+          "type": "array"
+        }
+      }
+    }
   ]
 }

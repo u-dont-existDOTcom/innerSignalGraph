@@ -273,6 +273,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
     ? createPrivateTherapyTurnController({
         privateCaseSource,
         modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
+        responseEvidence: { enforced: config.responseEvidenceEnforced === true },
         maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
       })
     : null);

@@ -27,7 +27,7 @@ for (const kind of Object.values(RESPONSE_EVIDENCE_KINDS)) {
   Object.freeze(kind);
 }
 export const RESPONSE_EVIDENCE_SOURCE_KINDS = Object.freeze(Object.keys(RESPONSE_EVIDENCE_KINDS));
-export const RESPONSE_EVIDENCE_BUDGETS = Object.freeze({ max_tokens: 8000, max_bytes: 64000, snapshots: 20000, snapshot_bytes: 96000, source_items: 200, recent_turns: 40, revisions: 3 });
+export const RESPONSE_EVIDENCE_BUDGETS = Object.freeze({ max_tokens: 8000, max_bytes: 64000, snapshots: 20000, snapshot_bytes: 192000, source_items: 200, transcript_items: 120, recent_turns: 40, drafts: 10, draft_bytes: 24000, supervisor_inputs: 20, supervisor_input_bytes: 16000, reports: 20, history_requirements: 20, revisions: 3 });
 export const RESPONSE_EVIDENCE_CODES = Object.freeze({ required: "RESPONSE_EVIDENCE_REQUIRED", invalid: "RESPONSE_EVIDENCE_INVALID", stale: "RESPONSE_EVIDENCE_STALE", unsupported: "RESPONSE_EVIDENCE_UNSUPPORTED" });
 const invalid = (reason = "invalid_structure") => { throw new ValidationError("Response evidence invalid.", { code: RESPONSE_EVIDENCE_CODES.invalid, details: { reasons: [reason] } }); };
 const object = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -81,7 +81,7 @@ export const responseEvidenceSnapshotSchema = shape({
     confirmed_or_reported_client_outbound: array({ type: "object" }, 25), supervisor_only_artifacts: array({ type: "object" }, 25), unresolved_delivery: array({ type: "object" }, 25),
     omitted: shape({ confirmed_or_reported_client_outbound: integer(), supervisor_only_artifacts: integer(), unresolved_delivery: integer(), source_items: array(omissionSchema) })
   }),
-  history_requirements: array(shape({ id, topic: text(), why_material: text(), source_ids: array(text(340)), disposition: enumeration(["answered_by_sources", "retrieval_requested", "unavailable", "open"]) })),
+  history_requirements: array(shape({ id, topic: text(1000), why_material: text(1000), source_ids: array(text(340)), disposition: enumeration(["answered_by_sources", "retrieval_requested", "unavailable", "open"]) }), 20),
   journal: responseEvidenceJournalSchema, snapshot_sha256: sha
 });
 const reviewItemProperties = {
@@ -153,6 +153,12 @@ export function responseEvidenceSnapshotSha256(snapshot) {
 function uniqueIds(entries) { if (new Set(entries.map((entry) => entry.id)).size !== entries.length) invalid("duplicate_id"); }
 const sourceTime = (item) => item.time.status === "known" ? Date.parse(item.time.at) : -Infinity;
 const sourceOrder = (left, right) => (sourceTime(left) - sourceTime(right)) || 0;
+function recordOmission(omissions, reason, count = 1) {
+  if (!count) return;
+  const existing = omissions.find((item) => item.reason === reason);
+  if (existing) existing.count += count;
+  else omissions.push({ reason, count });
+}
 function excerptCost(item) { const bytes = Buffer.byteLength(JSON.stringify(item.exact_excerpt), "utf8"); return { bytes, tokens: Math.ceil(bytes / 3) }; }
 function checkSourceItem(item) {
   validateEvidenceShape(item, responseEvidenceSourceItemSchema);
@@ -181,6 +187,11 @@ export function validateResponseEvidenceSnapshot(snapshot) {
   if (snapshot.original_writer_source_inclusion !== (snapshot.candidate_origin === "backend_produced" ? "verified" : "not_attested")) invalid("origin_mismatch");
   uniqueIds(snapshot.source_items); uniqueIds(snapshot.history_requirements);
   snapshot.source_items.forEach(checkSourceItem);
+  const inventory = (predicate) => snapshot.source_items.filter(predicate);
+  const drafts = inventory((item) => item.kind === "unsent_draft"), inputs = inventory((item) => item.locator.kind === "supervisor_input");
+  if (inventory((item) => item.id.startsWith("src:turn:")).length > 120 || drafts.length > 10 || inputs.length > 20
+      || inventory((item) => item.id.startsWith("src:report:")).length > 20
+      || drafts.reduce((sum, item) => sum + item.excerpt_bytes, 0) > 24000 || inputs.reduce((sum, item) => sum + item.excerpt_bytes, 0) > 16000) invalid("source_budget");
   const sources = new Set(snapshot.source_items.map((entry) => entry.id));
   if (snapshot.history_requirements.some((entry) => (entry.disposition === "answered_by_sources" && entry.source_ids.length === 0) || entry.source_ids.some((ref) => !sources.has(ref)))) invalid("unknown_source");
   const costs = snapshot.source_items.filter((entry) => entry.kind === "journal_quotation").map(excerptCost);
@@ -194,7 +205,7 @@ const makeItem = (id, kind, actor, audience, exactText, locator, at = null, supp
   excerpt_sha256: sha256Text(exactText), excerpt_bytes: Buffer.byteLength(exactText), exact_excerpt: locator.kind === "transcript_turn" ? null : exactText, locator,
   ...(suppliedBy ? { supplied_by: structuredClone(suppliedBy) } : {})
 });
-export function buildResponseEvidenceSourceItems(record, { journalItems = [], inbound = null } = {}) {
+export function buildResponseEvidenceSourceItems(record, { journalItems = [], inbound = null, lineageRootId = null } = {}) {
   const projection = projectCommunicationState(record);
   // The normal context projection lists 25 entries. Source classification must also resolve older referenced turns.
   const sourceProjection = projectCommunicationState(record, { listedItemsLimit: Math.max(25, record.raw_transcript.length
@@ -210,7 +221,8 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
   const selected = turns.filter((turn) => refs.has(turn.id) || recent.has(turn.id));
   const committed = new Map(sourceProjection.confirmed_or_reported_client_outbound.filter((entry) => entry.state === "app_committed").map((entry) => [entry.assistant_turn_id, entry.subject.text_sha256]));
   const sourceOmissions = [];
-  const items = selected.map((turn) => {
+  if (selected.length > 120) sourceOmissions.push({ reason: "transcript_item_limit", count: selected.length - 120 });
+  const items = selected.slice(-120).map((turn) => {
     const client = turn.role === "user";
     // A completion amendment supplies effective words; an earlier delivery receipt attests only its original exact bytes.
     const appCommitted = committed.get(turn.id) === sha256Text(turn.text);
@@ -226,10 +238,10 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
     const candidate = event.subject.kind === "candidate" ? record.candidate_responses.find((entry) => entry.id === event.subject.candidate_id) : null;
     const turn = event.subject.kind === "transcript_turn" ? turns.find((entry) => entry.id === event.subject.assistant_turn_id) : null;
     const exactText = candidate?.exact_text ?? turn?.text ?? event.provenance.quote;
-    if (!exactText) { sourceOmissions.push({ reason: "unresolved_report_locator", count: 1 }); continue; }
-    if (!candidate && !turn) { sourceOmissions.push({ reason: "unresolved_report_locator", count: 1 }); continue; }
+    if (!exactText) { recordOmission(sourceOmissions, "unresolved_report_locator"); continue; }
+    if (!candidate && !turn) { recordOmission(sourceOmissions, "unresolved_report_locator"); continue; }
     if (sha256Text(exactText) !== event.subject.text_sha256) {
-      sourceOmissions.push({ reason: "report_text_changed", count: 1 });
+      recordOmission(sourceOmissions, "report_text_changed");
       continue;
     }
     const kind = (candidate || turn) && event.provenance.origin === "owner_action" ? "owner_reported_client_outbound" : "agent_relayed_report";
@@ -238,8 +250,10 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
     items.push(makeItem(`src:report:${event.id}`, kind, kind === "agent_relayed_report" ? "unknown" : "owner", "client", exactText, locator, event.sent_at));
   }
   const deliveredCandidates = new Set(sourceProjection.confirmed_or_reported_client_outbound.filter((entry) => entry.subject.kind === "candidate").map((entry) => entry.subject.candidate_id));
+  const ownLineage = lineageIds(record, lineageRootId);
   for (const candidate of record.candidate_responses ?? []) {
     if (candidate.status === "sent" || deliveredCandidates.has(candidate.id)) continue;
+    if (ownLineage.has(candidate.id)) { recordOmission(sourceOmissions, "reviewed_lineage_draft"); continue; }
     items.push(makeItem(`src:draft:${candidate.id}:v${candidate.version}`, "unsent_draft", "assistant", "supervisor", candidate.exact_text, { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version }, candidate.created_at));
   }
   for (const entry of record.supervisor_artifacts ?? []) {
@@ -249,6 +263,20 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
   items.push(...structuredClone(journalItems));
   // Known event times order the shared inventory; an unavailable time cannot attest that an item is newer.
   items.sort(sourceOrder);
+  // Keep the newest whole items within each inventory's count and excerpt budget.
+  const bounded = (predicate, maximum, maximumBytes, reason) => {
+    const group = items.filter(predicate), keep = new Set(); let bytes = 0;
+    for (const item of group.slice(-maximum).reverse()) {
+      if (bytes + item.excerpt_bytes > maximumBytes) continue;
+      keep.add(item); bytes += item.excerpt_bytes;
+    }
+    const removed = group.filter((item) => !keep.has(item));
+    if (removed.length) sourceOmissions.push({ reason, count: removed.length });
+    for (const item of removed) items.splice(items.indexOf(item), 1);
+  };
+  bounded((item) => item.kind === "unsent_draft", 10, 24000, "draft_budget");
+  bounded((item) => item.locator.kind === "supervisor_input", 20, 16000, "supervisor_input_budget");
+  bounded((item) => item.id.startsWith("src:report:"), 20, Infinity, "report_limit");
   const omitted = Math.max(0, items.length - RESPONSE_EVIDENCE_BUDGETS.source_items);
   // Retain whole items, newest first when capacity is exhausted; record the omission rather than trimming a quotation.
   return { source_items: items.slice(-200), communication_projection: {
@@ -294,7 +322,7 @@ export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJ
       && entry.visibility_epoch === locator.visibility_epoch && entry.returned_source_ids.includes(item.id));
     if (!corpus || corpus.active_generation !== locator.generation || corpus.visibility_epoch !== locator.visibility_epoch || !receipt) invalid("journal_authority");
   }
-  const sources = buildResponseEvidenceSourceItems(record, { journalItems: normalized.source_items, inbound });
+  const sources = buildResponseEvidenceSourceItems(record, { journalItems: normalized.source_items, inbound, lineageRootId: input.lineageRootId });
   const includedJournal = sources.source_items.filter((entry) => entry.kind === "journal_quotation");
   if (includedJournal.length !== normalized.source_items.length) {
     normalized.journal.omissions.push({ reason: "source_item_limit", count: normalized.source_items.length - includedJournal.length });
@@ -309,8 +337,48 @@ export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJ
     owner: structuredClone(owner), revision, parent_snapshot_id: parentSnapshotId, revision_reason: revisionReason,
     candidate_origin: candidateOrigin, original_writer_source_inclusion: candidateOrigin === "backend_produced" ? "verified" : "not_attested", inbound: structuredClone(inbound),
     dependency_binding: computeEvidenceDependencyBinding(record, { inboundTurnId: inbound?.turn_id, inboundSha256: inbound?.exact_text_sha256, lineageRootId: input.lineageRootId }),
-    ...sources, history_requirements: structuredClone(historyRequirements), journal: normalized.journal
+    ...sources, history_requirements: structuredClone(historyRequirements.slice(-20).filter((entry) => entry.topic?.length <= 1000 && entry.why_material?.length <= 1000)), journal: normalized.journal
   };
+  const omissions = snapshot.communication_projection.omitted.source_items;
+  const omittedHistory = historyRequirements.length - snapshot.history_requirements.length;
+  if (omittedHistory) omissions.push({ reason: "history_requirement_budget", count: omittedHistory });
+  // Leave room for the digest while fitting. Omit whole sources, in the specified priority order.
+  snapshot.snapshot_sha256 = "0".repeat(64);
+  const overBudget = () => Buffer.byteLength(JSON.stringify(snapshot)) > RESPONSE_EVIDENCE_BUDGETS.snapshot_bytes;
+  const synchronizeHistorySources = () => {
+    const available = new Set(snapshot.source_items.map((item) => item.id));
+    snapshot.history_requirements = snapshot.history_requirements.map((entry) => {
+      const source_ids = entry.source_ids.filter((ref) => available.has(ref));
+      return { ...entry, source_ids, disposition: entry.disposition === "answered_by_sources" && !source_ids.length ? "unavailable" : entry.disposition };
+    });
+  };
+  synchronizeHistorySources();
+  const omitSources = (predicate, reason, onOmitted = null) => {
+    while (overBudget()) {
+      const index = snapshot.source_items.findIndex(predicate);
+      if (index < 0) break;
+      const [removed] = snapshot.source_items.splice(index, 1);
+      recordOmission(omissions, reason);
+      onOmitted?.(removed);
+      synchronizeHistorySources();
+    }
+  };
+  omitSources((item) => item.locator.kind === "transcript_turn", "snapshot_byte_budget");
+  omitSources((item) => item.kind === "unsent_draft", "snapshot_byte_budget");
+  // Large report excerpts and heavily linked requirements can independently exceed the cap.
+  // After the specified transcript/draft priority, retain only whole remaining entries that fit.
+  while (overBudget() && snapshot.history_requirements.length) {
+    snapshot.history_requirements.shift(); recordOmission(omissions, "history_requirement_snapshot_budget");
+  }
+  omitSources((item) => item.id.startsWith("src:report:"), "report_snapshot_budget");
+  omitSources((item) => item.locator.kind === "supervisor_input", "supervisor_input_snapshot_budget");
+  omitSources((item) => item.kind === "journal_quotation", "journal_snapshot_budget", (item) => {
+    recordOmission(snapshot.journal.omissions, "snapshot_byte_budget");
+    snapshot.journal.more_available = true;
+    snapshot.journal.retrieval_status = "budget_exhausted";
+    snapshot.journal.budget.used_bytes -= excerptCost(item).bytes;
+    snapshot.journal.budget.used_tokens -= excerptCost(item).tokens;
+  });
   snapshot.snapshot_sha256 = responseEvidenceSnapshotSha256(snapshot);
   return validateResponseEvidenceSnapshot(snapshot);
 }
@@ -382,13 +450,17 @@ export function normalizeEvidenceReview(review, { candidateText, snapshot } = {}
   for (const coverage of normalized.coverage) if (coverage.status === "no_applicable_items" && normalized.items.some((item) => item.dimension === coverage.dimension)) invalid("coverage_inconsistent");
   return normalized;
 }
-const derivedFinding = (id, code) => ({ id: `evidence:${id}`, code, severity: "substantive", summary: "Response evidence requires repair.", unresolved: true });
+const derivedFinding = (item, code) => ({
+  id: `evidence:${item.id}`, code, severity: "substantive",
+  summary: `${code} (${item.dimension ?? "missing_material_history"}): "${item.candidate_quote.slice(0, 300)}" - ${item.reason ?? item.why_material}`.slice(0, 2000),
+  evidence_turn_ids: (item.source_ids ?? []).filter((ref) => ref.startsWith("src:turn:")).map((ref) => ref.slice("src:turn:".length)), unresolved: true
+});
 export function deriveEvidenceFindings(review) {
   return [
-    ...review.items.flatMap((item) => item.source_incompatible ? [derivedFinding(item.id, "RESPONSE_EVIDENCE_SOURCE_INCOMPATIBLE")]
-      : item.assessment === "unsupported" ? [derivedFinding(item.id, "RESPONSE_EVIDENCE_UNSUPPORTED")]
-        : item.assessment === "contradicted" ? [derivedFinding(item.id, "RESPONSE_EVIDENCE_CONTRADICTED")] : []),
-    ...review.missing_material_history.map((item) => derivedFinding(item.id, "RESPONSE_EVIDENCE_MISSING_HISTORY"))
+    ...review.items.flatMap((item) => item.source_incompatible ? [derivedFinding(item, "RESPONSE_EVIDENCE_SOURCE_INCOMPATIBLE")]
+      : item.assessment === "unsupported" ? [derivedFinding(item, "RESPONSE_EVIDENCE_UNSUPPORTED")]
+        : item.assessment === "contradicted" ? [derivedFinding(item, "RESPONSE_EVIDENCE_CONTRADICTED")] : []),
+    ...review.missing_material_history.map((item) => derivedFinding(item, "RESPONSE_EVIDENCE_MISSING_HISTORY"))
   ];
 }
 export function validateResponseEvidenceAudit(audit, candidate, snapshot = null) {
@@ -403,12 +475,19 @@ export function validateResponseEvidenceAudit(audit, candidate, snapshot = null)
   if (snapshot && (evidence.snapshot_id !== snapshot.id || evidence.snapshot_sha256 !== snapshot.snapshot_sha256)) invalid("audit_snapshot_mismatch");
   return evidence;
 }
+export function responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate = null } = {}) {
+  const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256, lineageRootId: rootCandidate?.id });
+  if (snapshot.revision === 1 && rootCandidate) {
+    if (sha256Json(record.case_state) !== rootCandidate.metadata?.response_evidence?.established_context_after_commit_sha256) return false;
+    current.established_context_digest = snapshot.dependency_binding.established_context_digest;
+  }
+  return same(current, snapshot.dependency_binding);
+}
 export function responseEvidenceDependenciesCurrent(record, candidate, snapshot) {
   const binding = candidate.metadata.response_evidence;
   if (binding.dependency_status !== "current_at_commit" || binding.established_context_after_commit_sha256 !== sha256Json(record.case_state)) return false;
-  const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256, lineageRootId: candidate.root_candidate_id });
-  current.established_context_digest = snapshot.dependency_binding.established_context_digest;
-  return same(current, snapshot.dependency_binding);
+  const rootCandidate = record.candidate_responses.find((entry) => entry.id === candidate.root_candidate_id);
+  return responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate });
 }
 const result = (code = null, reason = null) => ({ admissible: code === null, code, reasons: reason === null ? [] : [reason] });
 export function assessResponseEvidenceAdmission(record, candidate, { policy = "advisory", point = "approval" } = {}) {
@@ -433,7 +512,7 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
     if (!root || actualOrigin !== binding.candidate_origin || (runtime ? root.metadata.runtime_turn_id !== runtime.id
       : root.metadata.supervisor_draft?.operation_key !== snapshot.owner.operation_key)) return result(RESPONSE_EVIDENCE_CODES.invalid, "lineage_binding");
     const inboundText = runtime?.inbound.exact_text ?? effectiveTurns(record).find((entry) => entry.id === snapshot.inbound.turn_id)?.text;
-    if (typeof inboundText !== "string" || sha256Text(inboundText) !== snapshot.inbound.exact_text_sha256) return result(RESPONSE_EVIDENCE_CODES.stale, "inbound_changed");
+    if (!auditPoint && (typeof inboundText !== "string" || sha256Text(inboundText) !== snapshot.inbound.exact_text_sha256)) return result(RESPONSE_EVIDENCE_CODES.stale, "inbound_changed");
     if (binding.writer_inclusion !== snapshot.original_writer_source_inclusion || (binding.candidate_origin === "external_draft" && binding.writer_inclusion_sha256 !== null)) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
     if (binding.candidate_origin === "backend_produced") {
       if (!binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
@@ -455,7 +534,7 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
       if (receipt?.disclosure_manifest?.response_evidence_snapshot_sha256 !== snapshot.snapshot_sha256 || receipt?.disclosure_manifest?.response_evidence_view_sha256 !== evidence.auditor_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
     }
     if (deriveEvidenceFindings(evidence.review).length) return result(RESPONSE_EVIDENCE_CODES.unsupported, "blocking_support");
-    if (!responseEvidenceDependenciesCurrent(record, candidate, snapshot)) return result(RESPONSE_EVIDENCE_CODES.stale, "dependencies_changed");
+    if (!auditPoint && !responseEvidenceDependenciesCurrent(record, candidate, snapshot)) return result(RESPONSE_EVIDENCE_CODES.stale, "dependencies_changed");
     return result();
   } catch { return result(RESPONSE_EVIDENCE_CODES.invalid, "invalid_evidence"); }
 }
