@@ -218,6 +218,18 @@ test("malformed evidence reviews fail the model invocation before any audit can 
   }
 });
 
+test("evidence auditor returns a boolean view disclosure and an identified provider receipt", async () => {
+  const { responseEvidence } = await syntheticResponseEvidence(), captured = [];
+  const provider = packetProvider({ findings: [], repair_induced_checks: [], evidence_review: assessedReview() }, captured);
+  const runtime = createPrivateTherapyModelRuntime({ privateCaseSource: sourceFor(), providers: { anthropic: provider }, config: {} });
+  const output = await runtime.auditCandidate({ caseId: "synthetic", candidateId: candidate.id, responseEvidence });
+  const packet = JSON.parse(captured[0].user.slice("AUTHORIZED AUDIT PACKET\n".length));
+  assert.deepEqual(packet.response_evidence, responseEvidence.view);
+  assert.equal(output.disclosureManifest.response_evidence_view_included, true);
+  assert.ok(Object.values(output.disclosureManifest).every(value => typeof value === "boolean"));
+  for (const key of ["provider", "model", "response_id"]) assert.ok(output.providerReceipt[key]?.trim());
+});
+
 test("repair packet carries each blocking evidence item and missing-history entry", async () => {
   const { responseEvidence } = await syntheticResponseEvidence(); const captured = [];
   const review = assessedReview();

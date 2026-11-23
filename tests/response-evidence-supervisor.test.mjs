@@ -7,7 +7,7 @@ import { createPrivateCaseAccessService } from "../src/storage/private-case-acce
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { createPrivateSupervisorDraftService } from "../src/supervisor/private-supervisor-draft.mjs";
 import { createPrivateTherapyModelRuntime, responseEvidenceFailures } from "../src/supervisor/private-therapy-model-runtime.mjs";
-import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
+import { REPAIR_INDUCED_ERROR_CHECKS, createCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvidenceModelView, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
 import { createSupervisorReplyTools } from "../src/server/supervisor-reply-tools.mjs";
 import { createSupervisorReviewRunner } from "../src/supervisor/private-supervisor-review-runner.mjs";
@@ -45,8 +45,8 @@ async function environment(t, options = {}) {
       return { contextId: `auditor:${n}`, value: { findings: [], repair_induced_checks: candidate.parent_candidate_id ? REPAIR_INDUCED_ERROR_CHECKS : [],
         ...(responseEvidence ? { evidence_review: options.review?.(candidate, responseEvidence, n) ?? review() } : {}) },
         ...(responseEvidence ? { responseEvidenceInclusion: inclusion(responseEvidence), disclosureManifest: {
-          response_evidence_snapshot_sha256: responseEvidence.snapshot.snapshot_sha256, response_evidence_view_sha256: responseEvidence.viewSha256
-        } } : {}) };
+          response_evidence_view_included: true
+        }, providerReceipt: { provider: "synthetic", model: "synthetic-reviewer", response_id: `response:${n}` } } : {}) };
     },
     async repairCandidate({ candidate, responseEvidence }) {
       const n = ++counts.repair;
@@ -239,6 +239,70 @@ test("supervisor review disclosure manifest retains only rollback-safe boolean v
   assert.ok(Object.values(receipt.disclosure_manifest).every(value => typeof value === "boolean"));
 });
 
+test("governed supervisor audits require the reviewer's identified receipt and exact audit binding", async (t) => {
+  const env = await environment(t, { onAudit() { throw new Error("pause before audit"); } });
+  await assert.rejects(env.submit(), code("SUPERVISOR_REVIEW_UNAVAILABLE"));
+  const before = await env.store.load(CASE), candidate = before.candidate_responses.at(-1), snapshot = before.response_evidence_snapshots[0];
+  const audit = createCandidateAuditEvidence({ auditId: "audit:direct", candidate, auditorContext: { kind: "independent", context_id: "direct:auditor" }, findings: [],
+    responseEvidence: { snapshotId: snapshot.id, snapshotSha256: snapshot.snapshot_sha256, auditorInclusionSha256: buildEvidenceModelView(before, snapshot).view_sha256, review: review(), snapshot } });
+  const receipt = { disclosureManifest: { response_evidence_view_included: true }, providerReceipt: { provider: "synthetic", model: "synthetic-reviewer", response_id: "response:direct" } };
+  const invalidReceipts = [undefined, {}, { ...receipt, providerReceipt: null }, { ...receipt, disclosureManifest: {} },
+    { ...receipt, disclosureManifest: { response_evidence_view_included: "true" } }, { ...receipt, disclosureManifest: { response_evidence_view_included: false } },
+    ...["provider", "model", "response_id"].map(key => ({ ...receipt, providerReceipt: { ...receipt.providerReceipt, [key]: " " } }))];
+  for (const invalid of invalidReceipts) {
+    await assert.rejects(env.store.recordSupervisorAudit(CASE, candidate.id, audit, invalid), code("RESPONSE_EVIDENCE_INVALID"));
+    assert.deepEqual(await env.store.load(CASE), before);
+  }
+  await env.store.recordSupervisorAudit(CASE, candidate.id, audit, receipt);
+  const recorded = await env.store.load(CASE), head = recorded.candidate_responses.at(-1);
+  assert.equal(assessResponseEvidenceAdmission(recorded, head).admissible, true);
+  for (const tamper of [
+    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").candidate_id += ":other"; },
+    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").candidate_version++; },
+    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").audit_id += ":other"; },
+    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").disclosure_manifest = {}; },
+    ...["provider", "model", "response_id"].map(key => r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").provider_receipt[key] = null; })
+  ]) {
+    const altered = structuredClone(recorded); tamper(altered);
+    assert.equal(assessResponseEvidenceAdmission(altered, head).code, "RESPONSE_EVIDENCE_INVALID");
+  }
+});
+
+test("a received runtime message blocks the older supervisor draft before and after inbound commit", async (t) => {
+  const env = await environment(t), result = await env.submit();
+  const old = (await env.store.load(CASE)).candidate_responses.at(-1), audit = old.audit_history.at(-1);
+  await env.store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "runtime:newer", exchangeId: "exchange:newer", userTurnId: "turn:newer", exactText: "New exact client words." });
+  for (const committed of [false, true]) {
+    if (committed) await env.store.appendTranscriptTurn(CASE, { id: "turn:newer", exchange_id: "exchange:newer", role: "user", text: "New exact client words.", at: "2026-11-23T12:00:00.000Z", episode_id: null });
+    const record = await env.store.load(CASE);
+    assert.equal(assessResponseEvidenceAdmission(record, old).code, "RESPONSE_EVIDENCE_STALE");
+    await assert.rejects(env.exportDraft(result.artifact.artifact_id), code("SUPERVISOR_ARTIFACT_STALE"));
+    await assert.rejects(env.store.approveCandidateForDelivery(CASE, old.id, audit.id), code("RESPONSE_EVIDENCE_STALE"));
+    await assert.rejects(env.store.deliverCandidateResponse(CASE, old.id, { auditId: audit.id, assistantTurnId: "turn:old-reply", inReplyToTurnId: "E2-user" }), code("RESPONSE_EVIDENCE_STALE"));
+    assert.deepEqual(await env.store.load(CASE), record);
+  }
+});
+
+for (const stage of ["audit", "repair"]) for (const amendment of [false, true]) test(`changed case ends supervisor ${stage} without writes (amendment: ${amendment})`, async (t) => {
+  let paused = true;
+  const env = await environment(t, { onAudit() { if (stage === "audit" && paused) throw new Error("pause audit"); },
+    review(candidate) { return stage === "repair" ? review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]) : review(); } });
+  if (stage === "repair") env.runtime.repairCandidate = async () => { throw new Error("pause repair"); };
+  await assert.rejects(env.submit(), code("SUPERVISOR_REVIEW_UNAVAILABLE"));
+  paused = false;
+  if (amendment) await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:pending", targetTurnId: "E2-user", completionText: " More exact words.", sourceArtifactId: "source:pending", producerContextId: "operator:completion" });
+  else await env.store.recordSupervisorInputs(CASE, { inputs: [{ inputId: "input:pending", inputType: "client_message", text: "The case moved on." }], channel: "owner_ui" });
+  const before = await env.store.load(CASE), head = before.candidate_responses.at(-1), operationKey = head.metadata.supervisor_draft.operation_key;
+  env.runtime.auditCandidate = env.runtime.repairCandidate = async () => assert.fail("stale review must call no model");
+  const restarted = createPrivateSupervisorDraftService({ privateCaseSource: env.access, modelRuntime: env.runtime });
+  for (const read of [() => restarted.resumeReview({ caseId: CASE, operationKey, authContext: AUTH }), () => restarted.getReviewStatus({ caseId: CASE, operationKey, authContext: AUTH }), () => env.submit()]) {
+    const result = await read();
+    assert.equal(result.status, "blocked"); assert.equal(result.reason, "case_changed"); assert.equal(result.exportable, false);
+    assert.match(result.notice, /case changed during review/); assert.match(result.notice, /[Nn]othing is approved/); assert.match(result.notice, /[Pp]repare the case again.*new draft/);
+    assert.deepEqual(await env.store.load(CASE), before);
+  }
+});
+
 test("connector supervisor writes refuse another process's root lock without changing the case", async (t) => {
   const { spawn } = await import("node:child_process");
   const { setTimeout: delay } = await import("node:timers/promises");
@@ -287,7 +351,15 @@ test("origin/main reads a governed supervisor draft through export", async (t) =
   const validateOld = await originMainPrivateCaseValidator(t);
   const env = await environment(t); const result = await env.submit(); await env.exportDraft(result.artifact.artifact_id);
   const record = await env.store.load(CASE);
+  assert.equal(record.supervisor_artifacts.find(e => e.kind === "review_receipt").disclosure_manifest.response_evidence_view_included, true);
   assert.doesNotThrow(() => validateOld(structuredClone(record)));
+  await env.store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "runtime:pending", exchangeId: "exchange:pending", userTurnId: "turn:pending", exactText: "Pending client words." });
+  const pending = await env.store.load(CASE);
+  assert.doesNotThrow(() => validateOld(structuredClone(pending)));
+  await env.store.freezeResponseEvidence(CASE, { snapshotId: "snapshot:with-pending-inbound", owner: { kind: "supervisor_draft", operation_key: "c".repeat(24) }, candidateOrigin: "external_draft", inbound: record.response_evidence_snapshots[0].inbound });
+  const frozenWithPending = await env.store.load(CASE);
+  assert.notEqual(frozenWithPending.response_evidence_snapshots.at(-1).dependency_binding.transcript_digest, record.response_evidence_snapshots[0].dependency_binding.transcript_digest);
+  assert.doesNotThrow(() => validateOld(structuredClone(frozenWithPending)));
 });
 
 test("a source amended during supervisor review preserves approval without allowing export", async (t) => {

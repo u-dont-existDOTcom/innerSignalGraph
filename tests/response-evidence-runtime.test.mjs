@@ -135,6 +135,34 @@ test("restart after sealed writer completion reuses the exact snapshot and does 
   assert.equal(freezes, 1); assert.equal(retrievals, 1); assert.equal(env.counts.candidate, 1);
 });
 
+for (const stage of ["candidate", "repair"]) test(`restart commits the completed ${stage} before resolving amended source evidence`, async (t) => {
+  const env = await setup(t, { auditReview: (text, n) => stage === "repair" && n === 0 ? unsupported(text) : emptyReview() });
+  await env.store.appendTranscriptTurn(CASE, { id: "turn:older", exchange_id: "exchange:older", role: "user", text: "Earlier incomplete words.", at: NOW, episode_id: null });
+  let interrupted = false;
+  const source = { ...env.store, commitPrivateRuntimeCandidate(...args) {
+    if (!interrupted && Boolean(args[1].parentCandidateId) === (stage === "repair")) {
+      interrupted = true; throw new Error("completed writer boundary");
+    }
+    return env.store.commitPrivateRuntimeCandidate(...args);
+  } };
+  await assert.rejects(env.controller({ privateCaseSource: source }).run(request()), /completed writer boundary/);
+  const before = await env.store.load(CASE), completed = before.runtime_turns[0].events.filter(e => e.stage === stage && e.event_type === "INVOCATION_COMPLETED").at(-1);
+  assert.ok(completed);
+  await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:writer-pending", targetTurnId: "turn:older", completionText: " More exact words.", sourceArtifactId: "source:writer-pending", producerContextId: "operator:completion" });
+  const reopened = createEncryptedPrivateCaseStore(env.storeOptions); t.after(() => reopened.close());
+  await env.controller({ privateCaseSource: reopened }).run(request());
+  const record = await assertDelivered(reopened), stale = record.candidate_responses.find(c => c.producer_context_id === completed.details.output.contextId);
+  assert.equal(stale.exact_text, completed.details.output.exactText);
+  assert.equal(stale.metadata.response_evidence.dependency_status, "stale_at_commit");
+  assert.equal(stale.audit_history[0].verdict, "fail"); assert.equal(stale.audit_history[0].independent, false);
+  assert.equal(stale.audit_history[0].findings[0].code, "RESPONSE_EVIDENCE_STALE");
+  assert.equal(env.counts.candidate, 1); assert.equal(env.counts.repair, stage === "repair" ? 2 : 1);
+  assert.equal(record.runtime_turns[0].events.filter(e => e.stage === stage && e.event_type === "INVOCATION_COMPLETED" && e.input_sha256 === completed.input_sha256).length, 1);
+  const { originMainPrivateCaseValidator } = await import("./helpers/origin-main-private-case-validator.mjs");
+  const validateOld = await originMainPrivateCaseValidator(t);
+  assert.doesNotThrow(() => validateOld(structuredClone(record)));
+});
+
 test("missing history expands only once and two repairs never create a fourth revision", async (t) => {
   let retrievals = 0;
   const env = await setup(t, { auditReview: (text) => missing(text), onAudit: async ({ store, n }) => {

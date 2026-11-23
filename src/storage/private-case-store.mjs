@@ -5,7 +5,7 @@ import { ValidationError } from "../core/errors.mjs";
 import {
   RESPONSE_EVIDENCE_POLICY_VERSION, RESPONSE_EVIDENCE_BUDGETS, assessResponseEvidenceAdmission,
   buildEvidenceModelView, buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeEvidenceReview, normalizeResponseEvidenceJournal,
-  responseEvidenceCandidateSchema, responseEvidenceSnapshotSchema, validateEvidenceShape, validateResponseEvidenceAudit, validateResponseEvidenceSnapshot
+  responseEvidenceCandidateSchema, responseEvidenceSnapshotSchema, validateEvidenceShape, validateResponseEvidenceAudit, validateResponseEvidenceSnapshot, hasSupervisorEvidenceReviewReceipt
 } from "../supervisor/response-evidence-contract.mjs";
 import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
 import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
@@ -1990,14 +1990,20 @@ export function createEncryptedPrivateCaseStore({
       return mutate(caseId, (record) => {
         const target = record.candidate_responses.find((entry) => entry.id === candidateId);
         if (!target || !isSupervisorDraftCandidate(target)) throw new ValidationError("Only a supervisor draft can receive supervisor review evidence.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
-        const appendReceipt = (candidate, audit) => record.supervisor_artifacts.push(createSupervisorReviewReceipt({
-          id: `receipt:${audit.id}`,
-          candidate,
-          auditId: audit.id,
-          disclosureManifest,
-          providerReceipt,
-          recordedAt: now()
-        }));
+        const appendReceipt = (candidate, audit) => {
+          const receipt = createSupervisorReviewReceipt({
+            id: `receipt:${audit.id}`,
+            candidate,
+            auditId: audit.id,
+            disclosureManifest,
+            providerReceipt,
+            recordedAt: now()
+          });
+          if (target.metadata.response_evidence && !hasSupervisorEvidenceReviewReceipt(receipt)) {
+            throw new ValidationError("Response evidence reviewer receipt required.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          }
+          record.supervisor_artifacts.push(receipt);
+        };
         if (target.metadata.response_evidence) {
           // A governed PASS needs the receipt visible to admission in this same mutation.
           const audit = validateAuditInRecord(record, target, evidence);

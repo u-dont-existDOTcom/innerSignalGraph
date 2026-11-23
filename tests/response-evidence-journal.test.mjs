@@ -156,7 +156,7 @@ test("a visibility epoch change invalidates the earlier governed snapshot at the
   const viewSha = buildEvidenceModelView(record, snapshot).view_sha256;
   const audit = createCandidateAuditEvidence({ auditId: "audit:journal", candidate, auditVersion: "private-candidate-audit-v4", auditorContext: { kind: "independent", context_id: "context:journal:auditor" }, findings: [],
     responseEvidence: { snapshotId: snapshot.id, snapshotSha256: snapshot.snapshot_sha256, auditorInclusionSha256: viewSha, review: review(), snapshot } });
-  await env.store.recordSupervisorAudit(CASE, candidate.id, audit, { disclosureManifest: { response_evidence_snapshot_sha256: snapshot.snapshot_sha256, response_evidence_view_sha256: viewSha } });
+  await env.store.recordSupervisorAudit(CASE, candidate.id, audit, { disclosureManifest: { response_evidence_view_included: true }, providerReceipt: { provider: "synthetic", model: "synthetic-reviewer", response_id: "response:journal" } });
   await env.store.approveSupervisorDraft(CASE, candidate.id, audit.id);
   record = await env.store.load(CASE); candidate = record.candidate_responses.at(-1);
   assert.equal(assessResponseEvidenceAdmission(record, candidate).admissible, true);

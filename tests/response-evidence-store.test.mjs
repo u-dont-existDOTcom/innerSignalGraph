@@ -328,7 +328,7 @@ async function supervisorGoverned(t) {
 async function supervisorAudit(env, evidenceReview = review(), findings = []) {
   const viewSha = buildEvidenceModelView(await env.store.load(CASE), env.snapshot).view_sha256;
   const audit = auditFor(env.candidate, env.snapshot, evidenceReview, findings, "supervisor:audit", viewSha);
-  const receipt = { disclosureManifest: { response_evidence_snapshot_sha256: env.snapshot.snapshot_sha256, response_evidence_view_sha256: viewSha } };
+  const receipt = { disclosureManifest: { response_evidence_view_included: true }, providerReceipt: { provider: "synthetic", model: "synthetic-reviewer", response_id: "response:supervisor" } };
   return { audit, receipt };
 }
 
@@ -337,14 +337,14 @@ test("recordSupervisorAudit refuses generic or mismatched PASS, preserves FAIL a
   await assert.rejects(store.recordSupervisorAudit(CASE, candidate.id, auditFor(candidate)), errorCode("RESPONSE_EVIDENCE_INVALID"));
   const { audit, receipt } = await supervisorAudit(env);
   const mismatched = structuredClone(audit); mismatched.response_evidence.auditor_inclusion_sha256 = "0".repeat(64);
-  await assert.rejects(store.recordSupervisorAudit(CASE, candidate.id, mismatched, { disclosureManifest: {} }), errorCode("RESPONSE_EVIDENCE_INVALID"));
+  await assert.rejects(store.recordSupervisorAudit(CASE, candidate.id, mismatched, receipt), errorCode("RESPONSE_EVIDENCE_INVALID"));
   await store.recordSupervisorAudit(CASE, candidate.id, audit, receipt);
   await store.approveSupervisorDraft(CASE, candidate.id, audit.id);
   const exported = await store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" });
   assert.equal(exported.client_text, candidate.exact_text);
   assert.equal((await store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" })).replayed, true);
   const failing = await supervisorGoverned(t);
-  await failing.store.recordSupervisorAudit(CASE, failing.candidate.id, auditFor(failing.candidate, null, review(), ordinaryFail));
+  await failing.store.recordSupervisorAudit(CASE, failing.candidate.id, auditFor(failing.candidate, null, review(), ordinaryFail), receipt);
   assert.equal((await failing.store.getCandidateResponse(CASE, failing.candidate.id)).status, "audit_failed");
 });
 

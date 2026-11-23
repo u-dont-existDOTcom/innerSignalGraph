@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, createCandidateAuditEvidence } from "./private-candidate-lifecycle.mjs";
-import { assessResponseEvidenceAdmission, buildEvidenceModelView } from "./response-evidence-contract.mjs";
+import { assessResponseEvidenceAdmission, buildEvidenceModelView, responseEvidenceSnapshotCurrent } from "./response-evidence-contract.mjs";
 import {
   SUPERVISOR_INPUT_TYPES,
   SUPERVISOR_LIMITS,
@@ -140,6 +140,14 @@ export function createPrivateSupervisorDraftService({
     const resolved = buildEvidenceModelView(record, snapshot);
     return { snapshot, view: resolved.view, viewSha256: resolved.view_sha256 };
   };
+  const caseChanged = (record, head) => ({ status: "blocked", reason: "case_changed", record, head });
+  const pendingReviewEvidence = (record, head, snapshot) => {
+    if (!snapshot) return null;
+    const root = record.candidate_responses.find(candidate => candidate.id === head.root_candidate_id);
+    try {
+      return responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate: root }) ? modelEvidence(record, snapshot) : null;
+    } catch { return null; }
+  };
 
   // Drives one draft lineage to a terminal result: approved, blocked at the repair limit, or replaced. Every step is a durable
   // write that a restart or a replayed request repeats safely, so the loop reads the stored lineage afresh each time.
@@ -152,7 +160,8 @@ export function createPrivateSupervisorDraftService({
       switch (head.status) {
         case "pending_audit":
         case "reconstructed_pending_audit": {
-          const evidence = bound ? modelEvidence(record, record.response_evidence_snapshots.find((entry) => entry.id === bound.snapshot_id)) : null;
+          const evidence = bound ? pendingReviewEvidence(record, head, record.response_evidence_snapshots.find((entry) => entry.id === bound.snapshot_id)) : null;
+          if (bound && !evidence) return caseChanged(record, head);
           const audited = await invoke("audit", operationKey, head.version, (attemptContextId) => requireModelRuntime("auditCandidate")({
             caseId, candidateId: head.id, candidate: head, journalEvidence: null, ...(evidence ? { responseEvidence: evidence } : {}), authContext, attemptContextId
           }));
@@ -181,7 +190,8 @@ export function createPrivateSupervisorDraftService({
         case "audit_failed": {
           if (head.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) return { status: "blocked", record, head };
           const newest = bound ? record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1) : null;
-          const repairEvidence = newest ? modelEvidence(record, newest) : null;
+          const repairEvidence = bound ? pendingReviewEvidence(record, head, newest) : null;
+          if (bound && !repairEvidence) return caseChanged(record, head);
           const repaired = await invoke("repair", operationKey, head.version, (attemptContextId) => requireModelRuntime("repairCandidate")({
             caseId, candidate: head, journalEvidence: null, ...(repairEvidence ? { responseEvidence: repairEvidence } : {}), authContext, attemptContextId
           }));
@@ -205,6 +215,7 @@ export function createPrivateSupervisorDraftService({
     return Object.freeze({
       case_id: caseId,
       status: outcome.status,
+      ...(outcome.reason ? { reason: outcome.reason } : {}),
       replayed,
       exportable: headArtifact?.exportable === true,
       artifact: headArtifact,
@@ -213,7 +224,9 @@ export function createPrivateSupervisorDraftService({
           ? "The exact reviewed text is approved for controlled export. Export it from here; text edited or retyped elsewhere inherits no approval."
           : "This draft was approved, but the case has changed since, so it can no longer be exported. Prepare the case again and submit a new draft.")
         : (outcome.status === "blocked"
-          ? "The bounded repair limit was reached and no text is approved. Nothing can be exported for this draft."
+          ? (outcome.reason === "case_changed"
+            ? "The case changed during review. Nothing is approved. Prepare the case again and submit a new draft."
+            : "The bounded repair limit was reached and no text is approved. Nothing can be exported for this draft.")
           : (outcome.status === "reviewing"
             ? "The review of this draft is not finished. Nothing is approved yet."
             : "This draft no longer governs the case; use the newest draft."))
@@ -400,6 +413,13 @@ export function createPrivateSupervisorDraftService({
       const record = await loadCase(caseId, authContext);
       const head = lineageHead(record, operationKey);
       if (!head) throw new ValidationError("The supervisor draft to review was not found.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+      if (head.metadata.response_evidence && (["pending_audit", "reconstructed_pending_audit"].includes(head.status)
+          || (head.status === "audit_failed" && head.repair_cycle < MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES))) {
+        const snapshot = head.status === "audit_failed"
+          ? record.response_evidence_snapshots.filter(entry => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1)
+          : record.response_evidence_snapshots.find(entry => entry.id === head.metadata.response_evidence.snapshot_id);
+        if (!pendingReviewEvidence(record, head, snapshot)) return describeReview({ caseId, outcome: caseChanged(record, head), authContext, replayed: true });
+      }
       return describeReview({ caseId, outcome: { status: reviewStatusOf(head), head }, authContext, replayed: true });
     },
 

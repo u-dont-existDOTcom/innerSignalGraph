@@ -139,8 +139,15 @@ const lineageIds = (record, root) => new Set([root, ...(record.candidate_respons
 export function computeEvidenceDependencyBinding(record, { inboundTurnId, inboundSha256, lineageRootId = null } = {}) {
   // The inbound identity/hash live in snapshot.inbound. Check it separately when resolving the snapshot against a record.
   if (inboundSha256 != null) validateEvidenceShape(inboundSha256, sha);
+  const turns = effectiveTurns(record);
+  const committedIds = new Set(turns.map(turn => turn.id));
+  // Intake is durable before the writer commits the client turn to the transcript. Bind those pending bytes too;
+  // only the snapshot's exact own inbound may move into the transcript without invalidating its writer.
+  const pending = (record.runtime_turns ?? []).filter(turn => !committedIds.has(turn.user_turn_id))
+    .map(turn => [turn.user_turn_id, "runtime_inbound", sha256Text(turn.inbound.exact_text)])
+    .filter(([id, , digest]) => id !== inboundTurnId || digest !== inboundSha256);
   return {
-    transcript_digest: sha256Json(effectiveTurns(record).filter((turn) => turn.id !== inboundTurnId).map((turn) => [turn.id, turn.role, turn.text, turn.exchange_id, turn.episode_id ?? null])),
+    transcript_digest: sha256Json([...turns.filter((turn) => turn.id !== inboundTurnId).map((turn) => [turn.id, turn.role, turn.text, turn.exchange_id, turn.episode_id ?? null]), ...pending]),
     amendments_digest: sha256Json((record.transcript_amendments ?? []).map((entry) => [entry.id, entry.target_turn_id, entry.effective_text_sha256 ?? entry.completion_sha256 ?? null])),
     communication_digest: sha256Json(foreignCommunicationSignature(record, lineageIds(record, lineageRootId))),
     established_context_digest: sha256Json(record.case_state),
@@ -532,6 +539,10 @@ export function responseEvidenceDependenciesCurrent(record, candidate, snapshot)
   return responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate });
 }
 const result = (code = null, reason = null) => ({ admissible: code === null, code, reasons: reason === null ? [] : [reason] });
+export function hasSupervisorEvidenceReviewReceipt(receipt) {
+  return receipt?.disclosure_manifest?.response_evidence_view_included === true
+    && ["provider", "model", "response_id"].every(key => typeof receipt.provider_receipt?.[key] === "string" && receipt.provider_receipt[key].trim().length > 0);
+}
 export function assessResponseEvidenceAdmission(record, candidate, { policy = "advisory", point = "approval" } = {}) {
   if (!["advisory", "enforced"].includes(policy)) return result(RESPONSE_EVIDENCE_CODES.invalid, "policy_invalid");
   const binding = candidate?.metadata?.response_evidence;
@@ -581,7 +592,7 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
       if (!same(sealedReview, evidence.review)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_review_binding");
     } else {
       const receipt = (record.supervisor_artifacts ?? []).find((entry) => entry.kind === "review_receipt" && entry.audit_id === audit.id && entry.candidate_id === candidate.id && entry.candidate_version === candidate.version);
-      if (!receipt || evidence.auditor_inclusion_sha256 !== buildEvidenceModelView(record, snapshot, { historical: true }).view_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
+      if (!hasSupervisorEvidenceReviewReceipt(receipt) || evidence.auditor_inclusion_sha256 !== buildEvidenceModelView(record, snapshot, { historical: true }).view_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
     }
     if (deriveEvidenceFindings(evidence.review).length) return result(RESPONSE_EVIDENCE_CODES.unsupported, "blocking_support");
     if (freshnessRequired && !responseEvidenceDependenciesCurrent(record, candidate, snapshot)) return result(RESPONSE_EVIDENCE_CODES.stale, "dependencies_changed");

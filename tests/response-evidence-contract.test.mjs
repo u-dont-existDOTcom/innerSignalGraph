@@ -65,6 +65,24 @@ test("inbound transcript insertion and audit bookkeeping do not change the depen
   assert.deepEqual(computeEvidenceDependencyBinding(r, options), original);
 });
 
+test("pending runtime inbounds bind their id and exact bytes, excluding only this snapshot's own inbound", () => {
+  const r = record(), options = { inboundTurnId: "inbound", inboundSha256: sha256Text("Current words.") };
+  const original = computeEvidenceDependencyBinding(r, options);
+  r.runtime_turns.push({ id: "runtime:newer", user_turn_id: "newer", inbound: { exact_text: "New café words.\r\n" } });
+  const pending = computeEvidenceDependencyBinding(r, options);
+  assert.notDeepEqual(pending, original);
+  r.runtime_turns[1].inbound.exact_text = "New café words.\n";
+  assert.notDeepEqual(computeEvidenceDependencyBinding(r, options), pending);
+  r.runtime_turns[1].inbound.exact_text = "New café words.\r\n";
+  r.runtime_turns[1].user_turn_id = "different-id";
+  assert.notDeepEqual(computeEvidenceDependencyBinding(r, options), pending);
+  r.raw_transcript.push(turn("different-id", "user", r.runtime_turns[1].inbound.exact_text));
+  assert.notDeepEqual(computeEvidenceDependencyBinding(r, options), original);
+  r.runtime_turns.pop(); r.raw_transcript.pop();
+  r.runtime_turns[0].inbound.exact_text += " changed";
+  assert.notDeepEqual(computeEvidenceDependencyBinding(r, options), original);
+});
+
 test("each independent material change invalidates its dependency component", () => {
   const options = { inboundTurnId: "inbound", lineageRootId: "root" };
   const changes = [

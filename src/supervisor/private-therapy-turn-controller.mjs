@@ -48,6 +48,12 @@ function auditId(operationKey, repairCycle) {
   return `audit:runtime:${operationKey}:v${repairCycle + 1}`;
 }
 
+function candidateInputIdentity(runtimeTurn, journalEvidence, snapshot) {
+  return { runtime_turn_id: runtimeTurn.id, inbound_sha256: runtimeTurn.inbound.sha256, repair_cycle: 0,
+    journal_evidence_sha256: journalEvidence?.sha256 ?? null,
+    ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
+}
+
 function repairInputIdentity(parent, audit, journalEvidence, snapshot = null) {
   return { parent_candidate_id: parent.id, parent_version: parent.version, parent_sha256: sha256(parent.exact_text), audit_id: audit?.id,
     repair_cycle: parent.repair_cycle + 1, journal_evidence_sha256: journalEvidence?.sha256 ?? null,
@@ -269,15 +275,22 @@ export function createPrivateTherapyTurnController({
         // A candidate that already completed keeps the evidence it was produced with. Freezing again
         // after a restart could pick up a newer snapshot, miss the completed call, produce a second
         // candidate, and leave the audit with a different packet from the one the producer saw.
-        const candidateCompleted = runtimeTurn.events.some((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "candidate");
         const record = await loadCase(caseId, authContext);
         const owned = snapshotsFor(record, runtimeTurn);
         const governed = evidenceEnforced || owned.length > 0;
-        const completedOutput = runtimeTurn.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "candidate")?.details?.output;
+        const candidateCompleted = [...runtimeTurn.events].reverse().find(event => {
+          if (event.event_type !== "INVOCATION_COMPLETED" || event.stage !== "candidate") return false;
+          const output = event.details?.output;
+          const snapshot = owned.find(entry => entry.id === output?.responseEvidenceInclusion?.snapshot_id);
+          return event.input_sha256 === jsonHash(candidateInputIdentity(runtimeTurn, output?.journalEvidence, snapshot));
+        });
+        const completedOutput = candidateCompleted?.details?.output;
         const snapshot = governed ? (candidateCompleted
           ? owned.find((entry) => entry.id === completedOutput?.responseEvidenceInclusion?.snapshot_id)
           : owned.at(-1) ?? await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext })) : null;
-        const evidence = governed ? modelEvidence(await loadCase(caseId, authContext), snapshot) : null;
+        // A sealed completion needs no current source view. Commit its original binding first; the store records
+        // stale_at_commit and AUDITING takes the trusted stale-FAIL path if a source changed during the restart.
+        const evidence = governed && !candidateCompleted ? modelEvidence(await loadCase(caseId, authContext), snapshot) : null;
         const journalEvidence = governed ? null : candidateCompleted
           ? frozenJournalEvidence(runtimeTurn)
           : await freezeJournalEvidence({ caseId, runtimeTurn, userInput, authContext });
@@ -286,7 +299,7 @@ export function createPrivateTherapyTurnController({
           runtimeTurn,
           operationKey,
           stage: "candidate",
-          inputIdentity: { runtime_turn_id: runtimeTurn.id, inbound_sha256: runtimeTurn.inbound.sha256, repair_cycle: 0, journal_evidence_sha256: journalEvidence?.sha256 ?? null, ...(evidence ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) },
+          inputIdentity: candidateInputIdentity(runtimeTurn, journalEvidence, snapshot),
           authContext,
           execute: async (attemptContextId) => ({
             ...(await modelRuntime.produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence, ...(evidence ? { responseEvidence: evidence } : {}), authContext, attemptContextId })),
@@ -301,7 +314,7 @@ export function createPrivateTherapyTurnController({
           caseState: produced.caseState,
           stateDiff: produced.stateDiff,
           diffId: `diff:runtime:${operationKey}`,
-          ...(evidence ? { responseEvidence: { snapshotId: snapshot.id, writerInclusionSha256: produced.responseEvidenceInclusion?.view_sha256 } } : {}),
+          ...(snapshot ? { responseEvidence: { snapshotId: snapshot.id, writerInclusionSha256: produced.responseEvidenceInclusion?.view_sha256 } } : {}),
           metadata: {
             producer_attempt_context_id: produced.result?.producerAttemptContextId ?? null,
             journal_evidence_sha256: produced.journalEvidence?.sha256 ?? null,
@@ -395,8 +408,8 @@ export function createPrivateTherapyTurnController({
           const rootCandidate = exactCandidate(record, parent.root_candidate_id);
           if (expand || !responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: expand ? "evidence_expansion" : "dependency_refresh", ...(expand ? { query: missing.map((entry) => entry.question).join("\n").slice(0, JOURNAL_QUERY_CHARACTERS) } : {}) });
         }
-        const evidence = snapshot ? modelEvidence(await loadCase(caseId, authContext), snapshot) : null;
-        const journalEvidence = evidence ? null : frozenJournalEvidence(runtimeTurn);
+        const evidence = snapshot && !repairCompleted ? modelEvidence(await loadCase(caseId, authContext), snapshot) : null;
+        const journalEvidence = snapshot ? null : frozenJournalEvidence(runtimeTurn);
         const repaired = await invoke({
           caseId,
           runtimeTurn,
@@ -413,7 +426,7 @@ export function createPrivateTherapyTurnController({
           producerContextId: repaired.contextId,
           parentCandidateId: parent.id,
           basedOnAuditId: sourceAudit.id,
-          ...(evidence ? { responseEvidence: { snapshotId: snapshot.id, writerInclusionSha256: repaired.responseEvidenceInclusion?.view_sha256 } } : {}),
+          ...(snapshot ? { responseEvidence: { snapshotId: snapshot.id, writerInclusionSha256: repaired.responseEvidenceInclusion?.view_sha256 } } : {}),
           metadata: {
             repair_induced_error_checks_required: [...REPAIR_INDUCED_ERROR_CHECKS],
             compatibility_state_binding: parent.metadata?.compatibility_state_binding ?? null
