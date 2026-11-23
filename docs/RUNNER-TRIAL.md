@@ -99,7 +99,9 @@ foreign host, foreign origin or foreign referrer does not grant access to the pa
 The log holds start/end times, total milliseconds, time to first words (the provisional reply, highlighted line, or final reply or
 closing, whichever was first), delivery or closing kind and reason code, the crisis reader's level, repairs attempted, and every
 recorded worker call's role, attempt, provider, model, effort, duration and reported input/cache-read/cache-write/output/reasoning
-counts. Rule-part names and byte sizes appear where recorded. Checker findings contain codes and severities only. The summary has
+counts. Rule-part names and byte sizes appear where recorded. Checker findings contain codes and severities only. Each turn's
+`failures` list holds invocation-level failure codes, including failures after workers answered; the summary counts these without
+counting a worker receipt's own failure twice. The summary has
 turn count, median and nearest-rank 90th-percentile total/first-word times, mean workers and repairs per turn, token sums by provider
 and model, finding-code frequencies and failure-code counts. Token categories preserve each provider's reported meanings; they are
 not a currency estimate and cache/reasoning counts must not be added to other categories as if every provider counts them separately.
@@ -111,7 +113,9 @@ counts, durations, efforts and rule parts stay unknown rather than being guessed
 cannot be reconstructed; new failed calls retain their receipts too.
 
 The server appends the same turn rows to `<trial dir>/runner-log.jsonl` (0600), with a header naming the rules and arrangement at
-file creation and a new header whenever they change. Each turn belongs to the nearest header above it. Before appending, an
+file creation and a new header whenever they change. Headers mark the server's startup configuration. Each turn row carries its own
+`rules` and `arrangement`, saved with the turn when it was created; both are `null` for turns that ran before this was recorded.
+Rebuilding the file preserves each turn's own configuration regardless of the current server's configuration. Before appending, an
 incomplete final line is discarded; earlier complete lines stay unchanged. If the file is missing on startup, it rebuilds it from
 stored finished turns, then appends newly finished turns once.
 An unfinished turn appears after reconciliation closes it. Writes run after the response, and logging errors are caught and dropped;

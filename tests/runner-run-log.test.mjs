@@ -17,6 +17,7 @@ import { createRunnerTrialController } from "../src/runner-trial/trial-controlle
 import { createRunnerLogWriter, runnerLogFromRecord } from "../src/runner-trial/run-log.mjs";
 import { loadRunnerRules } from "../src/runner-trial/released-rules.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
+import { createPrivateRuntimeTurn, validatePrivateRuntimeTurn } from "../src/supervisor/private-runtime-turn-lifecycle.mjs";
 import { createInnerSignalServer } from "../src/server/create-server.mjs";
 import { prepareReleasedRules, serverEnvironment } from "../scripts/runner-trial-start.mjs";
 
@@ -26,7 +27,7 @@ const MARKERS = ["Privatepersonmarker", "Privatereplymarker", "Privateprovisiona
 const at = Date.parse("2026-11-23T12:00:00.000Z");
 async function directory(t) { const dir = await fs.mkdtemp(path.join(os.tmpdir(), "runner-log-test-")); t.after(() => fs.rm(dir, { recursive: true, force: true })); return dir; }
 const configFor = (dir, extra = {}) => loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialDir: dir, runnerTrialSettingsPath: null, runnerRulesRoot: null, runnerTrialCaseId: CASE, ...extra });
-async function fixture(t, { failure = false, dir = null, keptPlan = false, checkerFailure = false, retryWriter = false } = {}) {
+async function fixture(t, { failure = false, dir = null, keptPlan = false, checkerFailure = false, retryWriter = false, unchangedRepair = false, incompleteChecklist = false } = {}) {
   dir ??= await directory(t);
   let clock = at;
   const store = createEncryptedPrivateCaseStore({ rootDir: path.join(dir, "vault"), routineKek: Buffer.alloc(32, 35), recoverySecretBytes: Buffer.alloc(32, 36), developmentExternalCredentialAuthorized: true, now: () => new Date(clock).toISOString() });
@@ -46,9 +47,10 @@ async function fixture(t, { failure = false, dir = null, keptPlan = false, check
     else if (role === "W" || role === "W-repair") {
       if (role === "W" && retryWriter && ++writerAttempts === 1) throw Object.assign(new Error(MARKERS[1]), { code: "TIMEOUT" });
       if (failure) throw Object.assign(new Error(MARKERS[1]), { code: "PLAN_LIMIT" });
-      value = { reply: `${MARKERS[1]} ${++writerCount}${keptPlan ? ` ${MARKERS[5]}.` : ""}`, answered_level: "acted_or_about_to", quotes: [], plan_reached: keptPlan, offered_to_keep_plan: false, kept_plan_lines: keptPlan ? [`${MARKERS[5]}.`] : [] };
+      if (role === "W" || !unchangedRepair) writerCount++;
+      value = { reply: `${MARKERS[1]} ${writerCount}${keptPlan ? ` ${MARKERS[5]}.` : ""}`, answered_level: "acted_or_about_to", quotes: [], plan_reached: keptPlan, offered_to_keep_plan: false, kept_plan_lines: keptPlan ? [`${MARKERS[5]}.`] : [] };
     } else if (role === "CW" && checkerFailure) throw Object.assign(new Error(MARKERS[3]), { code: "REFUSED" });
-    else if (role === "CW") value = { findings: checkerCount++ === 0 ? [{ code: "QUOTE_NOT_EXACT", severity: "high", summary: MARKERS[3], quote: MARKERS[4], evidence_turn_ids: [MARKERS[4]] }] : [], level: "acted_or_about_to", repair_induced_checks: checkerCount > 1 ? [...REPAIR_INDUCED_ERROR_CHECKS] : [], missed_boxes: [] };
+    else if (role === "CW") value = { findings: checkerCount++ === 0 ? [{ code: "QUOTE_NOT_EXACT", severity: "high", summary: MARKERS[3], quote: MARKERS[4], evidence_turn_ids: [MARKERS[4]] }] : [], level: "acted_or_about_to", repair_induced_checks: checkerCount > 1 ? REPAIR_INDUCED_ERROR_CHECKS.slice(0, incompleteChecklist ? -1 : undefined) : [], missed_boxes: [] };
     else throw new Error(`unexpected ${role}`);
     return { value, receipt: { provider: "stand-in", model: "stand-in-model", effort: "low", session_id: `stand-in-${session}`, input_tokens: 10, cache_read_input_tokens: 4, cache_creation_input_tokens: 2, output_tokens: 3, reasoning_output_tokens: 1, unrelated_prose: MARKERS[4] } };
   } }) });
@@ -109,6 +111,9 @@ test("a stand-in repair run has exact totals, one receipt per call, fixed findin
   assert.equal(lines.length, 2);
   assert.equal(lines[0].type, "header");
   assert.equal(lines[0].arrangement.writerMode, "whole");
+  assert.deepEqual(record.runtime_turns[0].runner_config, { rules: lines[0].runnerRules, arrangement: lines[0].arrangement });
+  assert.deepEqual(turn.rules, lines[0].runnerRules);
+  assert.deepEqual(turn.arrangement, lines[0].arrangement);
   assert.deepEqual(lines[1], turn);
   assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
   const p = await page(t);
@@ -153,6 +158,7 @@ test("a failed writer retains its receipt and closes with fixed codes; logging e
   assert.deepEqual(log.turns[0].outcome, { status: "closed", kind: "runner_unavailable", reason_code: "plan_limit" });
   assert.deepEqual(log.summary.failures_by_code, [{ code: "PLAN_LIMIT", count: 1 }]);
   assert.equal(log.turns[0].workers.at(-1).failure_code, "PLAN_LIMIT");
+  assert.deepEqual(log.turns[0].failures, ["PLAN_LIMIT"]);
   assert.equal(log.turns[0].tokens.input_tokens, 20);
   const writer = createRunnerLogWriter({ directory: path.join(f.dir, "missing"), runnerRules: loadRunnerRules().runnerRules, arrangement: {}, loadRecord: async () => { throw new Error(MARKERS[0]); } });
   writer.schedule(CASE); await writer.flush(); // Does not reject or leak an error.
@@ -168,7 +174,31 @@ test("a failed checker is counted once with its failure code and tokens from the
   assert.equal(log.turns[0].tokens.input_tokens, 30);
   assert.equal(log.turns[0].outcome.reason_code, "refused");
   assert.deepEqual(log.summary.failures_by_code, [{ code: "REFUSED", count: 1 }]);
+  assert.deepEqual(log.turns[0].failures, ["REFUSED"]);
 });
+
+for (const [option, code, stage, role] of [["unchangedRepair", "REPAIR_UNCHANGED", "repair", "W-repair"], ["incompleteChecklist", "PROVIDER_MALFORMED", "audit", "CW"]]) {
+  test(`${code} after a successful ${role} is retained and counted in API and JSONL`, async (t) => {
+    const f = await fixture(t, { [option]: true });
+    await f.run();
+    const record = await f.store.load(CASE);
+    const failed = record.runtime_turns[0].events.find((event) => event.event_type === "INVOCATION_FAILED");
+    assert.equal(failed.stage, stage);
+    assert.equal(failed.details.error_code, code);
+    const response = await fetch(`${f.base}/v1/runner/log?caseId=${CASE}`, { headers: { origin: f.base } });
+    assert.equal(response.status, 200);
+    const log = await response.json();
+    assert.equal(log.turns[0].outcome.status, "closed");
+    assert.equal(log.turns[0].workers.at(-1).role, role);
+    assert.ok(log.turns[0].workers.every((worker) => worker.failure_code === null));
+    assert.deepEqual(log.turns[0].failures, [code]);
+    assert.deepEqual(log.summary.failures_by_code, [{ code, count: 1 }]);
+    await f.trial.logWriter.flush();
+    const rows = (await fs.readFile(path.join(f.dir, "runner-log.jsonl"), "utf8")).trimEnd().split("\n").map(JSON.parse);
+    assert.deepEqual(rows[1], log.turns[0]);
+    for (const marker of MARKERS) assert.equal(JSON.stringify([log, rows]).includes(marker), false);
+  });
+}
 
 test("a retried worker keeps both attempts and counts the timeout once", async (t) => {
   const f = await fixture(t, { retryWriter: true });
@@ -208,6 +238,86 @@ function logOptions(directory, record) {
   return { directory, runnerRules: { version: "0.2.6", sha256: "a".repeat(64), source: "stable 123456789" }, arrangement: { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] }, loadRecord: async () => record };
 }
 async function syncLog(writer) { writer.schedule(CASE); await writer.flush(); }
+
+test("rebuilding after a restart keeps each stored configuration and leaves legacy turns unknown", async (t) => {
+  const f = await fixture(t);
+  await f.run();
+  const original = (await f.store.load(CASE)).runtime_turns[0];
+  const originalHealth = await (await fetch(`${f.base}/health`)).json();
+  assert.deepEqual(original.runner_config, { rules: originalHealth.runnerRules, arrangement: originalHealth.runnerArrangement });
+  // A pre-change turn has no configuration field, even when reconciled by a configured runtime.
+  await f.store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "legacy-turn", exchangeId: "legacy-exchange", userTurnId: "legacy-user", exactText: MARKERS[0] });
+  await f.trial.controller.reconcile({ caseId: CASE });
+  await f.trial.logWriter.flush();
+  const file = path.join(f.dir, "runner-log.jsonl");
+  await fs.unlink(file);
+  const released = await prepareReleasedRules(f.dir, { git: async (args, options) => {
+    if (args[0] === "fetch") throw new Error("offline stand-in");
+    return exec("git", args, options);
+  } });
+  const config = configFor(f.dir, { runnerRulesRoot: released.rulesRoot });
+  const settings = validateRunnerTrialSettings({ writerMode: "focused", checkerMode: "split" });
+  const restarted = createRunnerTrialController({ privateCaseSource: f.store, config, settings, workerFor: () => { throw new Error("recovery must not call workers"); } });
+  const server = createInnerSignalServer({ config, providers: createProviders(config), privateCaseStore: f.store, privateTherapyController: restarted.controller, runnerTrialEvents: restarted.events, runnerTrialSettings: restarted.settings });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const health = await (await fetch(`${base}/health`)).json();
+  assert.notDeepEqual(health.runnerRules, original.runner_config.rules);
+  assert.notDeepEqual(health.runnerArrangement, original.runner_config.arrangement);
+  restarted.controller.startRunLog(null);
+  await restarted.logWriter.flush();
+  const rows = (await fs.readFile(file, "utf8")).trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(rows[0].runnerRules, health.runnerRules);
+  assert.deepEqual(rows[0].arrangement, health.runnerArrangement);
+  assert.deepEqual(rows[1].rules, original.runner_config.rules);
+  assert.deepEqual(rows[1].arrangement, original.runner_config.arrangement);
+  assert.equal(rows[2].rules, null);
+  assert.equal(rows[2].arrangement, null);
+  const log = await (await fetch(`${base}/v1/runner/log?caseId=${CASE}`, { headers: { origin: base } })).json();
+  assert.deepEqual(rows.slice(1), log.turns);
+  // Retrying a stored turn under different settings never rewrites its original configuration.
+  await f.store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: original.id, exchangeId: original.exchange_id, userTurnId: original.user_turn_id, exactText: original.inbound.exact_text, runnerConfig: { rules: health.runnerRules, arrangement: health.runnerArrangement } });
+  assert.deepEqual((await f.store.load(CASE)).runtime_turns[0].runner_config, original.runner_config);
+});
+
+test("runner configuration is optional for old turns, cloned on creation and narrowly validated", () => {
+  const input = { id: "test-turn", exchangeId: "test-exchange", userTurnId: "test-user", exactText: MARKERS[0], createdAt: new Date(at).toISOString() };
+  assert.equal(Object.hasOwn(createPrivateRuntimeTurn(input), "runner_config"), false);
+  const options = logOptions(null, null);
+  const runnerConfig = { rules: options.runnerRules, arrangement: options.arrangement };
+  const turn = createPrivateRuntimeTurn({ ...input, runnerConfig });
+  runnerConfig.arrangement.writer.push("claude");
+  assert.deepEqual(turn.runner_config.arrangement.writer, ["codex"]);
+  for (const invalid of [null, { ...turn.runner_config, extra: MARKERS[0] }, { ...turn.runner_config, rules: { ...turn.runner_config.rules, sha256: MARKERS[0] } }, { ...turn.runner_config, arrangement: { ...turn.runner_config.arrangement, writer: "claude" } }]) {
+    assert.throws(() => validatePrivateRuntimeTurn({ ...turn, runner_config: invalid }), { code: "VALIDATION_ERROR" });
+  }
+});
+
+test("turn configuration uses the header's allow-list and failure deduplication stays within an invocation", async (t) => {
+  const dir = await directory(t);
+  const prose = `private words ${MARKERS[0]}`;
+  const config = { rules: { version: prose, sha256: prose, source: prose, extra: MARKERS[0] }, arrangement: { writerMode: prose, checkerMode: prose, readers: ["claude", prose], writer: [prose], checkers: ["codex"], extra: MARKERS[0] } };
+  const turn = { ...logTurn(0), runner_config: config, events: [
+    { event_type: "INVOCATION_COMPLETED", stage: "candidate", details: { output: { result: { receipts: [{ role: "W", failed: "TIMEOUT" }] } } } },
+    { event_type: "INVOCATION_FAILED", details: { error_code: "TIMEOUT" } },
+    { event_type: "INVOCATION_FAILED", details: { error_code: prose, raw_private_evidence: { receipts: [{ role: "CW", failed: prose }] } } },
+    { event_type: "INVOCATION_FAILED", details: {} }
+  ] };
+  const record = { runtime_turns: [turn] };
+  const log = runnerLogFromRecord(record);
+  assert.deepEqual(log.turns[0].failures, ["TIMEOUT", "PROVIDER_FAILED", "PROVIDER_FAILED"]);
+  assert.deepEqual(log.summary.failures_by_code, [{ code: "PROVIDER_FAILED", count: 2 }, { code: "TIMEOUT", count: 2 }]);
+  await syncLog(createRunnerLogWriter({ directory: dir, runnerRules: config.rules, arrangement: config.arrangement, loadRecord: async () => record }));
+  const jsonl = await fs.readFile(path.join(dir, "runner-log.jsonl"), "utf8");
+  const [header, row] = jsonl.trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(row.rules, header.runnerRules);
+  assert.deepEqual(row.arrangement, header.arrangement);
+  assert.deepEqual(row.rules, { version: null, sha256: null, source: "checkout" });
+  assert.deepEqual(row.arrangement, { writerMode: null, checkerMode: null, readers: ["claude"], writer: [], checkers: ["codex"] });
+  assert.equal(JSON.stringify(log).includes(MARKERS[0]), false);
+  assert.equal(jsonl.includes(MARKERS[0]), false);
+});
 
 for (const changed of ["rules", "arrangement"]) test(`a restart with changed ${changed} appends a header before the next turn`, async (t) => {
   const dir = await directory(t);

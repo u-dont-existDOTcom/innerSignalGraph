@@ -67,6 +67,7 @@ function normalizeInvocationOutput(value) {
 export function createPrivateTherapyTurnController({
   privateCaseSource,
   modelRuntime,
+  runnerConfig = null,
   // Off by default. No production provider exists yet, and the servers build this controller
   // without one, so therapy turns read no journal evidence. Supplying one is a separate change,
   // made once the import has published a session-use generation that passed its cold test.
@@ -269,7 +270,7 @@ export function createPrivateTherapyTurnController({
       await authorizeTurn({ caseId, authContext });
       await modelRuntime.closeUnfinishedTurns({ caseId, keepRuntimeTurnId: runtimeTurnId, authContext });
     }
-    await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage }], authContext);
+    await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage, ...(closesTurns && runnerConfig ? { runnerConfig } : {}) }], authContext);
     const operationKey = sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24);
 
     const closeTurn = async (runtimeTurn, reasonCode) => {

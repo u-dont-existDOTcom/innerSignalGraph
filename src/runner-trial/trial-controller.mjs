@@ -79,6 +79,7 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, se
   if (!isRunnerEventHub(hub)) throw new ValidationError("The runner trial needs an event hub.");
   const trialSettings = settings ?? loadRunnerTrialSettings({ settingsPath: config.runnerTrialSettingsPath ?? null, claudeConfigDir: config.runnerClaudeConfigDir ?? null });
   const rules = loadRunnerRules(config);
+  const runnerConfig = { rules: rules.runnerRules, arrangement: runnerArrangement(trialSettings) };
   const runtime = createRunnerTrialRuntime({
     privateCaseSource,
     parts: parts ?? cutRuleParts(rules.protocol),
@@ -94,13 +95,13 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, se
     now
   });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
-  const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, maximumInvocationAttempts: 1 });
+  const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1 });
   const loadExisting = async (caseId, authContext) => {
     try {
       return await (typeof privateCaseSource.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource.load(caseId));
     } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
   };
-  const logWriter = createRunnerLogWriter({ directory: runnerTrialDirectory(config), runnerRules: rules.runnerRules, arrangement: runnerArrangement(trialSettings), loadRecord: loadExisting });
+  const logWriter = createRunnerLogWriter({ directory: runnerTrialDirectory(config), runnerRules: runnerConfig.rules, arrangement: runnerConfig.arrangement, loadRecord: loadExisting });
   const loggedController = Object.freeze({
     ...controller,
     async run(input) {

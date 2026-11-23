@@ -17,6 +17,8 @@ const stamp = (v) => typeof v === "string" && Number.isFinite(Date.parse(v)) ? n
 const elapsed = (start, end) => start && end ? Math.max(0, Date.parse(end) - Date.parse(start)) : null;
 const array = (v) => Array.isArray(v) ? v : [];
 const failure = (v) => v == null ? null : FAILURES.has(v) ? v : "PROVIDER_FAILED";
+const rules = (v) => ({ version: name(v?.version), sha256: /^[a-f0-9]{64}$/u.test(v?.sha256) ? v.sha256 : null, source: /^stable [a-f0-9]{7,40}$/u.test(v?.source) ? v.source : "checkout" });
+const arrangement = (v) => ({ writerMode: ["whole", "focused"].includes(v?.writerMode) ? v.writerMode : null, checkerMode: ["whole", "split"].includes(v?.checkerMode) ? v.checkerMode : null, readers: array(v?.readers).map(name).filter(Boolean), writer: array(v?.writer).map(name).filter(Boolean), checkers: array(v?.checkers).map(name).filter(Boolean) });
 export const RUNNER_LOG_TOKEN_FIELDS = Object.freeze(["input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens", "reasoning_output_tokens"]);
 const emptyTokens = () => ({ input_tokens: null, cache_read_input_tokens: null, cache_creation_input_tokens: null, output_tokens: null, reasoning_output_tokens: null });
 function addTokens(into, call) {
@@ -41,6 +43,7 @@ const counts = (map, field) => [...map].map(([code, count]) => ({ [field]: code,
 
 export function runnerLogFromRecord(record) {
   const turns = [];
+  const failureCounts = new Map();
   for (const [index, turn] of array(record?.runtime_turns).entries()) {
     if (!["DELIVERED", "UNANSWERED"].includes(turn.state)) continue;
     const started = stamp(turn.created_at);
@@ -52,6 +55,7 @@ export function runnerLogFromRecord(record) {
       const call = worker(receipt); if (call) calls.push(call);
     }
     const findings = [];
+    const failures = [];
     for (const event of array(turn.events)) {
       let receipts = [];
       if (event.event_type === "INVOCATION_COMPLETED") {
@@ -62,20 +66,28 @@ export function runnerLogFromRecord(record) {
         if (event.stage === "audit") for (const item of array(output?.value?.findings)) findings.push({ code: FINDINGS.has(item?.code) ? item.code : "UNSPECIFIED_FINDING", severity: ["low", "medium", "substantive", "high"].includes(item?.severity) ? item.severity : "high" });
       } else if (event.event_type === "INVOCATION_FAILED") receipts = array(event.details?.raw_private_evidence?.receipts);
       const legacyParts = event.stage === "candidate" ? event.details?.output?.result?.rules?.parts : [];
-      for (const receipt of receipts) { const call = worker(receipt, legacyParts); if (call) calls.push(call); }
+      const eventCalls = receipts.map((receipt) => worker(receipt, legacyParts)).filter(Boolean);
+      calls.push(...eventCalls);
+      if (event.event_type === "INVOCATION_FAILED") {
+        const code = failure(event.details?.error_code) ?? "PROVIDER_FAILED";
+        failures.push(code);
+        // A failed worker already accounts for this invocation's error. Post-worker failures have no such receipt.
+        if (!eventCalls.some((call) => call.failure_code === code)) failureCounts.set(code, (failureCounts.get(code) ?? 0) + 1);
+      }
     }
     const tokens = emptyTokens();
     for (const call of calls) addTokens(tokens, call);
     turns.push({
       turn: index + 1, started_at: started, ended_at: ended,
+      rules: turn.runner_config ? rules(turn.runner_config.rules) : null,
+      arrangement: turn.runner_config ? arrangement(turn.runner_config.arrangement) : null,
       duration_ms: elapsed(started, ended), first_words_ms: elapsed(started, first),
       outcome: turn.state === "DELIVERED" ? { status: "delivered", kind: null, reason_code: null } : { status: "closed", kind: ["runner_unavailable", "owner_fallback"].includes(turn.closure?.kind) ? turn.closure.kind : "runner_unavailable", reason_code: REASONS.has(turn.closure?.reason_code) ? turn.closure.reason_code : "provider_failed" },
       crisis_level: LEVELS.has(turn.runner_reading?.readers?.crisis?.level) ? turn.runner_reading.readers.crisis.level : null,
-      repair_rounds: Math.max(number(turn.repair_cycle) ?? 0, array(turn.events).filter((event) => event.to_state === "RECONSTRUCTING").length), workers: calls, tokens, findings
+      repair_rounds: Math.max(number(turn.repair_cycle) ?? 0, array(turn.events).filter((event) => event.to_state === "RECONSTRUCTING").length), workers: calls, tokens, findings, failures
     });
   }
   const findingCounts = new Map();
-  const failureCounts = new Map();
   const models = new Map();
   for (const turn of turns) {
     for (const finding of turn.findings) findingCounts.set(finding.code, (findingCounts.get(finding.code) ?? 0) + 1);
@@ -100,10 +112,10 @@ export function runnerLogFromRecord(record) {
 }
 
 // One queue per controller (shared by both loopback listeners). Work is deferred and errors are dropped; a response never awaits it.
-export function createRunnerLogWriter({ directory, runnerRules, arrangement, loadRecord }) {
+export function createRunnerLogWriter({ directory, runnerRules, arrangement: runnerArrangement, loadRecord }) {
   let tail = Promise.resolve();
   const file = directory ? path.join(directory, "runner-log.jsonl") : null;
-  const header = { schema_version: 1, type: "header", runnerRules: { version: name(runnerRules.version), sha256: /^[a-f0-9]{64}$/u.test(runnerRules.sha256) ? runnerRules.sha256 : null, source: /^stable [a-f0-9]{7,40}$/u.test(runnerRules.source) ? runnerRules.source : "checkout" }, arrangement: { writerMode: ["whole", "focused"].includes(arrangement?.writerMode) ? arrangement.writerMode : null, checkerMode: ["whole", "split"].includes(arrangement?.checkerMode) ? arrangement.checkerMode : null, readers: array(arrangement?.readers).map(name).filter(Boolean), writer: array(arrangement?.writer).map(name).filter(Boolean), checkers: array(arrangement?.checkers).map(name).filter(Boolean) } };
+  const header = { schema_version: 1, type: "header", runnerRules: rules(runnerRules), arrangement: arrangement(runnerArrangement) };
   const enqueue = (work) => { tail = tail.then(work).catch(() => {}); return tail; };
   return {
     schedule(caseId, authContext) {

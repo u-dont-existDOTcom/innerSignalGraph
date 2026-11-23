@@ -540,7 +540,7 @@ function assertAppendOnly(previous, next) {
   for (let index = 0; index < previous.runtime_turns.length; index += 1) {
     const before = previous.runtime_turns[index];
     const after = next.runtime_turns[index];
-    for (const field of ["id", "exchange_id", "user_turn_id", "inbound", "created_at"]) {
+    for (const field of ["id", "exchange_id", "user_turn_id", "inbound", "created_at", "runner_config"]) {
       if (!after || JSON.stringify(before[field]) !== JSON.stringify(after[field])) throw new ValidationError("Private runtime turn identities are immutable.");
     }
     if (after.events.length < before.events.length || before.events.some((event, eventIndex) => JSON.stringify(event) !== JSON.stringify(after.events[eventIndex]))) {
@@ -989,7 +989,7 @@ export function createEncryptedPrivateCaseStore({
     rootDir,
     async load(caseId) { const value = await readExisting(safeCaseId(caseId)); return value ? structuredClone(value) : null; },
     loadOrCreate,
-    async beginPrivateRuntimeTurn(caseId, { runtimeTurnId, exchangeId, userTurnId, exactText }) {
+    async beginPrivateRuntimeTurn(caseId, { runtimeTurnId, exchangeId, userTurnId, exactText, runnerConfig }) {
       return mutate(caseId, (record) => {
         const existing = record.runtime_turns.find((entry) => entry.id === runtimeTurnId);
         if (existing) {
@@ -1009,6 +1009,7 @@ export function createEncryptedPrivateCaseStore({
           exchangeId,
           userTurnId,
           exactText,
+          runnerConfig,
           createdAt: now()
         }));
         return record;

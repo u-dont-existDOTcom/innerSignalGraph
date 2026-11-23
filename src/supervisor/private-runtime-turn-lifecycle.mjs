@@ -149,6 +149,7 @@ export function validatePrivateRuntimeTurn(value) {
   if (derivedState !== value.state) throw new ValidationError("Private runtime turn state does not match its transition ledger.");
   if (!["RECEIVED", "UNANSWERED"].includes(value.state) && value.current_candidate_id == null) throw new ValidationError("Private runtime turn current candidate is required after RECEIVED.");
   if (value.runner_reading != null) validateRunnerReading(value.runner_reading);
+  if (Object.hasOwn(value, "runner_config")) validateRunnerConfig(value.runner_config);
   if (value.provisional != null) validateProvisional(value.provisional);
   // The runner trial's kept plan (src/runner-trial/kept-plan.mjs): when this turn kept a plan, and when it deleted the kept plan on
   // the person's request. The plan itself is in the case record, never on the turn.
@@ -194,6 +195,23 @@ export function validatePrivateRuntimeTurn(value) {
     }
   }
   return value;
+}
+
+function validateRunnerConfig(value) {
+  const fields = (object, keys) => {
+    boundedJson(object, "runtime turn runner_config", 10_000);
+    if (Object.keys(object).length !== keys.length || keys.some((key) => !Object.hasOwn(object, key))) throw new ValidationError("Runner configuration fields are invalid.");
+  };
+  const validName = (name) => typeof name === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,95}$/u.test(name);
+  fields(value, ["rules", "arrangement"]);
+  fields(value.rules, ["version", "sha256", "source"]);
+  fields(value.arrangement, ["writerMode", "checkerMode", "readers", "writer", "checkers"]);
+  if (!validName(value.rules.version) || typeof value.rules.sha256 !== "string" || !SHA256.test(value.rules.sha256)
+      || !(value.rules.source === "checkout" || /^stable [a-f0-9]{7,40}$/u.test(value.rules.source))
+      || !["whole", "focused"].includes(value.arrangement.writerMode) || !["whole", "split"].includes(value.arrangement.checkerMode)
+      || ["readers", "writer", "checkers"].some((key) => !Array.isArray(value.arrangement[key]) || !value.arrangement[key].every(validName))) {
+    throw new ValidationError("Runner configuration is invalid.");
+  }
 }
 
 // The runner trial's readers' results for one turn (conversation, crisis level, box picks, compatibility assessment), stored once
@@ -253,7 +271,7 @@ export function createRunnerClosure({ kind, reasonCode, assistantTurnId, closedA
   return validateClosure({ kind, reason_code: reasonCode, exact_text: exactText, sha256: sha256ExactText(exactText), assistant_turn_id: assistantTurnId, closed_at: closedAt });
 }
 
-export function createPrivateRuntimeTurn({ id, exchangeId, userTurnId, exactText, createdAt }) {
+export function createPrivateRuntimeTurn({ id, exchangeId, userTurnId, exactText, createdAt, runnerConfig }) {
   if (typeof exactText !== "string" || exactText.length === 0) throw new ValidationError("Private runtime inbound exact text is required.");
   const value = {
     schema_version: 1,
@@ -273,6 +291,7 @@ export function createPrivateRuntimeTurn({ id, exchangeId, userTurnId, exactText
     delivery: null,
     created_at: createdAt,
     updated_at: createdAt,
+    ...(runnerConfig ? { runner_config: structuredClone(runnerConfig) } : {}),
     events: [{
       id: `${id}:received`,
       sequence: 1,
