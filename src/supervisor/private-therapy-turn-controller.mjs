@@ -4,7 +4,9 @@ import { createCandidateAuditEvidence, REPAIR_INDUCED_ERROR_CHECKS } from "./pri
 import { privateRuntimeNextAction } from "./private-runtime-turn-lifecycle.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { OWNER_FALLBACK_KIND } from "./owner-fallback-message.mjs";
-import { buildEvidenceModelView, deriveEvidenceFindings, normalizeEvidenceReview, runtimeAuditInputIdentity, responseEvidenceDependenciesCurrent, responseEvidenceSnapshotCurrent } from "./response-evidence-contract.mjs";
+import { deriveEvidenceFindings, normalizeEvidenceReview, runtimeAuditInputIdentity,
+  runtimeCandidateInputIdentity as candidateInputIdentity, runtimeRepairInputIdentity as repairInputIdentity,
+  prepareGovernedModelCall, responseEvidenceRefreshJournal, responseEvidenceDependenciesCurrent } from "./response-evidence-contract.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
@@ -46,18 +48,6 @@ function candidateId(operationKey, repairCycle) {
 
 function auditId(operationKey, repairCycle) {
   return `audit:runtime:${operationKey}:v${repairCycle + 1}`;
-}
-
-function candidateInputIdentity(runtimeTurn, journalEvidence, snapshot) {
-  return { runtime_turn_id: runtimeTurn.id, inbound_sha256: runtimeTurn.inbound.sha256, repair_cycle: 0,
-    journal_evidence_sha256: journalEvidence?.sha256 ?? null,
-    ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
-}
-
-function repairInputIdentity(parent, audit, journalEvidence, snapshot = null) {
-  return { parent_candidate_id: parent.id, parent_version: parent.version, parent_sha256: sha256(parent.exact_text), audit_id: audit?.id,
-    repair_cycle: parent.repair_cycle + 1, journal_evidence_sha256: journalEvidence?.sha256 ?? null,
-    ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
 }
 
 function exactCandidate(record, id) {
@@ -125,11 +115,6 @@ export function createPrivateTherapyTurnController({
     ?.details?.output?.journalEvidence ?? null;
 
   const snapshotsFor = (record, runtimeTurn) => (record.response_evidence_snapshots ?? []).filter((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id);
-  const modelEvidence = (record, snapshot) => {
-    if (!snapshot) throw new ValidationError("Response evidence snapshot missing.", { code: "RESPONSE_EVIDENCE_INVALID" });
-    const { view, view_sha256 } = buildEvidenceModelView(record, snapshot);
-    return { snapshot, view, viewSha256: view_sha256 };
-  };
   const journalPart = async ({ caseId, query, authContext }) => {
     if (!journalEvidenceProvider) return { availability: "not_configured" };
     if (typeof journalEvidenceProvider.freezeResponseEvidenceJournal !== "function") return { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: "legacy_provider_contract", count: 1 }] };
@@ -151,24 +136,24 @@ export function createPrivateTherapyTurnController({
   const freezeSnapshot = async ({ caseId, runtimeTurn, operationKey, record, reason = "initial", query = runtimeTurn.inbound.exact_text.slice(0, JOURNAL_QUERY_CHARACTERS), authContext }) => {
     const previous = snapshotsFor(record, runtimeTurn).at(-1);
     const revision = (previous?.revision ?? 0) + 1;
-    const journal = reason === "dependency_refresh" ? {
-      ...structuredClone(previous.journal),
-      source_items: previous.source_items.filter((entry) => entry.kind === "journal_quotation")
-    } : await journalPart({ caseId, query, authContext });
-    // Refreshes preserve authorized excerpts only while their corpus binding still exists.
-    if (reason === "dependency_refresh") {
-      journal.source_items = journal.source_items.filter((item) => record.journal_corpora?.some((corpus) => corpus.corpus_id === item.locator.corpus_id && corpus.active_generation === item.locator.generation && corpus.visibility_epoch === item.locator.visibility_epoch));
-      if (journal.source_items.length !== previous.source_items.filter((entry) => entry.kind === "journal_quotation").length) {
-        journal.availability = "unavailable"; journal.retrieval_status = "not_attempted";
-        journal.omissions.push({ reason: "journal_binding_changed", count: 1 });
-      }
-    }
+    const journal = reason === "dependency_refresh" ? responseEvidenceRefreshJournal(record, previous) : await journalPart({ caseId, query, authContext });
     return call("freezeResponseEvidence", [caseId, {
       snapshotId: `snapshot:runtime:${operationKey}:r${revision}`, owner: { kind: "runtime_turn", runtime_turn_id: runtimeTurn.id },
       revision, parentSnapshotId: previous?.id ?? null, revisionReason: reason, candidateOrigin: "backend_produced",
       inbound: { turn_id: runtimeTurn.user_turn_id, exact_text_sha256: runtimeTurn.inbound.sha256, audience: "client", source_kind: "exact_client_turn" },
       historyRequirements: [], journal
     }], authContext);
+  };
+  const prepareCall = async ({ caseId, runtimeTurn, operationKey, record, snapshot, rootCandidate = null, completed = null, authContext }) => {
+    const prepared = await prepareGovernedModelCall({ record, snapshot, rootCandidate, completed,
+      load: () => loadCase(caseId, authContext),
+      freeze: (reason, current) => freezeSnapshot({ caseId, runtimeTurn, operationKey, record: current.record, reason, authContext }) });
+    if (prepared.exhausted && runtimeTurn.state !== "AUDITING") {
+      throw new RuntimeError("InnerSignal could not safely complete this response. Nothing unaudited was delivered.", {
+        code: "THERAPY_RUNTIME_UNAVAILABLE", details: { response_evidence_revisions_exhausted: true }
+      });
+    }
+    return prepared;
   };
 
   async function invoke({ caseId, runtimeTurn, operationKey, stage, inputIdentity, authContext, execute }) {
@@ -198,6 +183,16 @@ export function createPrivateTherapyTurnController({
 
     let attempt = started.length + 1;
     while (attempt <= maximumInvocationAttempts) {
+      const evidenceSha = inputIdentity.response_evidence_snapshot_sha256 ?? inputIdentity.snapshot_sha256;
+      if (evidenceSha) {
+        const record = await loadCase(caseId, authContext);
+        const snapshot = stage === "audit" ? snapshotsFor(record, runtimeTurn).find(entry => entry.snapshot_sha256 === evidenceSha) : snapshotsFor(record, runtimeTurn).at(-1);
+        if (snapshot?.snapshot_sha256 !== evidenceSha) throw new ValidationError("Model input changed.", { code: "RESPONSE_EVIDENCE_CALL_INPUT_CHANGED" });
+        const candidate = record.candidate_responses.find(entry => entry.id === runtimeTurn.current_candidate_id);
+        const rootCandidate = record.candidate_responses.find(entry => entry.id === candidate?.root_candidate_id);
+        const prepared = await prepareCall({ caseId, runtimeTurn, operationKey, record, snapshot, rootCandidate, authContext });
+        if (prepared.refreshed || prepared.exhausted) throw new ValidationError("Model input changed.", { code: "RESPONSE_EVIDENCE_CALL_INPUT_CHANGED" });
+      }
       const attemptContextId = `attempt:${operationKey}:${stage}:${inputSha256.slice(0, 12)}:${attempt}`;
       await call("recordPrivateRuntimeInvocationEvent", [caseId, runtimeTurn.id, {
         eventId: runtimeEventId(operationKey, stage, inputSha256, attempt, "started"),
@@ -257,6 +252,7 @@ export function createPrivateTherapyTurnController({
     const operationKey = sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24);
 
     for (let step = 0; step < 40; step += 1) {
+      try {
       const runtimeTurn = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
       if (runtimeTurn.state === "DELIVERED") {
         const record = await loadCase(caseId, authContext);
@@ -285,12 +281,14 @@ export function createPrivateTherapyTurnController({
           return event.input_sha256 === jsonHash(candidateInputIdentity(runtimeTurn, output?.journalEvidence, snapshot));
         });
         const completedOutput = candidateCompleted?.details?.output;
-        const snapshot = governed ? (candidateCompleted
+        let snapshot = governed ? (candidateCompleted
           ? owned.find((entry) => entry.id === completedOutput?.responseEvidenceInclusion?.snapshot_id)
           : owned.at(-1) ?? await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext })) : null;
         // A sealed completion needs no current source view. Commit its original binding first; the store records
         // stale_at_commit and AUDITING takes the trusted stale-FAIL path if a source changed during the restart.
-        const evidence = governed && !candidateCompleted ? modelEvidence(await loadCase(caseId, authContext), snapshot) : null;
+        const prepared = governed ? await prepareCall({ caseId, runtimeTurn, operationKey, record: await loadCase(caseId, authContext), snapshot, completed: candidateCompleted, authContext }) : null;
+        if (prepared) snapshot = prepared.snapshot;
+        const evidence = prepared?.evidence;
         const journalEvidence = governed ? null : candidateCompleted
           ? frozenJournalEvidence(runtimeTurn)
           : await freezeJournalEvidence({ caseId, runtimeTurn, userInput, authContext });
@@ -340,17 +338,18 @@ export function createPrivateTherapyTurnController({
         let responseEvidenceInput = null;
         if (candidate.metadata.response_evidence) {
           const snapshot = record.response_evidence_snapshots.find(entry => entry.id === candidate.metadata.response_evidence.snapshot_id);
-          let current = snapshot && responseEvidenceDependenciesCurrent(record, candidate, snapshot);
-          if (current) {
-            try { responseEvidenceInput = modelEvidence(record, snapshot); }
-            catch { current = false; }
-          }
-          if (!current) {
+          const completed = runtimeTurn.events.find(event => event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit"
+            && event.input_sha256 === jsonHash(runtimeAuditInputIdentity(candidate, null, snapshot)));
+          const prepared = await prepareCall({ caseId, runtimeTurn, operationKey, record,
+            snapshot: completed || responseEvidenceDependenciesCurrent(record, candidate, snapshot) ? snapshot : snapshotsFor(record, runtimeTurn).at(-1),
+            rootCandidate: exactCandidate(record, candidate.root_candidate_id), completed, authContext });
+          if (!completed && (prepared.exhausted || prepared.refreshed || prepared.snapshot.id !== snapshot.id || !responseEvidenceDependenciesCurrent(record, candidate, snapshot))) {
             await call("commitPrivateRuntimeEvidenceStale", [caseId, runtimeTurnId, {
               eventId: `runtime-event:${operationKey}:audit:v${candidate.repair_cycle + 1}:stale`
             }], authContext);
             continue;
           }
+          responseEvidenceInput = prepared.evidence ?? { snapshot };
         }
         const journalEvidence = responseEvidenceInput ? null : frozenJournalEvidence(runtimeTurn);
         const audited = await invoke({
@@ -405,10 +404,12 @@ export function createPrivateTherapyTurnController({
         else if (snapshot && owned.length < 3) {
           const missing = sourceAudit?.response_evidence?.review?.missing_material_history ?? [];
           const expand = missing.length > 0 && typeof journalEvidenceProvider?.freezeResponseEvidenceJournal === "function" && !owned.some((entry) => entry.revision_reason === "evidence_expansion");
-          const rootCandidate = exactCandidate(record, parent.root_candidate_id);
-          if (expand || !responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: expand ? "evidence_expansion" : "dependency_refresh", ...(expand ? { query: missing.map((entry) => entry.question).join("\n").slice(0, JOURNAL_QUERY_CHARACTERS) } : {}) });
+          if (expand) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: "evidence_expansion", query: missing.map((entry) => entry.question).join("\n").slice(0, JOURNAL_QUERY_CHARACTERS) });
         }
-        const evidence = snapshot && !repairCompleted ? modelEvidence(await loadCase(caseId, authContext), snapshot) : null;
+        const prepared = snapshot ? await prepareCall({ caseId, runtimeTurn, operationKey, record: await loadCase(caseId, authContext), snapshot,
+          rootCandidate: exactCandidate(record, parent.root_candidate_id), completed: repairCompleted, authContext }) : null;
+        if (prepared) snapshot = prepared.snapshot;
+        const evidence = prepared?.evidence;
         const journalEvidence = snapshot ? null : frozenJournalEvidence(runtimeTurn);
         const repaired = await invoke({
           caseId,
@@ -449,6 +450,13 @@ export function createPrivateTherapyTurnController({
         const needsFirstReview = runtimeTurn.discriminator && runtimeTurn.discriminator.kind !== OWNER_FALLBACK_KIND
           && !runtimeTurn.discriminator_review && (evidenceEnforced || snapshotsFor(await loadCase(caseId, authContext), runtimeTurn).length > 0);
         if (!runtimeTurn.discriminator || needsFirstReview) {
+          const before = await loadCase(caseId, authContext);
+          const governed = evidenceEnforced || snapshotsFor(before, runtimeTurn).length > 0;
+          const discriminatorIdentity = { candidate_id: runtimeTurn.current_candidate_id, repair_cycle: runtimeTurn.repair_cycle };
+          const completedProduction = runtimeTurn.events.find(event => event.event_type === "INVOCATION_COMPLETED" && event.stage === "discriminator"
+            && event.input_sha256 === jsonHash(discriminatorIdentity));
+          if (governed && !runtimeTurn.discriminator && !completedProduction) await prepareCall({ caseId, runtimeTurn, operationKey, record: before,
+            snapshot: snapshotsFor(before, runtimeTurn).at(-1), rootCandidate: exactCandidate(before, exactCandidate(before, runtimeTurn.current_candidate_id).root_candidate_id), authContext });
           let produced = runtimeTurn.discriminator ? {
             exactText: runtimeTurn.discriminator.exact_text, contextId: runtimeTurn.discriminator.producer_context_id
           } : await invoke({
@@ -456,7 +464,7 @@ export function createPrivateTherapyTurnController({
             runtimeTurn,
             operationKey,
             stage: "discriminator",
-            inputIdentity: { candidate_id: runtimeTurn.current_candidate_id, repair_cycle: runtimeTurn.repair_cycle },
+            inputIdentity: discriminatorIdentity,
             authContext,
             execute: (attemptContextId) => modelRuntime.produceDiscriminator({ caseId, runtimeTurn, authContext, attemptContextId })
           });
@@ -464,18 +472,16 @@ export function createPrivateTherapyTurnController({
           const record = await loadCase(caseId, authContext);
           const owned = snapshotsFor(record, runtimeTurn);
           if ((evidenceEnforced || owned.length) && produced.kind !== OWNER_FALLBACK_KIND) {
-            let snapshot = owned.at(-1) ?? await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext });
+            let snapshot = owned.at(-1);
             const candidate = exactCandidate(record, runtimeTurn.current_candidate_id);
             const rootCandidate = exactCandidate(record, candidate.root_candidate_id);
-            const completedReview = runtimeTurn.events.find((event) => event.stage === "discriminator_review" && event.event_type === "INVOCATION_COMPLETED");
-            let current = responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate });
-            if (completedReview && completedReview.details?.output?.responseEvidenceInclusion?.snapshot_id !== snapshot.id) current = false;
-            if (!current && !completedReview && owned.length < 3) {
-              snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, reason: "dependency_refresh", authContext });
-              current = true;
-            }
-            if (current) {
-              const evidence = modelEvidence(await loadCase(caseId, authContext), snapshot);
+            const completedReview = runtimeTurn.events.find(event => event.stage === "discriminator_review" && event.event_type === "INVOCATION_COMPLETED"
+              && owned.some(s => event.input_sha256 === jsonHash({ runtime_turn_id: runtimeTurn.id, sha256: sha256(produced.exactText), snapshot_sha256: s.snapshot_sha256 })));
+            if (completedReview) snapshot = owned.find(s => s.id === completedReview.details.output.responseEvidenceInclusion?.snapshot_id);
+            const prepared = await prepareCall({ caseId, runtimeTurn, operationKey, record, snapshot, rootCandidate, completed: completedReview, authContext });
+            snapshot = prepared.snapshot;
+            {
+              const evidence = prepared.evidence;
               const reviewed = await invoke({
                 caseId, runtimeTurn, operationKey, stage: "discriminator_review",
                 inputIdentity: { runtime_turn_id: runtimeTurn.id, sha256: sha256(produced.exactText), snapshot_sha256: snapshot.snapshot_sha256 }, authContext,
@@ -517,6 +523,10 @@ export function createPrivateTherapyTurnController({
         code: "PRIVATE_RUNTIME_FRONTIER_INVALID",
         details: { next_action: privateRuntimeNextAction(runtimeTurn) }
       });
+      } catch (error) {
+        if (error?.code === "RESPONSE_EVIDENCE_CALL_INPUT_CHANGED") continue;
+        throw error;
+      }
     }
     throw new RuntimeError("Private runtime exceeded its bounded transition ceiling.", { code: "PRIVATE_RUNTIME_FRONTIER_INVALID" });
   }

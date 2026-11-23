@@ -4,9 +4,11 @@ import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import {
   RESPONSE_EVIDENCE_POLICY_VERSION, RESPONSE_EVIDENCE_BUDGETS, assessResponseEvidenceAdmission,
-  buildEvidenceModelView, buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeEvidenceReview, normalizeResponseEvidenceJournal,
-  responseEvidenceCandidateSchema, responseEvidenceSnapshotSchema, validateEvidenceShape, validateResponseEvidenceAudit, validateResponseEvidenceSnapshot, hasSupervisorEvidenceReviewReceipt
+  buildEvidenceModelView, buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeResponseEvidenceJournal,
+  responseEvidenceCandidateSchema, responseEvidenceSnapshotSchema, validateEvidenceShape, validateResponseEvidenceAudit, validateResponseEvidenceSnapshot,
+  supervisorInvocationInput, verifySealedEvidenceOutput, verifyRuntimeWriterInvocation
 } from "../supervisor/response-evidence-contract.mjs";
+import { normalizeSupervisorInvocationOutput, requireSupervisorInvocation, supervisorCallCandidate, validateSupervisorInvocations } from "../supervisor/supervisor-model-invocations.mjs";
 import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
 import { projectEvidenceAuthority } from "../case-state/evidence-authority.mjs";
 import { applyRoadmapDecision, projectCasePlan, readCaseRoadmap } from "../case-formulation/case-roadmap.mjs";
@@ -344,6 +346,7 @@ function normalizePrivateCaseRecord(value) {
   // supervisor inputs, companions or review receipts. Code from before this field keeps it through its own writes.
   if (!Object.hasOwn(migrated, "supervisor_artifacts")) migrated.supervisor_artifacts = [];
   if (!Object.hasOwn(migrated, "response_evidence_snapshots")) migrated.response_evidence_snapshots = [];
+  if (!Object.hasOwn(migrated, "supervisor_invocations")) migrated.supervisor_invocations = [];
   return migrated;
 }
 
@@ -435,6 +438,7 @@ export function validatePrivateCaseRecord(value) {
   }
   validateCommunicationEvents(value.communication_events, value);
   validateSupervisorArtifacts(value.supervisor_artifacts, value);
+  validateSupervisorInvocations(value);
   if (!Array.isArray(value.response_evidence_snapshots) || value.response_evidence_snapshots.length > RESPONSE_EVIDENCE_BUDGETS.snapshots) {
     throw new ValidationError("Response evidence snapshot limit invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
   }
@@ -513,6 +517,7 @@ function newRecord(caseId, now) {
     communication_events: [],
     supervisor_artifacts: [],
     response_evidence_snapshots: [],
+    supervisor_invocations: [],
     journal_corpora: [],
     journal_corpus_keys: []
   };
@@ -579,6 +584,10 @@ function assertAppendOnly(previous, next) {
   const nextSnapshots = next.response_evidence_snapshots ?? [];
   if (nextSnapshots.length < previousSnapshots.length || previousSnapshots.some((entry, index) => JSON.stringify(entry) !== JSON.stringify(nextSnapshots[index]))) {
     throw new ValidationError("Response evidence snapshots immutable.", { code: "RESPONSE_EVIDENCE_INVALID" });
+  }
+  const beforeInvocations = previous.supervisor_invocations ?? [], afterInvocations = next.supervisor_invocations ?? [];
+  if (afterInvocations.length < beforeInvocations.length || beforeInvocations.some((entry, index) => JSON.stringify(entry) !== JSON.stringify(afterInvocations[index]))) {
+    throw new ValidationError("Supervisor invocations are append-only and immutable.", { code: "RESPONSE_EVIDENCE_INVALID" });
   }
   if (next.journal_corpus_keys.length < previous.journal_corpus_keys.length) throw new ValidationError("Journal corpus keys are append-only.");
   for (let index = 0; index < previous.journal_corpus_keys.length; index += 1) {
@@ -704,6 +713,7 @@ export function createEncryptedPrivateCaseStore({
     // when no snapshot has ever been frozen; once nonempty, append-only validation keeps it permanently.
     const payload = { ...candidate };
     if (candidate.response_evidence_snapshots.length === 0) delete payload.response_evidence_snapshots;
+    if (candidate.supervisor_invocations.length === 0) delete payload.supervisor_invocations;
     const plaintext = Buffer.from(JSON.stringify(payload), "utf8");
     try {
       let envelope;
@@ -783,11 +793,9 @@ export function createEncryptedPrivateCaseStore({
     const invocation = runtimeTurn.events.find((entry) => entry.event_type === "INVOCATION_COMPLETED" && entry.stage === "discriminator_review"
       && entry.details?.actual_context_id === review.auditor_context_id
       && entry.input_sha256 === sha256Text(JSON.stringify({ runtime_turn_id: runtimeTurn.id, sha256: discriminator.sha256, snapshot_sha256: snapshot.snapshot_sha256 })));
-    const output = invocation?.details?.output, inclusion = output?.responseEvidenceInclusion;
-    if (!inclusion || output.contextId !== review.auditor_context_id || discriminator.producer_context_id === review.auditor_context_id
-      || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== review.auditor_inclusion_sha256
-      || !sameJson(output.value?.findings, review.findings)
-      || !sameJson(normalizeEvidenceReview(output.value?.evidence_review, { candidateText: discriminator.exact_text, snapshot }), review.review)) blocked();
+    if (discriminator.producer_context_id === review.auditor_context_id) blocked();
+    try { verifySealedEvidenceOutput(invocation?.details?.output, { contextId: review.auditor_context_id, snapshot,
+      viewSha256: review.auditor_inclusion_sha256, exactText: discriminator.exact_text, review }); } catch { blocked(); }
     const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
     const rootCandidate = record.candidate_responses.find((entry) => entry.id === candidate?.root_candidate_id);
     if (!responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) blocked();
@@ -1070,10 +1078,13 @@ export function createEncryptedPrivateCaseStore({
         }
         const revision = input.revision ?? 1;
         const parent = owned.at(-1);
+        const unusedReceived = runtime?.state === "RECEIVED" && input.revisionReason === "dependency_refresh"
+          && !runtime.events.some(entry => entry.stage === "candidate" && entry.event_type === "INVOCATION_COMPLETED")
+          && !record.candidate_responses.some(entry => owned.some(snapshot => entry.metadata.response_evidence?.snapshot_id === snapshot.id));
         if (revision !== owned.length + 1 || revision > 3 || (revision > 1 && input.parentSnapshotId !== parent?.id)
             || (input.revisionReason === "evidence_expansion" && owned.some((entry) => entry.revision_reason === "evidence_expansion"))
-            || (runtime?.state === "DISCRIMINATING_QUESTION_REQUIRED" && revision > 1 && input.revisionReason !== "dependency_refresh")
-            || (runtime && !(revision === 1 ? ["RECEIVED", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"] : ["RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]).includes(runtime.state))) {
+            || (["AUDITING", "DISCRIMINATING_QUESTION_REQUIRED"].includes(runtime?.state) && revision > 1 && input.revisionReason !== "dependency_refresh")
+            || (runtime && !unusedReceived && !(revision === 1 ? ["RECEIVED", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"] : ["AUDITING", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]).includes(runtime.state))) {
           throw new ValidationError("Response evidence revision invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
         }
         frozen = buildResponseEvidenceSnapshot(record, { ...input, lineageRootId: root }, { createdAt: now(), priorJournalItems });
@@ -1081,6 +1092,51 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
       return structuredClone(frozen);
+    },
+    async startSupervisorInvocation(caseId, { operationKey, stage, candidateId, snapshotId, attemptContextId }) {
+      let started;
+      await mutate(caseId, record => {
+        const snapshot = record.response_evidence_snapshots.find(entry => entry.id === snapshotId);
+        if (!snapshot || snapshot.owner.kind !== "supervisor_draft" || snapshot.owner.operation_key !== operationKey) throw new ValidationError("Supervisor invocation snapshot invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+        const candidate = supervisorCallCandidate(record, { operationKey, stage, candidateId, snapshot });
+        const head = record.candidate_responses.filter(entry => entry.metadata.supervisor_draft?.operation_key === operationKey).at(-1);
+        if (stage === "candidate" ? Boolean(head) : head?.id !== candidate.id || !(stage === "repair" ? ["audit_failed"] : ["pending_audit", "reconstructed_pending_audit"]).includes(candidate.status)) {
+          throw new ValidationError("Supervisor invocation stage invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+        }
+        const rootCandidate = record.candidate_responses.find(entry => entry.id === candidate.root_candidate_id);
+        if (!responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) throw new ValidationError("Supervisor invocation input changed.", { code: "RESPONSE_EVIDENCE_STALE" });
+        const { view_sha256: viewSha256 } = buildEvidenceModelView(record, snapshot);
+        const input = supervisorInvocationInput({ operationKey, stage, candidate, snapshot, viewSha256 });
+        const existing = record.supervisor_invocations.find(entry => entry.event_type === "STARTED" && entry.attempt_context_id === attemptContextId);
+        if (existing) {
+          if (!sameJson(existing.input, input)) throw new ValidationError("Supervisor invocation replay conflict.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          started = existing; return null;
+        }
+        started = { schema_version: 1, id: `supervisor-call:${sha256Json([input, attemptContextId]).slice(0, 40)}:started`, event_type: "STARTED",
+          input, attempt_context_id: attemptContextId, created_at: now(), actual_context_id: null, provider_receipt: null, output: null };
+        record.supervisor_invocations.push(started); return record;
+      });
+      return structuredClone(started);
+    },
+    async completeSupervisorInvocation(caseId, { startedId, output }) {
+      let completed;
+      await mutate(caseId, record => {
+        const started = record.supervisor_invocations.find(entry => entry.id === startedId && entry.event_type === "STARTED");
+        if (!started) throw new ValidationError("Supervisor invocation was not started.", { code: "RESPONSE_EVIDENCE_INVALID" });
+        const snapshot = record.response_evidence_snapshots.find(entry => entry.id === started.input.snapshot_id);
+        const candidate = started.input.stage === "candidate" ? { id: started.input.candidate_id, version: started.input.candidate_version }
+          : record.candidate_responses.find(entry => entry.id === started.input.candidate_id);
+        const normalized = normalizeSupervisorInvocationOutput(started, output, candidate, snapshot);
+        const existing = record.supervisor_invocations.find(entry => entry.event_type === "COMPLETED" && entry.attempt_context_id === started.attempt_context_id);
+        if (existing) {
+          if (!sameJson(existing.output, normalized)) throw new ValidationError("Supervisor completion is immutable.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          completed = existing; return null;
+        }
+        completed = { ...started, id: started.id.replace(/:started$/u, ":completed"), event_type: "COMPLETED", created_at: now(),
+          actual_context_id: normalized.contextId, provider_receipt: normalized.providerReceipt, output: normalized };
+        record.supervisor_invocations.push(completed); return record;
+      });
+      return structuredClone(completed);
     },
     async beginPrivateRuntimeTurn(caseId, { runtimeTurnId, exchangeId, userTurnId, exactText }) {
       return mutate(caseId, (record) => {
@@ -1183,17 +1239,17 @@ export function createEncryptedPrivateCaseStore({
         let evidenceBinding = null;
         if (responseEvidence != null) {
           const snapshot = record.response_evidence_snapshots.find((entry) => entry.id === responseEvidence.snapshotId);
-          const newest = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurnId).at(-1);
           const stage = parentCandidateId == null ? "candidate" : "repair";
           const sealed = [...runtimeTurn.events].reverse().find((entry) => entry.event_type === "INVOCATION_COMPLETED" && entry.stage === stage && entry.details?.actual_context_id === producerContextId);
           const inclusion = sealed?.details?.output?.responseEvidenceInclusion;
-          if (!snapshot || snapshot !== newest || snapshot.case_id !== caseId || snapshot.owner.kind !== "runtime_turn" || snapshot.owner.runtime_turn_id !== runtimeTurnId
+          if (!snapshot || snapshot.case_id !== caseId || snapshot.owner.kind !== "runtime_turn" || snapshot.owner.runtime_turn_id !== runtimeTurnId
               || snapshot.candidate_origin !== "backend_produced" || snapshot.inbound.turn_id !== runtimeTurn.user_turn_id || snapshot.inbound.exact_text_sha256 !== runtimeTurn.inbound.sha256
               || !inclusion || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== responseEvidence.writerInclusionSha256
               || sealed.details.output.exactText !== exactText) {
             throw new ValidationError("Response evidence writer binding invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
           }
           validateResponseEvidenceSnapshot(snapshot);
+          verifyRuntimeWriterInvocation(record, runtimeTurn, { parentCandidateId, contextId: producerContextId, exactText, snapshot, viewSha256: responseEvidence.writerInclusionSha256 });
           const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
           const root = parent ? record.candidate_responses.find((entry) => entry.id === parent.root_candidate_id) : null;
           const current = responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate: root });
@@ -1346,7 +1402,9 @@ export function createEncryptedPrivateCaseStore({
           throw new ValidationError("Response evidence stale recovery invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
         }
         validateResponseEvidenceSnapshot(snapshot);
-        if (responseEvidenceDependenciesCurrent(record, candidate, snapshot)) {
+        let currentEvidence = responseEvidenceDependenciesCurrent(record, candidate, snapshot);
+        if (currentEvidence) { try { buildEvidenceModelView(record, snapshot); } catch { currentEvidence = false; } }
+        if (currentEvidence) {
           throw new ValidationError("Response evidence is current.", { code: "RESPONSE_EVIDENCE_INVALID" });
         }
         const audit = structuredClone(createCandidateAuditEvidence({
@@ -1661,6 +1719,13 @@ export function createEncryptedPrivateCaseStore({
     },
     async recordCandidateAudit(caseId, candidateId, evidence) {
       return mutate(caseId, (record) => {
+        const candidate = record.candidate_responses.find(entry => entry.id === candidateId);
+        if (candidate?.metadata.supervisor_draft && candidate.metadata.response_evidence) {
+          const audit = validateAuditInRecord(record, candidate, evidence);
+          const snapshot = record.response_evidence_snapshots.find(entry => entry.id === candidate.metadata.response_evidence.snapshot_id);
+          requireSupervisorInvocation(record, candidate, snapshot, { stage: "audit", contextId: audit.auditor_context_id,
+            viewSha256: audit.response_evidence?.auditor_inclusion_sha256, exactText: candidate.exact_text, audit });
+        }
         applyCandidateAudit(record, candidateId, evidence);
         return record;
       });
@@ -1932,22 +1997,26 @@ export function createEncryptedPrivateCaseStore({
         if (responseEvidence != null) {
           const snapshot = record.response_evidence_snapshots.find((entry) => entry.id === responseEvidence.snapshotId);
           const newest = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1);
-          if (!snapshot || snapshot !== newest || snapshot.case_id !== caseId || snapshot.candidate_origin !== source) {
+          if (!snapshot || (source === "external_draft" && snapshot !== newest) || snapshot.case_id !== caseId || snapshot.candidate_origin !== source) {
             throw new ValidationError("Response evidence binding invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
           }
           validateResponseEvidenceSnapshot(snapshot);
-          if (snapshot.inbound.turn_id !== basis.latest_user_turn_id || !responseEvidenceSnapshotCurrent(record, { snapshot })) throw new ValidationError("Response evidence stale.", { code: "RESPONSE_EVIDENCE_STALE" });
+          const current = snapshot.inbound.turn_id === basis.latest_user_turn_id && responseEvidenceSnapshotCurrent(record, { snapshot });
+          if (!current && source === "external_draft") throw new ValidationError("Response evidence stale.", { code: "RESPONSE_EVIDENCE_STALE" });
           const inclusion = responseEvidence.writerInclusionSha256;
           if (source === "external_draft" ? inclusion !== null
-            : inclusion !== receipts.response_evidence_view_sha256 || inclusion !== buildEvidenceModelView(record, snapshot).view_sha256) {
+            : inclusion !== receipts.response_evidence_view_sha256) {
             throw new ValidationError("Response evidence writer inclusion invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
           }
+          if (source === "backend_produced") requireSupervisorInvocation(record,
+            supervisorCallCandidate(record, { operationKey, stage: "candidate", candidateId, snapshot }), snapshot,
+            { stage: "candidate", contextId: producerContextId, viewSha256: inclusion, exactText });
           evidenceBinding = {
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
             candidate_origin: source, writer_inclusion: source === "external_draft" ? "not_attested" : "verified", writer_inclusion_sha256: inclusion,
-            established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest, dependency_status: "current_at_commit"
+            established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest, dependency_status: current ? "current_at_commit" : "stale_at_commit"
           };
-        } else if (responseEvidencePolicy === "enforced") throw new ValidationError("Response evidence required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
+        } else if (responseEvidencePolicy === "enforced" || record.response_evidence_snapshots.some(entry => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey)) throw new ValidationError("Response evidence required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
         const candidate = appendOriginalCandidate(record, candidateId, exactText, {
           producer_context_id: producerContextId,
           compatibility_state_binding: basis.compatibility_state_binding,
@@ -1999,14 +2068,14 @@ export function createEncryptedPrivateCaseStore({
             providerReceipt,
             recordedAt: now()
           });
-          if (target.metadata.response_evidence && !hasSupervisorEvidenceReviewReceipt(receipt)) {
-            throw new ValidationError("Response evidence reviewer receipt required.", { code: "RESPONSE_EVIDENCE_INVALID" });
-          }
           record.supervisor_artifacts.push(receipt);
         };
         if (target.metadata.response_evidence) {
-          // A governed PASS needs the receipt visible to admission in this same mutation.
+          // Provenance comes from the immutable completion; this receipt is display bookkeeping.
           const audit = validateAuditInRecord(record, target, evidence);
+          const snapshot = record.response_evidence_snapshots.find(entry => entry.id === target.metadata.response_evidence.snapshot_id);
+          requireSupervisorInvocation(record, target, snapshot, { stage: "audit", contextId: audit.auditor_context_id,
+            viewSha256: audit.response_evidence?.auditor_inclusion_sha256, exactText: target.exact_text, audit });
           appendReceipt(target, audit);
           applyCandidateAudit(record, candidateId, audit, "recordSupervisorAudit");
         } else {
@@ -2014,6 +2083,26 @@ export function createEncryptedPrivateCaseStore({
           const { candidate, audit } = applyCandidateAudit(record, candidateId, evidence, "recordSupervisorAudit");
           appendReceipt(candidate, audit);
         }
+        return record;
+      });
+    },
+    async recordSupervisorEvidenceStale(caseId, candidateId) {
+      return mutate(caseId, record => {
+        const candidate = record.candidate_responses.find(entry => entry.id === candidateId);
+        const snapshot = record.response_evidence_snapshots.find(entry => entry.id === candidate?.metadata.response_evidence?.snapshot_id);
+        let currentEvidence = candidate && snapshot && responseEvidenceDependenciesCurrent(record, candidate, snapshot);
+        if (currentEvidence) { try { buildEvidenceModelView(record, snapshot); } catch { currentEvidence = false; } }
+        if (!candidate || !snapshot || !isSupervisorDraftCandidate(candidate) || currentEvidence) {
+          throw new ValidationError("Supervisor stale recovery invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+        }
+        const audit = structuredClone(createCandidateAuditEvidence({
+          auditId: `audit:code-stale:${sha256Text(candidate.id).slice(0, 32)}`, candidate, auditVersion: "private-candidate-audit-v4",
+          auditorContext: { kind: "self_critique", context_id: "code:response-evidence-stale" }, independentAuditorAvailable: false,
+          completedAt: now(), repairInducedChecks: candidate.parent_candidate_id === null ? [] : REPAIR_INDUCED_ERROR_CHECKS,
+          findings: [{ id: "evidence:dependencies", code: "RESPONSE_EVIDENCE_STALE", severity: "substantive", summary: "Response evidence dependencies changed.", derived_in_code: true }]
+        }));
+        audit.derived_in_code = true;
+        applyCandidateAudit(record, candidateId, audit, "recordSupervisorAudit");
         return record;
       });
     },
@@ -2038,12 +2127,13 @@ export function createEncryptedPrivateCaseStore({
         }
         let evidenceBinding = null;
         if (parent.metadata.response_evidence) {
-          const snapshot = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === draft.operation_key).at(-1);
+          const completion = record.supervisor_invocations.find(entry => entry.event_type === "COMPLETED" && entry.input.stage === "repair"
+            && entry.input.candidate_id === parent.id && entry.actual_context_id === producerContextId);
+          const snapshot = record.response_evidence_snapshots.find(entry => entry.id === completion?.input.snapshot_id);
           if (!snapshot || snapshot.case_id !== caseId || snapshot.candidate_origin !== draft.root_source) throw new ValidationError("Response evidence binding invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
           const root = record.candidate_responses.find((entry) => entry.id === parent.root_candidate_id);
-          if (writerInclusionSha256 !== buildEvidenceModelView(record, snapshot).view_sha256) {
-            throw new ValidationError("Response evidence writer inclusion invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
-          }
+          requireSupervisorInvocation(record, parent, snapshot, { stage: "repair", contextId: producerContextId,
+            viewSha256: writerInclusionSha256, exactText });
           evidenceBinding = {
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
             candidate_origin: snapshot.candidate_origin, writer_inclusion: "verified", writer_inclusion_sha256: writerInclusionSha256,

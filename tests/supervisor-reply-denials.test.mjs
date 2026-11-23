@@ -110,6 +110,9 @@ test("every method of the access service refuses a holder of only the reply-draf
     loadPrivateRuntimeCase: () => access.loadPrivateRuntimeCase(CASE_ID, replyOnly),
     beginPrivateRuntimeTurn: () => access.beginPrivateRuntimeTurn(CASE_ID, {}, replyOnly),
     freezeResponseEvidence: () => access.freezeResponseEvidence(CASE_ID, {}, replyOnly),
+    startSupervisorInvocation: () => access.startSupervisorInvocation(CASE_ID, {}, replyOnly),
+    completeSupervisorInvocation: () => access.completeSupervisorInvocation(CASE_ID, {}, replyOnly),
+    recordSupervisorEvidenceStale: () => access.recordSupervisorEvidenceStale(CASE_ID, "candidate:x", replyOnly),
     getPrivateRuntimeTurn: () => access.getPrivateRuntimeTurn(CASE_ID, "runtime:x", replyOnly),
     recordPrivateRuntimeInvocationEvent: () => access.recordPrivateRuntimeInvocationEvent(CASE_ID, "runtime:x", { stage: "audit" }, replyOnly),
     transitionPrivateRuntimeTurn: () => access.transitionPrivateRuntimeTurn(CASE_ID, "runtime:x", { toState: "APPROVED" }, replyOnly),
@@ -218,8 +221,8 @@ test("the review runs under a ticket only the service mints: the source refuses 
   // The source offers exactly the operations the connector needs, and no generic write. freezeResponseEvidence writes only a
   // response-evidence snapshot for a draft (ticket only, below); responseEvidencePolicy is the store policy label, not an operation.
   assert.deepEqual(Object.keys(source).sort(), [
-    "approveCandidateForDelivery", "exportSupervisorArtifact", "freezeResponseEvidence", "getSupervisorSnapshot", "loadCaseContext", "loadPrivateRuntimeCase",
-    "reconstructSupervisorDraft", "recordSupervisorAudit", "recordSupervisorReport", "resolveSupervisorSubmission", "responseEvidencePolicy", "submitSupervisorDraft"
+    "approveCandidateForDelivery", "completeSupervisorInvocation", "exportSupervisorArtifact", "freezeResponseEvidence", "getSupervisorSnapshot", "loadCaseContext", "loadPrivateRuntimeCase",
+    "reconstructSupervisorDraft", "recordSupervisorAudit", "recordSupervisorEvidenceStale", "recordSupervisorReport", "resolveSupervisorSubmission", "responseEvidencePolicy", "startSupervisorInvocation", "submitSupervisorDraft"
   ]);
   assert.equal(Object.isFrozen(source), true);
   assert.equal(Object.isFrozen(env.access.supervisorDraftAccess), true);
@@ -233,7 +236,10 @@ test("the review runs under a ticket only the service mints: the source refuses 
     recordSupervisorAudit: (ctx, caseId = CASE_ID) => source.recordSupervisorAudit(caseId, candidateId, {}, {}, ctx),
     approveCandidateForDelivery: (ctx, caseId = CASE_ID) => source.approveCandidateForDelivery(caseId, candidateId, "audit:x", ctx),
     reconstructSupervisorDraft: (ctx, caseId = CASE_ID) => source.reconstructSupervisorDraft(caseId, candidateId, { exactText: "x", producerContextId: "c" }, ctx),
-    freezeResponseEvidence: (ctx, caseId = CASE_ID) => source.freezeResponseEvidence(caseId, {}, ctx)
+    freezeResponseEvidence: (ctx, caseId = CASE_ID) => source.freezeResponseEvidence(caseId, {}, ctx),
+    startSupervisorInvocation: (ctx, caseId = CASE_ID) => source.startSupervisorInvocation(caseId, {}, ctx),
+    completeSupervisorInvocation: (ctx, caseId = CASE_ID) => source.completeSupervisorInvocation(caseId, {}, ctx),
+    recordSupervisorEvidenceStale: (ctx, caseId = CASE_ID) => source.recordSupervisorEvidenceStale(caseId, candidateId, ctx)
   };
   const before = await env.fingerprint();
   const forged = [

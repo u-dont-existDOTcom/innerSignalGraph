@@ -199,6 +199,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         ...inclusion,
         exactText: assembleCanonicalCandidateText(result),
         contextId: producerContextId,
+        ...(responseEvidence ? { providerReceipt: { provider: result.rendererProvider, model: result.rendererModel, response_id: result.producerContextId } } : {}),
         caseState,
         stateDiff: diffCaseStates(previousCaseState, caseState),
         result: {

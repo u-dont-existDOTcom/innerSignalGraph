@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, createCandidateAuditEvidence } from "./private-candidate-lifecycle.mjs";
-import { assessResponseEvidenceAdmission, buildEvidenceModelView, responseEvidenceSnapshotCurrent } from "./response-evidence-contract.mjs";
+import { assessResponseEvidenceAdmission, inspectGovernedModelCall, prepareGovernedModelCall, responseEvidenceRefreshJournal, supervisorInvocationInput } from "./response-evidence-contract.mjs";
 import {
   SUPERVISOR_INPUT_TYPES,
   SUPERVISOR_LIMITS,
@@ -109,18 +109,29 @@ export function createPrivateSupervisorDraftService({
 
   // One model invocation with a bounded number of attempts. A transient failure retries; an authorization or isolation failure
   // does not. When attempts run out the draft stays exactly where it was, and the same request resumes from there.
-  async function invoke(stage, operationKey, version, execute) {
+  async function invoke(stage, operationKey, version, execute, governed = null) {
+    if (governed?.completed) return { ...structuredClone(governed.completed.output), attemptContextId: governed.completed.attempt_context_id };
     let lastError = null;
+    const previousAttempts = governed ? (await loadCase(governed.caseId, governed.authContext)).supervisor_invocations.filter(entry => entry.event_type === "STARTED"
+      && entry.input.stage === stage && entry.input.candidate_id === governed.candidate.id && entry.input.snapshot_id === governed.evidence.snapshot.id).length : 0;
     for (let attempt = 1; attempt <= maximumInvocationAttempts; attempt += 1) {
       try {
-        const output = await execute(`attempt:supervisor:${operationKey}:${stage}:v${version}:${attempt}`);
+        const attemptContextId = `attempt:supervisor:${operationKey}:${stage}:v${version}:${governed ? governed.evidence.snapshot.snapshot_sha256.slice(0, 12) + ":" : ""}${previousAttempts + attempt}`;
+        const started = governed ? await call("startSupervisorInvocation", [governed.caseId, { operationKey, stage, candidateId: governed.candidate.id,
+          snapshotId: governed.evidence.snapshot.id, attemptContextId }], governed.authContext) : null;
+        const output = await execute(attemptContextId);
         if (!output || typeof output !== "object" || Array.isArray(output)) throw new ValidationError("Private inference returned no structured result.");
         if (typeof output.contextId !== "string" || !output.contextId.trim() || output.contextId.length > 160) {
           throw new ValidationError("Private inference returned no bounded actual context identity.");
         }
+        if (started) {
+          const completed = await call("completeSupervisorInvocation", [governed.caseId, { startedId: started.id, output }], governed.authContext);
+          return { ...completed.output, attemptContextId: completed.attempt_context_id };
+        }
         return output;
       } catch (error) {
         lastError = error;
+        if (["RESPONSE_EVIDENCE_STALE", "RESPONSE_EVIDENCE_INVALID"].includes(error?.code)) throw error;
         if (NON_RETRYABLE.has(error?.code)) break;
       }
     }
@@ -136,23 +147,45 @@ export function createPrivateSupervisorDraftService({
     const prefix = `candidate:supervisor:${operationKey}:`;
     return record.candidate_responses.filter((candidate) => candidate.id.startsWith(prefix)).at(-1) ?? null;
   };
-  const modelEvidence = (record, snapshot) => {
-    const resolved = buildEvidenceModelView(record, snapshot);
-    return { snapshot, view: resolved.view, viewSha256: resolved.view_sha256 };
-  };
   const caseChanged = (record, head) => ({ status: "blocked", reason: "case_changed", record, head });
-  const pendingReviewEvidence = (record, head, snapshot) => {
-    if (!snapshot) return null;
-    const root = record.candidate_responses.find(candidate => candidate.id === head.root_candidate_id);
-    try {
-      return responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate: root }) ? modelEvidence(record, snapshot) : null;
-    } catch { return null; }
+  const completedCall = (record, stage, candidate, snapshot) => snapshot ? [...record.supervisor_invocations].reverse().find(entry => entry.event_type === "COMPLETED"
+    && sha256Json(entry.input) === sha256Json(supervisorInvocationInput({ operationKey: snapshot.owner.operation_key, stage, candidate, snapshot, viewSha256: entry.input.view_sha256 }))) : null;
+  const selectPendingCall = ({ operationKey, record, head, stage, snapshot }) => {
+    let completed = completedCall(record, stage, head, snapshot);
+    if (!completed && stage !== "audit") {
+      for (const prior of [...record.response_evidence_snapshots].reverse()) {
+        if (prior.owner.kind !== "supervisor_draft" || prior.owner.operation_key !== operationKey) continue;
+        completed = completedCall(record, stage, head, prior);
+        if (completed) { snapshot = prior; break; }
+      }
+    }
+    const rootCandidate = record.candidate_responses.find(entry => entry.id === head.root_candidate_id);
+    if (!completed && stage === "audit" && !inspectGovernedModelCall({ record, snapshot, rootCandidate }).evidence) snapshot = record.response_evidence_snapshots
+      .filter(entry => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1);
+    return { snapshot, completed, rootCandidate };
+  };
+  const prepareCall = async ({ caseId, operationKey, record, head, stage, snapshot: initialSnapshot, authContext }) => {
+    const { snapshot, completed, rootCandidate } = selectPendingCall({ operationKey, record, head, stage, snapshot: initialSnapshot });
+    return prepareGovernedModelCall({ record, snapshot, rootCandidate, completed,
+      load: () => loadCase(caseId, authContext),
+      freeze: async (reason, { record, snapshot }) => {
+        const latest = (await call("getSupervisorSnapshot", [caseId], authContext)).latest_client_turn;
+        if (!latest) throw new ValidationError("No client message for evidence refresh.", { code: "RESPONSE_EVIDENCE_INVALID" });
+        return call("freezeResponseEvidence", [caseId, { snapshotId: `snapshot:supervisor:${operationKey}:r${(snapshot?.revision ?? 0) + 1}`,
+          owner: { kind: "supervisor_draft", operation_key: operationKey }, candidateOrigin: snapshot.candidate_origin,
+          inbound: { turn_id: latest.turn_id, exact_text_sha256: sha256Text(latest.text), audience: "client", source_kind: "exact_client_turn" },
+          revision: (snapshot?.revision ?? 0) + 1, parentSnapshotId: snapshot?.id ?? null, revisionReason: reason,
+          historyRequirements: snapshot.history_requirements, journal: responseEvidenceRefreshJournal(record, snapshot)
+        }], authContext);
+      }
+    });
   };
 
   // Drives one draft lineage to a terminal result: approved, blocked at the repair limit, or replaced. Every step is a durable
   // write that a restart or a replayed request repeats safely, so the loop reads the stored lineage afresh each time.
   async function driveReview({ caseId, operationKey, authContext }) {
     for (let step = 0; step < 16; step += 1) {
+      try {
       const record = await loadCase(caseId, authContext);
       const head = lineageHead(record, operationKey);
       if (!head) throw new ValidationError("The supervisor draft to review was not found.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
@@ -160,11 +193,17 @@ export function createPrivateSupervisorDraftService({
       switch (head.status) {
         case "pending_audit":
         case "reconstructed_pending_audit": {
-          const evidence = bound ? pendingReviewEvidence(record, head, record.response_evidence_snapshots.find((entry) => entry.id === bound.snapshot_id)) : null;
-          if (bound && !evidence) return caseChanged(record, head);
+          const prepared = bound ? await prepareCall({ caseId, operationKey, record, head, stage: "audit",
+            snapshot: record.response_evidence_snapshots.find(entry => entry.id === bound.snapshot_id), authContext }) : null;
+          if (prepared?.exhausted) return caseChanged(record, head);
+          if (prepared && (prepared.refreshed || prepared.snapshot.id !== bound.snapshot_id)) {
+            await call("recordSupervisorEvidenceStale", [caseId, head.id], authContext);
+            break;
+          }
+          const evidence = prepared ? prepared.evidence ?? { snapshot: prepared.snapshot } : null;
           const audited = await invoke("audit", operationKey, head.version, (attemptContextId) => requireModelRuntime("auditCandidate")({
             caseId, candidateId: head.id, candidate: head, journalEvidence: null, ...(evidence ? { responseEvidence: evidence } : {}), authContext, attemptContextId
-          }));
+          }), prepared ? { caseId, candidate: head, evidence, completed: prepared.completed, authContext } : null);
           if (audited.contextId === head.producer_context_id) throw new ValidationError("Candidate producer cannot audit the exact text it produced.");
           const result = audited.value ?? audited.result;
           const auditEvidence = createCandidateAuditEvidence({
@@ -190,11 +229,12 @@ export function createPrivateSupervisorDraftService({
         case "audit_failed": {
           if (head.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) return { status: "blocked", record, head };
           const newest = bound ? record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1) : null;
-          const repairEvidence = bound ? pendingReviewEvidence(record, head, newest) : null;
-          if (bound && !repairEvidence) return caseChanged(record, head);
+          const prepared = bound ? await prepareCall({ caseId, operationKey, record, head, stage: "repair", snapshot: newest, authContext }) : null;
+          if (prepared?.exhausted) return caseChanged(record, head);
+          const repairEvidence = prepared ? prepared.evidence ?? { snapshot: prepared.snapshot } : null;
           const repaired = await invoke("repair", operationKey, head.version, (attemptContextId) => requireModelRuntime("repairCandidate")({
             caseId, candidate: head, journalEvidence: null, ...(repairEvidence ? { responseEvidence: repairEvidence } : {}), authContext, attemptContextId
-          }));
+          }), prepared ? { caseId, candidate: head, evidence: repairEvidence, completed: prepared.completed, authContext } : null);
           await call("reconstructSupervisorDraft", [caseId, head.id, { exactText: repaired.exactText, producerContextId: repaired.contextId, ...(repairEvidence ? { writerInclusionSha256: repaired.responseEvidenceInclusion?.view_sha256 } : {}) }], authContext);
           break;
         }
@@ -204,6 +244,10 @@ export function createPrivateSupervisorDraftService({
           return { status: "superseded", record, head };
         default:
           return { status: "committed", record, head };
+      }
+      } catch (error) {
+        if (error?.code === "RESPONSE_EVIDENCE_STALE") continue;
+        throw error;
       }
     }
     throw new RuntimeError("The supervisor review exceeded its bounded step ceiling.", { code: "SUPERVISOR_REVIEW_UNAVAILABLE" });
@@ -329,11 +373,13 @@ export function createPrivateSupervisorDraftService({
         let replayed = existing;
         // Freeze once before storing external bytes or invoking the backend writer. A restart after the freeze but before
         // submission reuses the persisted input; a submission replay never freezes against the case's newer state.
-        let responseEvidence = null;
-        if (privateCaseSource.responseEvidencePolicy === "enforced" || existing) {
-          const record = await loadCase(caseId, authContext);
+        let responseEvidence = null, writerPrepared = null, writerCandidate = null;
+        const record = await loadCase(caseId, authContext);
+        if (privateCaseSource.responseEvidencePolicy === "enforced" || existing || record.response_evidence_snapshots.some(entry => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey)) {
           const snapshotId = `snapshot:supervisor:${operationKey}:r1`;
-          let frozen = record.response_evidence_snapshots.find((entry) => entry.id === snapshotId);
+          const root = record.candidate_responses.find(entry => entry.id === supervisorCandidateId(operationKey, 1));
+          let frozen = existing ? record.response_evidence_snapshots.find(entry => entry.id === root?.metadata.response_evidence?.snapshot_id)
+            : record.response_evidence_snapshots.filter(entry => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1);
           if (!frozen && !existing) {
             const latest = snapshot.latest_client_turn;
             if (!latest) throw new ValidationError("The runtime has no client message to bind.", { code: "SUPERVISOR_NO_PENDING_CLIENT_MESSAGE" });
@@ -345,7 +391,16 @@ export function createPrivateSupervisorDraftService({
           }
           if (!frozen && privateCaseSource.responseEvidencePolicy === "enforced") throw new ValidationError("Response evidence required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
           // An existing external draft needs only its binding to replay; do not resolve stale transcript locators here.
-          if (frozen) responseEvidence = existing ? { snapshot: frozen } : modelEvidence(record, frozen);
+          if (frozen) {
+            if (existing) responseEvidence = { snapshot: frozen };
+            else {
+              writerCandidate = { id: supervisorCandidateId(operationKey, 1), version: record.candidate_responses.length + 1 };
+              writerPrepared = await prepareCall({ caseId, operationKey, record, head: writerCandidate, stage: "candidate", snapshot: frozen, authContext });
+              if (writerPrepared.exhausted) return Object.freeze({ case_id: caseId, status: "blocked", reason: "case_changed", replayed: false, exportable: false, artifact: null,
+                notice: "The case changed during review. Nothing is approved. Prepare the case again and submit a new draft." });
+              responseEvidence = writerPrepared.evidence ?? { snapshot: writerPrepared.snapshot };
+            }
+          }
         }
         if (external) {
           const stored = await call("submitSupervisorDraft", [caseId, {
@@ -373,16 +428,17 @@ export function createPrivateSupervisorDraftService({
             authContext,
             attemptContextId,
             inboundAlreadyRecorded: true
-          }).then((value) => ({ ...value, attemptContextId })));
+          }).then((value) => ({ ...value, attemptContextId })), writerPrepared ? { caseId, candidate: writerCandidate,
+            evidence: responseEvidence, completed: writerPrepared.completed, authContext } : null);
           await call("submitSupervisorDraft", [caseId, {
             operationKey,
             source,
             exactText: produced.exactText,
             producerContextId: produced.contextId,
-            receipts: { producer_attempt_context_id: produced.attemptContextId, journal_evidence_sha256: null,
+            receipts: { producer_attempt_context_id: produced.attemptContextId ?? null, journal_evidence_sha256: null,
               ...(responseEvidence ? { response_evidence_view_sha256: produced.responseEvidenceInclusion?.view_sha256 } : {}) },
             ...(responseEvidence ? { responseEvidence: { snapshotId: responseEvidence.snapshot.id, writerInclusionSha256: produced.responseEvidenceInclusion?.view_sha256 } } : {}),
-            expectedBasisSha256: snapshot.basis.sha256,
+            expectedBasisSha256: responseEvidence ? null : snapshot.basis.sha256,
             channel: normalizeChannel(channel)
           }], authContext, trustOptions(channel));
         }
@@ -418,7 +474,8 @@ export function createPrivateSupervisorDraftService({
         const snapshot = head.status === "audit_failed"
           ? record.response_evidence_snapshots.filter(entry => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1)
           : record.response_evidence_snapshots.find(entry => entry.id === head.metadata.response_evidence.snapshot_id);
-        if (!pendingReviewEvidence(record, head, snapshot)) return describeReview({ caseId, outcome: caseChanged(record, head), authContext, replayed: true });
+        const selected = selectPendingCall({ operationKey, record, head, stage: head.status === "audit_failed" ? "repair" : "audit", snapshot });
+        if (inspectGovernedModelCall({ record, ...selected }).exhausted) return describeReview({ caseId, outcome: caseChanged(record, head), authContext, replayed: true });
       }
       return describeReview({ caseId, outcome: { status: reviewStatusOf(head), head }, authContext, replayed: true });
     },

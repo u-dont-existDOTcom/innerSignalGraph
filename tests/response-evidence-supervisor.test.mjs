@@ -36,7 +36,7 @@ async function environment(t, options = {}) {
     async produceCandidate({ responseEvidence }) {
       calls.push({ stage: "producer", responseEvidence }); counts.producer++;
       if (options.onProduce) await options.onProduce({ store, responseEvidence });
-      return { exactText: "A present-message reply.", contextId: "writer:backend", ...(responseEvidence ? { responseEvidenceInclusion: options.forgeWriter ? { ...inclusion(responseEvidence), view_sha256: "0".repeat(64) } : inclusion(responseEvidence) } : {}) };
+      return { exactText: "A present-message reply.", contextId: "writer:backend", ...(responseEvidence ? { providerReceipt: { provider: "synthetic", model: "synthetic-writer", response_id: "response:writer" }, responseEvidenceInclusion: options.forgeWriter ? { ...inclusion(responseEvidence), view_sha256: "0".repeat(64) } : inclusion(responseEvidence) } : {}) };
     },
     async auditCandidate({ candidate, responseEvidence }) {
       const n = counts.audit++;
@@ -51,7 +51,7 @@ async function environment(t, options = {}) {
     async repairCandidate({ candidate, responseEvidence }) {
       const n = ++counts.repair;
       calls.push({ stage: "repair", responseEvidence, failures: responseEvidenceFailures(candidate.audit_history.at(-1)) });
-      return { exactText: `A new suggestion, without assuming earlier delivery (${n}).`, contextId: `repair:${n}`, ...(responseEvidence ? { responseEvidenceInclusion: options.forgeRepair ? { ...inclusion(responseEvidence), view_sha256: "0".repeat(64) } : inclusion(responseEvidence) } : {}) };
+      return { exactText: `A new suggestion, without assuming earlier delivery (${n}).`, contextId: `repair:${n}`, ...(responseEvidence ? { providerReceipt: { provider: "synthetic", model: "synthetic-repair", response_id: `response:repair:${n}` }, responseEvidenceInclusion: options.forgeRepair ? { ...inclusion(responseEvidence), view_sha256: "0".repeat(64) } : inclusion(responseEvidence) } : {}) };
     }
   };
   const service = createPrivateSupervisorDraftService({ privateCaseSource: access, modelRuntime: runtime });
@@ -138,7 +138,7 @@ test("a backend-produced root binds its writer receipt; forged inclusion is refu
   assert.equal(candidate.metadata.response_evidence.writer_inclusion, "verified");
   assert.equal(candidate.metadata.response_evidence_view_sha256, candidate.metadata.response_evidence.writer_inclusion_sha256);
   assert.equal(candidate.metadata.response_evidence_view_sha256, buildEvidenceModelView(record, record.response_evidence_snapshots[0]).view_sha256);
-  candidate.metadata.response_evidence_view_sha256 = "0".repeat(64);
+  record.supervisor_invocations.find(e => e.event_type === "COMPLETED" && e.input.stage === "candidate").output.exactText += " altered";
   assert.equal(assessResponseEvidenceAdmission(record, candidate).code, "RESPONSE_EVIDENCE_INVALID");
   const forged = await environment(t, { forgeWriter: true });
   await assert.rejects(forged.submit(null, { source: "backend_produced" }), code("RESPONSE_EVIDENCE_INVALID"));
@@ -182,6 +182,25 @@ test("the connector tools use the governed real model runtime and review ticket 
   assert.equal(exported.value.client_text, "Exact connector words.");
   assert.deepEqual(tools.scopes("submit_reply_draft"), ["case:supervisor_draft"]);
   await assert.rejects(source.freezeResponseEvidence(CASE, {}, AUTH), code("PRIVATE_CASE_ACCESS_DENIED"));
+  await assert.rejects(source.startSupervisorInvocation(CASE, {}, AUTH), code("PRIVATE_CASE_ACCESS_DENIED"));
+  await assert.rejects(source.completeSupervisorInvocation(CASE, {}, AUTH), code("PRIVATE_CASE_ACCESS_DENIED"));
+  await assert.rejects(source.recordSupervisorEvidenceStale(CASE, "missing", AUTH), code("PRIVATE_CASE_ACCESS_DENIED"));
+});
+
+test("connector status polling resumes a refreshable stale audit through the shared recovery rule", async (t) => {
+  let paused = true;
+  const env = await environment(t, { onAudit() { if (paused) throw new Error("unfinished audit"); } });
+  await assert.rejects(env.submit());
+  await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:status", targetTurnId: "E2-user", completionText: " More exact words.", sourceArtifactId: "source:status", producerContextId: "operator:completion" });
+  paused = false;
+  const drafts = createPrivateSupervisorDraftService({ privateCaseSource: env.access.supervisorDraftAccess.source, modelRuntime: env.runtime });
+  const tools = createSupervisorReplyTools({ draftAccess: env.access.supervisorDraftAccess, drafts, runner: createSupervisorReviewRunner(), reviewAvailable: true });
+  const result = await tools.call("get_reply_draft_status", { case_id: CASE, idempotency_key: "one" }, AUTH);
+  assert.equal(result.value.status, "approved");
+  assert.equal(env.counts.repair, 1);
+  const record = await env.store.load(CASE);
+  assert.deepEqual(record.response_evidence_snapshots.map(entry => entry.revision_reason), ["initial", "dependency_refresh"]);
+  assert.equal(record.candidate_responses[0].audit_history[0].findings[0].code, "RESPONSE_EVIDENCE_STALE");
 });
 
 test("the advisory service creates no snapshot and sends no evidence to its models", async (t) => {
@@ -239,7 +258,143 @@ test("supervisor review disclosure manifest retains only rollback-safe boolean v
   assert.ok(Object.values(receipt.disclosure_manifest).every(value => typeof value === "boolean"));
 });
 
-test("governed supervisor audits require the reviewer's identified receipt and exact audit binding", async (t) => {
+test("supervisor model output is sealed before audit persistence and cannot be asserted with a display receipt", async (t) => {
+  const env = await environment(t);
+  await env.submit();
+  const record = await env.store.load(CASE);
+  assert.equal(record.supervisor_invocations.length, 2);
+  assert.deepEqual(record.supervisor_invocations.map(e => e.event_type), ["STARTED", "COMPLETED"]);
+  const completed = record.supervisor_invocations[1], candidate = record.candidate_responses.at(-1);
+  assert.equal(completed.input.candidate_id, candidate.id);
+  assert.equal(completed.input.candidate_version, candidate.version);
+  assert.equal(completed.input.candidate_sha256, sha256Text(candidate.exact_text));
+  assert.equal(completed.actual_context_id, candidate.audit_history[0].auditor_context_id);
+  const unsealed = structuredClone(record); unsealed.supervisor_invocations = [];
+  assert.equal(assessResponseEvidenceAdmission(unsealed, candidate).code, "RESPONSE_EVIDENCE_INVALID");
+});
+
+test("a complete caller-supplied supervisor receipt cannot substitute for a completed invocation", async (t) => {
+  const env = await environment(t, { onAudit() { throw new Error("pause before call completion"); } });
+  await assert.rejects(env.submit());
+  const before = await env.store.load(CASE), candidate = before.candidate_responses.at(-1), snapshot = before.response_evidence_snapshots[0];
+  const audit = createCandidateAuditEvidence({ auditId: "audit:unsealed", candidate, auditorContext: { kind: "independent", context_id: "asserted:auditor" }, findings: [],
+    responseEvidence: { snapshotId: snapshot.id, snapshotSha256: snapshot.snapshot_sha256, auditorInclusionSha256: buildEvidenceModelView(before, snapshot).view_sha256, review: review(), snapshot } });
+  await assert.rejects(env.store.recordSupervisorAudit(CASE, candidate.id, audit, {
+    disclosureManifest: { response_evidence_view_included: true }, providerReceipt: { provider: "synthetic", model: "synthetic", response_id: "asserted" }
+  }), code("RESPONSE_EVIDENCE_INVALID"));
+  assert.deepEqual(await env.store.load(CASE), before);
+});
+
+test("a supervisor repair cannot be admitted by asserting the reconstructible inclusion digest", async (t) => {
+  const env = await environment(t, { review(candidate) { return review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]); } });
+  env.runtime.repairCandidate = async () => { throw new Error("pause repair"); };
+  await assert.rejects(env.submit());
+  const before = await env.store.load(CASE), head = before.candidate_responses.at(-1), snapshot = before.response_evidence_snapshots.at(-1);
+  await assert.rejects(env.store.reconstructSupervisorDraft(CASE, head.id, { exactText: "Caller asserted repair.", producerContextId: "asserted:repair",
+    writerInclusionSha256: buildEvidenceModelView(before, snapshot).view_sha256 }), code("RESPONSE_EVIDENCE_INVALID"));
+  assert.deepEqual(await env.store.load(CASE), before);
+});
+
+test("an original supervisor audit completion and display receipt cannot certify a repaired candidate", async (t) => {
+  const env = await environment(t, { onAudit({ n }) { if (n) throw new Error("pause repaired audit"); },
+    review(candidate) { return review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]); } });
+  await assert.rejects(env.submit());
+  const before = await env.store.load(CASE), candidate = before.candidate_responses.at(-1), original = before.candidate_responses[0].audit_history[0];
+  assert.ok(candidate.parent_candidate_id);
+  const snapshot = before.response_evidence_snapshots.find(entry => entry.id === candidate.metadata.response_evidence.snapshot_id);
+  const forged = createCandidateAuditEvidence({ auditId: "audit:repackaged", candidate, auditorContext: { kind: "independent", context_id: original.auditor_context_id },
+    findings: [], repairInducedChecks: REPAIR_INDUCED_ERROR_CHECKS, responseEvidence: { snapshotId: snapshot.id, snapshotSha256: snapshot.snapshot_sha256,
+      auditorInclusionSha256: original.response_evidence.auditor_inclusion_sha256, review: review(), snapshot } });
+  const receipt = before.supervisor_artifacts.find(entry => entry.kind === "review_receipt");
+  for (const method of ["recordSupervisorAudit", "recordCandidateAudit"]) {
+    await assert.rejects(env.store[method](CASE, candidate.id, forged, { disclosureManifest: receipt.disclosure_manifest, providerReceipt: receipt.provider_receipt }), code("RESPONSE_EVIDENCE_INVALID"));
+    assert.deepEqual(await env.store.load(CASE), before);
+  }
+});
+
+test("an unfinished supervisor writer refreshes amended sources even if the service setting turns off", async (t) => {
+  let paused = true;
+  const env = await environment(t, { onProduce({ responseEvidence }) {
+    if (paused) throw new Error("unfinished writer");
+    assert.equal(responseEvidence.snapshot.revision, 2);
+  } });
+  await assert.rejects(env.submit(null, { source: "backend_produced" }));
+  await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:unfinished", targetTurnId: "E2-user", completionText: " More exact words.", sourceArtifactId: "source:unfinished", producerContextId: "operator:completion" });
+  paused = false;
+  const restarted = createPrivateSupervisorDraftService({ privateCaseSource: { ...env.access, responseEvidencePolicy: "advisory" }, modelRuntime: env.runtime });
+  const result = await restarted.submitCandidateForReview({ caseId: CASE, source: "backend_produced", idempotencyKey: "one", authContext: AUTH });
+  assert.equal(result.status, "approved"); assert.equal(result.exportable, true);
+  const record = await env.store.load(CASE);
+  assert.deepEqual(record.response_evidence_snapshots.map(entry => entry.revision_reason), ["initial", "dependency_refresh"]);
+  assert.equal(record.supervisor_invocations.find(entry => entry.event_type === "COMPLETED").input.snapshot_id, record.response_evidence_snapshots[1].id);
+});
+
+test("one provider response may back only one immutable completed supervisor call", async (t) => {
+  const env = await environment(t, { onAudit() { throw new Error("pause audit"); } });
+  await assert.rejects(env.submit());
+  const record = await env.store.load(CASE), candidate = record.candidate_responses.at(-1), snapshot = record.response_evidence_snapshots.at(-1);
+  const input = { operationKey: snapshot.owner.operation_key, stage: "audit", candidateId: candidate.id, snapshotId: snapshot.id };
+  const started = await env.store.startSupervisorInvocation(CASE, { ...input, attemptContextId: "attempt:one" });
+  const output = { contextId: "context:sealed:one", providerReceipt: { provider: "synthetic", model: "synthetic", response_id: "unique:response" },
+    responseEvidenceInclusion: inclusion({ snapshot, viewSha256: buildEvidenceModelView(record, snapshot).view_sha256 }),
+    value: { findings: [], repair_induced_checks: [], evidence_review: review() } };
+  const completed = await env.store.completeSupervisorInvocation(CASE, { startedId: started.id, output });
+  const beforeReplay = await env.store.load(CASE);
+  assert.deepEqual(await env.store.completeSupervisorInvocation(CASE, { startedId: started.id, output }), completed);
+  assert.deepEqual(await env.store.load(CASE), beforeReplay);
+  await assert.rejects(env.store.completeSupervisorInvocation(CASE, { startedId: started.id, output: { ...output, contextId: "changed" } }), code("RESPONSE_EVIDENCE_INVALID"));
+  const second = await env.store.startSupervisorInvocation(CASE, { ...input, attemptContextId: "attempt:two" });
+  const before = await env.store.load(CASE);
+  await assert.rejects(env.store.completeSupervisorInvocation(CASE, { startedId: second.id, output: { ...output, contextId: "context:sealed:two" } }), code("RESPONSE_EVIDENCE_INVALID"));
+  assert.deepEqual(await env.store.load(CASE), before);
+});
+
+for (const stage of ["candidate", "audit", "repair"]) for (const changed of [false, true]) test(`restart records completed supervisor ${stage} before resolving sources (changed: ${changed})`, async (t) => {
+  const env = await environment(t, { review(candidate, evidence, n) { return stage === "repair" && n === 0 ? review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]) : review(); } });
+  const method = stage === "candidate" ? "submitSupervisorDraft" : stage === "audit" ? "recordSupervisorAudit" : "reconstructSupervisorDraft";
+  const interrupted = createPrivateSupervisorDraftService({ privateCaseSource: { ...env.access, async [method]() { throw new Error("sealed output boundary"); } }, modelRuntime: env.runtime });
+  const input = { caseId: CASE, source: stage === "candidate" ? "backend_produced" : "external_draft", ...(stage === "candidate" ? {} : { text: "Exact initial words." }), idempotencyKey: "sealed-restart", authContext: AUTH };
+  await assert.rejects(interrupted.submitCandidateForReview(input), /sealed output boundary/);
+  const before = await env.store.load(CASE), completion = before.supervisor_invocations.filter(e => e.event_type === "COMPLETED").at(-1);
+  assert.equal(completion.input.stage, stage);
+  if (changed) await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:sealed", targetTurnId: "E2-user", completionText: " More exact words.", sourceArtifactId: "source:sealed", producerContextId: "operator:completion" });
+  let calls = 0;
+  const noInference = Object.fromEntries(Object.keys(env.runtime).map(key => [key, async () => { calls++; assert.fail("record completion first"); }]));
+  const recording = createPrivateSupervisorDraftService({ privateCaseSource: { ...env.access, async [method](...args) {
+    await env.access[method](...args); throw new Error("completion recorded");
+  } }, modelRuntime: noInference });
+  await assert.rejects(recording.submitCandidateForReview(input), /completion recorded/);
+  assert.equal(calls, 0);
+  const after = await env.store.load(CASE);
+  assert.equal(after.supervisor_invocations.filter(e => e.event_type === "COMPLETED" && e.input.stage === stage).length, 1);
+  if (stage === "audit") assert.equal(after.candidate_responses.at(-1).audit_history.at(-1).auditor_context_id, completion.actual_context_id);
+  else {
+    assert.equal(after.candidate_responses.at(-1).exact_text, completion.output.exactText);
+    assert.equal(after.candidate_responses.at(-1).metadata.response_evidence.dependency_status, changed ? "stale_at_commit" : "current_at_commit");
+  }
+});
+
+test("origin/main preserves every supervisor invocation state, including repairs, through its own encrypted writes", async (t) => {
+  const { originMainPrivateCaseModule } = await import("./helpers/origin-main-private-case-validator.mjs");
+  const old = await originMainPrivateCaseModule(t);
+  const env = await environment(t, { review(candidate, evidence, n) { return n === 0 ? review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]) : review(); } });
+  const result = await env.submit(null, { source: "backend_produced" });
+  await env.exportDraft(result.artifact.artifact_id);
+  const before = await env.store.load(CASE);
+  assert.deepEqual(before.supervisor_invocations.filter(e => e.event_type === "COMPLETED").map(e => e.input.stage), ["candidate", "audit", "repair", "audit"]);
+  for (let count = 0; count <= before.supervisor_invocations.length; count++) {
+    const prefix = structuredClone(before); prefix.supervisor_invocations = prefix.supervisor_invocations.slice(0, count);
+    assert.doesNotThrow(() => old.validatePrivateCaseRecord(prefix));
+  }
+  const oldStore = old.createEncryptedPrivateCaseStore({ rootDir: env.access.rootDir, routineKek: Buffer.alloc(32, 41), recoverySecretBytes: Buffer.alloc(32, 42), developmentExternalCredentialAuthorized: true });
+  try {
+    assert.deepEqual((await oldStore.load(CASE)).supervisor_invocations, before.supervisor_invocations);
+    await oldStore.saveCaseState(CASE, before.case_state);
+  } finally { oldStore.close(); }
+  assert.deepEqual((await env.store.load(CASE)).supervisor_invocations, before.supervisor_invocations);
+});
+
+test("governed supervisor audits bind the sealed input and output independently of display receipts", async (t) => {
   const env = await environment(t, { onAudit() { throw new Error("pause before audit"); } });
   await assert.rejects(env.submit(), code("SUPERVISOR_REVIEW_UNAVAILABLE"));
   const before = await env.store.load(CASE), candidate = before.candidate_responses.at(-1), snapshot = before.response_evidence_snapshots[0];
@@ -253,15 +408,23 @@ test("governed supervisor audits require the reviewer's identified receipt and e
     await assert.rejects(env.store.recordSupervisorAudit(CASE, candidate.id, audit, invalid), code("RESPONSE_EVIDENCE_INVALID"));
     assert.deepEqual(await env.store.load(CASE), before);
   }
-  await env.store.recordSupervisorAudit(CASE, candidate.id, audit, receipt);
+  await assert.rejects(env.store.recordSupervisorAudit(CASE, candidate.id, audit, receipt), code("RESPONSE_EVIDENCE_INVALID"));
+  const started = await env.store.startSupervisorInvocation(CASE, { operationKey: snapshot.owner.operation_key, stage: "audit", candidateId: candidate.id,
+    snapshotId: snapshot.id, attemptContextId: "attempt:direct:sealed" });
+  await env.store.completeSupervisorInvocation(CASE, { startedId: started.id, output: { contextId: audit.auditor_context_id,
+    providerReceipt: receipt.providerReceipt, responseEvidenceInclusion: inclusion({ snapshot, viewSha256: audit.response_evidence.auditor_inclusion_sha256 }),
+    value: { findings: [], repair_induced_checks: [], evidence_review: review() } } });
+  await env.store.recordSupervisorAudit(CASE, candidate.id, audit);
   const recorded = await env.store.load(CASE), head = recorded.candidate_responses.at(-1);
   assert.equal(assessResponseEvidenceAdmission(recorded, head).admissible, true);
   for (const tamper of [
-    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").candidate_id += ":other"; },
-    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").candidate_version++; },
-    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").audit_id += ":other"; },
-    r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").disclosure_manifest = {}; },
-    ...["provider", "model", "response_id"].map(key => r => { r.supervisor_artifacts.find(e => e.kind === "review_receipt").provider_receipt[key] = null; })
+    ...["candidate_id", "candidate_version", "candidate_sha256", "snapshot_id", "snapshot_sha256", "view_sha256"].map(key => r => {
+      const entry = r.supervisor_invocations.find(e => e.event_type === "COMPLETED"); entry.input[key] = typeof entry.input[key] === "number" ? 2 : "different";
+    }),
+    r => { r.supervisor_invocations.find(e => e.event_type === "COMPLETED").actual_context_id = "different"; },
+    r => { r.supervisor_invocations.find(e => e.event_type === "COMPLETED").output.value.findings.push({ id: "lost", code: "SYNTHETIC", severity: "high", summary: "Must retain." }); },
+    r => { r.supervisor_invocations.find(e => e.event_type === "COMPLETED").output.value.repair_induced_checks.push("different"); },
+    r => { r.supervisor_invocations.find(e => e.event_type === "COMPLETED").output.value.evidence_review.coverage[0].reason += " changed"; }
   ]) {
     const altered = structuredClone(recorded); tamper(altered);
     assert.equal(assessResponseEvidenceAdmission(altered, head).code, "RESPONSE_EVIDENCE_INVALID");
@@ -283,7 +446,7 @@ test("a received runtime message blocks the older supervisor draft before and af
   }
 });
 
-for (const stage of ["audit", "repair"]) for (const amendment of [false, true]) test(`changed case ends supervisor ${stage} without writes (amendment: ${amendment})`, async (t) => {
+for (const stage of ["audit", "repair"]) for (const amendment of [false, true]) test(`changed case refreshes before supervisor ${stage}, then blocks without inference when revisions run out (amendment: ${amendment})`, async (t) => {
   let paused = true;
   const env = await environment(t, { onAudit() { if (stage === "audit" && paused) throw new Error("pause audit"); },
     review(candidate) { return stage === "repair" ? review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]) : review(); } });
@@ -293,14 +456,31 @@ for (const stage of ["audit", "repair"]) for (const amendment of [false, true]) 
   if (amendment) await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:pending", targetTurnId: "E2-user", completionText: " More exact words.", sourceArtifactId: "source:pending", producerContextId: "operator:completion" });
   else await env.store.recordSupervisorInputs(CASE, { inputs: [{ inputId: "input:pending", inputType: "client_message", text: "The case moved on." }], channel: "owner_ui" });
   const before = await env.store.load(CASE), head = before.candidate_responses.at(-1), operationKey = head.metadata.supervisor_draft.operation_key;
-  env.runtime.auditCandidate = env.runtime.repairCandidate = async () => assert.fail("stale review must call no model");
+  const pending = await env.service.getReviewStatus({ caseId: CASE, operationKey, authContext: AUTH });
+  assert.equal(pending.status, "reviewing", "status polling must let refreshable work reach recovery");
+  assert.deepEqual(await env.store.load(CASE), before);
+  let calls = 0;
+  env.runtime.auditCandidate = env.runtime.repairCandidate = async () => { calls++; assert.fail("refresh must precede inference"); };
+  const refreshing = createPrivateSupervisorDraftService({ privateCaseSource: { ...env.access, async freezeResponseEvidence(...args) {
+    const snapshot = await env.access.freezeResponseEvidence(...args);
+    throw new Error(`refreshed:${snapshot.revision_reason}`);
+  } }, modelRuntime: env.runtime });
+  await assert.rejects(refreshing.resumeReview({ caseId: CASE, operationKey, authContext: AUTH }), /refreshed:dependency_refresh/);
+  assert.equal(calls, 0);
+  const second = (await env.store.load(CASE)).response_evidence_snapshots.at(-1);
+  assert.equal(second.revision, 2);
+  await env.store.freezeResponseEvidence(CASE, { snapshotId: "snapshot:exhausted:r3", owner: second.owner, candidateOrigin: second.candidate_origin,
+    inbound: second.inbound, revision: 3, parentSnapshotId: second.id, revisionReason: "dependency_refresh" });
+  await env.store.recordSupervisorInputs(CASE, { inputs: [{ inputId: "input:exhausted", inputType: "client_message", text: "Changed again after the last revision." }], channel: "owner_ui" });
+  const exhausted = await env.store.load(CASE);
   const restarted = createPrivateSupervisorDraftService({ privateCaseSource: env.access, modelRuntime: env.runtime });
   for (const read of [() => restarted.resumeReview({ caseId: CASE, operationKey, authContext: AUTH }), () => restarted.getReviewStatus({ caseId: CASE, operationKey, authContext: AUTH }), () => env.submit()]) {
     const result = await read();
     assert.equal(result.status, "blocked"); assert.equal(result.reason, "case_changed"); assert.equal(result.exportable, false);
     assert.match(result.notice, /case changed during review/); assert.match(result.notice, /[Nn]othing is approved/); assert.match(result.notice, /[Pp]repare the case again.*new draft/);
-    assert.deepEqual(await env.store.load(CASE), before);
+    assert.deepEqual(await env.store.load(CASE), exhausted);
   }
+  assert.equal(calls, 0);
 });
 
 test("connector supervisor writes refuse another process's root lock without changing the case", async (t) => {
@@ -331,6 +511,9 @@ test("connector supervisor writes refuse another process's root lock without cha
     inbound: { turn_id: "E2-user", exact_text_sha256: sha256Text(before.raw_transcript.at(-1).text), audience: "client", source_kind: "exact_client_turn" } };
   const writes = [
     () => source.freezeResponseEvidence(CASE, snapshotInput, ticket),
+    () => source.startSupervisorInvocation(CASE, {}, ticket),
+    () => source.completeSupervisorInvocation(CASE, {}, ticket),
+    () => source.recordSupervisorEvidenceStale(CASE, "missing", ticket),
     () => source.submitSupervisorDraft(CASE, {}, ticket),
     () => source.recordSupervisorAudit(CASE, "missing", {}, {}, ticket),
     () => source.approveCandidateForDelivery(CASE, "missing", "missing", ticket),

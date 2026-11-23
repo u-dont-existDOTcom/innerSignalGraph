@@ -82,6 +82,53 @@ test("governed controller delivers through the real enforced store", async (t) =
   assert.equal(env.counts.candidate, 1);
 });
 
+for (const state of ["RECEIVED", "AUDITING", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]) test(`restart preflight refreshes amended sources in ${state} before any model call`, async (t) => {
+  const env = await setup(t, { alwaysFail: state === "DISCRIMINATING_QUESTION_REQUIRED", auditReview: (text, n) => state === "RECONSTRUCTING" && n === 0 ? unsupported(text) : emptyReview() });
+  await env.store.appendTranscriptTurn(CASE, { id: "turn:older", exchange_id: "exchange:older", role: "user", text: "Earlier words.", at: NOW, episode_id: null });
+  const method = state === "RECEIVED" ? "produceCandidate" : state === "RECONSTRUCTING" ? "repairCandidate" : state === "AUDITING" ? "auditCandidate" : "produceDiscriminator";
+  const originalRuntime = { ...env.runtime };
+  env.runtime[method] = async () => { throw new Error("unfinished model invocation"); };
+  await assert.rejects(env.controller({ maximumInvocationAttempts: 1 }).run(request()));
+  assert.equal((await env.store.load(CASE)).runtime_turns[0].state, state);
+  await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:restart", targetTurnId: "turn:older", completionText: " Additional words.", sourceArtifactId: "source:restart", producerContextId: "operator:completion" });
+  let calls = 0;
+  for (const key of Object.keys(env.runtime)) env.runtime[key] = async () => { calls++; assert.fail("refresh must precede all model calls"); };
+  const source = { ...env.store, async freezeResponseEvidence(...args) {
+    const snapshot = await env.store.freezeResponseEvidence(...args);
+    throw new Error(`refreshed:${snapshot.revision_reason}`);
+  } };
+  await assert.rejects(env.controller({ privateCaseSource: source }).run(request()), /refreshed:dependency_refresh/);
+  assert.equal(calls, 0);
+  assert.equal((await env.store.load(CASE)).response_evidence_snapshots.at(-1).revision, 2);
+  Object.assign(env.runtime, originalRuntime);
+  await env.controller().run(request());
+  await assertDelivered(env.store);
+});
+
+for (const state of ["RECEIVED", "AUDITING", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]) test(`exhausted stale ${state} performs no inference and delivers nothing`, async (t) => {
+  const env = await setup(t, { alwaysFail: state === "DISCRIMINATING_QUESTION_REQUIRED", auditReview: (text, n) => state === "RECONSTRUCTING" && n === 0 ? unsupported(text) : emptyReview() });
+  const method = state === "RECEIVED" ? "produceCandidate" : state === "RECONSTRUCTING" ? "repairCandidate" : state === "AUDITING" ? "auditCandidate" : "produceDiscriminator";
+  env.runtime[method] = async () => { throw new Error("unfinished invocation"); };
+  await assert.rejects(env.controller({ maximumInvocationAttempts: 1 }).run(request()));
+  let snapshot = (await env.store.load(CASE)).response_evidence_snapshots.at(-1);
+  for (const revision of [2, 3]) snapshot = await env.store.freezeResponseEvidence(CASE, { snapshotId: `snapshot:exhausted:${revision}`, owner: snapshot.owner,
+    candidateOrigin: snapshot.candidate_origin, inbound: snapshot.inbound, revision, parentSnapshotId: snapshot.id, revisionReason: "dependency_refresh" });
+  await env.store.recordSupervisorInputs(CASE, { inputs: [{ inputId: "input:exhausted", inputType: "client_message", text: "Changed after the final revision." }], channel: "owner_ui" });
+  let calls = 0;
+  for (const key of Object.keys(env.runtime)) env.runtime[key] = async () => { calls++; assert.fail("exhaustion needs no inference"); };
+  const before = await env.store.load(CASE);
+  await assert.rejects(env.controller().run(request()), { code: "THERAPY_RUNTIME_UNAVAILABLE" });
+  const after = await env.store.load(CASE);
+  assert.equal(calls, 0); assert.equal(after.response_evidence_snapshots.length, 3);
+  assert.ok(after.raw_transcript.every(turn => turn.role !== "assistant"));
+  if (state === "AUDITING") {
+    const audit = after.candidate_responses[0].audit_history.at(-1);
+    assert.equal(audit.findings[0].code, "RESPONSE_EVIDENCE_STALE");
+    assert.equal(audit.independent, false);
+    assert.equal(after.runtime_turns[0].state, "RECONSTRUCTING");
+  } else assert.deepEqual(after, before);
+});
+
 test("unsupported evidence becomes a derived FAIL; repair receives the defect and stays current on revision one", async (t) => {
   const env = await setup(t, { auditReview: (text, n) => n === 0 ? unsupported(text) : emptyReview() });
   await env.controller().run(request());
@@ -135,6 +182,23 @@ test("restart after sealed writer completion reuses the exact snapshot and does 
   assert.equal(freezes, 1); assert.equal(retrievals, 1); assert.equal(env.counts.candidate, 1);
 });
 
+test("restart records a completed audit before resolving amended sources or spending a revision", async (t) => {
+  const env = await setup(t);
+  await env.store.appendTranscriptTurn(CASE, { id: "turn:older", exchange_id: "exchange:older", role: "user", text: "Earlier words.", at: NOW, episode_id: null });
+  await assert.rejects(env.controller({ privateCaseSource: { ...env.store, async commitPrivateRuntimeAudit() { throw new Error("completed audit boundary"); } } }).run(request()), /completed audit boundary/);
+  await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:completed-audit", targetTurnId: "turn:older", completionText: " More exact words.", sourceArtifactId: "source:completed-audit", producerContextId: "operator:completion" });
+  let calls = 0;
+  for (const method of Object.keys(env.runtime)) env.runtime[method] = async () => { calls++; assert.fail("record completion before inference"); };
+  const source = { ...env.store, async commitPrivateRuntimeAudit(...args) {
+    await env.store.commitPrivateRuntimeAudit(...args); throw new Error("completion recorded");
+  } };
+  await assert.rejects(env.controller({ privateCaseSource: source }).run(request()), /completion recorded/);
+  const record = await env.store.load(CASE), audit = record.candidate_responses[0].audit_history[0];
+  assert.equal(calls, 0); assert.equal(record.response_evidence_snapshots.length, 1);
+  assert.equal(audit.verdict, "fail"); assert.equal(audit.independent, true);
+  assert.equal(audit.findings.at(-1).code, "RESPONSE_EVIDENCE_STALE");
+});
+
 for (const stage of ["candidate", "repair"]) test(`restart commits the completed ${stage} before resolving amended source evidence`, async (t) => {
   const env = await setup(t, { auditReview: (text, n) => stage === "repair" && n === 0 ? unsupported(text) : emptyReview() });
   await env.store.appendTranscriptTurn(CASE, { id: "turn:older", exchange_id: "exchange:older", role: "user", text: "Earlier incomplete words.", at: NOW, episode_id: null });
@@ -168,7 +232,7 @@ test("missing history expands only once and two repairs never create a fourth re
   const env = await setup(t, { auditReview: (text) => missing(text), onAudit: async ({ store, n }) => {
     const state = await store.getCaseState(CASE); state.current_episode.target = `Synthetic changed target ${n}.`; await store.saveCaseState(CASE, state);
   } });
-  await assert.rejects(env.controller({ journalEvidenceProvider: { async freezeResponseEvidenceJournal() { retrievals++; return { availability: "available", retrieval_status: "no_match" }; } } }).run(request()), { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
+  await assert.rejects(env.controller({ journalEvidenceProvider: { async freezeResponseEvidenceJournal() { retrievals++; return { availability: "available", retrieval_status: "no_match" }; } } }).run(request()), { code: "THERAPY_RUNTIME_UNAVAILABLE" });
   const record = await env.store.load(CASE);
   assert.deepEqual(record.response_evidence_snapshots.map((s) => s.revision_reason), ["initial", "evidence_expansion", "dependency_refresh"]);
   assert.equal(retrievals, 2); assert.equal(env.counts.repair, 2); assert.equal(env.counts.review, 0);

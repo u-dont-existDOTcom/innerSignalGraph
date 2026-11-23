@@ -16,7 +16,7 @@ import { createVaultEnvelope, decryptVaultEnvelopeWithRecoverySecret } from "../
 import { REPAIR_INDUCED_ERROR_CHECKS, createCandidateAuditEvidence, validateCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import {
   RESPONSE_EVIDENCE_DIMENSIONS, buildEvidenceModelView, normalizeEvidenceReview, sha256Json, sha256Text,
-  responseEvidenceSnapshotSha256, assessResponseEvidenceAdmission
+  responseEvidenceSnapshotSha256, assessResponseEvidenceAdmission, runtimeCandidateInputIdentity, runtimeRepairInputIdentity
 } from "../src/supervisor/response-evidence-contract.mjs";
 
 const CASE = "synthetic-evidence", NOW = "2026-11-23T12:00:00.000Z";
@@ -41,7 +41,14 @@ async function environment(t, policy = "advisory") {
   await store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "runtime:one", exchangeId: "exchange:one", userTurnId: inbound.turn_id, exactText: inboundText });
   return { store, rootDir, options, seed };
 }
-async function seal(store, { stage, contextId, output, key = stage, inputSha256 = sha256Text(key) }) {
+async function seal(store, { stage, contextId, output, key = stage, inputSha256 = null }) {
+  if (!inputSha256) {
+    const record = await store.load(CASE), runtime = record.runtime_turns[0];
+    const snapshot = record.response_evidence_snapshots.find(entry => entry.id === output.responseEvidenceInclusion?.snapshot_id);
+    const parent = record.candidate_responses.find(entry => entry.id === runtime.current_candidate_id);
+    inputSha256 = sha256Text(JSON.stringify(stage === "candidate" ? runtimeCandidateInputIdentity(runtime, null, snapshot)
+      : runtimeRepairInputIdentity(parent, parent.audit_history.at(-1), null, snapshot)));
+  }
   for (const [suffix, eventType] of [["start", "INVOCATION_STARTED"], ["complete", "INVOCATION_COMPLETED"]]) {
     await store.recordPrivateRuntimeInvocationEvent(CASE, "runtime:one", {
       eventId: `${key}:${suffix}`, eventType, stage, contextId: `attempt:${key}`, attempt: 1, inputSha256,
@@ -312,23 +319,26 @@ test("snapshot, v5 audit and candidate metadata agree with the public schemas", 
   }
 });
 
-// A2 will bind supervisor metadata in its trusted submission path. Seed only that additive binding in this synthetic encrypted
-// fixture, then exercise A1's real supervisor audit, approval and export methods without adding a caller injection API.
+// Exercise supervisor audit, approval and export through trusted submission and invocation methods.
 async function supervisorGoverned(t) {
   const env = await environment(t), { store } = env;
   await store.appendTranscriptTurn(CASE, turn(inbound.turn_id, inboundText));
   const operationKey = "b".repeat(24);
   const snapshot = await store.freezeResponseEvidence(CASE, freezeInput({ snapshotId: "snapshot:supervisor", owner: { kind: "supervisor_draft", operation_key: operationKey }, candidateOrigin: "external_draft" }));
-  const submitted = await store.submitSupervisorDraft(CASE, { operationKey, source: "external_draft", exactText: "Synthetic reply. What changed?", producerContextId: "external:writer", channel: "owner_ui" });
+  const submitted = await store.submitSupervisorDraft(CASE, { operationKey, source: "external_draft", exactText: "Synthetic reply. What changed?", producerContextId: "external:writer", channel: "owner_ui",
+    responseEvidence: { snapshotId: snapshot.id, writerInclusionSha256: null } });
   const record = await store.load(CASE), candidate = record.candidate_responses.at(-1);
-  candidate.metadata.response_evidence = { schema_version: 1, policy_version: "response-evidence-v1", snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256, candidate_origin: "external_draft", writer_inclusion: "not_attested", writer_inclusion_sha256: null, established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest, dependency_status: "current_at_commit" };
-  await env.seed(record);
   return { ...env, snapshot, candidate, artifactId: submitted.artifact.artifact_id };
 }
 async function supervisorAudit(env, evidenceReview = review(), findings = []) {
   const viewSha = buildEvidenceModelView(await env.store.load(CASE), env.snapshot).view_sha256;
   const audit = auditFor(env.candidate, env.snapshot, evidenceReview, findings, "supervisor:audit", viewSha);
   const receipt = { disclosureManifest: { response_evidence_view_included: true }, providerReceipt: { provider: "synthetic", model: "synthetic-reviewer", response_id: "response:supervisor" } };
+  const started = await env.store.startSupervisorInvocation(CASE, { operationKey: env.snapshot.owner.operation_key, stage: "audit", candidateId: env.candidate.id,
+    snapshotId: env.snapshot.id, attemptContextId: "attempt:supervisor:audit" });
+  await env.store.completeSupervisorInvocation(CASE, { startedId: started.id, output: { contextId: audit.auditor_context_id,
+    providerReceipt: receipt.providerReceipt, value: { findings, repair_induced_checks: [], evidence_review: evidenceReview },
+    responseEvidenceInclusion: { snapshot_id: env.snapshot.id, snapshot_sha256: env.snapshot.snapshot_sha256, view_sha256: viewSha } } });
   return { audit, receipt };
 }
 
@@ -344,7 +354,8 @@ test("recordSupervisorAudit refuses generic or mismatched PASS, preserves FAIL a
   assert.equal(exported.client_text, candidate.exact_text);
   assert.equal((await store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" })).replayed, true);
   const failing = await supervisorGoverned(t);
-  await failing.store.recordSupervisorAudit(CASE, failing.candidate.id, auditFor(failing.candidate, null, review(), ordinaryFail), receipt);
+  const failedReview = await supervisorAudit(failing, review(), ordinaryFail);
+  await failing.store.recordSupervisorAudit(CASE, failing.candidate.id, failedReview.audit, failedReview.receipt);
   assert.equal((await failing.store.getCandidateResponse(CASE, failing.candidate.id)).status, "audit_failed");
 });
 
@@ -466,9 +477,31 @@ test("ordinary v7 payload bytes retain their pre-extension shape until a snapsho
     try { return JSON.parse(bytes.toString("utf8")); } finally { bytes.fill(0); }
   };
   assert.equal(Object.hasOwn(await readPayload(), "response_evidence_snapshots"), false);
+  assert.equal(Object.hasOwn(await readPayload(), "supervisor_invocations"), false);
   assert.deepEqual((await env.store.load(CASE)).response_evidence_snapshots, []);
   await env.store.freezeResponseEvidence(CASE, freezeInput());
   assert.equal((await readPayload()).response_evidence_snapshots.length, 1);
+});
+
+test("setting-off encrypted payload bytes equal origin/main through ordinary writes", async (t) => {
+  const { originMainPrivateCaseModule } = await import("./helpers/origin-main-private-case-validator.mjs");
+  const old = await originMainPrivateCaseModule(t), env = await environment(t);
+  const oldRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-old-payload-"));
+  const oldStore = old.createEncryptedPrivateCaseStore({ ...env.options, rootDir: oldRoot });
+  t.after(async () => { oldStore.close(); await fs.rm(oldRoot, { recursive: true, force: true }); });
+  await oldStore.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "runtime:one", exchangeId: "exchange:one", userTurnId: inbound.turn_id, exactText: inboundText });
+  const payloadBytes = async rootDir => {
+    const envelope = deserializeVaultEnvelope(JSON.parse(await fs.readFile(path.join(rootDir, `${CASE}.vault.json`), "utf8")));
+    return decryptVaultEnvelopeWithRecoverySecret({ envelope, recoverySecretBytes: env.options.recoverySecretBytes });
+  };
+  for (const writeAgain of [false, true]) {
+    if (writeAgain) {
+      const state = await env.store.getCaseState(CASE);
+      await env.store.saveCaseState(CASE, state); await oldStore.saveCaseState(CASE, state);
+    }
+    const current = await payloadBytes(env.rootDir), previous = await payloadBytes(oldRoot);
+    try { assert.deepEqual(current, previous); } finally { current.fill(0); previous.fill(0); }
+  }
 });
 
 test("concurrent stores serialize identical freezes through the existing case coordinator", async (t) => {
@@ -548,7 +581,7 @@ test("journal replay uses the same chronological source order as the frozen inve
 test("empty evidence extensions preserve existing non-journal publication digests", async (t) => {
   const env = await environment(t), record = await env.store.load(CASE);
   const legacy = structuredClone(record);
-  for (const field of ["revision", "updated_at", "schema_version", "journal_corpora", "journal_corpus_keys", "response_evidence_snapshots"]) delete legacy[field];
+  for (const field of ["revision", "updated_at", "schema_version", "journal_corpora", "journal_corpus_keys", "response_evidence_snapshots", "supervisor_invocations"]) delete legacy[field];
   const access = createPrivateCaseAccessService({ rootDir: env.rootDir,
     authorizationProvider: { async authorize({ requiredScope, requiredPurpose }) { return { allowed: true, principalId: "synthetic", scopes: [requiredScope], purposes: [requiredPurpose] }; } },
     keyProvider: { async getCaseKeyMaterial() { return { routineKek: Buffer.alloc(32, 41), recoverySecretBytes: Buffer.alloc(32, 42), accessAssurance: "managed_secret_provider", managedSecretProvider: true }; } }

@@ -516,6 +516,100 @@ export function runtimeAuditInputIdentity(candidate, journalEvidence = null, sna
     journal_evidence_sha256: journalEvidence?.sha256 ?? null,
     ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
 }
+export function runtimeCandidateInputIdentity(turn, journalEvidence, snapshot) {
+  return { runtime_turn_id: turn.id, inbound_sha256: turn.inbound.sha256, repair_cycle: 0,
+    journal_evidence_sha256: journalEvidence?.sha256 ?? null,
+    ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
+}
+export function runtimeRepairInputIdentity(parent, audit, journalEvidence, snapshot = null) {
+  return { parent_candidate_id: parent.id, parent_version: parent.version, parent_sha256: sha256Text(parent.exact_text), audit_id: audit?.id,
+    repair_cycle: parent.repair_cycle + 1, journal_evidence_sha256: journalEvidence?.sha256 ?? null,
+    ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
+}
+export function supervisorInvocationInput({ operationKey, stage, candidate, snapshot, viewSha256 }) {
+  return { operation_key: operationKey, stage, candidate_id: candidate.id, candidate_version: candidate.version,
+    candidate_sha256: stage === "candidate" ? snapshot.inbound.exact_text_sha256 : sha256Text(candidate.exact_text), snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256, view_sha256: viewSha256 };
+}
+
+// All consumers compare the sealed call's actual context, inclusion and complete output here.
+// The adapters below supply their own exact, store-recorded input identity.
+export function verifySealedEvidenceOutput(output, { contextId, snapshot, viewSha256, exactText, audit = null, review = null } = {}) {
+  const inclusion = output?.responseEvidenceInclusion;
+  if (output?.contextId !== contextId || !inclusion || inclusion.snapshot_id !== snapshot.id
+    || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== viewSha256) invalid("invocation_inclusion");
+  if (!audit && !review) {
+    if (output.exactText !== exactText) invalid("invocation_text");
+    return output;
+  }
+  const value = output.value ?? output.result;
+  const normalized = normalizeEvidenceReview(value?.evidence_review, { candidateText: exactText, snapshot });
+  if (review) {
+    if (!same(value.findings, review.findings) || !same(normalized, review.review)) invalid("invocation_review");
+  } else {
+    const ordinary = value.findings.map(finding => normalizeRecordOnlyFinding({ unresolved: true, ...finding }));
+    const derived = audit.response_evidence.derived_finding_ids;
+    if (!same(ordinary, audit.findings.filter(finding => !derived.includes(finding.id)
+      && !(finding.derived_in_code === true && finding.code === RESPONSE_EVIDENCE_CODES.stale)))
+      || !same(value.repair_induced_checks, audit.repair_induced_checks)
+      || !same(normalized, audit.response_evidence.review)) invalid("invocation_audit_output");
+  }
+  return output;
+}
+
+export function matchingSupervisorInvocation(record, { operationKey, stage, candidate, snapshot, contextId, viewSha256 }) {
+  const expected = supervisorInvocationInput({ operationKey, stage, candidate, snapshot, viewSha256 });
+  const completed = (record.supervisor_invocations ?? []).find(entry => entry.event_type === "COMPLETED"
+    && entry.actual_context_id === contextId && same(entry.input, expected));
+  if (!completed) invalid("supervisor_invocation_missing");
+  const started = record.supervisor_invocations.find(entry => entry.event_type === "STARTED" && entry.attempt_context_id === completed.attempt_context_id);
+  if (!started || !same(started.input, expected) || !same(completed.provider_receipt, completed.output?.providerReceipt)
+    || !["provider", "model", "response_id"].every(key => typeof completed.provider_receipt?.[key] === "string" && completed.provider_receipt[key].trim())) invalid("supervisor_invocation_receipt");
+  if (record.supervisor_invocations.filter(entry => entry.event_type === "COMPLETED" && entry.provider_receipt?.response_id === completed.provider_receipt.response_id).length !== 1) invalid("provider_response_reused");
+  return completed.output;
+}
+export function verifyRuntimeWriterInvocation(record, turn, { parentCandidateId = null, contextId, exactText, snapshot, viewSha256 }) {
+  const parent = record.candidate_responses.find(entry => entry.id === parentCandidateId);
+  const input = parent ? runtimeRepairInputIdentity(parent, parent.audit_history.at(-1), null, snapshot) : runtimeCandidateInputIdentity(turn, null, snapshot);
+  const invocation = turn.events.find(entry => entry.event_type === "INVOCATION_COMPLETED" && entry.stage === (parent ? "repair" : "candidate")
+    && entry.details?.actual_context_id === contextId && entry.input_sha256 === sha256Text(JSON.stringify(input)));
+  return verifySealedEvidenceOutput(invocation?.details?.output, { contextId, snapshot, viewSha256, exactText });
+}
+
+// Shared by status routing and execution: a read-only status must not hide recoverable work from the runner.
+export function inspectGovernedModelCall({ record, snapshot, rootCandidate = null, completed = null }) {
+  if (completed) return { snapshot, completed, evidence: null, refreshed: false };
+  try {
+    if (snapshot && responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) {
+      const resolved = buildEvidenceModelView(record, snapshot);
+      return { snapshot, evidence: { snapshot, view: resolved.view, viewSha256: resolved.view_sha256 } };
+    }
+  } catch { /* An unresolvable view is a dependency change, including amended exact source bytes. */ }
+  return { snapshot, needsRefresh: snapshot?.revision < RESPONSE_EVIDENCE_BUDGETS.revisions || !snapshot,
+    exhausted: snapshot?.revision >= RESPONSE_EVIDENCE_BUDGETS.revisions };
+}
+// One pre-call recovery rule: sealed output wins; otherwise refresh unusable inputs within the lineage budget.
+export async function prepareGovernedModelCall({ record, snapshot, rootCandidate = null, completed = null, freeze, load }) {
+  let refreshed = false;
+  for (;;) {
+    const inspected = inspectGovernedModelCall({ record, snapshot, rootCandidate, completed });
+    if (!inspected.needsRefresh) return { ...inspected, refreshed };
+    snapshot = await freeze(snapshot ? "dependency_refresh" : "initial", { record, snapshot });
+    record = await load();
+    refreshed = true;
+  }
+}
+export function responseEvidenceRefreshJournal(record, snapshot) {
+  const journal = { ...structuredClone(snapshot.journal), source_items: snapshot.source_items.filter(entry => entry.kind === "journal_quotation") };
+  const current = locator => (record.journal_corpora ?? []).some(corpus => corpus.corpus_id === locator.corpus_id
+    && corpus.active_generation === locator.generation && corpus.visibility_epoch === locator.visibility_epoch);
+  const included = journal.source_items.length;
+  journal.source_items = journal.source_items.filter(item => current(item.locator));
+  if (included !== journal.source_items.length || journal.receipts.some(receipt => !current(receipt))) {
+    journal.availability = "unavailable"; journal.retrieval_status = "not_attempted";
+    journal.omissions.push({ reason: "journal_binding_changed", count: 1 });
+  }
+  return journal;
+}
 export function normalizeRecordOnlyFinding(finding) {
   if (!SELF_DIRECTED_RISK_AUDIT_CODES.includes(finding?.code)) return finding;
   return { ...finding, record_only: true,
@@ -526,7 +620,7 @@ function journalRetrievalStatement(journal) {
 }
 export function responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate = null } = {}) {
   const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256, lineageRootId: rootCandidate?.id });
-  if (snapshot.revision === 1 && rootCandidate?.metadata?.response_evidence?.snapshot_id === snapshot.id) {
+  if (rootCandidate?.metadata?.response_evidence?.snapshot_id === snapshot.id) {
     if (sha256Json(record.case_state) !== rootCandidate.metadata?.response_evidence?.established_context_after_commit_sha256) return false;
     current.established_context_digest = snapshot.dependency_binding.established_context_digest;
   }
@@ -572,27 +666,26 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
     if (writerRequired) {
       if (!binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
       if (runtime) {
-        const stage = candidate.parent_candidate_id === null ? "candidate" : "repair";
-        const invocation = runtime.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === stage && event.details?.actual_context_id === candidate.producer_context_id && event.details?.output?.exactText === candidate.exact_text);
-        const inclusion = invocation?.details?.output?.responseEvidenceInclusion;
-        if (!inclusion || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
-      } else if (candidate.metadata.response_evidence_view_sha256 !== binding.writer_inclusion_sha256 || binding.writer_inclusion_sha256 !== buildEvidenceModelView(record, snapshot, { historical: true }).view_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
+        verifyRuntimeWriterInvocation(record, runtime, { parentCandidateId: candidate.parent_candidate_id, contextId: candidate.producer_context_id,
+          snapshot, viewSha256: binding.writer_inclusion_sha256, exactText: candidate.exact_text });
+      } else {
+        const inputCandidate = candidate.parent_candidate_id === null ? { id: candidate.id, version: candidate.version, exact_text: inboundText }
+          : record.candidate_responses.find(entry => entry.id === candidate.parent_candidate_id);
+        const output = matchingSupervisorInvocation(record, { operationKey: snapshot.owner.operation_key, stage: candidate.parent_candidate_id === null ? "candidate" : "repair",
+          candidate: inputCandidate, snapshot, contextId: candidate.producer_context_id, viewSha256: binding.writer_inclusion_sha256 });
+        verifySealedEvidenceOutput(output, { contextId: candidate.producer_context_id, snapshot, viewSha256: binding.writer_inclusion_sha256, exactText: candidate.exact_text });
+      }
     }
     if (!audit || (!auditPoint && (audit.verdict !== "pass" || audit.sufficient_for_approval !== true)) || audit.candidate_id !== candidate.id || audit.candidate_version !== candidate.version || audit.candidate_sha256 !== sha256Text(candidate.exact_text)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_binding");
     const evidence = validateResponseEvidenceAudit(audit, candidate, snapshot);
     if (runtime) {
       const invocation = runtime.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit" && event.details?.actual_context_id === audit.auditor_context_id
         && event.input_sha256 === sha256Text(JSON.stringify(runtimeAuditInputIdentity(candidate, null, snapshot))));
-      const inclusion = invocation?.details?.output?.responseEvidenceInclusion;
-      if (!inclusion || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== evidence.auditor_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
-      const sealedValue = invocation.details.output.value ?? invocation.details.output.result;
-      const sealedReview = normalizeEvidenceReview(sealedValue?.evidence_review, { candidateText: candidate.exact_text, snapshot });
-      const ordinary = sealedValue.findings.map(finding => normalizeRecordOnlyFinding({ unresolved: true, ...finding }));
-      if (!same(ordinary, audit.findings.filter(finding => !evidence.derived_finding_ids.includes(finding.id) && !(finding.derived_in_code === true && finding.code === RESPONSE_EVIDENCE_CODES.stale))) || !same(sealedValue.repair_induced_checks, audit.repair_induced_checks)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_output_binding");
-      if (!same(sealedReview, evidence.review)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_review_binding");
+      verifySealedEvidenceOutput(invocation?.details?.output, { contextId: audit.auditor_context_id, snapshot, viewSha256: evidence.auditor_inclusion_sha256, exactText: candidate.exact_text, audit });
     } else {
-      const receipt = (record.supervisor_artifacts ?? []).find((entry) => entry.kind === "review_receipt" && entry.audit_id === audit.id && entry.candidate_id === candidate.id && entry.candidate_version === candidate.version);
-      if (!hasSupervisorEvidenceReviewReceipt(receipt) || evidence.auditor_inclusion_sha256 !== buildEvidenceModelView(record, snapshot, { historical: true }).view_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
+      const output = matchingSupervisorInvocation(record, { operationKey: snapshot.owner.operation_key, stage: "audit", candidate, snapshot,
+        contextId: audit.auditor_context_id, viewSha256: evidence.auditor_inclusion_sha256 });
+      verifySealedEvidenceOutput(output, { contextId: audit.auditor_context_id, snapshot, viewSha256: evidence.auditor_inclusion_sha256, exactText: candidate.exact_text, audit });
     }
     if (deriveEvidenceFindings(evidence.review).length) return result(RESPONSE_EVIDENCE_CODES.unsupported, "blocking_support");
     if (freshnessRequired && !responseEvidenceDependenciesCurrent(record, candidate, snapshot)) return result(RESPONSE_EVIDENCE_CODES.stale, "dependencies_changed");

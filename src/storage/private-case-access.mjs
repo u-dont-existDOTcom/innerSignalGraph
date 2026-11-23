@@ -69,6 +69,7 @@ function nonJournalStateDigest(record) {
   for (const field of NON_JOURNAL_EXCLUDED_FIELDS) delete copy[field];
   // Match pre-extension digests until evidence exists; nonempty snapshots remain protected case content.
   if (copy.response_evidence_snapshots?.length === 0) delete copy.response_evidence_snapshots;
+  if (copy.supervisor_invocations?.length === 0) delete copy.supervisor_invocations;
   return createHash("sha256").update(JSON.stringify(copy)).digest("hex");
 }
 // Judged on real locations: a link back into the checkout is inside, and so is a name like "..private".
@@ -234,6 +235,9 @@ export function createPrivateCaseAccessService({
   const supervisorDraftSource = Object.freeze({
     responseEvidencePolicy,
     freezeResponseEvidence: (caseId, input, authContext) => supervisorWrite(caseId, authContext, "ticket", (store) => store.freezeResponseEvidence(caseId, input)),
+    startSupervisorInvocation: (caseId, input, authContext) => supervisorWrite(caseId, authContext, "ticket", store => store.startSupervisorInvocation(caseId, input)),
+    completeSupervisorInvocation: (caseId, input, authContext) => supervisorWrite(caseId, authContext, "ticket", store => store.completeSupervisorInvocation(caseId, input)),
+    recordSupervisorEvidenceStale: (caseId, candidateId, authContext) => supervisorWrite(caseId, authContext, "ticket", store => store.recordSupervisorEvidenceStale(caseId, candidateId)),
     // The caller's own bearer, authorized for the case, or a ticket for it.
     getSupervisorSnapshot: (caseId, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.getSupervisorSnapshot(caseId)),
     resolveSupervisorSubmission: (caseId, input, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.resolveSupervisorSubmission(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL })),
@@ -328,6 +332,9 @@ export function createPrivateCaseAccessService({
       return auditWrite(caseId, authContext, store => store.commitPrivateRuntimeEvidenceStale(caseId, runtimeTurnId, input));
     },
     async freezeResponseEvidence(caseId, input, authContext) { return write(caseId, authContext, (store) => store.freezeResponseEvidence(caseId, input)); },
+    async startSupervisorInvocation(caseId, input, authContext) { return auditWrite(caseId, authContext, store => store.startSupervisorInvocation(caseId, input)); },
+    async completeSupervisorInvocation(caseId, input, authContext) { return auditWrite(caseId, authContext, store => store.completeSupervisorInvocation(caseId, input)); },
+    async recordSupervisorEvidenceStale(caseId, candidateId, authContext) { return auditWrite(caseId, authContext, store => store.recordSupervisorEvidenceStale(caseId, candidateId)); },
     async beginPrivateRuntimeTurn(caseId, input, authContext) { return write(caseId, authContext, (store) => store.beginPrivateRuntimeTurn(caseId, input)); },
     async getPrivateRuntimeTurn(caseId, runtimeTurnId, authContext) { return read(caseId, authContext, (store) => store.getPrivateRuntimeTurn(caseId, runtimeTurnId)); },
     async recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event, authContext) {

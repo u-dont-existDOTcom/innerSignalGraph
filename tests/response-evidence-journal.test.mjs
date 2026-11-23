@@ -9,7 +9,7 @@ import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { createJournalResultCache, openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { createSessionUseJournalEvidenceProvider } from "../src/journal-import/response-evidence-journal.mjs";
 import { createCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvidenceModelView, sha256Json, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvidenceModelView, responseEvidenceRefreshJournal, sha256Json, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
 
 const CASE = "synthetic-case", CORPUS = "synthetic-corpus", AUTH = { bearerToken: "session-use-grant" };
 const fixture = async (name) => JSON.parse(await fs.readFile(new URL(`../schemas/journal-import/fixtures/${name}`, import.meta.url), "utf8"));
@@ -156,6 +156,12 @@ test("a visibility epoch change invalidates the earlier governed snapshot at the
   const viewSha = buildEvidenceModelView(record, snapshot).view_sha256;
   const audit = createCandidateAuditEvidence({ auditId: "audit:journal", candidate, auditVersion: "private-candidate-audit-v4", auditorContext: { kind: "independent", context_id: "context:journal:auditor" }, findings: [],
     responseEvidence: { snapshotId: snapshot.id, snapshotSha256: snapshot.snapshot_sha256, auditorInclusionSha256: viewSha, review: review(), snapshot } });
+  const started = await env.store.startSupervisorInvocation(CASE, { operationKey: snapshot.owner.operation_key, stage: "audit", candidateId: candidate.id,
+    snapshotId: snapshot.id, attemptContextId: "attempt:journal:audit" });
+  await env.store.completeSupervisorInvocation(CASE, { startedId: started.id, output: { contextId: audit.auditor_context_id,
+    providerReceipt: { provider: "synthetic", model: "synthetic-reviewer", response_id: "response:journal" },
+    responseEvidenceInclusion: { snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256, view_sha256: viewSha },
+    value: { findings: [], repair_induced_checks: [], evidence_review: review() } } });
   await env.store.recordSupervisorAudit(CASE, candidate.id, audit, { disclosureManifest: { response_evidence_view_included: true }, providerReceipt: { provider: "synthetic", model: "synthetic-reviewer", response_id: "response:journal" } });
   await env.store.approveSupervisorDraft(CASE, candidate.id, audit.id);
   record = await env.store.load(CASE); candidate = record.candidate_responses.at(-1);
@@ -166,6 +172,11 @@ test("a visibility epoch change invalidates the earlier governed snapshot at the
   await assert.rejects(env.store.exportSupervisorArtifact(CASE, { artifactId: submitted.artifact.artifact_id, channel: "owner_ui" }), (error) => error.code === "SUPERVISOR_ARTIFACT_STALE");
   const oldHits = env.counts.cacheHits;
   assert.equal((await env.retrieve()).availability, "unavailable"); assert.equal(env.counts.cacheHits, oldHits);
+  const refreshed = await env.store.freezeResponseEvidence(CASE, { ...freezeInput(responseEvidenceRefreshJournal(record, snapshot)),
+    snapshotId: "snapshot:journal:supervisor:r2", revision: 2, parentSnapshotId: snapshot.id, revisionReason: "dependency_refresh" });
+  assert.equal(refreshed.journal.availability, "unavailable");
+  assert.equal(refreshed.source_items.some(item => item.kind === "journal_quotation"), false);
+  assert.doesNotThrow(() => buildEvidenceModelView(record, refreshed));
 });
 
 test("origin/main reads a governed snapshot containing journal quotations and retrieval record", async (t) => {
