@@ -1,3 +1,4 @@
+import { SELF_DIRECTED_RISK_AUDIT_CODES } from "../prompts/self-directed-risk-audit.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
 import { applyTranscriptAmendments } from "../storage/transcript-amendments.mjs";
@@ -12,14 +13,15 @@ export const RESPONSE_EVIDENCE_DIMENSIONS = Object.freeze([
 export const RESPONSE_EVIDENCE_ASSESSMENTS = Object.freeze(["supported", "contradicted", "unsupported", "uncertain_but_worded_accurately"]);
 // These are provenance capabilities, not an entailment judgment. Accurate qualifications remain the auditor's responsibility.
 export const RESPONSE_EVIDENCE_KINDS = Object.freeze({
-  exact_client_turn: { from: "effective_user_turn", supports: ["prior_delivery", "personal_history", "history_dependent_advice", "coverage_scope_and_conflicts"], limit: "quoted_words_only_for_delivery" },
-  app_committed_client_outbound: { from: "app_committed_projection", supports: ["prior_delivery"], limit: "exact_text_only" },
-  owner_reported_client_outbound: { from: "resolved_owner_action_report", supports: ["prior_delivery"], limit: "reported_provenance" },
+  exact_client_turn: { from: "effective_user_turn", supports: ["prior_delivery", "personal_history", "history_dependent_advice", "source_consultation_claims", "coverage_scope_and_conflicts"], limit: "quoted_words_only_for_delivery" },
+  app_committed_client_outbound: { from: "app_committed_projection", supports: ["prior_delivery", "source_consultation_claims"], limit: "exact_text_only" },
+  owner_reported_client_outbound: { from: "resolved_owner_action_report", supports: ["prior_delivery", "source_consultation_claims"], limit: "reported_provenance" },
   agent_relayed_report: { from: "relayed_or_unresolved_report", supports: [], limit: "reported_or_uncertain_wording_only" },
   unsent_draft: { from: "undelivered_candidate", supports: [], limit: "non_delivery_only" },
   unattributed_assistant_turn: { from: "unattributed_assistant_turn", supports: [], limit: "audience_unknown" },
-  relayed_client_message: { from: "supervisor_client_message_input", supports: ["personal_history", "history_dependent_advice", "coverage_scope_and_conflicts"], limit: "relayed_with_supplier" },
+  relayed_client_message: { from: "supervisor_client_message_input", supports: ["personal_history", "history_dependent_advice", "source_consultation_claims", "coverage_scope_and_conflicts"], limit: "relayed_with_supplier" },
   supervisor_instruction: { from: "supervisor_revision_input", supports: [], limit: "instruction_only" },
+  journal_retrieval_record: { from: "snapshot_journal_part", supports: ["source_consultation_claims", "coverage_scope_and_conflicts"], limit: "retrieval_only" },
   journal_quotation: { from: "authorized_session_use_excerpt", supports: ["personal_history", "history_dependent_advice", "source_consultation_claims", "coverage_scope_and_conflicts"], limit: "written_account_only" }
 });
 for (const kind of Object.values(RESPONSE_EVIDENCE_KINDS)) {
@@ -43,6 +45,7 @@ const shape = (properties, optional = []) => ({ type: "object", additionalProper
 const timeSchema = shape({ at: nullable(text(80)), status: enumeration(["known", "unavailable"]) });
 const spanSchema = shape({ start_utf8_byte: integer(), end_utf8_byte: integer(1), span_sha256: sha });
 const locatorSchema = { anyOf: [
+  shape({ kind: { const: "journal_record" } }),
   shape({ kind: { const: "transcript_turn" }, turn_id: id }),
   shape({ kind: { const: "candidate" }, candidate_id: id, candidate_version: integer(1) }),
   shape({ kind: { const: "supervisor_input" }, entry_id: id }),
@@ -169,6 +172,7 @@ function checkSourceItem(item) {
     unsent_draft: ["assistant", "supervisor", "unsent_draft", "candidate"],
     relayed_client_message: ["supervisor", "supervisor", "owner_reported", "supervisor_input"],
     supervisor_instruction: ["supervisor", "supervisor", "owner_reported", "supervisor_input"],
+    journal_retrieval_record: ["unknown", "private_journal", "unknown_delivery", "journal_record"],
     journal_quotation: ["client", "private_journal", "client_written_account", "journal"]
   }[item.kind];
   if (expected && !same([item.actor, item.audience, item.epistemic_status, item.locator.kind], expected)) invalid("source_provenance");
@@ -176,6 +180,7 @@ function checkSourceItem(item) {
   if ((item.time.status === "known") !== (item.time.at !== null) || (item.time.at !== null && Number.isNaN(Date.parse(item.time.at)))) invalid();
   if (item.locator.kind === "transcript_turn") { if (item.exact_excerpt !== null) invalid(); }
   else if (typeof item.exact_excerpt !== "string" || item.excerpt_sha256 !== sha256Text(item.exact_excerpt) || item.excerpt_bytes !== Buffer.byteLength(item.exact_excerpt)) invalid("excerpt_mismatch");
+  if ((item.kind === "journal_retrieval_record") !== (item.locator.kind === "journal_record")) invalid("source_provenance");
   if ((item.kind === "journal_quotation") !== (item.locator.kind === "journal")) invalid();
   if (item.locator.kind === "journal" && item.locator.end_byte - item.locator.start_byte !== item.excerpt_bytes) invalid("excerpt_mismatch");
 }
@@ -187,6 +192,8 @@ export function validateResponseEvidenceSnapshot(snapshot) {
   if (snapshot.original_writer_source_inclusion !== (snapshot.candidate_origin === "backend_produced" ? "verified" : "not_attested")) invalid("origin_mismatch");
   uniqueIds(snapshot.source_items); uniqueIds(snapshot.history_requirements);
   snapshot.source_items.forEach(checkSourceItem);
+  const retrieval = snapshot.source_items.filter(item => item.kind === "journal_retrieval_record");
+  if (retrieval.length > 1 || retrieval.some(item => item.id !== "src:journal:record" || item.exact_excerpt !== journalRetrievalStatement(snapshot.journal))) invalid("journal_record");
   const inventory = (predicate) => snapshot.source_items.filter(predicate);
   const drafts = inventory((item) => item.kind === "unsent_draft"), inputs = inventory((item) => item.locator.kind === "supervisor_input");
   if (inventory((item) => item.id.startsWith("src:turn:")).length > 120 || drafts.length > 10 || inputs.length > 20
@@ -201,7 +208,7 @@ export function validateResponseEvidenceSnapshot(snapshot) {
 }
 const makeItem = (id, kind, actor, audience, exactText, locator, at = null, suppliedBy = null) => ({
   id, kind, actor, audience, time: { at, status: at === null ? "unavailable" : "known" },
-  epistemic_status: ({ exact_client_turn: "exact_client_words", app_committed_client_outbound: "app_committed_text", owner_reported_client_outbound: "owner_reported", agent_relayed_report: "agent_relayed_report", unsent_draft: "unsent_draft", unattributed_assistant_turn: "unknown_delivery", relayed_client_message: "owner_reported", supervisor_instruction: "owner_reported", journal_quotation: "client_written_account" })[kind],
+  epistemic_status: ({ exact_client_turn: "exact_client_words", app_committed_client_outbound: "app_committed_text", owner_reported_client_outbound: "owner_reported", agent_relayed_report: "agent_relayed_report", unsent_draft: "unsent_draft", unattributed_assistant_turn: "unknown_delivery", relayed_client_message: "owner_reported", supervisor_instruction: "owner_reported", journal_quotation: "client_written_account", journal_retrieval_record: "unknown_delivery" })[kind],
   excerpt_sha256: sha256Text(exactText), excerpt_bytes: Buffer.byteLength(exactText), exact_excerpt: locator.kind === "transcript_turn" ? null : exactText, locator,
   ...(suppliedBy ? { supplied_by: structuredClone(suppliedBy) } : {})
 });
@@ -323,6 +330,11 @@ export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJ
     if (!corpus || corpus.active_generation !== locator.generation || corpus.visibility_epoch !== locator.visibility_epoch || !receipt) invalid("journal_authority");
   }
   const sources = buildResponseEvidenceSourceItems(record, { journalItems: normalized.source_items, inbound, lineageRootId: input.lineageRootId });
+  // Reserve one inventory slot for the trusted retrieval record; a caller can supply only quotations.
+  if (sources.source_items.length >= 200) {
+    sources.source_items.shift();
+    recordOmission(sources.communication_projection.omitted.source_items, "source_item_limit");
+  }
   const includedJournal = sources.source_items.filter((entry) => entry.kind === "journal_quotation");
   if (includedJournal.length !== normalized.source_items.length) {
     normalized.journal.omissions.push({ reason: "source_item_limit", count: normalized.source_items.length - includedJournal.length });
@@ -344,7 +356,8 @@ export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJ
   if (omittedHistory) omissions.push({ reason: "history_requirement_budget", count: omittedHistory });
   // Leave room for the digest while fitting. Omit whole sources, in the specified priority order.
   snapshot.snapshot_sha256 = "0".repeat(64);
-  const overBudget = () => Buffer.byteLength(JSON.stringify(snapshot)) > RESPONSE_EVIDENCE_BUDGETS.snapshot_bytes;
+  const overBudget = () => Buffer.byteLength(JSON.stringify(snapshot)) + Buffer.byteLength(JSON.stringify(makeItem(
+    "src:journal:record", "journal_retrieval_record", "unknown", "private_journal", journalRetrievalStatement(snapshot.journal), { kind: "journal_record" }))) + 1 > RESPONSE_EVIDENCE_BUDGETS.snapshot_bytes;
   const synchronizeHistorySources = () => {
     const available = new Set(snapshot.source_items.map((item) => item.id));
     snapshot.history_requirements = snapshot.history_requirements.map((entry) => {
@@ -379,16 +392,31 @@ export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJ
     snapshot.journal.budget.used_bytes -= excerptCost(item).bytes;
     snapshot.journal.budget.used_tokens -= excerptCost(item).tokens;
   });
+  snapshot.source_items.push(makeItem("src:journal:record", "journal_retrieval_record", "unknown", "private_journal",
+    journalRetrievalStatement(snapshot.journal), { kind: "journal_record" }));
   snapshot.snapshot_sha256 = responseEvidenceSnapshotSha256(snapshot);
   return validateResponseEvidenceSnapshot(snapshot);
 }
-export function buildEvidenceModelView(record, snapshot) {
+export function buildEvidenceModelView(record, snapshot, { historical = false } = {}) {
   validateResponseEvidenceSnapshot(snapshot);
   if (snapshot.case_id !== record.case_id) invalid("foreign_snapshot");
   const turns = effectiveTurns(record);
   const sourceItems = snapshot.source_items.map((item) => {
     const runtime = (record.runtime_turns ?? []).find((entry) => entry.user_turn_id === item.locator.turn_id);
-    const exactText = item.locator.kind === "transcript_turn" ? turns.find((entry) => entry.id === item.locator.turn_id)?.text ?? runtime?.inbound.exact_text : item.exact_excerpt;
+    let exactText = item.locator.kind === "transcript_turn" ? turns.find((entry) => entry.id === item.locator.turn_id)?.text ?? runtime?.inbound.exact_text : item.exact_excerpt;
+    // Admission verifies a past supervisor receipt even when a later amendment made export stale.
+    // Recover only exact hash-matching bytes from the record's immutable original and amendment ledger.
+    if (historical && item.locator.kind === "transcript_turn" && sha256Text(exactText ?? "") !== item.excerpt_sha256) {
+      let prior = record.raw_transcript.find(turn => turn.id === item.locator.turn_id)?.text;
+      if (typeof prior === "string") {
+        if (sha256Text(prior) === item.excerpt_sha256) exactText = prior;
+        else for (const amendment of record.transcript_amendments ?? []) {
+          if (amendment.target_turn_id !== item.locator.turn_id) continue;
+          prior += amendment.completion_text;
+          if (sha256Text(prior) === item.excerpt_sha256) { exactText = prior; break; }
+        }
+      }
+    }
     if (typeof exactText !== "string" || sha256Text(exactText) !== item.excerpt_sha256 || Buffer.byteLength(exactText) !== item.excerpt_bytes) invalid("excerpt_mismatch");
     return { ...structuredClone(item), exact_excerpt: exactText };
   });
@@ -475,9 +503,23 @@ export function validateResponseEvidenceAudit(audit, candidate, snapshot = null)
   if (snapshot && (evidence.snapshot_id !== snapshot.id || evidence.snapshot_sha256 !== snapshot.snapshot_sha256)) invalid("audit_snapshot_mismatch");
   return evidence;
 }
+// This exact object is the controller's sealed invocation input, including insertion order.
+export function runtimeAuditInputIdentity(candidate, journalEvidence = null, snapshot = null) {
+  return { candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: sha256Text(candidate.exact_text),
+    journal_evidence_sha256: journalEvidence?.sha256 ?? null,
+    ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
+}
+export function normalizeRecordOnlyFinding(finding) {
+  if (!SELF_DIRECTED_RISK_AUDIT_CODES.includes(finding?.code)) return finding;
+  return { ...finding, record_only: true,
+    ...(["substantive", "high"].includes(finding.severity) ? { severity: "medium", reported_severity: finding.severity } : {}) };
+}
+function journalRetrievalStatement(journal) {
+  return `Journal retrieval record\navailability: ${journal.availability}\nretrieval_status: ${journal.retrieval_status}\ncoverage: ${JSON.stringify(journal.coverage)}\nmore_available: ${journal.more_available}\nomissions: ${JSON.stringify(journal.omissions.map(({ reason, count }) => ({ reason, count })))}`;
+}
 export function responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate = null } = {}) {
   const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256, lineageRootId: rootCandidate?.id });
-  if (snapshot.revision === 1 && rootCandidate) {
+  if (snapshot.revision === 1 && rootCandidate?.metadata?.response_evidence?.snapshot_id === snapshot.id) {
     if (sha256Json(record.case_state) !== rootCandidate.metadata?.response_evidence?.established_context_after_commit_sha256) return false;
     current.established_context_digest = snapshot.dependency_binding.established_context_digest;
   }
@@ -493,7 +535,7 @@ const result = (code = null, reason = null) => ({ admissible: code === null, cod
 export function assessResponseEvidenceAdmission(record, candidate, { policy = "advisory", point = "approval" } = {}) {
   if (!["advisory", "enforced"].includes(policy)) return result(RESPONSE_EVIDENCE_CODES.invalid, "policy_invalid");
   const binding = candidate?.metadata?.response_evidence;
-  if (!binding) return policy === "enforced" && !["recordCandidateAudit", "recordSupervisorAudit", "commitPrivateRuntimeAudit"].includes(point)
+  if (!binding) return policy === "enforced" && !["recordCandidateAudit", "recordSupervisorAudit"].includes(point) && !(point === "commitPrivateRuntimeAudit" && candidate.audit_history.at(-1)?.verdict === "fail")
     ? result(RESPONSE_EVIDENCE_CODES.required, "snapshot_required") : result();
   const auditPoint = ["recordCandidateAudit", "recordSupervisorAudit", "commitPrivateRuntimeAudit"].includes(point);
   const audit = auditPoint ? candidate.audit_history.at(-1) : candidate.audit_history.find((entry) => entry.id === candidate.metadata.approval_audit_id) ?? [...candidate.audit_history].reverse().find((entry) => entry.sufficient_for_approval);
@@ -514,7 +556,7 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
     const inboundText = runtime?.inbound.exact_text ?? effectiveTurns(record).find((entry) => entry.id === snapshot.inbound.turn_id)?.text;
     const freshnessRequired = !auditPoint && point !== "approveSupervisorDraft";
     if (freshnessRequired && (typeof inboundText !== "string" || sha256Text(inboundText) !== snapshot.inbound.exact_text_sha256)) return result(RESPONSE_EVIDENCE_CODES.stale, "inbound_changed");
-    const writerRequired = Boolean(runtime) || (candidate.id === root.id && actualOrigin === "backend_produced");
+    const writerRequired = Boolean(runtime) || candidate.id !== root.id || actualOrigin === "backend_produced";
     if (binding.writer_inclusion !== (writerRequired ? "verified" : "not_attested") || (!writerRequired && binding.writer_inclusion_sha256 !== null)) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
     if (writerRequired) {
       if (!binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
@@ -523,19 +565,23 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
         const invocation = runtime.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === stage && event.details?.actual_context_id === candidate.producer_context_id && event.details?.output?.exactText === candidate.exact_text);
         const inclusion = invocation?.details?.output?.responseEvidenceInclusion;
         if (!inclusion || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
-      } else if (candidate.metadata.response_evidence_view_sha256 !== binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
+      } else if (candidate.metadata.response_evidence_view_sha256 !== binding.writer_inclusion_sha256 || binding.writer_inclusion_sha256 !== buildEvidenceModelView(record, snapshot, { historical: true }).view_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
     }
     if (!audit || (!auditPoint && (audit.verdict !== "pass" || audit.sufficient_for_approval !== true)) || audit.candidate_id !== candidate.id || audit.candidate_version !== candidate.version || audit.candidate_sha256 !== sha256Text(candidate.exact_text)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_binding");
     const evidence = validateResponseEvidenceAudit(audit, candidate, snapshot);
     if (runtime) {
-      const invocation = runtime.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit" && event.details?.actual_context_id === audit.auditor_context_id);
+      const invocation = runtime.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit" && event.details?.actual_context_id === audit.auditor_context_id
+        && event.input_sha256 === sha256Text(JSON.stringify(runtimeAuditInputIdentity(candidate, null, snapshot))));
       const inclusion = invocation?.details?.output?.responseEvidenceInclusion;
       if (!inclusion || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== evidence.auditor_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
-      const sealedReview = normalizeEvidenceReview(invocation.details.output.value?.evidence_review, { candidateText: candidate.exact_text, snapshot });
+      const sealedValue = invocation.details.output.value ?? invocation.details.output.result;
+      const sealedReview = normalizeEvidenceReview(sealedValue?.evidence_review, { candidateText: candidate.exact_text, snapshot });
+      const ordinary = sealedValue.findings.map(finding => normalizeRecordOnlyFinding({ unresolved: true, ...finding }));
+      if (!same(ordinary, audit.findings.filter(finding => !evidence.derived_finding_ids.includes(finding.id) && !(finding.derived_in_code === true && finding.code === RESPONSE_EVIDENCE_CODES.stale))) || !same(sealedValue.repair_induced_checks, audit.repair_induced_checks)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_output_binding");
       if (!same(sealedReview, evidence.review)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_review_binding");
     } else {
       const receipt = (record.supervisor_artifacts ?? []).find((entry) => entry.kind === "review_receipt" && entry.audit_id === audit.id && entry.candidate_id === candidate.id && entry.candidate_version === candidate.version);
-      if (receipt?.disclosure_manifest?.response_evidence_snapshot_sha256 !== snapshot.snapshot_sha256 || receipt?.disclosure_manifest?.response_evidence_view_sha256 !== evidence.auditor_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
+      if (!receipt || evidence.auditor_inclusion_sha256 !== buildEvidenceModelView(record, snapshot, { historical: true }).view_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
     }
     if (deriveEvidenceFindings(evidence.review).length) return result(RESPONSE_EVIDENCE_CODES.unsupported, "blocking_support");
     if (freshnessRequired && !responseEvidenceDependenciesCurrent(record, candidate, snapshot)) return result(RESPONSE_EVIDENCE_CODES.stale, "dependencies_changed");

@@ -6,7 +6,7 @@ import { score, renderReport } from "./score.mjs";
 import { selfcheck } from "./selfcheck.mjs";
 
 const USAGE = `Commands (all folders outside Git):
-  seal --out SEALED_DIR
+  seal --out SEALED_DIR [--corpus main|holdout] (default: main)
   selfcheck --sealed SEALED_DIR
   audit --sealed SEALED_DIR --out RECEIPTS_DIR (--mock | --live) [--limit N] [--samples 1|2] [--model M] [--effort E] [--concurrency 1..3]
   score --run RECEIPTS_DIR
@@ -14,7 +14,7 @@ Live audit also requires INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1 and no ANTHR
 
 function parse(argv) {
   const [command, ...args] = argv, options = {};
-  const flags = new Set(["mock", "live", "help"]), values = new Set(["out", "sealed", "run", "limit", "samples", "model", "effort", "concurrency"]);
+  const flags = new Set(["mock", "live", "help"]), values = new Set(["out", "corpus", "sealed", "run", "limit", "samples", "model", "effort", "concurrency"]);
   for (let i = 0; i < args.length; i++) {
     const key = args[i].slice(2);
     if (!args[i].startsWith("--") || Object.hasOwn(options, key)) throw new Error("Unknown or repeated argument.");
@@ -28,10 +28,10 @@ function parse(argv) {
 export async function main(argv = process.argv.slice(2)) {
   const { command, options: o } = parse(argv);
   if (!command || command === "--help" || o.help) { console.log(USAGE); return; }
-  const allowed = { seal: ["out"], selfcheck: ["sealed"], score: ["run"], audit: ["sealed", "out", "mock", "live", "limit", "samples", "model", "effort", "concurrency"] };
+  const allowed = { seal: ["out", "corpus"], selfcheck: ["sealed"], score: ["run"], audit: ["sealed", "out", "mock", "live", "limit", "samples", "model", "effort", "concurrency"] };
   if (!allowed[command] || Object.keys(o).some((k) => !allowed[command].includes(k))) throw new Error(USAGE);
   let result;
-  if (command === "seal") result = await seal({ outDir: o.out });
+  if (command === "seal") result = await seal({ outDir: o.out, corpus: o.corpus });
   if (command === "selfcheck") result = await selfcheck({ sealedDir: o.sealed });
   if (command === "audit") {
     if (o.mock && o.live) throw new Error("Choose exactly one of --mock and --live.");

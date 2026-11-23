@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
+import { withPrivateRootWriterLock } from "./shared-case-coordinator.mjs";
 import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
 import { createPrivateJournalCorpusStore } from "./private-journal-corpus.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
@@ -87,6 +88,7 @@ export function createPrivateCaseAccessService({
   keyProvider,
   allowDevelopmentFileProvider = false,
   mutationCoordinator = null,
+  heldRootDir = null,
   responseEvidencePolicy = "advisory",
   now = () => new Date().toISOString()
 } = {}) {
@@ -227,13 +229,15 @@ export function createPrivateCaseAccessService({
     }
     return runWithStore(caseId, authContext, authorization, operation);
   };
+  const supervisorWrite = (caseId, authContext, accept, operation) => supervisorRun(caseId, authContext, accept,
+    (store, authorization) => withPrivateRootWriterLock({ rootDir, heldRootDir }, () => operation(store, authorization)));
   const supervisorDraftSource = Object.freeze({
     responseEvidencePolicy,
-    freezeResponseEvidence: (caseId, input, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.freezeResponseEvidence(caseId, input)),
+    freezeResponseEvidence: (caseId, input, authContext) => supervisorWrite(caseId, authContext, "ticket", (store) => store.freezeResponseEvidence(caseId, input)),
     // The caller's own bearer, authorized for the case, or a ticket for it.
     getSupervisorSnapshot: (caseId, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.getSupervisorSnapshot(caseId)),
     resolveSupervisorSubmission: (caseId, input, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.resolveSupervisorSubmission(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL })),
-    submitSupervisorDraft: (caseId, input, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.submitSupervisorDraft(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL })),
+    submitSupervisorDraft: (caseId, input, authContext) => supervisorWrite(caseId, authContext, "either", (store) => store.submitSupervisorDraft(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL })),
     // A ticket only: the review lifecycle, which runs under the backend's authority.
     loadPrivateRuntimeCase: (caseId, authContext) => supervisorRun(caseId, authContext, "ticket", async (store) => {
       const record = await store.load(caseId);
@@ -244,17 +248,17 @@ export function createPrivateCaseAccessService({
       await supervisorRun(caseId, authContext, "ticket", (store) => store.loadCaseContext(caseId, caseContextOptions(options))),
       options
     ),
-    recordSupervisorAudit: (caseId, candidateId, evidence, receipt, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.recordSupervisorAudit(caseId, candidateId, evidence, receipt)),
-    approveCandidateForDelivery: (caseId, candidateId, auditId, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.approveSupervisorDraft(caseId, candidateId, auditId)),
-    reconstructSupervisorDraft: (caseId, parentCandidateId, input, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.reconstructSupervisorDraft(caseId, parentCandidateId, input)),
+    recordSupervisorAudit: (caseId, candidateId, evidence, receipt, authContext) => supervisorWrite(caseId, authContext, "ticket", (store) => store.recordSupervisorAudit(caseId, candidateId, evidence, receipt)),
+    approveCandidateForDelivery: (caseId, candidateId, auditId, authContext) => supervisorWrite(caseId, authContext, "ticket", (store) => store.approveSupervisorDraft(caseId, candidateId, auditId)),
+    reconstructSupervisorDraft: (caseId, parentCandidateId, input, authContext) => supervisorWrite(caseId, authContext, "ticket", (store) => store.reconstructSupervisorDraft(caseId, parentCandidateId, input)),
     // The caller's own bearer only, authorized afresh in this call.
-    exportSupervisorArtifact: (caseId, input, authContext) => supervisorRun(caseId, authContext, "bearer", async (store) => {
+    exportSupervisorArtifact: (caseId, input, authContext) => supervisorWrite(caseId, authContext, "bearer", async (store) => {
       const exported = await store.exportSupervisorArtifact(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL });
       return Object.freeze({ ...exported, checks: Object.freeze({ ...exported.checks, authorization_current: true }) });
     }),
     recordSupervisorReport: (caseId, input, authContext) => {
       const { origin: _claimedOrigin, ...rest } = input ?? {};
-      return supervisorRun(caseId, authContext, "bearer", (store) => store.recordSupervisorReport(caseId, { ...rest, origin: "agent_relayed" }));
+      return supervisorWrite(caseId, authContext, "bearer", (store) => store.recordSupervisorReport(caseId, { ...rest, origin: "agent_relayed" }));
     }
   });
   const supervisorDraftAccess = Object.freeze({
@@ -319,6 +323,9 @@ export function createPrivateCaseAccessService({
         if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
         return record;
       });
+    },
+    async commitPrivateRuntimeEvidenceStale(caseId, runtimeTurnId, input, authContext) {
+      return auditWrite(caseId, authContext, store => store.commitPrivateRuntimeEvidenceStale(caseId, runtimeTurnId, input));
     },
     async freezeResponseEvidence(caseId, input, authContext) { return write(caseId, authContext, (store) => store.freezeResponseEvidence(caseId, input)); },
     async beginPrivateRuntimeTurn(caseId, input, authContext) { return write(caseId, authContext, (store) => store.beginPrivateRuntimeTurn(caseId, input)); },

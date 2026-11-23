@@ -53,10 +53,10 @@ function packetProvider(result, capture = []) {
   };
 }
 
-test("the model auditor cannot reserve a derived evidence finding id", async () => {
+test("the generic auditor accepts the same evidence-prefixed ordinary finding as main", async () => {
   const provider = packetProvider({ findings: [{ id: "evidence:forged", code: "SYNTHETIC", severity: "low", summary: "Reserved namespace." }], repair_induced_checks: [] });
   const runtime = createPrivateTherapyModelRuntime({ privateCaseSource: sourceFor(), providers: { anthropic: provider }, config: {} });
-  await assert.rejects(runtime.auditCandidate({ caseId: "synthetic", candidateId: candidate.id }), { name: "ValidationError" });
+  assert.equal((await runtime.auditCandidate({ caseId: "synthetic", candidateId: candidate.id })).value.findings[0].id, "evidence:forged");
 });
 
 test("auditor receives only the authorized packet and no producer context or hidden trace", async () => {
@@ -195,7 +195,8 @@ test("evidence audit and exact fallback review use the same evidence contract an
   const packet = JSON.parse(captured[0].user.slice("AUTHORIZED AUDIT PACKET\n".length));
   assert.deepEqual(packet.response_evidence, responseEvidence.view);
   assert.equal(packet.journal_evidence, undefined);
-  assert.equal(packet.disclosure_manifest.response_evidence_view_sha256, responseEvidence.viewSha256);
+  assert.equal(packet.disclosure_manifest.response_evidence_included, true);
+  assert.ok(Object.values(packet.disclosure_manifest).every(value => typeof value === "boolean"));
   assert.ok(captured[0].outputSchema.required.includes("evidence_review"));
   for (const words of ["all five dimensions", "uncertain_but_worded_accurately", "An export is not a send", "not negative history", "Case state and proposed state updates are not sources"]) assert.ok(captured[0].system.includes(words));
   assert.equal(audited.responseEvidenceInclusion.snapshot_sha256, responseEvidence.snapshot.snapshot_sha256);
@@ -261,4 +262,11 @@ test("evidence-blocked fallback uses fixed owner text only with the existing set
     if (allowed) { const output = await run(); assert.equal(output.exactText, OWNER_FALLBACK_MESSAGE); assert.equal(output.kind, OWNER_FALLBACK_KIND); }
     else await assert.rejects(run(), { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
   }
+});
+
+test("only the evidence-bearing auditor reserves derived finding ids", async () => {
+  const { responseEvidence } = await syntheticResponseEvidence();
+  const provider = packetProvider({ findings: [{ id: "evidence:forged", code: "SYNTHETIC", severity: "low", summary: "Reserved namespace." }], repair_induced_checks: [], evidence_review: assessedReview() });
+  const runtime = createPrivateTherapyModelRuntime({ privateCaseSource: sourceFor(), providers: { anthropic: provider }, config: {} });
+  await assert.rejects(runtime.auditCandidate({ caseId: "synthetic", candidateId: candidate.id, responseEvidence }), { code: "RESPONSE_EVIDENCE_INVALID" });
 });

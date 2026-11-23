@@ -24,25 +24,25 @@ const stateFor = (turn) => applyCaseStatePatch(createEmptyCaseState({ caseId: CA
 
 async function setup(t, options = {}) {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-evidence-runtime-"));
-  const storeOptions = { rootDir, routineKek: Buffer.alloc(32, 41), recoverySecretBytes: Buffer.alloc(32, 42), developmentExternalCredentialAuthorized: true, responseEvidencePolicy: "enforced", now: () => NOW };
+  const storeOptions = { rootDir, routineKek: Buffer.alloc(32, 41), recoverySecretBytes: Buffer.alloc(32, 42), developmentExternalCredentialAuthorized: true, responseEvidencePolicy: options.policy ?? "enforced", now: () => NOW };
   const store = createEncryptedPrivateCaseStore(storeOptions);
   t.after(async () => { store.close(); await fs.rm(rootDir, { recursive: true, force: true }); });
   const calls = [], counts = { candidate: 0, audit: 0, repair: 0, review: 0, discriminator: 0 };
   const runtime = {
     async produceCandidate({ runtimeTurn, responseEvidence }) {
       counts.candidate++; calls.push({ stage: "candidate", responseEvidence });
-      return { exactText: "A synthetic current-message reply.", contextId: "context:writer", caseState: stateFor(runtimeTurn), responseEvidenceInclusion: inclusion(responseEvidence) };
+      return { exactText: "A synthetic current-message reply.", contextId: "context:writer", caseState: stateFor(runtimeTurn), ...(responseEvidence ? { responseEvidenceInclusion: inclusion(responseEvidence) } : {}) };
     },
     async auditCandidate({ candidate, responseEvidence }) {
       const n = counts.audit++; calls.push({ stage: "audit", responseEvidence });
       if (options.onAudit) await options.onAudit({ store, candidate, responseEvidence, n });
       const review = options.auditReview?.(candidate.exact_text, n) ?? emptyReview();
-      return { contextId: `context:audit:${n}`, responseEvidenceInclusion: inclusion(responseEvidence), value: { findings: options.alwaysFail ? [{ id: "ordinary", code: "SYNTHETIC", severity: "substantive", summary: "Synthetic repair." }] : [], repair_induced_checks: candidate.parent_candidate_id == null ? [] : [...REPAIR_INDUCED_ERROR_CHECKS], evidence_review: review } };
+      return { contextId: `context:audit:${n}`, ...(responseEvidence ? { responseEvidenceInclusion: inclusion(responseEvidence) } : {}), value: { findings: options.alwaysFail ? [{ id: "ordinary", code: "SYNTHETIC", severity: "substantive", summary: "Synthetic repair." }] : [], repair_induced_checks: candidate.parent_candidate_id == null ? [] : [...REPAIR_INDUCED_ERROR_CHECKS], evidence_review: review } };
     },
     async repairCandidate({ candidate, responseEvidence }) {
       const n = ++counts.repair;
       calls.push({ stage: "repair", responseEvidence, response_evidence_failures: responseEvidenceFailures(candidate.audit_history.at(-1)) });
-      return { exactText: `Repaired current-message reply ${n}.`, contextId: `context:repair:${n}`, responseEvidenceInclusion: inclusion(responseEvidence) };
+      return { exactText: `Repaired current-message reply ${n}.`, contextId: `context:repair:${n}`, ...(responseEvidence ? { responseEvidenceInclusion: inclusion(responseEvidence) } : {}) };
     },
     async produceDiscriminator({ evidenceReviewFailed }) {
       const n = ++counts.discriminator;
@@ -51,7 +51,7 @@ async function setup(t, options = {}) {
     },
     async reviewFallbackQuestion({ exactText, responseEvidence }) {
       counts.review++;
-      return { contextId: "context:question-review", responseEvidenceInclusion: inclusion(responseEvidence), value: { findings: options.questionFindings ?? [], repair_induced_checks: [], evidence_review: options.badQuestion ? unsupported(exactText) : emptyReview() } };
+      return { contextId: "context:question-review", ...(responseEvidence ? { responseEvidenceInclusion: inclusion(responseEvidence) } : {}), value: { findings: options.questionFindings ?? [], repair_induced_checks: [], evidence_review: options.badQuestion ? unsupported(exactText) : emptyReview() } };
     }
   };
   const controller = (extra = {}) => createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: runtime, responseEvidence: { enforced: true, journalTimeoutMs: 10 }, ...extra });
@@ -230,4 +230,90 @@ for (const changed of [false, true]) test(`completed fallback review is replayed
     await env.controller().run(request()); await assertDelivered(env.store);
   }
   assert.equal(env.counts.review, 1);
+});
+
+for (const stage of ["original", "repair"]) test(`enforced commit refuses an ungoverned ${stage} candidate without mutation`, async (t) => {
+  const env = await setup(t, { policy: "advisory", alwaysFail: true });
+  let pending;
+  const source = { ...env.store, async commitPrivateRuntimeCandidate(...args) {
+    if ((stage === "repair") === Boolean(args[1].parentCandidateId)) { pending = args; throw new Error("commit boundary"); }
+    return env.store.commitPrivateRuntimeCandidate(...args);
+  } };
+  await assert.rejects(env.controller({ privateCaseSource: source, responseEvidence: { enforced: false } }).run(request()), /commit boundary/);
+  const enforced = createEncryptedPrivateCaseStore({ ...env.storeOptions, responseEvidencePolicy: "enforced" }); t.after(() => enforced.close());
+  const before = await enforced.load(CASE);
+  await assert.rejects(enforced.commitPrivateRuntimeCandidate(...pending), { code: "RESPONSE_EVIDENCE_REQUIRED" });
+  assert.deepEqual(await enforced.load(CASE), before);
+});
+
+test("advisory PASS resumed under enforcement becomes a required FAIL and repairs on its first snapshot", async (t) => {
+  const env = await setup(t, { policy: "advisory" });
+  const source = { ...env.store, async commitPrivateRuntimeAudit() { throw new Error("audit boundary"); } };
+  await assert.rejects(env.controller({ privateCaseSource: source, responseEvidence: { enforced: false } }).run(request()), /audit boundary/);
+  const enforced = createEncryptedPrivateCaseStore({ ...env.storeOptions, responseEvidencePolicy: "enforced" }); t.after(() => enforced.close());
+  await env.controller({ privateCaseSource: enforced }).run(request());
+  const record = await assertDelivered(enforced), root = record.candidate_responses[0], repair = record.candidate_responses[1];
+  assert.equal(root.audit_history[0].verdict, "fail");
+  assert.equal(root.audit_history[0].findings.at(-1).code, "RESPONSE_EVIDENCE_REQUIRED");
+  assert.equal(root.audit_history[0].findings.at(-1).derived_in_code, true);
+  assert.equal(record.response_evidence_snapshots.length, 1);
+  assert.equal(repair.metadata.response_evidence.dependency_status, "current_at_commit");
+});
+
+for (const saved of [false, true]) test(`enforcement resumes an advisory discriminator safely (saved: ${saved})`, async (t) => {
+  const env = await setup(t, { policy: "advisory", alwaysFail: true });
+  const source = { ...env.store, ...(saved
+    ? { async deliverPrivateRuntimeDiscriminator() { throw new Error("question boundary"); } }
+    : { async savePrivateRuntimeDiscriminator() { throw new Error("question boundary"); } }) };
+  await assert.rejects(env.controller({ privateCaseSource: source, responseEvidence: { enforced: false } }).run(request()), /question boundary/);
+  const enforced = createEncryptedPrivateCaseStore({ ...env.storeOptions, responseEvidencePolicy: "enforced" }); t.after(() => enforced.close());
+  const before = await enforced.load(CASE), turn = before.runtime_turns[0];
+  if (saved) {
+    await assert.rejects(enforced.deliverPrivateRuntimeDiscriminator(CASE, turn.id, { assistantTurnId: request().assistantTurnId, eventId: "enforced:deliver" }), { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
+    assert.deepEqual(await enforced.load(CASE), before);
+    await env.controller({ privateCaseSource: enforced }).run(request());
+    const record = await assertDelivered(enforced);
+    assert.equal(record.response_evidence_snapshots.length, 1);
+    assert.ok(record.runtime_turns[0].discriminator_review);
+    assert.equal(env.counts.review, 1);
+  } else {
+    await assert.rejects(enforced.savePrivateRuntimeDiscriminator(CASE, turn.id, { exactText: "What do you notice now?", producerContextId: "context:discriminator:1" }), { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
+    await env.controller({ privateCaseSource: enforced }).run(request());
+    const record = await assertDelivered(enforced);
+    assert.equal(record.response_evidence_snapshots.length, 1);
+    assert.ok(record.runtime_turns[0].discriminator_review);
+    assert.equal(env.counts.review, 1);
+  }
+});
+
+test("source amendment before AUDITING records a trusted stale FAIL without an auditor and repairs after restart", async (t) => {
+  const env = await setup(t);
+  await env.store.appendTranscriptTurn(CASE, { id: "turn:older", exchange_id: "exchange:older", role: "user", text: "Earlier incomplete words.", at: NOW, episode_id: null });
+  const source = { ...env.store, async transitionPrivateRuntimeTurn(...args) {
+    const result = await env.store.transitionPrivateRuntimeTurn(...args);
+    if (args[2].toState === "AUDITING") throw new Error("before audit boundary");
+    return result;
+  } };
+  await assert.rejects(env.controller({ privateCaseSource: source }).run(request()), /before audit boundary/);
+  const { chunkExactSourceText, createExactSourceArtifact } = await import("../src/storage/exact-source-artifact.mjs");
+  const artifact = createExactSourceArtifact({ id: "source:amended", chunks: chunkExactSourceText("Earlier completed words."), createdAt: NOW });
+  await env.store.appendTranscriptCompletionAmendment(CASE, { amendmentId: "amendment:older", targetTurnId: "turn:older", completionText: artifact.exact_text, sourceArtifactId: artifact.id, producerContextId: "writer:completion" });
+  await env.controller().run(request());
+  const record = await assertDelivered(env.store), audit = record.candidate_responses[0].audit_history[0];
+  assert.equal(audit.verdict, "fail"); assert.equal(audit.independent, false); assert.equal(audit.independent_auditor_available, false);
+  assert.equal(audit.findings[0].code, "RESPONSE_EVIDENCE_STALE"); assert.equal(audit.findings[0].derived_in_code, true);
+  assert.equal(env.counts.audit, 1); assert.equal(env.counts.repair, 1);
+  assert.deepEqual(record.response_evidence_snapshots.map(s => s.revision_reason), ["initial", "dependency_refresh"]);
+  const delivered = await env.store.load(CASE);
+  await assert.rejects(env.store.commitPrivateRuntimeEvidenceStale(CASE, "runtime:one", { eventId: "illegal:stale" }));
+  assert.deepEqual(await env.store.load(CASE), delivered);
+});
+
+test("origin/main reads a governed runtime delivery with a reviewed fallback", async (t) => {
+  const { originMainPrivateCaseValidator } = await import("./helpers/origin-main-private-case-validator.mjs");
+  const validateOld = await originMainPrivateCaseValidator(t);
+  const env = await setup(t, { alwaysFail: true }); await env.controller().run(request());
+  const record = await assertDelivered(env.store);
+  assert.ok(record.runtime_turns[0].discriminator_review);
+  assert.doesNotThrow(() => validateOld(structuredClone(record)));
 });

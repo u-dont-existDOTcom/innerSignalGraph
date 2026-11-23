@@ -185,7 +185,7 @@ export function createPrivateSupervisorDraftService({
           const repaired = await invoke("repair", operationKey, head.version, (attemptContextId) => requireModelRuntime("repairCandidate")({
             caseId, candidate: head, journalEvidence: null, ...(repairEvidence ? { responseEvidence: repairEvidence } : {}), authContext, attemptContextId
           }));
-          await call("reconstructSupervisorDraft", [caseId, head.id, { exactText: repaired.exactText, producerContextId: repaired.contextId }], authContext);
+          await call("reconstructSupervisorDraft", [caseId, head.id, { exactText: repaired.exactText, producerContextId: repaired.contextId, ...(repairEvidence ? { writerInclusionSha256: repaired.responseEvidenceInclusion?.view_sha256 } : {}) }], authContext);
           break;
         }
         case "approved_for_delivery":

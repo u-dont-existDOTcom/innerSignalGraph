@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
-import { RESPONSE_EVIDENCE_POLICY_VERSION, normalizeEvidenceReview, deriveEvidenceFindings, validateResponseEvidenceAudit } from "./response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_POLICY_VERSION, normalizeRecordOnlyFinding, normalizeEvidenceReview, deriveEvidenceFindings, validateResponseEvidenceAudit } from "./response-evidence-contract.mjs";
 import { SELF_DIRECTED_RISK_AUDIT_CODES } from "../prompts/self-directed-risk-audit.mjs";
 
 export const PRIVATE_CANDIDATE_STATUSES = Object.freeze([
@@ -48,7 +48,6 @@ const BLOCKING_SEVERITIES = new Set(["substantive", "high"]);
 const FINDING_SEVERITIES = new Set(["low", "medium", ...BLOCKING_SEVERITIES]);
 // Findings under these codes are recorded in the audit history and never block delivery or start a repair.
 export const RECORD_ONLY_AUDIT_CODES = SELF_DIRECTED_RISK_AUDIT_CODES;
-const RECORD_ONLY_CODE_SET = new Set(RECORD_ONLY_AUDIT_CODES);
 const AVAILABILITY_STATUSES = new Set(["known", "unavailable"]);
 const sha256Hex = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -74,14 +73,6 @@ export function isSubstantiveAuditFinding(finding) {
 // stored severity is capped at medium. Doing it where the evidence is created, rather than in isSubstantiveAuditFinding, keeps
 // every stored record consistent for any reader, including an earlier build that loads this case: it sees a medium finding, an
 // empty list of unresolved substantive findings and a pass, exactly as the stored evidence says.
-function normalizeRecordOnlyFinding(finding) {
-  if (!RECORD_ONLY_CODE_SET.has(finding?.code)) return finding;
-  return {
-    ...finding,
-    record_only: true,
-    ...(BLOCKING_SEVERITIES.has(finding.severity) ? { severity: "medium", reported_severity: finding.severity } : {})
-  };
-}
 
 export function validateCandidateAuditFinding(value, index = 0) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`audit findings[${index}] must be an object.`);

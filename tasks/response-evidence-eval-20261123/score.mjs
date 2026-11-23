@@ -68,7 +68,7 @@ export async function score({ runDir }) {
     cases.push(row);
   }
   const result = { schema: "response-evidence-score-v1", mode: run.mode, requested_model: run.requested_model, effort: run.effort, provider: run.provider,
-    corpus_commit: manifest.corpus_commit, corpus_sha256: manifest.corpus_sha256, sealed_manifest_sha256: run.sealed_manifest_sha256,
+    corpus_name: manifest.corpus_name ?? "main", corpus_commit: manifest.corpus_commit, corpus_sha256: manifest.corpus_sha256, sealed_manifest_sha256: run.sealed_manifest_sha256,
     labels_status: manifest.status, exploratory: "Counts from short synthetic cases; no pooled rate or reliability claim. Mock results test propagation only.",
     hard_cap: HARD_CAP, calls_recorded: history.size, samples_scheduled: maxSample,
     cli_versions: [...new Set(invocations.map((i) => i.preflight?.claude_version).filter(Boolean))],
@@ -79,7 +79,7 @@ export async function score({ runDir }) {
 }
 
 export function renderReport(result) {
-  const lines = ["Response-evidence evaluation (exploratory).", `Corpus commit: ${result.corpus_commit}; SHA-256: ${result.corpus_sha256}.`,
+  const lines = ["Response-evidence evaluation (exploratory).", `Corpus: ${result.corpus_name ?? "main"}; commit: ${result.corpus_commit ?? "not recorded"}; SHA-256: ${result.corpus_sha256}.`,
     `Sealed manifest SHA-256: ${result.sealed_manifest_sha256}.`, `Run: ${result.mode}; model: ${result.requested_model}; effort: ${result.effort}; provider: ${result.provider}.`,
     result.labels_status, result.exploratory, ""];
   const show = (name, r) => `${name}: false approvals ${r.false_approvals} of ${r.block_labels_with_verdict}; unnecessary blocks ${r.unnecessary_blocks} of ${r.pass_labels_with_verdict} (${r.derived_evidence_blocks} derived evidence, ${r.only_ordinary_blocks} only ordinary); malformed ${r.malformed} of ${r.attempted} attempts; dimension agreement ${r.dimension_agreements} of ${r.dimension_comparisons} blocked E comparisons; ${r.input_tokens} input tokens, ${r.output_tokens} output tokens, ${r.ms.toFixed(1)} ms summed latency.`;

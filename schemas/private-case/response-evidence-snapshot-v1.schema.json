@@ -234,6 +234,7 @@
               "unattributed_assistant_turn",
               "relayed_client_message",
               "supervisor_instruction",
+              "journal_retrieval_record",
               "journal_quotation"
             ]
           },
@@ -315,6 +316,18 @@
           },
           "locator": {
             "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "journal_record"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
               {
                 "type": "object",
                 "additionalProperties": false,

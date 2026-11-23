@@ -4,9 +4,20 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-export const CORPUS = new URL("./corpus/cases.json", import.meta.url);
-export const CORPUS_COMMIT = "4b543a87a";
-export const CORPUS_SHA256 = "bbd1a40cdab2bf4964edbd234505a0b3779398ce3842b1985e0c443ede366a21";
+// Each digest freezes the exact authored bytes, independently of the selected corpus.
+export const CORPORA = Object.freeze({
+  main: Object.freeze({ file: new URL("./corpus/cases.json", import.meta.url), sha256: "bbd1a40cdab2bf4964edbd234505a0b3779398ce3842b1985e0c443ede366a21", commit: "4b543a87a", caseCount: 36 }),
+  // Claude must commit and verify these bytes before any live holdout run; no containing commit is claimed here.
+  holdout: Object.freeze({ file: new URL("./corpus/holdout-cases.json", import.meta.url), sha256: "457ce1c0d92caf5f25972480fe6a12a27268cbbe122e9ed1c7850a6e487fe8f6", commit: null, caseCount: 16 })
+});
+export function corpusEntry(name = "main") {
+  if (!Object.hasOwn(CORPORA, name)) throw new Error("--corpus must be main or holdout.");
+  return CORPORA[name];
+}
+// Keep the original main-corpus exports for existing consumers.
+export const CORPUS = CORPORA.main.file;
+export const CORPUS_COMMIT = CORPORA.main.commit;
+export const CORPUS_SHA256 = CORPORA.main.sha256;
 export const MANIFEST_SCHEMA = "response-evidence-sealed-v1";
 export const RUN_SCHEMA = "response-evidence-run-v1";
 export const HARD_CAP = 144;
@@ -20,8 +31,10 @@ export const exists = async (file) => fs.lstat(file).then(() => true, (e) => { i
 // Read Git metadata directly so even --mock has no subprocess dependency.
 export async function head() {
   let gitDir = path.join(ROOT, ".git");
-  if ((await fs.stat(gitDir)).isFile()) {
-    const pointer = (await fs.readFile(gitDir, "utf8")).trim();
+  // Read .git once instead of checking its type first (no check-then-use race): a worktree's .git is a pointer file.
+  const pointerText = await fs.readFile(gitDir, "utf8").catch((error) => { if (error.code === "EISDIR") return null; throw error; });
+  if (pointerText !== null) {
+    const pointer = pointerText.trim();
     if (!pointer.startsWith("gitdir: ")) throw new Error("Invalid Git directory pointer.");
     gitDir = path.resolve(ROOT, pointer.slice(8));
   }
@@ -77,11 +90,11 @@ export async function privateDirectory(dir) {
   await fs.chmod(dir, 0o700);
 }
 
-export async function loadCorpus() {
-  const bytes = await fs.readFile(CORPUS);
-  // This digest is of the exact committed bytes at CORPUS_COMMIT, verified with git show when the harness was built.
-  if (sha256(bytes) !== CORPUS_SHA256) throw new Error("The frozen corpus bytes differ from the corpus commit; leave the corpus alone.");
+export async function loadCorpus(name = "main") {
+  const entry = corpusEntry(name);
+  const bytes = await fs.readFile(entry.file);
+  if (sha256(bytes) !== entry.sha256) throw new Error(`The frozen ${name} corpus bytes differ from its registered SHA-256; leave the corpus alone.`);
   const corpus = JSON.parse(bytes);
-  if (corpus.cases.length !== 36 || new Set(corpus.cases.map((c) => c.id)).size !== 36) throw new Error("Expected 36 distinct frozen cases.");
-  return { corpus, bytes };
+  if (corpus.cases.length !== entry.caseCount || new Set(corpus.cases.map((c) => c.id)).size !== entry.caseCount) throw new Error(`Expected ${entry.caseCount} distinct frozen ${name} cases.`);
+  return { corpus, bytes, name, entry };
 }

@@ -93,13 +93,9 @@
         "candidate_version": { "type": "integer", "minimum": 1 },
         "audit_id": { "$ref": "#/$defs/refId" },
         "disclosure_manifest": {
-          "description": "What the independent audit run reported it was shown. Boolean flags and optional private response-evidence digests; never case text.",
+          "description": "What the independent audit run reported it was shown. Boolean flags only; never case text.",
           "type": "object", "maxProperties": 24,
           "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$" },
-          "properties": {
-            "response_evidence_snapshot_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-            "response_evidence_view_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
-          },
           "additionalProperties": { "type": "boolean" }
         },
         "provider_receipt": {

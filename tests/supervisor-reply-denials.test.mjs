@@ -115,6 +115,7 @@ test("every method of the access service refuses a holder of only the reply-draf
     transitionPrivateRuntimeTurn: () => access.transitionPrivateRuntimeTurn(CASE_ID, "runtime:x", { toState: "APPROVED" }, replyOnly),
     commitPrivateRuntimeCandidate: () => access.commitPrivateRuntimeCandidate(CASE_ID, {}, replyOnly),
     commitPrivateRuntimeAudit: () => access.commitPrivateRuntimeAudit(CASE_ID, "runtime:x", {}, {}, replyOnly),
+    commitPrivateRuntimeEvidenceStale: () => access.commitPrivateRuntimeEvidenceStale(CASE_ID, "runtime:x", {}, replyOnly),
     savePrivateRuntimeDiscriminator: () => access.savePrivateRuntimeDiscriminator(CASE_ID, "runtime:x", {}, replyOnly),
     deliverPrivateRuntimeCandidate: () => access.deliverPrivateRuntimeCandidate(CASE_ID, "runtime:x", {}, replyOnly),
     deliverPrivateRuntimeDiscriminator: () => access.deliverPrivateRuntimeDiscriminator(CASE_ID, "runtime:x", {}, replyOnly),

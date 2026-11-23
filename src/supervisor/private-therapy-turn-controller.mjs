@@ -4,7 +4,7 @@ import { createCandidateAuditEvidence, REPAIR_INDUCED_ERROR_CHECKS } from "./pri
 import { privateRuntimeNextAction } from "./private-runtime-turn-lifecycle.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { OWNER_FALLBACK_KIND } from "./owner-fallback-message.mjs";
-import { buildEvidenceModelView, deriveEvidenceFindings, normalizeEvidenceReview, responseEvidenceSnapshotCurrent } from "./response-evidence-contract.mjs";
+import { buildEvidenceModelView, deriveEvidenceFindings, normalizeEvidenceReview, runtimeAuditInputIdentity, responseEvidenceDependenciesCurrent, responseEvidenceSnapshotCurrent } from "./response-evidence-contract.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
@@ -324,14 +324,28 @@ export function createPrivateTherapyTurnController({
       if (runtimeTurn.state === "AUDITING") {
         const record = await loadCase(caseId, authContext);
         const candidate = exactCandidate(record, runtimeTurn.current_candidate_id);
-        const responseEvidenceInput = candidate.metadata.response_evidence ? modelEvidence(record, record.response_evidence_snapshots.find((entry) => entry.id === candidate.metadata.response_evidence.snapshot_id)) : null;
+        let responseEvidenceInput = null;
+        if (candidate.metadata.response_evidence) {
+          const snapshot = record.response_evidence_snapshots.find(entry => entry.id === candidate.metadata.response_evidence.snapshot_id);
+          let current = snapshot && responseEvidenceDependenciesCurrent(record, candidate, snapshot);
+          if (current) {
+            try { responseEvidenceInput = modelEvidence(record, snapshot); }
+            catch { current = false; }
+          }
+          if (!current) {
+            await call("commitPrivateRuntimeEvidenceStale", [caseId, runtimeTurnId, {
+              eventId: `runtime-event:${operationKey}:audit:v${candidate.repair_cycle + 1}:stale`
+            }], authContext);
+            continue;
+          }
+        }
         const journalEvidence = responseEvidenceInput ? null : frozenJournalEvidence(runtimeTurn);
         const audited = await invoke({
           caseId,
           runtimeTurn,
           operationKey,
           stage: "audit",
-          inputIdentity: { candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: sha256(candidate.exact_text), journal_evidence_sha256: journalEvidence?.sha256 ?? null, ...(responseEvidenceInput ? { response_evidence_snapshot_sha256: responseEvidenceInput.snapshot.snapshot_sha256 } : {}) },
+          inputIdentity: runtimeAuditInputIdentity(candidate, journalEvidence, responseEvidenceInput?.snapshot),
           authContext,
           execute: (attemptContextId) => modelRuntime.auditCandidate({ caseId, candidateId: candidate.id, candidate, journalEvidence, ...(responseEvidenceInput ? { responseEvidence: responseEvidenceInput } : {}), authContext, attemptContextId })
         });
@@ -373,6 +387,7 @@ export function createPrivateTherapyTurnController({
           const completedSnapshot = owned.find((entry) => entry.id === event.details?.output?.responseEvidenceInclusion?.snapshot_id);
           return completedSnapshot && event.input_sha256 === jsonHash(repairInputIdentity(parent, sourceAudit, null, completedSnapshot));
         });
+        if (!snapshot && evidenceEnforced) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext });
         if (repairCompleted) snapshot = owned.find((entry) => entry.id === repairCompleted.details.output.responseEvidenceInclusion.snapshot_id);
         else if (snapshot && owned.length < 3) {
           const missing = sourceAudit?.response_evidence?.review?.missing_material_history ?? [];
@@ -418,8 +433,12 @@ export function createPrivateTherapyTurnController({
       }
 
       if (runtimeTurn.state === "DISCRIMINATING_QUESTION_REQUIRED") {
-        if (!runtimeTurn.discriminator) {
-          let produced = await invoke({
+        const needsFirstReview = runtimeTurn.discriminator && runtimeTurn.discriminator.kind !== OWNER_FALLBACK_KIND
+          && !runtimeTurn.discriminator_review && (evidenceEnforced || snapshotsFor(await loadCase(caseId, authContext), runtimeTurn).length > 0);
+        if (!runtimeTurn.discriminator || needsFirstReview) {
+          let produced = runtimeTurn.discriminator ? {
+            exactText: runtimeTurn.discriminator.exact_text, contextId: runtimeTurn.discriminator.producer_context_id
+          } : await invoke({
             caseId,
             runtimeTurn,
             operationKey,
@@ -431,8 +450,8 @@ export function createPrivateTherapyTurnController({
           let review = null;
           const record = await loadCase(caseId, authContext);
           const owned = snapshotsFor(record, runtimeTurn);
-          if (owned.length && produced.kind !== OWNER_FALLBACK_KIND) {
-            let snapshot = owned.at(-1);
+          if ((evidenceEnforced || owned.length) && produced.kind !== OWNER_FALLBACK_KIND) {
+            let snapshot = owned.at(-1) ?? await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext });
             const candidate = exactCandidate(record, runtimeTurn.current_candidate_id);
             const rootCandidate = exactCandidate(record, candidate.root_candidate_id);
             const completedReview = runtimeTurn.events.find((event) => event.stage === "discriminator_review" && event.event_type === "INVOCATION_COMPLETED");
@@ -457,6 +476,7 @@ export function createPrivateTherapyTurnController({
               }
             }
             if (!review) {
+              if (runtimeTurn.discriminator) throw new RuntimeError("The stored discriminating question could not pass response evidence review. Nothing was delivered.", { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
               produced = await invoke({
                 caseId, runtimeTurn, operationKey, stage: "discriminator",
                 inputIdentity: { candidate_id: runtimeTurn.current_candidate_id, repair_cycle: runtimeTurn.repair_cycle, evidence_review_failed: true }, authContext,

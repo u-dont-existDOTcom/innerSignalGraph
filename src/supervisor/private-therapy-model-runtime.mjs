@@ -125,7 +125,7 @@ function sealAuditPacket(input, journalEvidence = null, responseEvidence = null)
       trajectory_digest_included: input.trajectory_digest != null,
       trajectory_digest_computed_in_code_without_model: true,
       self_directed_risk_record_included: input.trajectory_digest?.self_directed_risk != null,
-      ...(responseEvidence ? { response_evidence_snapshot_sha256: responseEvidence.snapshot.snapshot_sha256, response_evidence_view_sha256: responseEvidence.viewSha256 } : {})
+      ...(responseEvidence ? { response_evidence_included: true } : {})
     })
   });
 }

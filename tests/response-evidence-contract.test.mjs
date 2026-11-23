@@ -132,10 +132,10 @@ test("source selection includes old referenced turns and records whole-item omis
   const r = record(); r.raw_transcript = Array.from({ length: 240 }, (_, n) => turn(`turn:${n}`));
   r.case_state.items = r.raw_transcript.map((entry) => ({ id: entry.id, source: { turn_id: entry.id } }));
   const snapshot = freeze(r);
-  assert.equal(snapshot.source_items.length, 120);
+  assert.equal(snapshot.source_items.length, 121);
   assert.ok(snapshot.communication_projection.omitted.source_items.length);
   assert.ok(snapshot.source_items.some((entry) => entry.locator.turn_id === "turn:121"));
-  assert.ok(snapshot.source_items.every((entry) => entry.exact_excerpt === null));
+  assert.ok(snapshot.source_items.filter(entry => entry.locator.kind === "transcript_turn").every((entry) => entry.exact_excerpt === null));
 });
 
 test("source classification retains app commitment beyond the ordinary 25-item projection window", () => {
@@ -173,7 +173,7 @@ test("the transcript cap preserves the bounded inventory of other source kinds",
   r.case_state.items = r.raw_transcript.map((entry) => ({ id: entry.id, statement: "A model proposal is not a source.", source: { turn_id: entry.id } }));
   r.candidate_responses.push({ id: "old-draft", version: 1, root_candidate_id: "old-draft", status: "pending_audit", exact_text: "Older unsent draft.", created_at: "2020-01-01T00:00:00.000Z", metadata: {}, audit_history: [] });
   const snapshot = freeze(r);
-  assert.equal(snapshot.source_items.length, 121);
+  assert.equal(snapshot.source_items.length, 122);
   assert.equal(snapshot.source_items.some((item) => item.id === "src:draft:old-draft:v1"), true);
   assert.equal(snapshot.source_items.some((item) => item.id === "src:turn:inbound"), true);
   assert.equal(JSON.stringify(snapshot.source_items).includes("A model proposal is not a source."), false);
@@ -229,4 +229,25 @@ test("large reports also fit by whole-item omission after transcript and draft i
   assert.ok(reports.length < 20);
   assert.ok(reports.every((item) => item.exact_excerpt === "r".repeat(100000)));
   assert.equal(snapshot.communication_projection.omitted.source_items.find((item) => item.reason === "report_snapshot_budget").count, 20 - reports.length);
+});
+
+test("amended source capabilities and store-built journal retrieval records are citable", async () => {
+  const { RESPONSE_EVIDENCE_KINDS } = await import("../src/supervisor/response-evidence-contract.mjs");
+  for (const kind of ["exact_client_turn", "app_committed_client_outbound", "owner_reported_client_outbound", "relayed_client_message"]) assert.ok(RESPONSE_EVIDENCE_KINDS[kind].supports.includes("source_consultation_claims"));
+  for (const journal of [undefined, { availability: "available", retrieval_status: "no_match", coverage: "Bounded search.", more_available: true, omissions: [{ reason: "partial", count: 2 }] }]) {
+    const r = record(), snapshot = buildResponseEvidenceSnapshot(r, { ...input(), journal }, { createdAt: NOW });
+    const item = snapshot.source_items.find(s => s.id === "src:journal:record");
+    assert.equal(item.kind, "journal_retrieval_record"); assert.deepEqual(item.locator, { kind: "journal_record" });
+    for (const field of ["availability", "retrieval_status", "coverage", "more_available", "omissions"]) assert.ok(item.exact_excerpt.includes(field));
+    const result = normalizeEvidenceReview({ coverage: coverage(), items: [{ ...review().items[0], candidate_quote: "Search result.", dimension: "source_consultation_claims", source_ids: [item.id] }], missing_material_history: [] }, { candidateText: "Search result.", snapshot });
+    assert.deepEqual(deriveEvidenceFindings(result), []);
+    assert.deepEqual(RESPONSE_EVIDENCE_KINDS[item.kind].supports, ["source_consultation_claims", "coverage_scope_and_conflicts"]);
+    malformed(() => buildResponseEvidenceSnapshot(r, { ...input(), journal: { source_items: [item] } }, { createdAt: NOW }));
+  }
+});
+
+test("audit prompt uses the owner's exact amended advice paragraph", async () => {
+  const { privateRuntimeAuditPrompt } = await import("../src/prompts/private-runtime-audit.mjs");
+  const paragraph = "Personalized advice depends on history when whether the method was tried before, what happened, or a barrier to it would change the advice. When the sources settle that, check the advice against them: advice that repeats what the sources say failed, or ignores a barrier they state, is contradicted, even with no historical claim in its wording and even if it is called general information. When the sources do not settle it, a suggestion that says or implies nothing about the person's past with the method is current-message support: assess it uncertain_but_worded_accurately, not missing history. List missing_material_history only when the response itself asserts, presupposes or depends on an answer the sources do not give.";
+  assert.ok(privateRuntimeAuditPrompt({ response_evidence: {} }).system.includes(paragraph));
 });

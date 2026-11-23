@@ -41,10 +41,10 @@ async function environment(t, policy = "advisory") {
   await store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "runtime:one", exchangeId: "exchange:one", userTurnId: inbound.turn_id, exactText: inboundText });
   return { store, rootDir, options, seed };
 }
-async function seal(store, { stage, contextId, output, key = stage }) {
+async function seal(store, { stage, contextId, output, key = stage, inputSha256 = sha256Text(key) }) {
   for (const [suffix, eventType] of [["start", "INVOCATION_STARTED"], ["complete", "INVOCATION_COMPLETED"]]) {
     await store.recordPrivateRuntimeInvocationEvent(CASE, "runtime:one", {
-      eventId: `${key}:${suffix}`, eventType, stage, contextId: `attempt:${key}`, attempt: 1, inputSha256: sha256Text(key),
+      eventId: `${key}:${suffix}`, eventType, stage, contextId: `attempt:${key}`, attempt: 1, inputSha256,
       details: suffix === "complete" ? { actual_context_id: contextId, output: { contextId, ...output } } : {}
     });
   }
@@ -70,7 +70,7 @@ async function sealedAudit(env, evidenceReview = review(), findings = []) {
   const inclusion = { snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256, view_sha256: buildEvidenceModelView(await store.load(CASE), snapshot).view_sha256 };
   const audit = auditFor(candidate, snapshot, evidenceReview, findings, `audit:${candidate.id}`, inclusion.view_sha256);
   await store.transitionPrivateRuntimeTurn(CASE, "runtime:one", { eventId: `auditing:${candidate.id}`, toState: "AUDITING" });
-  await seal(store, { stage: "audit", contextId: audit.auditor_context_id, key: audit.id, output: { value: { evidence_review: evidenceReview }, responseEvidenceInclusion: inclusion } });
+  await seal(store, { stage: "audit", contextId: audit.auditor_context_id, key: audit.id, inputSha256: sha256Text(JSON.stringify({ candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: sha256Text(candidate.exact_text), journal_evidence_sha256: null, response_evidence_snapshot_sha256: snapshot.snapshot_sha256 })), output: { value: { findings, repair_induced_checks: candidate.parent_candidate_id == null ? [] : REPAIR_INDUCED_ERROR_CHECKS, evidence_review: evidenceReview }, responseEvidenceInclusion: inclusion } });
   return audit;
 }
 const ordinaryFail = [{ id: "ordinary:failure", code: "SYNTHETIC_FAILURE", severity: "substantive", summary: "Synthetic failure." }];
@@ -336,7 +336,8 @@ test("recordSupervisorAudit refuses generic or mismatched PASS, preserves FAIL a
   const env = await supervisorGoverned(t), { store, candidate } = env;
   await assert.rejects(store.recordSupervisorAudit(CASE, candidate.id, auditFor(candidate)), errorCode("RESPONSE_EVIDENCE_INVALID"));
   const { audit, receipt } = await supervisorAudit(env);
-  await assert.rejects(store.recordSupervisorAudit(CASE, candidate.id, audit, { disclosureManifest: {} }), errorCode("RESPONSE_EVIDENCE_INVALID"));
+  const mismatched = structuredClone(audit); mismatched.response_evidence.auditor_inclusion_sha256 = "0".repeat(64);
+  await assert.rejects(store.recordSupervisorAudit(CASE, candidate.id, mismatched, { disclosureManifest: {} }), errorCode("RESPONSE_EVIDENCE_INVALID"));
   await store.recordSupervisorAudit(CASE, candidate.id, audit, receipt);
   await store.approveSupervisorDraft(CASE, candidate.id, audit.id);
   const exported = await store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" });
@@ -411,7 +412,7 @@ for (const alteration of ["missing", "foreign", "altered", "wrong_candidate", "w
 }
 
 test("the enforced policy stops both delivery exits even for a pre-existing generic approved runtime candidate", async (t) => {
-  const env = await environment(t, "enforced"), { store, seed } = env;
+  const env = await environment(t), { store, seed } = env;
   await store.commitPrivateRuntimeCandidate(CASE, { runtimeTurnId: "runtime:one", candidateId: "ungoverned", exactText: "Legacy approved bytes.", producerContextId: "legacy:writer", caseState: createEmptyCaseState({ caseId: CASE }), eventId: "legacy:commit" });
   const candidate = await store.getCandidateResponse(CASE, "ungoverned"), audit = auditFor(candidate);
   await store.recordCandidateAudit(CASE, candidate.id, audit);
@@ -420,8 +421,10 @@ test("the enforced policy stops both delivery exits even for a pre-existing gene
   approved.status = "approved_for_delivery"; approved.metadata.approval_audit_id = audit.id;
   runtime.state = "APPROVED"; runtime.events.push({ id: "legacy:approved", sequence: runtime.events.length + 1, event_type: "STATE_TRANSITION", from_state: "AUDITING", to_state: "APPROVED", at: NOW, details: {} });
   await seed(record);
-  await assert.rejects(store.deliverCandidateResponse(CASE, candidate.id, { auditId: audit.id, assistantTurnId: "assistant", inReplyToTurnId: inbound.turn_id }), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
-  await assert.rejects(store.deliverPrivateRuntimeCandidate(CASE, "runtime:one", { candidateId: candidate.id, assistantTurnId: "assistant", eventId: "delivery" }), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
+  const enforcedStore = createEncryptedPrivateCaseStore({ ...env.options, responseEvidencePolicy: "enforced" });
+  t.after(() => enforcedStore.close());
+  await assert.rejects(enforcedStore.deliverCandidateResponse(CASE, candidate.id, { auditId: audit.id, assistantTurnId: "assistant", inReplyToTurnId: inbound.turn_id }), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
+  await assert.rejects(enforcedStore.deliverPrivateRuntimeCandidate(CASE, "runtime:one", { candidateId: candidate.id, assistantTurnId: "assistant", eventId: "delivery" }), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
 });
 
 test("journal revision budgets are shared across the runtime turn and omitted inputs are never silently certified on replay", async (t) => {
@@ -585,4 +588,40 @@ test("recordSupervisorAudit records a valid exact PASS despite later state chang
   await assert.rejects(env.store.approveCandidateForDelivery(CASE, env.candidate.id, audit.id), errorCode("RESPONSE_EVIDENCE_STALE"));
   await env.store.approveSupervisorDraft(CASE, env.candidate.id, audit.id);
   await assert.rejects(env.store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" }), errorCode("SUPERVISOR_ARTIFACT_STALE"));
+});
+
+for (const tamper of ["candidate_identity", "ordinary_findings", "repair_checks"]) test(`sealed runtime audit binds exact input and validated output (${tamper})`, async (t) => {
+  const env = await governed(t), audit = await sealedAudit(env);
+  const record = await env.store.load(CASE);
+  const event = record.runtime_turns[0].events.find(e => e.stage === "audit" && e.event_type === "INVOCATION_COMPLETED");
+  if (tamper === "candidate_identity") {
+    for (const e of record.runtime_turns[0].events.filter(e => e.stage === "audit")) e.input_sha256 = sha256Text("other candidate");
+  } else if (tamper === "ordinary_findings") event.details.output.value.findings = [{ id: "ordinary", code: "SYNTHETIC", severity: "substantive", summary: "Must preserve this defect." }];
+  else event.details.output.value.repair_induced_checks = ["forged"];
+  await env.seed(record);
+  const before = await env.store.load(CASE);
+  await assert.rejects(env.store.commitPrivateRuntimeAudit(CASE, "runtime:one", audit, { eventId: "forged:commit" }), errorCode("RESPONSE_EVIDENCE_INVALID"));
+  assert.deepEqual(await env.store.load(CASE), before);
+});
+
+test("trusted stale recovery refuses a current snapshot and changes nothing", async (t) => {
+  const env = await governed(t); await sealedAudit(env);
+  const before = await env.store.load(CASE);
+  await assert.rejects(env.store.commitPrivateRuntimeEvidenceStale(CASE, "runtime:one", { eventId: "not:stale" }), errorCode("RESPONSE_EVIDENCE_INVALID"));
+  assert.deepEqual(await env.store.load(CASE), before);
+});
+
+test("trusted stale FAIL is schema-valid, code-derived and never claims independent review", async (t) => {
+  const env = await governed(t); await sealedAudit(env);
+  await invalidate.owner_input(env.store);
+  await env.store.commitPrivateRuntimeEvidenceStale(CASE, "runtime:one", { eventId: "code:stale" });
+  const record = await env.store.load(CASE), audit = record.candidate_responses.at(-1).audit_history.at(-1);
+  assert.equal(audit.verdict, "fail"); assert.equal(audit.derived_in_code, true);
+  assert.equal(audit.independent, false); assert.equal(audit.independent_auditor_available, false);
+  const schema = JSON.parse(await fs.readFile(new URL("../schemas/private-case/candidate-audit-v1.schema.json", import.meta.url), "utf8"));
+  const validate = new Ajv2020({ strict: true, validateFormats: false }).compile(schema);
+  assert.equal(validate(audit), true, JSON.stringify(validate.errors));
+  const { originMainPrivateCaseValidator } = await import("./helpers/origin-main-private-case-validator.mjs");
+  const old = await originMainPrivateCaseValidator(t);
+  assert.doesNotThrow(() => old(structuredClone(record)));
 });

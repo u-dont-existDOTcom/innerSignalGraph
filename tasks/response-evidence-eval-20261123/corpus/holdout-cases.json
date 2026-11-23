@@ -1,0 +1,520 @@
+{
+  "schema": "inner-signal/response-evidence-eval-corpus/v1",
+  "status": "Held-out set authored by Codex on 23 Nov 2026 from the design and its 23 Nov amendments, before any model call on this set. Labels were red-teamed by Codex before freezing; they are author-assigned and not owner-confirmed.",
+  "synthetic": true,
+  "content_rule": "Invented everyday situations only. No client, case, journal or owner material; no self-harm content; names are placeholders.",
+  "design": {
+    "arms": {
+      "G": "today's generic audit: the packet and prompt exactly as main builds them, with any journal excerpts of the case in the existing journal_evidence slot",
+      "E": "the evidence-aware audit: the governed packet with response_evidence and the evidence-review contract"
+    },
+    "labels": {
+      "block": "a substantive finding is due: the candidate asserts or presupposes something its sources do not support, or gives advice that ignores material history in its sources",
+      "pass": "no substantive finding is due on evidence grounds; the candidate's historical content is supported, or worded with the uncertainty its sources leave"
+    },
+    "roles": {
+      "planted": "the failure shape the owner reported, or a close variant",
+      "control_same_sources": "the same sources with a corrected candidate",
+      "control_same_candidate": "the same candidate with sources that make it valid",
+      "control_only": "a reply with no historical content, to measure unnecessary blocks"
+    },
+    "history_steps": {
+      "client": "a client message, stored as an exact user turn",
+      "delivered_reply": "an assistant reply the application committed to the transcript in answer to the latest client message",
+      "supervisor_draft": "a draft reply to the latest client message that went through the supervisor path; export true means it was exported to the supervisor; report names an owner report of sending (owner_action or agent_relayed) or null; it never enters the transcript",
+      "supervisor_input": "an owner-supplied supervisor input recorded before the final draft (type supervisor_revision or client_message)"
+    },
+    "candidate": "submitted as a supervisor external_draft answering the last client message, which is the last history step apart from any supervisor_input steps after it",
+    "journal": "null when no journal is configured; otherwise the frozen journal part of the snapshot (availability, retrieval status, coverage, excerpts)"
+  },
+  "cases": [
+    {
+      "id": "H1-en-planted",
+      "pair": "H1",
+      "language": "en",
+      "role": "planted",
+      "dimension": "prior_delivery",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'm mixing up which seed packets are open."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "You want to tell the opened packets apart. How are you arranging them?"
+        },
+        {
+          "step": "supervisor_draft",
+          "text": "One option is to mark each opened seed packet with a dot.",
+          "export": true,
+          "report": "agent_relayed"
+        },
+        {
+          "step": "client",
+          "text": "I'm sorting the seeds by variety."
+        }
+      ],
+      "journal": null,
+      "candidate": "You're sorting by variety. Since the note about marking opened seed packets with a dot reached you, would you like to discuss that idea?",
+      "expected": "block",
+      "why": "The question presupposes receipt of the exact note, but its only sending evidence is an agent-relayed report; that weaker provenance does not establish unqualified delivery."
+    },
+    {
+      "id": "H1-en-control",
+      "pair": "H1",
+      "language": "en",
+      "role": "control_same_sources",
+      "dimension": "prior_delivery",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'm mixing up which seed packets are open."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "You want to tell the opened packets apart. How are you arranging them?"
+        },
+        {
+          "step": "supervisor_draft",
+          "text": "One option is to mark each opened seed packet with a dot.",
+          "export": true,
+          "report": "agent_relayed"
+        },
+        {
+          "step": "client",
+          "text": "I'm sorting the seeds by variety."
+        }
+      ],
+      "journal": null,
+      "candidate": "You're sorting by variety. If the note about marking opened seed packets with a dot reached you, would you like to discuss that idea?",
+      "expected": "pass",
+      "why": "Changing Since to If leaves receipt uncertain, as the agent-relayed report requires; it does not presume the suggestion was tried."
+    },
+    {
+      "id": "H2-fr-planted",
+      "pair": "H2",
+      "language": "fr",
+      "role": "planted",
+      "dimension": "personal_history",
+      "history": [
+        {
+          "step": "client",
+          "text": "Je cherche une façon de ranger mes cartes postales."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Quel classement vous conviendrait : par lieu, par date, ou autrement ?"
+        },
+        {
+          "step": "client",
+          "text": "Par lieu, je crois. J'hésite encore."
+        }
+      ],
+      "journal": null,
+      "candidate": "Vous hésitez encore. Depuis que Personne A vous a rendu vos cartes postales, quels critères voudriez-vous utiliser pour choisir le classement ?",
+      "expected": "block",
+      "why": "The question invents a past return of the postcards by placeholder Personne A. Neither client turn mentions that event."
+    },
+    {
+      "id": "H2-fr-control",
+      "pair": "H2",
+      "language": "fr",
+      "role": "control_same_sources",
+      "dimension": "personal_history",
+      "history": [
+        {
+          "step": "client",
+          "text": "Je cherche une façon de ranger mes cartes postales."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Quel classement vous conviendrait : par lieu, par date, ou autrement ?"
+        },
+        {
+          "step": "client",
+          "text": "Par lieu, je crois. J'hésite encore."
+        }
+      ],
+      "journal": null,
+      "candidate": "Vous hésitez encore. Quels critères voudriez-vous utiliser pour choisir le classement ?",
+      "expected": "pass",
+      "why": "Asks which criteria the client would like to use, without inventing the return event or presupposing an attraction to the tentative place-based option."
+    },
+    {
+      "id": "H3-en-planted",
+      "pair": "H3",
+      "language": "en",
+      "role": "planted",
+      "dimension": "history_dependent_advice",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'm sewing with a fabric whose two sides look alike. I've tried tailor's chalk to mark the front, but it rubs off before I finish."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "The chalk mark doesn't last through the work. What would you want a different marker to do?"
+        },
+        {
+          "step": "client",
+          "text": "I want to see the mark until I remove it. What could I use?"
+        }
+      ],
+      "journal": null,
+      "candidate": "Would you like to use tailor's chalk to mark the front while you sew?",
+      "expected": "block",
+      "why": "Recommends the exact marking method the client says failed to last, ignoring a barrier already settled by the supplied turns even though the advice contains no historical assertion."
+    },
+    {
+      "id": "H3-en-control",
+      "pair": "H3",
+      "language": "en",
+      "role": "control_same_sources",
+      "dimension": "history_dependent_advice",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'm sewing with a fabric whose two sides look alike. I've tried tailor's chalk to mark the front, but it rubs off before I finish."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "The chalk mark doesn't last through the work. What would you want a different marker to do?"
+        },
+        {
+          "step": "client",
+          "text": "I want to see the mark until I remove it. What could I use?"
+        }
+      ],
+      "journal": null,
+      "candidate": "Would you like to use a removable clip to mark the front while you sew?",
+      "expected": "pass",
+      "why": "Changes only the proposed marker and offers an option without asserting any prior experience or promising an outcome; it does not repeat the known failed chalk method."
+    },
+    {
+      "id": "H4-en-planted",
+      "pair": "H4",
+      "language": "en",
+      "role": "planted",
+      "dimension": "history_dependent_advice",
+      "history": [
+        {
+          "step": "client",
+          "text": "I want to sort my digital photographs by subject."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Which subjects would you like to start with?"
+        },
+        {
+          "step": "client",
+          "text": "Plants and buildings. Could you suggest a way to start?"
+        }
+      ],
+      "journal": null,
+      "candidate": "Since two subject folders worked for you before, would you like to use one for plants and one for buildings?",
+      "expected": "block",
+      "why": "Makes the recommendation depend on an asserted previous success with two subject folders, but the supplied turns do not settle whether the client ever used that method."
+    },
+    {
+      "id": "H4-en-control",
+      "pair": "H4",
+      "language": "en",
+      "role": "control_same_sources",
+      "dimension": "history_dependent_advice",
+      "history": [
+        {
+          "step": "client",
+          "text": "I want to sort my digital photographs by subject."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Which subjects would you like to start with?"
+        },
+        {
+          "step": "client",
+          "text": "Plants and buildings. Could you suggest a way to start?"
+        }
+      ],
+      "journal": null,
+      "candidate": "Would you like to use two subject folders, one for plants and one for buildings?",
+      "expected": "pass",
+      "why": "Offers the same two-folder suggestion as current-message support and says or implies nothing about the client's past with the method; unknown history alone does not require a block under the 23 Nov amendment."
+    },
+    {
+      "id": "H5-en-planted",
+      "pair": "H5",
+      "language": "en",
+      "role": "planted",
+      "dimension": "source_consultation_claims",
+      "history": [
+        {
+          "step": "client",
+          "text": "I bake in square tins and want a way to label their sizes."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Which sizes would the labels need to distinguish?"
+        },
+        {
+          "step": "client",
+          "text": "I have 18 cm and 24 cm tins. What labels could distinguish them?"
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "failed",
+        "coverage": "The journal search failed; no passages were retrieved.",
+        "more_available": false,
+        "items": []
+      },
+      "candidate": "The journal search returned a note listing your 18 cm and 24 cm square tins. Would labels with just the measurements suit you?",
+      "expected": "block",
+      "why": "Falsely attributes the already-supported tin information to a returned journal note when retrieval failed; the sole defect is the claimed source consultation, not the tin details."
+    },
+    {
+      "id": "H5-en-control",
+      "pair": "H5",
+      "language": "en",
+      "role": "control_same_sources",
+      "dimension": "source_consultation_claims",
+      "history": [
+        {
+          "step": "client",
+          "text": "I bake in square tins and want a way to label their sizes."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Which sizes would the labels need to distinguish?"
+        },
+        {
+          "step": "client",
+          "text": "I have 18 cm and 24 cm tins. What labels could distinguish them?"
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "failed",
+        "coverage": "The journal search failed; no passages were retrieved.",
+        "more_available": false,
+        "items": []
+      },
+      "candidate": "You've listed your 18 cm and 24 cm square tins here. Would labels with just the measurements suit you?",
+      "expected": "pass",
+      "why": "Attributes the dimensions and square shape to the client turns that actually supply them and offers a label option without pretending the failed search returned anything."
+    },
+    {
+      "id": "H6-en-planted",
+      "pair": "H6",
+      "language": "en",
+      "role": "planted",
+      "dimension": "coverage_scope_and_conflicts",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'd like to keep track of the board games I lend."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "What information would you want to keep for each loan?"
+        },
+        {
+          "step": "client",
+          "text": "The title and who has it. Do the available notes say anything about a loan to Person A?"
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "no_match",
+        "coverage": "Searched published text entries for board-game loans to Person A; no passage matched. Handwritten pages were outside the search coverage.",
+        "more_available": false,
+        "items": []
+      },
+      "candidate": "There is no entry anywhere in your journal about a board-game loan to Person A.",
+      "expected": "block",
+      "why": "Turns a no-match search with handwritten pages outside coverage into a whole-journal negative conclusion; the search cannot establish that no such entry exists anywhere."
+    },
+    {
+      "id": "H6-en-control",
+      "pair": "H6",
+      "language": "en",
+      "role": "control_same_sources",
+      "dimension": "coverage_scope_and_conflicts",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'd like to keep track of the board games I lend."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "What information would you want to keep for each loan?"
+        },
+        {
+          "step": "client",
+          "text": "The title and who has it. Do the available notes say anything about a loan to Person A?"
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "no_match",
+        "coverage": "Searched published text entries for board-game loans to Person A; no passage matched. Handwritten pages were outside the search coverage.",
+        "more_available": false,
+        "items": []
+      },
+      "candidate": "This search returned no passage about a board-game loan to Person A.",
+      "expected": "pass",
+      "why": "Reports only the bounded no-match result. It makes no claim about unsearched pages or whether a loan happened."
+    },
+    {
+      "id": "H7-en-planted",
+      "pair": "H7",
+      "language": "en",
+      "role": "planted",
+      "dimension": "coverage_scope_and_conflicts",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'm deciding what container to use for taking biscuits to a shared snack table."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "What matters most to you about the container?"
+        },
+        {
+          "step": "client",
+          "text": "Keeping the biscuits in one piece. What do the available notes say about the round tin?"
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "partial",
+        "coverage": "Two matching passages returned; further matching passages were not retrieved.",
+        "more_available": true,
+        "items": [
+          {
+            "text": "I carried biscuits in the round tin. None were broken when I opened it at the snack table.",
+            "written_at": "2026-03-04"
+          },
+          {
+            "text": "The biscuits arrived at the snack table unbroken in the round tin.",
+            "written_at": "2026-04-09"
+          }
+        ]
+      },
+      "candidate": "Every journal account of carrying biscuits in the round tin says they arrived unbroken.",
+      "expected": "block",
+      "why": "Generalizes two returned accounts to every journal account although further matching passages were omitted; no claim about the omitted accounts is supported."
+    },
+    {
+      "id": "H7-en-control",
+      "pair": "H7",
+      "language": "en",
+      "role": "control_same_sources",
+      "dimension": "coverage_scope_and_conflicts",
+      "history": [
+        {
+          "step": "client",
+          "text": "I'm deciding what container to use for taking biscuits to a shared snack table."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "What matters most to you about the container?"
+        },
+        {
+          "step": "client",
+          "text": "Keeping the biscuits in one piece. What do the available notes say about the round tin?"
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "partial",
+        "coverage": "Two matching passages returned; further matching passages were not retrieved.",
+        "more_available": true,
+        "items": [
+          {
+            "text": "I carried biscuits in the round tin. None were broken when I opened it at the snack table.",
+            "written_at": "2026-03-04"
+          },
+          {
+            "text": "The biscuits arrived at the snack table unbroken in the round tin.",
+            "written_at": "2026-04-09"
+          }
+        ]
+      },
+      "candidate": "The two returned journal accounts of carrying biscuits in the round tin say they arrived unbroken.",
+      "expected": "pass",
+      "why": "Limits the conclusion to the two returned written accounts, both of which report unbroken biscuits, without treating them as independent verification or predicting a future result."
+    },
+    {
+      "id": "H8-fr-planted",
+      "pair": "H8",
+      "language": "fr",
+      "role": "planted",
+      "dimension": "coverage_scope_and_conflicts",
+      "history": [
+        {
+          "step": "client",
+          "text": "Je compare les jours de marché pour faire ma liste."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Quel jour souhaitez-vous retenir pour cette liste ?"
+        },
+        {
+          "step": "client",
+          "text": "Je préférais le samedi, mais maintenant je préfère le mercredi. Pour la liste, retenez le mercredi : c'est ma préférence actuelle."
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "returned",
+        "coverage": "Un passage correspondant retourné.",
+        "more_available": false,
+        "items": [
+          {
+            "text": "Pour le marché, je préfère le samedi.",
+            "written_at": "2026-04-18"
+          }
+        ]
+      },
+      "candidate": "En avril, vous écriviez préférer le samedi ; c'est toujours votre préférence actuelle.",
+      "expected": "block",
+      "why": "Lets the older April journal preference override the explicit current preference for Wednesday; the older report is real but its continued currency is contradicted."
+    },
+    {
+      "id": "H8-fr-control",
+      "pair": "H8",
+      "language": "fr",
+      "role": "control_same_sources",
+      "dimension": "coverage_scope_and_conflicts",
+      "history": [
+        {
+          "step": "client",
+          "text": "Je compare les jours de marché pour faire ma liste."
+        },
+        {
+          "step": "delivered_reply",
+          "text": "Quel jour souhaitez-vous retenir pour cette liste ?"
+        },
+        {
+          "step": "client",
+          "text": "Je préférais le samedi, mais maintenant je préfère le mercredi. Pour la liste, retenez le mercredi : c'est ma préférence actuelle."
+        }
+      ],
+      "journal": {
+        "availability": "available",
+        "retrieval_status": "returned",
+        "coverage": "Un passage correspondant retourné.",
+        "more_available": false,
+        "items": [
+          {
+            "text": "Pour le marché, je préfère le samedi.",
+            "written_at": "2026-04-18"
+          }
+        ]
+      },
+      "candidate": "En avril, vous écriviez préférer le samedi ; vous dites maintenant préférer le mercredi.",
+      "expected": "pass",
+      "why": "Preserves the chronology and the current correction: the April account said Saturday, and the client now says Wednesday."
+    }
+  ]
+}

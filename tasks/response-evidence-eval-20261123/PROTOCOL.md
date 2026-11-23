@@ -111,3 +111,11 @@ Mode, model, effort, provider and sealed-manifest identity are fixed by the fold
 them. A folder lock prevents concurrent invocations; after interruption inspect the lock and receipts before removing the lock
 and resuming. The live path checks the CLI's flags and version and uses only sealed `ClaudeCliProvider` calls. Nothing in these
 commands installs packages, enables enforcement in production, approves a release, or sends a client message.
+
+## Held-out set
+
+The first live run on the main corpus led to amendments of the contract and the audit instruction, so a second run on the main
+corpus is development evidence. The 16 cases in `corpus/holdout-cases.json`, authored before any model call on them by Codex,
+a different model from Claude, which tuned the instruction, check the amended system. Their labels are not owner-confirmed.
+Select them with `seal --corpus holdout --out SEALED_DIR`; `--corpus main` is the default. Each corpus has its own frozen SHA-256
+in `common.mjs`; the seal records its name and digest. Claude commits the held-out file and verifies that digest before any live run.

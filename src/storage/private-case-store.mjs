@@ -22,6 +22,7 @@ import {
   PRIVATE_CANDIDATE_STATUSES,
   REPAIR_INDUCED_ERROR_CHECKS,
   candidateDeliveryGate,
+  createCandidateAuditEvidence,
   isActivePrivateCandidate,
   projectCandidateLifecycle,
   validateCandidateAuditEvidence,
@@ -749,11 +750,34 @@ export function createEncryptedPrivateCaseStore({
     if (!assessment.admissible) throw new ValidationError("Response evidence admission refused.", { code: assessment.code, details: { reasons: assessment.reasons } });
     return assessment;
   };
+  const finishRuntimeAudit = (record, runtimeTurn, candidate, audit, eventId) => {
+    let nextState;
+    if (audit.verdict === "fail") {
+      candidate.status = "audit_failed";
+      nextState = candidate.repair_cycle < MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES ? "REPAIR_REQUIRED" : "DISCRIMINATING_QUESTION_REQUIRED";
+    } else {
+      if (!audit.sufficient_for_approval) throw new ValidationError("Runtime PASS requires an available fresh independent auditor.");
+      candidate.status = "approved_for_delivery";
+      candidate.metadata = { ...candidate.metadata, approval_audit_id: audit.id };
+      nextState = "APPROVED";
+    }
+    candidate.updated_at = now();
+    validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+    const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
+      eventId,
+      toState: nextState,
+      at: now(),
+      details: { audit_id: audit.id, candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: audit.candidate_sha256, verdict: audit.verdict }
+    });
+    Object.assign(runtimeTurn, updatedRuntime);
+    return record;
+  };
   const requireDiscriminatorReview = (record, runtimeTurn, discriminator, review) => {
     const snapshot = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id).at(-1);
-    if (!snapshot || discriminator.kind === OWNER_FALLBACK_KIND) return;
+    if (discriminator.kind === OWNER_FALLBACK_KIND) return;
+    if (!snapshot && responseEvidencePolicy !== "enforced") return;
     const blocked = () => { throw new ValidationError("Discriminating question evidence review required.", { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" }); };
-    if (!review) blocked();
+    if (!snapshot || !review) blocked();
     validateResponseEvidenceSnapshot(snapshot);
     validatePrivateRuntimeDiscriminatorReview(review, { exactText: discriminator.exact_text, snapshot });
     const invocation = runtimeTurn.events.find((entry) => entry.event_type === "INVOCATION_COMPLETED" && entry.stage === "discriminator_review"
@@ -1048,8 +1072,8 @@ export function createEncryptedPrivateCaseStore({
         const parent = owned.at(-1);
         if (revision !== owned.length + 1 || revision > 3 || (revision > 1 && input.parentSnapshotId !== parent?.id)
             || (input.revisionReason === "evidence_expansion" && owned.some((entry) => entry.revision_reason === "evidence_expansion"))
-            || (runtime?.state === "DISCRIMINATING_QUESTION_REQUIRED" && input.revisionReason !== "dependency_refresh")
-            || (runtime && !(revision === 1 ? ["RECEIVED"] : ["RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]).includes(runtime.state))) {
+            || (runtime?.state === "DISCRIMINATING_QUESTION_REQUIRED" && revision > 1 && input.revisionReason !== "dependency_refresh")
+            || (runtime && !(revision === 1 ? ["RECEIVED", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"] : ["RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]).includes(runtime.state))) {
           throw new ValidationError("Response evidence revision invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
         }
         frozen = buildResponseEvidenceSnapshot(record, { ...input, lineageRootId: root }, { createdAt: now(), priorJournalItems });
@@ -1176,10 +1200,10 @@ export function createEncryptedPrivateCaseStore({
           evidenceBinding = {
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
             candidate_origin: snapshot.candidate_origin, writer_inclusion: "verified", writer_inclusion_sha256: responseEvidence.writerInclusionSha256,
-            established_context_after_commit_sha256: root ? (snapshot.revision >= 2 ? snapshot.dependency_binding.established_context_digest : root.metadata.response_evidence?.established_context_after_commit_sha256 ?? null) : null,
+            established_context_after_commit_sha256: root ? (root.metadata.response_evidence?.snapshot_id === snapshot.id ? root.metadata.response_evidence.established_context_after_commit_sha256 : snapshot.dependency_binding.established_context_digest) : null,
             dependency_status: current ? "current_at_commit" : "stale_at_commit"
           };
-        } else if (record.response_evidence_snapshots.some((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurnId) || (parentCandidateId != null && record.candidate_responses.find((entry) => entry.id === parentCandidateId)?.metadata.response_evidence)) {
+        } else if (responseEvidencePolicy === "enforced" || record.response_evidence_snapshots.some((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurnId) || (parentCandidateId != null && record.candidate_responses.find((entry) => entry.id === parentCandidateId)?.metadata.response_evidence)) {
           throw new ValidationError("Response evidence repair binding required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
         }
         const timestamp = now();
@@ -1293,47 +1317,64 @@ export function createEncryptedPrivateCaseStore({
           if (!responseEvidenceDependenciesCurrent(record, candidate, snapshot)) Object.assign(admission, { admissible: false, code: "RESPONSE_EVIDENCE_STALE" });
         }
         if (!admission.admissible) {
-          if (audit.verdict === "pass" && admission.code === "RESPONSE_EVIDENCE_STALE") {
+          if (audit.verdict === "pass" && ["RESPONSE_EVIDENCE_STALE", "RESPONSE_EVIDENCE_REQUIRED"].includes(admission.code)) {
             let staleId = "evidence:dependencies";
             let suffix = 0;
             while (audit.findings.some((entry) => entry.id === staleId)) staleId = `evidence:dependencies:${++suffix}`;
-            audit.findings.push({ id: staleId, code: "RESPONSE_EVIDENCE_STALE", severity: "substantive", summary: "Response evidence dependencies changed.", unresolved: true });
+            audit.findings.push({ id: staleId, code: admission.code, severity: "substantive", summary: admission.code === "RESPONSE_EVIDENCE_STALE" ? "Response evidence dependencies changed." : "Response evidence required.", unresolved: true, derived_in_code: true });
             audit.unresolved_substantive_finding_ids = audit.findings.filter((entry) => entry.unresolved !== false && ["substantive", "high"].includes(entry.severity)).map((entry) => entry.id);
             audit.verdict = "fail";
             audit.sufficient_for_approval = false;
             validateCandidateAuditEvidence(audit, candidate);
           } else requireResponseEvidence(record, candidate, "commitPrivateRuntimeAudit");
         }
-        let nextState;
-        if (audit.verdict === "fail") {
-          candidate.status = "audit_failed";
-          nextState = candidate.repair_cycle < MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES ? "REPAIR_REQUIRED" : "DISCRIMINATING_QUESTION_REQUIRED";
-        } else {
-          if (!audit.sufficient_for_approval) throw new ValidationError("Runtime PASS requires an available fresh independent auditor.");
-          candidate.status = "approved_for_delivery";
-          candidate.metadata = { ...candidate.metadata, approval_audit_id: audit.id };
-          nextState = "APPROVED";
+        return finishRuntimeAudit(record, runtimeTurn, candidate, audit, eventId);
+      });
+    },
+    // Trusted recovery: the store independently proves staleness and can write only a blocking code result.
+    async commitPrivateRuntimeEvidenceStale(caseId, runtimeTurnId, { eventId }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const candidate = record.candidate_responses.find(entry => entry.id === runtimeTurn.current_candidate_id);
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        const binding = candidate?.metadata.response_evidence;
+        const snapshot = record.response_evidence_snapshots.find(entry => entry.id === binding?.snapshot_id);
+        if (runtimeTurn.state !== "AUDITING" || !candidate || current?.id !== candidate.id
+          || !["pending_audit", "reconstructed_pending_audit"].includes(candidate.status) || !binding || !snapshot
+          || snapshot.owner.kind !== "runtime_turn" || snapshot.owner.runtime_turn_id !== runtimeTurn.id
+          || snapshot.case_id !== record.case_id || snapshot.snapshot_sha256 !== binding.snapshot_sha256) {
+          throw new ValidationError("Response evidence stale recovery invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
         }
-        candidate.updated_at = now();
-        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
-        const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
-          eventId,
-          toState: nextState,
-          at: now(),
-          details: { audit_id: audit.id, candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: audit.candidate_sha256, verdict: audit.verdict }
-        });
-        Object.assign(runtimeTurn, updatedRuntime);
-        return record;
+        validateResponseEvidenceSnapshot(snapshot);
+        if (responseEvidenceDependenciesCurrent(record, candidate, snapshot)) {
+          throw new ValidationError("Response evidence is current.", { code: "RESPONSE_EVIDENCE_INVALID" });
+        }
+        const audit = structuredClone(createCandidateAuditEvidence({
+          auditId: `audit:code-stale:${sha256Text(candidate.id).slice(0, 32)}`, candidate, auditVersion: "private-candidate-audit-v4",
+          auditorContext: { kind: "self_critique", context_id: "code:response-evidence-stale" }, independentAuditorAvailable: false,
+          completedAt: now(), repairInducedChecks: candidate.parent_candidate_id === null ? [] : REPAIR_INDUCED_ERROR_CHECKS,
+          findings: [{ id: "evidence:dependencies", code: "RESPONSE_EVIDENCE_STALE", severity: "substantive",
+            summary: "Response evidence dependencies changed.", derived_in_code: true }]
+        }));
+        audit.derived_in_code = true;
+        candidate.audit_history.push(audit);
+        return finishRuntimeAudit(record, runtimeTurn, candidate, audit, eventId);
       });
     },
     async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, { exactText, producerContextId, kind = null, review = null }) {
       return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED") throw new ValidationError("Runtime discriminator requires its explicit terminal-uncertainty state.");
-        const discriminator = createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt: now(), kind });
+        const discriminator = createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt: runtimeTurn.discriminator?.created_at ?? now(), kind });
         requireDiscriminatorReview(record, runtimeTurn, discriminator, review);
         if (runtimeTurn.discriminator) {
           if (!sameJson(runtimeTurn.discriminator, discriminator)) throw new ValidationError("Private runtime discriminator conflicts with immutable bytes.");
+          if (review != null && runtimeTurn.discriminator_review == null) {
+            runtimeTurn.discriminator_review = structuredClone(review);
+            runtimeTurn.updated_at = now();
+            return record;
+          }
+          if (review != null && !sameJson(runtimeTurn.discriminator_review, review)) throw new ValidationError("Discriminating question evidence review conflicts.", { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
           return null;
         }
         const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
@@ -1972,7 +2013,7 @@ export function createEncryptedPrivateCaseStore({
     },
     // One bounded repair of a supervisor draft that failed its audit. The repaired bytes are a new candidate that inherits the
     // basis of its parent and no approval, and the caller supplies neither the basis nor the source.
-    async reconstructSupervisorDraft(caseId, parentCandidateId, { exactText, producerContextId } = {}) {
+    async reconstructSupervisorDraft(caseId, parentCandidateId, { exactText, producerContextId, writerInclusionSha256 = null } = {}) {
       let childId = null;
       const record = await mutate(caseId, (record) => {
         const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
@@ -1984,7 +2025,8 @@ export function createEncryptedPrivateCaseStore({
           assertSameSupervisorOperation([
             ["parent", existing.parent_candidate_id, parent.id],
             ["exact_text", existing.exact_text, exactText],
-            ["producer_context", existing.producer_context_id, producerContextId]
+            ["producer_context", existing.producer_context_id, producerContextId],
+            ["writer_inclusion", existing.metadata.response_evidence?.writer_inclusion_sha256 ?? null, writerInclusionSha256]
           ]);
           return null;
         }
@@ -1993,9 +2035,12 @@ export function createEncryptedPrivateCaseStore({
           const snapshot = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === draft.operation_key).at(-1);
           if (!snapshot || snapshot.case_id !== caseId || snapshot.candidate_origin !== draft.root_source) throw new ValidationError("Response evidence binding invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
           const root = record.candidate_responses.find((entry) => entry.id === parent.root_candidate_id);
+          if (writerInclusionSha256 !== buildEvidenceModelView(record, snapshot).view_sha256) {
+            throw new ValidationError("Response evidence writer inclusion invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          }
           evidenceBinding = {
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
-            candidate_origin: snapshot.candidate_origin, writer_inclusion: "not_attested", writer_inclusion_sha256: null,
+            candidate_origin: snapshot.candidate_origin, writer_inclusion: "verified", writer_inclusion_sha256: writerInclusionSha256,
             established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest,
             dependency_status: responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate: root }) ? "current_at_commit" : "stale_at_commit"
           };
@@ -2004,6 +2049,7 @@ export function createEncryptedPrivateCaseStore({
           producer_context_id: producerContextId,
           compatibility_state_binding: parent.metadata.compatibility_state_binding ?? null,
           repair_induced_error_checks_required: [...REPAIR_INDUCED_ERROR_CHECKS],
+          ...(evidenceBinding ? { response_evidence_view_sha256: writerInclusionSha256 } : {}),
           supervisor_draft: {
             ...structuredClone(draft),
             source: "backend_repair",

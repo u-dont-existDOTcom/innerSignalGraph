@@ -167,3 +167,14 @@ test("a visibility epoch change invalidates the earlier governed snapshot at the
   const oldHits = env.counts.cacheHits;
   assert.equal((await env.retrieve()).availability, "unavailable"); assert.equal(env.counts.cacheHits, oldHits);
 });
+
+test("origin/main reads a governed snapshot containing journal quotations and retrieval record", async (t) => {
+  const { originMainPrivateCaseValidator } = await import("./helpers/origin-main-private-case-validator.mjs");
+  const validateOld = await originMainPrivateCaseValidator(t);
+  const env = await environment(t), journal = await env.retrieve();
+  const snapshot = await env.store.freezeResponseEvidence(CASE, freezeInput(journal));
+  assert.ok(snapshot.source_items.some(item => item.kind === "journal_quotation"));
+  assert.ok(snapshot.source_items.some(item => item.kind === "journal_retrieval_record"));
+  const record = await env.store.load(CASE);
+  assert.doesNotThrow(() => validateOld(structuredClone(record)));
+});

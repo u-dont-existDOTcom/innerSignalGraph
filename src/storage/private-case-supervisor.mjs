@@ -261,7 +261,7 @@ export function createSupervisorReviewReceipt({ id, candidate, auditId, disclosu
     candidate_version: candidate.version,
     audit_id: auditId,
     disclosure_manifest: isObject(disclosureManifest)
-      ? Object.fromEntries(Object.entries(disclosureManifest).filter(([key, flag]) => (FLAG_NAME.test(key) && typeof flag === "boolean") || (["response_evidence_snapshot_sha256", "response_evidence_view_sha256"].includes(key) && typeof flag === "string" && SHA256.test(flag))))
+      ? Object.fromEntries(Object.entries(disclosureManifest).filter(([key, flag]) => FLAG_NAME.test(key) && typeof flag === "boolean"))
       : {},
     provider_receipt: isObject(providerReceipt)
       ? Object.fromEntries(["provider", "model", "response_id"].map((key) => [key, typeof providerReceipt[key] === "string" ? providerReceipt[key].slice(0, 200) : null]))
@@ -316,7 +316,7 @@ function validateEntry(entry, index, record) {
       const candidate = requireCandidateVersion(record, entry.candidate_id, entry.candidate_version, name);
       if (!candidate.audit_history.some((audit) => audit.id === entry.audit_id)) throw new ValidationError(`${name} does not identify a stored audit of that candidate version.`);
       if (!isObject(entry.disclosure_manifest) || Object.keys(entry.disclosure_manifest).length > SUPERVISOR_LIMITS.receipt_flags
-          || Object.entries(entry.disclosure_manifest).some(([key, flag]) => !((FLAG_NAME.test(key) && typeof flag === "boolean") || (["response_evidence_snapshot_sha256", "response_evidence_view_sha256"].includes(key) && typeof flag === "string" && SHA256.test(flag))))) {
+          || Object.entries(entry.disclosure_manifest).some(([key, flag]) => !(FLAG_NAME.test(key) && typeof flag === "boolean"))) {
         throw new ValidationError(`${name}.disclosure_manifest is invalid.`);
       }
       if (entry.provider_receipt !== null) {

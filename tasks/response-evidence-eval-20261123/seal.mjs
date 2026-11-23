@@ -11,7 +11,7 @@ import { createPrivateTherapyModelRuntime } from "../../src/supervisor/private-t
 import { createCandidateAuditEvidence } from "../../src/supervisor/private-candidate-lifecycle.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "../../src/supervisor/private-candidate-audit.mjs";
 import { RESPONSE_EVIDENCE_DIMENSIONS, buildEvidenceModelView, sha256Json } from "../../src/supervisor/response-evidence-contract.mjs";
-import { CORPUS_COMMIT, CORPUS_SHA256, MANIFEST_SCHEMA, HARD_CAP, head, isolation, json, loadCorpus, outsideRepository, packetId, privateDirectory, sha256 } from "./common.mjs";
+import { MANIFEST_SCHEMA, HARD_CAP, head, isolation, json, loadCorpus, outsideRepository, packetId, privateDirectory, sha256 } from "./common.mjs";
 
 export const emptyReview = () => ({ coverage: RESPONSE_EVIDENCE_DIMENSIONS.map((dimension) => ({ dimension, status: "no_applicable_items", reason: "Scripted placeholder; no semantic assessment." })), items: [], missing_material_history: [] });
 const AUTH = Object.freeze({});
@@ -161,10 +161,10 @@ export async function buildCasePacket(spec, arm) {
   }
 }
 
-export async function seal({ outDir }) {
+export async function seal({ outDir, corpus: corpusName = "main" }) {
   const started = performance.now();
   outDir = await outsideRepository(outDir);
-  const { corpus, bytes } = await loadCorpus();
+  const { corpus, bytes, entry: frozenCorpus } = await loadCorpus(corpusName);
   // Exclusive creation refuses even an existing empty folder. Partial seals are never reused.
   await fs.mkdir(outDir, { mode: 0o700 });
   await privateDirectory(outDir);
@@ -182,7 +182,7 @@ export async function seal({ outDir }) {
       ...(arm === "E" ? { snapshot: await save(`${id}.snapshot.json`, json(built.snapshot)), candidate: await save(`${id}.candidate.txt`, built.candidateText) } : {}) });
   }
   const manifest = { schema: MANIFEST_SCHEMA, sealed_at: new Date().toISOString(), repository_head: await head(), node: process.version,
-    corpus_commit: CORPUS_COMMIT, corpus_sha256: CORPUS_SHA256, corpus_file: corpusFile, status: corpus.status,
+    corpus_name: corpusName, corpus_commit: frozenCorpus.commit, corpus_sha256: frozenCorpus.sha256, corpus_file: corpusFile, status: corpus.status,
     design: { arms: ["G", "E"], samples: 2, hard_cap: HARD_CAP },
     cases: corpus.cases.map(({ id, pair, language, role, dimension, expected, why }) => ({ id, pair, language, role, dimension, expected, why })), packets };
   const manifestFile = await save("manifest.json", json(manifest));

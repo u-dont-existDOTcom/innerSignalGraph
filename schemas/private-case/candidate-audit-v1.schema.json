@@ -20,6 +20,7 @@
     "auditor_context_id_status": { "enum": ["known", "unavailable"] },
     "independent_auditor_available": { "type": "boolean" },
     "independent": { "type": "boolean" },
+    "derived_in_code": { "const": true },
     "findings": {
       "type": "array",
       "items": {
@@ -32,6 +33,7 @@
           "severity": { "enum": ["low", "medium", "substantive", "high"] },
           "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
           "unresolved": { "type": "boolean" },
+          "derived_in_code": { "const": true },
           "evidence_turn_ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true }
         }
       }

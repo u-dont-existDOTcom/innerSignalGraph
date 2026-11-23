@@ -3,16 +3,17 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { seal, emptyReview } from "../tasks/response-evidence-eval-20261123/seal.mjs";
 import { loadSealed, selfcheck } from "../tasks/response-evidence-eval-20261123/selfcheck.mjs";
 import { buildSchedule, executeAudit, MockAuditor, runAudit } from "../tasks/response-evidence-eval-20261123/audit.mjs";
 import { score, judge } from "../tasks/response-evidence-eval-20261123/score.mjs";
-import { CORPUS, CORPUS_SHA256, OPT_IN_ENV, ROOT, isolation, json, sha256 } from "../tasks/response-evidence-eval-20261123/common.mjs";
+import { CORPORA, CORPUS, CORPUS_SHA256, OPT_IN_ENV, ROOT, isolation, json, sha256 } from "../tasks/response-evidence-eval-20261123/common.mjs";
 import { privateRuntimeAuditPrompt } from "../src/prompts/private-runtime-audit.mjs";
 import { sha256Json } from "../src/supervisor/response-evidence-contract.mjs";
 import { main } from "../tasks/response-evidence-eval-20261123/cli.mjs";
 
-let root, sealedDir, sealed, sealedSummary;
+let root, sealedDir, sealed, sealedSummary, holdoutDir, holdoutSealed, holdoutSummary;
 before(async () => {
   root = await fs.mkdtemp(path.join(os.tmpdir(), "response-evidence-eval-test-"));
   await fs.chmod(root, 0o700);
@@ -20,6 +21,9 @@ before(async () => {
   sealedSummary = await seal({ outDir: sealedDir });
   console.log(`Sealed all ${sealedSummary.cases} cases (${sealedSummary.packets} packets) in ${sealedSummary.seconds.toFixed(3)} seconds.`);
   sealed = await loadSealed(sealedDir);
+  holdoutDir = path.join(root, "holdout-sealed");
+  holdoutSummary = await seal({ outDir: holdoutDir, corpus: "holdout" });
+  holdoutSealed = await loadSealed(holdoutDir);
 });
 after(async () => { if (root) await fs.rm(root, { recursive: true, force: true }); });
 
@@ -34,6 +38,8 @@ const results = async (name) => {
 test("all frozen cases seal through the real runtime; G uses the unchanged no-evidence prompt", async () => {
   assert.equal(sealedSummary.cases, 36); assert.equal(sealedSummary.packets, 72);
   assert.equal(sha256(await fs.readFile(CORPUS)), CORPUS_SHA256);
+  assert.equal(sealed.manifest.corpus_name, "main");
+  assert.equal(sealed.manifest.corpus_sha256, CORPORA.main.sha256);
   assert.equal(sealed.manifest.corpus_commit, "4b543a87a");
   const corpus = JSON.parse(await fs.readFile(CORPUS));
   for (const spec of corpus.cases) {
@@ -53,12 +59,105 @@ test("all frozen cases seal through the real runtime; G uses the unchanged no-ev
           coverage: spec.journal.coverage, more_available: spec.journal.more_available, excerpts: spec.journal.items });
       } else {
         assert.ok(captured.prompt.system.includes("RESPONSE EVIDENCE REVIEW"));
-        assert.equal(captured.packet.disclosure_manifest.response_evidence_view_sha256, sha256Json(captured.packet.response_evidence));
+        assert.ok(Object.values(captured.packet.disclosure_manifest).every((flag) => typeof flag === "boolean"));
+        assert.equal(captured.packet.response_evidence.snapshot_sha256, captured.snapshot.snapshot_sha256);
       }
     }
   }
   assert.equal((await fs.stat(sealedDir)).mode & 0o777, 0o700);
   await assert.rejects(seal({ outDir: sealedDir }), /exist/i);
+});
+
+test("every held-out case seals in both arms with the exact sources, candidate and corpus identity", async () => {
+  assert.equal(holdoutSummary.cases, 16); assert.equal(holdoutSummary.packets, 32);
+  assert.equal(holdoutSealed.manifest.corpus_name, "holdout");
+  assert.equal(holdoutSealed.manifest.corpus_sha256, CORPORA.holdout.sha256);
+  assert.equal(holdoutSealed.manifest.corpus_file.sha256, CORPORA.holdout.sha256);
+  assert.equal(holdoutSealed.manifest.corpus_commit, null); // no containing commit invented before Claude commits it
+  assert.equal(sha256(await fs.readFile(CORPORA.holdout.file)), CORPORA.holdout.sha256);
+  const corpus = JSON.parse(await fs.readFile(CORPORA.holdout.file));
+  assert.equal(corpus.cases.filter((c) => c.language === "fr").length, 4);
+  const pairs = new Map();
+  for (const spec of corpus.cases) {
+    const pair = pairs.get(spec.pair) ?? []; pair.push(spec); pairs.set(spec.pair, pair);
+    assert.ok(spec.history.filter((s) => s.step === "client").length >= 2);
+    assert.ok(spec.history.some((s) => s.step === "delivered_reply"));
+    for (const arm of ["G", "E"]) {
+      const captured = holdoutSealed.byId.get(`${spec.id}.${arm}`);
+      assert.ok(captured);
+      assert.equal(captured.packet.candidate_response, spec.candidate);
+      assert.deepEqual(captured.packet.recent_verbatim.turns.map((t) => t.text),
+        spec.history.filter((s) => ["client", "delivered_reply"].includes(s.step)).map((s) => s.text));
+      assert.equal(captured.packet.recent_verbatim.episode_completeness.complete, true);
+      if (arm === "G") {
+        assert.equal(captured.packet.response_evidence, undefined);
+        assert.deepEqual(captured.prompt, privateRuntimeAuditPrompt(captured.packet));
+        if (spec.journal) assert.deepEqual(captured.packet.journal_evidence.excerpts, spec.journal.items);
+      } else {
+        assert.ok(captured.prompt.system.includes("RESPONSE EVIDENCE REVIEW"));
+        assert.ok(Object.values(captured.packet.disclosure_manifest).every((flag) => typeof flag === "boolean"));
+        assert.equal(captured.packet.response_evidence.snapshot_sha256, captured.snapshot.snapshot_sha256);
+        assert.deepEqual(captured.packet.response_evidence.source_items.filter((s) => s.kind === "journal_quotation").map((s) => s.exact_excerpt),
+          spec.journal?.items.map((s) => s.text) ?? []);
+      }
+    }
+  }
+  assert.equal(pairs.size, 8);
+  for (const pair of pairs.values()) {
+    assert.equal(pair.length, 2);
+    assert.deepEqual(pair.map((c) => [c.role, c.expected]), [["planted", "block"], ["control_same_sources", "pass"]]);
+    assert.deepEqual(pair[0].history, pair[1].history); assert.deepEqual(pair[0].journal, pair[1].journal);
+  }
+  assert.ok(holdoutSealed.byId.get("H1-en-planted.E").packet.response_evidence.source_items.some((s) => s.kind === "agent_relayed_report"));
+  assert.equal((await selfcheck({ sealedDir: holdoutDir })).packets, 32);
+});
+
+test("seal refuses one changed holdout byte before creating an output folder", async () => {
+  // Copy only the harness entry points, with a symlink to the real runtime imports.
+  // The production corpus is never modified, even transiently. Final JSON whitespace is
+  // changed to other valid whitespace so the refusal must be the frozen-byte guard.
+  const fixture = path.join(root, "changed-holdout"), taskPath = "tasks/response-evidence-eval-20261123";
+  const fixtureTask = path.join(fixture, taskPath);
+  await fs.mkdir(path.join(fixtureTask, "corpus"), { recursive: true, mode: 0o700 });
+  await fs.symlink(path.join(ROOT, "src"), path.join(fixture, "src"), "dir");
+  for (const file of ["common.mjs", "seal.mjs"]) await fs.copyFile(path.join(ROOT, taskPath, file), path.join(fixtureTask, file));
+  const changed = await fs.readFile(CORPORA.holdout.file);
+  assert.equal(changed.at(-1), 0x0a); changed[changed.length - 1] = 0x20;
+  await fs.writeFile(path.join(fixtureTask, "corpus", "holdout-cases.json"), changed);
+  const fixtureSeal = await import(pathToFileURL(path.join(fixtureTask, "seal.mjs")).href);
+  const refusedOut = path.join(root, "never-sealed-changed-holdout");
+  await assert.rejects(fixtureSeal.seal({ outDir: refusedOut, corpus: "holdout" }), /frozen holdout corpus bytes differ/);
+  await assert.rejects(fs.stat(refusedOut), { code: "ENOENT" });
+  assert.equal(sha256(await fs.readFile(CORPORA.holdout.file)), CORPORA.holdout.sha256);
+});
+
+test("holdout mock audit, scorer and schedule retain both arms and all eight matched labels", async () => {
+  const schedule = buildSchedule(holdoutSealed.manifest, 2);
+  assert.equal(schedule.length, 64);
+  assert.equal(new Set(schedule.map((s) => s.call)).size, 64);
+  assert.ok(schedule.slice(0, 32).every((s) => s.sample === 1));
+  assert.ok(schedule.every((s, i) => s.packet.endsWith(i % 2 ? ".E" : ".G")));
+  const runDir = path.join(root, "holdout-mock");
+  const summary = await runAudit({ sealedDir: holdoutDir, outDir: runDir, mode: "mock", samples: 1, concurrency: 3 });
+  assert.equal(summary.started_now, 32); assert.equal(summary.this_run.ok, 32);
+  const scored = await score({ runDir });
+  assert.equal(scored.corpus_name, "holdout"); assert.equal(scored.corpus_sha256, CORPORA.holdout.sha256);
+  assert.equal(scored.cases.length, 16);
+  for (const arm of ["G", "E"]) {
+    assert.equal(scored.by_arm[arm].verdicts, 16); assert.equal(scored.by_arm[arm].false_approvals, 8);
+    assert.equal(scored.by_arm[arm].unnecessary_blocks, 0); assert.equal(scored.by_arm[arm].malformed, 0);
+  }
+});
+
+test("selfcheck refuses a holdout manifest relabeled as main even when its manifest is rehashed", async () => {
+  const manifestPath = path.join(holdoutDir, "manifest.json"), hashPath = path.join(holdoutDir, "manifest.sha256");
+  const manifestBytes = await fs.readFile(manifestPath), manifestHash = await fs.readFile(hashPath);
+  try {
+    const changed = JSON.parse(manifestBytes); changed.corpus_name = "main";
+    const bytes = json(changed);
+    await fs.writeFile(manifestPath, bytes); await fs.writeFile(hashPath, `${sha256(bytes)}\n`);
+    await assert.rejects(selfcheck({ sealedDir: holdoutDir }), /Invalid response-evidence sealed manifest/);
+  } finally { await fs.writeFile(manifestPath, manifestBytes); await fs.writeFile(hashPath, manifestHash); }
 });
 
 test("frozen provenance distinguishes unsent, exported, app-committed, reported, owner instruction and journal sources", () => {
@@ -224,6 +323,11 @@ test("live guards and missing --live refuse before even probing the stand-in exe
 });
 
 test("invalid options and output paths are refused without a provider call", async () => {
+  for (const corpus of ["other", "__proto__"]) {
+    const outDir = path.join(root, `invalid-corpus-${corpus}`);
+    await assert.rejects(main(["seal", "--out", outDir, "--corpus", corpus]), /--corpus must be main or holdout/);
+    await assert.rejects(fs.stat(outDir), { code: "ENOENT" });
+  }
   for (const options of [{ limit: 0 }, { limit: 1.5 }, { concurrency: 4 }, { samples: 3 }]) await assert.rejects(run("invalid", options));
   await assert.rejects(runAudit({ sealedDir, outDir: path.join(ROOT, "never-create-eval"), mode: "mock" }), /outside/);
   const link = path.join(root, "checkout-link"); await fs.symlink(ROOT, link);
