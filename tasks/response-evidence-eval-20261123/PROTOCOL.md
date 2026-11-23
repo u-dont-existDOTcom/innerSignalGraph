@@ -71,3 +71,43 @@ run; no call is retried; three failures in a row stop the run. Receipts are writ
 One auditor model through one transport (the subscription CLI with the repository's sealed settings), so a result does not carry
 over to the hosted API auditor. The cases test the auditor on a supervisor draft, not the writer or the runtime's repair loop. No
 real journal, no adaptive adversary, no clinical claim.
+
+## Commands
+
+Run from this checkout with Node 24.18.0. All sealed folders and receipts folders must be outside Git checkouts; newly created
+folders have mode 0700. A seal requires a new destination and never rewrites even a partial or empty existing folder.
+
+```sh
+npm run eval:response-evidence -- seal --out /absolute/private/location/sealed
+npm run eval:response-evidence -- selfcheck --sealed /absolute/private/location/sealed
+npm run eval:response-evidence -- audit --sealed /absolute/private/location/sealed --out /absolute/private/location/mock-receipts --mock --samples 1
+npm run eval:response-evidence -- score --run /absolute/private/location/mock-receipts
+```
+
+`seal` builds all 36 cases and both arms through synthetic encrypted stores, captures the real runtime's audit requests, then
+removes the stores. The continuation guard requires a retrievable provenance artifact when every history turn is in the recent
+episode: each store keeps an exact copy of its first client message as that artifact, adding no older exchange or journal entry.
+That artifact is not added to the audit packet. Setup approvals and capture answers are scripted; sealing calls no model.
+`selfcheck` checks every sealed file against its hash and rebuilds every prompt and output schema with this checkout; a changed
+prompt, schema or sealed byte refuses the run. `audit --mock` returns no ordinary findings, and in E marks all five dimensions
+`no_applicable_items`; it tests propagation only. `score` writes `score.json` and `report.txt` in the receipts folder and reports
+counts separately by arm and role, with every case shown. Missing and malformed answers have no verdict.
+
+A live run is a separate, explicitly authorized operation. With the subscription CLI signed into the intended account, API mode
+off and `ANTHROPIC_API_KEY` absent (even an empty variable is refused):
+
+```sh
+INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1 npm run eval:response-evidence -- audit --sealed /absolute/private/location/sealed --out /absolute/private/location/live-receipts --live --samples 1 --limit 12 --model claude-opus-5-5 --effort high --concurrency 1
+npm run eval:response-evidence -- score --run /absolute/private/location/live-receipts
+```
+
+`--samples` is 1 (default) or 2. Scheduling alternates G and E for each case and finishes all first-sample calls before starting a
+second sample. `--limit` is the total number of possibly billed calls in the folder, including earlier invocations, capped at 144.
+The same limit sends nothing further; increasing it continues unattempted calls. Each call has an exclusive `.started.json`
+receipt and an atomically written `.result.json` receipt. No attempted call is retried, including a usage-limit rejection; usage
+rejections do not count as billed calls. Interrupted calls count as ambiguous and are never repeated. The first usage-limit
+message or three consecutive failures stops further scheduling; concurrent calls already started finish and retain receipts.
+Mode, model, effort, provider and sealed-manifest identity are fixed by the folder's first `run.json`. Use a new folder to change
+them. A folder lock prevents concurrent invocations; after interruption inspect the lock and receipts before removing the lock
+and resuming. The live path checks the CLI's flags and version and uses only sealed `ClaudeCliProvider` calls. Nothing in these
+commands installs packages, enables enforcement in production, approves a release, or sends a client message.
