@@ -200,6 +200,12 @@ test("unknown and strictly malformed turn numbers return one fixed error with no
     assert.equal(response.status, 404, query);
     assert.deepEqual(await response.json(), { error: "Turn details unavailable.", code: "RUNNER_TURN_NOT_FOUND" });
   }
+  // A malformed, missing, empty or repeated case id gets the same fixed error (Codex's review 5).
+  for (const query of ["?caseId=%3Cimg%3E&turn=1", "?turn=1", "?caseId=&turn=1", `?caseId=${CASE}&caseId=${CASE}&turn=1`, "?caseId=UPPER&turn=1"]) {
+    const response = await f.request(`${f.base}/v1/runner/turn-details${query}`, { headers: { origin: f.base } });
+    assert.equal(response.status, 404, query);
+    assert.deepEqual(await response.json(), { error: "Turn details unavailable.", code: "RUNNER_TURN_NOT_FOUND" });
+  }
   assert.deepEqual(await f.store.load(CASE), before);
 });
 
@@ -301,4 +307,28 @@ test("failed worker receipts show the failed attempt without inventing its outpu
   assert.equal(step(details, "draft"), undefined);
   assert.equal(step(details, "reader").at, null);
   assert.equal(JSON.stringify(details).includes(M.finding), false);
+});
+
+test("a check that fails part-way still shows the readings its finished checkers stored for that draft", () => {
+  const record = {
+    candidate_responses: [{ id: "cand-1", metadata: { runtime_turn_id: "t1" }, repair_cycle: 0, exact_text: M.draft1 }],
+    runtime_turns: [{
+      id: "t1", state: "UNANSWERED", inbound: { exact_text: M.person },
+      runner_reading: { checker_levels: [
+        { checker: "C1", candidate_id: "cand-1", level: "wants_to_die", recorded_at: "2026-11-23T12:00:02.000Z" },
+        { checker: "C1", candidate_id: "other-candidate", level: "none", recorded_at: "2026-11-23T12:00:02.000Z" }
+      ] },
+      closure: { kind: "fixed_message", reason_code: "checker_refused", exact_text: "Fixed stored notice" },
+      events: [
+        { event_type: "INVOCATION_COMPLETED", stage: "candidate", at: "2026-11-23T12:00:01.000Z", details: { output: { exactText: M.draft1, result: { receipts: [{ role: "W", provider: "openai" }] } } } },
+        { event_type: "INVOCATION_FAILED", stage: "audit", at: "2026-11-23T12:00:03.000Z", details: { error_code: "CHECKER_REFUSED", raw_private_evidence: { receipts: [{ role: "C1", provider: "anthropic" }, { role: "C2", provider: "anthropic", failed: "REFUSED" }] } } }
+      ]
+    }]
+  };
+  const details = runnerTurnDetailsFromRecord(record, 1);
+  const failure = step(details, "failure");
+  assert.equal(failure.content.result, "not stored");
+  assert.deepEqual(failure.content.readings, [record.runtime_turns[0].runner_reading.checker_levels[0]]);
+  assert.equal(failure.draft, 1);
+  assert.deepEqual(failure.workers.map((call) => [call.role, call.failure_code]), [["C1", null], ["C2", "REFUSED"]]);
 });

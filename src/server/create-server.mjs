@@ -617,12 +617,15 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         assertOwnerChannelRequest(req, { pageGet: req.method === "GET" && runnerPageGet });
         if (runnerPageGet && req.method !== "GET") return send(res, 404, { error: "Not found" });
         const input = req.method === "GET" ? { caseId: url.searchParams.get("caseId") } : await readSupervisorBody(req);
-        const caseId = readCaseId(input.caseId);
+        // A malformed or missing case id on the Details route gets the same fixed not-found as a malformed turn (Codex's review 5).
+        const detailsRoute = url.pathname === "/v1/runner/turn-details";
+        const unavailable = () => send(res, 404, { error: "Turn details unavailable.", code: "RUNNER_TURN_NOT_FOUND" });
+        let caseId;
+        try { caseId = readCaseId(input.caseId); } catch (error) { if (detailsRoute && error?.code === "VALIDATION_ERROR") return unavailable(); throw error; }
         const authContext = requestAuthContext(req);
-        if (url.pathname === "/v1/runner/turn-details") {
-          const unavailable = () => send(res, 404, { error: "Turn details unavailable.", code: "RUNNER_TURN_NOT_FOUND" });
+        if (detailsRoute) {
           const value = url.searchParams.get("turn");
-          if (url.searchParams.getAll("turn").length !== 1 || !/^[1-9][0-9]{0,15}$/u.test(value ?? "") || !Number.isSafeInteger(Number(value))) return unavailable();
+          if (url.searchParams.getAll("caseId").length !== 1 || url.searchParams.getAll("turn").length !== 1 || !/^[1-9][0-9]{0,15}$/u.test(value ?? "") || !Number.isSafeInteger(Number(value))) return unavailable();
           let details;
           try {
             details = typeof automaticPrivateTherapy.turnDetails === "function"

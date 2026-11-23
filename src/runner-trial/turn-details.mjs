@@ -86,9 +86,15 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
         }, [], { draft, timing: "Checker completion order not stored; these results belong to the same draft." });
       }
     } else if (["INVOCATION_FAILED", "INVOCATION_ABANDONED"].includes(event.event_type)) {
+      // A check that failed part-way still keeps the readings its finished checkers stored (a crisis level, say) before the
+      // failure, bound to the draft being checked (Codex's review 5): show them instead of hiding them behind "not stored".
+      const readings = event.stage === "audit"
+        ? list(turn.runner_reading?.checker_levels).filter((entry) => currentCandidate && entry.candidate_id === currentCandidate.id && (!event.at || !entry.recorded_at || entry.recorded_at <= event.at))
+        : [];
       add("failure", `${event.stage} ${event.event_type === "INVOCATION_FAILED" ? "failed" : "interrupted"}`, event.at, {
-        error_code: stored(event.details?.error_code), result: "not stored"
-      }, callsFrom(event.details?.raw_private_evidence?.receipts));
+        error_code: stored(event.details?.error_code), result: "not stored",
+        ...(readings.length ? { readings } : {})
+      }, callsFrom(event.details?.raw_private_evidence?.receipts), event.stage === "audit" && draft ? { draft } : {});
     }
   }
   if (turn.emergency_line_shown_at) {
