@@ -1,12 +1,27 @@
 # Inner Signal Codex current state
 
+## Therapy skill 0.2.6 and the feedback page live — 22 November 2026
+
+Therapy skill 0.2.6 was released on `stable` at `45759cb26` (pull request 239; backend `main` `45c0f906e`, pull requests 236 and 237 with IS7) and verified on the hosted connector at 16:41 UTC (kit: `InnerSignal_0.2.6_activate.sh`; owner answers i69 1a 2a and his `go 0.2.6` at 16:30 UTC). The feedback page answers at `https://innerself.love/feedback` (page on, chat tool off; tools/list unchanged); see the [release evidence record](../docs/releases/2026-11-22-therapy-skill-0.2.6.md). The chat tool's switch goes with pull request 232's release.
+
 ## Therapy skill stable release and delivery follow-up — 21 November 2026
 
 Therapy skill 0.2.5 was released on `stable` at `a7550955` (kit: `InnerSignal_0.2.5_activate.sh`) and has been live since 21 Nov 2026 04:05 UTC (lane handoff, 21 Nov 2026); see the [release evidence record](../docs/releases/2026-11-21-therapy-skill-0.2.5.md). Post-release checks found that ChatGPT keeps only the head and tail of the one large protocol result. The split-delivery fix, pull request 232, is built and parked by the owner's answer i61b on 21 Nov 2026 17:32 UTC, which puts an InnerSignal runner first (lane handoff, 21 Nov 2026).
 
-Updated: 2026-11-21
+Updated: 2026-11-22
+
+## Feedback place (IS8, owner answer i63b) — 22 November 2026 (pull request 236, draft; branch `claude/feedback-place-20261122`; held sentence on `claude/feedback-place-sentence-20261122`; not merged, not released, not installed)
+
+- **Status (22 Nov 2026):** merged as `146ac4df3` (#236) and `45c0f906e` (#237, the served sentence); released in therapy skill 0.2.6 (section above). The entries below are the history.
+
+- **Owner outcome and authority:** his request of 20 Nov 2026 (23:45 UTC) for "a place where people can send InnerSignal suggestions, bugs, praise and reviews", and his answer i63b (chat, 22 Nov 2026, 00:37 UTC): a private feedback page, and sending from inside a chat with the person's yes to the exact text.
+- **Change:** `src/feedback/` (page, sealed store, owner's routes, chat tool `send_feedback` behind `INNER_SIGNAL_FEEDBACK_TOOL`), wired into the hosted connector behind `INNER_SIGNAL_FEEDBACK` (both off); the owner's laptop script `scripts/feedback-inbox.mjs`; the Inbox view `scripts/feedback-inbox-view.js`; `docs/FEEDBACK.md`. With both switches off nothing the connector serves or logs changes. The served-rules sentence naming the page waits on its own branch for the release that turns the page on.
+- **Reviews and tests:** design `docs/superpowers/specs/2026-11-22-feedback-place-design.md` with Fable's red team (23 findings) and five Codex reviews (25 findings in the first four, all fixed with tests; the fifth, on `93458e118`, found nothing). Full suite on `93458e118`: 3,141 of 3,141.
+- **Next safe action:** the release question goes to the owner through the InnerSignal lane (open points: the page's address on his domain, how long messages are kept, the page's words, where he reads them). On his yes: rebase on main, Codex's review of the final commit, merge, then the release with the sentence branch. The chat tool turns on only with the release that changes the tool list (#232).
 
 ## The owner's 19 Oct 2026 symptom line (IS7) — 21 November 2026 (branch `claude/is7-symptom-causal-humility-20261121`; not released, not installed)
+
+- **Status (22 Nov 2026):** merged as `1be3deaf3` (#234) and released in therapy skill 0.2.6 (section above).
 
 - **Authority:** the owner approved two clarifications on 19 Oct 2026 (pull request 185's body). Pull request 185 was closed on 21 Nov 2026 as replaced by pull request 229, which carried his own words on both into guide r11 and the ordinary-want point into IC.MEET_GUARD, but not the map line on symptoms.
 - **Change:** `AMEND.CROSS.SYMPTOM_CAUSAL_HUMILITY_20261019` (amendments r24, his approved words); IC.SOLAR_PLEXUS_RELAXATION gains one avoid line and one required nuance, served in its box; graph case G20261019C; PGQ-089 queued (queue r24). The ordinary-want amendment of the same day stays on its branch, `chat/schema-source-clarifications-20261019`.

@@ -5,6 +5,8 @@ import { TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolMa
 import { JOURNAL_READ_ONLY_MCP_TOOLS } from "../journal-import/http.mjs";
 import { projectCasePlan } from "../case-formulation/case-roadmap.mjs";
 import { KNOWN_VS_NEW_LIMITS } from "../case-formulation/known-vs-new.mjs";
+import { feedbackAddressInRules } from "../feedback/address.mjs";
+import { ownsFeedbackPath, sendFeedbackClosed } from "../feedback/service.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
@@ -276,13 +278,15 @@ const AUTHORIZATION_INSTRUCTION = "Authorization is transport-owned; never put b
 
 // Keep the ordinary and journal-enabled continuity instructions aligned; journal mode adds only its mutation exception and journal-specific instructions.
 // The reply-draft tools, when enabled, add their own exception and instructions the same way.
-function serverInstructions(journalWork, supervisorReply = null) {
+// The feedback tool, when on, adds its own sentence the same way; while it is off the instructions are unchanged.
+function serverInstructions(journalWork, supervisorReply = null, feedbackTool = null) {
   const writers = [...(journalWork ? ["submit_journal_work_result"] : []), ...(supervisorReply ? ["the reply-draft tools"] : [])];
   return [
     ...THERAPY_INSTRUCTIONS,
     `To continue from an InnerSignal handoff, call load_handoff first. If the user names a known private case but supplies no opaque ID, call load_case_context_by_alias before searching or reconstructing prior conversation. ${writers.length ? `The private case tools are read-only, except ${writers.join(" and ")}.` : "The private case tools are read-only."}`,
     ...(journalWork ? [journalWork.instructions] : []),
     ...(supervisorReply ? [supervisorReply.instructions] : []),
+    ...(feedbackTool ? [feedbackTool.instructions] : []),
     AUTHORIZATION_INSTRUCTION
   ].join(" ");
 }
@@ -296,25 +300,27 @@ const toolScopes = (name, journalWork = null, supervisorReply = null) => {
     : [PRIVATE_CASE_SCOPES.READ];
 };
 
-function advertisedTools(oauthEnabled, journalWork = null, journalApi = null, supervisorReply = null) {
+// The feedback tool, when on, comes last and needs no sign-in, like the protocol tools.
+function advertisedTools(oauthEnabled, journalWork = null, journalApi = null, supervisorReply = null, feedbackTool = null) {
   const privateTools = [
     ...TOOL_DEFINITIONS,
     ...(journalApi ? JOURNAL_READ_ONLY_MCP_TOOLS : []),
     ...(journalWork ? journalWork.definitions : []),
     ...(supervisorReply ? supervisorReply.definitions : [])
   ];
-  if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...privateTools];
-  const protocolTools = PROTOCOL_TOOL_DEFINITIONS.map((tool) => Object.freeze({
+  const publicWriteTools = feedbackTool ? feedbackTool.definitions : [];
+  if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...privateTools, ...publicWriteTools];
+  const noauth = (tool) => Object.freeze({
     ...tool,
     securitySchemes: Object.freeze([Object.freeze({ type: "noauth" })])
-  }));
-  return [...protocolTools, ...privateTools.map((tool) => Object.freeze({
+  });
+  return [...PROTOCOL_TOOL_DEFINITIONS.map(noauth), ...privateTools.map((tool) => Object.freeze({
     ...tool,
     securitySchemes: Object.freeze([Object.freeze({
       type: "oauth2",
       scopes: Object.freeze(toolScopes(tool.name, journalWork, supervisorReply))
     })])
-  }))];
+  })), ...publicWriteTools.map(noauth)];
 }
 
 // A journal answer that fails its schema, or a reply-draft call the draft service refuses, is an ordinary tool error the model
@@ -643,7 +649,7 @@ async function callTool(service, name, args, authContext, journalApi = null) {
 // class (the next power of two, so a case's exact size can't be followed across lines). Never its arguments, a case
 // reference or any content: the trace shows which tools were called and when, not what was read. A sink that throws or
 // rejects never affects a call.
-export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, supervisorReply = null, callLog = null } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, supervisorReply = null, callLog = null, feedback = null } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function" || typeof caseAccessService.loadCaseContextByAlias !== "function") throw new TypeError("caseAccessService with exact-ID and alias continuity is required.");
   if (journalWork !== null && (typeof journalWork?.call !== "function" || !(journalWork.names instanceof Set))) {
     throw new TypeError("journalWork must come from createJournalWorkTools.");
@@ -657,6 +663,22 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
     const taken = new Set([...TOOL_DEFINITIONS, ...PROTOCOL_TOOL_DEFINITIONS, ...JOURNAL_READ_ONLY_MCP_TOOLS, ...(journalWork ? journalWork.definitions : [])].map((tool) => tool.name));
     if ([...supervisorReply.names].some((name) => taken.has(name))) throw new TypeError("supervisorReply tool names collide with existing tools.");
   }
+  // The feedback place, off unless a caller passes it (see src/feedback/setup.mjs): its page and owner routes under /feedback, and
+  // its chat tool when that switch is on too.
+  if (feedback !== null) {
+    if (typeof feedback?.service?.owns !== "function" || typeof feedback.service.handle !== "function" || !feedback.health || typeof feedback.publicUrl !== "string") {
+      throw new TypeError("feedback must come from createFeedbackFromEnvironment.");
+    }
+    const feedbackTool = feedback.tool ?? null;
+    if (feedbackTool !== null) {
+      if (typeof feedbackTool.call !== "function" || !(feedbackTool.names instanceof Set) || !Array.isArray(feedbackTool.definitions) || typeof feedbackTool.instructions !== "string") {
+        throw new TypeError("feedback.tool must come from createSendFeedbackTool.");
+      }
+      const taken = new Set([...TOOL_DEFINITIONS, ...PROTOCOL_TOOL_DEFINITIONS, ...JOURNAL_READ_ONLY_MCP_TOOLS, ...(journalWork ? journalWork.definitions : []), ...(supervisorReply ? supervisorReply.definitions : [])].map((tool) => tool.name));
+      if ([...feedbackTool.names].some((name) => taken.has(name))) throw new TypeError("feedback tool names collide with existing tools.");
+    }
+  }
+  const feedbackTool = feedback?.tool ?? null;
   const normalizedOauth = normalizeOauth(oauth);
   // The scope is advertised only when the feature is on.
   if (normalizedOauth?.scopesSupported.includes(PRIVATE_CASE_SCOPES.SUPERVISOR_DRAFT) && supervisorReply === null) {
@@ -665,12 +687,19 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
   if (journalApi != null && typeof journalApi.search !== "function") throw new TypeError("journalApi is invalid.");
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
   if (callLog !== null && typeof callLog !== "function") throw new TypeError("callLog must be a function.");
-  const tools = advertisedTools(Boolean(normalizedOauth), journalWork, journalApi, supervisorReply);
+  const tools = advertisedTools(Boolean(normalizedOauth), journalWork, journalApi, supervisorReply, feedbackTool);
   const toolNames = new Set(tools.map((tool) => tool.name));
-  const instructions = serverInstructions(journalWork, supervisorReply);
+  const instructions = serverInstructions(journalWork, supervisorReply, feedbackTool);
   const serveRoot = !normalizedOauth || new URL(normalizedOauth.resource).pathname === "/";
   // Loaded once per process: a redeploy is what changes the served protocol.
   const protocol = therapyProtocol === undefined ? loadProtocolOrNull() : therapyProtocol;
+  // The feedback address the served rules name, if any. With the page on, it must be the page's own address; with the page off,
+  // that address answers with a closed page rather than a 404 (design section 10). Rules that name none leave /feedback a 404.
+  const namedFeedbackAddress = feedbackAddressInRules(protocol);
+  if (feedback && namedFeedbackAddress && feedback.publicUrl !== namedFeedbackAddress) {
+    throw new TypeError("INNER_SIGNAL_FEEDBACK_PUBLIC_URL must equal the feedback address the served rules name.");
+  }
+  const feedbackClosed = !feedback && Boolean(namedFeedbackAddress);
   return http.createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
     if (req.method === "GET" && url.pathname === "/health") {
@@ -679,9 +708,15 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
         service: "inner-signal-private-case-mcp",
         runtimeVersion: RUNTIME_VERSION,
         productionAuthReady: productionAuthReady === true,
-        therapyProtocol: protocol ? { version: protocol.version, protocolSha256: protocol.protocolSha256 } : null
+        therapyProtocol: protocol ? { version: protocol.version, protocolSha256: protocol.protocolSha256 } : null,
+        // Present only while the feedback place is on or closed, so the health answer of a deployment without it is unchanged.
+        ...(feedback ? { feedback: feedback.health } : feedbackClosed ? { feedback: { page: "closed", tool: "off" } } : {})
       });
     }
+    // The feedback page and the owner's feedback routes. With the page off they answer a closed page when the served rules name
+    // its address, and otherwise fall through to 404 as before.
+    if (feedback?.service.owns(url.pathname)) return feedback.service.handle(req, res, url);
+    if (feedbackClosed && ownsFeedbackPath(url.pathname)) return sendFeedbackClosed(res);
     if (req.method === "GET" && normalizedOauth && ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"].includes(url.pathname)) {
       return send(res, 200, protectedResourceMetadata(normalizedOauth));
     }
@@ -714,9 +749,13 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
     const bytes = send(res, answer.status, answer.payload, answer.headers);
     if (callLog) {
       try {
-        const traced = callLog({ event: "tool_call", at: new Date().toISOString(), tool: toolNames.has(name) ? name : "unknown",
-          bearer: bearerToken(req) !== null, ok: answer.code === null, code: traceCode(answer.code), ms: Math.round(performance.now() - started),
-          bytes_at_most: sizeClass(bytes) });
+        // A feedback send's line gives the hour only and leaves out whether a token came with it, so the trace can't tie a sealed
+        // message to a time or to a signed-in account (design section 4).
+        const feedbackCall = feedbackTool?.names.has(name) === true;
+        const at = new Date().toISOString();
+        const traced = callLog({ event: "tool_call", at: feedbackCall ? `${at.slice(0, 13)}:00:00Z` : at, tool: toolNames.has(name) ? name : "unknown",
+          ...(feedbackCall ? {} : { bearer: bearerToken(req) !== null }), ok: answer.code === null, code: traceCode(answer.code),
+          ms: Math.round(performance.now() - started), bytes_at_most: sizeClass(bytes) });
         if (typeof traced?.then === "function") traced.then(undefined, () => {});
       } catch { /* the trace never breaks a call */ }
     }
@@ -730,6 +769,17 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
         return reply(200, success(request.id, { ...toolResult(value), content: [{ type: "text", text: protocolText(value) }] }));
       } catch {
         return reply(200, failure(request.id, -32003, "InnerSignal therapy protocol is unavailable; do not improvise it.", { code: "THERAPY_PROTOCOL_UNAVAILABLE" }), "THERAPY_PROTOCOL_UNAVAILABLE");
+      }
+    }
+
+    // The feedback tool needs no sign-in: a bearer token sent with the call is not passed on and nothing about an account is kept.
+    if (feedbackTool?.names.has(name)) {
+      try {
+        const outcome = await feedbackTool.call(name, args, { req });
+        if (outcome.toolError) return reply(200, success(request.id, extensionToolError(outcome.toolError)), outcome.toolError.code ?? "FEEDBACK_TOOL_ERROR");
+        return reply(200, success(request.id, { ...toolResult(outcome.value), ...(typeof outcome.text === "string" ? { content: [{ type: "text", text: outcome.text }] } : {}) }));
+      } catch {
+        return reply(200, success(request.id, extensionToolError({ code: "FEEDBACK_UNAVAILABLE", message: "Not sent: the feedback box isn't working right now. Tell the person to try again later." })), "FEEDBACK_UNAVAILABLE");
       }
     }
 
@@ -767,8 +817,8 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
   }
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, supervisorReply = null, callLog = null, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService, journalApi, oauth, productionAuthReady, therapyProtocol, journalWork, supervisorReply, callLog });
+export async function listenPrivateCaseMcp({ caseAccessService, journalApi = null, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, supervisorReply = null, callLog = null, feedback = null, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, journalApi, oauth, productionAuthReady, therapyProtocol, journalWork, supervisorReply, callLog, feedback });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);

@@ -11,7 +11,7 @@ import { auditWorkflows } from "../scripts/audit-workflows.mjs";
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pinnedCheckout = "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683";
 const codeqlCheckout = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1";
-const codeqlAction = "2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2";
+const codeqlAction = "9b3254085494b55a0f7c4c2b3d2d52cc712ce370";
 const exactCodeqlWorkflow = `name: CodeQL
 
 on:
@@ -318,7 +318,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - &shared {uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020}
+          - &shared {uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1}
     runs-on: ubuntu-latest
     steps:
       - *shared
