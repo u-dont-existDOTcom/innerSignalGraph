@@ -329,6 +329,59 @@ test("an unfinished supervisor writer refreshes amended sources even if the serv
   assert.equal(record.supervisor_invocations.find(entry => entry.event_type === "COMPLETED").input.snapshot_id, record.response_evidence_snapshots[1].id);
 });
 
+test("a completed supervisor writer survives an interleaved candidate and restart without a second call", async (t) => {
+  const env = await environment(t);
+  const interrupted = createPrivateSupervisorDraftService({ privateCaseSource: { ...env.access, async submitSupervisorDraft() {
+    await env.store.saveCandidateResponse(CASE, "candidate:interleaved", "Another unsent draft.", { producer_context_id: "writer:other" });
+    throw new Error("interrupted after completed writer");
+  } }, modelRuntime: env.runtime });
+  const input = { caseId: CASE, source: "backend_produced", idempotencyKey: "interleaved", authContext: AUTH, channel: CHANNEL };
+  await assert.rejects(interrupted.submitCandidateForReview(input), /interrupted after completed writer/);
+  const before = await env.store.load(CASE);
+  assert.equal(env.counts.producer, 1);
+  assert.equal(before.supervisor_invocations.filter(e => e.event_type === "COMPLETED" && e.input.stage === "candidate").length, 1);
+  const restartedAccess = createPrivateCaseAccessService(env.accessOptions);
+  const restarted = createPrivateSupervisorDraftService({ privateCaseSource: restartedAccess, modelRuntime: env.runtime });
+  const result = await restarted.submitCandidateForReview(input);
+  assert.equal(result.status, "approved"); assert.equal(result.exportable, true);
+  assert.equal(env.counts.producer, 1);
+  const record = await env.store.load(CASE), candidate = record.candidate_responses.at(-1);
+  assert.equal(candidate.version, 2);
+  assert.equal(candidate.producer_context_id, "writer:backend");
+  assert.equal(record.supervisor_invocations.filter(e => e.event_type === "COMPLETED" && e.input.stage === "candidate").length, 1);
+  assert.deepEqual(record.supervisor_invocations.slice(0, 2), before.supervisor_invocations, "submission preserves the sealed writer unchanged");
+  assert.equal(record.supervisor_invocations.find(e => e.input.stage === "audit").input.candidate_version, candidate.version);
+  assert.equal((await restarted.getApprovedResponseArtifact({ caseId: CASE, artifactId: result.artifact.artifact_id, authContext: AUTH, channel: CHANNEL })).client_text, candidate.exact_text);
+});
+
+test("enforced supervisor artifact projections and service status agree with refusal of legacy export", async (t) => {
+  const env = await environment(t, { policy: "advisory" }), result = await env.submit();
+  assert.equal(result.exportable, true);
+  const access = createPrivateCaseAccessService({ ...env.accessOptions, responseEvidencePolicy: "enforced" });
+  const service = createPrivateSupervisorDraftService({ privateCaseSource: access, modelRuntime: env.runtime });
+  const record = await env.store.load(CASE), candidate = record.candidate_responses.at(-1), operationKey = candidate.metadata.supervisor_draft.operation_key;
+  const snapshot = await service.prepareResponseContext({ caseId: CASE, authContext: AUTH });
+  assert.equal(snapshot.artifacts.find(a => a.candidate_id === candidate.id).exportable, false);
+  const status = await service.getReviewStatus({ caseId: CASE, operationKey, authContext: AUTH });
+  assert.equal(status.exportable, false); assert.equal(status.artifact.exportable, false);
+  await assert.rejects(service.submitCandidateForReview({ caseId: CASE, source: "external_draft", text: candidate.exact_text, idempotencyKey: "one", authContext: AUTH, channel: CHANNEL }), code("RESPONSE_EVIDENCE_REQUIRED"));
+  await assert.rejects(service.getApprovedResponseArtifact({ caseId: CASE, artifactId: result.artifact.artifact_id, authContext: AUTH, channel: CHANNEL }), code("RESPONSE_EVIDENCE_REQUIRED"));
+});
+
+test("supervisor approval pre-check uses the enforced store policy before calling the approval mutation", async (t) => {
+  const env = await environment(t, { policy: "advisory" });
+  const paused = createPrivateSupervisorDraftService({ privateCaseSource: { ...env.access, async approveSupervisorDraft() { throw new Error("pause before approval"); } }, modelRuntime: env.runtime });
+  await assert.rejects(paused.submitCandidateForReview({ caseId: CASE, source: "external_draft", text: "Legacy reviewed reply.", idempotencyKey: "legacy", authContext: AUTH }), /pause before approval/);
+  const record = await env.store.load(CASE), candidate = record.candidate_responses.at(-1);
+  assert.equal(candidate.status, "audited");
+  let approvals = 0;
+  const source = createPrivateCaseAccessService({ ...env.accessOptions, responseEvidencePolicy: "enforced" });
+  const service = createPrivateSupervisorDraftService({ privateCaseSource: { ...source, async approveSupervisorDraft(...args) { approvals++; return source.approveSupervisorDraft(...args); } }, modelRuntime: env.runtime });
+  await assert.rejects(service.resumeReview({ caseId: CASE, operationKey: candidate.metadata.supervisor_draft.operation_key, authContext: AUTH }), code("RESPONSE_EVIDENCE_REQUIRED"));
+  assert.equal(approvals, 0);
+  assert.deepEqual(await env.store.load(CASE), record);
+});
+
 test("one provider response may back only one immutable completed supervisor call", async (t) => {
   const env = await environment(t, { onAudit() { throw new Error("pause audit"); } });
   await assert.rejects(env.submit());

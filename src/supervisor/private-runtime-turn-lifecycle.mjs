@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, validateCandidateAuditFinding } from "./private-candidate-lifecycle.mjs";
-import { deriveEvidenceFindings, normalizeEvidenceReview, sha256Json } from "./response-evidence-contract.mjs";
+import { deriveEvidenceFindings, normalizeEvidenceReview, normalizeRecordOnlyFinding, sha256Json } from "./response-evidence-contract.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "./owner-fallback-message.mjs";
 
 export const PRIVATE_RUNTIME_TURN_STATES = Object.freeze([
@@ -85,7 +85,7 @@ export function validatePrivateRuntimeDiscriminatorReview(value, { exactText, sn
   if (sha256Json(normalized) !== sha256Json(value.review) || deriveEvidenceFindings(normalized).length) blocked();
   for (const [index, finding] of value.findings.entries()) {
     validateCandidateAuditFinding(finding, index);
-    if (finding.id.startsWith("evidence:") || ["substantive", "high"].includes(finding.severity)) blocked();
+    if (finding.id.startsWith("evidence:") || ["substantive", "high"].includes(normalizeRecordOnlyFinding(finding).severity)) blocked();
   }
   return value;
 }

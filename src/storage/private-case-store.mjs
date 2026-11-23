@@ -6,7 +6,7 @@ import {
   RESPONSE_EVIDENCE_POLICY_VERSION, RESPONSE_EVIDENCE_BUDGETS, assessResponseEvidenceAdmission,
   buildEvidenceModelView, buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeResponseEvidenceJournal,
   responseEvidenceCandidateSchema, responseEvidenceSnapshotSchema, validateEvidenceShape, validateResponseEvidenceAudit, validateResponseEvidenceSnapshot,
-  supervisorInvocationInput, verifySealedEvidenceOutput, verifyRuntimeWriterInvocation
+  supervisorInvocationInput, supervisorInvocationIdentity, normalizeRecordOnlyFinding, verifySealedEvidenceOutput, verifyRuntimeWriterInvocation
 } from "../supervisor/response-evidence-contract.mjs";
 import { normalizeSupervisorInvocationOutput, requireSupervisorInvocation, supervisorCallCandidate, validateSupervisorInvocations } from "../supervisor/supervisor-model-invocations.mjs";
 import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
@@ -1109,7 +1109,7 @@ export function createEncryptedPrivateCaseStore({
         const input = supervisorInvocationInput({ operationKey, stage, candidate, snapshot, viewSha256 });
         const existing = record.supervisor_invocations.find(entry => entry.event_type === "STARTED" && entry.attempt_context_id === attemptContextId);
         if (existing) {
-          if (!sameJson(existing.input, input)) throw new ValidationError("Supervisor invocation replay conflict.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          if (!sameJson(supervisorInvocationIdentity(existing.input), input)) throw new ValidationError("Supervisor invocation replay conflict.", { code: "RESPONSE_EVIDENCE_INVALID" });
           started = existing; return null;
         }
         started = { schema_version: 1, id: `supervisor-call:${sha256Json([input, attemptContextId]).slice(0, 40)}:started`, event_type: "STARTED",
@@ -1257,6 +1257,8 @@ export function createEncryptedPrivateCaseStore({
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
             candidate_origin: snapshot.candidate_origin, writer_inclusion: "verified", writer_inclusion_sha256: responseEvidence.writerInclusionSha256,
             established_context_after_commit_sha256: root ? (root.metadata.response_evidence?.snapshot_id === snapshot.id ? root.metadata.response_evidence.established_context_after_commit_sha256 : snapshot.dependency_binding.established_context_digest) : null,
+            compatibility_state_after_commit_binding: root ? (root.metadata.response_evidence?.snapshot_id === snapshot.id
+              ? root.metadata.response_evidence.compatibility_state_after_commit_binding ?? snapshot.dependency_binding.compatibility_state_binding : snapshot.dependency_binding.compatibility_state_binding) : null,
             dependency_status: current ? "current_at_commit" : "stale_at_commit"
           };
         } else if (responseEvidencePolicy === "enforced" || record.response_evidence_snapshots.some((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurnId) || (parentCandidateId != null && record.candidate_responses.find((entry) => entry.id === parentCandidateId)?.metadata.response_evidence)) {
@@ -1333,7 +1335,10 @@ export function createEncryptedPrivateCaseStore({
           parent.updated_at = timestamp;
         }
         if (evidenceBinding) {
-          if (parentCandidateId == null && evidenceBinding.dependency_status === "current_at_commit") evidenceBinding.established_context_after_commit_sha256 = sha256Json(record.case_state);
+          if (parentCandidateId == null && evidenceBinding.dependency_status === "current_at_commit") {
+            evidenceBinding.established_context_after_commit_sha256 = sha256Json(record.case_state);
+            evidenceBinding.compatibility_state_after_commit_binding = compatibilityStateBinding(record.case_state.protective_compatibility ?? null);
+          }
           candidate.metadata.response_evidence = evidenceBinding;
         }
         validateCandidateResponse(candidate, record.candidate_responses.length);
@@ -1420,6 +1425,7 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, { exactText, producerContextId, kind = null, review = null }) {
+      if (Array.isArray(review?.findings)) review = { ...review, findings: review.findings.map(normalizeRecordOnlyFinding) };
       return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED") throw new ValidationError("Runtime discriminator requires its explicit terminal-uncertainty state.");
@@ -1902,7 +1908,7 @@ export function createEncryptedPrivateCaseStore({
       const basis = computeResponseBasis(record);
       const projection = projectCommunicationState(record);
       const active = [...record.candidate_responses].reverse().find(isActivePrivateCandidate) ?? null;
-      const artifacts = supervisorArtifactViews(record);
+      const artifacts = supervisorArtifactViews(record, { responseEvidencePolicy });
       return Object.freeze({
         schema_version: 1,
         case_id: caseId,
@@ -1942,7 +1948,7 @@ export function createEncryptedPrivateCaseStore({
       const stored = record.candidate_responses.find((entry) => entry.id === supervisorCandidateId(operationKey, 1));
       if (!stored) return Object.freeze({ case_id: caseId, found: false, artifact: null });
       assertSameSupervisorOperation(supervisorSubmissionIdentity(record, stored, { source, exactText, producerContextId, companion, basisSha256, channel }));
-      return Object.freeze({ case_id: caseId, found: true, artifact: supervisorArtifactView(record, stored) });
+      return Object.freeze({ case_id: caseId, found: true, artifact: supervisorArtifactView(record, stored, { responseEvidencePolicy }) });
     },
     // Stores one supervisor draft as an immutable candidate that begins pending its independent audit, together with the basis it
     // was written against. `external_draft` bytes are stored exactly as received and the original writer is not attested;
@@ -2014,7 +2020,8 @@ export function createEncryptedPrivateCaseStore({
           evidenceBinding = {
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
             candidate_origin: source, writer_inclusion: source === "external_draft" ? "not_attested" : "verified", writer_inclusion_sha256: inclusion,
-            established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest, dependency_status: current ? "current_at_commit" : "stale_at_commit"
+            established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest,
+            compatibility_state_after_commit_binding: snapshot.dependency_binding.compatibility_state_binding, dependency_status: current ? "current_at_commit" : "stale_at_commit"
           };
         } else if (responseEvidencePolicy === "enforced" || record.response_evidence_snapshots.some(entry => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey)) throw new ValidationError("Response evidence required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
         const candidate = appendOriginalCandidate(record, candidateId, exactText, {
@@ -2051,7 +2058,7 @@ export function createEncryptedPrivateCaseStore({
       });
       await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
       const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
-      return Object.freeze({ case_id: caseId, revision: record.revision, replayed, artifact: supervisorArtifactView(record, candidate) });
+      return Object.freeze({ case_id: caseId, revision: record.revision, replayed, artifact: supervisorArtifactView(record, candidate, { responseEvidencePolicy }) });
     },
     // The same audit persistence as recordCandidateAudit, restricted to supervisor drafts, plus what that audit run reported
     // having been shown, written in the same step so a stored audit and its receipt cannot come apart.
@@ -2138,6 +2145,7 @@ export function createEncryptedPrivateCaseStore({
             schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
             candidate_origin: snapshot.candidate_origin, writer_inclusion: "verified", writer_inclusion_sha256: writerInclusionSha256,
             established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest,
+            compatibility_state_after_commit_binding: snapshot.dependency_binding.compatibility_state_binding,
             dependency_status: responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate: root }) ? "current_at_commit" : "stale_at_commit"
           };
         }
@@ -2156,7 +2164,7 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
       await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: childId, caseId });
-      return Object.freeze({ case_id: caseId, revision: record.revision, artifact: supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === childId)) });
+      return Object.freeze({ case_id: caseId, revision: record.revision, artifact: supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === childId), { responseEvidencePolicy }) });
     },
     // The only function that returns the exact approved client text. It re-checks, inside the same write that records the export,
     // that the bytes are the audited bytes, the audit passed and the candidate is approved, and that nothing has made the draft
@@ -2217,7 +2225,7 @@ export function createEncryptedPrivateCaseStore({
         revision: record.revision,
         artifact_id: artifactId,
         ...exported,
-        artifact: supervisorArtifactView(record, candidate),
+        artifact: supervisorArtifactView(record, candidate, { responseEvidencePolicy }),
         sent_status: "not_sent",
         notice: "Exported text has been released from InnerSignal; it has not been sent. InnerSignal records a send only when the owner reports it."
       });
@@ -2306,7 +2314,7 @@ export function createEncryptedPrivateCaseStore({
         revision: record.revision,
         replayed,
         event: structuredClone(record.communication_events.find((event) => event.id === reportEventId) ?? null),
-        artifact: targetCandidate ? supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === targetCandidate)) : null,
+        artifact: targetCandidate ? supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === targetCandidate), { responseEvidencePolicy }) : null,
         communication_projection: projectCommunicationState(record)
       });
     },
@@ -2321,7 +2329,14 @@ export function createEncryptedPrivateCaseStore({
     },
     async getCandidateLifecycle(caseId) {
       const record = await readRequired(caseId);
-      return projectCandidateLifecycle(record.candidate_responses);
+      // Archived handoffs retain their audit-status gate. A live readback also applies today's store admission policy.
+      const lifecycle = projectCandidateLifecycle(record.candidate_responses);
+      if (!["DELIVER", "APPROVE_FOR_DELIVERY"].includes(lifecycle.delivery_gate.action)) return lifecycle;
+      const candidate = record.candidate_responses.find(entry => entry.id === lifecycle.current_candidate_id);
+      const admission = assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy,
+        point: lifecycle.delivery_gate.action === "DELIVER" ? "deliverCandidateResponse" : "approveCandidateForDelivery" });
+      return admission.admissible ? lifecycle : Object.freeze({ ...lifecycle,
+        delivery_gate: { ...lifecycle.delivery_gate, action: "BLOCK", delivery_allowed: false, reason: admission.code } });
     },
     async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata = {}) {
       return mutate(caseId, (record) => {

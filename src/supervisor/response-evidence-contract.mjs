@@ -107,8 +107,9 @@ export const responseEvidenceAuditSchema = shape({
 export const responseEvidenceCandidateSchema = shape({
   schema_version: { const: 1 }, policy_version: { const: RESPONSE_EVIDENCE_POLICY_VERSION }, snapshot_id: id, snapshot_sha256: sha,
   candidate_origin: enumeration(["backend_produced", "external_draft"]), writer_inclusion: enumeration(["verified", "not_attested"]), writer_inclusion_sha256: nullable(sha),
-  established_context_after_commit_sha256: nullable(sha), dependency_status: enumeration(["current_at_commit", "stale_at_commit"])
-});
+  established_context_after_commit_sha256: nullable(sha), compatibility_state_after_commit_binding: nullable(text(1000)),
+  dependency_status: enumeration(["current_at_commit", "stale_at_commit"])
+}, ["compatibility_state_after_commit_binding"]);
 
 // Deliberately local and limited to the schema vocabulary above: the encrypted store must work without npm packages.
 export function validateEvidenceShape(value, schema) {
@@ -527,8 +528,13 @@ export function runtimeRepairInputIdentity(parent, audit, journalEvidence, snaps
     ...(snapshot ? { response_evidence_snapshot_sha256: snapshot.snapshot_sha256 } : {}) };
 }
 export function supervisorInvocationInput({ operationKey, stage, candidate, snapshot, viewSha256 }) {
-  return { operation_key: operationKey, stage, candidate_id: candidate.id, candidate_version: candidate.version,
+  // The reserved writer id is stable before submission. Its global version is assigned atomically when the candidate is appended.
+  return { operation_key: operationKey, stage, candidate_id: candidate.id, candidate_version: stage === "candidate" ? null : candidate.version,
     candidate_sha256: stage === "candidate" ? snapshot.inbound.exact_text_sha256 : sha256Text(candidate.exact_text), snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256, view_sha256: viewSha256 };
+}
+export function supervisorInvocationIdentity(input) {
+  // Earlier sealed writer calls stored a predicted ordinal. Keep them reusable without rewriting their immutable records.
+  return input.stage === "candidate" ? { ...input, candidate_version: null } : input;
 }
 
 // All consumers compare the sealed call's actual context, inclusion and complete output here.
@@ -544,7 +550,7 @@ export function verifySealedEvidenceOutput(output, { contextId, snapshot, viewSh
   const value = output.value ?? output.result;
   const normalized = normalizeEvidenceReview(value?.evidence_review, { candidateText: exactText, snapshot });
   if (review) {
-    if (!same(value.findings, review.findings) || !same(normalized, review.review)) invalid("invocation_review");
+    if (!same(value.findings.map(normalizeRecordOnlyFinding), review.findings.map(normalizeRecordOnlyFinding)) || !same(normalized, review.review)) invalid("invocation_review");
   } else {
     const ordinary = value.findings.map(finding => normalizeRecordOnlyFinding({ unresolved: true, ...finding }));
     const derived = audit.response_evidence.derived_finding_ids;
@@ -559,10 +565,10 @@ export function verifySealedEvidenceOutput(output, { contextId, snapshot, viewSh
 export function matchingSupervisorInvocation(record, { operationKey, stage, candidate, snapshot, contextId, viewSha256 }) {
   const expected = supervisorInvocationInput({ operationKey, stage, candidate, snapshot, viewSha256 });
   const completed = (record.supervisor_invocations ?? []).find(entry => entry.event_type === "COMPLETED"
-    && entry.actual_context_id === contextId && same(entry.input, expected));
+    && entry.actual_context_id === contextId && same(supervisorInvocationIdentity(entry.input), expected));
   if (!completed) invalid("supervisor_invocation_missing");
   const started = record.supervisor_invocations.find(entry => entry.event_type === "STARTED" && entry.attempt_context_id === completed.attempt_context_id);
-  if (!started || !same(started.input, expected) || !same(completed.provider_receipt, completed.output?.providerReceipt)
+  if (!started || !same(started.input, completed.input) || !same(supervisorInvocationIdentity(started.input), expected) || !same(completed.provider_receipt, completed.output?.providerReceipt)
     || !["provider", "model", "response_id"].every(key => typeof completed.provider_receipt?.[key] === "string" && completed.provider_receipt[key].trim())) invalid("supervisor_invocation_receipt");
   if (record.supervisor_invocations.filter(entry => entry.event_type === "COMPLETED" && entry.provider_receipt?.response_id === completed.provider_receipt.response_id).length !== 1) invalid("provider_response_reused");
   return completed.output;
@@ -621,8 +627,12 @@ function journalRetrievalStatement(journal) {
 export function responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate = null } = {}) {
   const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256, lineageRootId: rootCandidate?.id });
   if (rootCandidate?.metadata?.response_evidence?.snapshot_id === snapshot.id) {
-    if (sha256Json(record.case_state) !== rootCandidate.metadata?.response_evidence?.established_context_after_commit_sha256) return false;
+    const committed = rootCandidate.metadata.response_evidence;
+    const compatibility = Object.hasOwn(committed, "compatibility_state_after_commit_binding")
+      ? committed.compatibility_state_after_commit_binding : snapshot.dependency_binding.compatibility_state_binding;
+    if (sha256Json(record.case_state) !== committed.established_context_after_commit_sha256 || current.compatibility_state_binding !== compatibility) return false;
     current.established_context_digest = snapshot.dependency_binding.established_context_digest;
+    current.compatibility_state_binding = snapshot.dependency_binding.compatibility_state_binding;
   }
   return same(current, snapshot.dependency_binding);
 }

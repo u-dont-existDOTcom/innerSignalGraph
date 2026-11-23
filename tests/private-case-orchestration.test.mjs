@@ -104,6 +104,20 @@ async function makeHarness(t) {
   return { store, orchestrator: createPrivateCaseOrchestrator({ caseAccessService: service }) };
 }
 
+test("audit replay compares record-only findings using the same normalization as persistence", async (t) => {
+  const { store, orchestrator } = await makeHarness(t);
+  const request = operation("record_candidate_audit", { candidate_id: ORIGINAL_ID, audit_id: AUDIT_ID,
+    auditor_context: { kind: "independent", context_id: "context:record-only" }, completed_at: NOW,
+    result: { findings: [{ id: "record", code: "LONGITUDINAL_CONTEXT_MISSING", severity: "high", summary: "Record only." }], repair_induced_checks: [] } });
+  await orchestrator.execute(request, {});
+  const before = await store.load(CASE_ID);
+  assert.equal(before.candidate_responses[0].audit_history[0].findings[0].severity, "medium");
+  assert.equal((await orchestrator.execute(request, {})).reused, true);
+  assert.deepEqual(await store.load(CASE_ID), before);
+  const changed = structuredClone(request); changed.result.findings[0].severity = "substantive";
+  await assert.rejects(orchestrator.execute(changed, {}), /conflicts with an existing immutable record/);
+});
+
 test("backend-only alias binding returns no alias plaintext and is schema-valid", async (t) => {
   const { orchestrator } = await makeHarness(t);
   const receipt = await orchestrator.execute(operation("bind_case_alias", { case_alias: "Synthetic Named Case" }), {});

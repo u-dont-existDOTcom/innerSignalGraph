@@ -14,6 +14,7 @@ import { createPrivateCaseAccessService } from "../src/storage/private-case-acce
 import { createEncryptedPrivateCaseStore, serializeVaultEnvelope, deserializeVaultEnvelope, validatePrivateCaseRecord } from "../src/storage/private-case-store.mjs";
 import { createVaultEnvelope, decryptVaultEnvelopeWithRecoverySecret } from "../src/storage/vault-crypto.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS, createCandidateAuditEvidence, validateCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
+import { createPrivateCaseOrchestrator } from "../src/supervisor/private-case-orchestration.mjs";
 import {
   RESPONSE_EVIDENCE_DIMENSIONS, buildEvidenceModelView, normalizeEvidenceReview, sha256Json, sha256Text,
   responseEvidenceSnapshotSha256, assessResponseEvidenceAdmission, runtimeCandidateInputIdentity, runtimeRepairInputIdentity
@@ -434,6 +435,19 @@ test("the enforced policy stops both delivery exits even for a pre-existing gene
   await seed(record);
   const enforcedStore = createEncryptedPrivateCaseStore({ ...env.options, responseEvidencePolicy: "enforced" });
   t.after(() => enforcedStore.close());
+  await t.test("live lifecycle readback applies the same enforced policy", async () => {
+    const lifecycle = await enforcedStore.getCandidateLifecycle(CASE);
+    assert.equal(lifecycle.delivery_gate.delivery_allowed, false);
+    assert.equal(lifecycle.delivery_gate.action, "BLOCK");
+    assert.equal(lifecycle.delivery_gate.reason, "RESPONSE_EVIDENCE_REQUIRED");
+  });
+  await t.test("orchestration replay receipts apply the same enforced policy", async () => {
+    const source = { responseEvidencePolicy: "enforced", getCandidateResponse: (...args) => enforcedStore.getCandidateResponse(...args),
+      getCandidateLifecycle: (...args) => enforcedStore.getCandidateLifecycle(...args) };
+    const receipt = await createPrivateCaseOrchestrator({ caseAccessService: source }).execute({ schema_version: 1, operation: "approve_candidate_for_delivery",
+      case_id: CASE, candidate_id: candidate.id, audit_id: audit.id }, {});
+    assert.equal(receipt.reused, true); assert.equal(receipt.delivery_allowed, false); assert.equal(receipt.next_action, "BLOCK");
+  });
   await assert.rejects(enforcedStore.deliverCandidateResponse(CASE, candidate.id, { auditId: audit.id, assistantTurnId: "assistant", inReplyToTurnId: inbound.turn_id }), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
   await assert.rejects(enforcedStore.deliverPrivateRuntimeCandidate(CASE, "runtime:one", { candidateId: candidate.id, assistantTurnId: "assistant", eventId: "delivery" }), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
 });

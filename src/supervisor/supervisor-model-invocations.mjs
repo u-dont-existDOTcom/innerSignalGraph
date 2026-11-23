@@ -14,7 +14,7 @@ export function supervisorCallCandidate(record, { operationKey, stage, candidate
   if (stage === "candidate") {
     if (candidateId !== supervisorCandidateId(operationKey, 1)) invalid();
     // The writer's input is the frozen inbound, not its as-yet unknown output.
-    return { id: candidateId, version: record.candidate_responses.length + 1 };
+    return { id: candidateId, version: null };
   }
   if (!["audit", "repair"].includes(stage)) invalid();
   const candidate = record.candidate_responses.find(entry => entry.id === candidateId);
@@ -69,11 +69,14 @@ export function validateSupervisorInvocations(record) {
     if (!input || !same(Object.keys(input).sort(), ["operation_key", "stage", "candidate_id", "candidate_version", "candidate_sha256", "snapshot_id", "snapshot_sha256", "view_sha256"].sort())) invalid();
     validateOperationKey(input?.operation_key);
     if (!["candidate", "audit", "repair"].includes(input.stage) || !bounded(input.candidate_id)
-      || !Number.isSafeInteger(input.candidate_version) || input.candidate_version < 1) invalid();
+      || (!(input.stage === "candidate" && input.candidate_version === null)
+        && (!Number.isSafeInteger(input.candidate_version) || input.candidate_version < 1))) invalid();
     for (const key of ["candidate_sha256", "snapshot_sha256", "view_sha256"]) validateEvidenceShape(input[key], responseEvidenceSnapshotSchema.properties.snapshot_sha256);
     const snapshot = record.response_evidence_snapshots.find(s => s.id === input.snapshot_id);
     if (!snapshot || snapshot.owner.kind !== "supervisor_draft" || snapshot.owner.operation_key !== input.operation_key
       || snapshot.snapshot_sha256 !== input.snapshot_sha256) invalid();
+    if (input.stage === "candidate" && (input.candidate_id !== supervisorCandidateId(input.operation_key, 1)
+      || input.candidate_sha256 !== snapshot.inbound.exact_text_sha256)) invalid();
     if (entry.event_type === "STARTED") {
       if (starts.has(entry.attempt_context_id) || entry.output !== null || entry.actual_context_id !== null || entry.provider_receipt !== null) invalid();
       starts.set(entry.attempt_context_id, entry);
@@ -84,7 +87,7 @@ export function validateSupervisorInvocations(record) {
       const receipt = entry.provider_receipt;
       if (!["provider", "model", "response_id"].every(key => bounded(receipt?.[key])) || responses.has(receipt.response_id) || contexts.has(entry.actual_context_id)) invalid();
       responses.add(receipt.response_id); completedIds.add(start.id); contexts.add(entry.actual_context_id);
-      // Root output may now exist; its STARTED version is already frozen and remains authoritative.
+      // A root may now exist; the reserved writer identity remains unchanged when submission assigns its final version.
       const candidate = input.stage === "candidate" ? { id: input.candidate_id, version: input.candidate_version,
         exact_text: "" } : record.candidate_responses.find(c => c.id === input.candidate_id);
       if (!candidate) invalid();

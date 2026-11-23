@@ -467,9 +467,9 @@ export function companionView(entry, { includeText = false } = {}) {
 }
 
 // A supervisor artifact as the owner's surfaces list it. It never carries the client text; only the controlled export does.
-export function supervisorArtifactView(record, candidate) {
+export function supervisorArtifactView(record, candidate, { responseEvidencePolicy = "advisory" } = {}) {
   const draft = candidate.metadata.supervisor_draft;
-  const assessment = assessSupervisorArtifact(record, candidate);
+  const assessment = assessSupervisorArtifact(record, candidate, { responseEvidencePolicy });
   const events = activeCommunication(record);
   const own = events.filter((event) => event.audience === "client" && event.subject.kind === "candidate"
     && event.subject.candidate_id === candidate.id && event.subject.candidate_version === candidate.version);
@@ -510,8 +510,8 @@ export function supervisorArtifactView(record, candidate) {
   };
 }
 
-export function supervisorArtifactViews(record) {
-  return record.candidate_responses.filter(isSupervisorDraftCandidate).map((candidate) => supervisorArtifactView(record, candidate));
+export function supervisorArtifactViews(record, { responseEvidencePolicy = "advisory" } = {}) {
+  return record.candidate_responses.filter(isSupervisorDraftCandidate).map((candidate) => supervisorArtifactView(record, candidate, { responseEvidencePolicy }));
 }
 
 export function supervisorInputViews(record) {

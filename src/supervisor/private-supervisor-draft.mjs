@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, createCandidateAuditEvidence } from "./private-candidate-lifecycle.mjs";
-import { assessResponseEvidenceAdmission, inspectGovernedModelCall, prepareGovernedModelCall, responseEvidenceRefreshJournal, supervisorInvocationInput } from "./response-evidence-contract.mjs";
+import { assessResponseEvidenceAdmission, inspectGovernedModelCall, prepareGovernedModelCall, responseEvidenceRefreshJournal, supervisorInvocationInput, supervisorInvocationIdentity } from "./response-evidence-contract.mjs";
 import {
   SUPERVISOR_INPUT_TYPES,
   SUPERVISOR_LIMITS,
@@ -62,7 +62,7 @@ export function createPrivateSupervisorDraftService({
   maximumInvocationAttempts = 2,
   // Pre-check only; the store repeats admission inside its approval mutation.
   admissionCheck = async ({ record, candidate }) => {
-    const assessment = assessResponseEvidenceAdmission(record, candidate, { point: "approveSupervisorDraft" });
+    const assessment = assessResponseEvidenceAdmission(record, candidate, { policy: privateCaseSource.responseEvidencePolicy ?? "advisory", point: "approveSupervisorDraft" });
     if (!assessment.admissible) throw new ValidationError("Response evidence admission refused.", { code: assessment.code, details: { reasons: assessment.reasons } });
   }
 } = {}) {
@@ -149,7 +149,7 @@ export function createPrivateSupervisorDraftService({
   };
   const caseChanged = (record, head) => ({ status: "blocked", reason: "case_changed", record, head });
   const completedCall = (record, stage, candidate, snapshot) => snapshot ? [...record.supervisor_invocations].reverse().find(entry => entry.event_type === "COMPLETED"
-    && sha256Json(entry.input) === sha256Json(supervisorInvocationInput({ operationKey: snapshot.owner.operation_key, stage, candidate, snapshot, viewSha256: entry.input.view_sha256 }))) : null;
+    && sha256Json(supervisorInvocationIdentity(entry.input)) === sha256Json(supervisorInvocationInput({ operationKey: snapshot.owner.operation_key, stage, candidate, snapshot, viewSha256: entry.input.view_sha256 }))) : null;
   const selectPendingCall = ({ operationKey, record, head, stage, snapshot }) => {
     let completed = completedCall(record, stage, head, snapshot);
     if (!completed && stage !== "audit") {
@@ -394,7 +394,7 @@ export function createPrivateSupervisorDraftService({
           if (frozen) {
             if (existing) responseEvidence = { snapshot: frozen };
             else {
-              writerCandidate = { id: supervisorCandidateId(operationKey, 1), version: record.candidate_responses.length + 1 };
+              writerCandidate = { id: supervisorCandidateId(operationKey, 1), version: null };
               writerPrepared = await prepareCall({ caseId, operationKey, record, head: writerCandidate, stage: "candidate", snapshot: frozen, authContext });
               if (writerPrepared.exhausted) return Object.freeze({ case_id: caseId, status: "blocked", reason: "case_changed", replayed: false, exportable: false, artifact: null,
                 notice: "The case changed during review. Nothing is approved. Prepare the case again and submit a new draft." });

@@ -10,6 +10,8 @@ import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate
 import { RESPONSE_EVIDENCE_DIMENSIONS, responseEvidenceDependenciesCurrent, sha256Json, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
 import { responseEvidenceFailures } from "../src/supervisor/private-therapy-model-runtime.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
+import { compatibilityStateBinding, protectiveCompatibilityDecision, updateProtectiveCompatibilityState } from "../src/case-formulation/protective-compatibility.mjs";
+import { validatePrivateRuntimeDiscriminatorReview } from "../src/supervisor/private-runtime-turn-lifecycle.mjs";
 
 const CASE = "synthetic-evidence-runtime", NOW = "2026-11-23T12:00:00.000Z";
 const request = () => ({ caseId: CASE, runtimeTurnId: "runtime:one", exchangeId: "exchange:one", userTurnId: "turn:user", assistantTurnId: "turn:assistant", userMessage: "What is happening for me now?" });
@@ -80,6 +82,65 @@ test("governed controller delivers through the real enforced store", async (t) =
   assert.equal(record.response_evidence_snapshots.length, 1);
   assert.equal(record.response_evidence_snapshots[0].journal.availability, "not_configured");
   assert.equal(env.counts.candidate, 1);
+});
+
+test("the first writer's fresh compatibility assessment survives approval and delivery without repair", async (t) => {
+  const env = await setup(t);
+  const assessment = { version: 1, issue: "Synthetic present concern.", assessment_basis: "CURRENT_TURN", subject_context: "current_client",
+    harm_intent: "not_supported", harm_intent_observation_ids: [], help_goal: "safe", help_goal_text: "Understand the present concern.", help_goal_observation_ids: [],
+    nonharm_choice: "unknown", nonharm_choice_observation_ids: [], identity_inquiry_consent: "unknown", identity_inquiry_observation_ids: [],
+    agreed_next_job: "ordinary", agreed_next_job_observation_ids: [], prior_restriction: "none", prior_restriction_observation_ids: [],
+    correction_observation_ids: [], reentry_status: "not_required", reentry_observation_ids: [], human_review_required: false };
+  const assessed = (previous, turnId, recordedAt) => updateProtectiveCompatibilityState(previous, assessment,
+    protectiveCompatibilityDecision(assessment, previous), { turnId, recordedAt });
+  const before = createEmptyCaseState({ caseId: CASE });
+  before.protective_compatibility = assessed(null, "turn:prior", "2026-11-22T12:00:00.000Z");
+  await env.store.saveCaseState(CASE, before);
+  const produce = env.runtime.produceCandidate;
+  env.runtime.produceCandidate = async (input) => {
+    const output = await produce(input);
+    output.caseState.protective_compatibility = assessed(before.protective_compatibility, input.runtimeTurn.user_turn_id, NOW);
+    output.result = { compatibilityBinding: compatibilityStateBinding(output.caseState.protective_compatibility) };
+    return output;
+  };
+  await env.controller().run(request());
+  const record = await assertDelivered(env.store), candidate = record.candidate_responses[0];
+  assert.equal(env.counts.repair, 0);
+  assert.equal(env.counts.audit, 1);
+  assert.equal(record.response_evidence_snapshots.length, 1);
+  assert.equal(candidate.audit_history[0].verdict, "pass");
+  assert.equal(candidate.metadata.response_evidence.compatibility_state_after_commit_binding, compatibilityStateBinding(record.case_state.protective_compatibility));
+  assert.notEqual(candidate.metadata.response_evidence.compatibility_state_after_commit_binding, record.response_evidence_snapshots[0].dependency_binding.compatibility_state_binding);
+  const preDelivery = structuredClone(record); preDelivery.raw_transcript.pop();
+  preDelivery.case_state.protective_compatibility = assessed(record.case_state.protective_compatibility, "turn:foreign", "2026-11-23T13:00:00.000Z");
+  assert.equal(preDelivery.case_state.protective_compatibility.current.gate, record.case_state.protective_compatibility.current.gate);
+  assert.equal(responseEvidenceDependenciesCurrent(preDelivery, candidate, record.response_evidence_snapshots[0]), false);
+});
+
+test("record-only fallback findings use ordinary audit normalization through store save and delivery", async (t) => {
+  const findings = [{ id: "record", code: "LONGITUDINAL_CONTEXT_MISSING", severity: "high", summary: "Earlier exact words are outside this packet." }];
+  const env = await setup(t, { alwaysFail: true, questionFindings: findings });
+  const result = await env.controller({ privateCaseSource: { ...env.store, savePrivateRuntimeDiscriminator(caseId, turnId, input) {
+    // Exercise the store's own boundary with raw provider severities, independently of the controller's normalization.
+    return env.store.savePrivateRuntimeDiscriminator(caseId, turnId, { ...input, review: { ...input.review, findings } });
+  } } }).run(request());
+  assert.equal(result.deliveryKind, "discriminator");
+  const record = await assertDelivered(env.store), stored = record.runtime_turns[0].discriminator_review;
+  assert.deepEqual(stored.findings, [{ ...findings[0], severity: "medium", reported_severity: "high", record_only: true }]);
+  const invocation = record.runtime_turns[0].events.find(e => e.stage === "discriminator_review" && e.event_type === "INVOCATION_COMPLETED");
+  assert.deepEqual(invocation.details.output.value.findings, findings, "the raw provider output stays sealed unchanged");
+});
+
+test("store discriminator validation normalizes record-only codes while retaining ordinary and evidence blockers", () => {
+  const exactText = "What do you notice now?";
+  const value = { schema_version: 1, exact_text_sha256: sha256Text(exactText), snapshot_id: "snapshot:one", snapshot_sha256: "a".repeat(64),
+    auditor_context_id: "context:review", auditor_inclusion_sha256: "b".repeat(64), review: emptyReview(),
+    findings: [{ id: "record", code: "LONGITUDINAL_CONTEXT_MISSING", severity: "high", summary: "Record only." }] };
+  assert.doesNotThrow(() => validatePrivateRuntimeDiscriminatorReview(value, { exactText }));
+  for (const finding of [
+    { ...value.findings[0], code: "ORDINARY_BLOCKER" },
+    { ...value.findings[0], id: "evidence:forged", severity: "medium" }
+  ]) assert.throws(() => validatePrivateRuntimeDiscriminatorReview({ ...value, findings: [finding] }, { exactText }), { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
 });
 
 for (const state of ["RECEIVED", "AUDITING", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"]) test(`restart preflight refreshes amended sources in ${state} before any model call`, async (t) => {

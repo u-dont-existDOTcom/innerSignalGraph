@@ -79,6 +79,11 @@
                 }
               ]
             },
+            "compatibility_state_after_commit_binding": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "maxLength": 1000
+            },
             "dependency_status": {
               "enum": [
                 "current_at_commit",

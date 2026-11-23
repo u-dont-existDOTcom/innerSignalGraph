@@ -4,7 +4,7 @@ import { createCandidateAuditEvidence, REPAIR_INDUCED_ERROR_CHECKS } from "./pri
 import { privateRuntimeNextAction } from "./private-runtime-turn-lifecycle.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { OWNER_FALLBACK_KIND } from "./owner-fallback-message.mjs";
-import { deriveEvidenceFindings, normalizeEvidenceReview, runtimeAuditInputIdentity,
+import { deriveEvidenceFindings, normalizeEvidenceReview, normalizeRecordOnlyFinding, runtimeAuditInputIdentity,
   runtimeCandidateInputIdentity as candidateInputIdentity, runtimeRepairInputIdentity as repairInputIdentity,
   prepareGovernedModelCall, responseEvidenceRefreshJournal, responseEvidenceDependenciesCurrent } from "./response-evidence-contract.mjs";
 
@@ -488,10 +488,11 @@ export function createPrivateTherapyTurnController({
                 execute: (attemptContextId) => modelRuntime.reviewFallbackQuestion({ caseId, runtimeTurn, exactText: produced.exactText, responseEvidence: evidence, authContext, attemptContextId })
               });
               const normalized = normalizeEvidenceReview(reviewed.value.evidence_review, { candidateText: produced.exactText, snapshot });
-              if (!deriveEvidenceFindings(normalized).length && !reviewed.value.findings.some((item) => ["substantive", "high"].includes(item.severity))) {
+              const findings = reviewed.value.findings.map(normalizeRecordOnlyFinding);
+              if (!deriveEvidenceFindings(normalized).length && !findings.some((item) => ["substantive", "high"].includes(item.severity))) {
                 review = { schema_version: 1, exact_text_sha256: sha256(produced.exactText), snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
                   auditor_context_id: reviewed.contextId, auditor_inclusion_sha256: reviewed.responseEvidenceInclusion?.view_sha256,
-                  findings: reviewed.value.findings, review: normalized };
+                  findings, review: normalized };
               }
             }
             if (!review) {
