@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import { constants } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import vm from "node:vm";
@@ -8,6 +9,7 @@ import http from "node:http";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { JSDOM } from "jsdom";
+import Ajv2020 from "ajv/dist/2020.js";
 import { loadConfig } from "../src/core/config.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
@@ -27,7 +29,7 @@ const MARKERS = ["Privatepersonmarker", "Privatereplymarker", "Privateprovisiona
 const at = Date.parse("2026-11-23T12:00:00.000Z");
 async function directory(t) { const dir = await fs.mkdtemp(path.join(os.tmpdir(), "runner-log-test-")); t.after(() => fs.rm(dir, { recursive: true, force: true })); return dir; }
 const configFor = (dir, extra = {}) => loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialDir: dir, runnerTrialSettingsPath: null, runnerRulesRoot: null, runnerTrialCaseId: CASE, ...extra });
-async function fixture(t, { failure = false, dir = null, keptPlan = false, checkerFailure = false, retryWriter = false, unchangedRepair = false, incompleteChecklist = false } = {}) {
+async function fixture(t, { failure = false, dir = null, keptPlan = false, checkerFailure = false, retryWriter = false, retryChecker = false, unchangedRepair = false, incompleteChecklist = false } = {}) {
   dir ??= await directory(t);
   let clock = at;
   const store = createEncryptedPrivateCaseStore({ rootDir: path.join(dir, "vault"), routineKek: Buffer.alloc(32, 35), recoverySecretBytes: Buffer.alloc(32, 36), developmentExternalCredentialAuthorized: true, now: () => new Date(clock).toISOString() });
@@ -37,6 +39,7 @@ async function fixture(t, { failure = false, dir = null, keptPlan = false, check
   let checkerCount = 0;
   let writerCount = 0;
   let writerAttempts = 0;
+  let checkerAttempts = 0;
   const settings = validateRunnerTrialSettings({ writerMode: "whole", checkerMode: "whole" });
   const trial = createRunnerTrialController({ privateCaseSource: store, config: configFor(dir, { runnerKeptPlanEnabled: keptPlan }), settings, now: () => clock, workerFor: (role) => ({ provider: "stand-in", model: "stand-in-model", effort: "low", async call(request) {
     clock += 100;
@@ -50,7 +53,10 @@ async function fixture(t, { failure = false, dir = null, keptPlan = false, check
       if (role === "W" || !unchangedRepair) writerCount++;
       value = { reply: `${MARKERS[1]} ${writerCount}${keptPlan ? ` ${MARKERS[5]}.` : ""}`, answered_level: "acted_or_about_to", quotes: [], plan_reached: keptPlan, offered_to_keep_plan: false, kept_plan_lines: keptPlan ? [`${MARKERS[5]}.`] : [] };
     } else if (role === "CW" && checkerFailure) throw Object.assign(new Error(MARKERS[3]), { code: "REFUSED" });
-    else if (role === "CW") value = { findings: checkerCount++ === 0 ? [{ code: "QUOTE_NOT_EXACT", severity: "high", summary: MARKERS[3], quote: MARKERS[4], evidence_turn_ids: [MARKERS[4]] }] : [], level: "acted_or_about_to", repair_induced_checks: checkerCount > 1 ? REPAIR_INDUCED_ERROR_CHECKS.slice(0, incompleteChecklist ? -1 : undefined) : [], missed_boxes: [] };
+    else if (role === "CW") {
+      if (retryChecker && ++checkerAttempts === 2) throw Object.assign(new Error(MARKERS[3]), { code: "PROVIDER_MALFORMED" });
+      value = { findings: checkerCount++ === 0 ? [{ code: "QUOTE_NOT_EXACT", severity: "high", summary: MARKERS[3], quote: MARKERS[4], evidence_turn_ids: [MARKERS[4]] }] : [], level: "acted_or_about_to", repair_induced_checks: checkerCount > 1 ? REPAIR_INDUCED_ERROR_CHECKS.slice(0, incompleteChecklist ? -1 : undefined) : [], missed_boxes: [] };
+    }
     else throw new Error(`unexpected ${role}`);
     return { value, receipt: { provider: "stand-in", model: "stand-in-model", effort: "low", session_id: `stand-in-${session}`, input_tokens: 10, cache_read_input_tokens: 4, cache_creation_input_tokens: 2, output_tokens: 3, reasoning_output_tokens: 1, unrelated_prose: MARKERS[4] } };
   } }) });
@@ -214,6 +220,39 @@ test("a retried worker keeps both attempts and counts the timeout once", async (
   assert.deepEqual(log.summary.failures_by_code, [{ code: "TIMEOUT", count: 1 }]);
 });
 
+test("a checker retry that succeeds cannot hide a subsequent checklist failure with the same code", async (t) => {
+  const f = await fixture(t, { retryChecker: true, incompleteChecklist: true });
+  await f.run();
+  const log = runnerLogFromRecord(await f.store.load(CASE));
+  const calls = log.turns[0].workers.filter((call) => call.role === "CW");
+  assert.deepEqual(calls.map((call) => [call.attempt, call.failure_code]), [[1, null], [1, "PROVIDER_MALFORMED"], [2, null]]);
+  assert.deepEqual(log.turns[0].failures, ["PROVIDER_MALFORMED"]);
+  assert.deepEqual(log.summary.failures_by_code, [{ code: "PROVIDER_MALFORMED", count: 2 }]);
+  await f.trial.logWriter.flush();
+  const rows = (await fs.readFile(path.join(f.dir, "runner-log.jsonl"), "utf8")).trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(rows[1], log.turns[0]);
+});
+
+test("separate invocations count a recovered attempt and a later terminal failure twice", () => {
+  const record = { runtime_turns: [{ ...logTurn(0), events: [
+    { event_type: "INVOCATION_COMPLETED", stage: "audit", details: { output: { providerReceipt: { receipts: [{ role: "CW", attempt: 1, failed: "PROVIDER_MALFORMED" }, { role: "CW", attempt: 2 }] } } } },
+    { event_type: "INVOCATION_FAILED", stage: "audit", details: { error_code: "PROVIDER_MALFORMED", raw_private_evidence: { receipts: [{ role: "CW", attempt: 1, failed: "PROVIDER_MALFORMED" }] } } }
+  ] }] };
+  const log = runnerLogFromRecord(record);
+  assert.deepEqual(log.summary.failures_by_code, [{ code: "PROVIDER_MALFORMED", count: 2 }]);
+});
+
+test("split checkers deduplicate each worker's terminal failure even when a different checker finishes successfully", () => {
+  const record = { runtime_turns: [{ ...logTurn(0), events: [
+    { event_type: "INVOCATION_FAILED", stage: "audit", details: { error_code: "PROVIDER_MALFORMED", raw_private_evidence: { receipts: [
+      { role: "C1", attempt: 1, failed: "PROVIDER_MALFORMED" },
+      { role: "C2", attempt: 1, failed: "PROVIDER_MALFORMED" }, { role: "C2", attempt: 2 },
+      { role: "C3", attempt: 1 }
+    ] } } }
+  ] }] };
+  assert.deepEqual(runnerLogFromRecord(record).summary.failures_by_code, [{ code: "PROVIDER_MALFORMED", count: 2 }]);
+});
+
 test("old writer rule-part names and the fixed Codex default model label are kept without guessing byte sizes", () => {
   const log = runnerLogFromRecord({ runtime_turns: [{ state: "DELIVERED", created_at: new Date(at).toISOString(), delivery: { delivered_at: new Date(at + 10).toISOString() }, events: [{ event_type: "INVOCATION_COMPLETED", stage: "candidate", details: { output: { result: { receipts: [{ role: "W", attempt: 1, provider: "openai", model: "codex default", input_tokens: 10 }], rules: { parts: [{ id: "whole", sha256: MARKERS[0], prose: MARKERS[1] }] } } } } }] }] });
   assert.equal(log.turns[0].workers[0].model, "codex default");
@@ -238,6 +277,9 @@ function logOptions(directory, record) {
   return { directory, runnerRules: { version: "0.2.6", sha256: "a".repeat(64), source: "stable 123456789" }, arrangement: { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] }, loadRecord: async () => record };
 }
 async function syncLog(writer) { writer.schedule(CASE); await writer.flush(); }
+function expectedJsonl(options, record) {
+  return [{ schema_version: 1, type: "header", runnerRules: options.runnerRules, arrangement: options.arrangement }, ...runnerLogFromRecord(record).turns].map((row) => JSON.stringify(row)).join("\n") + "\n";
+}
 
 test("rebuilding after a restart keeps each stored configuration and leaves legacy turns unknown", async (t) => {
   const f = await fixture(t);
@@ -250,7 +292,6 @@ test("rebuilding after a restart keeps each stored configuration and leaves lega
   await f.trial.controller.reconcile({ caseId: CASE });
   await f.trial.logWriter.flush();
   const file = path.join(f.dir, "runner-log.jsonl");
-  await fs.unlink(file);
   const released = await prepareReleasedRules(f.dir, { git: async (args, options) => {
     if (args[0] === "fetch") throw new Error("offline stand-in");
     return exec("git", args, options);
@@ -276,6 +317,7 @@ test("rebuilding after a restart keeps each stored configuration and leaves lega
   assert.equal(rows[2].arrangement, null);
   const log = await (await fetch(`${base}/v1/runner/log?caseId=${CASE}`, { headers: { origin: base } })).json();
   assert.deepEqual(rows.slice(1), log.turns);
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl({ runnerRules: health.runnerRules, arrangement: health.runnerArrangement }, await f.store.load(CASE)));
   // Retrying a stored turn under different settings never rewrites its original configuration.
   await f.store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: original.id, exchangeId: original.exchange_id, userTurnId: original.user_turn_id, exactText: original.inbound.exact_text, runnerConfig: { rules: health.runnerRules, arrangement: health.runnerArrangement } });
   assert.deepEqual((await f.store.load(CASE)).runtime_turns[0].runner_config, original.runner_config);
@@ -291,6 +333,46 @@ test("runner configuration is optional for old turns, cloned on creation and nar
   assert.deepEqual(turn.runner_config.arrangement.writer, ["codex"]);
   for (const invalid of [null, { ...turn.runner_config, extra: MARKERS[0] }, { ...turn.runner_config, rules: { ...turn.runner_config.rules, sha256: MARKERS[0] } }, { ...turn.runner_config, arrangement: { ...turn.runner_config.arrangement, writer: "claude" } }]) {
     assert.throws(() => validatePrivateRuntimeTurn({ ...turn, runner_config: invalid }), { code: "VALIDATION_ERROR" });
+  }
+});
+
+test("storage and schema refuse word-bearing configuration names; projection replaces each invalid name with null", async (t) => {
+  const dir = await directory(t);
+  const store = createEncryptedPrivateCaseStore({ rootDir: path.join(dir, "vault"), routineKek: Buffer.alloc(32, 35), recoverySecretBytes: Buffer.alloc(32, 36), developmentExternalCredentialAuthorized: true });
+  t.after(() => store.close());
+  await store.loadOrCreate(CASE);
+  const schema = JSON.parse(await fs.readFile(new URL("../schemas/private-case/therapy-turn-lifecycle-v1.schema.json", import.meta.url), "utf8"));
+  const validate = new Ajv2020({ strict: true, validateFormats: false }).compile(schema);
+  const options = logOptions(dir, null);
+  const config = { rules: options.runnerRules, arrangement: options.arrangement };
+  const input = { id: "valid-config", exchangeId: "valid-config", userTurnId: "valid-config-user", exactText: MARKERS[0], createdAt: new Date(at).toISOString(), runnerConfig: config };
+  assert.equal(validate(createPrivateRuntimeTurn(input)), true, JSON.stringify(validate.errors));
+  for (const version of ["0.2.6", "10.200.3000"]) assert.doesNotThrow(() => createPrivateRuntimeTurn({ ...input, runnerConfig: { ...config, rules: { ...config.rules, version } } }));
+  const invalid = [];
+  for (const value of [MARKERS[0], "v0.2.6", "0.2", "0.2.6-private", "0.2.6\n", 123, null]) invalid.push({ config: { ...config, rules: { ...config.rules, version: value } }, field: "version" });
+  for (const field of ["readers", "writer", "checkers"]) for (const value of [MARKERS[0], "openai", "Claude", "claude-private", 123, null]) invalid.push({ config: { ...config, arrangement: { ...config.arrangement, [field]: ["claude", value, "codex"] } }, field });
+  for (const [index, entry] of invalid.entries()) {
+    assert.throws(() => createPrivateRuntimeTurn({ ...input, runnerConfig: entry.config }), { code: "VALIDATION_ERROR" });
+    assert.equal(validate({ ...createPrivateRuntimeTurn(input), runner_config: entry.config }), false);
+    await assert.rejects(store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: `invalid-${index}`, exchangeId: `invalid-${index}`, userTurnId: `invalid-user-${index}`, exactText: MARKERS[0], runnerConfig: entry.config }), { code: "VALIDATION_ERROR" });
+    const projected = runnerLogFromRecord({ runtime_turns: [{ ...logTurn(0), runner_config: entry.config }] }).turns[0];
+    if (entry.field === "version") assert.equal(projected.rules.version, null);
+    else assert.deepEqual(projected.arrangement[entry.field], ["claude", null, "codex"]);
+    assert.equal(JSON.stringify(projected).includes(MARKERS[0]), false);
+  }
+  assert.equal((await store.load(CASE)).runtime_turns.length, 0);
+  await store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: input.id, exchangeId: input.exchangeId, userTurnId: input.userTurnId, exactText: input.exactText, runnerConfig: config });
+  assert.deepEqual((await store.load(CASE)).runtime_turns[0].runner_config, config);
+  const unsafe = { rules: { ...config.rules, version: MARKERS[0] }, arrangement: { ...config.arrangement, readers: [MARKERS[0]], writer: [MARKERS[0]], checkers: [MARKERS[0]] } };
+  const record = { runtime_turns: [{ ...logTurn(0), runner_config: unsafe }] };
+  await syncLog(createRunnerLogWriter({ ...options, runnerRules: unsafe.rules, arrangement: unsafe.arrangement, loadRecord: async () => record }));
+  const jsonl = await fs.readFile(path.join(dir, "runner-log.jsonl"), "utf8");
+  assert.equal(jsonl.includes(MARKERS[0]), false);
+  for (const row of jsonl.trimEnd().split("\n").map(JSON.parse)) {
+    assert.equal((row.runnerRules ?? row.rules).version, null);
+    assert.deepEqual(row.arrangement.readers, [null]);
+    assert.deepEqual(row.arrangement.writer, [null]);
+    assert.deepEqual(row.arrangement.checkers, [null]);
   }
 });
 
@@ -314,92 +396,286 @@ test("turn configuration uses the header's allow-list and failure deduplication 
   assert.deepEqual(row.rules, header.runnerRules);
   assert.deepEqual(row.arrangement, header.arrangement);
   assert.deepEqual(row.rules, { version: null, sha256: null, source: "checkout" });
-  assert.deepEqual(row.arrangement, { writerMode: null, checkerMode: null, readers: ["claude"], writer: [], checkers: ["codex"] });
+  assert.deepEqual(row.arrangement, { writerMode: null, checkerMode: null, readers: ["claude", null], writer: [null], checkers: ["codex"] });
   assert.equal(JSON.stringify(log).includes(MARKERS[0]), false);
   assert.equal(jsonl.includes(MARKERS[0]), false);
 });
 
-for (const changed of ["rules", "arrangement"]) test(`a restart with changed ${changed} appends a header before the next turn`, async (t) => {
+test("every finished turn, reconciliation and missing-file recovery matches a fresh projection", async (t) => {
+  const f = await fixture(t);
+  const file = path.join(f.dir, "runner-log.jsonl");
+  // The controller owns the actual settings; use the same header the health route reports.
+  const health = await (await fetch(`${f.base}/health`)).json();
+  const options = { runnerRules: health.runnerRules, arrangement: health.runnerArrangement };
+  for (const exchangeId of ["projection-first", "projection-second"]) {
+    await f.run({ exchangeId });
+    await f.trial.logWriter.flush();
+    const record = await f.store.load(CASE);
+    assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, record));
+    assert.ok(runnerLogFromRecord(record).turns.every((turn) => turn.schema_version === 1));
+  }
+  await f.store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "unfinished", exchangeId: "unfinished", userTurnId: "unfinished-user", exactText: MARKERS[0] });
+  await f.trial.controller.reconcile({ caseId: CASE });
+  await f.trial.logWriter.flush();
+  const record = await f.store.load(CASE);
+  assert.equal(record.runtime_turns.at(-1).state, "UNANSWERED");
+  const expected = expectedJsonl(options, record);
+  assert.equal(await fs.readFile(file, "utf8"), expected);
+  await fs.unlink(file);
+  await f.run({ exchangeId: "projection-second" }); // Replayed turn still rebuilds a deleted file.
+  await f.trial.logWriter.flush();
+  assert.equal(await fs.readFile(file, "utf8"), expected);
+});
+
+for (const changed of ["rules", "arrangement"]) test(`a restart with changed ${changed} rewrites the whole projection and preserves each turn's configuration`, async (t) => {
   const dir = await directory(t);
   const file = path.join(dir, "runner-log.jsonl");
-  const record = { runtime_turns: [logTurn(0)] };
+  const record = { runtime_turns: [logTurn(0), logTurn(1)] };
   const options = logOptions(dir, record);
+  record.runtime_turns[0].runner_config = { rules: options.runnerRules, arrangement: options.arrangement };
   await syncLog(createRunnerLogWriter(options));
-  const original = await fs.readFile(file, "utf8");
+  // Simulate an old row format, including a missing post-worker failure and missing null legacy configuration.
+  record.runtime_turns[0].events.push({ event_type: "INVOCATION_FAILED", details: { error_code: "REPAIR_UNCHANGED" } });
+  const oldRows = (await fs.readFile(file, "utf8")).trimEnd().split("\n").map(JSON.parse);
+  for (const row of oldRows.slice(1)) {
+    delete row.schema_version; delete row.failures; delete row.rules; delete row.arrangement;
+  }
+  await fs.writeFile(file, oldRows.map((row) => JSON.stringify(row)).join("\n") + "\n");
   const next = changed === "rules" ? { ...options, runnerRules: { version: "0.2.7", sha256: "b".repeat(64), source: "stable 987654321" } }
     : { ...options, arrangement: { ...options.arrangement, writer: ["claude"] } };
   const restarted = createRunnerLogWriter(next);
-  await syncLog(restarted); // Startup may run before another turn closes.
-  record.runtime_turns.push(logTurn(1));
+  await syncLog(restarted); // Startup must replace existing rows even without a newly finished turn.
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(next, record));
+  const rows = (await fs.readFile(file, "utf8")).trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(rows.map((row) => row.type ?? row.turn), ["header", 1, 2]);
+  assert.deepEqual(rows[1].rules, options.runnerRules);
+  assert.deepEqual(rows[1].arrangement, options.arrangement);
+  assert.deepEqual(rows[1].failures, ["REPAIR_UNCHANGED"]);
+  assert.equal(rows[2].rules, null);
+  assert.equal(rows[2].arrangement, null);
+  record.runtime_turns.push({ ...logTurn(2), runner_config: { rules: next.runnerRules, arrangement: next.arrangement } });
   await syncLog(restarted);
-  const updated = await fs.readFile(file, "utf8");
-  assert.ok(updated.startsWith(original), "earlier lines remain byte-for-byte unchanged");
-  const rows = updated.trimEnd().split("\n").map(JSON.parse);
-  assert.deepEqual(rows.map((row) => row.type ?? row.turn), ["header", 1, "header", 2]);
-  assert.deepEqual(rows[2].runnerRules, next.runnerRules);
-  assert.deepEqual(rows[2].arrangement, next.arrangement);
-  await syncLog(createRunnerLogWriter(next));
-  assert.equal(await fs.readFile(file, "utf8"), updated, "an unchanged restart duplicates neither headers nor turns");
-  record.runtime_turns.push(logTurn(2));
-  await syncLog(createRunnerLogWriter(options));
-  const reverted = (await fs.readFile(file, "utf8")).trimEnd().split("\n").map(JSON.parse);
-  assert.deepEqual(reverted.map((row) => row.type ?? row.turn), ["header", 1, "header", 2, "header", 3]);
-  assert.deepEqual(reverted[4], rows[0], "compare the last header, even when an earlier one matches");
+  const expected = expectedJsonl(next, record);
+  assert.equal(await fs.readFile(file, "utf8"), expected);
+  await fs.unlink(file);
+  await syncLog(restarted);
+  assert.equal(await fs.readFile(file, "utf8"), expected);
 });
 
-test("header equality compares parsed objects rather than JSON key order or whitespace", async (t) => {
+for (const contents of ['{"type":"header"', '{"type":"header"}\n{"turn":', '{"turn":1}\nnot-json\n']) test(`an existing damaged log is replaced by a fresh complete projection (${JSON.stringify(contents)})`, async (t) => {
+  const dir = await directory(t);
+  const options = logOptions(dir, { runtime_turns: [logTurn(0), logTurn(1)] });
+  const file = path.join(dir, "runner-log.jsonl");
+  await fs.writeFile(file, contents, { mode: 0o644 });
+  await syncLog(createRunnerLogWriter(options));
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, await options.loadRecord()));
+  assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
+});
+
+for (const interrupted of ["partial write", "fsync", "rename"]) test(`an interrupted ${interrupted} keeps the previous valid file and a later rewrite recovers`, async (t) => {
   const dir = await directory(t);
   const file = path.join(dir, "runner-log.jsonl");
+  const leftover = path.join(dir, ".runner-log-leftover.tmp");
   const record = { runtime_turns: [logTurn(0)] };
   const options = logOptions(dir, record);
   await syncLog(createRunnerLogWriter(options));
-  const [header, turn] = (await fs.readFile(file, "utf8")).trimEnd().split("\n").map(JSON.parse);
-  const reordered = { arrangement: { checkers: header.arrangement.checkers, writer: header.arrangement.writer, readers: header.arrangement.readers, checkerMode: header.arrangement.checkerMode, writerMode: header.arrangement.writerMode }, runnerRules: { source: header.runnerRules.source, sha256: header.runnerRules.sha256, version: header.runnerRules.version }, type: header.type, schema_version: header.schema_version };
-  const prefix = ` ${JSON.stringify(reordered)} \n${JSON.stringify(turn)}\n`;
-  await fs.writeFile(file, prefix);
+  const original = await fs.readFile(file, "utf8");
+  await fs.writeFile(leftover, '{"partial":');
   record.runtime_turns.push(logTurn(1));
-  await syncLog(createRunnerLogWriter(options));
-  const updated = await fs.readFile(file, "utf8");
-  assert.ok(updated.startsWith(prefix));
-  assert.deepEqual(updated.trimEnd().split("\n").map(JSON.parse).map((row) => row.type ?? row.turn), ["header", 1, 2]);
+  const open = fs.open.bind(fs);
+  const operations = [];
+  const opened = t.mock.method(fs, "open", async (filename, flags, mode) => {
+    assert.equal(path.dirname(filename), dir);
+    assert.notEqual(filename, file);
+    assert.equal(flags & (constants.O_EXCL | constants.O_NOFOLLOW), constants.O_EXCL | constants.O_NOFOLLOW);
+    assert.equal(mode, 0o600);
+    const handle = await open(filename, flags, mode);
+    return {
+      async writeFile(contents) {
+        operations.push("write");
+        if (interrupted === "partial write") {
+          await handle.writeFile(contents.slice(0, 12));
+          throw new Error("synthetic write interruption");
+        }
+        await handle.writeFile(contents);
+      },
+      async sync() {
+        operations.push("fsync");
+        if (interrupted === "fsync") throw new Error("synthetic sync interruption");
+        await handle.sync();
+      },
+      async close() { operations.push("close"); await handle.close(); }
+    };
+  });
+  const rename = fs.rename.bind(fs);
+  const renamed = t.mock.method(fs, "rename", async (...args) => {
+    operations.push("rename");
+    assert.deepEqual(operations, ["write", "fsync", "close", "rename"]);
+    if (interrupted === "rename") throw new Error("synthetic rename interruption");
+    await rename(...args);
+  });
+  const writer = createRunnerLogWriter(options);
+  await syncLog(writer); // Filesystem errors never reach the turn or flush.
+  assert.equal(await fs.readFile(file, "utf8"), original);
+  assert.equal(await fs.readFile(leftover, "utf8"), '{"partial":');
+  assert.deepEqual((await fs.readdir(dir)).sort(), [".runner-log-leftover.tmp", "runner-log.jsonl"]);
+  opened.mock.restore(); renamed.mock.restore();
+  await syncLog(writer);
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, record));
 });
 
-for (const interrupted of ["initial header", "later header", "turn"]) test(`an interrupted ${interrupted} is truncated before appending valid JSONL`, async (t) => {
+test("a successful rewrite fsyncs and closes an exclusive private temporary file before renaming", async (t) => {
+  const dir = await directory(t);
+  const options = logOptions(dir, { runtime_turns: [logTurn(0)] });
+  const file = path.join(dir, "runner-log.jsonl");
+  const open = fs.open.bind(fs);
+  const operations = [];
+  t.mock.method(fs, "open", async (filename, flags, mode) => {
+    assert.equal(path.dirname(filename), dir);
+    assert.notEqual(filename, file);
+    assert.equal(flags, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW);
+    assert.equal(mode, 0o600);
+    const handle = await open(filename, flags, mode);
+    return {
+      async writeFile(contents) { operations.push("write"); await handle.writeFile(contents); },
+      async sync() { operations.push("fsync"); await handle.sync(); },
+      async close() { operations.push("close"); await handle.close(); }
+    };
+  });
+  const rename = fs.rename.bind(fs);
+  t.mock.method(fs, "rename", async (...args) => { operations.push("rename"); await rename(...args); });
+  await syncLog(createRunnerLogWriter(options));
+  assert.deepEqual(operations, ["write", "fsync", "close", "rename"]);
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, await options.loadRecord()));
+  assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
+});
+
+test("a process interrupted halfway through a temporary file leaves valid JSONL and restart ignores the leftover", async (t) => {
   const dir = await directory(t);
   const file = path.join(dir, "runner-log.jsonl");
   const record = { runtime_turns: [logTurn(0)] };
   const options = logOptions(dir, record);
   await syncLog(createRunnerLogWriter(options));
   const original = await fs.readFile(file, "utf8");
-  const header = JSON.parse(original.split("\n")[0]);
   record.runtime_turns.push(logTurn(1));
-  const next = interrupted === "later header" ? { ...options, runnerRules: { ...options.runnerRules, version: "0.2.7" } } : options;
-  const brokenRow = interrupted === "turn" ? runnerLogFromRecord(record).turns[1] : { ...header, runnerRules: next.runnerRules };
-  const prefix = interrupted === "initial header" ? "" : original;
-  const serialized = JSON.stringify(brokenRow);
-  await fs.writeFile(file, prefix + serialized.slice(0, Math.floor(serialized.length / 2)));
-  await syncLog(createRunnerLogWriter(next));
-  const updated = await fs.readFile(file, "utf8");
-  assert.ok(updated.startsWith(prefix), "complete lines must not be rewritten");
-  assert.ok(updated.endsWith("\n"));
-  const rows = updated.trimEnd().split("\n").map(JSON.parse);
-  assert.deepEqual(rows.filter((row) => row.type !== "header").map((row) => row.turn), [1, 2]);
-  assert.deepEqual(rows.filter((row) => row.type === "header").at(-1).runnerRules, next.runnerRules);
-  assert.equal(rows.length, interrupted === "later header" ? 4 : 3);
-  assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
+  const script = `
+    import fs from "node:fs/promises";
+    import { createRunnerLogWriter } from ${JSON.stringify(new URL("../src/runner-trial/run-log.mjs", import.meta.url).href)};
+    const { config, record } = JSON.parse(process.argv[1]);
+    const open = fs.open.bind(fs);
+    fs.open = async (...args) => {
+      const handle = await open(...args);
+      return { async writeFile(contents) { await handle.writeFile(contents.slice(0, 12)); process.exit(73); } };
+    };
+    const writer = createRunnerLogWriter({ ...config, loadRecord: async () => record });
+    writer.schedule("synthetic-case");
+    await writer.flush();
+  `;
+  const config = { directory: dir, runnerRules: options.runnerRules, arrangement: options.arrangement };
+  await assert.rejects(exec(process.execPath, ["--input-type=module", "-e", script, JSON.stringify({ config, record })]), { code: 73 });
+  assert.equal(await fs.readFile(file, "utf8"), original);
+  const [leftover] = (await fs.readdir(dir)).filter((name) => name.endsWith(".tmp"));
+  assert.ok(leftover);
+  assert.equal(await fs.readFile(path.join(dir, leftover), "utf8"), original.slice(0, 12));
+  assert.equal((await fs.stat(path.join(dir, leftover))).mode & 0o777, 0o600);
+  await syncLog(createRunnerLogWriter(options));
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, record));
 });
 
-test("log recovery refuses a symlink without reading, truncating or appending its target", async (t) => {
+test("an existing temporary symlink cannot be followed, overwritten or removed by a failed exclusive create", async (t) => {
+  const dir = await directory(t);
+  const file = path.join(dir, "runner-log.jsonl");
+  const target = path.join(await directory(t), "target");
+  await fs.writeFile(target, "untouched", { mode: 0o640 });
+  const options = logOptions(dir, { runtime_turns: [logTurn(0)] });
+  await syncLog(createRunnerLogWriter(options));
+  const original = await fs.readFile(file, "utf8");
+  const open = fs.open.bind(fs);
+  let temporary;
+  t.mock.method(fs, "open", async (filename, ...args) => {
+    temporary = filename;
+    await fs.symlink(target, filename);
+    return open(filename, ...args);
+  });
+  await syncLog(createRunnerLogWriter(options));
+  assert.equal(await fs.readFile(file, "utf8"), original);
+  assert.equal(await fs.readFile(target, "utf8"), "untouched");
+  assert.equal((await fs.stat(target)).mode & 0o777, 0o640);
+  assert.equal((await fs.lstat(temporary)).isSymbolicLink(), true);
+});
+
+test("projection work is deferred and queued writes load records serially", async (t) => {
+  const dir = await directory(t);
+  const record = { runtime_turns: [logTurn(0)] };
+  const options = logOptions(dir, record);
+  let calls = 0;
+  let active = 0;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  let entered;
+  const started = new Promise((resolve) => { entered = resolve; });
+  const writer = createRunnerLogWriter({ ...options, async loadRecord() {
+    calls += 1; active += 1;
+    assert.equal(active, 1);
+    if (calls === 1) { entered(); await gate; }
+    active -= 1;
+    return record;
+  } });
+  assert.equal(writer.schedule(CASE), undefined);
+  writer.schedule(CASE);
+  assert.equal(calls, 0, "scheduling does no record or filesystem work before returning");
+  await started;
+  assert.equal(calls, 1);
+  release();
+  await writer.flush();
+  assert.equal(calls, 2);
+  assert.equal(await fs.readFile(path.join(dir, "runner-log.jsonl"), "utf8"), expectedJsonl(options, record));
+});
+
+test("a destination symlink is replaced without reading or changing its target", async (t) => {
   const dir = await directory(t);
   const target = path.join(await directory(t), "target");
   const original = '{"incomplete":';
   await fs.writeFile(target, original, { mode: 0o640 });
   const mode = (await fs.stat(target)).mode;
-  await fs.symlink(target, path.join(dir, "runner-log.jsonl"));
-  await syncLog(createRunnerLogWriter(logOptions(dir, { runtime_turns: [logTurn(0)] })));
+  const file = path.join(dir, "runner-log.jsonl");
+  await fs.symlink(target, file);
+  const options = logOptions(dir, { runtime_turns: [logTurn(0)] });
+  await syncLog(createRunnerLogWriter(options));
   assert.equal(await fs.readFile(target, "utf8"), original);
   assert.equal((await fs.stat(target)).mode, mode);
-  assert.equal((await fs.lstat(path.join(dir, "runner-log.jsonl"))).isSymbolicLink(), true);
+  assert.equal((await fs.lstat(file)).isSymbolicLink(), false);
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, await options.loadRecord()));
+});
+
+for (const phase of ["deferred", "loading", "writing"]) test(`case deletion invalidates a ${phase} projection without recreating the log`, async (t) => {
+  const dir = await directory(t);
+  const file = path.join(dir, "runner-log.jsonl");
+  const options = logOptions(dir, { runtime_turns: [logTurn(0)] });
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  let entered;
+  const started = new Promise((resolve) => { entered = resolve; });
+  const open = fs.open.bind(fs);
+  if (phase === "loading") {
+    const load = options.loadRecord;
+    options.loadRecord = async () => { entered(); await gate; return load(); };
+  } else if (phase === "writing") {
+    t.mock.method(fs, "open", async (...args) => { const handle = await open(...args); entered(); await gate; return handle; });
+  }
+  const writer = createRunnerLogWriter(options);
+  writer.schedule(CASE);
+  if (phase !== "deferred") await started;
+  const deletion = writer.remove();
+  release();
+  await deletion;
+  await writer.flush();
+  assert.deepEqual(await fs.readdir(dir), []);
+  // A delayed startup callback after deletion finds no case and must not write a header-only log.
+  options.loadRecord = async () => null;
+  const absent = createRunnerLogWriter(options);
+  await syncLog(absent);
+  await assert.rejects(fs.stat(file), { code: "ENOENT" });
 });
 
 test("the log route has the runner page's origin, host, bearer, same-site and case authorization checks, and is absent with the trial off", async (t) => {

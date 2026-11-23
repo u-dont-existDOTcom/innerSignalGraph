@@ -101,7 +101,8 @@ closing, whichever was first), delivery or closing kind and reason code, the cri
 recorded worker call's role, attempt, provider, model, effort, duration and reported input/cache-read/cache-write/output/reasoning
 counts. Rule-part names and byte sizes appear where recorded. Checker findings contain codes and severities only. Each turn's
 `failures` list holds invocation-level failure codes, including failures after workers answered; the summary counts these without
-counting a worker receipt's own failure twice. The summary has
+counting the same failure on that invocation's terminal worker attempt twice. An earlier failed attempt followed by a successful
+retry is still counted separately from a later invocation failure. The summary has
 turn count, median and nearest-rank 90th-percentile total/first-word times, mean workers and repairs per turn, token sums by provider
 and model, finding-code frequencies and failure-code counts. Token categories preserve each provider's reported meanings; they are
 not a currency estimate and cache/reasoning counts must not be added to other categories as if every provider counts them separately.
@@ -112,12 +113,14 @@ protocol/program code list become `UNSPECIFIED_FINDING`; unknown failure codes b
 counts, durations, efforts and rule parts stay unknown rather than being guessed. Earlier failures whose receipts were never stored
 cannot be reconstructed; new failed calls retain their receipts too.
 
-The server appends the same turn rows to `<trial dir>/runner-log.jsonl` (0600), with a header naming the rules and arrangement at
-file creation and a new header whenever they change. Headers mark the server's startup configuration. Each turn row carries its own
-`rules` and `arrangement`, saved with the turn when it was created; both are `null` for turns that ran before this was recorded.
-Rebuilding the file preserves each turn's own configuration regardless of the current server's configuration. Before appending, an
-incomplete final line is discarded; earlier complete lines stay unchanged. If the file is missing on startup, it rebuilds it from
-stored finished turns, then appends newly finished turns once.
+The server rewrites `<trial dir>/runner-log.jsonl` (0600) in full from stored finished turns after each turn, after reconciliation,
+and at server start, whether or not a file already exists. The first line is one header naming this server's rules and arrangement.
+Every turn row has a `schema_version` and its own `rules` and `arrangement`, saved with the turn when it was created; both are `null`
+for turns that ran before this was recorded. Old rows keep their own configuration after a restart with different settings. Provider
+names in the arrangement are only `claude` or `codex`, and rules versions contain three digit groups separated by dots; invalid
+stored values project as `null`.
+Each rewrite uses a new, exclusively created temporary file in the same folder (0600, no symlink followed), syncs it, then atomically
+renames it over the log. An interrupted rewrite leaves the previous complete log intact; a leftover temporary file is never read.
 An unfinished turn appears after reconciliation closes it. Writes run after the response, and logging errors are caught and dropped;
 they never fail a turn. **Delete this case deletes the JSONL file too**, and clears the page's log panel. No log route, file writing or
 Run log button is active when the trial is off.

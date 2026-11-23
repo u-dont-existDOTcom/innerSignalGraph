@@ -72,7 +72,7 @@
           "additionalProperties": false,
           "required": ["version", "sha256", "source"],
           "properties": {
-            "version": { "$ref": "#/$defs/runnerName" },
+            "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
             "sha256": { "$ref": "#/$defs/sha256" },
             "source": { "type": "string", "pattern": "^(checkout|stable [a-f0-9]{7,40})$" }
           }
@@ -84,9 +84,9 @@
           "properties": {
             "writerMode": { "enum": ["whole", "focused"] },
             "checkerMode": { "enum": ["whole", "split"] },
-            "readers": { "type": "array", "items": { "$ref": "#/$defs/runnerName" } },
-            "writer": { "type": "array", "items": { "$ref": "#/$defs/runnerName" } },
-            "checkers": { "type": "array", "items": { "$ref": "#/$defs/runnerName" } }
+            "readers": { "type": "array", "items": { "$ref": "#/$defs/runnerProvider" } },
+            "writer": { "type": "array", "items": { "$ref": "#/$defs/runnerProvider" } },
+            "checkers": { "type": "array", "items": { "$ref": "#/$defs/runnerProvider" } }
           }
         }
       }
@@ -106,7 +106,7 @@
   "$defs": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" },
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-    "runnerName": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,95}$" },
+    "runnerProvider": { "enum": ["claude", "codex"] },
     "state": { "enum": ["RECEIVED", "CANDIDATE_PENDING_AUDIT", "AUDITING", "APPROVED", "DELIVERED", "REPAIR_REQUIRED", "RECONSTRUCTING", "DISCRIMINATING_QUESTION_REQUIRED"] },
     "stateEvent": {
       "type": "object",

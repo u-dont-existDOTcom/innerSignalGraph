@@ -202,14 +202,13 @@ function validateRunnerConfig(value) {
     boundedJson(object, "runtime turn runner_config", 10_000);
     if (Object.keys(object).length !== keys.length || keys.some((key) => !Object.hasOwn(object, key))) throw new ValidationError("Runner configuration fields are invalid.");
   };
-  const validName = (name) => typeof name === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,95}$/u.test(name);
   fields(value, ["rules", "arrangement"]);
   fields(value.rules, ["version", "sha256", "source"]);
   fields(value.arrangement, ["writerMode", "checkerMode", "readers", "writer", "checkers"]);
-  if (!validName(value.rules.version) || typeof value.rules.sha256 !== "string" || !SHA256.test(value.rules.sha256)
+  if (typeof value.rules.version !== "string" || !/^\d+\.\d+\.\d+$/u.test(value.rules.version) || typeof value.rules.sha256 !== "string" || !SHA256.test(value.rules.sha256)
       || !(value.rules.source === "checkout" || /^stable [a-f0-9]{7,40}$/u.test(value.rules.source))
       || !["whole", "focused"].includes(value.arrangement.writerMode) || !["whole", "split"].includes(value.arrangement.checkerMode)
-      || ["readers", "writer", "checkers"].some((key) => !Array.isArray(value.arrangement[key]) || !value.arrangement[key].every(validName))) {
+      || ["readers", "writer", "checkers"].some((key) => !Array.isArray(value.arrangement[key]) || !value.arrangement[key].every((provider) => ["claude", "codex"].includes(provider)))) {
     throw new ValidationError("Runner configuration is invalid.");
   }
 }

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { isDeepStrictEqual } from "node:util";
 
 // This is a projection, never a redacted copy. No stored object (including a receipt) is spread or serialized here.
 // Timestamps are parsed and re-emitted; names have bounded alphabets; model prose has no output field.
@@ -17,8 +17,9 @@ const stamp = (v) => typeof v === "string" && Number.isFinite(Date.parse(v)) ? n
 const elapsed = (start, end) => start && end ? Math.max(0, Date.parse(end) - Date.parse(start)) : null;
 const array = (v) => Array.isArray(v) ? v : [];
 const failure = (v) => v == null ? null : FAILURES.has(v) ? v : "PROVIDER_FAILED";
-const rules = (v) => ({ version: name(v?.version), sha256: /^[a-f0-9]{64}$/u.test(v?.sha256) ? v.sha256 : null, source: /^stable [a-f0-9]{7,40}$/u.test(v?.source) ? v.source : "checkout" });
-const arrangement = (v) => ({ writerMode: ["whole", "focused"].includes(v?.writerMode) ? v.writerMode : null, checkerMode: ["whole", "split"].includes(v?.checkerMode) ? v.checkerMode : null, readers: array(v?.readers).map(name).filter(Boolean), writer: array(v?.writer).map(name).filter(Boolean), checkers: array(v?.checkers).map(name).filter(Boolean) });
+const provider = (v) => ["claude", "codex"].includes(v) ? v : null;
+const rules = (v) => ({ version: typeof v?.version === "string" && /^\d+\.\d+\.\d+$/u.test(v.version) ? v.version : null, sha256: /^[a-f0-9]{64}$/u.test(v?.sha256) ? v.sha256 : null, source: /^stable [a-f0-9]{7,40}$/u.test(v?.source) ? v.source : "checkout" });
+const arrangement = (v) => ({ writerMode: ["whole", "focused"].includes(v?.writerMode) ? v.writerMode : null, checkerMode: ["whole", "split"].includes(v?.checkerMode) ? v.checkerMode : null, readers: array(v?.readers).map(provider), writer: array(v?.writer).map(provider), checkers: array(v?.checkers).map(provider) });
 export const RUNNER_LOG_TOKEN_FIELDS = Object.freeze(["input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens", "reasoning_output_tokens"]);
 const emptyTokens = () => ({ input_tokens: null, cache_read_input_tokens: null, cache_creation_input_tokens: null, output_tokens: null, reasoning_output_tokens: null });
 function addTokens(into, call) {
@@ -71,14 +72,15 @@ export function runnerLogFromRecord(record) {
       if (event.event_type === "INVOCATION_FAILED") {
         const code = failure(event.details?.error_code) ?? "PROVIDER_FAILED";
         failures.push(code);
-        // A failed worker already accounts for this invocation's error. Post-worker failures have no such receipt.
-        if (!eventCalls.some((call) => call.failure_code === code)) failureCounts.set(code, (failureCounts.get(code) ?? 0) + 1);
+        // Only a worker's terminal attempt can account for the invocation's failure. A successful retry supersedes its earlier failure.
+        const terminalCalls = new Map(eventCalls.map((call) => [call.role, call]));
+        if (![...terminalCalls.values()].some((call) => call.failure_code === code)) failureCounts.set(code, (failureCounts.get(code) ?? 0) + 1);
       }
     }
     const tokens = emptyTokens();
     for (const call of calls) addTokens(tokens, call);
     turns.push({
-      turn: index + 1, started_at: started, ended_at: ended,
+      schema_version: 1, turn: index + 1, started_at: started, ended_at: ended,
       rules: turn.runner_config ? rules(turn.runner_config.rules) : null,
       arrangement: turn.runner_config ? arrangement(turn.runner_config.arrangement) : null,
       duration_ms: elapsed(started, ended), first_words_ms: elapsed(started, first),
@@ -114,41 +116,37 @@ export function runnerLogFromRecord(record) {
 // One queue per controller (shared by both loopback listeners). Work is deferred and errors are dropped; a response never awaits it.
 export function createRunnerLogWriter({ directory, runnerRules, arrangement: runnerArrangement, loadRecord }) {
   let tail = Promise.resolve();
+  let generation = 0;
   const file = directory ? path.join(directory, "runner-log.jsonl") : null;
   const header = { schema_version: 1, type: "header", runnerRules: rules(runnerRules), arrangement: arrangement(runnerArrangement) };
   const enqueue = (work) => { tail = tail.then(work).catch(() => {}); return tail; };
   return {
     schedule(caseId, authContext) {
       if (!file) return;
+      const scheduledGeneration = generation;
       // Let the response return before projection, reads or filesystem work begin.
       setImmediate(() => enqueue(async () => {
+        if (scheduledGeneration !== generation) return;
         const record = await loadRecord(caseId, authContext);
+        if (!record || scheduledGeneration !== generation) return;
         const log = runnerLogFromRecord(record);
-        const handle = await fs.open(file, constants.O_RDWR | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
+        const temporary = path.join(directory, `.runner-log-${randomUUID()}.tmp`);
+        let handle = await fs.open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
         try {
-          await handle.chmod(0o600);
-          const existing = await handle.readFile();
-          // Truncate only the incomplete tail, using byte offsets on the same no-follow handle used to append.
-          const completeLength = existing.length === 0 || existing.at(-1) === 10 ? existing.length : existing.lastIndexOf(10) + 1;
-          if (completeLength < existing.length) await handle.truncate(completeLength);
-          const seen = new Set();
-          let lastHeader = null;
-          for (const line of existing.subarray(0, completeLength).toString("utf8").split("\n")) {
-            try {
-              const row = JSON.parse(line);
-              if (row?.type === "header") lastHeader = row;
-              else if (row?.turn != null) seen.add(row.turn);
-            } catch { /* leave earlier complete lines unchanged */ }
-          }
-          const lines = isDeepStrictEqual(lastHeader, header) ? [] : [header];
-          for (const turn of log.turns) if (!seen.has(turn.turn)) lines.push(turn);
-          if (lines.length) await handle.writeFile(lines.map((line) => JSON.stringify(line)).join("\n") + "\n");
-        } finally { await handle.close(); }
+          await handle.writeFile([header, ...log.turns].map((line) => JSON.stringify(line)).join("\n") + "\n");
+          await handle.sync();
+          await handle.close();
+          handle = null;
+          if (scheduledGeneration === generation) await fs.rename(temporary, file);
+        } finally {
+          try { await handle?.close(); }
+          finally { await fs.rm(temporary, { force: true }); }
+        }
       }));
     },
     async remove() {
-      // Drain scheduled callbacks too, so a queued write cannot recreate a deleted case's log.
-      await new Promise((resolve) => setImmediate(resolve));
+      // Invalidate deferred and in-flight snapshots before queuing deletion behind any active write.
+      generation += 1;
       const deletion = tail.then(async () => { if (file) await fs.rm(file, { force: true }); });
       tail = deletion.catch(() => {});
       await deletion;
