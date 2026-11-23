@@ -1,9 +1,10 @@
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
-import { loadTherapyProtocol } from "../protocol/therapy-protocol.mjs";
+import { loadRunnerRules, runnerTrialDirectory } from "./released-rules.mjs";
+import { createRunnerLogWriter, runnerLogFromRecord } from "./run-log.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
 import { createRunnerTrialRuntime } from "./runtime.mjs";
-import { RUNNER_TRIAL_SETTING, createRunnerWorkerFactory, loadRunnerTrialSettings } from "./settings.mjs";
+import { RUNNER_TRIAL_SETTING, createRunnerWorkerFactory, loadRunnerTrialSettings, runnerArrangement } from "./settings.mjs";
 
 // What the server builds when INNER_SIGNAL_RUNNER_TRIAL is on (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections
 // 8 and 11): the turn controller over the trial's runtime, and the hub that carries the runtime's events to the page's stream.
@@ -77,9 +78,11 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, se
   const hub = events ?? createRunnerEventHub();
   if (!isRunnerEventHub(hub)) throw new ValidationError("The runner trial needs an event hub.");
   const trialSettings = settings ?? loadRunnerTrialSettings({ settingsPath: config.runnerTrialSettingsPath ?? null, claudeConfigDir: config.runnerClaudeConfigDir ?? null });
+  const rules = loadRunnerRules(config);
   const runtime = createRunnerTrialRuntime({
     privateCaseSource,
-    parts: parts ?? cutRuleParts(loadTherapyProtocol({ boxGuidance: true })),
+    parts: parts ?? cutRuleParts(rules.protocol),
+    workerSettings: trialSettings.workers,
     settings: trialSettings.runtime,
     workerFor: workerFor ?? createRunnerWorkerFactory(trialSettings, { claudeCommand: config.claudeCommand ?? "claude", codexCommand: config.codexCommand ?? "codex" }),
     ownerFallbackEnabled: config.ownerFallbackEnabled === true,
@@ -92,5 +95,29 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, se
   });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
   const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, maximumInvocationAttempts: 1 });
-  return Object.freeze({ controller, events: hub, runtime, settings: trialSettings });
+  const loadExisting = async (caseId, authContext) => {
+    try {
+      return await (typeof privateCaseSource.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource.load(caseId));
+    } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
+  };
+  const logWriter = createRunnerLogWriter({ directory: runnerTrialDirectory(config), runnerRules: rules.runnerRules, arrangement: runnerArrangement(trialSettings), loadRecord: loadExisting });
+  const loggedController = Object.freeze({
+    ...controller,
+    async run(input) {
+      try { return await controller.run(input); }
+      finally { logWriter.schedule(input.caseId, input.authContext); }
+    },
+    async reconcile(input) {
+      try { return await controller.reconcile(input); }
+      finally { logWriter.schedule(input.caseId, input.authContext); }
+    },
+    async deleteCase(input) {
+      const result = await controller.deleteCase(input);
+      await logWriter.remove();
+      return result;
+    },
+    async runLog({ caseId, authContext }) { return runnerLogFromRecord(await loadExisting(caseId, authContext)); },
+    startRunLog(authContext) { if (config.runnerTrialCaseId) logWriter.schedule(config.runnerTrialCaseId, authContext); }
+  });
+  return Object.freeze({ controller: loggedController, events: hub, runtime, settings: trialSettings, runnerRules: rules.runnerRules, logWriter });
 }

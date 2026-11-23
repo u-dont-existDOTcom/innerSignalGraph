@@ -147,6 +147,7 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_PRIVATE_RUNTIME_CREDENTIALS: "/synthetic/trial/credentials.json",
     INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: "synthetic-token",
     INNER_SIGNAL_RUNNER_TRIAL: "on",
+    INNER_SIGNAL_RUNNER_TRIAL_DIR: "/synthetic/trial",
     INNER_SIGNAL_RUNNER_TRIAL_SETTINGS: "/synthetic/trial/settings-codex.json",
     INNER_SIGNAL_RUNNER_TRIAL_CASE_ID: SYNTHETIC_CASE,
     INNER_SIGNAL_RUNNER_KEPT_PLAN: "off",
@@ -267,6 +268,17 @@ test("a real start serves the trial page on loopback in its own vault, names its
   const base = `http://127.0.0.1:${port}`;
   // Stand-ins for the Codex and Claude commands: the start checks that they exist, and no message is sent, so nothing runs them.
   const env = { ...process.env, CODEX_COMMAND: process.execPath, CLAUDE_COMMAND: process.execPath, INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: claudeHome, INNER_SIGNAL_RUNNER_KEPT_PLAN: "on", INNER_SIGNAL_RUNNER_TRIAL_CASE_ID: SYNTHETIC_CASE };
+  // Fetch is explicitly offline in this test; local archive/rev-parse still exercise the real release extraction.
+  const bin = path.join(dir, "bin");
+  await fs.mkdir(bin);
+  let gitCommand;
+  for (const folder of process.env.PATH.split(path.delimiter)) {
+    const candidate = path.join(folder, "git");
+    try { await fs.access(candidate, 1); gitCommand = candidate; break; } catch { /* next PATH entry */ }
+  }
+  assert.ok(gitCommand);
+  await fs.writeFile(path.join(bin, "git"), `#!${process.execPath}\nconst { spawnSync } = require("node:child_process");\nif (process.argv[2] === "fetch") process.exit(1);\nconst result = spawnSync(${JSON.stringify(gitCommand)}, process.argv.slice(2), { stdio: "inherit" });\nprocess.exit(result.status ?? 1);\n`, { mode: 0o755 });
+  env.PATH = `${bin}${path.delimiter}${env.PATH}`;
   const child = spawn(process.execPath, [script, "--provider", "mixed", "--port", String(port), "--dir", home, "--number-now", "--owner-fallback", "--fixed-message-on-failure", "--fixed-message-on-any-failure"], { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = "";
   let stderr = "";

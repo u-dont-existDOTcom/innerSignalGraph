@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
 import { readOnOffSetting } from "./on-off-setting.mjs";
-import { RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_NUMBER_NOW_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerFixedMessageOnAnyFailureSwitch, readRunnerFixedMessageOnFailureSwitch, readRunnerKeptPlanSwitch, readRunnerNumberNowSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
+import { RUNNER_RULES_ROOT, RUNNER_TRIAL_DIR, RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_NUMBER_NOW_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerFixedMessageOnAnyFailureSwitch, readRunnerFixedMessageOnFailureSwitch, readRunnerKeptPlanSwitch, readRunnerNumberNowSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -103,6 +103,8 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     runnerFeedbackLinkEnabled: readRunnerFeedbackLinkSwitch(process.env[RUNNER_FEEDBACK_LINK_SETTING]),
     // The case the trial's page uses (the one the trial vault's credentials grant), or null; a value of another form stops startup.
     runnerTrialCaseId: readRunnerTrialCaseId(process.env[RUNNER_TRIAL_CASE_ID_SETTING]),
+    runnerRulesRoot: nonBlankEnv(RUNNER_RULES_ROOT, null),
+    runnerTrialDir: nonBlankEnv(RUNNER_TRIAL_DIR, null),
     runnerTrialSettingsPath: nonBlankEnv(RUNNER_TRIAL_SETTINGS_FILE, null),
     runnerClaudeConfigDir: nonBlankEnv(RUNNER_CLAUDE_CONFIG_DIR, null),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),

@@ -129,7 +129,7 @@ export function normalizeFindings(checkerId, findings) {
 // (design, section 7), on only when exactly true: it changes nothing but which closings show the owner's fixed message, and only
 // while `ownerFallbackEnabled` is on too. `fixedMessageOnAnyFailureEnabled` is INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE (the
 // same section), on only when exactly true, and only on top of both: then every closing reason shows his message in such a conversation.
-export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, fixedMessageOnAnyFailureEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
+export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, workerSettings = {}, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, fixedMessageOnAnyFailureEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
   if (!privateCaseSource || !parts || typeof workerFor !== "function") throw new ValidationError("The runner trial needs its case source, rule parts and workers.");
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
@@ -168,21 +168,38 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   // no retry, so a slow reading can't hold up the writer twice). Returns { value, receipts }. `requestFor`, when given, builds the
   // request ({ system, user, schema }) again for every attempt, so a retry is given only what still holds when it starts (the kept
   // plan's 30 days are checked again); otherwise every attempt sends the request given.
-  async function callWorker(role, { kind, runtimeTurn, system, user, schema, requestFor = null, validate = (value) => value, attempts = 2 }) {
+  async function callWorker(role, { kind, runtimeTurn, system, user, schema, requestFor = null, validate = (value) => value, attempts = 2, ruleParts = [] }) {
     const receipts = [];
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
-      const timeoutMs = limitFor(runtimeTurn, kind, role);
-      const started = now();
-      const request = requestFor ? requestFor() : { system, user, schema };
+      let timeoutMs;
+      let request;
       try {
-        const result = await workerFor(role).call({ system: request.system, user: request.user, schema: request.schema, timeoutMs, stage: role });
-        receipts.push({ ...result.receipt, role, attempt });
-        return { value: validate(result.value), receipts };
+        timeoutMs = limitFor(runtimeTurn, kind, role);
+        request = requestFor ? requestFor() : { system, user, schema };
       } catch (error) {
-        receipts.push({ role, attempt, failed: error?.code ?? "PROVIDER_FAILED", duration_ms: now() - started });
+        error.details = { ...error.details, receipts };
+        throw Object.assign(error, { receipts });
+      }
+      const started = now();
+      let receipt = null;
+      let worker = null;
+      const spec = workerSettings[role];
+      const configuredProvider = { claude: "anthropic", codex: "openai" }[spec?.provider] ?? null;
+      try {
+        worker = workerFor(role);
+        const result = await worker.call({ system: request.system, user: request.user, schema: request.schema, timeoutMs, stage: role });
+        receipt = result.receipt;
+        const value = validate(result.value);
+        receipts.push({ ...receipt, role, attempt, provider: receipt?.provider ?? worker?.provider ?? configuredProvider, model: receipt?.model ?? worker?.model ?? spec?.model ?? null, effort: receipt?.effort ?? worker?.effort ?? spec?.effort ?? null, duration_ms: receipt?.duration_ms ?? now() - started, rule_parts: ruleParts });
+        return { value, receipts };
+      } catch (error) {
+        receipts.push({ ...receipt, role, attempt, provider: receipt?.provider ?? worker?.provider ?? configuredProvider, model: receipt?.model ?? worker?.model ?? spec?.model ?? null, effort: receipt?.effort ?? worker?.effort ?? spec?.effort ?? null, failed: error?.code ?? "PROVIDER_FAILED", duration_ms: receipt?.duration_ms ?? now() - started, rule_parts: ruleParts });
         const retryable = ["TIMEOUT", "PROVIDER_MALFORMED", "CODEX_RECEIPT_INCOMPLETE"].includes(error?.code) || error instanceof ValidationError;
         if (attempt === attempts || !retryable || deadlineOf(runtimeTurn) - now() < config.limits[kind] / 2) {
-          throw Object.assign(error instanceof Error ? error : new Error(String(error)), { receipts });
+          const failed = error instanceof Error ? error : new Error(String(error));
+          // The generic controller already persists details on invocation failure. Keep worker metadata there too.
+          failed.details = { ...failed.details, receipts };
+          throw Object.assign(failed, { receipts });
         }
       }
     }
@@ -346,7 +363,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     let reading = null;
     let receipts = [];
     try {
-      const result = await callWorker("R1", { kind: "reader", runtimeTurn, system, user: prompt.user, schema: crisisReaderSchema({ keptPlan: keptPlanEnabled, numberNow }), attempts: 1, validate: (value) => ({ ...value, level: validLevel(value?.level), reason: String(value?.reason ?? "").slice(0, 400), ...keptPlanReading(value), ...numberNowReading(value) }) });
+      const result = await callWorker("R1", { kind: "reader", runtimeTurn, ruleParts: rules.parts, system, user: prompt.user, schema: crisisReaderSchema({ keptPlan: keptPlanEnabled, numberNow }), attempts: 1, validate: (value) => ({ ...value, level: validLevel(value?.level), reason: String(value?.reason ?? "").slice(0, 400), ...keptPlanReading(value), ...numberNowReading(value) }) });
       reading = result.value;
       receipts = result.receipts;
     } catch (error) {
@@ -388,7 +405,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const rules = rulesFrom([parts.map, parts.boxPreamble, parts.boxIndex], ["the therapy map", "the box file's opening", "the box index"]);
     const prompt = boxPickerPrompt({ rules, packet: readersPacket(view, runtimeTurn) });
     try {
-      const result = await callWorker("R2", { kind: "reader", runtimeTurn, ...prompt, schema: BOX_PICKER_SCHEMA, validate: (value) => ({ boxes: (Array.isArray(value?.boxes) ? value.boxes : []).filter((id) => typeof id === "string" && parts.boxes[id]).slice(0, config.maxBoxes) }) });
+      const result = await callWorker("R2", { kind: "reader", runtimeTurn, ruleParts: rules.parts, ...prompt, schema: BOX_PICKER_SCHEMA, validate: (value) => ({ boxes: (Array.isArray(value?.boxes) ? value.boxes : []).filter((id) => typeof id === "string" && parts.boxes[id]).slice(0, config.maxBoxes) }) });
       return { boxes: result.value.boxes, receipts: result.receipts };
     } catch (error) {
       // No picks: the writer gets every box (the whole box file), never fewer rules.
@@ -402,7 +419,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const prompt = protectionReaderPrompt({ rules, packet: { ...readersPacket(view, runtimeTurn), current_gate: current ? { gate: current.gate, issue: current.issue ?? "", reentry_status: current.reentry_status ?? null } : { gate: "NOT_BLOCKED" } } });
     const turnIds = new Set(view.turns.filter((turn) => turn.turn_id).map((turn) => turn.turn_id));
     try {
-      const result = await callWorker("R3", { kind: "reader", runtimeTurn, ...prompt, schema: PROTECTION_READER_SCHEMA, validate: (value) => ({ assessment: validateCompatibilityAssessment(value?.compatibility_assessment ?? null, { observationIds: turnIds }) }) });
+      const result = await callWorker("R3", { kind: "reader", runtimeTurn, ruleParts: rules.parts, ...prompt, schema: PROTECTION_READER_SCHEMA, validate: (value) => ({ assessment: validateCompatibilityAssessment(value?.compatibility_assessment ?? null, { observationIds: turnIds }) }) });
       return { assessment: result.value.assessment, receipts: result.receipts };
     } catch (error) {
       // No reading keeps the stored gate (a prior restriction survives).
@@ -622,7 +639,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         const current = keptPlanAsOfNow(keptPlan);
         return keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, provisional, keptPlan: current }) }), current);
       };
-      const written = await callWorker("W", { kind: "writer", runtimeTurn, requestFor: writerRequest, validate: (value) => validateWriter(value, keptPlan) });
+      const written = await callWorker("W", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: writerRequest, validate: (value) => validateWriter(value, keptPlan) });
       // The person asked to keep the plan: kept now, unless the reply before offered it, when the crisis checker confirms the yes first.
       if (keptPlan?.keepAsked && !keptPlan.previousOffered) await tryKeepPlan(caseId, runtimeTurn.id, written.value.keptPlan.lines, authContext);
       return {
@@ -723,8 +740,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
           const kept = keptPlanPart ? keptPlanPart() : { packet: {}, extra: "" };
           return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}` }), schema };
         };
-        const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, requestFor })) };
-        return LEVEL_READERS.includes(checker.id) ? actOnLevel(result) : result;
+        const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, ruleParts: rules.parts, requestFor })) };
+        try { return LEVEL_READERS.includes(checker.id) ? await actOnLevel(result) : result; }
+        catch (error) {
+          error.details = { ...error.details, receipts: result.receipts };
+          throw Object.assign(error, { receipts: result.receipts });
+        }
       }));
       const results = settled.filter((entry) => entry.status === "fulfilled").map((entry) => entry.value);
       const levelReader = results.find((result) => LEVEL_READERS.includes(result.checker.id));
@@ -733,56 +754,63 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const failed = settled.find((entry) => entry.status === "rejected");
       if (failed) {
         const receipts = settled.flatMap((entry) => (entry.status === "fulfilled" ? entry.value.receipts : (entry.reason?.receipts ?? [])));
-        throw Object.assign(failed.reason instanceof Error ? failed.reason : new Error(String(failed.reason)), { receipts });
-      }
-      // The number check holds on every turn read acted until the conversation has actually shown a number (Codex's review of
-      // 371a8f6f2), not only on the first turn read acted.
-      const numberAlreadyShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
-      const earlierCrisisTurn = readings.some((entry) => entry.turnId !== runtimeTurn.id && (entry.checkerLevels.some(isCrisisLevel) || entry.provisional));
-      const quoteSources = new Map(view.turns.filter((turn) => turn.turn_id).map((turn) => [turn.turn_id, turn.text]));
-      const program = runProgramChecks({
-        reply: candidate.exact_text,
-        checkerLevel,
-        firstActedTurn: checkerLevel === "acted_or_about_to" && !numberAlreadyShown,
-        firstCrisisTurn: (isCrisisLevel(checkerLevel) || Boolean(provisional)) && !earlierCrisisTurn,
-        crisisConversation: crisisSoFar || isCrisisLevel(checkerLevel),
-        provisional,
-        quotes: written.quotes ?? [],
-        quoteSources,
-        childContactPatternHits: patternHits
-      });
-      const findings = [...results.flatMap((result) => normalizeFindings(result.checker.id, result.value.findings)), ...program.map((finding, index) => ({ ...finding, id: `P:${index + 1}`, checker: "program" }))];
-      let repairInducedChecks = [];
-      if (repaired) {
-        const comparer = results.find((result) => ["C5", "CW"].includes(result.checker.id));
-        if (JSON.stringify(comparer?.value?.repair_induced_checks) !== JSON.stringify(REPAIR_INDUCED_ERROR_CHECKS)) {
-          throw new ValidationError("The repair comparer did not check every repair item.", { code: "PROVIDER_MALFORMED" });
-        }
-        repairInducedChecks = [...REPAIR_INDUCED_ERROR_CHECKS];
-      }
-      // A turn read acted or about to that would be delivered with no emergency number anywhere in it (its provisional reply, the
-      // reply or the line): on a later turn the number check no longer requires one in the reply (the conversation showed it
-      // before) and the crisis reader may have read the message as an answer, so the program puts the highlighted line in before
-      // delivery. It never asks the writer to repeat the number (Codex's review of e17c949a2).
-      const passes = !findings.some((finding) => !RECORD_ONLY_AUDIT_CODES.includes(finding.code) && isSubstantiveAuditFinding(finding));
-      const readActedThisTurn = readers.crisis?.level === "acted_or_about_to" || checkerLevel === "acted_or_about_to" || checkerLevelsOf(runtimeTurn).includes("acted_or_about_to");
-      // With the number now on, a turn the crisis reader read number_now too (design, section 9b).
-      if (passes && (readActedThisTurn || numberNowRead(readers.crisis)) && emergencyNumbersIn(candidate.exact_text).length === 0) {
-        const fresh = (await load(caseId, authContext)).runtime_turns.find((turn) => turn.id === runtimeTurn.id);
-        if (fresh && !isFinishedRuntimeTurn(fresh) && !showsNumber(fresh)) await showEmergencyLine(caseId, fresh, "reply_without_number", authContext);
+        const error = failed.reason instanceof Error ? failed.reason : new Error(String(failed.reason));
+        error.details = { ...error.details, receipts };
+        throw Object.assign(error, { receipts });
       }
       const receipts = results.flatMap((result) => result.receipts);
-      return {
-        value: {
-          findings: findings.map(({ checker, ...finding }) => finding),
-          repair_induced_checks: repairInducedChecks,
-          checker_level: checkerLevel,
-          missed_boxes: [...new Set(results.flatMap((result) => (result.value.missed_boxes ?? []).filter((id) => parts.boxes[id])))].slice(0, config.maxBoxes),
-          findings_by_checker: Object.fromEntries(results.map((result) => [result.checker.id, (result.value.findings ?? []).length]).concat([["program", program.length]]))
-        },
-        contextId: contextIdOf(receipts.filter((receipt) => receipt.session_id)),
-        providerReceipt: { provider: "runner-trial-checkers", receipts }
-      };
+      try {
+        // The number check holds on every turn read acted until the conversation has actually shown a number (Codex's review of
+        // 371a8f6f2), not only on the first turn read acted.
+        const numberAlreadyShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
+        const earlierCrisisTurn = readings.some((entry) => entry.turnId !== runtimeTurn.id && (entry.checkerLevels.some(isCrisisLevel) || entry.provisional));
+        const quoteSources = new Map(view.turns.filter((turn) => turn.turn_id).map((turn) => [turn.turn_id, turn.text]));
+        const program = runProgramChecks({
+          reply: candidate.exact_text,
+          checkerLevel,
+          firstActedTurn: checkerLevel === "acted_or_about_to" && !numberAlreadyShown,
+          firstCrisisTurn: (isCrisisLevel(checkerLevel) || Boolean(provisional)) && !earlierCrisisTurn,
+          crisisConversation: crisisSoFar || isCrisisLevel(checkerLevel),
+          provisional,
+          quotes: written.quotes ?? [],
+          quoteSources,
+          childContactPatternHits: patternHits
+        });
+        const findings = [...results.flatMap((result) => normalizeFindings(result.checker.id, result.value.findings)), ...program.map((finding, index) => ({ ...finding, id: `P:${index + 1}`, checker: "program" }))];
+        let repairInducedChecks = [];
+        if (repaired) {
+          const comparer = results.find((result) => ["C5", "CW"].includes(result.checker.id));
+          if (JSON.stringify(comparer?.value?.repair_induced_checks) !== JSON.stringify(REPAIR_INDUCED_ERROR_CHECKS)) {
+            throw new ValidationError("The repair comparer did not check every repair item.", { code: "PROVIDER_MALFORMED" });
+          }
+          repairInducedChecks = [...REPAIR_INDUCED_ERROR_CHECKS];
+        }
+        // A turn read acted or about to that would be delivered with no emergency number anywhere in it (its provisional reply, the
+        // reply or the line): on a later turn the number check no longer requires one in the reply (the conversation showed it
+        // before) and the crisis reader may have read the message as an answer, so the program puts the highlighted line in before
+        // delivery. It never asks the writer to repeat the number (Codex's review of e17c949a2).
+        const passes = !findings.some((finding) => !RECORD_ONLY_AUDIT_CODES.includes(finding.code) && isSubstantiveAuditFinding(finding));
+        const readActedThisTurn = readers.crisis?.level === "acted_or_about_to" || checkerLevel === "acted_or_about_to" || checkerLevelsOf(runtimeTurn).includes("acted_or_about_to");
+        // With the number now on, a turn the crisis reader read number_now too (design, section 9b).
+        if (passes && (readActedThisTurn || numberNowRead(readers.crisis)) && emergencyNumbersIn(candidate.exact_text).length === 0) {
+          const fresh = (await load(caseId, authContext)).runtime_turns.find((turn) => turn.id === runtimeTurn.id);
+          if (fresh && !isFinishedRuntimeTurn(fresh) && !showsNumber(fresh)) await showEmergencyLine(caseId, fresh, "reply_without_number", authContext);
+        }
+        return {
+          value: {
+            findings: findings.map(({ checker, ...finding }) => finding),
+            repair_induced_checks: repairInducedChecks,
+            checker_level: checkerLevel,
+            missed_boxes: [...new Set(results.flatMap((result) => (result.value.missed_boxes ?? []).filter((id) => parts.boxes[id])))].slice(0, config.maxBoxes),
+            findings_by_checker: Object.fromEntries(results.map((result) => [result.checker.id, (result.value.findings ?? []).length]).concat([["program", program.length]]))
+          },
+          contextId: contextIdOf(receipts.filter((receipt) => receipt.session_id)),
+          providerReceipt: { provider: "runner-trial-checkers", receipts }
+        };
+      } catch (error) {
+        error.details = { ...error.details, receipts };
+        throw Object.assign(error, { receipts });
+      }
     },
 
     async repairCandidate({ caseId, candidate, journalEvidence = null, authContext }) {
@@ -800,10 +828,10 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }), previous_candidate: candidate.exact_text, findings: blocking };
         return keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current);
       };
-      const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, requestFor: repairRequest, validate: (value) => validateWriter(value, keptPlan) });
+      const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: repairRequest, validate: (value) => validateWriter(value, keptPlan) });
       // A repair that changes nothing can't fix what the checks found: the turn ends as a failed check (the store would refuse
       // the same bytes as a new version, which would otherwise read as a failed model call).
-      if (written.value.reply === candidate.exact_text) throw new RuntimeError("The repair returned the same reply.", { code: "REPAIR_UNCHANGED" });
+      if (written.value.reply === candidate.exact_text) throw new RuntimeError("The repair returned the same reply.", { code: "REPAIR_UNCHANGED", details: { receipts: written.receipts } });
       // A plan the person asked to keep and the first draft's lines didn't keep may be kept from the repaired draft's lines (after an
       // offer, only once the crisis checker has confirmed the yes on an earlier check of this turn).
       if (keptPlan?.keepAsked && (!keptPlan.previousOffered || keepPlanYesConfirmed(runtimeTurn))) await tryKeepPlan(caseId, runtimeTurn.id, written.value.keptPlan.lines, authContext);

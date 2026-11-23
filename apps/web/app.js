@@ -264,6 +264,40 @@ function runnerArrangementText(arrangement) {
   const [readers, writer, writes, checkers, checks] = parts;
   return `Runner trial: readers on ${readers} · ${writer} on ${writes} · ${checkers} on ${checks}`;
 }
+function runnerVersionText(health) {
+  if (health.runnerTrial === "on") {
+    const rules = health.runnerRules;
+    return `InnerSignal runner trial · rules ${rules?.version ?? "unknown"} (${rules?.sha256?.slice(0, 8) ?? "unknown"}) · page v${health.version}${rules?.source === "checkout" ? " · rules from this checkout, not the release" : ""}`;
+  }
+  const repair = health.localRepair?.jobId ? ` · local repair ${String(health.localRepair.jobId).slice(0, 8)}` : "";
+  return `Inner Signal runtime v${health.version}${repair}`;
+}
+
+// Only operational metadata reaches this renderer; every text node is made through textContent.
+function renderRunnerLog(root, log) {
+  root.replaceChildren();
+  const add = (parent, tag, words) => { const node = root.ownerDocument.createElement(tag); node.textContent = words; parent.append(node); return node; };
+  const seconds = (ms) => typeof ms === "number" ? (ms / 1000).toFixed(2) : "—";
+  const tokens = (value) => `input ${value.input_tokens ?? "—"}, cache read ${value.cache_read_input_tokens ?? "—"}, cache write ${value.cache_creation_input_tokens ?? "—"}, output ${value.output_tokens ?? "—"}, reasoning ${value.reasoning_output_tokens ?? "—"}`;
+  const roleNames = { R1: "Read crisis level", R2: "Choose rule boxes", R3: "Read child-contact boundary", W: "Write reply", "W-repair": "Repair reply", C1: "Check crisis rules", C2: "Check skill and response", C3: "Check boxes and protection", C4: "Check role and belief", C5: "Compare repair", CW: "Check whole reply" };
+  const summary = log.summary;
+  add(root, "h3", "Run log");
+  add(root, "p", `${summary.turns} turns · total seconds: median ${seconds(summary.total_time_ms.median)}, p90 ${seconds(summary.total_time_ms.p90)} · first words seconds: median ${seconds(summary.first_words_ms.median)}, p90 ${seconds(summary.first_words_ms.p90)} · workers/turn ${summary.workers_per_turn.toFixed(1)} · repairs/turn ${summary.repairs_per_turn.toFixed(1)}`);
+  for (const group of summary.tokens_by_provider_model) add(root, "p", `${group.provider ?? "unknown provider"} / ${group.model ?? "unknown model"} · ${group.calls} calls · ${tokens(group.tokens)}`);
+  add(root, "p", `Finding codes: ${summary.finding_codes.map((item) => `${item.code} ${item.count}`).join(", ") || "none"} · Failures: ${summary.failures_by_code.map((item) => `${item.code} ${item.count}`).join(", ") || "none"}`);
+  for (const turn of log.turns) {
+    const row = add(root, "details", "");
+    const outcome = turn.outcome.status === "delivered" ? "delivered" : `closed: ${turn.outcome.kind} / ${turn.outcome.reason_code}`;
+    add(row, "summary", `${turn.turn}. ${turn.started_at ?? "unknown time"} · total ${seconds(turn.duration_ms)} s · first words ${seconds(turn.first_words_ms)} s · ${turn.workers.length} workers · ${turn.repair_rounds} repairs · tokens: ${tokens(turn.tokens)} · ${outcome}`);
+    add(row, "p", `Ended ${turn.ended_at ?? "unknown time"} · crisis reading ${turn.crisis_level ?? "unavailable"}`);
+    for (const call of turn.workers) add(row, "pre", `${roleNames[call.role] ?? "Worker"} (${call.role}) · attempt ${call.attempt ?? "—"} · ${call.provider ?? "unknown provider"} / ${call.model ?? "unknown model"} · effort ${call.effort ?? "unreported"} · ${seconds(call.duration_ms)} s
+Tokens: ${tokens(call)}
+Failure: ${call.failure_code ?? "none"}
+Rule parts: ${call.rule_parts.map((part) => `${part.name} (${part.bytes ?? "unknown"} bytes)`).join(", ") || "unreported"}`);
+    add(row, "p", `Findings: ${turn.findings.map((item) => `${item.code} (${item.severity})`).join(", ") || "none"}`);
+  }
+}
+
 // runner-trial-page:end
 
 // `inFlight`: the exchanges of the trial turns this page is still receiving, which a reconcile leaves to their own stream.
@@ -287,6 +321,28 @@ function applyRunnerTrial(on) {
   line.hidden = !on;
   $("#runner-new-conversation").hidden = !on;
   $("#runner-delete-case").hidden = !on;
+  $("#runner-run-log").hidden = !on;
+  if (!on) {
+    $("#runner-log-panel").hidden = true;
+    $("#runner-log-panel").replaceChildren();
+    $("#runner-run-log").setAttribute("aria-expanded", "false");
+  }
+  // State & tracker uses the encrypted case's state, tracker, journal and handoff routes without a model. The other views
+  // use the app's model pipeline, manage its separate Guide Packet, or export/erase browser memory rather than the trial vault.
+  for (const id of ["hypnosis", "guides", "supervisor", "data"]) {
+    const tab = $(`[data-tab="${id}"]`);
+    tab.hidden = on;
+    if (on) {
+      $(`#${id}`).hidden = true;
+      if (tab.classList.contains("active")) {
+        tab.classList.remove("active");
+        $("#therapy").hidden = false;
+        $("#therapy").classList.add("active");
+        $('[data-tab="therapy"]').classList.add("active");
+      }
+    }
+  }
+  $("#runner-tabs-note").hidden = !on;
   // The usual app's pipeline sentences and its reasoning-depth menu don't apply to the trial; "not emergency care" stays.
   $("#therapy-pipeline-description").hidden = on;
   $("#therapy-processing-mode-label").hidden = on;
@@ -1108,6 +1164,7 @@ async function exportDiagnosticZip(button) {
 }
 
 function activateTab(id) {
+  if (runnerTrial.on && ["hypnosis", "guides", "supervisor", "data"].includes(id)) return;
   if (id !== "hypnosis") speechPlayback.stop();
   for (const button of $$(".tab")) button.classList.toggle("active", button.dataset.tab === id);
   for (const panel of $$(".panel")) {
@@ -1125,8 +1182,7 @@ async function checkHealth() {
     if (!response.ok || !health.ok) throw new Error("Runtime health check failed.");
     const versionLabel = $("#runtime-version");
     if (versionLabel && health.version) {
-      const repair = health.localRepair?.jobId ? ` · local repair ${String(health.localRepair.jobId).slice(0, 8)}` : "";
-      versionLabel.textContent = `Inner Signal runtime v${health.version}${repair}`;
+      versionLabel.textContent = runnerVersionText(health);
     }
     badge.className = "status ok";
     // With the trial on, the badge shows who reads, writes and checks, not the usual app's models (the trial doesn't use them).
@@ -1246,6 +1302,27 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   }
 });
 
+let runnerLogRequest = 0;
+$("#runner-run-log").addEventListener("click", async () => {
+  if (!runnerTrial.on) return;
+  const panel = $("#runner-log-panel");
+  const button = $("#runner-run-log");
+  const request = ++runnerLogRequest;
+  if (!panel.hidden) { panel.hidden = true; button.setAttribute("aria-expanded", "false"); return; }
+  panel.hidden = false;
+  button.setAttribute("aria-expanded", "true");
+  panel.textContent = "Loading run log…";
+  const caseId = state.caseId;
+  try {
+    const response = await fetch(`/v1/runner/log?caseId=${encodeURIComponent(caseId)}`, { headers: { accept: "application/json" }, referrerPolicy: "same-origin" });
+    if (!response.ok) throw new Error("unavailable");
+    const log = await response.json();
+    if (request === runnerLogRequest && caseId === state.caseId && !panel.hidden) renderRunnerLog(panel, log);
+  } catch {
+    if (request === runnerLogRequest && caseId === state.caseId && !panel.hidden) panel.textContent = "The run log is unavailable right now.";
+  }
+});
+
 // The runner trial's "New conversation": the next message starts a new conversation on the server, which lifts the crisis
 // rules' "in this conversation" limits; the risk record and the protection gate carry over.
 $("#runner-new-conversation").addEventListener("click", () => {
@@ -1310,6 +1387,9 @@ function clearDeletedCase() {
   runnerTrial.newConversation = false;
   syncRunnerNewConversation();
   // The deleted case's kept plan went with it: no question about an earlier conversation, and no line about a plan.
+  $("#runner-log-panel").replaceChildren();
+  $("#runner-log-panel").hidden = true;
+  $("#runner-run-log").setAttribute("aria-expanded", "false");
   runnerTrial.hasConversation = false;
   showRunnerResume(false);
   setRunnerKeptPlanStatus("");
@@ -1594,6 +1674,10 @@ renderCaseState();
 saveState();
 syncSpeechPlaybackControls();
 healthChecked = checkHealth();
-refreshDevelopmentStatus();
-refreshGuidePacketStatus().catch(() => {});
-setInterval(refreshDevelopmentStatus, 5000);
+healthChecked.then(() => {
+  if (!runnerTrial.on) {
+    refreshDevelopmentStatus();
+    refreshGuidePacketStatus().catch(() => {});
+  }
+});
+setInterval(() => { if (!runnerTrial.on) refreshDevelopmentStatus(); }, 5000);

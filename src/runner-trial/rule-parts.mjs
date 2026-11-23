@@ -117,7 +117,7 @@ export function focusedRules(parts, boxIds = []) {
   const labels = ["SKILL.md", "the therapy map", ...references.map((ref) => ref.label), `the advice of these boxes: ${boxes.map((box) => box.id.slice(4)).join(", ") || "none"}`];
   return Object.freeze({
     text: [runnerPreface(labels), ...sections.map((section) => `\n=== ${section.label} ===\n${section.text}`)].join("\n"),
-    parts: sections.map((section) => ({ id: section.id, sha256: section.sha256 })),
+    parts: sections.map((section) => ({ id: section.id, sha256: section.sha256, bytes: section.bytes })),
     boxIds: boxes.map((box) => box.id.slice(4))
   });
 }
@@ -125,7 +125,7 @@ export function focusedRules(parts, boxIds = []) {
 export function wholeRules(parts) {
   return Object.freeze({
     text: `${runnerPreface(["the whole served protocol"])}\n${parts.whole.text}`,
-    parts: [{ id: parts.whole.id, sha256: parts.whole.sha256 }],
+    parts: [{ id: parts.whole.id, sha256: parts.whole.sha256, bytes: parts.whole.bytes }],
     boxIds: Object.keys(parts.boxes)
   });
 }
@@ -133,6 +133,6 @@ export function wholeRules(parts) {
 export function rulesFrom(sections, labels) {
   return Object.freeze({
     text: [runnerPreface(labels), ...sections.map((section) => `\n=== ${section.label} ===\n${section.text}`)].join("\n"),
-    parts: sections.map((section) => ({ id: section.id, sha256: section.sha256 }))
+    parts: sections.map((section) => ({ id: section.id, sha256: section.sha256, bytes: section.bytes }))
   });
 }

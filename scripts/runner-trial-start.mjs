@@ -21,7 +21,8 @@
 // p90 24.5 s, the provisional 5.1 s) the readers and the checker run on Claude and the writer and its repair on GPT; with codex
 // or claude, every worker runs on that one.
 
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import { promisify } from "node:util";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
@@ -33,6 +34,8 @@ import { OWNER_FALLBACK_SETTING } from "../src/core/config.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import {
+  RUNNER_RULES_ROOT,
+  RUNNER_TRIAL_DIR,
   RUNNER_CLAUDE_CONFIG_DIR,
   RUNNER_FEEDBACK_LINK_SETTING,
   RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING,
@@ -155,7 +158,7 @@ export function trialSettings(provider) {
 // trial's own workers calls a model, and no decision ledger is written into the checkout. The kept plan, the number now, the
 // feedback link, the owner's fixed message, that message after the plan's limit, the sign-in or the time, and after every failure,
 // are off unless their flag is given; the last two only with the ones they extend.
-export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false, fixedMessageOnFailure = false, fixedMessageOnAnyFailure = false }) {
+export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, rulesRoot = null, trialDir = path.dirname(settingsPath), claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false, fixedMessageOnFailure = false, fixedMessageOnAnyFailure = false }) {
   if (typeof caseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) throw new StartError("The trial's case id isn't of the form the credentials hold.");
   if (fixedMessageOnFailure && !ownerFallback) throw new StartError("The fixed message after the plan's limit, the sign-in or the time needs the owner's fixed message on too.");
   if (fixedMessageOnAnyFailure && !(fixedMessageOnFailure && ownerFallback)) throw new StartError("The fixed message after every failure needs the owner's fixed message on, and after the plan's limit, the sign-in or the time.");
@@ -168,6 +171,7 @@ export function serverEnvironment({ base = process.env, provider, port, credenti
     INNER_SIGNAL_PRIVATE_RUNTIME_CREDENTIALS: credentialsPath,
     INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: token,
     [RUNNER_TRIAL_SETTING]: "on",
+    [RUNNER_TRIAL_DIR]: trialDir,
     [RUNNER_TRIAL_SETTINGS_FILE]: settingsPath,
     [RUNNER_TRIAL_CASE_ID_SETTING]: caseId,
     [RUNNER_KEPT_PLAN_SETTING]: keptPlan ? "on" : "off",
@@ -177,6 +181,7 @@ export function serverEnvironment({ base = process.env, provider, port, credenti
     [RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING]: fixedMessageOnFailure ? "on" : "off",
     [RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING]: fixedMessageOnAnyFailure ? "on" : "off"
   });
+  if (rulesRoot) environment[RUNNER_RULES_ROOT] = rulesRoot;
   if (usesClaude(provider)) environment[RUNNER_CLAUDE_CONFIG_DIR] = claudeConfigDir ?? defaultClaudeConfigDir();
   return environment;
 }
@@ -277,6 +282,44 @@ export async function prepareTrialFolder({ home, provider }) {
   return { home: resolved, vault, credentialsPath, settingsPath, token, caseId };
 }
 
+// The only network operation on startup. Tests inject git, including the fetch, and never contact a remote.
+const execFileAsync = promisify(execFile);
+export async function prepareReleasedRules(home, { git = (args, options = {}) => execFileAsync("git", args, { cwd: repositoryRoot, maxBuffer: 16 * 1024 * 1024, ...options }) } = {}) {
+  try { await git(["fetch", "--quiet", "origin", "stable"], { timeout: 30_000 }); } catch { /* use the last local release ref */ }
+  let commit;
+  try { commit = String((await git(["rev-parse", "--verify", "refs/remotes/origin/stable^{commit}"])).stdout).trim(); }
+  catch { return { rulesRoot: null, source: "checkout" }; }
+  if (!/^[a-f0-9]{40}$/u.test(commit)) throw new StartError("The local origin/stable ref could not be read.");
+  const parent = path.join(home, "released-rules");
+  await privateFolder(parent, "The released-rules folder");
+  const target = path.join(parent, commit);
+  // Publish a complete immutable snapshot through an atomically replaced commit-addressed link.
+  const staging = await fsp.mkdtemp(path.join(parent, ".extract-"));
+  const snapshot = path.join(parent, `.snapshot-${commit}-${randomUUID()}`);
+  const pointer = path.join(parent, `.pointer-${randomUUID()}`);
+  let published = false;
+  try {
+    await fsp.chmod(staging, 0o700);
+    const archive = path.join(staging, "rules.tar");
+    await git(["archive", "--format=tar", `--output=${archive}`, commit, "plugins/inner-signal-therapy"]);
+    await execFileAsync("tar", ["-xf", archive, "-C", staging]);
+    await fsp.unlink(archive);
+    await fsp.rename(staging, snapshot);
+    const existing = await lstatOrNull(target);
+    if (existing && !existing.isSymbolicLink()) throw new StartError("The released-rules commit path must be a snapshot link; it was left as it is.");
+    const prior = existing ? await fsp.readlink(target) : null;
+    await fsp.symlink(path.basename(snapshot), pointer);
+    await fsp.rename(pointer, target); // atomic replacement of the complete snapshot, never a partially extracted tree
+    published = true;
+    if (prior && new RegExp(`^\\.snapshot-${commit}-[a-f0-9-]{36}$`, "u").test(prior)) await fsp.rm(path.join(parent, prior), { recursive: true, force: true });
+    return { rulesRoot: path.join(target, "plugins", "inner-signal-therapy"), source: `stable ${commit.slice(0, 9)}` };
+  } finally {
+    await fsp.rm(staging, { recursive: true, force: true });
+    await fsp.rm(pointer, { force: true });
+    if (!published) await fsp.rm(snapshot, { recursive: true, force: true });
+  }
+}
+
 const executable = (file) => {
   try { fs.accessSync(file, fs.constants.X_OK); return fs.statSync(file).isFile(); } catch { return false; }
 };
@@ -364,7 +407,9 @@ async function main(argv) {
   if (!(await portIsFree(options.port))) {
     throw new StartError(`Port ${options.port} on 127.0.0.1 is in use: is the trial already running? Stop it, or start with --port and another number (the page then starts with a new case).`);
   }
-  const environment = serverEnvironment({ provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback, fixedMessageOnFailure: options.fixedMessageOnFailure, fixedMessageOnAnyFailure: options.fixedMessageOnAnyFailure });
+  const released = await prepareReleasedRules(prepared.home);
+  console.log(released.rulesRoot ? `  Rules from ${released.source}.` : "  No local origin/stable ref: using rules from this checkout, not the release.");
+  const environment = serverEnvironment({ rulesRoot: released.rulesRoot, trialDir: prepared.home, provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback, fixedMessageOnFailure: options.fixedMessageOnFailure, fixedMessageOnAnyFailure: options.fixedMessageOnAnyFailure });
   console.log(`Starting InnerSignal's runner trial on ${PROVIDER_WORDS[options.provider]}, with its own vault: ${prepared.vault}`);
   const child = spawn(node, [serveEntry], { cwd: repositoryRoot, env: environment, stdio: ["ignore", "inherit", "inherit"] });
   const exited = new Promise((resolve) => {

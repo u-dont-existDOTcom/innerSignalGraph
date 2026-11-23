@@ -38,6 +38,8 @@ import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
 import { createRunnerTrialController, isRunnerEventHub, runnerEventLine } from "../runner-trial/trial-controller.mjs";
+import { loadRunnerRules } from "../runner-trial/released-rules.mjs";
+import { runnerLogFromRecord } from "../runner-trial/run-log.mjs";
 import { runnerArrangement } from "../runner-trial/settings.mjs";
 import { RUNNER_TRIAL_CASE_ID_PATTERN, RUNNER_TRIAL_CASE_ID_SETTING } from "../runner-trial/switch.mjs";
 import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
@@ -221,7 +223,7 @@ async function readJson(req, maxBytes = 2_000_000) {
 // authorization; a request that carries its own bearer token is an authenticated agent acting for someone, which does not make
 // it the owner.
 const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
-const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
+const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/log", "/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
 const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
 const SUPERVISOR_STATUS = Object.freeze({
   SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
@@ -249,12 +251,17 @@ const supervisorChannelFor = (req) => (typeof req.headers.authorization === "str
 // the Host must be a loopback name and the Origin must be present and name that same host over http. A request with no Origin did
 // not come from a page, so it is refused too. This is all the owner channel can check: a process on this machine that deliberately
 // sends these headers looks the same as the owner's page (see "Who is calling" in docs/PRIVATE-CASE-CONTINUITY.md).
-function assertOwnerChannelRequest(req) {
+function assertOwnerChannelRequest(req, { pageGet = false } = {}) {
   const refused = () => supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
   if (!LOOPBACK_HOST.test(String(req.headers.host ?? ""))) throw refused();
   let origin = null;
   if (typeof req.headers.origin === "string") {
     try { origin = new URL(req.headers.origin); } catch { /* an unreadable Origin is refused below, like an absent one */ }
+  }
+  // Browsers omit Origin on a same-origin GET and forbid scripts from setting it. For this read-only page route,
+  // require both the browser's same-origin fetch marker and a matching Referer when Origin is absent.
+  if (!origin && req.headers.origin === undefined && pageGet && req.headers["sec-fetch-site"] === "same-origin" && typeof req.headers.referer === "string") {
+    try { origin = new URL(req.headers.referer); } catch { /* refused below */ }
   }
   if (!origin || origin.protocol !== "http:" || origin.host.toLowerCase() !== String(req.headers.host).toLowerCase()) throw refused();
   const site = req.headers["sec-fetch-site"];
@@ -388,6 +395,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       })
     : null);
   const runnerEvents = runnerTrial?.events ?? null;
+  const runnerRules = runnerTrial ? runnerTrial.runnerRules ?? loadRunnerRules(config).runnerRules : null;
+  if (runnerTrial) automaticPrivateTherapy.startRunLog?.(privateAuthContext);
   // With the trial on: what the page's badge shows of its arrangement (from the settings of the trial built here, or those a caller
   // that brings its own controller passes along), and the case its page uses (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID), checked again
   // here so a value given to the server directly can't bypass the form loadConfig requires.
@@ -463,6 +472,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // Whether therapy turns run through the runner trial. It is on exactly when INNER_SIGNAL_RUNNER_TRIAL is on: with the switch
           // on, a server that can't build the trial doesn't start. The page shows the trial's banner, line and stream from it.
           runnerTrial: runnerEvents ? "on" : "off",
+          ...(runnerEvents ? { runnerRules } : {}),
           // Whether the trial keeps a plan for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN): on only with the trial on. The page shows the
           // "Pick up where we left off?" question and the "Delete the kept plan" button from it.
           runnerKeptPlan: runnerKeptPlan ? "on" : "off",
@@ -598,14 +608,21 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       // reconcile when it loads, "Delete this case" and, with the kept plan on, "Delete the kept plan". Only with the trial on (the
       // last only with the kept plan on too), only from the owner's page on this machine (no agent's bearer token, a loopback Host and
       // a matching Origin), and only as JSON; anything else is refused.
-      if (req.method === "POST" && RUNNER_PAGE_ROUTES.has(url.pathname)) {
+      if ((req.method === "POST" || (req.method === "GET" && url.pathname === "/v1/runner/log")) && RUNNER_PAGE_ROUTES.has(url.pathname)) {
         if (!runnerEvents || typeof automaticPrivateTherapy?.reconcile !== "function" || typeof automaticPrivateTherapy?.deleteCase !== "function") return send(res, 404, { error: "Not found" });
         if (url.pathname === "/v1/runner/kept-plan/delete" && !runnerKeptPlan) return send(res, 404, { error: "Not found" });
         if (supervisorChannelFor(req) !== "owner_ui") throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
-        assertOwnerChannelRequest(req);
-        const input = await readSupervisorBody(req);
+        assertOwnerChannelRequest(req, { pageGet: req.method === "GET" && url.pathname === "/v1/runner/log" });
+        if (url.pathname === "/v1/runner/log" && req.method !== "GET") return send(res, 404, { error: "Not found" });
+        const input = req.method === "GET" ? { caseId: url.searchParams.get("caseId") } : await readSupervisorBody(req);
         const caseId = readCaseId(input.caseId);
         const authContext = requestAuthContext(req);
+        if (url.pathname === "/v1/runner/log") {
+          const log = typeof automaticPrivateTherapy.runLog === "function"
+            ? await automaticPrivateTherapy.runLog({ caseId, authContext })
+            : runnerLogFromRecord(await loadPrivateRecord(caseId, authContext));
+          return send(res, 200, log);
+        }
         if (url.pathname === "/v1/runner/reconcile") {
           // A page that shows none of the case's turns (a reload) asks for the current conversation, all of it; a page that still
           // shows its earlier turns asks for those after the last one it shows.

@@ -27,6 +27,10 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
   every start; only its SHA-256 is written, and the token goes to the server through its environment, nowhere else. Nothing prints
   a key or the token. This is the development file provider, not OS-backed security: whoever can read your files can open the vault.
   If the file goes missing while the vault holds files, the command stops instead of making new keys, which couldn't open them.
+- `released-rules/`: a private (0700) snapshot of `origin/stable`'s `plugins/inner-signal-therapy`, extracted with `git archive`.
+  Before starting the server the command quietly tries `git fetch origin stable`; if that fails it uses the local ref. A complete
+  snapshot is published through an atomically replaced commit link, never an in-progress extraction.
+- `runner-log.jsonl` (mode 0600): the word-free run log described below.
 - `settings-<provider>.json` (mode 0600, `INNER_SIGNAL_RUNNER_TRIAL_SETTINGS`), written at every start: the arrangement that
   measured best, the whole writer with one whole checker, readers and checkers at low effort and the writer at medium, each worker
   on the provider the choice gives it.
@@ -58,11 +62,56 @@ limit, a lapsed sign-in or the time ends a turn of a conversation about wanting 
 too; off until he answers question i68, part 2; design, section 7). No `INNER_SIGNAL_` setting of the shell reaches the trial's
 server, so one set for the usual app can't turn anything on or point the trial at another vault.
 
-The rest of the page runs in mock mode: its other tabs call no model, and no decision ledger is written into the checkout. With the
-trial on, the badge at the top shows who reads, writes and checks, and the page hides the usual app's "Reasoning depth" menu and
+The rest of the app runs in mock mode, and no decision ledger is written into the checkout. During the trial, Structured hypnosis
+and Supervisor drafts are hidden because they use the app's separate model pipelines (hypnosis can fail in mock mode). Guide Packet
+is hidden because it manages the app's rules, not this trial's; no Guide Packet installation is needed. Local data is hidden because
+its export/import/erase buttons handle browser-session memory, not the trial vault. State & tracker remains available: its state,
+tracker, journal and encrypted handoff routes work against the trial's own case without a model. The tab bar explains which part is
+the trial. With the trial on, the badge at the top shows who reads, writes and checks, and the page hides the usual app's "Reasoning depth" menu and
 its sentences about the fast Sonnet path.
 
 ## Keep one address
 
 The page keeps its settings in the browser, per address. Open `http://127.0.0.1:8797` each time; the server's own first line names
 `localhost`, which the browser treats as another site.
+
+## Released rules and the page version
+
+`INNER_SIGNAL_RUNNER_RULES_ROOT` tells the trial controller which plugin tree to load, with box guidance on. The start command
+passes the extracted release tree and `INNER_SIGNAL_RUNNER_TRIAL_DIR`, the trial's folder. A rules root must be an absolute path
+to a directory inside that folder, checked on real paths so a symlink cannot escape it; otherwise trial startup fails. The settings
+file's containing folder can also identify the trial folder for callers that do not set `INNER_SIGNAL_RUNNER_TRIAL_DIR`.
+
+If there is no local `origin/stable` ref, the command plainly says it is using this checkout's rules. With no rules-root setting,
+the controller also uses the checkout. `/health` reports `runnerRules: { version, sha256, source }` only with the trial on: source
+is `stable <short commit>` for a release snapshot, or `checkout`. The footer separates the rules version and hash from the page's
+runtime version and warns when the rules come from the checkout. With the trial off the ordinary footer and tabs stay as before.
+The always-visible emergency line keeps its words and note role, in small muted text below the message box and Send button. The
+highlighted emergency line inside a conversation and its triggers are unchanged.
+
+## Run log
+
+The trial's **Run log** button opens a summary and one expandable row per finished runtime turn. It reads only stored turns through
+`GET /v1/runner/log?caseId=…`, with the runner page's local-owner, matching-origin and case-read authorization checks. Browsers omit
+Origin on a same-origin GET; that route also accepts a matching Referer together with `Sec-Fetch-Site: same-origin`. A bearer token,
+foreign host, foreign origin or foreign referrer does not grant access to the page route.
+
+The log holds start/end times, total milliseconds, time to first words (the provisional reply, highlighted line, or final reply or
+closing, whichever was first), delivery or closing kind and reason code, the crisis reader's level, repairs attempted, and every
+recorded worker call's role, attempt, provider, model, effort, duration and reported input/cache-read/cache-write/output/reasoning
+counts. Rule-part names and byte sizes appear where recorded. Checker findings contain codes and severities only. The summary has
+turn count, median and nearest-rank 90th-percentile total/first-word times, mean workers and repairs per turn, token sums by provider
+and model, finding-code frequencies and failure-code counts. Token categories preserve each provider's reported meanings; they are
+not a currency estimate and cache/reasoning counts must not be added to other categories as if every provider counts them separately.
+
+**No words are stored in this log.** It has no person's messages, replies, provisional replies, highlighted lines, journal text,
+kept-plan text, finding descriptions, quotes or links. Fields are copied individually from an allow-list. Findings outside the fixed
+protocol/program code list become `UNSPECIFIED_FINDING`; unknown failure codes become `PROVIDER_FAILED`. Unreported historical token
+counts, durations, efforts and rule parts stay unknown rather than being guessed. Earlier failures whose receipts were never stored
+cannot be reconstructed; new failed calls retain their receipts too.
+
+The server appends the same turn rows to `<trial dir>/runner-log.jsonl` (0600), with one header naming the rules and arrangement at
+file creation. If the file is missing on startup, it rebuilds it from stored finished turns, then appends newly finished turns once.
+An unfinished turn appears after reconciliation closes it. Writes run after the response, and logging errors are caught and dropped;
+they never fail a turn. **Delete this case deletes the JSONL file too**, and clears the page's log panel. No log route, file writing or
+Run log button is active when the trial is off.

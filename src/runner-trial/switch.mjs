@@ -4,6 +4,8 @@ import { readOnOffSetting } from "../core/on-off-setting.mjs";
 // The runner trial's switch and setting names, with nothing else, so the app's config (src/core/config.mjs) can read them
 // without loading any of the trial's code: with the switch off, a fault in the trial can't stop the app.
 export const RUNNER_TRIAL_SETTING = "INNER_SIGNAL_RUNNER_TRIAL";
+export const RUNNER_RULES_ROOT = "INNER_SIGNAL_RUNNER_RULES_ROOT";
+export const RUNNER_TRIAL_DIR = "INNER_SIGNAL_RUNNER_TRIAL_DIR";
 export const RUNNER_TRIAL_SETTINGS_FILE = "INNER_SIGNAL_RUNNER_TRIAL_SETTINGS";
 export const RUNNER_CLAUDE_CONFIG_DIR = "INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR";
 

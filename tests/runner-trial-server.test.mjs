@@ -420,7 +420,8 @@ test("/health reports runnerTrial on or off, and the switch on with no vault sto
   const on = await (await fetch(`${await listen(t, createInnerSignalServer({ config: onConfig, providers: createProviders(onConfig), privateCaseStore: store }))}/health`)).json();
   assert.equal(on.runnerTrial, "on");
   assert.equal(on.privateCaseStorage.automaticOrchestration, true);
-  assert.deepEqual(Object.keys(on), Object.keys(off), "the same fields in both states");
+  assert.deepEqual(Object.keys(on).filter((key) => key !== "runnerRules"), Object.keys(off), "only the trial gains the rules identity");
+  assert.deepEqual(on.runnerRules, { version: parts.protocol.version, sha256: parts.protocol.sha256, source: "checkout" });
 
   const listener = await listenInnerSignalLoopback({ config: onConfig, providers: createProviders(onConfig), privateCaseStore: store, port: 0 });
   try {
@@ -1211,7 +1212,7 @@ test("the page's trial parts are hidden until /health says on, send for the stre
   assert.match(html, /id="runner-trial-banner"[^>]*>Runner trial</u);
   assert.match(html, /id="runner-new-conversation"[^>]*>New conversation</u);
   const form = html.slice(html.indexOf('<form id="therapy-form"'), html.indexOf("</form>", html.indexOf('<form id="therapy-form"')));
-  assert.ok(form.indexOf('id="runner-emergency-line"') >= 0 && form.indexOf('id="runner-emergency-line"') < form.indexOf('id="therapy-message"'), "the line is above the message box");
+  assert.ok(form.indexOf('id="runner-emergency-line"') >= 0 && form.indexOf('id="runner-emergency-line"') > form.indexOf('id="therapy-send"'), "the line is below the message box and send button");
   assert.match(app, /applyRunnerTrial\(health\.runnerTrial === "on"\)/u);
   assert.match(app, /"accept": "application\/x-ndjson"/u);
   assert.match(app, /response\.body\.getReader\(\)/u);
