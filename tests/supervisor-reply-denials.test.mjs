@@ -109,6 +109,7 @@ test("every method of the access service refuses a holder of only the reply-draf
   const A = {
     loadPrivateRuntimeCase: () => access.loadPrivateRuntimeCase(CASE_ID, replyOnly),
     beginPrivateRuntimeTurn: () => access.beginPrivateRuntimeTurn(CASE_ID, {}, replyOnly),
+    freezeResponseEvidence: () => access.freezeResponseEvidence(CASE_ID, {}, replyOnly),
     getPrivateRuntimeTurn: () => access.getPrivateRuntimeTurn(CASE_ID, "runtime:x", replyOnly),
     recordPrivateRuntimeInvocationEvent: () => access.recordPrivateRuntimeInvocationEvent(CASE_ID, "runtime:x", { stage: "audit" }, replyOnly),
     transitionPrivateRuntimeTurn: () => access.transitionPrivateRuntimeTurn(CASE_ID, "runtime:x", { toState: "APPROVED" }, replyOnly),

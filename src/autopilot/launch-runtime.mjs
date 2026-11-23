@@ -2,7 +2,7 @@ import { createInnerSignalServer } from "../server/create-server.mjs";
 import { loadPrivateRuntimeAccessFromEnvironment } from "../storage/private-runtime-environment.mjs";
 
 export async function launchRuntimeForeground({ config, providers, onProgress }) {
-  const privateRuntime = await loadPrivateRuntimeAccessFromEnvironment();
+  const privateRuntime = await loadPrivateRuntimeAccessFromEnvironment(process.env, { responseEvidenceEnforced: config.responseEvidenceEnforced });
   const server = createInnerSignalServer({
     config,
     providers,

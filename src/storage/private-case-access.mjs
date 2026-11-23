@@ -66,6 +66,8 @@ const NON_JOURNAL_EXCLUDED_FIELDS = Object.freeze(["revision", "updated_at", "sc
 function nonJournalStateDigest(record) {
   const copy = structuredClone(record);
   for (const field of NON_JOURNAL_EXCLUDED_FIELDS) delete copy[field];
+  // Match pre-extension digests until evidence exists; nonempty snapshots remain protected case content.
+  if (copy.response_evidence_snapshots?.length === 0) delete copy.response_evidence_snapshots;
   return createHash("sha256").update(JSON.stringify(copy)).digest("hex");
 }
 // Judged on real locations: a link back into the checkout is inside, and so is a name like "..private".
@@ -85,9 +87,11 @@ export function createPrivateCaseAccessService({
   keyProvider,
   allowDevelopmentFileProvider = false,
   mutationCoordinator = null,
+  responseEvidencePolicy = "advisory",
   now = () => new Date().toISOString()
 } = {}) {
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
+  if (!["advisory", "enforced"].includes(responseEvidencePolicy)) throw new ValidationError("Response evidence policy invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
   assertProvider(authorizationProvider, "authorize", "authorizationProvider");
   assertProvider(keyProvider, "getCaseKeyMaterial", "keyProvider");
   const authorizeFor = async (caseId, authContext, requiredScope, requiredPurpose = null) => {
@@ -137,6 +141,7 @@ export function createPrivateCaseAccessService({
         managedSecretAuthorized,
         developmentExternalCredentialAuthorized,
         mutationCoordinator,
+        responseEvidencePolicy,
         now
       });
       return await operation(store, authorization);
@@ -312,6 +317,7 @@ export function createPrivateCaseAccessService({
         return record;
       });
     },
+    async freezeResponseEvidence(caseId, input, authContext) { return write(caseId, authContext, (store) => store.freezeResponseEvidence(caseId, input)); },
     async beginPrivateRuntimeTurn(caseId, input, authContext) { return write(caseId, authContext, (store) => store.beginPrivateRuntimeTurn(caseId, input)); },
     async getPrivateRuntimeTurn(caseId, runtimeTurnId, authContext) { return read(caseId, authContext, (store) => store.getPrivateRuntimeTurn(caseId, runtimeTurnId)); },
     async recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event, authContext) {

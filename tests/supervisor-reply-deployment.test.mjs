@@ -200,12 +200,13 @@ test("a host can supply its own review runtime, or none, and the setup needs an 
   assert.equal(await createSupervisorReplyConnector({ access: {}, environment: {} }), null, "off needs no access service at all");
 });
 
-test("with the setting off the connector starts and advertises exactly what it did before", async (t) => {
+test("with reply drafts off the connector keeps its tools and reports advisory response evidence", async (t) => {
   const environment = await setup(t);
   const unset = await start(t, environment);
   const disabled = await start(t, environment, { settings: { [SETTING]: "false" } });
   for (const run of [unset, disabled]) {
-    assert.deepEqual(Object.keys(run.ready), ["ready", "mcpUrl", "provider", "productionReady", "journalEnabled", "journalWork"], "the ready line gains no field");
+    assert.deepEqual(Object.keys(run.ready), ["ready", "responseEvidence", "mcpUrl", "provider", "productionReady", "journalEnabled", "journalWork"]);
+    assert.deepEqual(run.ready.responseEvidence, { runtime: "advisory", supervisorExport: "advisory", journalProvider: "unconfigured" });
     const names = await run.toolNames();
     for (const tool of REPLY_TOOLS) assert.ok(!names.includes(tool), `${tool} is not offered`);
     assert.ok(names.includes("load_case_context"), "the existing tools are still there");

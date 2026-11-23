@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { assessResponseEvidenceAdmission } from "../supervisor/response-evidence-contract.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
 import { candidateDeliveryGate, isActivePrivateCandidate } from "../supervisor/private-candidate-lifecycle.mjs";
@@ -104,7 +105,7 @@ function subjectCandidateIds(subject) {
 
 // Communication evidence that is about the draft's own lineage (its exports and reports, and retractions of those) is the draft's
 // own bookkeeping and cannot make it stale. Anything else, such as a report about another message or a correction of one, can.
-function foreignCommunicationSignature(record, lineageIds) {
+export function foreignCommunicationSignature(record, lineageIds) {
   const events = record.communication_events ?? [];
   const own = new Set();
   for (const event of events) {
@@ -154,7 +155,7 @@ export const SUPERVISOR_REFUSALS = Object.freeze({
 // The one place that decides whether the exact bytes of a supervisor draft may be handed over. Slice 3's shared source-support
 // validator is called from here at the same point once it exists. Authorization is not decided here: the access service checks
 // it on the same call, before the store is opened.
-export function assessSupervisorArtifact(record, candidate) {
+export function assessSupervisorArtifact(record, candidate, { responseEvidencePolicy = "advisory" } = {}) {
   const draft = candidate.metadata?.supervisor_draft;
   const textSha256 = sha256Text(candidate.exact_text);
   const sufficientAudit = [...candidate.audit_history].reverse().find((audit) => audit.sufficient_for_approval) ?? null;
@@ -183,7 +184,8 @@ export function assessSupervisorArtifact(record, candidate) {
   if (!checks.audit_passed) notApprovedReasons.push(candidate.status === "audit_failed" ? "audit_failed" : "audit_not_passed");
   if (!checks.bytes_match_audited_candidate) notApprovedReasons.push("audit_does_not_bind_these_bytes");
   if (!checks.approved_for_delivery) notApprovedReasons.push(candidate.status === "audited" ? "approval_pending" : "not_approved_for_delivery");
-  const refusal = staleReasons.some((reason) => ["superseded_by_newer_draft", "already_committed_to_transcript", "not_the_current_candidate"].includes(reason))
+  const evidenceAdmission = assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point: "exportSupervisorArtifact" });
+  const refusal = !evidenceAdmission.admissible ? { code: evidenceAdmission.code, reasons: evidenceAdmission.reasons } : staleReasons.some((reason) => ["superseded_by_newer_draft", "already_committed_to_transcript", "not_the_current_candidate"].includes(reason))
     ? { code: SUPERVISOR_REFUSALS.stale, reasons: staleReasons }
     : (notApprovedReasons.length ? { code: SUPERVISOR_REFUSALS.not_approved, reasons: notApprovedReasons }
       : (staleReasons.length ? { code: SUPERVISOR_REFUSALS.stale, reasons: staleReasons } : null));
@@ -255,7 +257,7 @@ export function createSupervisorReviewReceipt({ id, candidate, auditId, disclosu
     candidate_version: candidate.version,
     audit_id: auditId,
     disclosure_manifest: isObject(disclosureManifest)
-      ? Object.fromEntries(Object.entries(disclosureManifest).filter(([key, flag]) => FLAG_NAME.test(key) && typeof flag === "boolean"))
+      ? Object.fromEntries(Object.entries(disclosureManifest).filter(([key, flag]) => (FLAG_NAME.test(key) && typeof flag === "boolean") || (["response_evidence_snapshot_sha256", "response_evidence_view_sha256"].includes(key) && typeof flag === "string" && SHA256.test(flag))))
       : {},
     provider_receipt: isObject(providerReceipt)
       ? Object.fromEntries(["provider", "model", "response_id"].map((key) => [key, typeof providerReceipt[key] === "string" ? providerReceipt[key].slice(0, 200) : null]))
@@ -310,7 +312,7 @@ function validateEntry(entry, index, record) {
       const candidate = requireCandidateVersion(record, entry.candidate_id, entry.candidate_version, name);
       if (!candidate.audit_history.some((audit) => audit.id === entry.audit_id)) throw new ValidationError(`${name} does not identify a stored audit of that candidate version.`);
       if (!isObject(entry.disclosure_manifest) || Object.keys(entry.disclosure_manifest).length > SUPERVISOR_LIMITS.receipt_flags
-          || Object.entries(entry.disclosure_manifest).some(([key, flag]) => !FLAG_NAME.test(key) || typeof flag !== "boolean")) {
+          || Object.entries(entry.disclosure_manifest).some(([key, flag]) => !((FLAG_NAME.test(key) && typeof flag === "boolean") || (["response_evidence_snapshot_sha256", "response_evidence_view_sha256"].includes(key) && typeof flag === "string" && SHA256.test(flag))))) {
         throw new ValidationError(`${name}.disclosure_manifest is invalid.`);
       }
       if (entry.provider_receipt !== null) {

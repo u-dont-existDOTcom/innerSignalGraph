@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readResponseEvidenceSetting } from "../core/on-off-setting.mjs";
 import { RuntimeError } from "../core/errors.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "./private-case-access.mjs";
 import { acquirePrivateRootWriterLock } from "./shared-case-coordinator.mjs";
@@ -15,7 +16,7 @@ function optionalText(value) {
  * always backed by the same encrypted, authorization-first service used by the
  * backend mutation orchestrator. The read-only continuity MCP is not involved.
  */
-export async function loadPrivateRuntimeAccessFromEnvironment(environment = process.env) {
+export async function loadPrivateRuntimeAccessFromEnvironment(environment = process.env, { responseEvidenceEnforced = readResponseEvidenceSetting(environment) } = {}) {
   const mode = optionalText(environment.INNER_SIGNAL_PRIVATE_RUNTIME_MODE);
   const credentialsPath = optionalText(environment.INNER_SIGNAL_PRIVATE_RUNTIME_CREDENTIALS);
   if (mode && !["development", "hosted"].includes(mode)) {
@@ -43,6 +44,7 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
       rootDir: providers.rootDir,
       authorizationProvider: providers.authorizationProvider,
       keyProvider: providers.keyProvider,
+      responseEvidencePolicy: responseEvidenceEnforced ? "enforced" : "advisory",
       allowDevelopmentFileProvider: resolvedMode === "development"
     });
     let privateAuthContext = null;

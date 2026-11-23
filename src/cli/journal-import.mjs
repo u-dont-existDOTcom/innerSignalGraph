@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readResponseEvidenceSetting } from "../core/on-off-setting.mjs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -181,6 +182,7 @@ async function inspectOperator(config, environment) {
   const providerEnvironment = { ...environment };
   const providers = loadHostedPrivateCaseOperatorProvidersFromEnvironment(providerEnvironment);
   const service = createPrivateCaseAccessService({
+    responseEvidencePolicy: readResponseEvidenceSetting(environment) ? "enforced" : "advisory",
     rootDir: providers.rootDir,
     authorizationProvider: providers.authorizationProvider,
     keyProvider: providers.keyProvider
