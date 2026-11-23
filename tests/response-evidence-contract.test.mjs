@@ -6,7 +6,7 @@ import { chunkExactSourceText, createExactSourceArtifact } from "../src/storage/
 import {
   RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView,
   computeEvidenceDependencyBinding, normalizeEvidenceReview, deriveEvidenceFindings,
-  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, sha256Json, sha256Text, validateResponseEvidenceSnapshot
+  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, inspectGovernedModelCall, prepareGovernedModelCall, sha256Json, sha256Text, validateResponseEvidenceSnapshot
 } from "../src/supervisor/response-evidence-contract.mjs";
 
 const NOW = "2026-11-23T12:00:00.000Z";
@@ -63,6 +63,23 @@ test("inbound transcript insertion and audit bookkeeping do not change the depen
   r.candidate_responses.push({ id: "root", root_candidate_id: "root", audit_history: [{ id: "audit" }] });
   r.communication_events.push({ id: "own", kind: "exported", subject: { kind: "candidate", candidate_id: "root" } });
   assert.deepEqual(computeEvidenceDependencyBinding(r, options), original);
+});
+
+for (const committed of [false, true]) test(`refreezing an older inbound cannot make it current after a newer client message (committed: ${committed})`, async () => {
+  const r = record();
+  r.raw_transcript.push(turn("inbound", "user", "Current words."));
+  r.runtime_turns.push({ id: "runtime:newer", user_turn_id: "newer", inbound: { exact_text: "I cancelled that visit.", received_at: NOW } });
+  if (committed) r.raw_transcript.push(turn("newer", "user", "I cancelled that visit."));
+  // These dependencies already include the newer message. Rebinding them cannot authorize the older inbound.
+  const snapshot = freeze(r);
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot }), false);
+  assert.equal(inspectGovernedModelCall({ record: r, snapshot }).exhausted, true);
+  assert.equal(inspectGovernedModelCall({ record: r, snapshot, completed: { output: {} } }).exhausted, true);
+  let freezes = 0;
+  const prepared = await prepareGovernedModelCall({ record: r, snapshot,
+    freeze: async () => { freezes++; throw new Error("An older inbound cannot be refreshed into currency."); }, load: async () => r });
+  assert.equal(prepared.exhausted, true);
+  assert.equal(freezes, 0);
 });
 
 const candidateSubject = (candidate_id) => ({ kind: "candidate", candidate_id, candidate_version: 1, text_sha256: sha256Text("Earlier draft.") });

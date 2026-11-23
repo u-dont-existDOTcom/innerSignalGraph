@@ -606,6 +606,8 @@ export function verifyRuntimeWriterInvocation(record, turn, { parentCandidateId 
 
 // Shared by status routing and execution: a read-only status must not hide recoverable work from the runner.
 export function inspectGovernedModelCall({ record, snapshot, rootCandidate = null, completed = null }) {
+  // Refresh retains the same inbound; a newer message requires a new response lineage, even with sealed older output.
+  if (snapshot && !resolveCurrentResponseEvidenceInbound(record, snapshot.inbound)) return { snapshot, exhausted: true };
   if (completed) return { snapshot, completed, evidence: null, refreshed: false };
   try {
     if (snapshot && responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) {
@@ -616,7 +618,7 @@ export function inspectGovernedModelCall({ record, snapshot, rootCandidate = nul
   return { snapshot, needsRefresh: snapshot?.revision < RESPONSE_EVIDENCE_BUDGETS.revisions || !snapshot,
     exhausted: snapshot?.revision >= RESPONSE_EVIDENCE_BUDGETS.revisions };
 }
-// One pre-call recovery rule: sealed output wins; otherwise refresh unusable inputs within the lineage budget.
+// With the newest inbound, sealed output wins; otherwise refresh unusable dependencies within the lineage budget.
 export async function prepareGovernedModelCall({ record, snapshot, rootCandidate = null, completed = null, freeze, load }) {
   let refreshed = false;
   for (;;) {
@@ -658,7 +660,19 @@ export function normalizeRecordOnlyFinding(finding) {
 function journalRetrievalStatement(journal) {
   return `Journal retrieval record\navailability: ${journal.availability}\nretrieval_status: ${journal.retrieval_status}\ncoverage: ${JSON.stringify(journal.coverage)}\nmore_available: ${journal.more_available}\nomissions: ${JSON.stringify(journal.omissions.map(({ reason, count }) => ({ reason, count })))}`;
 }
+export function resolveCurrentResponseEvidenceInbound(record, inbound) {
+  const turns = effectiveTurns(record);
+  const committedIds = new Set(turns.map(turn => turn.id));
+  // Intake is append-only and permits only one unfinished runtime turn. Until its transcript commit, that inbound is the
+  // newest client message; afterwards the transcript's append order decides. Do not use timestamps, which can be equal.
+  const pending = (record.runtime_turns ?? []).filter(turn => !committedIds.has(turn.user_turn_id)).at(-1);
+  const latest = pending ? { id: pending.user_turn_id, text: pending.inbound.exact_text }
+    : turns.filter(turn => turn.role === "user").at(-1);
+  // An amendment may refresh this same message's exact bytes. A different message requires a new lineage.
+  return latest && latest.id === inbound?.turn_id ? { ...inbound, exact_text_sha256: sha256Text(latest.text) } : null;
+}
 export function responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate = null } = {}) {
+  if (!resolveCurrentResponseEvidenceInbound(record, snapshot.inbound)) return false;
   // Older snapshots remain readable, but lack a trustworthy freeze boundary for the communication allowlist.
   if (!Object.hasOwn(snapshot.dependency_binding, "communication_event_count")) return false;
   const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256,
@@ -707,7 +721,8 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
       : root.metadata.supervisor_draft?.operation_key !== snapshot.owner.operation_key)) return result(RESPONSE_EVIDENCE_CODES.invalid, "lineage_binding");
     const inboundText = runtime?.inbound.exact_text ?? effectiveTurns(record).find((entry) => entry.id === snapshot.inbound.turn_id)?.text;
     const freshnessRequired = !auditPoint && point !== "approveSupervisorDraft";
-    if (freshnessRequired && (typeof inboundText !== "string" || sha256Text(inboundText) !== snapshot.inbound.exact_text_sha256)) return result(RESPONSE_EVIDENCE_CODES.stale, "inbound_changed");
+    const currentInbound = resolveCurrentResponseEvidenceInbound(record, snapshot.inbound);
+    if (freshnessRequired && (!currentInbound || typeof inboundText !== "string" || sha256Text(inboundText) !== snapshot.inbound.exact_text_sha256)) return result(RESPONSE_EVIDENCE_CODES.stale, "inbound_changed");
     const writerRequired = Boolean(runtime) || candidate.id !== root.id || actualOrigin === "backend_produced";
     if (binding.writer_inclusion !== (writerRequired ? "verified" : "not_attested") || (!writerRequired && binding.writer_inclusion_sha256 !== null)) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
     if (writerRequired) {

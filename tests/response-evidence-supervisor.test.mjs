@@ -9,7 +9,7 @@ import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-sto
 import { createPrivateSupervisorDraftService } from "../src/supervisor/private-supervisor-draft.mjs";
 import { createPrivateTherapyModelRuntime, responseEvidenceFailures } from "../src/supervisor/private-therapy-model-runtime.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS, createCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvidenceModelView, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvidenceModelView, responseEvidenceSnapshotCurrent, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
 import { createSupervisorReplyTools } from "../src/server/supervisor-reply-tools.mjs";
 import { createSupervisorReviewRunner } from "../src/supervisor/private-supervisor-review-runner.mjs";
 import { seedReplyCase } from "./fixtures/supervisor-reply-environment.mjs";
@@ -672,6 +672,50 @@ for (const stage of ["audit", "repair"]) for (const amendment of [false, true]) 
     assert.deepEqual(await env.store.load(CASE), exhausted);
   }
   assert.equal(calls, 0);
+});
+
+for (const stage of ["audit", "repair"]) for (const committed of [false, true]) test(`a newer client message blocks resumed supervisor ${stage} and cannot be refreshed away (committed: ${committed})`, async (t) => {
+  let paused = true;
+  const env = await environment(t, {
+    onAudit() { if (stage === "audit" && paused) throw new Error("paused audit"); },
+    review(candidate, evidence, n) { return stage === "repair" && n === 0
+      ? review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]) : review(); }
+  });
+  const repair = env.runtime.repairCandidate;
+  env.runtime.repairCandidate = async (args) => {
+    if (paused) throw new Error("paused repair");
+    return { ...await repair(args), exactText: "How are you preparing for tomorrow's visit?" };
+  };
+  await assert.rejects(env.submit("What would help with tomorrow's visit?"), code("SUPERVISOR_REVIEW_UNAVAILABLE"));
+  const before = await env.store.load(CASE), original = before.response_evidence_snapshots[0];
+  const head = before.candidate_responses.at(-1), operationKey = head.metadata.supervisor_draft.operation_key;
+  const artifactId = (await env.service.getReviewStatus({ caseId: CASE, operationKey, authContext: AUTH })).artifact.artifact_id;
+  await env.store.beginPrivateRuntimeTurn(CASE, { runtimeTurnId: "runtime:cancellation", exchangeId: "exchange:cancellation",
+    userTurnId: "turn:cancellation", exactText: "I cancelled tomorrow's visit. I am not going." });
+  if (committed) {
+    const inbound = (await env.store.load(CASE)).runtime_turns.at(-1);
+    await env.store.appendTranscriptTurn(CASE, { id: inbound.user_turn_id, exchange_id: inbound.exchange_id, role: "user",
+      text: inbound.inbound.exact_text, at: inbound.inbound.received_at, episode_id: null });
+  }
+  paused = false;
+  const calls = env.calls.length;
+  const restarted = createPrivateSupervisorDraftService({ privateCaseSource: env.access, modelRuntime: env.runtime });
+  const result = await restarted.resumeReview({ caseId: CASE, operationKey, authContext: AUTH });
+  assert.equal(result.status, "blocked"); assert.equal(result.reason, "case_changed"); assert.equal(result.exportable, false);
+  // Even an explicit refreeze of the same older inbound remains stale, including after transcript commitment.
+  const refreshed = await env.store.freezeResponseEvidence(CASE, { snapshotId: "snapshot:older:refrozen", owner: original.owner,
+    candidateOrigin: original.candidate_origin, inbound: original.inbound, revision: 2, parentSnapshotId: original.id, revisionReason: "dependency_refresh" });
+  const record = await env.store.load(CASE);
+  assert.equal(responseEvidenceSnapshotCurrent(record, { snapshot: refreshed }), false);
+  assert.equal(assessResponseEvidenceAdmission(record, record.candidate_responses.at(-1)).admissible, false);
+  for (const read of [() => restarted.getReviewStatus({ caseId: CASE, operationKey, authContext: AUTH }),
+    () => restarted.resumeReview({ caseId: CASE, operationKey, authContext: AUTH }), () => env.submit("What would help with tomorrow's visit?")]) {
+    const status = await read();
+    assert.equal(status.status, "blocked"); assert.equal(status.reason, "case_changed"); assert.equal(status.exportable, false);
+  }
+  await assert.rejects(env.exportDraft(artifactId), error => ["SUPERVISOR_ARTIFACT_NOT_APPROVED", "SUPERVISOR_ARTIFACT_STALE"].includes(error.code));
+  assert.equal(env.calls.length, calls, "a stale review must invoke neither audit nor repair");
+  assert.deepEqual((await env.store.load(CASE)).candidate_responses, before.candidate_responses);
 });
 
 test("connector supervisor writes refuse another process's root lock without changing the case", async (t) => {

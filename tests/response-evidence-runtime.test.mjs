@@ -7,7 +7,7 @@ import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/lon
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS, responseEvidenceDependenciesCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, responseEvidenceDependenciesCurrent, responseEvidenceSnapshotCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
 import { responseEvidenceFailures } from "../src/supervisor/private-therapy-model-runtime.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { compatibilityStateBinding, protectiveCompatibilityDecision, updateProtectiveCompatibilityState } from "../src/case-formulation/protective-compatibility.mjs";
@@ -82,6 +82,29 @@ test("governed controller delivers through the real enforced store", async (t) =
   assert.equal(record.response_evidence_snapshots.length, 1);
   assert.equal(record.response_evidence_snapshots[0].journal.availability, "not_configured");
   assert.equal(env.counts.candidate, 1);
+});
+
+test("the runtime's own newest inbound stays current before and after its transcript commit", async (t) => {
+  const env = await setup(t, { async onAudit({ store, responseEvidence }) {
+    const record = await store.load(CASE);
+    assert.equal(record.raw_transcript.at(-1).id, request().userTurnId);
+    assert.equal(responseEvidenceSnapshotCurrent(record, { snapshot: responseEvidence.snapshot,
+      rootCandidate: record.candidate_responses[0] }), true);
+  } });
+  await env.store.appendTranscriptTurn(CASE, { id: "turn:earlier", exchange_id: "exchange:earlier", role: "user",
+    text: "Earlier synthetic client words.", at: NOW, episode_id: null });
+  const produce = env.runtime.produceCandidate;
+  env.runtime.produceCandidate = async args => {
+    const record = await env.store.load(CASE);
+    assert.equal(record.raw_transcript.some(turn => turn.id === request().userTurnId), false);
+    assert.equal(responseEvidenceSnapshotCurrent(record, { snapshot: args.responseEvidence.snapshot }), true);
+    return produce(args);
+  };
+  assert.equal((await env.controller().run(request())).deliveryKind, "candidate");
+  const record = await assertDelivered(env.store);
+  assert.equal(record.response_evidence_snapshots.length, 1);
+  assert.equal(record.candidate_responses[0].metadata.response_evidence.dependency_status, "current_at_commit");
+  assert.deepEqual(env.counts, { candidate: 1, audit: 1, repair: 0, review: 0, discriminator: 0 });
 });
 
 for (const changed of [[], ["a"], ["b"], ["a", "b"]]) test(`journal refresh keeps a valid subset and the turn proceeds (changed: ${changed.join(",") || "none"})`, async (t) => {

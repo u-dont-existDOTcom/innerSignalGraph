@@ -3,7 +3,7 @@ import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { validatePrivateRuntimeEvidenceAuditResult, validatePrivateRuntimeRepairResult } from "../schemas/private-runtime.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, createCandidateAuditEvidence } from "./private-candidate-lifecycle.mjs";
-import { assessResponseEvidenceAdmission, inspectGovernedModelCall, prepareGovernedModelCall, responseEvidenceRefreshJournal, supervisorInvocationInput, supervisorInvocationIdentity } from "./response-evidence-contract.mjs";
+import { assessResponseEvidenceAdmission, inspectGovernedModelCall, prepareGovernedModelCall, resolveCurrentResponseEvidenceInbound, responseEvidenceRefreshJournal, supervisorInvocationInput, supervisorInvocationIdentity } from "./response-evidence-contract.mjs";
 import {
   SUPERVISOR_INPUT_TYPES,
   SUPERVISOR_LIMITS,
@@ -180,11 +180,9 @@ export function createPrivateSupervisorDraftService({
     return prepareGovernedModelCall({ record, snapshot, rootCandidate, completed,
       load: () => loadCase(caseId, authContext),
       freeze: async (reason, { record, snapshot }) => {
-        const latest = (await call("getSupervisorSnapshot", [caseId], authContext)).latest_client_turn;
-        if (!latest) throw new ValidationError("No client message for evidence refresh.", { code: "RESPONSE_EVIDENCE_INVALID" });
         return call("freezeResponseEvidence", [caseId, { snapshotId: `snapshot:supervisor:${operationKey}:r${(snapshot?.revision ?? 0) + 1}`,
           owner: { kind: "supervisor_draft", operation_key: operationKey }, candidateOrigin: snapshot.candidate_origin,
-          inbound: { turn_id: latest.turn_id, exact_text_sha256: sha256Text(latest.text), audience: "client", source_kind: "exact_client_turn" },
+          inbound: resolveCurrentResponseEvidenceInbound(record, snapshot.inbound),
           revision: (snapshot?.revision ?? 0) + 1, parentSnapshotId: snapshot?.id ?? null, revisionReason: reason,
           historyRequirements: snapshot.history_requirements, journal: responseEvidenceRefreshJournal(record, snapshot)
         }], authContext);
@@ -201,6 +199,7 @@ export function createPrivateSupervisorDraftService({
       const head = lineageHead(record, operationKey);
       if (!head) throw new ValidationError("The supervisor draft to review was not found.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
       const bound = head.metadata.response_evidence;
+      if (bound && !resolveCurrentResponseEvidenceInbound(record, record.response_evidence_snapshots.find(entry => entry.id === bound.snapshot_id)?.inbound)) return caseChanged(record, head);
       switch (head.status) {
         case "pending_audit":
         case "reconstructed_pending_audit": {
@@ -480,6 +479,10 @@ export function createPrivateSupervisorDraftService({
       const record = await loadCase(caseId, authContext);
       const head = lineageHead(record, operationKey);
       if (!head) throw new ValidationError("The supervisor draft to review was not found.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+      const bound = head.metadata.response_evidence;
+      if (bound && !resolveCurrentResponseEvidenceInbound(record, record.response_evidence_snapshots.find(entry => entry.id === bound.snapshot_id)?.inbound)) {
+        return describeReview({ caseId, outcome: caseChanged(record, head), authContext, replayed: true });
+      }
       if (head.metadata.response_evidence && (["pending_audit", "reconstructed_pending_audit"].includes(head.status)
           || (head.status === "audit_failed" && head.repair_cycle < MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES))) {
         const snapshot = head.status === "audit_failed"
