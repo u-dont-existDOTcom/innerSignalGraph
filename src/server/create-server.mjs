@@ -40,6 +40,7 @@ import { createPrivateSupervisorDraftService } from "../supervisor/private-super
 import { createRunnerTrialController, isRunnerEventHub, runnerEventLine } from "../runner-trial/trial-controller.mjs";
 import { loadRunnerRules } from "../runner-trial/released-rules.mjs";
 import { runnerLogFromRecord } from "../runner-trial/run-log.mjs";
+import { runnerTurnDetailsFromRecord } from "../runner-trial/turn-details.mjs";
 import { runnerArrangement } from "../runner-trial/settings.mjs";
 import { RUNNER_TRIAL_CASE_ID_PATTERN, RUNNER_TRIAL_CASE_ID_SETTING } from "../runner-trial/switch.mjs";
 import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
@@ -223,7 +224,7 @@ async function readJson(req, maxBytes = 2_000_000) {
 // authorization; a request that carries its own bearer token is an authenticated agent acting for someone, which does not make
 // it the owner.
 const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
-const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/log", "/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
+const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/log", "/v1/runner/turn-details", "/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
 const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
 const SUPERVISOR_STATUS = Object.freeze({
   SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
@@ -608,15 +609,28 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       // reconcile when it loads, "Delete this case" and, with the kept plan on, "Delete the kept plan". Only with the trial on (the
       // last only with the kept plan on too), only from the owner's page on this machine (no agent's bearer token, a loopback Host and
       // a matching Origin), and only as JSON; anything else is refused.
-      if ((req.method === "POST" || (req.method === "GET" && url.pathname === "/v1/runner/log")) && RUNNER_PAGE_ROUTES.has(url.pathname)) {
+      const runnerPageGet = ["/v1/runner/log", "/v1/runner/turn-details"].includes(url.pathname);
+      if ((req.method === "POST" || (req.method === "GET" && runnerPageGet)) && RUNNER_PAGE_ROUTES.has(url.pathname)) {
         if (!runnerEvents || typeof automaticPrivateTherapy?.reconcile !== "function" || typeof automaticPrivateTherapy?.deleteCase !== "function") return send(res, 404, { error: "Not found" });
         if (url.pathname === "/v1/runner/kept-plan/delete" && !runnerKeptPlan) return send(res, 404, { error: "Not found" });
         if (supervisorChannelFor(req) !== "owner_ui") throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
-        assertOwnerChannelRequest(req, { pageGet: req.method === "GET" && url.pathname === "/v1/runner/log" });
-        if (url.pathname === "/v1/runner/log" && req.method !== "GET") return send(res, 404, { error: "Not found" });
+        assertOwnerChannelRequest(req, { pageGet: req.method === "GET" && runnerPageGet });
+        if (runnerPageGet && req.method !== "GET") return send(res, 404, { error: "Not found" });
         const input = req.method === "GET" ? { caseId: url.searchParams.get("caseId") } : await readSupervisorBody(req);
         const caseId = readCaseId(input.caseId);
         const authContext = requestAuthContext(req);
+        if (url.pathname === "/v1/runner/turn-details") {
+          const unavailable = () => send(res, 404, { error: "Turn details unavailable.", code: "RUNNER_TURN_NOT_FOUND" });
+          const value = url.searchParams.get("turn");
+          if (url.searchParams.getAll("turn").length !== 1 || !/^[1-9][0-9]{0,15}$/u.test(value ?? "") || !Number.isSafeInteger(Number(value))) return unavailable();
+          let details;
+          try {
+            details = typeof automaticPrivateTherapy.turnDetails === "function"
+              ? await automaticPrivateTherapy.turnDetails({ caseId, turn: Number(value), authContext })
+              : runnerTurnDetailsFromRecord(await (typeof privateCaseSource?.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource?.load(caseId)), Number(value));
+          } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return unavailable(); throw error; }
+          return details ? send(res, 200, details) : unavailable();
+        }
         if (url.pathname === "/v1/runner/log") {
           const log = typeof automaticPrivateTherapy.runLog === "function"
             ? await automaticPrivateTherapy.runLog({ caseId, authContext })
