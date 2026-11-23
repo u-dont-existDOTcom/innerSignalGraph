@@ -114,6 +114,15 @@ export function runnerLogFromRecord(record) {
 }
 
 // One queue per controller (shared by both loopback listeners). Work is deferred and errors are dropped; a response never awaits it.
+// A rename or a deletion is durable only once its folder is synced (Codex review 4): without it, a power cut could bring back a stale
+// log or a deleted case's log. Best effort: a filesystem that refuses a directory sync changes nothing else.
+async function syncDirectory(directory) {
+  let handle = null;
+  try { handle = await fs.open(directory, constants.O_RDONLY | constants.O_DIRECTORY); await handle.sync(); }
+  catch { /* best effort */ }
+  finally { try { await handle?.close(); } catch { /* best effort */ } }
+}
+
 export function createRunnerLogWriter({ directory, runnerRules, arrangement: runnerArrangement, loadRecord }) {
   let tail = Promise.resolve();
   let generation = 0;
@@ -128,7 +137,9 @@ export function createRunnerLogWriter({ directory, runnerRules, arrangement: run
       setImmediate(() => enqueue(async () => {
         if (scheduledGeneration !== generation) return;
         const record = await loadRecord(caseId, authContext);
-        if (!record || scheduledGeneration !== generation) return;
+        if (scheduledGeneration !== generation) return;
+        // The case is gone (deleted, or never made): no log may outlive it, including one a power cut brought back.
+        if (!record) { await fs.rm(file, { force: true }); await syncDirectory(directory); return; }
         const log = runnerLogFromRecord(record);
         const temporary = path.join(directory, `.runner-log-${randomUUID()}.tmp`);
         let handle = await fs.open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
@@ -137,7 +148,7 @@ export function createRunnerLogWriter({ directory, runnerRules, arrangement: run
           await handle.sync();
           await handle.close();
           handle = null;
-          if (scheduledGeneration === generation) await fs.rename(temporary, file);
+          if (scheduledGeneration === generation) { await fs.rename(temporary, file); await syncDirectory(directory); }
         } finally {
           try { await handle?.close(); }
           finally { await fs.rm(temporary, { force: true }); }
@@ -147,7 +158,7 @@ export function createRunnerLogWriter({ directory, runnerRules, arrangement: run
     async remove() {
       // Invalidate deferred and in-flight snapshots before queuing deletion behind any active write.
       generation += 1;
-      const deletion = tail.then(async () => { if (file) await fs.rm(file, { force: true }); });
+      const deletion = tail.then(async () => { if (file) { await fs.rm(file, { force: true }); await syncDirectory(directory); } });
       tail = deletion.catch(() => {});
       await deletion;
     },

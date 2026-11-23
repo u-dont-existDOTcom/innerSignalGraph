@@ -531,6 +531,11 @@ test("a successful rewrite fsyncs and closes an exclusive private temporary file
   const open = fs.open.bind(fs);
   const operations = [];
   t.mock.method(fs, "open", async (filename, flags, mode) => {
+    if (flags === (constants.O_RDONLY | constants.O_DIRECTORY)) {
+      assert.equal(filename, dir);
+      const folder = await open(filename, flags);
+      return { async sync() { operations.push("dirsync"); await folder.sync(); }, async close() { await folder.close(); } };
+    }
     assert.equal(path.dirname(filename), dir);
     assert.notEqual(filename, file);
     assert.equal(flags, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW);
@@ -545,7 +550,7 @@ test("a successful rewrite fsyncs and closes an exclusive private temporary file
   const rename = fs.rename.bind(fs);
   t.mock.method(fs, "rename", async (...args) => { operations.push("rename"); await rename(...args); });
   await syncLog(createRunnerLogWriter(options));
-  assert.deepEqual(operations, ["write", "fsync", "close", "rename"]);
+  assert.deepEqual(operations, ["write", "fsync", "close", "rename", "dirsync"]);
   assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, await options.loadRecord()));
   assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
 });
@@ -806,4 +811,26 @@ test("the page's version, tabs, calm note and Run log are trial-only; State & tr
   const css = await fs.readFile(new URL("../apps/web/styles.css", import.meta.url), "utf8");
   const style = /\.runner-emergency-line \{([^}]+)\}/u.exec(css)[1];
   for (const expected of ["color: var(--muted)", "font-weight: 400", "border: 0", "background: none"]) assert.ok(style.includes(expected));
+});
+
+test("a deletion is synced to its folder, and a case that no longer exists leaves no log behind (Codex review 4)", async (t) => {
+  const dir = await directory(t);
+  const file = path.join(dir, "runner-log.jsonl");
+  const options = logOptions(dir, { runtime_turns: [logTurn(0)] });
+  await syncLog(createRunnerLogWriter(options));
+  assert.ok((await fs.stat(file)).isFile());
+  const open = fs.open.bind(fs);
+  const synced = [];
+  t.mock.method(fs, "open", async (filename, flags, mode) => {
+    if (flags === (constants.O_RDONLY | constants.O_DIRECTORY)) synced.push(filename);
+    return open(filename, flags, mode);
+  });
+  await createRunnerLogWriter(options).remove();
+  await assert.rejects(fs.stat(file), { code: "ENOENT" });
+  assert.deepEqual(synced, [dir]);
+  // A log a power cut brought back is removed at the next start when the case is gone.
+  await fs.writeFile(file, '{"stale":true}\n', { mode: 0o600 });
+  await syncLog(createRunnerLogWriter({ ...options, loadRecord: async () => null }));
+  await assert.rejects(fs.stat(file), { code: "ENOENT" });
+  assert.deepEqual(synced, [dir, dir]);
 });
