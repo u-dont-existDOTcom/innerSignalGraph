@@ -60,7 +60,8 @@ export const responseEvidenceSourceItemSchema = shape({
 }, ["supplied_by"]);
 const omissionSchema = shape({ reason: text(80), count: integer(1) });
 const receiptSchema = shape({
-  operation_id: id, corpus_id: id, generation: id, visibility_epoch: integer(), purpose: { const: "session_use" }, query_sha256: sha, filters_sha256: sha,
+  operation_id: id, corpus_id: id, generation: id, visibility_epoch: integer(), manifest_object_id: id,
+  purpose: { const: "session_use" }, query_sha256: sha, filters_sha256: sha,
   returned_source_ids: array(text(340)), packet_sha256: sha, more_available: { type: "boolean" }, omitted_count: integer(), budget_used_tokens: integer(), budget_used_bytes: integer()
 });
 export const responseEvidenceJournalSchema = shape({
@@ -194,6 +195,10 @@ function recordOmission(omissions, reason, count = 1) {
   else omissions.push({ reason, count });
 }
 function excerptCost(item) { const bytes = Buffer.byteLength(JSON.stringify(item.exact_excerpt), "utf8"); return { bytes, tokens: Math.ceil(bytes / 3) }; }
+function receiptIncludesQuotation(receipt, item) {
+  return receipt.corpus_id === item.locator.corpus_id && receipt.generation === item.locator.generation
+    && receipt.visibility_epoch === item.locator.visibility_epoch && receipt.returned_source_ids.includes(item.id);
+}
 function checkSourceItem(item) {
   validateEvidenceShape(item, responseEvidenceSourceItemSchema);
   const expected = {
@@ -225,6 +230,12 @@ export function validateResponseEvidenceSnapshot(snapshot) {
   snapshot.source_items.forEach(checkSourceItem);
   const retrieval = snapshot.source_items.filter(item => item.kind === "journal_retrieval_record");
   if (retrieval.length > 1 || retrieval.some(item => item.id !== "src:journal:record" || item.exact_excerpt !== journalRetrievalStatement(snapshot.journal))) invalid("journal_record");
+  if (snapshot.journal.receipts.some(receipt => !snapshot.dependency_binding.journal_bindings.some(binding =>
+    binding.corpus_id === receipt.corpus_id && binding.generation === receipt.generation && binding.visibility_epoch === receipt.visibility_epoch
+    // Legacy dependency bindings remain readable, but responseEvidenceSnapshotCurrent requires their refresh.
+    && (!Object.hasOwn(binding, "manifest_object_id") || binding.manifest_object_id === receipt.manifest_object_id)))) invalid("journal_authority");
+  if (snapshot.source_items.some(item => item.kind === "journal_quotation"
+    && !snapshot.journal.receipts.some(receipt => receiptIncludesQuotation(receipt, item)))) invalid("journal_authority");
   const inventory = (predicate) => snapshot.source_items.filter(predicate);
   const drafts = inventory((item) => item.kind === "unsent_draft"), inputs = inventory((item) => item.locator.kind === "supervisor_input");
   if (inventory((item) => item.id.startsWith("src:turn:")).length > 120 || drafts.length > 10 || inputs.length > 20
@@ -353,12 +364,30 @@ export function normalizeResponseEvidenceJournal(input = null, priorItems = []) 
 export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJournalItems = [] } = {}) {
   const { snapshotId, owner, revision = 1, parentSnapshotId = null, revisionReason = "initial", candidateOrigin = "backend_produced", inbound, journal, historyRequirements = [] } = input;
   const normalized = normalizeResponseEvidenceJournal(journal, priorJournalItems);
-  for (const item of normalized.source_items) {
-    const locator = item.locator;
-    const corpus = (record.journal_corpora ?? []).find((entry) => entry.corpus_id === locator.corpus_id);
-    const receipt = normalized.journal.receipts.find((entry) => entry.corpus_id === locator.corpus_id && entry.generation === locator.generation
-      && entry.visibility_epoch === locator.visibility_epoch && entry.returned_source_ids.includes(item.id));
-    if (!corpus || corpus.active_generation !== locator.generation || corpus.visibility_epoch !== locator.visibility_epoch || !receipt) invalid("journal_authority");
+  // The store calls this inside its mutation. Recheck every searched publication, including empty searches, against that
+  // exact record before binding dependencies. A publication race omits evidence; it must not fail the response turn.
+  const changedCorpora = new Set();
+  normalized.journal.receipts = normalized.journal.receipts.filter(receipt => {
+    const current = (record.journal_corpora ?? []).some(corpus => corpus.corpus_id === receipt.corpus_id
+      && corpus.active_generation === receipt.generation && corpus.visibility_epoch === receipt.visibility_epoch
+      && corpus.manifest_object_id === receipt.manifest_object_id);
+    if (!current) changedCorpora.add(receipt.corpus_id);
+    return current;
+  });
+  normalized.source_items = normalized.source_items.filter(item => {
+    const current = normalized.journal.receipts.some(receipt => receiptIncludesQuotation(receipt, item));
+    if (!current) changedCorpora.add(item.locator.corpus_id);
+    return current;
+  });
+  if (changedCorpora.size) {
+    normalized.journal.availability = normalized.source_items.length || normalized.journal.receipts.length ? "available" : "unavailable";
+    normalized.journal.retrieval_status = "partial";
+    normalized.journal.more_available = true;
+    normalized.journal.coverage = "Journal publication changed before freezing; earlier retrieval results were omitted. Only retained current-publication results may be cited; no full-journal review is claimed.";
+    recordOmission(normalized.journal.omissions, "journal_binding_changed", changedCorpora.size);
+    const costs = normalized.source_items.map(excerptCost);
+    normalized.journal.budget.used_bytes = costs.reduce((sum, cost) => sum + cost.bytes, 0);
+    normalized.journal.budget.used_tokens = costs.reduce((sum, cost) => sum + cost.tokens, 0);
   }
   const sources = buildResponseEvidenceSourceItems(record, { journalItems: normalized.source_items, inbound, lineageRootId: input.lineageRootId });
   // Reserve one inventory slot for the trusted retrieval record; a caller can supply only quotations.
@@ -635,6 +664,7 @@ export function responseEvidenceRefreshJournal(record, snapshot) {
   // quotations after a refresh either; discard it rather than silently attribute the old search to the current publication.
   const current = locator => (record.journal_corpora ?? []).some(corpus => corpus.corpus_id === locator.corpus_id
     && corpus.active_generation === locator.generation && corpus.visibility_epoch === locator.visibility_epoch
+    && (!Object.hasOwn(locator, "manifest_object_id") || locator.manifest_object_id === corpus.manifest_object_id)
     && snapshot.dependency_binding.journal_bindings.some(binding => binding.corpus_id === corpus.corpus_id
       && Object.hasOwn(binding, "manifest_object_id") && binding.manifest_object_id === (corpus.manifest_object_id ?? null)));
   const changedCorpora = new Set([...snapshot.dependency_binding.journal_bindings, ...journal.source_items.map(item => item.locator), ...journal.receipts]

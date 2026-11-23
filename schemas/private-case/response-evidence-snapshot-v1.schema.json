@@ -681,6 +681,11 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "manifest_object_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
               "purpose": {
                 "const": "session_use"
               },
@@ -730,6 +735,7 @@
               "corpus_id",
               "generation",
               "visibility_epoch",
+              "manifest_object_id",
               "purpose",
               "query_sha256",
               "filters_sha256",

@@ -47,7 +47,7 @@ async function journalPart(store, caseId, part) {
   const sources = items.map((item, i) => ({ id: `src:journal:synthetic:${i + 1}`, kind: "journal_quotation", actor: "client", audience: "private_journal",
     time: { at: item.written_at, status: "known" }, epistemic_status: "client_written_account", excerpt_sha256: sha256(item.text), excerpt_bytes: Buffer.byteLength(item.text), exact_excerpt: item.text,
     locator: { kind: "journal", corpus_id: corpusId, generation, visibility_epoch: epoch, record_id: `record:${i + 1}`, start_byte: 0, end_byte: Buffer.byteLength(item.text) } }));
-  return { ...metadata, source_items: sources, receipts: [{ operation_id: "retrieval:synthetic:1", corpus_id: corpusId, generation, visibility_epoch: epoch, purpose: "session_use",
+  return { ...metadata, source_items: sources, receipts: [{ operation_id: "retrieval:synthetic:1", corpus_id: corpusId, generation, visibility_epoch: epoch, manifest_object_id: "manifest:synthetic", purpose: "session_use",
     query_sha256: sha256("synthetic frozen retrieval"), filters_sha256: sha256Json({}), returned_source_ids: sources.map((s) => s.id), packet_sha256: sha256Json(sources),
     more_available: part.more_available, omitted_count: 0, budget_used_tokens: sources.reduce((sum, s) => sum + Math.ceil(Buffer.byteLength(JSON.stringify(s.exact_excerpt)) / 3), 0),
     budget_used_bytes: sources.reduce((sum, s) => sum + Buffer.byteLength(JSON.stringify(s.exact_excerpt)), 0) }] };

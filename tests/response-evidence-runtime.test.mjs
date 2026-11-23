@@ -125,7 +125,7 @@ for (const changed of [[], ["a"], ["b"], ["a", "b"]]) test(`journal refresh keep
       excerpt_sha256: sha256Text(exact_excerpt), excerpt_bytes: Buffer.byteLength(exact_excerpt), locator: { kind: "journal", corpus_id: `corpus:${id}`,
         generation: "generation:one", visibility_epoch: 0, record_id: `record:${id}`, start_byte: 0, end_byte: Buffer.byteLength(exact_excerpt) } };
     source_items.push(item);
-    receipts.push({ operation_id: `retrieval:${id}`, corpus_id: `corpus:${id}`, generation: "generation:one", visibility_epoch: 0,
+    receipts.push({ operation_id: `retrieval:${id}`, corpus_id: `corpus:${id}`, generation: "generation:one", visibility_epoch: 0, manifest_object_id: `manifest:${id}`,
       purpose: "session_use", query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: [item.id], packet_sha256: sha256Json([item]),
       more_available: false, omitted_count: 0, budget_used_tokens: Math.ceil(Buffer.byteLength(JSON.stringify(exact_excerpt)) / 3), budget_used_bytes: Buffer.byteLength(JSON.stringify(exact_excerpt)) });
   }
@@ -150,6 +150,33 @@ for (const changed of [[], ["a"], ["b"], ["a", "b"]]) test(`journal refresh keep
   const { originMainPrivateCaseValidator } = await import("./helpers/origin-main-private-case-validator.mjs");
   const validateOld = await originMainPrivateCaseValidator(t);
   assert.doesNotThrow(() => validateOld(structuredClone(record)));
+});
+
+test("a publication race after a no-match search preserves the governed current-message delivery", async (t) => {
+  const env = await setup(t);
+  await env.store.createJournalCorpus(CASE, { corpusId: "corpus:race", manifestObjectId: "manifest:old" });
+  await env.store.publishJournalGeneration(CASE, { corpusId: "corpus:race", generation: "generation:old", manifestObjectId: "manifest:old" });
+  let retrieved = false;
+  const result = await env.controller({ responseEvidence: { enforced: true, journalTimeoutMs: 5000 }, journalEvidenceProvider: {
+    async freezeResponseEvidenceJournal() {
+      retrieved = true;
+      const journal = { availability: "available", retrieval_status: "no_match", receipts: [{ operation_id: "retrieval:race",
+        corpus_id: "corpus:race", generation: "generation:old", visibility_epoch: 0, manifest_object_id: "manifest:old", purpose: "session_use",
+        query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: [], packet_sha256: sha256Json([]),
+        more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }] };
+      await env.store.publishJournalGeneration(CASE, { corpusId: "corpus:race", generation: "generation:new",
+        manifestObjectId: "manifest:new", expectedGeneration: "generation:old" });
+      return journal;
+    }
+  } }).run(request());
+  assert.equal(retrieved, true);
+  assert.equal(result.deliveryKind, "candidate");
+  const record = await assertDelivered(env.store), snapshot = record.response_evidence_snapshots[0];
+  assert.equal(record.response_evidence_snapshots.length, 1);
+  assert.deepEqual(snapshot.journal.receipts, []);
+  assert.equal(snapshot.journal.retrieval_status, "partial");
+  assert.deepEqual(snapshot.journal.omissions, [{ reason: "journal_binding_changed", count: 1 }]);
+  assert.deepEqual(env.counts, { candidate: 1, audit: 1, repair: 0, review: 0, discriminator: 0 });
 });
 
 test("the first writer's fresh compatibility assessment survives approval and delivery without repair", async (t) => {

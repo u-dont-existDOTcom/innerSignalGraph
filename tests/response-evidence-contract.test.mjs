@@ -137,17 +137,23 @@ test("a legacy snapshot without a communication freeze boundary stays readable a
 });
 
 for (const change of ["generation", "visibility_epoch", "manifest", "removed"]) for (const searched of [false, true]) {
-  test(`refresh rebuilds a valid no-match snapshot after ${change} (changed corpus searched: ${searched})`, () => {
+  test(`freeze and refresh rebuild valid no-match snapshots after ${change} (changed corpus searched: ${searched})`, () => {
     const r = record();
     r.journal_corpora = ["a", "b"].map(id => ({ corpus_id: `corpus:${id}`, active_generation: "generation:one", visibility_epoch: 0, manifest_object_id: `manifest:${id}` }));
     const receipts = r.journal_corpora.filter(corpus => searched || corpus.corpus_id !== "corpus:a").map(corpus => ({ operation_id: `retrieval:${corpus.corpus_id}`,
-      corpus_id: corpus.corpus_id, generation: corpus.active_generation, visibility_epoch: 0, purpose: "session_use", query_sha256: sha256Text("query"),
+      corpus_id: corpus.corpus_id, generation: corpus.active_generation, visibility_epoch: 0, manifest_object_id: corpus.manifest_object_id,
+      purpose: "session_use", query_sha256: sha256Text("query"),
       filters_sha256: sha256Json({}), returned_source_ids: [], packet_sha256: sha256Json([]), more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }));
     const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), journal: { availability: "available", retrieval_status: "no_match", receipts } }, { createdAt: NOW });
     if (change === "generation") r.journal_corpora[0].active_generation = "generation:two";
     else if (change === "visibility_epoch") r.journal_corpora[0].visibility_epoch++;
     else if (change === "manifest") r.journal_corpora[0].manifest_object_id = "manifest:replacement";
     else r.journal_corpora.shift();
+    const refrozen = buildResponseEvidenceSnapshot(r, { ...input(), journal: snapshot.journal }, { createdAt: NOW });
+    assert.deepEqual(refrozen.journal.receipts.map(receipt => receipt.corpus_id), ["corpus:b"]);
+    assert.equal(refrozen.journal.retrieval_status, searched ? "partial" : "no_match");
+    assert.deepEqual(refrozen.journal.omissions, searched ? [{ reason: "journal_binding_changed", count: 1 }] : []);
+    assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot: refrozen }), true);
     const journal = responseEvidenceRefreshJournal(r, snapshot);
     assert.equal(journal.availability, "available");
     assert.equal(journal.retrieval_status, "partial");

@@ -79,7 +79,8 @@ export function createSessionUseJournalEvidenceProvider({
               : result.omissions.some((entry) => entry.reason === "journal_budget") ? "budget_exhausted" : result.more_available ? "partial" : "no_match";
             result.coverage = `One targeted lexical search; ${found.total_matches} matching passages; ${result.source_items.length} exact quotations returned. Coverage is limited to this query and published generation; no full-journal review or independent verification of events is claimed.`;
             result.receipts = [{ operation_id: `journal-evidence:${randomUUID()}`, corpus_id: corpusId, generation: reference.active_generation,
-              visibility_epoch: reference.visibility_epoch, purpose: "session_use", query_sha256: sha256Text(query), filters_sha256: sha256Json(filters),
+              visibility_epoch: reference.visibility_epoch, manifest_object_id: reference.manifest_object_id,
+              purpose: "session_use", query_sha256: sha256Text(query), filters_sha256: sha256Json(filters),
               returned_source_ids: result.source_items.map((item) => item.id), packet_sha256: sha256Json(result.source_items), more_available: result.more_available,
               omitted_count: omitted, budget_used_tokens: result.budget.used_tokens, budget_used_bytes: result.budget.used_bytes }];
             if (!await assertSnapshotCurrent()) return empty("unavailable", "failed");

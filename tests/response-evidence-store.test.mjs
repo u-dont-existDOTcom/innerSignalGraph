@@ -121,7 +121,7 @@ function journalItem(id, exactExcerpt) {
     locator: { kind: "journal", corpus_id: "corpus:one", generation: "generation:one", visibility_epoch: 0, record_id: `record:${id}`, start_byte: 0, end_byte: Buffer.byteLength(exactExcerpt) } };
 }
 function journal(items) {
-  return { availability: "available", retrieval_status: "returned", source_items: items, receipts: [{ operation_id: "retrieval:one", corpus_id: "corpus:one", generation: "generation:one", visibility_epoch: 0, purpose: "session_use", query_sha256: sha256Text("query"), filters_sha256: sha256Text("filters"), returned_source_ids: items.map((item) => item.id), packet_sha256: sha256Json(items), more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }] };
+  return { availability: "available", retrieval_status: "returned", source_items: items, receipts: [{ operation_id: "retrieval:one", corpus_id: "corpus:one", generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:one", purpose: "session_use", query_sha256: sha256Text("query"), filters_sha256: sha256Text("filters"), returned_source_ids: items.map((item) => item.id), packet_sha256: sha256Json(items), more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }] };
 }
 async function corpus(store) {
   await store.createJournalCorpus(CASE, { corpusId: "corpus:one", manifestObjectId: "manifest:one" });
@@ -142,6 +142,12 @@ test("journal budgets count actual serialized excerpts, omit whole items and nev
   const { store } = await environment(t); await corpus(store);
   const items = [journalItem("1", "a".repeat(12000)), journalItem("2", "b".repeat(12000)), journalItem("3", "c".repeat(65000)), journalItem("4", "short exact quotation")];
   const snapshot = await store.freezeResponseEvidence(CASE, freezeInput({ journal: journal(items) }));
+  const validateSchema = new Ajv2020({ strict: true, validateFormats: false }).compile(JSON.parse(
+    await fs.readFile(new URL("../schemas/private-case/response-evidence-snapshot-v1.schema.json", import.meta.url), "utf8")));
+  assert.equal(validateSchema(snapshot), true, JSON.stringify(validateSchema.errors));
+  const missingManifest = structuredClone(snapshot);
+  delete missingManifest.journal.receipts[0].manifest_object_id;
+  assert.equal(validateSchema(missingManifest), false);
   const kept = snapshot.source_items.filter((item) => item.kind === "journal_quotation");
   assert.deepEqual(kept.map((item) => item.exact_excerpt), [items[0].exact_excerpt, items[3].exact_excerpt]);
   assert.equal(snapshot.journal.omissions[0].count, 2);

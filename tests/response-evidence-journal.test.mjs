@@ -73,6 +73,7 @@ test("authorized session-use reading returns exact source spans and a bounded re
   }
   const receipt = result.receipts[0];
   assert.equal(receipt.purpose, "session_use"); assert.equal(receipt.query_sha256, sha256Text("help"));
+  assert.equal(receipt.manifest_object_id, (await env.store.load(CASE)).journal_corpora[0].manifest_object_id);
   assert.equal(receipt.packet_sha256, sha256Json(result.source_items));
   assert.deepEqual(receipt.returned_source_ids, result.source_items.map((item) => item.id));
   assert.equal(receipt.budget_used_bytes, result.source_items.reduce((sum, item) => sum + Buffer.byteLength(JSON.stringify(item.exact_excerpt)), 0));
@@ -109,6 +110,59 @@ test("a query without matches records no_match, truthful coverage and an empty r
   assert.deepEqual(result.source_items, []); assert.equal(result.receipts[0].returned_source_ids.length, 0);
   assert.match(result.coverage, /0 matching passages/);
   await env.store.freezeResponseEvidence(CASE, freezeInput(result));
+});
+
+test("freeze omits an older-generation no-match receipt when publication changes after retrieval", async (t) => {
+  const env = await environment(t), journal = await env.retrieve({ query: "zxqnonexistent" });
+  assert.equal(journal.retrieval_status, "no_match");
+  await env.store.publishJournalGeneration(CASE, { corpusId: CORPUS, generation: "generation:replacement",
+    manifestObjectId: "manifest:replacement", expectedGeneration: env.graph.generation });
+  const snapshot = await env.store.freezeResponseEvidence(CASE, freezeInput(journal));
+  assert.deepEqual(snapshot.journal.receipts, []);
+  assert.equal(snapshot.journal.availability, "unavailable");
+  assert.equal(snapshot.journal.retrieval_status, "partial");
+  assert.equal(snapshot.journal.more_available, true);
+  assert.deepEqual(snapshot.journal.omissions, [{ reason: "journal_binding_changed", count: 1 }]);
+  assert.equal(responseEvidenceSnapshotCurrent(await env.store.load(CASE), { snapshot }), true);
+});
+
+test("freeze omits quotations and their receipt after a same-generation manifest replacement", async (t) => {
+  const env = await environment(t), journal = await env.retrieve();
+  assert.ok(journal.source_items.length > 0);
+  await env.store.publishJournalGeneration(CASE, { corpusId: CORPUS, generation: env.graph.generation,
+    manifestObjectId: "manifest:replacement", expectedGeneration: env.graph.generation });
+  const snapshot = await env.store.freezeResponseEvidence(CASE, freezeInput(journal));
+  assert.deepEqual(snapshot.journal.receipts, []);
+  assert.equal(snapshot.source_items.some(item => item.kind === "journal_quotation"), false);
+  assert.equal(snapshot.journal.retrieval_status, "partial");
+  assert.equal(snapshot.journal.more_available, true);
+  assert.deepEqual(snapshot.journal.omissions, [{ reason: "journal_binding_changed", count: 1 }]);
+  assert.equal(snapshot.journal.budget.used_bytes, 0);
+  assert.equal(snapshot.journal.budget.used_tokens, 0);
+  assert.equal(responseEvidenceSnapshotCurrent(await env.store.load(CASE), { snapshot }), true);
+});
+
+test("a current no-match receipt retains the exact searched publication and remains valid", async (t) => {
+  const env = await environment(t), journal = await env.retrieve({ query: "zxqnonexistent" });
+  const record = await env.store.load(CASE), publication = record.journal_corpora[0], receipt = journal.receipts[0];
+  assert.equal(receipt.corpus_id, publication.corpus_id);
+  assert.equal(receipt.generation, publication.active_generation);
+  assert.equal(receipt.visibility_epoch, publication.visibility_epoch);
+  assert.equal(receipt.manifest_object_id, publication.manifest_object_id);
+  const snapshot = await env.store.freezeResponseEvidence(CASE, freezeInput(journal));
+  assert.deepEqual(snapshot.journal.receipts, journal.receipts);
+  assert.equal(snapshot.journal.retrieval_status, "no_match");
+  assert.equal(snapshot.journal.more_available, false);
+  assert.deepEqual(snapshot.journal.omissions, []);
+  assert.equal(responseEvidenceSnapshotCurrent(await env.store.load(CASE), { snapshot }), true);
+  const missingIdentity = structuredClone(snapshot);
+  delete missingIdentity.journal.receipts[0].manifest_object_id;
+  missingIdentity.snapshot_sha256 = responseEvidenceSnapshotSha256(missingIdentity);
+  assert.throws(() => validateResponseEvidenceSnapshot(missingIdentity), { code: "RESPONSE_EVIDENCE_INVALID" });
+  const wrongIdentity = structuredClone(snapshot);
+  wrongIdentity.journal.receipts[0].manifest_object_id = "manifest:foreign";
+  wrongIdentity.snapshot_sha256 = responseEvidenceSnapshotSha256(wrongIdentity);
+  assert.throws(() => validateResponseEvidenceSnapshot(wrongIdentity), { code: "RESPONSE_EVIDENCE_INVALID" });
 });
 
 test("one bounded capped search reports partial and more_available without paging or truncation", async (t) => {
