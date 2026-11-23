@@ -30,8 +30,11 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   if (readers?.provisional_refused) add("provisional_refused", "Provisional reply refused", null, readers.provisional_refused);
   if (turn.provisional) add("provisional", "Provisional reply shown", turn.provisional.shown_at, turn.provisional, callsFrom(readers?.crisis?.receipts));
   // The remaining readers run concurrently. Their individual completion order is not recorded.
+  // A reader with nothing stored didn't run in this turn's arrangement (the whole writer has no box reader): leave it out
+  // rather than show an empty section that reads like a failure.
   for (const [key, role, label] of [["boxes", "R2", "Rule box reader"], ["protection", "R3", "Protection reader"]]) {
-    add("reader", label, null, without(readers?.[key], ["receipts"]), callsFrom(readers?.[key]?.receipts), { role, timing: "Individual completion time and order not stored." });
+    if (readers?.[key] == null) continue;
+    add("reader", label, null, without(readers[key], ["receipts"]), callsFrom(readers[key].receipts), { role, timing: "Individual completion time and order not stored." });
   }
   const otherReadings = without(readers, ["crisis", "boxes", "protection", "provisional_refused"]);
   if (otherReadings && Object.keys(otherReadings).length) add("reading", "Other stored readings", null, otherReadings);

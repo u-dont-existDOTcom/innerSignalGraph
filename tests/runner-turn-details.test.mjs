@@ -332,3 +332,11 @@ test("a check that fails part-way still shows the readings its finished checkers
   assert.equal(failure.draft, 1);
   assert.deepEqual(failure.workers.map((call) => [call.role, call.failure_code]), [["C1", null], ["C2", "REFUSED"]]);
 });
+
+test("a reader that didn't run in the turn's arrangement gets no section", () => {
+  const record = { runtime_turns: [{ id: "w", state: "DELIVERED", inbound: { exact_text: M.person },
+    runner_reading: { readers: { crisis: { level: "none", receipts: [{ role: "R1" }] }, protection: { compatible: true, receipts: [{ role: "R3" }] } } },
+    delivery: { exact_text: M.draft1, delivered_at: "2026-11-23T12:00:05.000Z" }, events: [] }] };
+  const details = runnerTurnDetailsFromRecord(record, 1);
+  assert.deepEqual(details.steps.filter((entry) => entry.kind === "reader").map((entry) => entry.label), ["Crisis reader", "Protection reader"]);
+});
