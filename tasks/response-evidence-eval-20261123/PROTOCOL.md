@@ -64,7 +64,7 @@ Sealed packets and prompts with their SHA-256, checked before the first call; a 
 sealed packet refuses to run. A live run needs `--live` and `INNER_SIGNAL_EVAL_ALLOW_SUBSCRIPTION_CLI=1`, refuses API mode and any
 `ANTHROPIC_API_KEY` in its environment, checks the Claude CLI's flags first, and sends every call sealed. A hard cap of 144 calls
 (36 cases, 2 arms, at most 2 samples); `--limit` counts the receipts folder's calls in total; the first usage-limit message stops the
-run; no call is retried; three failures in a row stop the run. Receipts are written outside Git in folders with mode 0700.
+run; no call is retried; three failures in a row stop the run. Receipts are written outside Git in folders with mode 0700. Before each live inference, `claude auth status --json` must confirm `loggedIn: true`, `authMethod: "claude.ai"`, `apiProvider: "firstParty"` and a non-empty `subscriptionType` in the sealed provider's exact environment and working directory; any failure refuses without a model call, and receipts retain only `authMethod`, `apiProvider` and `subscriptionType` from authentication status.
 
 ## Limits
 

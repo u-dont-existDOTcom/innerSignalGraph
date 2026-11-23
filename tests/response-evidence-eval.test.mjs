@@ -11,6 +11,7 @@ import { score, judge } from "../tasks/response-evidence-eval-20261123/score.mjs
 import { CORPORA, CORPUS, CORPUS_SHA256, OPT_IN_ENV, ROOT, isolation, json, sha256 } from "../tasks/response-evidence-eval-20261123/common.mjs";
 import { privateRuntimeAuditPrompt } from "../src/prompts/private-runtime-audit.mjs";
 import { sha256Json } from "../src/supervisor/response-evidence-contract.mjs";
+import { sealedInferenceEnvironment } from "../src/core/subprocess.mjs";
 import { main } from "../tasks/response-evidence-eval-20261123/cli.mjs";
 
 let root, sealedDir, sealed, sealedSummary, holdoutDir, holdoutSealed, holdoutSummary;
@@ -320,6 +321,116 @@ test("live guards and missing --live refuse before even probing the stand-in exe
   } finally {
     for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
   }
+});
+
+const subscriptionAuth = { loggedIn: true, authMethod: "claude.ai", apiProvider: "firstParty", subscriptionType: "max",
+  email: "private-auth-email-sentinel", organizationName: "private-auth-org-sentinel", organizationId: "private-auth-id-sentinel" };
+
+async function authStandIn(name, { status = subscriptionAuth, stdout = JSON.stringify(status), code = 0 } = {}) {
+  const bin = path.join(root, `auth-${name}`), log = path.join(bin, "calls.jsonl"), command = path.join(bin, "claude");
+  await fs.mkdir(bin, { mode: 0o700 });
+  // An absolute Node shebang and embedded fixture paths keep the stand-in independent
+  // of both PATH and the sealed environment's exclusion of arbitrary test variables.
+  await fs.writeFile(command, `#!${process.execPath}
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, cwd: process.cwd(),
+  env: ["--help", "--version"].includes(args[0]) ? undefined : process.env }) + "\\n");
+if (args[0] === "--help") {
+  fs.writeSync(1, "--print --output-format --json-schema --model --effort --tools --no-session-persistence --permission-mode --no-chrome --safe-mode --strict-mcp-config --system-prompt-file");
+} else if (args[0] === "--version") {
+  fs.writeSync(1, "stand-in-claude 1.0");
+} else if (JSON.stringify(args) === JSON.stringify(["auth", "status", "--json"])) {
+  fs.writeSync(1, ${JSON.stringify(stdout)});
+  fs.writeSync(2, "private-auth-stderr-sentinel");
+  process.exitCode = ${code};
+} else {
+  fs.writeSync(1, JSON.stringify({ session_id: "stand-in-session", structured_output: { findings: [], repair_induced_checks: [] },
+    modelUsage: { "claude-opus-5-5": { inputTokens: 1, outputTokens: 1 } } }));
+}
+`, { mode: 0o700 });
+  return { command, calls: async () => (await fs.readFile(log, "utf8")).trim().split("\n").map((line) => JSON.parse(line)) };
+}
+
+async function withAuthEnvironment(work) {
+  const changes = { ANTHROPIC_API_KEY: undefined, INNER_SIGNAL_MODE: undefined, INNER_SIGNAL_AUTH_TEST_SECRET: "must-not-reach-auth",
+    HOME: path.join(root, "auth-home"), CLAUDE_CONFIG_DIR: path.join(root, "auth-config") };
+  const saved = Object.fromEntries(Object.keys(changes).map((key) => [key, process.env[key]]));
+  try {
+    for (const [key, value] of Object.entries(changes)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    await work();
+  } finally {
+    for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+}
+
+test("live auth refuses Console, other API providers, logged-out, malformed and incomplete status before inference", async (t) => {
+  const cases = [
+    { name: "console", status: { ...subscriptionAuth, authMethod: "api_key" } },
+    { name: "other-provider", status: { ...subscriptionAuth, apiProvider: "bedrock" } },
+    { name: "logged-out", status: { ...subscriptionAuth, loggedIn: false } },
+    { name: "unparseable", stdout: "private-auth-output-sentinel is not JSON" },
+    { name: "nonzero", code: 1 },
+    ...Object.keys({ loggedIn: true, authMethod: "claude.ai", apiProvider: "firstParty", subscriptionType: "max" })
+      .map((key) => ({ name: `missing-${key}`, status: Object.fromEntries(Object.entries(subscriptionAuth).filter(([field]) => field !== key)) })),
+    { name: "empty-subscription", status: { ...subscriptionAuth, subscriptionType: " \t" } },
+    { name: "nonstring-subscription", status: { ...subscriptionAuth, subscriptionType: true } },
+    { name: "nonboolean-login", status: { ...subscriptionAuth, loggedIn: "true" } },
+    { name: "null", stdout: "null" }
+  ];
+  await withAuthEnvironment(async () => {
+    for (const spec of cases) await t.test(spec.name, async () => {
+      const fake = await authStandIn(spec.name, spec), outDir = path.join(root, `refused-auth-${spec.name}`);
+      await assert.rejects(runAudit({ sealedDir, outDir, mode: "live", limit: 1,
+        env: { [OPT_IN_ENV]: "1", CLAUDE_COMMAND: fake.command } }), (error) => {
+        assert.equal(error.message, "Claude CLI subscription authentication check failed. No model call was made.");
+        assert.equal(error.cause, undefined); assert.equal(error.details, undefined);
+        return true;
+      });
+      const calls = await fake.calls();
+      assert.deepEqual(calls.map((call) => call.args), [["--help"], ["--version"], ["auth", "status", "--json"]]);
+      assert.equal(calls.some((call) => call.args.includes("-p") || call.args.includes("--print")), false, "stand-in was never asked to infer");
+      assert.deepEqual(calls.at(-1).env, sealedInferenceEnvironment());
+      assert.equal(path.dirname(calls.at(-1).cwd), os.tmpdir());
+      assert.match(path.basename(calls.at(-1).cwd), /^inner-signal-claude-/u);
+      await assert.rejects(fs.stat(calls.at(-1).cwd), { code: "ENOENT" });
+      assert.deepEqual(await fs.readdir(path.join(outDir, "receipts")), []);
+      await assert.rejects(fs.stat(path.join(outDir, ".audit.lock")), { code: "ENOENT" });
+      await assert.rejects(fs.stat(path.join(outDir, "invocations.jsonl")), { code: "ENOENT" });
+    });
+  });
+});
+
+test("subscription auth passes preflight with sealed process settings and a receipt containing only allowed auth fields", async () => {
+  await withAuthEnvironment(async () => {
+    const fake = await authStandIn("subscription"), outDir = path.join(root, "subscription-live-stand-in");
+    const summary = await runAudit({ sealedDir, outDir, mode: "live", limit: 1,
+      env: { [OPT_IN_ENV]: "1", CLAUDE_COMMAND: fake.command, HOME: "unused-env-argument-home", CLAUDE_CONFIG_DIR: "unused-env-argument-config" } });
+    assert.equal(summary.started_now, 1); assert.equal(summary.this_run.ok, 1);
+    const calls = await fake.calls();
+    assert.equal(calls.length, 4);
+    const auth = calls[2], inference = calls[3];
+    assert.deepEqual(auth.args, ["auth", "status", "--json"]);
+    assert.ok(inference.args.includes("-p"));
+    assert.deepEqual(auth.env, sealedInferenceEnvironment());
+    assert.deepEqual(auth.env, inference.env);
+    assert.equal(auth.cwd, inference.cwd, "auth is checked in the exact inference working directory");
+    for (const call of [auth, inference]) {
+      assert.equal(call.env.HOME, process.env.HOME); assert.equal(call.env.CLAUDE_CONFIG_DIR, process.env.CLAUDE_CONFIG_DIR);
+      assert.equal(call.env.INNER_SIGNAL_AUTH_TEST_SECRET, undefined);
+      assert.equal(path.dirname(call.cwd), os.tmpdir());
+      assert.match(path.basename(call.cwd), /^inner-signal-claude-/u);
+      await assert.rejects(fs.stat(call.cwd), { code: "ENOENT" });
+    }
+    const receipt = JSON.parse(await fs.readFile(path.join(outDir, "invocations.jsonl"), "utf8"));
+    assert.deepEqual(receipt.preflight, { claude_version: "stand-in-claude 1.0", claude_command: fake.command,
+      flags_checked: ["print", "outputFormat", "jsonSchema", "model", "effort", "tools", "noSessionPersistence", "permissionMode", "noChrome", "safeMode", "strictMcpConfig"],
+      system_prompt_transport: "file", authMethod: "claude.ai", apiProvider: "firstParty", subscriptionType: "max" });
+    const files = await fs.readdir(outDir, { recursive: true });
+    for (const file of files.filter((name) => /\.jsonl?$/u.test(name))) {
+      assert.doesNotMatch(await fs.readFile(path.join(outDir, file), "utf8"), /private-auth-|loggedIn|organizationId|organizationName|email/u);
+    }
+  });
 });
 
 test("invalid options and output paths are refused without a provider call", async () => {

@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { ClaudeCliProvider } from "../../src/providers/claude-cli.mjs";
@@ -16,6 +17,34 @@ const STAGE = "private_candidate_audit";
 const USAGE_LIMIT = /usage limit|limit reached|hit your (?:\w+ )?limit|reached your .{0,40}limit|(?:5|five)[- ]hour limit|weekly limit|rate[_ -]?limit|too many requests|\b429\b|credit balance is too low|out of (?:extra )?usage/iu;
 export const RECEIPT_FILE = /^(.+)\.a(\d+)\.(started|result)\.json$/u;
 const SETTINGS = ["mode", "requested_model", "effort", "provider", "sealed_manifest_sha256"];
+const AUTH_REFUSAL = "Claude CLI subscription authentication check failed. No model call was made.";
+
+// ClaudeCliProvider itself supplies sealedInferenceEnvironment() and its fresh cwd.
+// This launch gate inherits both, checks auth there, then starts the real command
+// with the same environment, cwd, arguments and stdin; it never emits auth output.
+function subscriptionGate(authReceipt) {
+  return `
+import fs from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { runSubprocess } from ${JSON.stringify(new URL("../../src/core/subprocess.mjs", import.meta.url).href)};
+const command = process.argv[1], cwd = process.cwd(), env = process.env;
+try {
+  const status = await runSubprocess({ command, args: ["auth", "status", "--json"], cwd, env,
+    timeoutMs: 30000, label: "Claude CLI authentication check" });
+  const auth = JSON.parse(status.stdout);
+  if (status.code !== 0 || auth?.loggedIn !== true || auth.authMethod !== "claude.ai" || auth.apiProvider !== "firstParty"
+      || typeof auth.subscriptionType !== "string" || !auth.subscriptionType.trim()) throw new Error();
+  await fs.writeFile(${JSON.stringify(authReceipt)}, JSON.stringify({ authMethod: auth.authMethod,
+    apiProvider: auth.apiProvider, subscriptionType: auth.subscriptionType }), { flag: "wx", mode: 0o600 });
+} catch {
+  process.stderr.write(${JSON.stringify(AUTH_REFUSAL)});
+  process.exit(78);
+}
+const child = spawn(command, process.argv.slice(2), { cwd, env, stdio: "inherit" });
+child.on("error", () => { process.exitCode = 1; });
+child.on("exit", (code) => { process.exitCode = code ?? 1; });
+`;
+}
 
 export function buildSchedule(manifest, samples = 1) {
   if (![1, 2].includes(samples)) throw new Error("--samples must be 1 or 2.");
@@ -98,8 +127,29 @@ async function preflight(auditor) {
   if (!flags.systemPromptFile && flags.systemPrompt && process.platform === "win32") throw new Error("This CLI cannot pass the system prompt safely on Windows.");
   const version = await runSubprocess({ command: auditor.command, args: ["--version"], timeoutMs: 30000, label: "Claude CLI version check" });
   if (version.code !== 0 || !version.stdout.trim()) throw new Error("Claude CLI version check failed.");
-  return { claude_version: version.stdout.trim(), claude_command: auditor.command, flags_checked: needed,
+  const receipt = { claude_version: version.stdout.trim(), claude_command: auditor.command, flags_checked: needed,
     system_prompt_transport: flags.systemPromptFile ? "file" : flags.systemPrompt ? "argument" : "stdin" };
+  const generate = auditor.generate;
+  auditor.generate = async (request) => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "response-evidence-auth-")), authReceipt = path.join(dir, "auth.json");
+    // Retain the already probed flags and all provider settings; only wrap its command.
+    const gated = Object.assign(Object.create(auditor), { command: process.execPath,
+      baseArgs: ["--input-type=module", "--eval", subscriptionGate(authReceipt), "--", auditor.command, ...auditor.baseArgs] });
+    try {
+      return await generate.call(gated, request);
+    } catch (error) {
+      if (!(await exists(authReceipt))) {
+        const refusal = new Error(AUTH_REFUSAL);
+        refusal.code = "PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE";
+        throw refusal;
+      }
+      throw error;
+    } finally {
+      try { if (await exists(authReceipt)) Object.assign(receipt, await readJson(authReceipt)); }
+      finally { await fs.rm(dir, { recursive: true, force: true }); }
+    }
+  };
+  return receipt;
 }
 
 export async function readReceipts(dir) {
