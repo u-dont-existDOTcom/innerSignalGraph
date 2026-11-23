@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 
 // This is a projection, never a redacted copy. No stored object (including a receipt) is spread or serialized here.
 // Timestamps are parsed and re-emitted; names have bounded alphabets; model prose has no output field.
@@ -111,15 +112,26 @@ export function createRunnerLogWriter({ directory, runnerRules, arrangement, loa
       setImmediate(() => enqueue(async () => {
         const record = await loadRecord(caseId, authContext);
         const log = runnerLogFromRecord(record);
-        let existing;
-        try { existing = await fs.readFile(file, "utf8"); } catch (error) { if (error.code !== "ENOENT") throw error; }
-        const seen = new Set();
-        if (existing) for (const line of existing.trim().split("\n").slice(1)) { try { seen.add(JSON.parse(line).turn); } catch { /* incomplete last write */ } }
-        const lines = existing ? [] : [header];
-        for (const turn of log.turns) if (!seen.has(turn.turn)) lines.push(turn);
-        if (!lines.length) return;
-        const handle = await fs.open(file, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
-        try { await handle.chmod(0o600); await handle.writeFile(lines.map((line) => JSON.stringify(line)).join("\n") + "\n"); } finally { await handle.close(); }
+        const handle = await fs.open(file, constants.O_RDWR | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
+        try {
+          await handle.chmod(0o600);
+          const existing = await handle.readFile();
+          // Truncate only the incomplete tail, using byte offsets on the same no-follow handle used to append.
+          const completeLength = existing.length === 0 || existing.at(-1) === 10 ? existing.length : existing.lastIndexOf(10) + 1;
+          if (completeLength < existing.length) await handle.truncate(completeLength);
+          const seen = new Set();
+          let lastHeader = null;
+          for (const line of existing.subarray(0, completeLength).toString("utf8").split("\n")) {
+            try {
+              const row = JSON.parse(line);
+              if (row?.type === "header") lastHeader = row;
+              else if (row?.turn != null) seen.add(row.turn);
+            } catch { /* leave earlier complete lines unchanged */ }
+          }
+          const lines = isDeepStrictEqual(lastHeader, header) ? [] : [header];
+          for (const turn of log.turns) if (!seen.has(turn.turn)) lines.push(turn);
+          if (lines.length) await handle.writeFile(lines.map((line) => JSON.stringify(line)).join("\n") + "\n");
+        } finally { await handle.close(); }
       }));
     },
     async remove() {

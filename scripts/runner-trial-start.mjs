@@ -284,6 +284,12 @@ export async function prepareTrialFolder({ home, provider }) {
 
 // The only network operation on startup. Tests inject git, including the fetch, and never contact a remote.
 const execFileAsync = promisify(execFile);
+async function refuseExtractedSymlinks(entry) {
+  const info = await fsp.lstat(entry);
+  if (info.isSymbolicLink()) throw new StartError("The extracted released-rules tree must not contain symlinks.");
+  if (info.isDirectory()) for (const child of await fsp.readdir(entry)) await refuseExtractedSymlinks(path.join(entry, child));
+}
+
 export async function prepareReleasedRules(home, { git = (args, options = {}) => execFileAsync("git", args, { cwd: repositoryRoot, maxBuffer: 16 * 1024 * 1024, ...options }) } = {}) {
   try { await git(["fetch", "--quiet", "origin", "stable"], { timeout: 30_000 }); } catch { /* use the last local release ref */ }
   let commit;
@@ -304,6 +310,7 @@ export async function prepareReleasedRules(home, { git = (args, options = {}) =>
     await git(["archive", "--format=tar", `--output=${archive}`, commit, "plugins/inner-signal-therapy"]);
     await execFileAsync("tar", ["-xf", archive, "-C", staging]);
     await fsp.unlink(archive);
+    await refuseExtractedSymlinks(staging);
     await fsp.rename(staging, snapshot);
     const existing = await lstatOrNull(target);
     if (existing && !existing.isSymbolicLink()) throw new StartError("The released-rules commit path must be a snapshot link; it was left as it is.");

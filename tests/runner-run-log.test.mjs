@@ -201,6 +201,97 @@ test("statistics use ordinary median and nearest-rank p90 and never export inven
   assert.equal(JSON.stringify(log).includes("PRIVATEMARKER"), false);
 });
 
+function logTurn(index) {
+  return { state: "DELIVERED", created_at: new Date(at + index * 1000).toISOString(), delivery: { delivered_at: new Date(at + index * 1000 + 100).toISOString() }, events: [] };
+}
+function logOptions(directory, record) {
+  return { directory, runnerRules: { version: "0.2.6", sha256: "a".repeat(64), source: "stable 123456789" }, arrangement: { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] }, loadRecord: async () => record };
+}
+async function syncLog(writer) { writer.schedule(CASE); await writer.flush(); }
+
+for (const changed of ["rules", "arrangement"]) test(`a restart with changed ${changed} appends a header before the next turn`, async (t) => {
+  const dir = await directory(t);
+  const file = path.join(dir, "runner-log.jsonl");
+  const record = { runtime_turns: [logTurn(0)] };
+  const options = logOptions(dir, record);
+  await syncLog(createRunnerLogWriter(options));
+  const original = await fs.readFile(file, "utf8");
+  const next = changed === "rules" ? { ...options, runnerRules: { version: "0.2.7", sha256: "b".repeat(64), source: "stable 987654321" } }
+    : { ...options, arrangement: { ...options.arrangement, writer: ["claude"] } };
+  const restarted = createRunnerLogWriter(next);
+  await syncLog(restarted); // Startup may run before another turn closes.
+  record.runtime_turns.push(logTurn(1));
+  await syncLog(restarted);
+  const updated = await fs.readFile(file, "utf8");
+  assert.ok(updated.startsWith(original), "earlier lines remain byte-for-byte unchanged");
+  const rows = updated.trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(rows.map((row) => row.type ?? row.turn), ["header", 1, "header", 2]);
+  assert.deepEqual(rows[2].runnerRules, next.runnerRules);
+  assert.deepEqual(rows[2].arrangement, next.arrangement);
+  await syncLog(createRunnerLogWriter(next));
+  assert.equal(await fs.readFile(file, "utf8"), updated, "an unchanged restart duplicates neither headers nor turns");
+  record.runtime_turns.push(logTurn(2));
+  await syncLog(createRunnerLogWriter(options));
+  const reverted = (await fs.readFile(file, "utf8")).trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(reverted.map((row) => row.type ?? row.turn), ["header", 1, "header", 2, "header", 3]);
+  assert.deepEqual(reverted[4], rows[0], "compare the last header, even when an earlier one matches");
+});
+
+test("header equality compares parsed objects rather than JSON key order or whitespace", async (t) => {
+  const dir = await directory(t);
+  const file = path.join(dir, "runner-log.jsonl");
+  const record = { runtime_turns: [logTurn(0)] };
+  const options = logOptions(dir, record);
+  await syncLog(createRunnerLogWriter(options));
+  const [header, turn] = (await fs.readFile(file, "utf8")).trimEnd().split("\n").map(JSON.parse);
+  const reordered = { arrangement: { checkers: header.arrangement.checkers, writer: header.arrangement.writer, readers: header.arrangement.readers, checkerMode: header.arrangement.checkerMode, writerMode: header.arrangement.writerMode }, runnerRules: { source: header.runnerRules.source, sha256: header.runnerRules.sha256, version: header.runnerRules.version }, type: header.type, schema_version: header.schema_version };
+  const prefix = ` ${JSON.stringify(reordered)} \n${JSON.stringify(turn)}\n`;
+  await fs.writeFile(file, prefix);
+  record.runtime_turns.push(logTurn(1));
+  await syncLog(createRunnerLogWriter(options));
+  const updated = await fs.readFile(file, "utf8");
+  assert.ok(updated.startsWith(prefix));
+  assert.deepEqual(updated.trimEnd().split("\n").map(JSON.parse).map((row) => row.type ?? row.turn), ["header", 1, 2]);
+});
+
+for (const interrupted of ["initial header", "later header", "turn"]) test(`an interrupted ${interrupted} is truncated before appending valid JSONL`, async (t) => {
+  const dir = await directory(t);
+  const file = path.join(dir, "runner-log.jsonl");
+  const record = { runtime_turns: [logTurn(0)] };
+  const options = logOptions(dir, record);
+  await syncLog(createRunnerLogWriter(options));
+  const original = await fs.readFile(file, "utf8");
+  const header = JSON.parse(original.split("\n")[0]);
+  record.runtime_turns.push(logTurn(1));
+  const next = interrupted === "later header" ? { ...options, runnerRules: { ...options.runnerRules, version: "0.2.7" } } : options;
+  const brokenRow = interrupted === "turn" ? runnerLogFromRecord(record).turns[1] : { ...header, runnerRules: next.runnerRules };
+  const prefix = interrupted === "initial header" ? "" : original;
+  const serialized = JSON.stringify(brokenRow);
+  await fs.writeFile(file, prefix + serialized.slice(0, Math.floor(serialized.length / 2)));
+  await syncLog(createRunnerLogWriter(next));
+  const updated = await fs.readFile(file, "utf8");
+  assert.ok(updated.startsWith(prefix), "complete lines must not be rewritten");
+  assert.ok(updated.endsWith("\n"));
+  const rows = updated.trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(rows.filter((row) => row.type !== "header").map((row) => row.turn), [1, 2]);
+  assert.deepEqual(rows.filter((row) => row.type === "header").at(-1).runnerRules, next.runnerRules);
+  assert.equal(rows.length, interrupted === "later header" ? 4 : 3);
+  assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
+});
+
+test("log recovery refuses a symlink without reading, truncating or appending its target", async (t) => {
+  const dir = await directory(t);
+  const target = path.join(await directory(t), "target");
+  const original = '{"incomplete":';
+  await fs.writeFile(target, original, { mode: 0o640 });
+  const mode = (await fs.stat(target)).mode;
+  await fs.symlink(target, path.join(dir, "runner-log.jsonl"));
+  await syncLog(createRunnerLogWriter(logOptions(dir, { runtime_turns: [logTurn(0)] })));
+  assert.equal(await fs.readFile(target, "utf8"), original);
+  assert.equal((await fs.stat(target)).mode, mode);
+  assert.equal((await fs.lstat(path.join(dir, "runner-log.jsonl"))).isSymbolicLink(), true);
+});
+
 test("the log route has the runner page's origin, host, bearer, same-site and case authorization checks, and is absent with the trial off", async (t) => {
   const f = await fixture(t);
   for (const headers of [{}, { origin: "http://elsewhere.invalid" }, { origin: f.base, authorization: "Bearer unused" }, { origin: f.base, "sec-fetch-site": "cross-site" }, { origin: f.base, host: "elsewhere.invalid" }]) {
@@ -262,6 +353,46 @@ test("rules extraction uses one quiet fetch, a local stable snapshot after fetch
   const health = await (await fetch(`http://127.0.0.1:${server.address().port}/health`)).json();
   assert.deepEqual(health.runnerRules, rules);
   assert.throws(() => createRunnerTrialController({ privateCaseSource: f.store, config: configFor(dir, { runnerRulesRoot: outside }) }), { code: "BAD_CONFIG" });
+});
+
+for (const kind of ["directory", "file"]) test(`rules loading refuses a nested ${kind} symlink`, async (t) => {
+  const dir = await directory(t);
+  const outside = await directory(t);
+  const root = path.join(dir, "rules");
+  await fs.cp(new URL("../plugins/inner-signal-therapy/", import.meta.url), root, { recursive: true });
+  const config = configFor(dir, { runnerRulesRoot: root });
+  assert.equal(loadRunnerRules(config).runnerRules.source, "checkout");
+  const entry = kind === "directory" ? path.join(root, "skills") : path.join(root, "skills", "inner-signal-therapy", "SKILL.md");
+  const target = path.join(outside, "external");
+  await fs.rename(entry, target);
+  await fs.symlink(target, entry);
+  assert.throws(() => loadRunnerRules(config), { code: "BAD_CONFIG" });
+  await fs.unlink(entry);
+  await fs.rename(target, entry);
+  // Even an unused nested link whose target stays inside the trial folder is refused.
+  const internalTarget = kind === "directory" ? path.join(root, "skills") : path.join(root, ".codex-plugin", "plugin.json");
+  await fs.symlink(internalTarget, path.join(root, ".codex-plugin", "unused-link"));
+  assert.throws(() => loadRunnerRules(config), { code: "BAD_CONFIG" });
+});
+
+for (const kind of ["directory", "file"]) test(`released-rules extraction refuses a nested ${kind} symlink before publication`, async (t) => {
+  const dir = await directory(t);
+  const source = await directory(t);
+  const root = path.join(source, "plugins", "inner-signal-therapy");
+  await fs.mkdir(path.join(root, "nested"), { recursive: true });
+  const outside = await directory(t);
+  const target = kind === "directory" ? outside : path.join(outside, "external-file");
+  if (kind === "file") await fs.writeFile(target, "outside rules");
+  await fs.symlink(target, path.join(root, "nested", "link"));
+  await assert.rejects(prepareReleasedRules(dir, { git: async (args) => {
+    if (args[0] === "fetch") throw new Error("offline");
+    if (args[0] === "rev-parse") return { stdout: "a".repeat(40) };
+    assert.equal(args[0], "archive");
+    const archive = args.find((arg) => arg.startsWith("--output=")).slice("--output=".length);
+    return exec("tar", ["-cf", archive, "-C", source, "plugins/inner-signal-therapy"]);
+  } }), /extracted released-rules tree must not contain symlinks/u);
+  assert.deepEqual(await fs.readdir(path.join(dir, "released-rules")), [], "no snapshot or commit pointer was published");
+  if (kind === "file") assert.equal(await fs.readFile(target, "utf8"), "outside rules");
 });
 
 test("the page's version, tabs, calm note and Run log are trial-only; State & tracker stays available", async (t) => {

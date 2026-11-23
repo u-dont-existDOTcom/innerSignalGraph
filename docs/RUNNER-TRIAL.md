@@ -110,8 +110,10 @@ protocol/program code list become `UNSPECIFIED_FINDING`; unknown failure codes b
 counts, durations, efforts and rule parts stay unknown rather than being guessed. Earlier failures whose receipts were never stored
 cannot be reconstructed; new failed calls retain their receipts too.
 
-The server appends the same turn rows to `<trial dir>/runner-log.jsonl` (0600), with one header naming the rules and arrangement at
-file creation. If the file is missing on startup, it rebuilds it from stored finished turns, then appends newly finished turns once.
+The server appends the same turn rows to `<trial dir>/runner-log.jsonl` (0600), with a header naming the rules and arrangement at
+file creation and a new header whenever they change. Each turn belongs to the nearest header above it. Before appending, an
+incomplete final line is discarded; earlier complete lines stay unchanged. If the file is missing on startup, it rebuilds it from
+stored finished turns, then appends newly finished turns once.
 An unfinished turn appears after reconciliation closes it. Writes run after the response, and logging errors are caught and dropped;
 they never fail a turn. **Delete this case deletes the JSONL file too**, and clears the page's log panel. No log route, file writing or
 Run log button is active when the trial is off.
