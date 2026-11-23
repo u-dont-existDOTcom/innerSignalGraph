@@ -27,8 +27,9 @@ appears here, in a test or in a log.
 - **The cold test isn't wired yet.** The journal import lists `cold-test` among its planned commands
   (`JOURNAL_IMPORT_PLANNED_COMMANDS` in `src/cli/journal-import.mjs`: question freezing, the separate consumer and scoring aren't
   joined yet, though pieces such as `src/journal-import/cold-profile-runner.mjs` exist), and no passing cold test of the imported
-  journal is on record. The controller's journal slot is for a session-use generation that passed its cold test, and the trial
-  design (section 14) leaves the journal provider out of the trial.
+  journal is on record. The response-evidence design (26 Oct, section 6) keeps the journal provider unconfigured until a
+  generation's source consent, publication, cold-test and release criteria are met, the controller's journal slot says so too,
+  and the trial design (section 14) leaves the journal provider out of the trial.
 - **A new import reads before it indexes.** By the owner's default for new imports (`reading_first`,
   `src/journal-import/reading-first-runtime-gate.mjs`), a quote index can't be built from the source's text alone: `build-quotes`
   needs an authenticated reading of the whole source first (the import's model reader, or authorized page reviews), and
@@ -70,10 +71,11 @@ appears here, in a test or in a log.
    the corpus (trial design, section 6).
 5. **The gate.** (a) The owner has confirmed the client's consent, recorded with its time in the trial folder: that InnerSignal may
    use their journal in these sessions, and that their words and journal excerpts go to the companies running the trial's workers
-   (with `--provider mixed`, Anthropic and OpenAI). The runner reads that record at every retrieval and again at every delivery,
-   because grants are read once at start: after a withdrawal nothing more is retrieved, no undelivered reply resting on the
-   journal is delivered (its turn closes, also when found at a restart's reconcile), and the next start drops `session_use` from
-   that client's grant. (b) The corpus's active generation is published for `session_use` (the reader's own check). (c) A passing
+   (with `--provider mixed`, Anthropic and OpenAI, both accounts set not to train on chats: trial design, section 6). The runner
+   reads that record at every retrieval and again at every delivery, because grants are read once at start: after a withdrawal
+   nothing more is retrieved, no undelivered reply resting on the journal is delivered (its turn closes, also when found at a
+   restart's reconcile), and the next start drops `session_use` from that client's grant. (b) The corpus's active generation is
+   published for `session_use` (the reader's own check). (c) A passing
    cold-test receipt names exactly that generation, its manifest and its visibility epoch, so a pass on the server's generation
    doesn't carry over to the copy by itself: the test runs on the copy, or the build binds the receipt to the quotes both share.
    A lost receipt counts like a withdrawal. Short of any of the three, no reader is attached for that client: their turns get no
@@ -111,7 +113,7 @@ The two other options change the rule, so neither is built without the owner's w
   journal.
 - **c. Open the real record itself.** The runner reads and writes the record that the import and the connector use. That record is
   on the server, so the runner would run there (or the record move to the laptop), and the released connector would first need a
-  released change that reads the trial's records: in effect the hosted runner, not a change to this trial.
+  released change that reads the trial's records: a much bigger change than this trial.
 
 ## 4. Limits
 
