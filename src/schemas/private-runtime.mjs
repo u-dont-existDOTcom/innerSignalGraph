@@ -73,7 +73,9 @@ export function validatePrivateRuntimeEvidenceAuditResult(value, { candidateText
     }
     return { ...value, evidence_review: normalizeEvidenceReview(value.evidence_review, { candidateText, snapshot }) };
   } catch {
-    throw new ValidationError("Private runtime evidence audit result invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+    throw new ValidationError("Private runtime evidence audit result invalid.", {
+      code: "RESPONSE_EVIDENCE_INVALID", details: { failure_origin: "model_output_validation" }
+    });
   }
 }
 

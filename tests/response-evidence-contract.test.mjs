@@ -6,7 +6,7 @@ import { chunkExactSourceText, createExactSourceArtifact } from "../src/storage/
 import {
   RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView,
   computeEvidenceDependencyBinding, normalizeEvidenceReview, deriveEvidenceFindings,
-  responseEvidenceSnapshotSha256, sha256Json, sha256Text, validateResponseEvidenceSnapshot
+  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot
 } from "../src/supervisor/response-evidence-contract.mjs";
 
 const NOW = "2026-11-23T12:00:00.000Z";
@@ -65,6 +65,37 @@ test("inbound transcript insertion and audit bookkeeping do not change the depen
   assert.deepEqual(computeEvidenceDependencyBinding(r, options), original);
 });
 
+test("own-lineage unresolved reports in the review projection bind retractions without a source locator", () => {
+  const r = record();
+  r.candidate_responses.push({ id: "root", version: 1, root_candidate_id: "root", exact_text: "Earlier draft.", status: "pending_audit", metadata: {}, audit_history: [], created_at: NOW });
+  r.communication_events.push({ id: "ambiguous:own", kind: "reported_sent", audience: "client",
+    subject: { kind: "unresolved", reason: "ambiguous", candidate_refs: [{ candidate_id: "root", candidate_version: 1 }] },
+    provenance: { origin: "agent_relayed", actor_resolution: "unresolved", source_ref: null, quote: "An unresolved delivery account." },
+    sent_at: null, sent_at_status: "unavailable", recorded_at: NOW });
+  const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), lineageRootId: "root" }, { createdAt: NOW });
+  assert.equal(snapshot.source_items.some(s => s.id === "src:report:ambiguous:own"), false);
+  assert.equal(snapshot.communication_projection.unresolved_delivery.some(entry => entry.source.event_id === "ambiguous:own"), true);
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot, rootCandidate: { id: "root" } }), true);
+  r.communication_events.push({ id: "retraction:ambiguous", kind: "retraction", retracts_event_id: "ambiguous:own" });
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot, rootCandidate: { id: "root" } }), false);
+});
+
+test("source-dependent communication events bind even outside the bounded review projection", () => {
+  const r = record();
+  r.candidate_responses = Array.from({ length: 30 }, (_, n) => ({ id: `own:${n}`, version: n + 1, root_candidate_id: "root",
+    exact_text: `Earlier draft ${n}.`, status: "pending_audit", metadata: {}, audit_history: [], created_at: NOW }));
+  r.communication_events = r.candidate_responses.map((candidate, n) => ({ id: `report:${n}`, kind: "reported_sent", audience: "client",
+    subject: { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version, text_sha256: sha256Text(candidate.exact_text) },
+    provenance: { origin: "owner_action", actor_resolution: "owner_verified", source_ref: null, quote: null },
+    sent_at: n === 0 ? "2026-11-24T12:00:00.000Z" : NOW, sent_at_status: "known", recorded_at: NOW }));
+  const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), lineageRootId: "root" }, { createdAt: NOW });
+  assert.equal(snapshot.source_items.some(s => s.id === "src:report:report:0"), true);
+  assert.equal(snapshot.communication_projection.confirmed_or_reported_client_outbound.some(entry => entry.source.event_id === "report:0"), false);
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot, rootCandidate: { id: "root" } }), true);
+  r.communication_events.push({ id: "retraction:report:0", kind: "retraction", retracts_event_id: "report:0" });
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot, rootCandidate: { id: "root" } }), false);
+});
+
 test("pending runtime inbounds bind their id and exact bytes, excluding only this snapshot's own inbound", () => {
   const r = record(), options = { inboundTurnId: "inbound", inboundSha256: sha256Text("Current words.") };
   const original = computeEvidenceDependencyBinding(r, options);
@@ -95,6 +126,7 @@ test("each independent material change invalidates its dependency component", ()
     (r) => { r.case_state.updated_at = "2026-11-24"; },
     (r) => { r.journal_corpora[0].active_generation = "next"; },
     (r) => { r.journal_corpora[0].visibility_epoch += 1; },
+    (r) => { r.journal_corpora[0].manifest_object_id = "manifest:replacement"; },
     (r) => { r.journal_corpora[0].active_generation = null; r.journal_corpora[0].visibility_epoch += 1; r.journal_corpora[0].manifest_object_id = "tombstone"; }
   ];
   for (const change of changes) {

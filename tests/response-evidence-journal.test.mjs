@@ -9,7 +9,8 @@ import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { createJournalResultCache, openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { createSessionUseJournalEvidenceProvider } from "../src/journal-import/response-evidence-journal.mjs";
 import { createCandidateAuditEvidence } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvidenceModelView, responseEvidenceRefreshJournal, sha256Json, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvidenceModelView, responseEvidenceRefreshJournal,
+  responseEvidenceSnapshotCurrent, responseEvidenceSnapshotSha256, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
 
 const CASE = "synthetic-case", CORPUS = "synthetic-corpus", AUTH = { bearerToken: "session-use-grant" };
 const fixture = async (name) => JSON.parse(await fs.readFile(new URL(`../schemas/journal-import/fixtures/${name}`, import.meta.url), "utf8"));
@@ -148,7 +149,7 @@ test("a repeated search uses the existing ID-only cache while reauthorizing and 
   assert.deepEqual(second.source_items, first.source_items); assert.notEqual(second.receipts[0].operation_id, first.receipts[0].operation_id);
 });
 
-test("a visibility epoch change invalidates the earlier governed snapshot at the shared admission check", async (t) => {
+for (const change of ["visibility epoch", "manifest at the same generation"]) test(`a journal ${change} change invalidates the earlier governed snapshot at the shared admission check`, async (t) => {
   const env = await environment(t), journal = await env.retrieve(), snapshot = await env.store.freezeResponseEvidence(CASE, freezeInput(journal));
   const submitted = await env.store.submitSupervisorDraft(CASE, { operationKey: snapshot.owner.operation_key, source: "external_draft", exactText: "A cautious current-message reply.", producerContextId: "external:writer", channel: "owner_ui",
     responseEvidence: { snapshotId: snapshot.id, writerInclusionSha256: null } });
@@ -166,12 +167,16 @@ test("a visibility epoch change invalidates the earlier governed snapshot at the
   await env.store.approveSupervisorDraft(CASE, candidate.id, audit.id);
   record = await env.store.load(CASE); candidate = record.candidate_responses.at(-1);
   assert.equal(assessResponseEvidenceAdmission(record, candidate).admissible, true);
-  await env.service.incrementJournalVisibilityEpoch(CASE, { corpusId: CORPUS, expectedEpoch: snapshot.journal.receipts[0].visibility_epoch }, AUTH);
+  if (change === "visibility epoch") await env.service.incrementJournalVisibilityEpoch(CASE, { corpusId: CORPUS, expectedEpoch: snapshot.journal.receipts[0].visibility_epoch }, AUTH);
+  else await env.store.publishJournalGeneration(CASE, { corpusId: CORPUS, generation: snapshot.journal.receipts[0].generation,
+    manifestObjectId: "manifest:replacement", expectedGeneration: snapshot.journal.receipts[0].generation });
   record = await env.store.load(CASE); candidate = record.candidate_responses.at(-1);
   assert.equal(assessResponseEvidenceAdmission(record, candidate).code, "RESPONSE_EVIDENCE_STALE");
   await assert.rejects(env.store.exportSupervisorArtifact(CASE, { artifactId: submitted.artifact.artifact_id, channel: "owner_ui" }), (error) => error.code === "SUPERVISOR_ARTIFACT_STALE");
-  const oldHits = env.counts.cacheHits;
-  assert.equal((await env.retrieve()).availability, "unavailable"); assert.equal(env.counts.cacheHits, oldHits);
+  if (change === "visibility epoch") {
+    const oldHits = env.counts.cacheHits;
+    assert.equal((await env.retrieve()).availability, "unavailable"); assert.equal(env.counts.cacheHits, oldHits);
+  }
   const refreshed = await env.store.freezeResponseEvidence(CASE, { ...freezeInput(responseEvidenceRefreshJournal(record, snapshot)),
     snapshotId: "snapshot:journal:supervisor:r2", revision: 2, parentSnapshotId: snapshot.id, revisionReason: "dependency_refresh" });
   assert.equal(refreshed.journal.availability, "unavailable");
@@ -188,4 +193,19 @@ test("origin/main reads a governed snapshot containing journal quotations and re
   assert.ok(snapshot.source_items.some(item => item.kind === "journal_retrieval_record"));
   const record = await env.store.load(CASE);
   assert.doesNotThrow(() => validateOld(structuredClone(record)));
+});
+
+test("legacy journal bindings remain loadable but cannot attest quotations during a refresh", async (t) => {
+  const env = await environment(t), journal = await env.retrieve();
+  const snapshot = await env.store.freezeResponseEvidence(CASE, freezeInput(journal)), legacy = structuredClone(snapshot);
+  for (const binding of legacy.dependency_binding.journal_bindings) delete binding.manifest_object_id;
+  legacy.snapshot_sha256 = responseEvidenceSnapshotSha256(legacy);
+  assert.doesNotThrow(() => validateResponseEvidenceSnapshot(legacy));
+  const record = await env.store.load(CASE);
+  assert.equal(responseEvidenceSnapshotCurrent(record, { snapshot: legacy }), false);
+  assert.doesNotThrow(() => buildEvidenceModelView(record, legacy));
+  const refreshed = responseEvidenceRefreshJournal(record, legacy);
+  assert.equal(refreshed.availability, "unavailable");
+  assert.deepEqual(refreshed.source_items, []);
+  assert.ok(refreshed.omissions.some(entry => entry.reason === "journal_binding_changed"));
 });

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { ValidationError } from "../src/core/errors.mjs";
 import { createPrivateCaseAccessService } from "../src/storage/private-case-access.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { createPrivateSupervisorDraftService } from "../src/supervisor/private-supervisor-draft.mjs";
@@ -12,6 +13,7 @@ import { RESPONSE_EVIDENCE_DIMENSIONS, assessResponseEvidenceAdmission, buildEvi
 import { createSupervisorReplyTools } from "../src/server/supervisor-reply-tools.mjs";
 import { createSupervisorReviewRunner } from "../src/supervisor/private-supervisor-review-runner.mjs";
 import { seedReplyCase } from "./fixtures/supervisor-reply-environment.mjs";
+import { originMainPrivateCaseValidator } from "./helpers/origin-main-private-case-validator.mjs";
 
 const CASE = "synthetic-evidence-supervisor", AUTH = {}, CHANNEL = "authenticated_agent";
 const review = (items = []) => ({ coverage: RESPONSE_EVIDENCE_DIMENSIONS.map((dimension) => ({ dimension, status: "assessed", reason: "Synthetic review of the whole reply." })), items, missing_material_history: [] });
@@ -106,6 +108,116 @@ test("presupposing an unsent earlier draft derives a blocking finding; a fully a
   assert.equal((await env.exportDraft(result.artifact.artifact_id)).client_text, repaired.exact_text);
 });
 
+for (const correction of [false, true]) test(`retracting a repair's own-lineage source report blocks admission and export (replacement: ${correction})`, async (t) => {
+  const validateOld = await originMainPrivateCaseValidator(t);
+  let root;
+  const env = await environment(t, {
+    async onAudit({ store, candidate, n }) {
+      if (n) return;
+      root = candidate;
+      await store.recordCommunicationEvent(CASE, { eventId: "report:own-draft", kind: "reported_sent", audience: "client",
+        subject: { kind: "candidate", candidateId: root.id, candidateVersion: root.version },
+        provenance: { origin: "owner_action", sourceRef: null, quote: null } });
+      const state = await store.getCaseState(CASE); state.updated_at = "2026-11-23T20:00:00.000Z";
+      await store.saveCaseState(CASE, state);
+    },
+    review(candidate, evidence, n) {
+      return n ? review([item(candidate.exact_text, "prior_delivery", "src:report:report:own-draft")])
+        : review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]);
+    }
+  });
+  const result = await env.submit();
+  assert.equal(result.exportable, true); assert.equal(env.counts.repair, 1);
+  let record = await env.store.load(CASE), head = record.candidate_responses.at(-1);
+  const snapshot = record.response_evidence_snapshots.at(-1);
+  assert.equal(snapshot.revision, 2);
+  assert.equal(snapshot.source_items.find(s => s.id === "src:report:report:own-draft").locator.candidate_id, root.id);
+  assert.equal(assessResponseEvidenceAdmission(record, head).admissible, true);
+  assert.doesNotThrow(() => validateOld(structuredClone(record)));
+  // Exports/exposures with no source resting on them remain harmless, including their retractions.
+  await env.exportDraft(result.artifact.artifact_id);
+  await env.store.recordCommunicationEvent(CASE, { eventId: "exposure:own-repair", kind: "exposed", audience: "client",
+    subject: { kind: "candidate", candidateId: head.id, candidateVersion: head.version },
+    provenance: { origin: "application", sourceRef: null, quote: null } });
+  await env.store.recordCommunicationEvent(CASE, { eventId: "retraction:own-exposure", kind: "retraction", retractsEventId: "exposure:own-repair",
+    provenance: { origin: "owner_action", sourceRef: null, quote: null } });
+  record = await env.store.load(CASE);
+  assert.equal(assessResponseEvidenceAdmission(record, head).admissible, true);
+  assert.doesNotThrow(() => validateOld(structuredClone(record)));
+  await env.store.recordCommunicationEvent(CASE, { eventId: "retraction:own-report", kind: "retraction", retractsEventId: "report:own-draft",
+    provenance: { origin: "owner_action", sourceRef: null, quote: null } });
+  if (correction) await env.store.recordCommunicationEvent(CASE, { eventId: "report:corrected-own-draft", kind: "reported_sent", audience: "client",
+    subject: { kind: "candidate", candidateId: root.id, candidateVersion: root.version }, sentAt: "2026-11-22T12:00:00.000Z",
+    provenance: { origin: "agent_relayed", sourceRef: null, quote: null } });
+  record = await env.store.load(CASE); head = record.candidate_responses.at(-1);
+  assert.doesNotThrow(() => validateOld(structuredClone(record)));
+  assert.equal(assessResponseEvidenceAdmission(record, head).code, "RESPONSE_EVIDENCE_STALE");
+  const status = await env.submit();
+  assert.equal(status.status, "approved"); assert.equal(status.exportable, false);
+  await assert.rejects(env.exportDraft(result.artifact.artifact_id), code("SUPERVISOR_ARTIFACT_STALE"));
+});
+
+for (const defect of ["missing coverage", "unlocatable quote"]) for (const succeeds of [false, true]) {
+  test(`malformed supervisor model review retries within two attempts (${defect}, recovery: ${succeeds})`, async (t) => {
+    const validateOld = await originMainPrivateCaseValidator(t);
+    const env = await environment(t), packets = [];
+    const provider = { id: "synthetic-malformed-review", model: "synthetic",
+      privateInferenceIsolation: { packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false },
+      async generate(input) {
+        const packet = JSON.parse(input.user.slice("AUTHORIZED AUDIT PACKET\n".length)); packets.push(packet);
+        const evidenceReview = review();
+        if (packets.length === 1 || !succeeds) {
+          if (defect === "missing coverage") evidenceReview.coverage.pop();
+          else evidenceReview.items.push(item("Words absent from the candidate.", "personal_history", "src:turn:E2-user"));
+        }
+        return { text: JSON.stringify({ findings: [], repair_induced_checks: [], evidence_review: evidenceReview }), responseId: `malformed:${packets.length}` };
+      }
+    };
+    const runtime = createPrivateTherapyModelRuntime({ privateCaseSource: env.access, providers: { anthropic: provider }, config: {} });
+    const service = createPrivateSupervisorDraftService({ privateCaseSource: env.access, modelRuntime: runtime, maximumInvocationAttempts: 2 });
+    const submit = () => service.submitCandidateForReview({ caseId: CASE, source: "external_draft", text: "Exact reply.", idempotencyKey: "malformed", authContext: AUTH });
+    if (succeeds) assert.equal((await submit()).exportable, true);
+    else await assert.rejects(submit(), code("SUPERVISOR_REVIEW_UNAVAILABLE"));
+    assert.equal(packets.length, 2);
+    const record = await env.store.load(CASE);
+    assert.equal(record.supervisor_invocations.filter(e => e.event_type === "STARTED").length, 2);
+    assert.equal(record.supervisor_invocations.filter(e => e.event_type === "COMPLETED").length, succeeds ? 1 : 0);
+    assert.equal(record.candidate_responses.at(-1).audit_history.length, succeeds ? 1 : 0);
+    assert.doesNotThrow(() => validateOld(structuredClone(record)));
+    if (!succeeds) {
+      const runner = createSupervisorReviewRunner({ budgetMs: 1000, cooldownMs: 30_000, now: () => 0 });
+      let jobs = 0;
+      const work = () => { jobs++; return submit(); };
+      await assert.rejects(runner.run({ caseId: CASE, lineage: "malformed", identity: "malformed:one", work }), code("SUPERVISOR_REVIEW_UNAVAILABLE"));
+      await assert.rejects(runner.run({ caseId: CASE, lineage: "malformed", identity: "malformed:two", work }), code("SUPERVISOR_REVIEW_UNAVAILABLE"));
+      assert.equal(jobs, 1); assert.equal(packets.length, 4);
+    }
+  });
+}
+
+test("alternate supervisor runtime results are validated and retried before store completion", async (t) => {
+  const env = await environment(t, { review(_candidate, _evidence, n) {
+    const result = review(); if (n === 0) result.coverage.pop(); return result;
+  } });
+  assert.equal((await env.submit()).exportable, true);
+  assert.equal(env.counts.audit, 2);
+  const record = await env.store.load(CASE);
+  assert.deepEqual(record.supervisor_invocations.map(e => e.event_type), ["STARTED", "STARTED", "COMPLETED"]);
+});
+
+for (const boundary of ["startSupervisorInvocation", "completeSupervisorInvocation"]) {
+  test(`supervisor store provenance refusal at ${boundary} never retries even with a validation marker`, async (t) => {
+    const env = await environment(t); let calls = 0;
+    const refusal = new ValidationError("Synthetic store provenance refusal.", { code: "RESPONSE_EVIDENCE_INVALID", details: { failure_origin: "model_output_validation" } });
+    const service = createPrivateSupervisorDraftService({ privateCaseSource: { ...env.access, async [boundary]() { calls++; throw refusal; } }, modelRuntime: env.runtime });
+    await assert.rejects(service.submitCandidateForReview({ caseId: CASE, source: "external_draft", text: "Exact reply.", idempotencyKey: "store-refusal", authContext: AUTH }), error => error === refusal);
+    assert.equal(calls, 1); assert.equal(env.counts.audit, boundary === "startSupervisorInvocation" ? 0 : 1);
+    const record = await env.store.load(CASE);
+    assert.equal(record.supervisor_invocations.filter(e => e.event_type === "COMPLETED").length, 0);
+    assert.equal(record.candidate_responses.at(-1).audit_history.length, 0);
+  });
+}
+
 test("a supervisor instruction cited as client history is downgraded and blocks every version", async (t) => {
   const env = await environment(t, { review(candidate, evidence) {
     return review([item(candidate.exact_text, "personal_history", evidence.view.source_items.find((s) => s.kind === "supervisor_instruction").id)]);
@@ -142,6 +254,7 @@ test("a backend-produced root binds its writer receipt; forged inclusion is refu
   assert.equal(assessResponseEvidenceAdmission(record, candidate).code, "RESPONSE_EVIDENCE_INVALID");
   const forged = await environment(t, { forgeWriter: true });
   await assert.rejects(forged.submit(null, { source: "backend_produced" }), code("RESPONSE_EVIDENCE_INVALID"));
+  assert.equal(forged.counts.producer, 1);
   assert.equal((await forged.store.load(CASE)).candidate_responses.length, 0);
   const repaired = await environment(t, { review(candidate, evidence, n) { return n ? review() : review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]); } });
   const repairedResult = await repaired.submit(null, { source: "backend_produced" });
@@ -249,6 +362,7 @@ test("a supervisor repair uses its lineage's newest snapshot and remains governe
 test("forged supervisor repair inclusion is refused atomically", async (t) => {
   const env = await environment(t, { forgeRepair: true, review(candidate, evidence, n) { return n ? review() : review([{ ...item(candidate.exact_text, "personal_history", "src:turn:E2-user"), source_ids: [], assessment: "unsupported" }]); } });
   await assert.rejects(env.submit(), code("RESPONSE_EVIDENCE_INVALID"));
+  assert.equal(env.counts.repair, 1);
   assert.equal((await env.store.load(CASE)).candidate_responses.length, 1);
 });
 

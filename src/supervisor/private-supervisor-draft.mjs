@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
+import { validatePrivateRuntimeEvidenceAuditResult, validatePrivateRuntimeRepairResult } from "../schemas/private-runtime.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, createCandidateAuditEvidence } from "./private-candidate-lifecycle.mjs";
 import { assessResponseEvidenceAdmission, inspectGovernedModelCall, prepareGovernedModelCall, responseEvidenceRefreshJournal, supervisorInvocationInput, supervisorInvocationIdentity } from "./response-evidence-contract.mjs";
@@ -115,25 +116,35 @@ export function createPrivateSupervisorDraftService({
     const previousAttempts = governed ? (await loadCase(governed.caseId, governed.authContext)).supervisor_invocations.filter(entry => entry.event_type === "STARTED"
       && entry.input.stage === stage && entry.input.candidate_id === governed.candidate.id && entry.input.snapshot_id === governed.evidence.snapshot.id).length : 0;
     for (let attempt = 1; attempt <= maximumInvocationAttempts; attempt += 1) {
+      const attemptContextId = `attempt:supervisor:${operationKey}:${stage}:v${version}:${governed ? governed.evidence.snapshot.snapshot_sha256.slice(0, 12) + ":" : ""}${previousAttempts + attempt}`;
+      // Store refusals are never model retries, including failures while sealing a result. Only execute/validate is retryable.
+      const started = governed ? await call("startSupervisorInvocation", [governed.caseId, { operationKey, stage, candidateId: governed.candidate.id,
+        snapshotId: governed.evidence.snapshot.id, attemptContextId }], governed.authContext) : null;
+      let output;
       try {
-        const attemptContextId = `attempt:supervisor:${operationKey}:${stage}:v${version}:${governed ? governed.evidence.snapshot.snapshot_sha256.slice(0, 12) + ":" : ""}${previousAttempts + attempt}`;
-        const started = governed ? await call("startSupervisorInvocation", [governed.caseId, { operationKey, stage, candidateId: governed.candidate.id,
-          snapshotId: governed.evidence.snapshot.id, attemptContextId }], governed.authContext) : null;
-        const output = await execute(attemptContextId);
+        output = await execute(attemptContextId);
         if (!output || typeof output !== "object" || Array.isArray(output)) throw new ValidationError("Private inference returned no structured result.");
         if (typeof output.contextId !== "string" || !output.contextId.trim() || output.contextId.length > 160) {
           throw new ValidationError("Private inference returned no bounded actual context identity.");
         }
-        if (started) {
-          const completed = await call("completeSupervisorInvocation", [governed.caseId, { startedId: started.id, output }], governed.authContext);
-          return { ...completed.output, attemptContextId: completed.attempt_context_id };
+        if (governed) {
+          // Alternate runtimes must meet the same model-result contract before provenance is sealed by the store.
+          if (stage === "audit") validatePrivateRuntimeEvidenceAuditResult(output.value ?? output.result, {
+            candidateText: governed.candidate.exact_text, snapshot: governed.evidence.snapshot, reconstructed: governed.candidate.parent_candidate_id !== null
+          });
+          else validatePrivateRuntimeRepairResult({ exact_text: output.exactText });
         }
-        return output;
       } catch (error) {
         lastError = error;
-        if (["RESPONSE_EVIDENCE_STALE", "RESPONSE_EVIDENCE_INVALID"].includes(error?.code)) throw error;
+        if (error?.code === "RESPONSE_EVIDENCE_STALE" || (error?.code === "RESPONSE_EVIDENCE_INVALID" && error?.details?.failure_origin !== "model_output_validation")) throw error;
         if (NON_RETRYABLE.has(error?.code)) break;
+        continue;
       }
+      if (started) {
+        const completed = await call("completeSupervisorInvocation", [governed.caseId, { startedId: started.id, output }], governed.authContext);
+        return { ...completed.output, attemptContextId: completed.attempt_context_id };
+      }
+      return output;
     }
     if (NON_RETRYABLE.has(lastError?.code)) throw lastError;
     throw new RuntimeError("InnerSignal could not finish reviewing this draft. Nothing was approved.", {

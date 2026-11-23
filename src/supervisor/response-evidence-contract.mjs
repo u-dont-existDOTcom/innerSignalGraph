@@ -71,7 +71,9 @@ export const responseEvidenceJournalSchema = shape({
 });
 const bindingSchema = shape({
   transcript_digest: sha, amendments_digest: sha, communication_digest: sha, established_context_digest: sha, supervisor_inputs_digest: sha,
-  compatibility_state_binding: nullable(text(1000)), journal_bindings: array(shape({ corpus_id: id, generation: nullable(id), visibility_epoch: integer() }), 20000)
+  compatibility_state_binding: nullable(text(1000)), journal_bindings: array(shape({
+    corpus_id: id, generation: nullable(id), visibility_epoch: integer(), manifest_object_id: nullable(id)
+  }, ["manifest_object_id"]), 20000)
 });
 export const responseEvidenceSnapshotSchema = shape({
   schema_version: { const: 1 }, id, policy_version: { const: RESPONSE_EVIDENCE_POLICY_VERSION }, case_id: id, created_at: text(80),
@@ -137,7 +139,30 @@ export function validateEvidenceShape(value, schema) {
 }
 const effectiveTurns = (record) => applyTranscriptAmendments(record.raw_transcript, record.transcript_amendments ?? [], { sourceArtifacts: record.source_artifacts ?? [] });
 const lineageIds = (record, root) => new Set([root, ...(record.candidate_responses ?? []).filter((entry) => entry.root_candidate_id === root).map((entry) => entry.id)].filter(Boolean));
-export function computeEvidenceDependencyBinding(record, { inboundTurnId, inboundSha256, lineageRootId = null } = {}) {
+function evidenceCommunicationSignature(record, ownLineage, sourceItems, projection) {
+  const events = record.communication_events ?? [];
+  const dependent = new Set(sourceItems.filter(item => item.id.startsWith("src:report:")).map(item => item.id.slice("src:report:".length)));
+  // The review also sees the frozen delivery projection, including unresolved reports and corroboration. Bind those reports
+  // even when the source inventory could not locate them or omitted them. Exposures/exports matter only if a source rests on them.
+  const reports = new Set(events.filter(event => event.kind === "reported_sent").map(event => event.id));
+  const projected = [...(projection?.confirmed_or_reported_client_outbound ?? []), ...(projection?.supervisor_only_artifacts ?? []), ...(projection?.unresolved_delivery ?? [])];
+  for (const entry of projected) {
+    const backsSource = sourceItems.some(({ locator }) => {
+      if (locator.kind === "candidate" && entry.subject.kind === "candidate") {
+        return locator.candidate_id === entry.subject.candidate_id && locator.candidate_version === entry.subject.candidate_version;
+      }
+      return locator.kind === "transcript_turn" && locator.turn_id === entry.assistant_turn_id;
+    });
+    if (entry.source.event_id && (reports.has(entry.source.event_id) || backsSource)) dependent.add(entry.source.event_id);
+    for (const id of entry.corroborating_event_ids) dependent.add(id);
+  }
+  const foreign = new Set(foreignCommunicationSignature(record, ownLineage).map(([id]) => id));
+  // Events are immutable. A correction appends a retraction and a replacement; retaining the retraction binds the source's
+  // active/retracted state even though its original event is still present, including when it concerns this very lineage.
+  return events.filter(event => foreign.has(event.id) || dependent.has(event.id) || dependent.has(event.retracts_event_id))
+    .map(event => [event.id, event.kind, event.retracts_event_id ?? null]);
+}
+export function computeEvidenceDependencyBinding(record, { inboundTurnId, inboundSha256, lineageRootId = null, sourceItems = [], communicationProjection = null } = {}) {
   // The inbound identity/hash live in snapshot.inbound. Check it separately when resolving the snapshot against a record.
   if (inboundSha256 != null) validateEvidenceShape(inboundSha256, sha);
   const turns = effectiveTurns(record);
@@ -150,11 +175,12 @@ export function computeEvidenceDependencyBinding(record, { inboundTurnId, inboun
   return {
     transcript_digest: sha256Json([...turns.filter((turn) => turn.id !== inboundTurnId).map((turn) => [turn.id, turn.role, turn.text, turn.exchange_id, turn.episode_id ?? null]), ...pending]),
     amendments_digest: sha256Json((record.transcript_amendments ?? []).map((entry) => [entry.id, entry.target_turn_id, entry.effective_text_sha256 ?? entry.completion_sha256 ?? null])),
-    communication_digest: sha256Json(foreignCommunicationSignature(record, lineageIds(record, lineageRootId))),
+    communication_digest: sha256Json(evidenceCommunicationSignature(record, lineageIds(record, lineageRootId), sourceItems, communicationProjection)),
     established_context_digest: sha256Json(record.case_state),
     supervisor_inputs_digest: sha256Json((record.supervisor_artifacts ?? []).filter((entry) => entry.kind === "input").map((entry) => entry.id)),
     compatibility_state_binding: compatibilityStateBinding(record.case_state?.protective_compatibility ?? null),
-    journal_bindings: (record.journal_corpora ?? []).map((entry) => ({ corpus_id: entry.corpus_id, generation: entry.active_generation, visibility_epoch: entry.visibility_epoch })).sort((a, b) => a.corpus_id < b.corpus_id ? -1 : a.corpus_id > b.corpus_id ? 1 : 0)
+    journal_bindings: (record.journal_corpora ?? []).map((entry) => ({ corpus_id: entry.corpus_id, generation: entry.active_generation,
+      visibility_epoch: entry.visibility_epoch, manifest_object_id: entry.manifest_object_id ?? null })).sort((a, b) => a.corpus_id < b.corpus_id ? -1 : a.corpus_id > b.corpus_id ? 1 : 0)
   };
 }
 export function responseEvidenceSnapshotSha256(snapshot) {
@@ -402,6 +428,8 @@ export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJ
   });
   snapshot.source_items.push(makeItem("src:journal:record", "journal_retrieval_record", "unknown", "private_journal",
     journalRetrievalStatement(snapshot.journal), { kind: "journal_record" }));
+  snapshot.dependency_binding = computeEvidenceDependencyBinding(record, { inboundTurnId: inbound.turn_id, inboundSha256: inbound.exact_text_sha256,
+    lineageRootId: input.lineageRootId, sourceItems: snapshot.source_items, communicationProjection: snapshot.communication_projection });
   snapshot.snapshot_sha256 = responseEvidenceSnapshotSha256(snapshot);
   return validateResponseEvidenceSnapshot(snapshot);
 }
@@ -606,8 +634,12 @@ export async function prepareGovernedModelCall({ record, snapshot, rootCandidate
 }
 export function responseEvidenceRefreshJournal(record, snapshot) {
   const journal = { ...structuredClone(snapshot.journal), source_items: snapshot.source_items.filter(entry => entry.kind === "journal_quotation") };
+  // Generation alone does not identify the published manifest. A legacy binding without that identity cannot attest retained
+  // quotations after a refresh either; discard it rather than silently attribute the old search to the current publication.
   const current = locator => (record.journal_corpora ?? []).some(corpus => corpus.corpus_id === locator.corpus_id
-    && corpus.active_generation === locator.generation && corpus.visibility_epoch === locator.visibility_epoch);
+    && corpus.active_generation === locator.generation && corpus.visibility_epoch === locator.visibility_epoch
+    && snapshot.dependency_binding.journal_bindings.some(binding => binding.corpus_id === corpus.corpus_id
+      && Object.hasOwn(binding, "manifest_object_id") && binding.manifest_object_id === (corpus.manifest_object_id ?? null)));
   const included = journal.source_items.length;
   journal.source_items = journal.source_items.filter(item => current(item.locator));
   if (included !== journal.source_items.length || journal.receipts.some(receipt => !current(receipt))) {
@@ -625,7 +657,8 @@ function journalRetrievalStatement(journal) {
   return `Journal retrieval record\navailability: ${journal.availability}\nretrieval_status: ${journal.retrieval_status}\ncoverage: ${JSON.stringify(journal.coverage)}\nmore_available: ${journal.more_available}\nomissions: ${JSON.stringify(journal.omissions.map(({ reason, count }) => ({ reason, count })))}`;
 }
 export function responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate = null } = {}) {
-  const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256, lineageRootId: rootCandidate?.id });
+  const current = computeEvidenceDependencyBinding(record, { inboundTurnId: snapshot.inbound.turn_id, inboundSha256: snapshot.inbound.exact_text_sha256,
+    lineageRootId: rootCandidate?.id, sourceItems: snapshot.source_items, communicationProjection: snapshot.communication_projection });
   if (rootCandidate?.metadata?.response_evidence?.snapshot_id === snapshot.id) {
     const committed = rootCandidate.metadata.response_evidence;
     const compatibility = Object.hasOwn(committed, "compatibility_state_after_commit_binding")
