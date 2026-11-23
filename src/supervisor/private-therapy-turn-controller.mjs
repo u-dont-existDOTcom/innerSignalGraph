@@ -139,7 +139,10 @@ export function createPrivateTherapyTurnController({
         : { availability: "unavailable", retrieval_status: "failed" };
     } finally { clearTimeout(timer); }
   };
-  const freezeSnapshot = async ({ caseId, runtimeTurn, operationKey, record, reason = "initial", query = runtimeTurn.inbound.exact_text, authContext }) => {
+  // A journal query is bounded text (the session-use adapter refuses more than 4,000 characters); a longer message is cut for the
+  // query only, never for what the models see.
+  const JOURNAL_QUERY_CHARACTERS = 4000;
+  const freezeSnapshot = async ({ caseId, runtimeTurn, operationKey, record, reason = "initial", query = runtimeTurn.inbound.exact_text.slice(0, JOURNAL_QUERY_CHARACTERS), authContext }) => {
     const previous = snapshotsFor(record, runtimeTurn).at(-1);
     const revision = (previous?.revision ?? 0) + 1;
     const journal = reason === "dependency_refresh" ? {
@@ -375,7 +378,7 @@ export function createPrivateTherapyTurnController({
           const missing = sourceAudit?.response_evidence?.review?.missing_material_history ?? [];
           const expand = missing.length > 0 && typeof journalEvidenceProvider?.freezeResponseEvidenceJournal === "function" && !owned.some((entry) => entry.revision_reason === "evidence_expansion");
           const rootCandidate = exactCandidate(record, parent.root_candidate_id);
-          if (expand || !responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: expand ? "evidence_expansion" : "dependency_refresh", ...(expand ? { query: missing.map((entry) => entry.question).join("\n").slice(0, 8000) } : {}) });
+          if (expand || !responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: expand ? "evidence_expansion" : "dependency_refresh", ...(expand ? { query: missing.map((entry) => entry.question).join("\n").slice(0, JOURNAL_QUERY_CHARACTERS) } : {}) });
         }
         const evidence = snapshot ? modelEvidence(await loadCase(caseId, authContext), snapshot) : null;
         const journalEvidence = evidence ? null : frozenJournalEvidence(runtimeTurn);

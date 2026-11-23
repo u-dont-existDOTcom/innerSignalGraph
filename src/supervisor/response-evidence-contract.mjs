@@ -508,18 +508,22 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
     if (snapshot.owner.kind === "runtime_turn" ? !runtime || runtime.id !== snapshot.owner.runtime_turn_id
       : candidate.metadata.supervisor_draft?.operation_key !== snapshot.owner.operation_key) return result(RESPONSE_EVIDENCE_CODES.invalid, "lineage_binding");
     const root = (record.candidate_responses ?? []).find((entry) => entry.id === candidate.root_candidate_id);
-    const actualOrigin = runtime ? "backend_produced" : candidate.metadata.supervisor_draft?.source === "external_draft" ? "external_draft" : "backend_produced";
+    const actualOrigin = runtime ? "backend_produced" : root?.metadata.supervisor_draft?.root_source;
     if (!root || actualOrigin !== binding.candidate_origin || (runtime ? root.metadata.runtime_turn_id !== runtime.id
       : root.metadata.supervisor_draft?.operation_key !== snapshot.owner.operation_key)) return result(RESPONSE_EVIDENCE_CODES.invalid, "lineage_binding");
     const inboundText = runtime?.inbound.exact_text ?? effectiveTurns(record).find((entry) => entry.id === snapshot.inbound.turn_id)?.text;
-    if (!auditPoint && (typeof inboundText !== "string" || sha256Text(inboundText) !== snapshot.inbound.exact_text_sha256)) return result(RESPONSE_EVIDENCE_CODES.stale, "inbound_changed");
-    if (binding.writer_inclusion !== snapshot.original_writer_source_inclusion || (binding.candidate_origin === "external_draft" && binding.writer_inclusion_sha256 !== null)) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
-    if (binding.candidate_origin === "backend_produced") {
+    const freshnessRequired = !auditPoint && point !== "approveSupervisorDraft";
+    if (freshnessRequired && (typeof inboundText !== "string" || sha256Text(inboundText) !== snapshot.inbound.exact_text_sha256)) return result(RESPONSE_EVIDENCE_CODES.stale, "inbound_changed");
+    const writerRequired = Boolean(runtime) || (candidate.id === root.id && actualOrigin === "backend_produced");
+    if (binding.writer_inclusion !== (writerRequired ? "verified" : "not_attested") || (!writerRequired && binding.writer_inclusion_sha256 !== null)) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
+    if (writerRequired) {
       if (!binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
-      const stage = candidate.parent_candidate_id === null ? "candidate" : "repair";
-      const invocation = runtime?.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === stage && event.details?.actual_context_id === candidate.producer_context_id && event.details?.output?.exactText === candidate.exact_text);
-      const inclusion = invocation?.details?.output?.responseEvidenceInclusion;
-      if (!inclusion || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
+      if (runtime) {
+        const stage = candidate.parent_candidate_id === null ? "candidate" : "repair";
+        const invocation = runtime.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === stage && event.details?.actual_context_id === candidate.producer_context_id && event.details?.output?.exactText === candidate.exact_text);
+        const inclusion = invocation?.details?.output?.responseEvidenceInclusion;
+        if (!inclusion || inclusion.snapshot_id !== snapshot.id || inclusion.snapshot_sha256 !== snapshot.snapshot_sha256 || inclusion.view_sha256 !== binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
+      } else if (candidate.metadata.response_evidence_view_sha256 !== binding.writer_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "writer_inclusion");
     }
     if (!audit || (!auditPoint && (audit.verdict !== "pass" || audit.sufficient_for_approval !== true)) || audit.candidate_id !== candidate.id || audit.candidate_version !== candidate.version || audit.candidate_sha256 !== sha256Text(candidate.exact_text)) return result(RESPONSE_EVIDENCE_CODES.invalid, "audit_binding");
     const evidence = validateResponseEvidenceAudit(audit, candidate, snapshot);
@@ -534,7 +538,7 @@ export function assessResponseEvidenceAdmission(record, candidate, { policy = "a
       if (receipt?.disclosure_manifest?.response_evidence_snapshot_sha256 !== snapshot.snapshot_sha256 || receipt?.disclosure_manifest?.response_evidence_view_sha256 !== evidence.auditor_inclusion_sha256) return result(RESPONSE_EVIDENCE_CODES.invalid, "auditor_inclusion");
     }
     if (deriveEvidenceFindings(evidence.review).length) return result(RESPONSE_EVIDENCE_CODES.unsupported, "blocking_support");
-    if (!auditPoint && !responseEvidenceDependenciesCurrent(record, candidate, snapshot)) return result(RESPONSE_EVIDENCE_CODES.stale, "dependencies_changed");
+    if (freshnessRequired && !responseEvidenceDependenciesCurrent(record, candidate, snapshot)) return result(RESPONSE_EVIDENCE_CODES.stale, "dependencies_changed");
     return result();
   } catch { return result(RESPONSE_EVIDENCE_CODES.invalid, "invalid_evidence"); }
 }

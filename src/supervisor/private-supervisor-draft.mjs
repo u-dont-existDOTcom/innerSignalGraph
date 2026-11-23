@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, createCandidateAuditEvidence } from "./private-candidate-lifecycle.mjs";
+import { assessResponseEvidenceAdmission, buildEvidenceModelView } from "./response-evidence-contract.mjs";
 import {
   SUPERVISOR_INPUT_TYPES,
   SUPERVISOR_LIMITS,
@@ -59,9 +60,11 @@ export function createPrivateSupervisorDraftService({
   privateCaseSource,
   modelRuntime = null,
   maximumInvocationAttempts = 2,
-  // The point where slice 3's shared source-support validator is called. It receives the case record and the exact candidate at
-  // the approval point and may refuse by throwing; the default admits whatever the independent audit already admitted.
-  admissionCheck = async () => {}
+  // Pre-check only; the store repeats admission inside its approval mutation.
+  admissionCheck = async ({ record, candidate }) => {
+    const assessment = assessResponseEvidenceAdmission(record, candidate, { point: "approveSupervisorDraft" });
+    if (!assessment.admissible) throw new ValidationError("Response evidence admission refused.", { code: assessment.code, details: { reasons: assessment.reasons } });
+  }
 } = {}) {
   if (!privateCaseSource || typeof privateCaseSource !== "object") throw new ValidationError("privateCaseSource is required.");
   if (modelRuntime != null) {
@@ -133,6 +136,10 @@ export function createPrivateSupervisorDraftService({
     const prefix = `candidate:supervisor:${operationKey}:`;
     return record.candidate_responses.filter((candidate) => candidate.id.startsWith(prefix)).at(-1) ?? null;
   };
+  const modelEvidence = (record, snapshot) => {
+    const resolved = buildEvidenceModelView(record, snapshot);
+    return { snapshot, view: resolved.view, viewSha256: resolved.view_sha256 };
+  };
 
   // Drives one draft lineage to a terminal result: approved, blocked at the repair limit, or replaced. Every step is a durable
   // write that a restart or a replayed request repeats safely, so the loop reads the stored lineage afresh each time.
@@ -141,36 +148,42 @@ export function createPrivateSupervisorDraftService({
       const record = await loadCase(caseId, authContext);
       const head = lineageHead(record, operationKey);
       if (!head) throw new ValidationError("The supervisor draft to review was not found.", { code: "SUPERVISOR_ARTIFACT_NOT_FOUND" });
+      const bound = head.metadata.response_evidence;
       switch (head.status) {
         case "pending_audit":
         case "reconstructed_pending_audit": {
+          const evidence = bound ? modelEvidence(record, record.response_evidence_snapshots.find((entry) => entry.id === bound.snapshot_id)) : null;
           const audited = await invoke("audit", operationKey, head.version, (attemptContextId) => requireModelRuntime("auditCandidate")({
-            caseId, candidateId: head.id, candidate: head, journalEvidence: null, authContext, attemptContextId
+            caseId, candidateId: head.id, candidate: head, journalEvidence: null, ...(evidence ? { responseEvidence: evidence } : {}), authContext, attemptContextId
           }));
           if (audited.contextId === head.producer_context_id) throw new ValidationError("Candidate producer cannot audit the exact text it produced.");
           const result = audited.value ?? audited.result;
-          const evidence = createCandidateAuditEvidence({
+          const auditEvidence = createCandidateAuditEvidence({
             auditId: supervisorAuditId(operationKey, head.repair_cycle + 1),
             candidate: head,
             auditVersion: PRIVATE_CANDIDATE_AUDIT_VERSION,
             auditorContext: { kind: "independent", context_id: audited.contextId },
             findings: result.findings,
             repairInducedChecks: result.repair_induced_checks ?? [],
-            independentAuditorAvailable: true
+            independentAuditorAvailable: true,
+            ...(evidence ? { responseEvidence: { snapshotId: evidence.snapshot.id, snapshotSha256: evidence.snapshot.snapshot_sha256,
+              auditorInclusionSha256: audited.responseEvidenceInclusion?.view_sha256, review: result.evidence_review, snapshot: evidence.snapshot } } : {})
           });
-          await call("recordSupervisorAudit", [caseId, head.id, evidence, { disclosureManifest: audited.disclosureManifest ?? null, providerReceipt: audited.providerReceipt ?? null }], authContext);
+          await call("recordSupervisorAudit", [caseId, head.id, auditEvidence, { disclosureManifest: audited.disclosureManifest ?? null, providerReceipt: audited.providerReceipt ?? null }], authContext);
           break;
         }
         case "audited": {
           const audit = [...head.audit_history].reverse().find((entry) => entry.sufficient_for_approval);
           await admissionCheck({ point: "approval", caseId, record, candidate: head, audit });
-          await call("approveCandidateForDelivery", [caseId, head.id, audit.id], authContext);
+          await call(typeof privateCaseSource.approveSupervisorDraft === "function" ? "approveSupervisorDraft" : "approveCandidateForDelivery", [caseId, head.id, audit.id], authContext);
           break;
         }
         case "audit_failed": {
           if (head.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) return { status: "blocked", record, head };
+          const newest = bound ? record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1) : null;
+          const repairEvidence = newest ? modelEvidence(record, newest) : null;
           const repaired = await invoke("repair", operationKey, head.version, (attemptContextId) => requireModelRuntime("repairCandidate")({
-            caseId, candidate: head, journalEvidence: null, authContext, attemptContextId
+            caseId, candidate: head, journalEvidence: null, ...(repairEvidence ? { responseEvidence: repairEvidence } : {}), authContext, attemptContextId
           }));
           await call("reconstructSupervisorDraft", [caseId, head.id, { exactText: repaired.exactText, producerContextId: repaired.contextId }], authContext);
           break;
@@ -301,12 +314,33 @@ export function createPrivateSupervisorDraftService({
           throw new ValidationError("The case changed after this draft was prepared; prepare the case again before submitting.", { code: "SUPERVISOR_BASIS_CHANGED" });
         }
         let replayed = existing;
+        // Freeze once before storing external bytes or invoking the backend writer. A restart after the freeze but before
+        // submission reuses the persisted input; a submission replay never freezes against the case's newer state.
+        let responseEvidence = null;
+        if (privateCaseSource.responseEvidencePolicy === "enforced" || existing) {
+          const record = await loadCase(caseId, authContext);
+          const snapshotId = `snapshot:supervisor:${operationKey}:r1`;
+          let frozen = record.response_evidence_snapshots.find((entry) => entry.id === snapshotId);
+          if (!frozen && !existing) {
+            const latest = snapshot.latest_client_turn;
+            if (!latest) throw new ValidationError("The runtime has no client message to bind.", { code: "SUPERVISOR_NO_PENDING_CLIENT_MESSAGE" });
+            frozen = await call("freezeResponseEvidence", [caseId, {
+              snapshotId, owner: { kind: "supervisor_draft", operation_key: operationKey }, candidateOrigin: source,
+              inbound: { turn_id: latest.turn_id, exact_text_sha256: sha256Text(latest.text), audience: "client", source_kind: "exact_client_turn" },
+              historyRequirements: [], journal: { availability: "not_configured" }
+            }], authContext);
+          }
+          if (!frozen && privateCaseSource.responseEvidencePolicy === "enforced") throw new ValidationError("Response evidence required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
+          // An existing external draft needs only its binding to replay; do not resolve stale transcript locators here.
+          if (frozen) responseEvidence = existing ? { snapshot: frozen } : modelEvidence(record, frozen);
+        }
         if (external) {
           const stored = await call("submitSupervisorDraft", [caseId, {
             operationKey,
             source,
             exactText: text,
             producerContextId: `context:external:${operationKey}`,
+            ...(responseEvidence ? { responseEvidence: { snapshotId: responseEvidence.snapshot.id, writerInclusionSha256: null } } : {}),
             expectedBasisSha256: existing ? null : snapshot.basis.sha256,
             companion: companionInput,
             channel: normalizeChannel(channel)
@@ -322,6 +356,7 @@ export function createPrivateSupervisorDraftService({
             runtimeTurn: { id: `supervisor:${operationKey}`, user_turn_id: latest.turn_id, inbound: { exact_text: latest.text, received_at: latest.at } },
             userInput: {},
             journalEvidence: null,
+            ...(responseEvidence ? { responseEvidence } : {}),
             authContext,
             attemptContextId,
             inboundAlreadyRecorded: true
@@ -331,7 +366,9 @@ export function createPrivateSupervisorDraftService({
             source,
             exactText: produced.exactText,
             producerContextId: produced.contextId,
-            receipts: { producer_attempt_context_id: produced.attemptContextId, journal_evidence_sha256: null },
+            receipts: { producer_attempt_context_id: produced.attemptContextId, journal_evidence_sha256: null,
+              ...(responseEvidence ? { response_evidence_view_sha256: produced.responseEvidenceInclusion?.view_sha256 } : {}) },
+            ...(responseEvidence ? { responseEvidence: { snapshotId: responseEvidence.snapshot.id, writerInclusionSha256: produced.responseEvidenceInclusion?.view_sha256 } } : {}),
             expectedBasisSha256: snapshot.basis.sha256,
             channel: normalizeChannel(channel)
           }], authContext, trustOptions(channel));

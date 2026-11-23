@@ -185,7 +185,11 @@ export function assessSupervisorArtifact(record, candidate, { responseEvidencePo
   if (!checks.bytes_match_audited_candidate) notApprovedReasons.push("audit_does_not_bind_these_bytes");
   if (!checks.approved_for_delivery) notApprovedReasons.push(candidate.status === "audited" ? "approval_pending" : "not_approved_for_delivery");
   const evidenceAdmission = assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point: "exportSupervisorArtifact" });
-  const refusal = !evidenceAdmission.admissible ? { code: evidenceAdmission.code, reasons: evidenceAdmission.reasons } : staleReasons.some((reason) => ["superseded_by_newer_draft", "already_committed_to_transcript", "not_the_current_candidate"].includes(reason))
+  if (evidenceAdmission.code === "RESPONSE_EVIDENCE_STALE") {
+    staleReasons.push(...evidenceAdmission.reasons.filter((reason) => !staleReasons.includes(reason)));
+    checks.case_unchanged_since_draft = false;
+  }
+  const refusal = !evidenceAdmission.admissible && evidenceAdmission.code !== "RESPONSE_EVIDENCE_STALE" ? { code: evidenceAdmission.code, reasons: evidenceAdmission.reasons } : staleReasons.some((reason) => ["superseded_by_newer_draft", "already_committed_to_transcript", "not_the_current_candidate"].includes(reason))
     ? { code: SUPERVISOR_REFUSALS.stale, reasons: staleReasons }
     : (notApprovedReasons.length ? { code: SUPERVISOR_REFUSALS.not_approved, reasons: notApprovedReasons }
       : (staleReasons.length ? { code: SUPERVISOR_REFUSALS.stale, reasons: staleReasons } : null));

@@ -228,6 +228,8 @@ export function createPrivateCaseAccessService({
     return runWithStore(caseId, authContext, authorization, operation);
   };
   const supervisorDraftSource = Object.freeze({
+    responseEvidencePolicy,
+    freezeResponseEvidence: (caseId, input, authContext) => supervisorRun(caseId, authContext, "ticket", (store) => store.freezeResponseEvidence(caseId, input)),
     // The caller's own bearer, authorized for the case, or a ticket for it.
     getSupervisorSnapshot: (caseId, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.getSupervisorSnapshot(caseId)),
     resolveSupervisorSubmission: (caseId, input, authContext) => supervisorRun(caseId, authContext, "either", (store) => store.resolveSupervisorSubmission(caseId, { ...input, channel: SUPERVISOR_CONNECTOR_CHANNEL })),
@@ -265,6 +267,7 @@ export function createPrivateCaseAccessService({
   });
 
   return Object.freeze({
+    responseEvidencePolicy,
     rootDir,
     supervisorDraftAccess,
     // Checks only the caller's token, without opening any case, so a transport can tell a denial
@@ -373,6 +376,9 @@ export function createPrivateCaseAccessService({
     },
     async approveCandidateForDelivery(caseId, candidateId, auditId, authContext) {
       return auditWrite(caseId, authContext, (store) => store.approveCandidateForDelivery(caseId, candidateId, auditId));
+    },
+    async approveSupervisorDraft(caseId, candidateId, auditId, authContext) {
+      return auditWrite(caseId, authContext, (store) => store.approveSupervisorDraft(caseId, candidateId, auditId));
     },
     async markCandidateSent(caseId, candidateId, authContext) {
       return write(caseId, authContext, (store) => store.markCandidateSent(caseId, candidateId));

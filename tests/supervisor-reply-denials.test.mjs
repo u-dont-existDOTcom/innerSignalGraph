@@ -133,6 +133,7 @@ test("every method of the access service refuses a holder of only the reply-draf
     recordCandidateAudit: () => access.recordCandidateAudit(CASE_ID, "candidate:x", {}, replyOnly),
     reconstructCandidateResponse: () => access.reconstructCandidateResponse(CASE_ID, "candidate:x", "candidate:y", "text", {}, replyOnly),
     approveCandidateForDelivery: () => access.approveCandidateForDelivery(CASE_ID, "candidate:x", "audit:x", replyOnly),
+    approveSupervisorDraft: () => access.approveSupervisorDraft(CASE_ID, "candidate:x", "audit:x", replyOnly),
     markCandidateSent: () => access.markCandidateSent(CASE_ID, "candidate:x", replyOnly),
     deliverCandidateResponse: () => access.deliverCandidateResponse(CASE_ID, "candidate:x", {}, replyOnly),
     recordCommunicationEvent: () => access.recordCommunicationEvent(CASE_ID, {}, replyOnly),
@@ -180,9 +181,9 @@ test("every method of the access service refuses a holder of only the reply-draf
     authorizeCase_write_scope: () => access.authorizeCase(CASE_ID, replyOnly, PRIVATE_CASE_SCOPES.WRITE),
     authorizeCase_audit_scope: () => access.authorizeCase(CASE_ID, replyOnly, PRIVATE_CASE_SCOPES.AUDIT)
   };
-  // Not data access: the service's location, its own reply-draft path, a check of the token alone, a scope-checked authorization
-  // that opens nothing, and a journal check that is refused a scope other than read or write.
-  const NOT_A_CASE_OPERATION = ["rootDir", "supervisorDraftAccess", "authenticate", "authorizeCase", "verifyCaseAccess", "withJournalCorpus", "inspectJournalCorpus"];
+  // Not data access: the service's location, its response-evidence policy label, its own reply-draft path, a check of the token
+  // alone, a scope-checked authorization that opens nothing, and a journal check that is refused a scope other than read or write.
+  const NOT_A_CASE_OPERATION = ["rootDir", "responseEvidencePolicy", "supervisorDraftAccess", "authenticate", "authorizeCase", "verifyCaseAccess", "withJournalCorpus", "inspectJournalCorpus"];
   const covered = new Set([...Object.keys(A).filter((key) => !key.includes("_")), ...NOT_A_CASE_OPERATION]);
   assert.deepEqual([...covered].sort(), Object.keys(access).sort(), "every method of the access service has a case in this table");
 
@@ -213,10 +214,11 @@ test("the review runs under a ticket only the service mints: the source refuses 
   const candidateId = submitted.artifact.candidate_id;
   const ticket = await authorize(CASE_ID, replyOnly);
 
-  // The source offers exactly the operations the connector needs, and no generic write.
+  // The source offers exactly the operations the connector needs, and no generic write. freezeResponseEvidence writes only a
+  // response-evidence snapshot for a draft (ticket only, below); responseEvidencePolicy is the store policy label, not an operation.
   assert.deepEqual(Object.keys(source).sort(), [
-    "approveCandidateForDelivery", "exportSupervisorArtifact", "getSupervisorSnapshot", "loadCaseContext", "loadPrivateRuntimeCase",
-    "reconstructSupervisorDraft", "recordSupervisorAudit", "recordSupervisorReport", "resolveSupervisorSubmission", "submitSupervisorDraft"
+    "approveCandidateForDelivery", "exportSupervisorArtifact", "freezeResponseEvidence", "getSupervisorSnapshot", "loadCaseContext", "loadPrivateRuntimeCase",
+    "reconstructSupervisorDraft", "recordSupervisorAudit", "recordSupervisorReport", "resolveSupervisorSubmission", "responseEvidencePolicy", "submitSupervisorDraft"
   ]);
   assert.equal(Object.isFrozen(source), true);
   assert.equal(Object.isFrozen(env.access.supervisorDraftAccess), true);
@@ -229,7 +231,8 @@ test("the review runs under a ticket only the service mints: the source refuses 
     loadCaseContext: (ctx, caseId = CASE_ID) => source.loadCaseContext(caseId, ctx, { candidateId }),
     recordSupervisorAudit: (ctx, caseId = CASE_ID) => source.recordSupervisorAudit(caseId, candidateId, {}, {}, ctx),
     approveCandidateForDelivery: (ctx, caseId = CASE_ID) => source.approveCandidateForDelivery(caseId, candidateId, "audit:x", ctx),
-    reconstructSupervisorDraft: (ctx, caseId = CASE_ID) => source.reconstructSupervisorDraft(caseId, candidateId, { exactText: "x", producerContextId: "c" }, ctx)
+    reconstructSupervisorDraft: (ctx, caseId = CASE_ID) => source.reconstructSupervisorDraft(caseId, candidateId, { exactText: "x", producerContextId: "c" }, ctx),
+    freezeResponseEvidence: (ctx, caseId = CASE_ID) => source.freezeResponseEvidence(caseId, {}, ctx)
   };
   const before = await env.fingerprint();
   const forged = [

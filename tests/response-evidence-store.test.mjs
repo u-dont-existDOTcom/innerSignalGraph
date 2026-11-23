@@ -252,11 +252,13 @@ for (const policy of ["advisory", "enforced"]) {
 }
 
 test("supervisor approval and export refuse ungoverned candidates under enforcement", async (t) => {
-  const { store } = await environment(t, "enforced");
-  await store.appendTranscriptTurn(CASE, turn(inbound.turn_id, inboundText));
-  const submitted = await store.submitSupervisorDraft(CASE, { operationKey: "a".repeat(24), source: "external_draft", exactText: "Supervisor exact reply.", producerContextId: "external:writer", channel: "owner_ui" });
-  const candidate = await store.getCandidateResponse(CASE, submitted.artifact.candidate_id), audit = auditFor(candidate);
-  await store.recordSupervisorAudit(CASE, candidate.id, audit);
+  const env = await environment(t);
+  await env.store.appendTranscriptTurn(CASE, turn(inbound.turn_id, inboundText));
+  const submitted = await env.store.submitSupervisorDraft(CASE, { operationKey: "a".repeat(24), source: "external_draft", exactText: "Supervisor exact reply.", producerContextId: "external:writer", channel: "owner_ui" });
+  const candidate = await env.store.getCandidateResponse(CASE, submitted.artifact.candidate_id), audit = auditFor(candidate);
+  await env.store.recordSupervisorAudit(CASE, candidate.id, audit);
+  const store = createEncryptedPrivateCaseStore({ ...env.options, responseEvidencePolicy: "enforced" });
+  t.after(() => store.close());
   await assert.rejects(store.approveSupervisorDraft(CASE, candidate.id, audit.id), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
   await assert.rejects(store.exportSupervisorArtifact(CASE, { artifactId: submitted.artifact.artifact_id, channel: "owner_ui" }), errorCode("RESPONSE_EVIDENCE_REQUIRED"));
 });
@@ -346,16 +348,18 @@ test("recordSupervisorAudit refuses generic or mismatched PASS, preserves FAIL a
 });
 
 for (const [reason, change] of Object.entries(invalidate)) {
-  test(`supervisor approval and export refuse stale evidence after ${reason}`, async (t) => {
+  test(`supervisor approval preserves a reviewed draft but export refuses stale evidence after ${reason}`, async (t) => {
     const env = await supervisorGoverned(t), { store, candidate } = env;
     const { audit, receipt } = await supervisorAudit(env);
     await store.recordSupervisorAudit(CASE, candidate.id, audit, receipt);
     await store.approveSupervisorDraft(CASE, candidate.id, audit.id);
     await change(store);
-    await assert.rejects(store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" }), errorCode("RESPONSE_EVIDENCE_STALE"));
+    await assert.rejects(store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" }), errorCode("SUPERVISOR_ARTIFACT_STALE"));
     const record = await store.load(CASE); record.candidate_responses.at(-1).status = "audited"; delete record.candidate_responses.at(-1).metadata.approval_audit_id;
     await env.seed(record);
-    await assert.rejects(store.approveSupervisorDraft(CASE, candidate.id, audit.id), errorCode("RESPONSE_EVIDENCE_STALE"));
+    await assert.rejects(store.approveCandidateForDelivery(CASE, candidate.id, audit.id), errorCode("RESPONSE_EVIDENCE_STALE"));
+    await store.approveSupervisorDraft(CASE, candidate.id, audit.id);
+    await assert.rejects(store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" }), errorCode("SUPERVISOR_ARTIFACT_STALE"));
   });
 }
 
@@ -573,10 +577,12 @@ test("the encrypted store freezes a long case with full usable journal budget an
   assert.ok(snapshot.communication_projection.omitted.source_items.some((item) => item.reason === "draft_budget"));
 });
 
-test("recordSupervisorAudit records a valid exact PASS despite later state changes, while approval refuses it", async (t) => {
+test("recordSupervisorAudit records a valid exact PASS despite later state changes; supervisor approval releases nothing", async (t) => {
   const env = await supervisorGoverned(t), { audit, receipt } = await supervisorAudit(env);
   const state = await env.store.getCaseState(CASE); state.updated_at = "2026-11-23T18:00:00.000Z"; await env.store.saveCaseState(CASE, state);
   await env.store.recordSupervisorAudit(CASE, env.candidate.id, audit, receipt);
   assert.equal((await env.store.getCandidateResponse(CASE, env.candidate.id)).audit_history.at(-1).verdict, "pass");
-  await assert.rejects(env.store.approveSupervisorDraft(CASE, env.candidate.id, audit.id), errorCode("RESPONSE_EVIDENCE_STALE"));
+  await assert.rejects(env.store.approveCandidateForDelivery(CASE, env.candidate.id, audit.id), errorCode("RESPONSE_EVIDENCE_STALE"));
+  await env.store.approveSupervisorDraft(CASE, env.candidate.id, audit.id);
+  await assert.rejects(env.store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" }), errorCode("SUPERVISOR_ARTIFACT_STALE"));
 });

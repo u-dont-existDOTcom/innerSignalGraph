@@ -4,7 +4,7 @@ import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import {
   RESPONSE_EVIDENCE_POLICY_VERSION, RESPONSE_EVIDENCE_BUDGETS, assessResponseEvidenceAdmission,
-  buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeEvidenceReview, normalizeResponseEvidenceJournal,
+  buildEvidenceModelView, buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeEvidenceReview, normalizeResponseEvidenceJournal,
   responseEvidenceCandidateSchema, responseEvidenceSnapshotSchema, validateEvidenceShape, validateResponseEvidenceAudit, validateResponseEvidenceSnapshot
 } from "../supervisor/response-evidence-contract.mjs";
 import { applyCaseStatePatch, createEmptyCaseState, diffCaseStates, validateCaseState } from "../case-state/longitudinal-state.mjs";
@@ -769,11 +769,11 @@ export function createEncryptedPrivateCaseStore({
     if (!responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate })) blocked();
   };
   // Delivery approval of the exact current candidate on a fresh independent audit that certifies that exact ID and version.
-  const approveCandidateInRecord = (record, candidateId, auditId) => {
+  const approveCandidateInRecord = (record, candidateId, auditId, point = "approveCandidateForDelivery") => {
     const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
     const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
     if (!candidate || current?.id !== candidateId) throw new ValidationError("Delivery approval must target the exact current candidate version.");
-    requireResponseEvidence(record, candidate, "approveCandidateForDelivery");
+    requireResponseEvidence(record, candidate, point);
     if (candidate.status !== "audited") throw new ValidationError("Candidate must pass a fresh independent audit before delivery approval.");
     const audit = candidate.audit_history.find((entry) => entry.id === auditId);
     if (!audit?.sufficient_for_approval || audit.candidate_id !== candidate.id || audit.candidate_version !== candidate.version) {
@@ -927,14 +927,14 @@ export function createEncryptedPrivateCaseStore({
     record.candidate_responses.push(candidate);
     return candidate;
   };
-  const appendReconstruction = (record, parentCandidateId, candidateId, exactText, metadata) => {
+  const appendReconstruction = (record, parentCandidateId, candidateId, exactText, metadata, responseEvidenceBinding = null) => {
     if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
     if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
     if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate reconstruction metadata must be an object.");
     const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
     const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
     if (!parent || current?.id !== parentCandidateId) throw new ValidationError("Reconstruction must name the exact current candidate as its parent.");
-    if (parent.metadata.response_evidence) throw new ValidationError("Response evidence repair binding required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
+    if (parent.metadata.response_evidence && !responseEvidenceBinding) throw new ValidationError("Response evidence repair binding required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
     if (parent.status !== "audit_failed") throw new ValidationError("A substantive reconstruction requires unresolved substantive/high audit findings on its parent.");
     if (parent.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) {
       throw new ValidationError("Maximum two repair cycles reached; use the smallest discriminating question, explicit uncertainty, or block delivery.", { code: "PRIVATE_CANDIDATE_REPAIR_LIMIT" });
@@ -961,6 +961,7 @@ export function createEncryptedPrivateCaseStore({
       audit_history: [],
       metadata: {
         ...Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => !["producer_context_id", "based_on_audit_id"].includes(key))),
+        ...(responseEvidenceBinding ? { response_evidence: structuredClone(responseEvidenceBinding) } : {}),
         based_on_audit_id: sourceAudit.id,
         substantive_reconstruction: true
       }
@@ -1007,6 +1008,7 @@ export function createEncryptedPrivateCaseStore({
   return Object.freeze({
     format: ENVELOPE_FORMAT,
     rootDir,
+    responseEvidencePolicy,
     async load(caseId) { const value = await readExisting(safeCaseId(caseId)); return value ? structuredClone(value) : null; },
     loadOrCreate,
     async freezeResponseEvidence(caseId, input = {}) {
@@ -1653,7 +1655,7 @@ export function createEncryptedPrivateCaseStore({
         if (!recorded) {
           throw new ValidationError("A supervisor draft is approved only on the audit its supervisor review recorded.", { code: "SUPERVISOR_ARTIFACT_NOT_APPROVED" });
         }
-        approveCandidateInRecord(record, candidateId, auditId);
+        approveCandidateInRecord(record, candidateId, auditId, "approveSupervisorDraft");
         return record;
       });
     },
@@ -1815,9 +1817,9 @@ export function createEncryptedPrivateCaseStore({
         review_scope: {
           audit: "existing_independent_audit",
           audit_evidence: "stored_case_record_only",
-          owner_inputs_in_audit_packet: false,
+          owner_inputs_in_audit_packet: Boolean(active?.metadata.response_evidence && isSupervisorDraftCandidate(active)),
           translation_meaning: "unreviewed",
-          source_support_coverage: "not_enforced_in_this_version",
+          source_support_coverage: active?.metadata.response_evidence && isSupervisorDraftCandidate(active) ? "enforced" : "not_enforced_in_this_version",
           claim_scope: "Approval and export cover only the exact bytes InnerSignal stored; text edited, retyped, translated or paraphrased elsewhere inherits none of it."
         }
       });
@@ -1846,6 +1848,7 @@ export function createEncryptedPrivateCaseStore({
       exactText,
       producerContextId,
       receipts = {},
+      responseEvidence = null,
       expectedBasisSha256 = null,
       companion = null,
       channel
@@ -1857,7 +1860,7 @@ export function createEncryptedPrivateCaseStore({
       if (typeof producerContextId !== "string" || !producerContextId.trim() || producerContextId.length > 160) throw new ValidationError("A draft producer context is required.");
       if (expectedBasisSha256 != null && !/^[a-f0-9]{64}$/.test(expectedBasisSha256)) throw new ValidationError("basisSha256 is invalid.");
       if (!receipts || typeof receipts !== "object" || Array.isArray(receipts)
-          || Object.keys(receipts).some((key) => !["producer_attempt_context_id", "journal_evidence_sha256"].includes(key))) {
+          || Object.keys(receipts).some((key) => !["producer_attempt_context_id", "journal_evidence_sha256", "response_evidence_view_sha256"].includes(key))) {
         throw new ValidationError("Draft receipts may carry only the producer attempt context and the journal evidence digest.");
       }
       if (source === "external_draft" && Object.keys(receipts).length) throw new ValidationError("An external draft carries no producer receipts.");
@@ -1871,6 +1874,11 @@ export function createEncryptedPrivateCaseStore({
         if (existing) {
           // The same comparison the service's lookup makes (resolveSupervisorSubmission), repeated here inside the write.
           assertSameSupervisorOperation(supervisorSubmissionIdentity(record, existing, { source, exactText, producerContextId, companion: companion ?? null, channel }));
+          const bound = existing.metadata.response_evidence;
+          if ((bound != null) !== (responseEvidence != null) || (bound && (bound.snapshot_id !== responseEvidence.snapshotId
+              || bound.writer_inclusion_sha256 !== responseEvidence.writerInclusionSha256))) {
+            throw new ValidationError("Response evidence replay conflict.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          }
           replayed = true;
           return null;
         }
@@ -1879,10 +1887,31 @@ export function createEncryptedPrivateCaseStore({
         if (expectedBasisSha256 != null && expectedBasisSha256 !== basisSha256) {
           throw new ValidationError("The case changed after this draft was prepared; prepare the case again before submitting.", { code: "SUPERVISOR_BASIS_CHANGED" });
         }
+        let evidenceBinding = null;
+        if (responseEvidence != null) {
+          const snapshot = record.response_evidence_snapshots.find((entry) => entry.id === responseEvidence.snapshotId);
+          const newest = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === operationKey).at(-1);
+          if (!snapshot || snapshot !== newest || snapshot.case_id !== caseId || snapshot.candidate_origin !== source) {
+            throw new ValidationError("Response evidence binding invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          }
+          validateResponseEvidenceSnapshot(snapshot);
+          if (snapshot.inbound.turn_id !== basis.latest_user_turn_id || !responseEvidenceSnapshotCurrent(record, { snapshot })) throw new ValidationError("Response evidence stale.", { code: "RESPONSE_EVIDENCE_STALE" });
+          const inclusion = responseEvidence.writerInclusionSha256;
+          if (source === "external_draft" ? inclusion !== null
+            : inclusion !== receipts.response_evidence_view_sha256 || inclusion !== buildEvidenceModelView(record, snapshot).view_sha256) {
+            throw new ValidationError("Response evidence writer inclusion invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          }
+          evidenceBinding = {
+            schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
+            candidate_origin: source, writer_inclusion: source === "external_draft" ? "not_attested" : "verified", writer_inclusion_sha256: inclusion,
+            established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest, dependency_status: "current_at_commit"
+          };
+        } else if (responseEvidencePolicy === "enforced") throw new ValidationError("Response evidence required.", { code: "RESPONSE_EVIDENCE_REQUIRED" });
         const candidate = appendOriginalCandidate(record, candidateId, exactText, {
           producer_context_id: producerContextId,
           compatibility_state_binding: basis.compatibility_state_binding,
           ...structuredClone(receipts),
+          ...(evidenceBinding ? { response_evidence: evidenceBinding } : {}),
           supervisor_draft: {
             schema_version: SUPERVISOR_DRAFT_VERSION,
             source,
@@ -1959,6 +1988,18 @@ export function createEncryptedPrivateCaseStore({
           ]);
           return null;
         }
+        let evidenceBinding = null;
+        if (parent.metadata.response_evidence) {
+          const snapshot = record.response_evidence_snapshots.filter((entry) => entry.owner.kind === "supervisor_draft" && entry.owner.operation_key === draft.operation_key).at(-1);
+          if (!snapshot || snapshot.case_id !== caseId || snapshot.candidate_origin !== draft.root_source) throw new ValidationError("Response evidence binding invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+          const root = record.candidate_responses.find((entry) => entry.id === parent.root_candidate_id);
+          evidenceBinding = {
+            schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION, snapshot_id: snapshot.id, snapshot_sha256: snapshot.snapshot_sha256,
+            candidate_origin: snapshot.candidate_origin, writer_inclusion: "not_attested", writer_inclusion_sha256: null,
+            established_context_after_commit_sha256: snapshot.dependency_binding.established_context_digest,
+            dependency_status: responseEvidenceSnapshotCurrent(record, { snapshot, rootCandidate: root }) ? "current_at_commit" : "stale_at_commit"
+          };
+        }
         appendReconstruction(record, parent.id, childId, exactText, {
           producer_context_id: producerContextId,
           compatibility_state_binding: parent.metadata.compatibility_state_binding ?? null,
@@ -1969,7 +2010,7 @@ export function createEncryptedPrivateCaseStore({
             text_sha256: sha256Text(exactText),
             exposure: { exact_bytes: "produced_by_backend_repair", original_writer: "backend_inclusion_receipts", auditor_inputs: "case_record_only" }
           }
-        });
+        }, evidenceBinding);
         return record;
       });
       await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: childId, caseId });
