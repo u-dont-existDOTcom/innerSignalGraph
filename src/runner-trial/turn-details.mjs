@@ -30,10 +30,14 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   if (readers?.provisional_refused) add("provisional_refused", "Provisional reply refused", null, readers.provisional_refused);
   if (turn.provisional) add("provisional", "Provisional reply shown", turn.provisional.shown_at, turn.provisional, callsFrom(readers?.crisis?.receipts));
   // The remaining readers run concurrently. Their individual completion order is not recorded.
-  // A reader with nothing stored didn't run in this turn's arrangement (the whole writer has no box reader): leave it out
-  // rather than show an empty section that reads like a failure.
+  // A reader that didn't run in this turn's arrangement gets no section, rather than an empty one that reads like a failure.
+  // With the whole writer the runtime never calls the box reader and stores the placeholder `{ boxes: [], receipts: [] }`
+  // (runtime.mjs, the R2 step); a failed box reader stores `boxes: null` and stays shown.
+  const boxPlaceholder = (value) => value != null && list(value.receipts).length === 0
+    && Object.entries(without(value, ["receipts"])).every(([, item]) => Array.isArray(item) && item.length === 0);
+  const wholeWriter = turn.runner_config?.arrangement?.writerMode === "whole";
   for (const [key, role, label] of [["boxes", "R2", "Rule box reader"], ["protection", "R3", "Protection reader"]]) {
-    if (readers?.[key] == null) continue;
+    if (readers?.[key] == null || (key === "boxes" && (wholeWriter || boxPlaceholder(readers[key])))) continue;
     add("reader", label, null, without(readers[key], ["receipts"]), callsFrom(readers[key].receipts), { role, timing: "Individual completion time and order not stored." });
   }
   const otherReadings = without(readers, ["crisis", "boxes", "protection", "provisional_refused"]);

@@ -333,10 +333,18 @@ test("a check that fails part-way still shows the readings its finished checkers
   assert.deepEqual(failure.workers.map((call) => [call.role, call.failure_code]), [["C1", null], ["C2", "REFUSED"]]);
 });
 
-test("a reader that didn't run in the turn's arrangement gets no section", () => {
-  const record = { runtime_turns: [{ id: "w", state: "DELIVERED", inbound: { exact_text: M.person },
-    runner_reading: { readers: { crisis: { level: "none", receipts: [{ role: "R1" }] }, protection: { compatible: true, receipts: [{ role: "R3" }] } } },
-    delivery: { exact_text: M.draft1, delivered_at: "2026-11-23T12:00:05.000Z" }, events: [] }] };
-  const details = runnerTurnDetailsFromRecord(record, 1);
-  assert.deepEqual(details.steps.filter((entry) => entry.kind === "reader").map((entry) => entry.label), ["Crisis reader", "Protection reader"]);
+test("a reader that didn't run in the turn's arrangement gets no section; a failed one stays shown", () => {
+  const turnWith = (boxes, runnerConfig) => ({ runtime_turns: [{ id: "w", state: "DELIVERED", inbound: { exact_text: M.person },
+    ...(runnerConfig ? { runner_config: runnerConfig } : {}),
+    runner_reading: { readers: { crisis: { level: "none", receipts: [{ role: "R1" }] }, ...(boxes === undefined ? {} : { boxes }), protection: { compatible: true, receipts: [{ role: "R3" }] } } },
+    delivery: { exact_text: M.draft1, delivered_at: "2026-11-23T12:00:05.000Z" }, events: [] }] });
+  const readerLabels = (record) => runnerTurnDetailsFromRecord(record, 1).steps.filter((entry) => entry.kind === "reader").map((entry) => entry.label);
+  const whole = { rules: null, arrangement: { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] } };
+  // The runtime's own placeholder for the whole writer, with and without the stored arrangement (turns before runner_config).
+  assert.deepEqual(readerLabels(turnWith({ boxes: [], receipts: [] }, whole)), ["Crisis reader", "Protection reader"]);
+  assert.deepEqual(readerLabels(turnWith({ boxes: [], receipts: [] })), ["Crisis reader", "Protection reader"]);
+  assert.deepEqual(readerLabels(turnWith(undefined)), ["Crisis reader", "Protection reader"]);
+  // A focused writer's box reader that ran, or failed before any receipt, keeps its section.
+  assert.deepEqual(readerLabels(turnWith({ boxes: ["box-1"], receipts: [{ role: "R2" }] })), ["Crisis reader", "Rule box reader", "Protection reader"]);
+  assert.deepEqual(readerLabels(turnWith({ boxes: null, receipts: [] })), ["Crisis reader", "Rule box reader", "Protection reader"]);
 });
