@@ -7,7 +7,7 @@ import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/lon
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS, responseEvidenceDependenciesCurrent, sha256Json, sha256Text } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, responseEvidenceDependenciesCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
 import { responseEvidenceFailures } from "../src/supervisor/private-therapy-model-runtime.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { compatibilityStateBinding, protectiveCompatibilityDecision, updateProtectiveCompatibilityState } from "../src/case-formulation/protective-compatibility.mjs";
@@ -82,6 +82,51 @@ test("governed controller delivers through the real enforced store", async (t) =
   assert.equal(record.response_evidence_snapshots.length, 1);
   assert.equal(record.response_evidence_snapshots[0].journal.availability, "not_configured");
   assert.equal(env.counts.candidate, 1);
+});
+
+for (const changed of [[], ["a"], ["b"], ["a", "b"]]) test(`journal refresh keeps a valid subset and the turn proceeds (changed: ${changed.join(",") || "none"})`, async (t) => {
+  const env = await setup(t, { async onAudit({ store, n }) {
+    if (n !== 0) return;
+    for (const id of changed) await store.publishJournalGeneration(CASE, { corpusId: `corpus:${id}`, generation: "generation:one", manifestObjectId: `manifest:${id}:changed`, expectedGeneration: "generation:one" });
+    // Force a refresh even when neither journal corpus changed.
+    const state = await store.getCaseState(CASE); state.updated_at = "2026-11-23T14:00:00.000Z";
+    await store.saveCaseState(CASE, state);
+  } });
+  const source_items = [], receipts = [];
+  for (const id of ["a", "b"]) {
+    await env.store.createJournalCorpus(CASE, { corpusId: `corpus:${id}`, manifestObjectId: `manifest:${id}` });
+    await env.store.publishJournalGeneration(CASE, { corpusId: `corpus:${id}`, generation: "generation:one", manifestObjectId: `manifest:${id}` });
+    const exact_excerpt = `Exact synthetic journal quotation ${id}.`;
+    const item = { id: `src:journal:${id}`, kind: "journal_quotation", actor: "client", audience: "private_journal",
+      time: { at: null, status: "unavailable" }, epistemic_status: "client_written_account", exact_excerpt,
+      excerpt_sha256: sha256Text(exact_excerpt), excerpt_bytes: Buffer.byteLength(exact_excerpt), locator: { kind: "journal", corpus_id: `corpus:${id}`,
+        generation: "generation:one", visibility_epoch: 0, record_id: `record:${id}`, start_byte: 0, end_byte: Buffer.byteLength(exact_excerpt) } };
+    source_items.push(item);
+    receipts.push({ operation_id: `retrieval:${id}`, corpus_id: `corpus:${id}`, generation: "generation:one", visibility_epoch: 0,
+      purpose: "session_use", query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: [item.id], packet_sha256: sha256Json([item]),
+      more_available: false, omitted_count: 0, budget_used_tokens: Math.ceil(Buffer.byteLength(JSON.stringify(exact_excerpt)) / 3), budget_used_bytes: Buffer.byteLength(JSON.stringify(exact_excerpt)) });
+  }
+  let retrievals = 0;
+  const result = await env.controller({ journalEvidenceProvider: { async freezeResponseEvidenceJournal() {
+    retrievals++; return { availability: "available", retrieval_status: "returned", source_items, receipts, coverage: "Two targeted synthetic searches." };
+  } } }).run(request());
+  assert.equal(result.deliveryKind, "candidate");
+  const record = await assertDelivered(env.store), snapshot = record.response_evidence_snapshots.at(-1);
+  assert.equal(record.response_evidence_snapshots.length, 2);
+  assert.equal(retrievals, 1);
+  for (const entry of record.response_evidence_snapshots) assert.equal(validateResponseEvidenceSnapshot(entry), entry);
+  const kept = source_items.filter(item => !changed.includes(item.locator.corpus_id.slice("corpus:".length)));
+  assert.deepEqual(snapshot.source_items.filter(item => item.kind === "journal_quotation"), kept);
+  assert.deepEqual(snapshot.journal.receipts, receipts.filter(receipt => !changed.includes(receipt.corpus_id.slice("corpus:".length))));
+  assert.equal(snapshot.journal.availability, kept.length ? "available" : "unavailable");
+  assert.equal(snapshot.journal.retrieval_status, changed.length ? "partial" : "returned");
+  assert.equal(snapshot.journal.more_available, changed.length > 0);
+  assert.deepEqual(snapshot.journal.omissions, changed.length ? [{ reason: "journal_binding_changed", count: changed.length }] : []);
+  assert.equal(snapshot.journal.budget.used_bytes, kept.reduce((sum, item) => sum + Buffer.byteLength(JSON.stringify(item.exact_excerpt)), 0));
+  assert.equal(snapshot.journal.budget.used_tokens, kept.reduce((sum, item) => sum + Math.ceil(Buffer.byteLength(JSON.stringify(item.exact_excerpt)) / 3), 0));
+  const { originMainPrivateCaseValidator } = await import("./helpers/origin-main-private-case-validator.mjs");
+  const validateOld = await originMainPrivateCaseValidator(t);
+  assert.doesNotThrow(() => validateOld(structuredClone(record)));
 });
 
 test("the first writer's fresh compatibility assessment survives approval and delivery without repair", async (t) => {

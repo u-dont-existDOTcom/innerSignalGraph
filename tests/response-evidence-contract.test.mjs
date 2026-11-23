@@ -6,7 +6,7 @@ import { chunkExactSourceText, createExactSourceArtifact } from "../src/storage/
 import {
   RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView,
   computeEvidenceDependencyBinding, normalizeEvidenceReview, deriveEvidenceFindings,
-  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot
+  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, sha256Json, sha256Text, validateResponseEvidenceSnapshot
 } from "../src/supervisor/response-evidence-contract.mjs";
 
 const NOW = "2026-11-23T12:00:00.000Z";
@@ -55,7 +55,7 @@ test("snapshot canonical hashing, source resolution and validation reject altere
 });
 
 test("inbound transcript insertion and audit bookkeeping do not change the dependency binding", () => {
-  const r = record(), options = { inboundTurnId: "inbound", inboundSha256: sha256Text("Current words."), lineageRootId: "root" };
+  const r = record(), options = { inboundTurnId: "inbound", inboundSha256: sha256Text("Current words."), lineageRootId: "root", frozenCommunicationEventCount: 0 };
   const original = computeEvidenceDependencyBinding(r, options);
   r.raw_transcript.push(turn("inbound", "user", "Current words."));
   r.runtime_turns[0].events = [{ arbitrary: "audit bookkeeping" }];
@@ -64,6 +64,86 @@ test("inbound transcript insertion and audit bookkeeping do not change the depen
   r.communication_events.push({ id: "own", kind: "exported", subject: { kind: "candidate", candidate_id: "root" } });
   assert.deepEqual(computeEvidenceDependencyBinding(r, options), original);
 });
+
+const candidateSubject = (candidate_id) => ({ kind: "candidate", candidate_id, candidate_version: 1, text_sha256: sha256Text("Earlier draft.") });
+const ambiguousSubject = (...ids) => ({ kind: "unresolved", reason: "ambiguous", candidate_refs: ids.map(candidate_id => ({ candidate_id, candidate_version: 1 })) });
+function communicationRecord() {
+  const r = record();
+  r.candidate_responses = ["root", "repair", "foreign"].map((id, n) => ({ id, version: n + 1,
+    root_candidate_id: id === "foreign" ? id : "root", exact_text: "Earlier draft.", status: "pending_audit", metadata: {}, audit_history: [], created_at: NOW }));
+  return r;
+}
+const communicationEvent = (kind, subject) => ({ id: "event:one", kind, subject, audience: "client", recorded_at: NOW,
+  provenance: { origin: "owner_action", actor_resolution: "owner_verified", source_ref: null, quote: null }, sent_at: null, sent_at_status: "unavailable" });
+
+for (const [name, kind, subject, staysFresh] of [
+  ["own report", "reported_sent", candidateSubject("root"), false],
+  ["foreign report", "reported_sent", candidateSubject("foreign"), false],
+  ["mixed ambiguous report", "reported_sent", ambiguousSubject("root", "foreign"), false],
+  ["own ambiguous report", "reported_sent", ambiguousSubject("root", "repair"), false],
+  ["unresolved report without candidates", "reported_sent", ambiguousSubject(), false],
+  ["transcript pair report", "reported_sent", { kind: "transcript_turn", assistant_turn_id: "older", in_reply_to_turn_id: "prior", text_sha256: sha256Text("Synthetic exact words.") }, false],
+  ["foreign export", "exported", candidateSubject("foreign"), false],
+  ["own export", "exported", candidateSubject("root"), true],
+  ["own repair exposure", "exposed", candidateSubject("repair"), true],
+  ["own companion export", "exported", { kind: "companion", companion_of: { candidate_id: "repair", candidate_version: 2 }, artifact_sha256: sha256Text("Companion.") }, true]
+]) test(`post-freeze ${name} and its retraction ${staysFresh ? "stay fresh" : "invalidate"}`, () => {
+  const r = communicationRecord();
+  const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), lineageRootId: "root" }, { createdAt: NOW });
+  const current = () => responseEvidenceSnapshotCurrent(r, { snapshot, rootCandidate: { id: "root" } });
+  assert.equal(current(), true);
+  // The timestamp deliberately equals the freeze time: ledger order determines what was frozen.
+  r.communication_events.push(communicationEvent(kind, subject));
+  assert.equal(current(), staysFresh);
+  r.communication_events.push({ id: "event:retraction", kind: "retraction", retracts_event_id: "event:one", recorded_at: NOW });
+  assert.equal(current(), staysFresh);
+});
+
+for (const kind of ["reported_sent", "exported", "exposed"]) test(`freeze binds an existing own ${kind} and its later retraction`, () => {
+  const r = communicationRecord();
+  r.communication_events.push(communicationEvent(kind, candidateSubject("root")));
+  const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), lineageRootId: "root" }, { createdAt: NOW });
+  const without = communicationRecord();
+  assert.notEqual(snapshot.dependency_binding.communication_digest, freeze(without).dependency_binding.communication_digest);
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot, rootCandidate: { id: "root" } }), true);
+  r.communication_events.push({ id: "event:retraction", kind: "retraction", retracts_event_id: "event:one", recorded_at: NOW });
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot, rootCandidate: { id: "root" } }), false);
+});
+
+test("a legacy snapshot without a communication freeze boundary stays readable and requires refresh", () => {
+  const r = record(), snapshot = freeze(r);
+  delete snapshot.dependency_binding.communication_event_count;
+  snapshot.snapshot_sha256 = responseEvidenceSnapshotSha256(snapshot);
+  assert.equal(validateResponseEvidenceSnapshot(snapshot), snapshot);
+  assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot }), false);
+  assert.doesNotThrow(() => buildEvidenceModelView(r, snapshot));
+});
+
+for (const change of ["generation", "visibility_epoch", "manifest", "removed"]) for (const searched of [false, true]) {
+  test(`refresh rebuilds a valid no-match snapshot after ${change} (changed corpus searched: ${searched})`, () => {
+    const r = record();
+    r.journal_corpora = ["a", "b"].map(id => ({ corpus_id: `corpus:${id}`, active_generation: "generation:one", visibility_epoch: 0, manifest_object_id: `manifest:${id}` }));
+    const receipts = r.journal_corpora.filter(corpus => searched || corpus.corpus_id !== "corpus:a").map(corpus => ({ operation_id: `retrieval:${corpus.corpus_id}`,
+      corpus_id: corpus.corpus_id, generation: corpus.active_generation, visibility_epoch: 0, purpose: "session_use", query_sha256: sha256Text("query"),
+      filters_sha256: sha256Json({}), returned_source_ids: [], packet_sha256: sha256Json([]), more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }));
+    const snapshot = buildResponseEvidenceSnapshot(r, { ...input(), journal: { availability: "available", retrieval_status: "no_match", receipts } }, { createdAt: NOW });
+    if (change === "generation") r.journal_corpora[0].active_generation = "generation:two";
+    else if (change === "visibility_epoch") r.journal_corpora[0].visibility_epoch++;
+    else if (change === "manifest") r.journal_corpora[0].manifest_object_id = "manifest:replacement";
+    else r.journal_corpora.shift();
+    const journal = responseEvidenceRefreshJournal(r, snapshot);
+    assert.equal(journal.availability, "available");
+    assert.equal(journal.retrieval_status, "partial");
+    assert.equal(journal.more_available, true);
+    assert.deepEqual(journal.omissions, [{ reason: "journal_binding_changed", count: 1 }]);
+    assert.deepEqual(journal.receipts.map(receipt => receipt.corpus_id), ["corpus:b"]);
+    const refreshed = buildResponseEvidenceSnapshot(r, { ...input(), snapshotId: "snapshot:two", revision: 2, parentSnapshotId: snapshot.id,
+      revisionReason: "dependency_refresh", journal }, { createdAt: NOW });
+    assert.equal(validateResponseEvidenceSnapshot(refreshed), refreshed);
+    assert.equal(responseEvidenceSnapshotCurrent(r, { snapshot: refreshed }), true);
+    assert.doesNotThrow(() => buildEvidenceModelView(r, refreshed));
+  });
+}
 
 test("own-lineage unresolved reports in the review projection bind retractions without a source locator", () => {
   const r = record();

@@ -108,6 +108,30 @@ test("presupposing an unsent earlier draft derives a blocking finding; a fully a
   assert.equal((await env.exportDraft(result.artifact.artifact_id)).client_text, repaired.exact_text);
 });
 
+for (const kind of ["own report", "foreign report", "mixed report", "own export"]) test(`post-freeze ${kind} and retraction enforce the same admission and export rule`, async (t) => {
+  const env = await environment(t), validateOld = await originMainPrivateCaseValidator(t);
+  await env.store.saveCandidateResponse(CASE, "draft:foreign", "An earlier foreign draft.", { producer_context_id: "writer:foreign" });
+  const result = await env.submit();
+  let record = await env.store.load(CASE);
+  const candidate = record.candidate_responses.at(-1), foreign = record.candidate_responses.find(entry => entry.id === "draft:foreign");
+  assert.ok(record.response_evidence_snapshots[0].source_items.some(item => item.locator.candidate_id === foreign.id));
+  const subject = kind === "mixed report" ? { kind: "unresolved", reason: "ambiguous", candidateRefs: [candidate, foreign].map(entry => ({ candidateId: entry.id, candidateVersion: entry.version })) }
+    : { kind: "candidate", candidateId: kind === "foreign report" ? foreign.id : candidate.id, candidateVersion: kind === "foreign report" ? foreign.version : candidate.version };
+  await env.store.recordCommunicationEvent(CASE, { eventId: "event:after-freeze", kind: kind === "own export" ? "exported" : "reported_sent", audience: "client", subject,
+    provenance: { origin: "owner_action", sourceRef: null, quote: null } });
+  const check = async () => {
+    record = await env.store.load(CASE);
+    assert.doesNotThrow(() => validateOld(structuredClone(record)));
+    assert.equal(assessResponseEvidenceAdmission(record, candidate).admissible, kind === "own export");
+    if (kind === "own export") assert.equal((await env.exportDraft(result.artifact.artifact_id)).client_text, candidate.exact_text);
+    else await assert.rejects(env.exportDraft(result.artifact.artifact_id), code("SUPERVISOR_ARTIFACT_STALE"));
+  };
+  await check();
+  await env.store.recordCommunicationEvent(CASE, { eventId: "event:retract-after-freeze", kind: "retraction", retractsEventId: "event:after-freeze",
+    provenance: { origin: "owner_action", sourceRef: null, quote: null } });
+  await check();
+});
+
 for (const correction of [false, true]) test(`retracting a repair's own-lineage source report blocks admission and export (replacement: ${correction})`, async (t) => {
   const validateOld = await originMainPrivateCaseValidator(t);
   let root;
@@ -134,7 +158,7 @@ for (const correction of [false, true]) test(`retracting a repair's own-lineage 
   assert.equal(snapshot.source_items.find(s => s.id === "src:report:report:own-draft").locator.candidate_id, root.id);
   assert.equal(assessResponseEvidenceAdmission(record, head).admissible, true);
   assert.doesNotThrow(() => validateOld(structuredClone(record)));
-  // Exports/exposures with no source resting on them remain harmless, including their retractions.
+  // Own exports/exposures appended after the freeze remain harmless, including their retractions.
   await env.exportDraft(result.artifact.artifact_id);
   await env.store.recordCommunicationEvent(CASE, { eventId: "exposure:own-repair", kind: "exposed", audience: "client",
     subject: { kind: "candidate", candidateId: head.id, candidateVersion: head.version },

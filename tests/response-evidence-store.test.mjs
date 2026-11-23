@@ -557,14 +557,14 @@ test("the existing root writer lock holds off a competing process before it can 
   assert.equal((await env.store.load(CASE)).response_evidence_snapshots.length, 1);
 });
 
-test("supervisor snapshot revisions exclude their own lineage's export bookkeeping", async (t) => {
+test("supervisor snapshot revisions bind earlier own exports while freshness ignores later own exports", async (t) => {
   const env = await supervisorGoverned(t), { store, candidate, snapshot } = env;
   const { audit, receipt } = await supervisorAudit(env);
   await store.recordSupervisorAudit(CASE, candidate.id, audit, receipt);
   await store.approveSupervisorDraft(CASE, candidate.id, audit.id);
   await store.exportSupervisorArtifact(CASE, { artifactId: env.artifactId, channel: "owner_ui" });
   const next = await store.freezeResponseEvidence(CASE, freezeInput({ snapshotId: "supervisor:revision", owner: snapshot.owner, candidateOrigin: "external_draft", revision: 2, parentSnapshotId: snapshot.id, revisionReason: "dependency_refresh" }));
-  assert.equal(next.dependency_binding.communication_digest, snapshot.dependency_binding.communication_digest);
+  assert.notEqual(next.dependency_binding.communication_digest, snapshot.dependency_binding.communication_digest);
 });
 
 

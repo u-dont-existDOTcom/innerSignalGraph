@@ -144,6 +144,11 @@
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         },
+        "communication_event_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
         "established_context_digest": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
