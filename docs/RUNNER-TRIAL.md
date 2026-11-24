@@ -106,7 +106,9 @@ leaves, before a provisional reply is shown (the fixed emergency line shows inst
 is read last in each check, so a withdrawal holds for everything that starts after it; a packet already past its last check, in
 the instant before it leaves, still goes. Each output to the person (a provisional reply, a delivered reply) in such a case is
 checked and made under the trial folder's lock, which `--journal-consent` takes too, so a withdrawal lands wholly before it (and
-nothing is shown) or wholly after it; a command waits up to ten seconds for that lock. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
+nothing is shown) or wholly after it; a command waits up to ten seconds for that lock. The output is made when it is recorded in
+the case as shown or delivered: a withdrawal after that moment doesn't recall it, so its answer to the page, and the page showing
+the conversation again later, still carry it. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
 grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check, also
 an approved one a restart's reconcile finds, because the case's drafts, findings, evidence and delivered replies may hold the
 journal's words. Confirming the consent again (with the copy's receipt in place) opens it; deleting the case removes the case,

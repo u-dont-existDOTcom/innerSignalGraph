@@ -196,6 +196,14 @@ a delivery), which wait for an encrypted write. A further check can't close that
 in a case that has read its journal, the gate check, the record of the text as shown and the output itself happen under the trial
 folder's lock (`src/runner-trial/folder-lock.mjs`), which `--journal-consent` takes too.
 
+Codex's fifth review (24 Nov) found the class one stage later again: after the locked record, the reply still travels to the page
+(the HTTP answer, a reconcile). That was the fourth recurrence, so the boundary is now a stated decision rather than a further
+check: **an output is made when it is recorded in the case as shown or delivered**, under the lock, so a withdrawal is ordered
+before or after that moment; sending an output already recorded to the page, or showing the conversation again, is not a new use
+of the journal. Recalling an output already recorded would need the page and the HTTP layer inside the lock, for a gain the owner
+can weigh (lane question). The same review's minor finding is fixed: a lock file is removed by its identity, so a failed first
+write never leaves it behind.
+
 Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on
 the owner's go each time; the import into the client's runner case checked against the export; the adapter for the trial's
 development credentials), and **the journal's cold test**. Running the cold test on a client's journal comes back to the owner

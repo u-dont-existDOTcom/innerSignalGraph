@@ -49,10 +49,13 @@ export async function acquireTrialFolderLock(home, { pid = process.pid, waitMs =
       await pause(retryMs);
     }
   }
+  // Only the file this call created is removed, known by its identity (device and inode), so a first write that failed (an empty
+  // file after a full disk) never leaves the lock behind, and another holder's lock is never touched (Codex's review 5).
+  const created = await handle.stat();
   const remove = async () => {
     await handle.close().catch(() => {});
-    const current = await fs.readFile(lock, "utf8").catch(() => "");
-    if (current.trim().split(/\s+/u)[1] === token) await fs.rm(lock, { force: true });
+    const there = await fs.lstat(lock).catch(() => null);
+    if (there && there.dev === created.dev && there.ino === created.ino) await fs.rm(lock, { force: true });
   };
   try {
     await handle.writeFile(`${pid} ${token}\n`, "utf8");
