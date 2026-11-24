@@ -105,11 +105,13 @@ export function createSessionUseJournalEvidenceProvider({
             const texts = bound.length ? await reader.checkEvidenceQuotes(bound.map((item) => item.locator.record_id)) : [];
             const kept = bound.filter((item, index) => texts[index] === item.exact_excerpt);
             for (const item of kept) admit(structuredClone(item));
-            // One ranked search for the message, or one for each question, for as many quotations as there is room for. The search's result
-            // cache includes case, corpus, purpose, generation, epoch, the words searched and the method with its numbers.
+            // One ranked search for the message, or one for each question, for as many quotations as there is room for beside those the
+            // snapshot has. The search's result cache includes case, corpus, purpose, generation, epoch, the words searched and the method
+            // with its numbers.
             const found = [];
             const room = limit - result.source_items.length;
-            if (room > 0) for (const search of searches) found.push(await reader.findEvidenceQuotes({ query: search, limit: room }));
+            const exclude = result.source_items.map((item) => item.locator.record_id);
+            if (room > 0) for (const search of searches) found.push(await reader.findEvidenceQuotes({ query: search, limit: room, exclude }));
             // Why a passage may not be used (restricted, deleted, revoked) isn't told, only that some can't be.
             for (const { omitted } of found) for (const { count } of omitted) omit("quotation_not_usable", count);
             if (expansion && asked.length < questions.length) omit("question_not_searchable", questions.length - asked.length);
@@ -146,7 +148,7 @@ export function createSessionUseJournalEvidenceProvider({
             const included = new Set(result.source_items.map((item) => item.locator.record_id));
             // More was there to return: what the budget or the number of quotations or questions left out, never a passage that may not be used.
             const more = result.omissions.some((entry) => entry.reason !== "quotation_not_usable")
-              || found.some((search) => search.kept > search.examined || search.quotes.some((quote) => !included.has(quote.record_id)));
+              || found.some((search) => search.kept - search.excluded > search.examined || search.quotes.some((quote) => !included.has(quote.record_id)));
             result.receipts = [{ operation_id: `journal-evidence:${randomUUID()}`, corpus_id: corpusId, generation: reference.active_generation,
               visibility_epoch: reference.visibility_epoch, manifest_object_id: reference.manifest_object_id,
               purpose: "session_use", query_sha256: sha256Text(searches.join("\n")), filters_sha256: sha256Json({ reader: SESSION_USE_READER_VERSION, limit }),

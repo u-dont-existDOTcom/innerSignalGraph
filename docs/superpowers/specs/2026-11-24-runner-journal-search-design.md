@@ -59,7 +59,7 @@ with its reason, a receipt, no retry by another route.
   by, so many passages share one, none specifically enough, or none of those found may be used. Why a passage may not be used (restricted,
   deleted, revoked) isn't told, only that some can't be, and one that was looked at counts neither as a match nor as more to be had.
 - The repair's evidence expansion searches each missing-history question on its own (at most four; a further one, or one that can't be
-  searched, is an omission) and takes the best of each in turn, without repeats. It **adds to** the turn's part: the quotations the draft may
+  searched, is an omission), past the quotations the snapshot has, and takes the best of each in turn, without repeats. It **adds to** the turn's part: the quotations the draft may
   rest on keep their ids, the receipts that returned them, the coverage and what was left out; the snapshot holds at most twelve. Each kept
   quotation is checked again as a search checks one, and one that may no longer be used is left out, not the others; a new quotation never
   takes an id an earlier part or receipt gave. Before, an expansion replaced the turn's quotations and gave their ids to others. A retrieval
@@ -97,16 +97,18 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   by any reader or checker. **Every snapshot of a turn asks it as it is frozen** (`freezeSnapshot`), the message's own, the repair's expansion
   and a refresh alike: the part is then closed, `unavailable` and `not_attempted` with the reason `journal_withheld`, no search is made and
   nothing is carried over. The models read that reason, so it says nothing of the level: it also stands for a message read as thoughts of
-  death, as unclear or not at all. A decision that can't be made is a failed retrieval. A journal read earlier in the case still needs the
-  open gate.
+  death, as unclear or not at all. **Every model call asks it of the snapshot it would go out with** (`prepareCall`), when that holds a
+  quotation, whatever froze it and whatever was read since: a call that writes gets one frozen again without its quotations (three snapshots a
+  turn; with none left, the turn ends), and a check, which is bound to its draft's snapshot, isn't made and the turn ends. A decision that
+  can't be made is a failed retrieval, and stops no check. A journal read earlier in the case still needs the open gate.
 - **Earlier drafts.** An unsent draft of an earlier turn that was written with a quotation in view, or any version of it, may hold the
   journal's words, so no snapshot has it as a source (`draft_written_with_the_journal`), whether its turn gets the journal or not: the
   journal's words are in a snapshot through its own retrieval, or not at all.
 - **When only the checker reads it.** A draft written with quotations in view, before anyone had read the conversation as one about wanting to
   die, isn't sent once this turn's checker does: the program adds `PROGRAM_JOURNAL_IN_CRISIS` (high), and the repair goes on with a snapshot
-  frozen again without its quotations; with no further snapshot left (three a turn), the turn ends without a checked reply, so its fixed
-  message or notice shows. The repair isn't shown the draft either, nor what was found of its words (it gets the codes, and the program's own
-  sentences), and neither is the check of the repaired reply: a reply written anew, from the conversation alone. The repair's stored result
+  frozen again without its quotations; where the turn ends instead, its fixed message or notice shows. The repair isn't shown the draft
+  either, nor what was found of its words (it gets each finding's code, when it is a fixed one, its severity, and the program's own sentences),
+  and neither is the check of the repaired reply: a reply written anew, from the conversation alone. The repair's stored result
   says so (`draftHidden`), so the reply doesn't count as one written from that draft. One that was written from such a draft, its own
   evidence holding no quotation (its expansion's search failed), counts as written with the journal in view.
 - With response evidence off, or with no journal reader (a trial without clients), nothing is read first and every packet, prompt, order
@@ -129,6 +131,8 @@ A turn without a quotation, so every turn without a journal reader, gets the not
 - A new conversation gets the journal again, also right after one about wanting to die, when its message is read as none.
 - What the person has been sent stays in the conversation the models read, a reply that quoted the journal included. The check that is the
   first to read someone who wants to die has the quotations in view, since nobody had read the message as one when it was searched for.
+- A repair written anew has the rules, the conversation, what was found by its codes and the level the check read, not what the checker wrote
+  of the draft.
 - On an invented journal of 6,000 entries in the encrypted store a search takes about 0.4 s on the laptop, also for a message of 40,000
   characters; a real journal hasn't been timed.
 - Whether a quotation helps is the models' judgment; the search can't make it.

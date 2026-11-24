@@ -8,7 +8,7 @@ import { PRIVATE_CASE_SCOPES } from "../storage/private-case-access.mjs";
 import { CONTEXT_WINDOW_LIMITS } from "../case-state/context-window.mjs";
 import { deriveEvidenceFindings, normalizeEvidenceReview, normalizeRecordOnlyFinding, runtimeAuditInputIdentity,
   runtimeCandidateInputIdentity as candidateInputIdentity, runtimeRepairInputIdentity as repairInputIdentity,
-  prepareGovernedModelCall, responseEvidenceRefreshJournal, responseEvidenceDependenciesCurrent } from "./response-evidence-contract.mjs";
+  prepareGovernedModelCall, responseEvidenceRefreshJournal, responseEvidenceDependenciesCurrent, RESPONSE_EVIDENCE_BUDGETS } from "./response-evidence-contract.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
@@ -199,8 +199,8 @@ export function createPrivateTherapyTurnController({
   const searchesJournal = typeof journalEvidenceProvider?.freezeResponseEvidenceJournal === "function";
   const holdsQuotation = (snapshot) => (snapshot?.source_items ?? []).some((entry) => entry.kind === "journal_quotation");
   // Why this turn gets no journal now, or null (journalWithheld). Every snapshot of a turn asks it as it is frozen, whatever made the
-  // freeze, so a snapshot never holds a quotation the turn may not have; a repair asks it again for the snapshot it would go on with. With
-  // no reader attached (any more), it is asked only where the snapshot before holds a quotation to carry over.
+  // freeze, and every model call asks it of the snapshot it would go out with (prepareCall), so none goes out with a quotation its turn may
+  // not have. With no reader attached (any more), it is asked only where the snapshot before holds a quotation.
   const withheldNow = async ({ caseId, runtimeTurn, previous, authContext }) => ((searchesJournal || holdsQuotation(previous)) && typeof modelRuntime.journalWithheld === "function"
     ? await modelRuntime.journalWithheld({ caseId, runtimeTurn, authContext }) : null);
   // Every journal search of a turn is made here, the message's own and the repair's expansion. `expansion`, for the repair's: each
@@ -245,16 +245,28 @@ export function createPrivateTherapyTurnController({
       historyRequirements: [], journal
     }], authContext);
   };
+  const evidenceExhausted = () => new RuntimeError("InnerSignal could not safely complete this response. Nothing unaudited was delivered.", {
+    code: "THERAPY_RUNTIME_UNAVAILABLE", details: { response_evidence_revisions_exhausted: true }
+  });
+  // Every model call of a turn is prepared here, and none goes out with a quotation its turn may not have, whatever froze the snapshot (an
+  // earlier build that asked nothing included) and whatever was read since. For a call that writes it is frozen again, like one whose sources
+  // changed; where no further snapshot may be frozen, the turn ends. A check is bound to its draft's snapshot, so it isn't made (`closes`).
+  // A decision that can't be made counts as one for a call that writes: freezing again asks once more.
   const prepareCall = async ({ caseId, runtimeTurn, operationKey, record, snapshot, rootCandidate = null, completed = null, authContext }) => {
-    const prepared = await prepareGovernedModelCall({ record, snapshot, rootCandidate, completed,
-      load: () => loadCase(caseId, authContext),
-      freeze: (reason, current) => freezeSnapshot({ caseId, runtimeTurn, operationKey, record: current.record, reason, authContext }) });
-    if (prepared.exhausted && runtimeTurn.state !== "AUDITING") {
-      throw new RuntimeError("InnerSignal could not safely complete this response. Nothing unaudited was delivered.", {
-        code: "THERAPY_RUNTIME_UNAVAILABLE", details: { response_evidence_revisions_exhausted: true }
-      });
+    const freeze = (reason, current) => freezeSnapshot({ caseId, runtimeTurn, operationKey, record: current.record, reason, authContext });
+    const checking = runtimeTurn.state === "AUDITING";
+    let closes = false;
+    if (!completed && holdsQuotation(snapshot)) {
+      try { closes = Boolean(await withheldNow({ caseId, runtimeTurn, previous: snapshot, authContext })); } catch { closes = !checking; }
     }
-    return prepared;
+    if (closes && !checking) {
+      if (snapshot.revision >= RESPONSE_EVIDENCE_BUDGETS.revisions) throw evidenceExhausted();
+      snapshot = await freeze("dependency_refresh", { record, snapshot });
+      record = await loadCase(caseId, authContext);
+    }
+    const prepared = await prepareGovernedModelCall({ record, snapshot, rootCandidate, completed, load: () => loadCase(caseId, authContext), freeze });
+    if (prepared.exhausted && !checking) throw evidenceExhausted();
+    return { ...prepared, refreshed: prepared.refreshed || (closes && !checking), closes };
   };
 
   async function invoke({ caseId, runtimeTurn, operationKey, stage, inputIdentity, authContext, execute }) {
@@ -293,7 +305,7 @@ export function createPrivateTherapyTurnController({
         const candidate = record.candidate_responses.find(entry => entry.id === runtimeTurn.current_candidate_id);
         const rootCandidate = record.candidate_responses.find(entry => entry.id === candidate?.root_candidate_id);
         const prepared = await prepareCall({ caseId, runtimeTurn, operationKey, record, snapshot, rootCandidate, authContext });
-        if (prepared.refreshed || prepared.exhausted) throw new ValidationError("Model input changed.", { code: "RESPONSE_EVIDENCE_CALL_INPUT_CHANGED" });
+        if (prepared.refreshed || prepared.exhausted || prepared.closes) throw new ValidationError("Model input changed.", { code: "RESPONSE_EVIDENCE_CALL_INPUT_CHANGED" });
       }
       const attemptContextId = `attempt:${operationKey}:${stage}:${inputSha256.slice(0, 12)}:${attempt}`;
       await call("recordPrivateRuntimeInvocationEvent", [caseId, runtimeTurn.id, {
@@ -454,6 +466,7 @@ export function createPrivateTherapyTurnController({
             }], authContext);
             return;
           }
+          if (prepared.closes) throw evidenceExhausted();
           responseEvidenceInput = prepared.evidence ?? { snapshot };
         }
         const journalEvidence = responseEvidenceInput ? null : frozenJournalEvidence(runtimeTurn);
@@ -511,22 +524,12 @@ export function createPrivateTherapyTurnController({
         });
         if (!snapshot && evidenceEnforced) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext });
         if (repairCompleted) snapshot = owned.find((entry) => entry.id === repairCompleted.details.output.responseEvidenceInclusion.snapshot_id);
-        else if (snapshot) {
+        else if (snapshot && owned.length < 3) {
           const missing = sourceAudit?.response_evidence?.review?.missing_material_history ?? [];
-          const expand = owned.length < 3 && missing.length > 0 && searchesJournal && !owned.some((entry) => entry.revision_reason === "evidence_expansion");
-          // A check that read the conversation as one that gets no journal leaves the repair none: the snapshot it would go on with is
-          // frozen again without its quotations, and where no further snapshot may be frozen the turn closes.
-          const closes = holdsQuotation(snapshot) && Boolean(await withheldNow({ caseId, runtimeTurn, previous: snapshot, authContext }));
-          if (closes && owned.length >= 3) {
-            throw new RuntimeError("InnerSignal could not safely complete this response. Nothing unaudited was delivered.", {
-              code: "THERAPY_RUNTIME_UNAVAILABLE", details: { response_evidence_revisions_exhausted: true }
-            });
-          }
+          const expand = missing.length > 0 && searchesJournal && !owned.some((entry) => entry.revision_reason === "evidence_expansion");
           if (expand) {
             const questions = missing.map((entry) => entry.question);
             snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: "evidence_expansion", query: questions.join("\n").slice(0, JOURNAL_QUERY_CHARACTERS), questions });
-          } else if (closes) {
-            snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: "dependency_refresh" });
           }
         }
         const prepared = snapshot ? await prepareCall({ caseId, runtimeTurn, operationKey, record: await loadCase(caseId, authContext), snapshot,

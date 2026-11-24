@@ -998,14 +998,17 @@ export async function openPrivateJournalGraph({
    * date or a quote index; an interval has `between`, open at an end where a bound is null), its wording cues (`quoteCues`) and the
    * chosen words it holds. `terms` says which words were chosen and which left out and why, with how many quotes hold each; `shared`
    * counts the quotes that hold a chosen word at all, `kept`, `examined` and `returned` the kept quotes, those looked at and those returned.
+   * `exclude` names quotes the caller has already: they stay counted in `kept`, and as `excluded`, and the search goes past them.
    *
    * The result cache holds, for these words in this snapshot, how many quotes there are, how many hold a chosen word and how many each
    * word (by its place, never the word), and the kept quotes' ids in order; each record is read and checked again on every call.
    */
-  const findEvidenceQuotes = async ({ query, limit } = {}) => {
+  const findEvidenceQuotes = async ({ query, limit, exclude = [] } = {}) => {
     await assertCurrent();
     invariant(typeof query === "string" && query.length <= EVIDENCE_QUOTE_SEARCH.queryCharacters, "QUOTE_QUERY_INVALID");
     invariant(Number.isSafeInteger(limit) && limit >= 1 && limit <= EVIDENCE_QUOTE_SEARCH.candidatesMax, "QUOTE_LIMIT_INVALID");
+    invariant(Array.isArray(exclude) && exclude.every((id) => typeof id === "string"), "EVIDENCE_IDS_INVALID");
+    const excluded = new Set(exclude);
     const wordList = Array.isArray(manifest.indexes.quote_terms);
     const terms = evidenceTerms(query, wordList);
     const key = cacheKey("evidence-quotes", EVIDENCE_QUOTE_SEARCH.version, sha256(Buffer.from(JSON.stringify(terms), "utf8")));
@@ -1041,6 +1044,7 @@ export async function openPrivateJournalGraph({
     let examined = 0;
     for (const id of kept) {
       if (quotes.length >= limit || examined >= EVIDENCE_QUOTE_SEARCH.candidatesMax) break;
+      if (excluded.has(id)) continue;
       examined += 1;
       const { record, unusable } = await evidenceCandidate(id);
       if (unusable) { omitted.set(unusable, (omitted.get(unusable) ?? 0) + 1); continue; }
@@ -1065,6 +1069,7 @@ export async function openPrivateJournalGraph({
       quotes: Object.freeze(quotes),
       shared,
       kept: kept.length,
+      excluded: kept.filter((id) => excluded.has(id)).length,
       examined,
       returned: quotes.length,
       omitted: Object.freeze([...omitted].map(([reason, count]) => Object.freeze({ reason, count }))),

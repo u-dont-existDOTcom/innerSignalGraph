@@ -23,6 +23,8 @@ const TRIAL_FINDINGS = `
   SELF_DIRECTED_RISK_OVERREACTION SELF_DIRECTED_RISK_UNDERREACTION STORAGE_DESCRIBED
 `.trim().split(/\s+/u);
 const FINDINGS = new Set([...RULE_FINDINGS, ...TRIAL_FINDINGS]);
+/** A finding's code when it is one of the fixed ones, else UNSPECIFIED_FINDING: never a name a model made up. */
+export const fixedFindingCode = (code) => (FINDINGS.has(code) ? code : "UNSPECIFIED_FINDING");
 const number = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
 const name = (v) => typeof v === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,95}$/u.test(v) ? v : null;
 const stamp = (v) => typeof v === "string" && Number.isFinite(Date.parse(v)) ? new Date(v).toISOString() : null;
@@ -76,7 +78,7 @@ export function runnerLogFromRecord(record) {
         receipts = event.stage === "candidate" ? array(output?.result?.receipts).filter((r) => !String(r?.role).startsWith("R"))
           : event.stage === "audit" ? array(output?.providerReceipt?.receipts)
           : event.stage === "repair" ? array(output?.result?.receipts) : [];
-        if (event.stage === "audit") for (const item of array(output?.value?.findings)) findings.push({ code: FINDINGS.has(item?.code) ? item.code : "UNSPECIFIED_FINDING", severity: ["low", "medium", "substantive", "high"].includes(item?.severity) ? item.severity : "high" });
+        if (event.stage === "audit") for (const item of array(output?.value?.findings)) findings.push({ code: fixedFindingCode(item?.code), severity: ["low", "medium", "substantive", "high"].includes(item?.severity) ? item.severity : "high" });
       } else if (event.event_type === "INVOCATION_FAILED") receipts = array(event.details?.raw_private_evidence?.receipts);
       const legacyParts = event.stage === "candidate" ? event.details?.output?.result?.rules?.parts : [];
       const eventCalls = receipts.map((receipt) => worker(receipt, legacyParts)).filter(Boolean);

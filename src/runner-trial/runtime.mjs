@@ -15,6 +15,7 @@ import { selfDirectedRiskAuditRules } from "../prompts/self-directed-risk-audit.
 import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
 import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
 import { FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
+import { fixedFindingCode } from "./run-log.mjs";
 import { normalizeEvidenceReview, sha256Json } from "../supervisor/response-evidence-contract.mjs";
 import { acquireTrialFolderLock } from "./folder-lock.mjs";
 import {
@@ -180,13 +181,10 @@ function evidenceQuoteSources(responseEvidence) {
 function caseReadJournal(record, responseEvidence = null) {
   return holdsQuotation(responseEvidence?.view?.source_items) || (record?.response_evidence_snapshots ?? []).some((entry) => holdsQuotation(entry.source_items));
 }
-// What was found of a draft that isn't shown: what the program's own checks (P:1 and on) say, and of every other finding the code alone,
-// since its summary may hold the draft's words.
-const findingsWithoutWords = (findings) => findings.map((finding) => {
-  if (finding.id?.startsWith("P:")) return finding;
-  const { summary: _summary, ...rest } = finding;
-  return rest;
-});
+// What is told of the findings of a draft that isn't shown: each one's code, when it is a fixed one, and severity, and the sentence of the
+// program's own (P:1 and on), which is the program's words. Anything else of a finding may hold the draft's: a checker's sentence, a name it
+// made up, a link the program lists.
+const findingsWithoutWords = (findings) => findings.map(({ id, code, severity, summary }) => ({ code: fixedFindingCode(code), severity, ...(id?.startsWith("P:") ? { summary } : {}) }));
 
 // A checker's findings as the runtime stores them (exported for the measurement harness, so its catch rate reads them the same way).
 export function normalizeFindings(checkerId, findings) {

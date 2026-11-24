@@ -335,6 +335,19 @@ test("at most 40 candidates are looked at, and no more once the quotes asked for
   assert.deepEqual([found.kept, found.examined, found.returned], [45, 3, 3]);
 });
 
+test("quotes the caller has already are gone past, and stay counted", async (t) => {
+  const { open, find } = await journal(t, { paragraphs: countedParagraphs(60, { lantern1: 9 }) });
+  const all = await find("lantern1", { limit: 9 });
+  assert.deepEqual([all.kept, all.excluded, all.examined, all.returned], [9, 0, 9, 9]);
+  const ids = all.quotes.map(({ record_id: id }) => id);
+  const reader = await open();
+  try {
+    const rest = await reader.findEvidenceQuotes({ query: "lantern1", limit: 3, exclude: [...ids.slice(0, 4), "passage:of-another-search"] });
+    assert.deepEqual([rest.quotes.map(({ record_id: id }) => id), rest.kept, rest.excluded, rest.examined, rest.returned], [ids.slice(4, 7), 9, 4, 3, 3]);
+    for (const exclude of ["passage", [1], null]) await assert.rejects(reader.findEvidenceQuotes({ query: "lantern1", limit: 3, exclude }), { code: "EVIDENCE_IDS_INVALID" });
+  } finally { reader.close(); }
+});
+
 // ---- What a quote comes back with, the cache, the snapshot ---------------------------------------------------------------------------
 
 test("each quote comes back with its record, span, lifecycle, the date it was written under, its cues and the words it matched", async (t) => {

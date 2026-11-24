@@ -737,6 +737,58 @@ test("a refresh of a turn's evidence carries no quotation over into a turn that 
   }
 });
 
+// A build without the hooks, which searched before anyone had read the message, froze the turn's evidence and stopped.
+async function frozenByAnEarlierBuild(env, h, part) {
+  const unfinished = { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } };
+  const modelRuntime = { ...env.runtime, readBeforeEvidence: undefined, journalWithheld: undefined };
+  await assert.rejects(createPrivateTherapyTurnController({ privateCaseSource: unfinished, modelRuntime, responseEvidence: { enforced: true, journalTimeoutMs: 10 }, journalEvidenceProvider: h.journal(part) }).run(request()), /stop before the writer/u);
+  h.happened.splice(0); h.searches.splice(0);
+}
+
+test("a snapshot frozen before anyone had read the message isn't written from once its turn gets no journal: it is frozen again without its quotations", async (t) => {
+  for (const withheld of ["journal_withheld", null]) {
+    const env = await setup(t), h = hooked(env, { withheld: () => withheld });
+    const { item, found } = await publishedCorpus(env);
+    await frozenByAnEarlierBuild(env, h, () => found([item(1)]));
+    await h.controller({ journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    const { response_evidence_snapshots: snapshots } = await assertDelivered(env.store);
+    assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), withheld ? [["initial", ["src:journal:1"]], ["dependency_refresh", []]] : [["initial", ["src:journal:1"]]], String(withheld));
+    assert.deepEqual([h.searches.length, h.happened[0]], [0, "read"]);
+    for (const call of env.calls) assert.equal(quotationIds(call.responseEvidence.view).length, withheld ? 0 : 1, call.stage);
+  }
+});
+
+test("a check isn't made again with quotations in view once its conversation was read as one that gets no journal: the turn ends", async (t) => {
+  // The first check stores its reading and stops; a second attempt would get its draft's snapshot, which holds the quotation. A decision
+  // that can't be made stops no check.
+  for (const [withheld, calls] of [["journal_withheld", 1], [null, 2], [new Error("Synthetic store failure."), 2]]) {
+    let reason = null;
+    const env = await setup(t, { async onAudit({ n }) { if (n === 0) { reason = withheld; throw new Error("Synthetic stop after the reading."); } } });
+    const h = hooked(env, { withheld: () => { if (reason instanceof Error) throw reason; return reason; } });
+    const { item, found } = await publishedCorpus(env);
+    const run = h.controller({ journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    if (calls === 1) await assert.rejects(run, (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
+    else { await run; await assertDelivered(env.store); }
+    assert.deepEqual(env.calls.map((call) => [call.stage, quotationIds(call.responseEvidence.view).length]), [["candidate", 1], ...Array.from({ length: calls }, () => ["audit", 1])], String(withheld));
+    assert.equal((await env.store.load(CASE)).response_evidence_snapshots.length, 1);
+  }
+});
+
+test("a decision that can't be made for a repair is a failed retrieval: it goes on without the quotations, or with them once it can be made", async (t) => {
+  for (const [failures, kept] of [[1, true], [Infinity, false]]) {
+    let failing = 0;
+    const env = await setup(t, { alwaysFail: true, onAudit: async ({ n }) => { if (n === 0) failing = failures; } });
+    const h = hooked(env, { withheld: () => { if (failing > 0) { failing -= 1; throw new Error("Synthetic store failure."); } return null; } });
+    const { item, found } = await publishedCorpus(env);
+    await h.controller({ journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    const repair = env.calls.find((call) => call.stage === "repair");
+    assert.deepEqual(quotationIds(repair.responseEvidence.view), kept ? ["src:journal:1"] : [], String(failures));
+    const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
+    assert.deepEqual([snapshots[1].revision_reason, snapshots[1].journal.retrieval_status], ["dependency_refresh", kept ? "returned" : "failed"]);
+    assert.equal(h.searches.length, 1);
+  }
+});
+
 test("a quotation isn't carried over into a turn that gets no journal any more where the reader is no longer attached either", async (t) => {
   for (const later of ["journal_withheld", null]) {
     const env = await setup(t), h = hooked(env, { withheld: () => later });

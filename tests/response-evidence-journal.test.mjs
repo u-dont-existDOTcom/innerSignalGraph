@@ -459,6 +459,26 @@ test("an expansion adds to the part the turn has: its quotations keep their ids 
   assert.deepEqual([tight.source_items, tight.omissions[0].reason], [first.source_items, "journal_budget"]);
 });
 
+test("an expansion looks past the quotations the snapshot has: what ranks after them is added, and counted as before", async (t) => {
+  const env = await environment(t, { journal: { pages: inventedPages(numbered(60, { lantern1: range(0, 7), kettle1: range(20, 35), spout1: range(20, 35) })) } });
+  const lantern = await env.retrieve({ query: "lantern1" });
+  assert.deepEqual([lantern.source_items.length, lantern.more_available], [6, true]);
+  // Twice, so that the second goes by the cached search, which is one for any quotations the snapshot has.
+  for (const cached of [false, true]) {
+    const { cacheHits } = env.counts;
+    const result = await expand(env, ["What happened to the lantern1?"], lantern);
+    assert.equal(env.counts.cacheHits > cacheHits, cached);
+    assert.deepEqual(result.source_items.slice(0, 6), lantern.source_items);
+    assert.deepEqual([result.source_items.length, [...result.source_items.map(placeOf)].sort((left, right) => left - right)], [7, range(0, 7)], "the seventh, though all six the message found rank before it");
+    assert.match(result.coverage, / 1 ranked search for the less common words of one missing-history question; 7 matching passages, counted for each question; 1 exact quotations added\./u);
+    assert.equal(result.receipts[0].more_available, false, "nothing that matches is left");
+  }
+  // Two questions with the same matches fill the snapshot between them, and the rest is more to be had.
+  const kettle = await env.retrieve({ query: "kettle1 spout1" });
+  const more = await expand(env, ["And the kettle1 spout1?", "The spout1 of which kettle1?"], kettle);
+  assert.deepEqual([kettle.source_items.length, more.source_items.length, new Set(more.source_items.map(placeOf)).size, more.receipts[0].more_available], [6, 12, 12, true]);
+});
+
 test("the purpose is checked before the arguments are looked at, and arguments out of bounds are refused then", async (t) => {
   const env = await environment(t);
   const bad = [{ query: "" }, { query: "  " }, { query: null }, { query: "x".repeat(40_001) }, { questions: [] }, { questions: "help" }, { questions: ["help", null] }, { questions: ["x".repeat(40_001)] },
