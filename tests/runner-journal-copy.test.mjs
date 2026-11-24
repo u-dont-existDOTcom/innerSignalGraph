@@ -15,7 +15,8 @@ import { addClient, prepareTrialFolder, setJournalConsent } from "../scripts/run
 // alone, imported into the client's runner case and checked. The "server" here is a synthetic local vault with the journal
 // import's synthetic fixture: no server is contacted and no real journal is read.
 
-const SERVER_CASE = "synthetic-server-case", SERVER_CORPUS = "synthetic-server-corpus";
+// A case id of the runner form, since the cold test below runs on it as on a client's runner case.
+const SERVER_CASE = "case-12121212-1212-4121-8121-121212121212", SERVER_CORPUS = "synthetic-server-corpus";
 const allowAll = (caseIds) => ({ async authorize({ caseId, requiredScope }) {
   return { allowed: caseIds.includes(caseId), principalId: "synthetic-operator", scopes: [requiredScope], purposes: Object.values(PRIVATE_JOURNAL_PURPOSES) };
 } });
@@ -84,4 +85,50 @@ test("a client's journal is exported sealed for the trial alone, imported into t
   const part = await gate.freezeResponseEvidenceJournal({ caseId: clientCase, query: "help", authContext: { bearerToken: prepared.clientTokens[clientCase] } });
   assert.equal(part.availability, "available");
   assert.ok(part.source_items.length >= 1 && part.source_items.every((item) => server.sources.repr.includes(item.exact_excerpt) && item.locator.corpus_id === result.corpus_id));
+});
+
+// ---- The cold test ------------------------------------------------------------------------------------------------------------
+
+// A scripted stand-in for the fresh consumer: it sees only the packet (the frozen question and what the session-use reader
+// retrieved). It answers "supported" citing the passages it retrieved, or "not found" when it retrieved none, except for the
+// questions `script` answers otherwise (a model judges a false premise itself). `miss` makes it answer every question as not
+// found; `overclaim` makes it ignore the script, so a false premise with retrieved passages is answered as supported.
+const consumer = ({ miss = false, overclaim = false, script = { "q-premise": "false_premise" } } = {}) => ({
+  async invoke({ packet }) {
+    const passages = (packet.retrieved_evidence?.records ?? []).filter((record) => record.kind === "passage").map((record) => record.id);
+    const scripted = overclaim ? undefined : script[packet.frozen_question.id];
+    const answerability = miss ? "not_found" : scripted ?? (passages.length ? "supported" : "not_found");
+    const output = { schema_version: "1.0", question_id: packet.frozen_question.id, answer: "A synthetic answer.",
+      answerability, evidence_ids: answerability === "not_found" ? [] : passages,
+      qualifier_ids: [], snapshot_generation: packet.expected_generation, coverage_note: "Synthetic.", more_available: false };
+    return { output, receipt: { provider: "stand-in", model: "stand-in" } };
+  }
+});
+
+test("the cold test: a fresh consumer answers frozen questions from the copy alone; a strict pass gives the receipt for exactly that snapshot, anything less gives none", async (t) => {
+  const { runJournalColdTest } = await import("../src/runner-trial/journal-cold-test.mjs");
+  const server = await serverJournal(t);
+  const graph = JSON.parse(await fs.readFile(new URL("../schemas/journal-import/fixtures/synthetic-graph.json", import.meta.url), "utf8"));
+  const keyPassages = graph.nodes.filter((node) => node.kind === "passage" && /colleague/u.test(node.data?.quote ?? "")).map((node) => node.id);
+  assert.ok(keyPassages.length >= 1);
+  const frozen = [
+    { id: "q-colleague", question: "colleague", key: { answerable: true, evidence_ids: keyPassages } },
+    { id: "q-premise", question: "When did the colleague refuse to help?", key: { answerable: false, evidence_ids: [] } },
+    { id: "q-absent", question: "zebra", key: { answerable: false, evidence_ids: [] } }
+  ];
+  const run = (port) => runJournalColdTest({ service: server.service, auth: server.auth, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, frozen, port, now: () => new Date("2026-11-24T09:00:00.000Z") });
+  const passed = await run(consumer());
+  assert.equal(passed.passed, true, JSON.stringify(passed.report));
+  const reference = (await server.service.inspectJournalCorpus(SERVER_CASE, SERVER_CORPUS, { requiredScope: "case:read", requiredPurpose: "session_use" }, server.auth)).reference;
+  assert.deepEqual(passed.receipt, { schema_version: 1, kind: "journal_cold_test", result: "pass", case_id: SERVER_CASE, corpus_id: SERVER_CORPUS,
+    generation: reference.active_generation, manifest_object_id: reference.manifest_object_id, visibility_epoch: reference.visibility_epoch, tested_at: "2026-11-24T09:00:00.000Z" });
+  assert.equal(JSON.stringify(passed.report).includes("colleague for help"), false, "the report holds ids and scores, no journal text");
+  // A consumer that misses what the journal holds, or claims support for a false premise, doesn't pass: no receipt.
+  for (const [failing, wrong] of [[consumer({ miss: true }), "q-colleague"], [consumer({ overclaim: true }), "q-premise"]]) {
+    const failed = await run(failing);
+    assert.equal(failed.passed, false);
+    assert.equal(failed.receipt, null);
+    assert.deepEqual(failed.report.by_question.filter((entry) => !entry.graph.right).map((entry) => entry.id), [wrong]);
+  }
+  await assert.rejects(runJournalColdTest({ service: server.service, auth: server.auth, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, frozen: frozen.slice(0, 1), port: consumer() }), { code: "COLD_QUESTIONS_NEED_BOTH_KINDS" });
 });
