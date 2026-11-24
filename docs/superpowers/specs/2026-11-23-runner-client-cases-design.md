@@ -191,6 +191,11 @@ in such a case is shown only while the gate is open (the fixed emergency line ot
 after the copy and the receipt, and a start holds the folder's lock until its server has read the credentials. It found the store's
 journal hold sound under the trial's trust boundary, since it can only ever stop a reply.
 
+Codex's fourth review (24 Nov) found the timing class once more, between a check and the output to the person (a provisional reply,
+a delivery), which wait for an encrypted write. A further check can't close that, so the output is serialized with consent changes:
+in a case that has read its journal, the gate check, the record of the text as shown and the output itself happen under the trial
+folder's lock (`src/runner-trial/folder-lock.mjs`), which `--journal-consent` takes too.
+
 Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on
 the owner's go each time; the import into the client's runner case checked against the export; the adapter for the trial's
 development credentials), and **the journal's cold test**. Running the cold test on a client's journal comes back to the owner

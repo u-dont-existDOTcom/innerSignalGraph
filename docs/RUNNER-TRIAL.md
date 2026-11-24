@@ -104,7 +104,9 @@ passing cold-test receipt names exactly the copy's current publication. It is as
 reader, the writer, a checker or the repair (each retry included), by the worker itself at the last moment before its packet
 leaves, before a provisional reply is shown (the fixed emergency line shows instead) and before a reply is delivered. The consent
 is read last in each check, so a withdrawal holds for everything that starts after it; a packet already past its last check, in
-the instant before it leaves, still goes. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
+the instant before it leaves, still goes. Each output to the person (a provisional reply, a delivered reply) in such a case is
+checked and made under the trial folder's lock, which `--journal-consent` takes too, so a withdrawal lands wholly before it (and
+nothing is shown) or wholly after it; a command waits up to ten seconds for that lock. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
 grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check, also
 an approved one a restart's reconcile finds, because the case's drafts, findings, evidence and delivered replies may hold the
 journal's words. Confirming the consent again (with the copy's receipt in place) opens it; deleting the case removes the case,
