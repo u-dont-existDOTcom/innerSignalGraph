@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { loadConfig } from "../src/core/config.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
@@ -154,6 +156,23 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
 
 const lastRequest = (calls, role) => calls.filter((call) => call.role === role).at(-1).request;
 const snapshotsOf = (record) => record.response_evidence_snapshots ?? [];
+
+test("the app's server starts without an installed package: the journal's reader comes in only when a client's journal is read", async () => {
+  // run-autopilot.sh starts src/cli/serve.mjs from a folder without node_modules (tests/runtime-service-liveness.test.mjs starts it
+  // whole, which takes far longer). Here every module the start loads is loaded with any package refused.
+  const serve = new URL("../src/cli/serve.mjs", import.meta.url);
+  const modules = Array.from((await fs.readFile(serve, "utf8")).matchAll(/^import .* from "(\.[^"]+)";$/gmu), ([, specifier]) => new URL(specifier, serve).href);
+  assert.ok(modules.some((href) => href.endsWith("/src/server/listen-loopback.mjs")), "what the start loads");
+  const refusePackages = `import { isBuiltin, registerHooks } from "node:module";
+    registerHooks({ resolve(specifier, context, next) {
+      if (!isBuiltin(specifier) && !/^(?:[./]|file:)/u.test(specifier)) throw new Error("It needs an installed package: " + specifier);
+      return next(specifier, context);
+    } });`;
+  const load = (hrefs) => promisify(execFile)(process.execPath, ["--input-type=module", "--eval", `${refusePackages}\nfor (const href of ${JSON.stringify(hrefs)}) await import(href);`]);
+  await load(modules);
+  // The reader itself does need one, which is why the gate loads it late.
+  await assert.rejects(load([new URL("../src/journal-import/response-evidence-journal.mjs", import.meta.url).href]), /It needs an installed package: ajv/u);
+});
 
 test("the journal gate: no quotation without the owner's confirmation of consent, without a copy, without a matching cold-test receipt, or after a withdrawal; with all of them, the client's own journal only", async (t) => {
   const j = await journalTrial(t, { receipt: "none" });
