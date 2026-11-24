@@ -1,6 +1,6 @@
 # Runner trial: the replies' journal search
 
-Built 24 Nov 2026 on `claude/runner-journal-search-20261124`, from pull request 244's head `09f3de097`. It changes how a client's
+Built 24 Nov 2026 on `claude/runner-journal-search-20261124`, from pull request 244 (merged the same day as `4216e56cc`). It changes how a client's
 journal is searched for a reply, and when. Nothing here copies a journal or opens one that wasn't open before: the gate of the
 [design for clients](2026-11-23-runner-client-cases-design.md) (consent, a published copy, a passing cold test) decides that as it did.
 
@@ -18,9 +18,9 @@ message about wanting to die.
 `findEvidenceQuotes({ query, limit })` in `src/journal-import/retrieval.mjs`, beside `findQuotes`, which the connector serves and which
 stays as it is. A person's message is whole sentences, not chosen search words, so this search goes by how many quotes hold each word:
 
-- **Words.** The message's distinct words, read as the generation's word list reads them (accents and English and French word forms, on a
-  version 3 or 4 quote index; exactly elsewhere), without the English and French stop words, read the same way. A word no quote holds is
-  dropped. A word held by more than 5% of the quotes, and more than 20 of them, isn't ranked by. Of the rest, the 24 rarest; equally rare
+- **Words.** The message's distinct words, at most its first 40,000 characters, read as the generation's word list reads them (accents and
+  English and French word forms, on a version 3 or 4 quote index; exactly elsewhere), without the English and French stop words (below).
+  A word no quote holds is dropped. A word held by more than 5% of the quotes, and more than 20 of them, isn't ranked by. Of the rest, the 24 rarest; equally rare
   ones in the message's order. With none left there is no result: never a search by the words left out.
 - **Order.** Okapi BM25 over those words, with the constants of the version 3 ranking, then the id. No quote goes first for holding more
   of the words: in a long message many weak words would beat the one that matters. Where the word index says only which records hold a
@@ -31,6 +31,13 @@ stays as it is. A person's message is whole sentences, not chosen search words, 
   is counted with its reason and never fails the search. A record of another case still refuses it all.
 - **Returned.** Each quote's record, words, span, lifecycle, when the quote index says it was written (never the date line's words), its
   wording cues and the words it matched; the words chosen and left out, with counts; how many quotes were kept, looked at and returned.
+
+**Stop words** are left out as the message writes them (French also without its accents), never by how the word list reads them: it reads
+"shoulder" as *should*, "care" as the French *car*, "toy" as *toi* and "mois" as *moi*. A word it reads like a stop word's is looked up as
+written, with its plural or singular, since its quotes in the word list are mostly the stop word's. A stop word of one language that is
+an ordinary word of the other (`ALSO_ENGLISH`: "son", "car", "aura", "pendant" and others; `ALSO_FRENCH`: "but", "an", "or", "ours") is
+left out only in a message that holds more of its own list's other words than of the other list's: "my son" is searched, "son père" isn't.
+An English negation ("couldn't") is left out whole.
 
 The numbers are in `EVIDENCE_QUOTE_SEARCH`, with why and a version. They are reasoned, not measured: the 3,207 test questions about one
 real journal are on the server, so they can't be tuned on them from here. The result cache holds counts by a word's place and the kept
@@ -74,8 +81,9 @@ and what "superseded" means. A turn without a quotation, so every turn without a
   goes on after a restart use them: a reader whose reading is stored isn't called again, and first words a restart interrupted go out
   from the stored reading, once. What a reader's failure, the turn's time or a plan limit does is what it did. A case that has read its
   journal while its gate is closed is read by no one, and its turn closes as before.
-- **No search.** The optional hook `journalWithheld` says why a turn gets no journal: the current message is read as wanting to die or as
-  having acted or being about to, or isn't read, or its conversation has been read as one by any reader or checker. Every journal search
+- **No search.** The optional hook `journalWithheld` says why a turn gets no journal: the current message is read as wanting to die, as
+  having acted or being about to, or (with the number now on) as needing the emergency number now, or isn't read, or its conversation has
+  been read as one about wanting to die by any reader or checker. Every journal search
   of a turn, the message's own and the expansion's, is made in one place (`journalPart`), which asks it first: the part is then closed,
   `unavailable` and `not_attempted` with the reason `crisis_turn`, and no search is made. A decision that can't be made is a failed
   retrieval. A journal read earlier in the case still needs the open gate.
@@ -84,12 +92,11 @@ and what "superseded" means. A turn without a quotation, so every turn without a
 
 ## Limits
 
-- **The stop words take out words that matter.** Read as the word list reads words, the two lists also take out every word that reads
-  like one of theirs: in English "care", "caring", "son", "car", "coming", "sure", "toy" and "queer" (the French *car*, *son*, *comme*,
-  *sur*, *toi*, *que*), and "shoulder", "overeating", "bother" and "offer" (the English *should*, *over*, *both*, *off*, as in the version
-  3 ranking); in French "mois" (*moi*). A message whose point is one of them alone doesn't find it. On an exact word index only the
-  words of the lists themselves are lost, "son", "car", "pour" and "plus" among them.
-- A message over 4,000 characters is still searched by its first 4,000 (`JOURNAL_QUERY_CHARACTERS` in the controller), whatever its point.
+- A word that reads like a stop word's finds its exact form and its plural or singular, not its other forms ("sure" doesn't find
+  "surely"), and a word both languages have finds both ("son" also finds *son père* in a journal with French in it).
+- A message over 40,000 characters is searched by its first 40,000. On an invented journal of 6,000 entries a whole message of any length
+  up to that takes about 0.4 s on the laptop.
+- In a very long message many everyday words can outrank a single rare one; several rare words together didn't lose to them in the tests.
 - A one-word message finds what holds that word when few quotes do: "yes" finds the few quotes of a journal that say yes.
 - Words are runs of letters and digits, as in the quote search: a language written without spaces between words finds nothing. The stop
   words are English and French; in any other language only the common-words rule leaves everyday words out.
