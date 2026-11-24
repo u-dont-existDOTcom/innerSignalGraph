@@ -228,7 +228,7 @@ export function runProgramChecks({ reply, checkerLevel = "none", firstActedTurn 
   // checker alone reads it as one, the reply was written with quotations in view, and it isn't sent: the repair gets neither them nor it.
   if (journalInView && (crisisConversation || isCrisisLevel(checkerLevel))) {
     const read = isCrisisLevel(checkerLevel) ? ` (this check read the latest message as ${checkerLevel})` : "";
-    findings.push(finding("PROGRAM_JOURNAL_IN_CRISIS", "high", `Journal quotations were in view when this reply was written, in a conversation where someone said they want to die or might act${read}. Write the reply from the conversation alone: no journal quotation, and nothing taken from one.`));
+    findings.push(finding("PROGRAM_JOURNAL_IN_CRISIS", "high", `Journal quotations were in view when this reply, or a draft it was made from, was written, in a conversation where someone said they want to die or might act${read}. Write the reply from the conversation alone: no journal quotation, and nothing taken from one.`));
   }
   if (firstCrisisTurn) {
     const shape = shapeProblems(reply);

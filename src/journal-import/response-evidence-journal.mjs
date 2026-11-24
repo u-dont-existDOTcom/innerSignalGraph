@@ -26,11 +26,12 @@ function coverageOf({ expansion, searches, found, returned }) {
   const matched = kept - found.reduce((sum, search) => sum + search.omitted.reduce((count, entry) => count + entry.count, 0), 0);
   const shared = found.reduce((sum, search) => sum + search.shared, 0);
   const onlyCommon = found.length > 0 && found.every((search) => search.terms.chosen.length === 0 && search.terms.dropped.some((entry) => entry.reason === "common"));
-  const none = matched > 0 || found.length === 0 ? "" : kept > 0 ? " that may be used" : shared > 0 ? `; ${shared} passages share one of those words, none specifically enough to be returned`
+  const usable = matched === 0 && kept > 0 ? " that may be used" : "";
+  const none = kept > 0 || found.length === 0 ? "" : shared > 0 ? `; ${shared} passages share one of those words, none specifically enough to be returned`
     : onlyCommon ? "; every word of it that the journal holds is in too many passages to search by" : "; no passage holds any of them";
   const search = expansion
-    ? `${searches} ranked ${searches === 1 ? "search" : "searches"}, one for each missing-history question, for its less common words; ${matched} matching passages, counted for each question${none}; ${returned} exact quotations added.`
-    : `One ranked search for the message's less common words; ${matched} matching passages${none}; ${returned} exact quotations returned.`;
+    ? `${searches} ranked ${searches === 1 ? "search" : "searches, each"} for the less common words of one missing-history question; ${matched} matching passages${usable}, counted for each question${none}; ${returned} exact quotations added.`
+    : `One ranked search for the message's less common words; ${matched} matching passages${usable}${none}; ${returned} exact quotations returned.`;
   return `${search} Sharing words doesn't make a quotation relevant to the ${expansion ? "question" : "message"}, and wording cues are found for English wording only. Coverage is limited to ${expansion ? "these searches" : "this search"} and the published generation; no review of the whole journal and no independent verification of events is claimed.`;
 }
 

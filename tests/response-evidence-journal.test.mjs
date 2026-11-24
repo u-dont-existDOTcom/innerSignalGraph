@@ -389,7 +389,7 @@ test("an expansion searches each question on its own and takes the best of each 
   }
   assert.deepEqual(order, turns);
   assert.deepEqual([result.retrieval_status, result.more_available, result.omissions], ["returned", false, []]);
-  assert.match(result.coverage, /^3 ranked searches, one for each missing-history question, for its less common words; 8 matching passages, counted for each question; 7 exact quotations added\./u);
+  assert.match(result.coverage, /^3 ranked searches, each for the less common words of one missing-history question; 8 matching passages, counted for each question; 7 exact quotations added\./u);
   assert.equal(result.receipts[0].query_sha256, sha256Text(questions.join("\n")));
   // Joined into one search, as before, the three questions' words would compete for one ranking; each is searched for itself.
   assert.notDeepEqual((await env.retrieve({ query: questions.join("\n") })).source_items.map(placeOf), order);
@@ -423,14 +423,14 @@ test("an expansion adds to the part the turn has: its quotations keep their ids 
   assert.deepEqual(result.receipts.slice(1), first.receipts);
   assert.deepEqual([result.receipts[0].returned_source_ids, result.receipts[0].packet_sha256, result.receipts[0].budget_used_bytes],
     [result.source_items.slice(6).map((item) => item.id), sha256Json(result.source_items.slice(6)), bytes(result.source_items.slice(6))]);
-  assert.equal(result.coverage.startsWith(`${first.coverage} 2 ranked searches, one for each missing-history question, for its less common words; 19 matching passages, counted for each question; 6 exact quotations added.`), true, result.coverage);
+  assert.equal(result.coverage.startsWith(`${first.coverage} 2 ranked searches, each for the less common words of one missing-history question; 19 matching passages, counted for each question; 6 exact quotations added.`), true, result.coverage);
   const expanded = await env.store.freezeResponseEvidence(CASE, { ...freezeInput(result), snapshotId: "snapshot:journal:supervisor:r2", revision: 2, parentSnapshotId: initial.id, revisionReason: "evidence_expansion" });
   assert.deepEqual(expanded.source_items.filter((item) => item.kind === "journal_quotation"), result.source_items);
   assert.deepEqual(expanded.journal.receipts, result.receipts);
   // Nothing new found: what the turn had stays, and the coverage says nothing was added.
   const nothing = await expand(env, ["zxqnonexistent?"], first);
   assert.deepEqual([nothing.source_items, nothing.retrieval_status], [first.source_items, "returned"]);
-  assert.match(nothing.coverage, /; 0 matching passages, counted for each question; no passage holds any of them; 0 exact quotations added\./u);
+  assert.match(nothing.coverage, / 1 ranked search for the less common words of one missing-history question; 0 matching passages, counted for each question; no passage holds any of them; 0 exact quotations added\./u);
   // What the message's own search left out is still left out.
   const limited = await expand(env, ["zxqnonexistent?"], { ...first, more_available: true, omissions: [{ reason: "restricted_quotation", count: 2 }] });
   assert.deepEqual([limited.more_available, limited.retrieval_status, limited.omissions, limited.receipts[0].omitted_count], [true, "partial", [{ reason: "restricted_quotation", count: 2 }], 0]);
@@ -490,6 +490,8 @@ test("a quotation that may not be used is an omission that doesn't say why; one 
   const none = await provider.freezeResponseEvidenceJournal({ caseId: CASE, query: "gone1", authContext: AUTH });
   assert.deepEqual([none.source_items, none.omissions, none.retrieval_status, none.more_available], [[], [{ reason: "quotation_not_usable", count: 2 }], "no_match", false]);
   assert.match(none.coverage, /; 0 matching passages that may be used; 0 exact quotations returned\./u);
+  const asked = await provider.freezeResponseEvidenceJournal({ caseId: CASE, query: "gone1", questions: ["And gone1?"], authContext: AUTH });
+  assert.match(asked.coverage, /; 0 matching passages that may be used, counted for each question; 0 exact quotations added\./u);
 });
 
 test("with notes asked for, each quotation says when it was written, its cues and its lifecycle, in the snapshot and the models' view; without, none does", async (t) => {

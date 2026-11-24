@@ -197,11 +197,12 @@ export function createPrivateTherapyTurnController({
 
   const snapshotsFor = (record, runtimeTurn) => (record.response_evidence_snapshots ?? []).filter((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id);
   const searchesJournal = typeof journalEvidenceProvider?.freezeResponseEvidenceJournal === "function";
-  // Why this turn gets no journal now, or null (journalWithheld). Every snapshot of a turn asks it as it is frozen, whatever made the
-  // freeze, so a snapshot never holds a quotation the turn may not have; a repair asks it again for the snapshot it would go on with.
-  const withheldNow = async ({ caseId, runtimeTurn, authContext }) => (searchesJournal && typeof modelRuntime.journalWithheld === "function"
-    ? await modelRuntime.journalWithheld({ caseId, runtimeTurn, authContext }) : null);
   const holdsQuotation = (snapshot) => (snapshot?.source_items ?? []).some((entry) => entry.kind === "journal_quotation");
+  // Why this turn gets no journal now, or null (journalWithheld). Every snapshot of a turn asks it as it is frozen, whatever made the
+  // freeze, so a snapshot never holds a quotation the turn may not have; a repair asks it again for the snapshot it would go on with. With
+  // no reader attached (any more), it is asked only where the snapshot before holds a quotation to carry over.
+  const withheldNow = async ({ caseId, runtimeTurn, previous, authContext }) => ((searchesJournal || holdsQuotation(previous)) && typeof modelRuntime.journalWithheld === "function"
+    ? await modelRuntime.journalWithheld({ caseId, runtimeTurn, authContext }) : null);
   // Every journal search of a turn is made here, the message's own and the repair's expansion. `expansion`, for the repair's: each
   // missing-history question, and the journal part of the snapshot it adds to.
   const journalPart = async ({ caseId, query, expansion = null, authContext }) => {
@@ -227,7 +228,7 @@ export function createPrivateTherapyTurnController({
     const revision = (previous?.revision ?? 0) + 1;
     let journal;
     try {
-      const withheld = await withheldNow({ caseId, runtimeTurn, authContext });
+      const withheld = await withheldNow({ caseId, runtimeTurn, previous, authContext });
       if (withheld) journal = { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: withheld, count: 1 }] };
     } catch {
       // A decision that can't be made is a failed retrieval: no search, and nothing carried over.
@@ -515,7 +516,7 @@ export function createPrivateTherapyTurnController({
           const expand = owned.length < 3 && missing.length > 0 && searchesJournal && !owned.some((entry) => entry.revision_reason === "evidence_expansion");
           // A check that read the conversation as one that gets no journal leaves the repair none: the snapshot it would go on with is
           // frozen again without its quotations, and where no further snapshot may be frozen the turn closes.
-          const closes = holdsQuotation(snapshot) && Boolean(await withheldNow({ caseId, runtimeTurn, authContext }));
+          const closes = holdsQuotation(snapshot) && Boolean(await withheldNow({ caseId, runtimeTurn, previous: snapshot, authContext }));
           if (closes && owned.length >= 3) {
             throw new RuntimeError("InnerSignal could not safely complete this response. Nothing unaudited was delivered.", {
               code: "THERAPY_RUNTIME_UNAVAILABLE", details: { response_evidence_revisions_exhausted: true }

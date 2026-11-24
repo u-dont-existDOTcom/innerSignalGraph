@@ -120,7 +120,7 @@ const OUTPUT_LOCK_WAIT_MS = 5_000;
 const JOURNAL_WITHHELD = "journal_withheld";
 // What a repair, and the check of it, get in place of the draft it replaces when that draft may hold the journal's words (mayHoldJournal)
 // and the turn gets no journal.
-const DRAFT_NOT_SHOWN = "Not shown: it was written with journal quotations in view, and this turn may have none.";
+const DRAFT_NOT_SHOWN = "Not shown: it may hold words of the person's journal, and this turn may have none.";
 const DRAFT_NOT_SHOWN_TO_WRITER = `${DRAFT_NOT_SHOWN} Write the reply anew, from the conversation alone.`;
 const DRAFT_NOT_SHOWN_TO_CHECKER = `${DRAFT_NOT_SHOWN} This reply was written anew, from the conversation alone: check every item of repair_induced_error_checks on it by itself.`;
 
@@ -736,12 +736,13 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     .find((event) => event.event_type === "INVOCATION_COMPLETED" && ["candidate", "repair"].includes(event.stage) && event.details?.output?.exactText === exactText)
     ?.details?.output?.result ?? {};
   // Whether a draft may hold the journal's words: the evidence it was written with holds a quotation, or it was written from a draft that may
-  // (a repair is given the one it corrects, unless its stored result says that one was hidden).
+  // (a repair is given the one it corrects, unless the stored result of the call that wrote it, its producer's, says that one was hidden).
   const mayHoldJournal = (record, runtimeTurn, candidate) => {
     for (let draft = candidate; draft; draft = record.candidate_responses.find((entry) => entry.id === draft.parent_candidate_id)) {
       const evidence = (record.response_evidence_snapshots ?? []).find((entry) => entry.id === draft.metadata?.response_evidence?.snapshot_id);
       if (holdsQuotation(evidence?.source_items)) return true;
-      if (writerOutputOf(runtimeTurn, draft.exact_text).draftHidden === true) return false;
+      const call = runtimeTurn.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.details?.actual_context_id === draft.producer_context_id);
+      if (call?.details.output?.result?.draftHidden === true) return false;
     }
     return false;
   };

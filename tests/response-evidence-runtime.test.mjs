@@ -737,6 +737,23 @@ test("a refresh of a turn's evidence carries no quotation over into a turn that 
   }
 });
 
+test("a quotation isn't carried over into a turn that gets no journal any more where the reader is no longer attached either", async (t) => {
+  for (const later of ["journal_withheld", null]) {
+    const env = await setup(t), h = hooked(env, { withheld: () => later });
+    const { item, found } = await publishedCorpus(env);
+    // Frozen with its quotation, then stopped; started again without the reader, the case changed meanwhile.
+    const unfinished = { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } };
+    await assert.rejects(createPrivateTherapyTurnController({ privateCaseSource: unfinished, modelRuntime: { ...env.runtime, journalWithheld: undefined }, responseEvidence: { enforced: true, journalTimeoutMs: 10 }, journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request()), /stop before the writer/u);
+    const state = await env.store.getCaseState(CASE);
+    state.updated_at = "2026-11-23T14:00:00.000Z";
+    await env.store.saveCaseState(CASE, state);
+    await h.controller().run(request());
+    const { response_evidence_snapshots: snapshots } = await assertDelivered(env.store);
+    assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), [["initial", ["src:journal:1"]], ["dependency_refresh", later ? [] : ["src:journal:1"]]], String(later));
+    if (later) assert.deepEqual(withheldPart(snapshots[1]).slice(0, 3), ["unavailable", "not_attempted", [{ reason: later, count: 1 }]]);
+  }
+});
+
 test("a repair that may have no journal and no further snapshot isn't made: the turn ends as one without a checked reply", async (t) => {
   let withhold = null;
   const env = await setup(t, { alwaysFail: true, auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => withhold });
