@@ -23,14 +23,16 @@ function callsFrom(receipts, legacyParts = []) {
 // - a draft is bound to its writer's sealed call by the call's context (the draft's producer_context_id is the completion's
 //   details.actual_context_id, as the store checks it), or, in a record without contexts, by being the one draft of that stage
 //   with exactly the call's words; its number is its own repair cycle's;
-// - a committed audit is bound to its check's sealed call by the auditor's context (audit.auditor_context_id is the completion's
-//   details.actual_context_id, as the store checks it), and through it to its draft; it is shown as committed, with every finding
-//   (the commit can add findings, change a finding's severity and fail the audit);
-// - a checker reading is bound to its draft by its candidate id.
-// Only a call that left no stored result naming its draft (a failed or interrupted call, a check with no committed audit) is
-// placed by position, with the draft the last bound call was about. A draft is shown before anything bound to it; whatever no
-// call shows (a draft, a committed audit, a reading) gets a step of its own after the events, with its draft. The box reader's
-// section is left out only for the runtime's exact placeholder.
+// - a committed audit is placed at the transition that committed it (the store's transition names the audit and its draft), or,
+//   with none stored, with the one check call whose auditor's context it carries; its check call is the last audit completion
+//   with that context before the commit. It is shown as committed, with every finding (the commit can add findings, change a
+//   finding's severity and fail the audit);
+// - a checker reading is bound to its draft by its candidate id;
+// - a draft's stored words are the draft; the call's words, where they differ, are shown beside them.
+// Only a call that left no stored result naming its draft (a failed, abandoned or unended call, a check with no committed audit)
+// is placed by position, with the draft the last bound call was about. A draft is shown before anything bound to it; whatever no
+// call shows (a draft, a committed audit, a reading) gets a step of its own after the events, with its draft. A call started and
+// never ended is shown as such. The box reader's section is left out only for the runtime's exact placeholder.
 export function runnerTurnDetailsFromRecord(record, turnNumber) {
   if (!Number.isSafeInteger(turnNumber) || turnNumber < 1) return null;
   const turn = record?.runtime_turns?.[turnNumber - 1];
@@ -71,7 +73,26 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
     return taken;
   };
   const storedBy = (entry, at) => !at || !entry.recorded_at || entry.recorded_at <= at;
+  const events = list(turn.events);
+  const ended = new Set(events.filter((event) => ["INVOCATION_COMPLETED", "INVOCATION_FAILED", "INVOCATION_ABANDONED"].includes(event.event_type)).map((event) => event.context_id).filter(Boolean));
+  // The index of the transition that committed each audit, by the audit's id.
+  const commits = new Map();
+  events.forEach((event, index) => { if (event.event_type === "STATE_TRANSITION" && event.details?.audit_id != null) commits.set(event.details.audit_id, index); });
   const committedAudits = candidates.flatMap((candidate) => list(candidate.audit_history).map((audit) => ({ candidate, audit })));
+  // Which check call a committed audit came from (its event's index), or -1 when that can't be known.
+  const checkOf = (audit) => {
+    if (audit.auditor_context_id == null) return -1;
+    const matching = [];
+    events.forEach((event, index) => { if (event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit" && event.details?.actual_context_id === audit.auditor_context_id) matching.push(index); });
+    if (commits.has(audit.id)) { const before = matching.filter((index) => index < commits.get(audit.id)); return before.at(-1) ?? -1; }
+    return matching.length === 1 ? matching[0] : -1;
+  };
+  const checks = new Map(committedAudits.map((entry) => [entry, checkOf(entry.audit)]));
+  const commitStep = ({ candidate, audit }) => {
+    shown.add(audit);
+    const number = draftOf(candidate);
+    add("committed_check", `Stored result of the check of ${draftName(number)}`, audit.recorded_at ?? null, committedContent(audit), [], draftExtra(number));
+  };
   const writerOf = (event) => {
     const contextId = event.details?.actual_context_id;
     if (contextId != null) {
@@ -97,9 +118,24 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
     add("stored_draft", `Stored ${draftName(number)}, with no stored record of its writer's call`, stored(candidate.created_at), { exact_text: stored(candidate.exact_text) }, [], draftExtra(number));
   };
 
+  if (turn.kept_plan_kept_at != null || turn.kept_plan_deleted_at != null) {
+    add("kept_plan", "Kept plan", turn.kept_plan_kept_at ?? turn.kept_plan_deleted_at, { saved_at: stored(turn.kept_plan_kept_at), deleted_at: stored(turn.kept_plan_deleted_at) });
+  }
+  if (turn.discriminator) add("discriminator", "Question asked instead of a reply", turn.discriminator.created_at, { exact_text: stored(turn.discriminator.exact_text), kind: stored(turn.discriminator.kind) });
   let previousAudit = null;
   let current = null;
-  for (const event of list(turn.events)) {
+  for (const [eventIndex, event] of events.entries()) {
+    if (event.event_type === "STATE_TRANSITION" && event.details?.audit_id != null) {
+      const entry = committedAudits.find(({ audit }) => audit.id === event.details.audit_id);
+      const candidate = entry?.candidate ?? candidateById(event.details.candidate_id);
+      if (candidate) { storedDraft(candidate); current = candidate; }
+      if (entry && !shown.has(entry.audit)) commitStep(entry);
+    }
+    if (event.event_type === "INVOCATION_STARTED" && event.context_id != null && !ended.has(event.context_id)) {
+      // A call the process stopped in (the reload closes the turn without ending it): only its start is stored.
+      const number = event.stage === "audit" ? draftOf(current) : null;
+      add("started", `${event.stage} call started and not ended`, event.at, { attempt: stored(event.attempt), result: "not stored" }, [], draftExtra(number));
+    }
     if (event.event_type === "STATE_TRANSITION" && event.to_state === "RECONSTRUCTING") {
       // The runtime rebuilds the prompt on every attempt; its assembled words are not retained. The blocking findings it
       // supplies come from the exact parent candidate's stored audit, which can differ from the raw invocation result.
@@ -119,17 +155,19 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
         const candidate = writerOf(event);
         if (candidate) { shown.add(candidate); current = candidate; }
         const number = draftOf(candidate);
+        const callWords = output?.exactText;
+        const draftWords = candidate?.exact_text ?? null;
         add("draft", candidate ? `${workerName(workers, "Writer")}'s draft ${number}` : `${workerName(workers, "Writer")}'s words, bound to no stored draft`, event.at, {
-          exact_text: stored(output?.exactText ?? candidate?.exact_text),
+          exact_text: stored(draftWords ?? callWords),
+          ...(draftWords != null && callWords != null && draftWords !== callWords ? { call_exact_text: callWords } : {}),
           ...without(result, ["receipts", "rules", "compatibilityBinding", "mode", "processingTier", "routingReason"])
         }, workers, draftExtra(number));
       } else if (event.stage === "audit") {
         const value = output?.value;
         previousAudit = value;
-        const contextId = event.details?.actual_context_id;
-        const committed = contextId == null ? [] : committedAudits.filter(({ audit }) => !shown.has(audit) && audit.auditor_context_id === contextId);
-        const candidate = committed[0]?.candidate ?? current;
-        if (committed.length) { storedDraft(candidate); current = candidate; }
+        const boundHere = committedAudits.filter((entry) => !shown.has(entry.audit) && checks.get(entry) === eventIndex);
+        const candidate = boundHere[0]?.candidate ?? current;
+        if (boundHere.length) { storedDraft(candidate); current = candidate; }
         const number = draftOf(candidate);
         const workers = callsFrom(output?.providerReceipt?.receipts);
         const roles = [...new Set(workers.map((call) => call.role))];
@@ -151,11 +189,12 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
           ...without(value, ["findings"]),
           findings: unbound.filter(isProgram)
         }, [], { ...draftExtra(number), timing: "Checker completion order not stored; these results belong to the same draft." });
-        for (const { candidate: owner, audit } of committed) {
-          shown.add(audit);
-          const ownerNumber = draftOf(owner);
-          add("committed_check", `Stored result of the check of ${draftName(ownerNumber)}`, audit.recorded_at ?? event.at, committedContent(audit), [], draftExtra(ownerNumber));
-        }
+        // A commit with no stored transition follows its check here; one with a transition is shown at that transition.
+        for (const entry of boundHere) if (!commits.has(entry.audit.id)) commitStep(entry);
+      } else {
+        // Any other stored call: its result as stored, words and all (this view is the owner's).
+        add("call", `${event.stage} completed`, event.at, { result: without(output?.value ?? output?.result ?? null, ["receipts", "rules", "compatibilityBinding"]) },
+          callsFrom(output?.providerReceipt?.receipts ?? output?.result?.receipts));
       }
     } else if (["INVOCATION_FAILED", "INVOCATION_ABANDONED"].includes(event.event_type)) {
       // A call that failed or was abandoned stored no result naming its draft, so it is placed with the draft the last bound call

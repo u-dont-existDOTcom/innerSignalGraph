@@ -380,8 +380,12 @@ const interruptedEnd = { closure: { kind: "runner_unavailable", reason_code: "in
 test("an audit the process stopped in still shows the reading its finished checker stored (GPT's review 6)", () => {
   // C1 stored wants_to_die, the process stopped while C2 ran, and the reload closed the turn as interrupted: no failure event.
   const record = readingsTurn("UNANSWERED", [reading(1, "C1", "cand-1", 2, { level: "wants_to_die" })],
-    [writerDone("candidate", 1), moved("CANDIDATE_PENDING_AUDIT", "AUDITING", 1), moved("AUDITING", "UNANSWERED", 59)], interruptedEnd);
+    [{ event_type: "INVOCATION_STARTED", stage: "candidate", context_id: "attempt-w1", attempt: 1, at: at(0), details: {} }, { ...writerDone("candidate", 1), context_id: "attempt-w1" },
+      moved("CANDIDATE_PENDING_AUDIT", "AUDITING", 1), { event_type: "INVOCATION_STARTED", stage: "audit", context_id: "attempt-a1", attempt: 1, at: at(1), details: {} },
+      moved("AUDITING", "UNANSWERED", 59)], interruptedEnd);
   const details = runnerTurnDetailsFromRecord(record, 1);
+  // The check that started and never ended is shown as such; the writer's call, which ended, is not.
+  assert.deepEqual(details.steps.filter((entry) => entry.kind === "started").map((entry) => [entry.label, entry.draft ?? null]), [["audit call started and not ended", 1]]);
   const withReadings = details.steps.filter((entry) => entry.content?.readings);
   assert.equal(withReadings.length, 1);
   assert.deepEqual(withReadings[0].content.readings, record.runtime_turns[0].runner_reading.checker_levels);
@@ -477,9 +481,10 @@ test("drafts and committed audits are bound by stored identity: a first draft wi
   const audit1 = committedAudit(TWO_DRAFTS[0], "audit-1", "ctx-a1", [{ id: "CW:1", checker: "CW", code: "SYNTHETIC", severity: "high", summary: M.finding }], 3);
   const audit2 = committedAudit(TWO_DRAFTS[1], "audit-2", "ctx-a2", [], 8);
   const candidates = withAudits({ "cand-1": [audit1], "cand-2": [audit2] });
+  const committedAt = (audit, candidateId, from, to, second) => moved(from, to, second, { audit_id: audit.id, candidate_id: candidateId, verdict: audit.verdict });
   const record = readingsTurn("DELIVERED", [reading(1, "CW", "cand-1", 2), reading(2, "CW", "cand-2", 7)], [
-    auditDone(3, ["CW"], audit1.findings, "ctx-a1"), moved("AUDITING", "REPAIR_REQUIRED", 3), moved("REPAIR_REQUIRED", "RECONSTRUCTING", 4, { parent_candidate_id: "cand-1" }),
-    writerDone("repair", 6), auditDone(8, ["CW"], [], "ctx-a2")
+    auditDone(3, ["CW"], audit1.findings, "ctx-a1"), committedAt(audit1, "cand-1", "AUDITING", "REPAIR_REQUIRED", 3), moved("REPAIR_REQUIRED", "RECONSTRUCTING", 4, { parent_candidate_id: "cand-1" }),
+    writerDone("repair", 6), auditDone(8, ["CW"], [], "ctx-a2"), committedAt(audit2, "cand-2", "AUDITING", "APPROVED", 8)
   ], deliveredEnd, candidates);
   const details = runnerTurnDetailsFromRecord(record, 1);
   assert.deepEqual(draftSteps(details), [["stored_draft", 1], ["committed_check", 1], ["repair_request", 2], ["draft", 2], ["committed_check", 2]]);
@@ -491,4 +496,40 @@ test("drafts and committed audits are bound by stored identity: a first draft wi
   // Each draft and each committed audit exactly once, under its own identity.
   assert.deepEqual(details.steps.filter((entry) => ["draft", "stored_draft"].includes(entry.kind)).map((entry) => entry.content.exact_text), [M.draft1, M.draft2]);
   assert.deepEqual(details.steps.filter((entry) => entry.kind === "committed_check").map((entry) => entry.content.recorded_at), [audit1.recorded_at, audit2.recorded_at]);
+});
+
+test("a draft's stored words stay the draft's, beside its call's differing words, and two drafts' audits sharing an auditor's context stay with their own checks (GPT's third review)", () => {
+  // The advisory store keeps a draft whose words differ from its writer's call, and two audits may share an auditor's context.
+  const storedWords = "Candidatestoreddetailsmarker";
+  const drafts = [{ ...TWO_DRAFTS[0], exact_text: storedWords }, { ...TWO_DRAFTS[1] }];
+  const audit1 = { ...committedAudit(drafts[0], "audit-1", "ctx-shared", [{ id: "CW:1", checker: "CW", code: "SYNTHETIC", severity: "high", summary: M.finding }], 3), candidate_id: "cand-1" };
+  const audit2 = { ...committedAudit(drafts[1], "audit-2", "ctx-shared", [], 8), candidate_id: "cand-2" };
+  const candidates = [{ ...drafts[0], audit_history: [audit1] }, { ...drafts[1], audit_history: [audit2] }];
+  const commit = (audit, candidateId, to, second) => moved("AUDITING", to, second, { audit_id: audit.id, candidate_id: candidateId, verdict: audit.verdict });
+  const record = readingsTurn("DELIVERED", [reading(1, "CW", "cand-1", 2), reading(2, "CW", "cand-2", 7)], [
+    writerDone("candidate", 1), auditDone(3, ["CW"], audit1.findings, "ctx-shared"), commit(audit1, "cand-1", "REPAIR_REQUIRED", 3), moved("REPAIR_REQUIRED", "RECONSTRUCTING", 4, { parent_candidate_id: "cand-1" }),
+    writerDone("repair", 6), auditDone(8, ["CW"], [], "ctx-shared"), commit(audit2, "cand-2", "APPROVED", 8)
+  ], deliveredEnd, candidates);
+  const details = runnerTurnDetailsFromRecord(record, 1);
+  // The first draft's call words (M.draft1) differ from its stored words.
+  const draft1 = details.steps.find((entry) => entry.kind === "draft" && entry.draft === 1);
+  assert.equal(draft1.content.exact_text, storedWords);
+  assert.equal(draft1.content.call_exact_text, M.draft1);
+  assert.equal(Object.hasOwn(details.steps.find((entry) => entry.kind === "draft" && entry.draft === 2).content, "call_exact_text"), false);
+  assert.deepEqual(draftSteps(details), [["draft", 1], ["committed_check", 1], ["repair_request", 2], ["draft", 2], ["committed_check", 2]]);
+  assert.deepEqual(details.steps.filter((entry) => entry.kind === "checker").map((entry) => [entry.draft, entry.content.readings.map((item) => item.attempt)]), [[1, [1]], [2, [2]]]);
+  const committedSteps = details.steps.filter((entry) => entry.kind === "committed_check");
+  assert.deepEqual(committedSteps.map((entry) => [entry.draft, entry.content.verdict]), [[1, "fail"], [2, "pass"]]);
+});
+
+test("a kept-plan action, a question asked instead of a reply and a call of another stage are shown as stored", () => {
+  const record = readingsTurn("UNANSWERED", [], [writerDone("candidate", 1), { event_type: "INVOCATION_COMPLETED", stage: "discriminator_review", context_id: "attempt-d1", at: at(5), details: { actual_context_id: "ctx-d1", output: { value: { synthetic: "reviewed" }, providerReceipt: { receipts: [] } } } }], interruptedEnd);
+  record.runtime_turns[0].kept_plan_kept_at = at(10);
+  record.runtime_turns[0].kept_plan_deleted_at = at(20);
+  record.runtime_turns[0].discriminator = { exact_text: "Questiondetailsmarker", kind: "clarifying", sha256: "0".repeat(64), producer_context_id: "ctx-d0", created_at: at(4) };
+  const details = runnerTurnDetailsFromRecord(record, 1);
+  assert.deepEqual(details.steps.find((entry) => entry.kind === "kept_plan").content, { saved_at: at(10), deleted_at: at(20) });
+  assert.deepEqual(details.steps.find((entry) => entry.kind === "discriminator").content, { exact_text: "Questiondetailsmarker", kind: "clarifying" });
+  assert.deepEqual(details.steps.find((entry) => entry.kind === "call").content, { result: { synthetic: "reviewed" } });
+  assert.equal(JSON.stringify(details).includes("ctx-d0") || JSON.stringify(details).includes("ctx-d1"), false);
 });
