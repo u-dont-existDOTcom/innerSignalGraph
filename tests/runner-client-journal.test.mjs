@@ -13,6 +13,7 @@ import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { createInnerSignalServer } from "../src/server/create-server.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders, PRIVATE_JOURNAL_PURPOSES } from "../src/storage/private-case-access.mjs";
 import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
+import { SESSION_USE_READER_VERSION } from "../src/journal-import/response-evidence-journal.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
@@ -137,8 +138,17 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
   const plantReceipt = async (overrides = {}) => {
     const folder = clientJournalFolder(home, clientA);
     await fs.mkdir(folder, { recursive: true, mode: 0o700 });
-    await fs.writeFile(path.join(folder, COLD_TEST_RECEIPT_FILE), JSON.stringify({ schema_version: 1, kind: "journal_cold_test", result: "pass", case_id: clientA, corpus_id: CORPUS,
-      generation: reference.active_generation, manifest_object_id: reference.manifest_object_id, visibility_epoch: reference.visibility_epoch, tested_at: "2026-11-24T08:00:00.000Z", ...overrides }), { mode: 0o600 });
+    await fs.writeFile(path.join(folder, COLD_TEST_RECEIPT_FILE), JSON.stringify({ schema_version: 2, kind: "journal_cold_test", result: "pass", case_id: clientA, corpus_id: CORPUS,
+      generation: reference.active_generation, manifest_object_id: reference.manifest_object_id, visibility_epoch: reference.visibility_epoch, tested_at: "2026-11-24T08:00:00.000Z",
+      reader_version: SESSION_USE_READER_VERSION, rule: "journal-cold-test-rule-v2", questions: { answerable: 40, unanswerable: 20 },
+      consumer: { provider: "openai", model: "codex default" }, judge: { provider: "anthropic", model: "claude-opus-5-5" }, ...overrides }), { mode: 0o600 });
+  };
+  // A receipt of the cold test's first design, which names no reader: with it, the journal is as if it weren't tested.
+  const plantFirstReceipt = async () => {
+    await plantReceipt();
+    const file = path.join(clientJournalFolder(home, clientA), COLD_TEST_RECEIPT_FILE);
+    const { reader_version: _reader, rule: _rule, questions: _questions, consumer: _consumer, judge: _judge, ...first } = JSON.parse(await fs.readFile(file, "utf8"));
+    await fs.writeFile(file, JSON.stringify({ ...first, schema_version: 1 }), { mode: 0o600 });
   };
   if (receipt === "match") await plantReceipt();
   if (receipt === "other-generation") await plantReceipt({ generation: "generation-0" });
@@ -149,7 +159,7 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
   const fake = fakeWorkers(workers);
   const makeTrial = (source = service) => createRunnerTrialController({ privateCaseSource: source, config, clientCaseIds: [...caseAuthContexts.keys()], settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode }), parts, workerFor: fake.workerFor });
   return {
-    home, prepared, service, copier, copyAuth, ownAuth, caseAuthContexts, clientA, clientB, ownCase: prepared.caseId, calls: fake.calls, reference, sources, plantReceipt, makeTrial,
+    home, prepared, service, copier, copyAuth, ownAuth, caseAuthContexts, clientA, clientB, ownCase: prepared.caseId, calls: fake.calls, reference, sources, plantReceipt, plantFirstReceipt, makeTrial,
     // Turns on the trial's controller itself, client one's unless told otherwise, with everything that happens kept in one order: each
     // event the turn's page would get, each journal search as it starts (`search`; the one place the copy is opened), each evidence
     // snapshot as it is frozen (`freeze`) and each worker's call as it starts (its role). `onSearch`, when given, is awaited as a search
@@ -224,6 +234,10 @@ test("the journal gate: no quotation without the owner's confirmation of consent
   assert.equal((await ask(j.clientA)).omissions[0].reason, "cold_test_receipt_mismatch", "nor on another epoch");
   await j.plantReceipt({ result: "fail" });
   assert.equal((await ask(j.clientA)).omissions[0].reason, "cold_test_receipt_missing", "a failed test counts as none");
+  await j.plantFirstReceipt();
+  assert.deepEqual(reason(await ask(j.clientA)), ["unavailable", "cold_test_receipt_mismatch", 0], "a receipt that names no reader");
+  await j.plantReceipt({ reader_version: "session-use-reader-v1:every-word" });
+  assert.deepEqual(reason(await ask(j.clientA)), ["unavailable", "cold_test_receipt_mismatch", 0], "nor a pass of what another reader gives");
   await j.plantReceipt();
   const open = await ask(j.clientA);
   assert.equal(open.availability, "available");
@@ -244,6 +258,10 @@ test("the journal gate: no quotation without the owner's confirmation of consent
   assert.equal(await openNow(), false, "a lost receipt counts like a withdrawal");
   await j.plantReceipt({ generation: "generation-0" });
   assert.equal(await openNow(), false, "a receipt for another publication");
+  await j.plantFirstReceipt();
+  assert.equal(await openNow(), false, "a receipt that names no reader");
+  await j.plantReceipt({ reader_version: "session-use-reader-v1:every-word" });
+  assert.equal(await openNow(), false, "a receipt for another reader");
   await j.plantReceipt();
   assert.equal(await openNow(), true);
   await setJournalConsent({ home: j.home, number: 1, action: "withdraw" });
@@ -283,6 +301,27 @@ test("once a case has read its journal, a closed gate stops the whole case: the 
   const again = await respond(base, j.clientA, "exchange-case-3");
   assert.equal(again.status, 200);
   assert.equal(again.json.closing ?? null, null, "with the consent confirmed again, the case replies");
+});
+
+test("a reader other than the one tested closes the gate of a case that has read its journal, as a lost receipt does: the next turn makes no model call, and the page's list says no test passed", async (t) => {
+  const j = await journalTrial(t);
+  const { base } = await j.serve();
+  const listed = async () => (await (await fetch(`${base}/v1/runner/clients`, { headers: { origin: base } })).json()).cases.find((entry) => entry.caseId === j.clientA).journal.coldTestPassed;
+  assert.equal((await respond(base, j.clientA, "exchange-reader-1")).json.closing ?? null, null, "the first turn reads the journal and replies");
+  assert.equal(await listed(), true);
+  const closed = async (exchange) => {
+    const before = j.calls.length;
+    const next = await respond(base, j.clientA, exchange, "A synthetic later message.");
+    assert.deepEqual([next.status, next.json.answer, next.json.closing], [200, RUNNER_UNAVAILABLE_NOTICE, { kind: "runner_unavailable", reason_code: "checks_failed" }]);
+    assert.equal(j.calls.length, before, "no reader, writer or checker was called");
+  };
+  await j.plantReceipt({ reader_version: "session-use-reader-v1:every-word" });
+  await closed("exchange-reader-2");
+  await j.plantFirstReceipt();
+  await closed("exchange-reader-3");
+  assert.equal(await listed(), false, "a receipt that names no reader is no passed test");
+  await j.plantReceipt();
+  assert.equal((await respond(base, j.clientA, "exchange-reader-4")).json.closing ?? null, null, "with a test of this reader, the case replies");
 });
 
 test("a provisional reply in a case that has read its journal goes out only while the gate is open: withdrawn during the crisis reader's call, the emergency line shows instead", async (t) => {
