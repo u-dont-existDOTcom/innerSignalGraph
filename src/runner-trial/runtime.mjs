@@ -113,6 +113,9 @@ export class RunnerDeadlineError extends RuntimeError {
 // How long a journal output waits for the trial folder lock before it counts as refused (publishGated).
 const OUTPUT_LOCK_WAIT_MS = 5_000;
 
+// Why a turn about wanting to die gets no journal, as its evidence says it (journalWithheld).
+const JOURNAL_WITHHELD = "crisis_turn";
+
 function validLevel(value) { return LEVELS.includes(value) ? value : "unclear"; }
 
 // The refusals for which an approved reply is closed instead of delivered (the design for clients, point 6): response evidence no
@@ -437,6 +440,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     }
     const stored = { ...(reading ?? { level: "unclear", unread: true }), receipts };
     await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { crisis: stored } }], authContext);
+    await showFirstWords({ caseId, runtimeTurn, conversationId, priorCrisisConversation, levelsNow, numberShown, reading, authContext });
+    return stored;
+  }
+
+  // What the crisis reading (null when the reader gave none) calls for at once: the provisional reply, or the emergency line.
+  async function showFirstWords({ caseId, runtimeTurn, conversationId, priorCrisisConversation, levelsNow, numberShown, reading, authContext }) {
     // The level the first words go by: the reading's own, or, for a turn read number_now (switch on), acted or about to.
     const firstWordsLevel = numberNowRead(reading) ? "acted_or_about_to" : reading?.level;
     const allowsProvisional = Boolean(reading) && config.provisionalLevels.includes(firstWordsLevel);
@@ -444,7 +453,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     // level): nothing is shown or recorded as a provisional, whatever the reader returned, and the skip puts no emergency line into
     // the conversation (the line's other triggers are unchanged). A provisional reply for someone who has acted or is about to is
     // shown on a later turn too when the reader gives one and it passes its exact checks, a number included, as on a first turn.
-    if (allowsProvisional && !levelsNow.includes(firstWordsLevel)) return stored;
+    if (allowsProvisional && !levelsNow.includes(firstWordsLevel)) return;
     if (allowsProvisional && typeof reading.provisional_reply === "string") {
       const problems = provisionalProblems(reading.provisional_reply, { level: firstWordsLevel });
       // A provisional reply is shown to the person, so in a case that has read its journal it goes out only through the gated output
@@ -473,7 +482,6 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     // Read acted (or number_now) with nothing shown this turn (with provisionalTurns "first", a later turn whose message answers
     // what was said before): the highlighted line if the turn has no reply 30 s after the message arrived.
     if (firstWordsLevel === "acted_or_about_to") await armFallbackLine(caseId, runtimeTurn, authContext);
-    return stored;
   }
 
   async function runBoxPicker({ caseId, runtimeTurn, view, authContext }) {
@@ -501,6 +509,46 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // No reading keeps the stored gate (a prior restriction survives).
       return { assessment: null, unread: true, receipts: error.receipts ?? [] };
     }
+  }
+
+  // A turn's readings: the three readers at once, and the first words the crisis reading calls for. `reuse` (a turn read before its
+  // evidence is frozen, readBeforeEvidence below) takes a reading the turn has stored instead of calling its reader again, and completes
+  // the first words of one a restart interrupted; a stored provisional reply or line is never shown twice.
+  async function readTurn({ caseId, runtimeTurn, userInput, authContext, reuse = false }) {
+    const record = await load(caseId, authContext);
+    const turn = record.runtime_turns.find((entry) => entry.id === runtimeTurn.id);
+    const stored = reuse ? turn?.runner_reading?.readers ?? {} : {};
+    const conversationId = conversationIdFor(record, reuse && turn ? turn : runtimeTurn, userInput);
+    const view = conversationView(record, conversationId, runtimeTurn);
+    const earlierReadings = conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id);
+    const priorCrisisConversation = isCrisisConversation(earlierReadings);
+    const numberShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
+    const levelsNow = provisionalLevelsNow(earlierReadings);
+    if (!(reuse && readingsOf(turn))) emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
+    const firstWords = { caseId, runtimeTurn, conversationId, priorCrisisConversation, levelsNow, numberShown, authContext };
+    const [, boxes, protection] = await Promise.all([
+      !stored.crisis ? runCrisisReader({ ...firstWords, view })
+        : turn.provisional ? null : showFirstWords({ ...firstWords, reading: stored.crisis.unread === true ? null : stored.crisis }),
+      stored.boxes ?? runBoxPicker({ caseId, runtimeTurn, view, authContext }),
+      stored.protection ?? runProtectionReader({ caseId, runtimeTurn, view, record, authContext })
+    ]);
+    const resume = keptPlanEnabled ? resumeReadingFor(record, runtimeTurn, conversationId, userInput) : null;
+    const { readers } = await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { boxes, protection, ...(resume ? { resume } : {}) } }], authContext);
+    return { readers, conversationId, view };
+  }
+  // A turn's stored readings once all three readers' are there, else null.
+  const readingsOf = (turn) => {
+    const readers = turn?.runner_reading?.readers;
+    return readers?.crisis && readers.boxes && readers.protection ? readers : null;
+  };
+  // The readings of a turn the hook read, as stored; a turn it couldn't read (its case's journal gate was closed) is read here.
+  async function readingsReadBefore({ caseId, runtimeTurn, userInput, authContext }) {
+    const record = await load(caseId, authContext);
+    const turn = record.runtime_turns.find((entry) => entry.id === runtimeTurn.id);
+    const readers = readingsOf(turn);
+    if (!readers) return readTurn({ caseId, runtimeTurn, userInput, authContext, reuse: true });
+    const conversationId = turn.runner_reading.conversation_id;
+    return { readers, conversationId, view: conversationView(record, conversationId, runtimeTurn) };
   }
 
   // The case state after this turn's readings: the risk record from the crisis reading, the compatibility record from the
@@ -677,25 +725,30 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   return Object.freeze({
     settings: Object.freeze(structuredClone(config)),
 
-    async produceCandidate({ caseId, runtimeTurn, userInput = {}, journalEvidence = null, responseEvidence = null, authContext }) {
+    // Optional, called by the turn controller before it freezes the evidence of a turn that has no candidate yet, when a journal reader
+    // is attached: the readers read the message and its first words go out before any journal search (the design of 24 Nov 2026,
+    // point 4). What a reader's failure, its time or a plan limit does is what it does in produceCandidate. A case that has read its
+    // journal is read here only while its gate is open; produceCandidate then refuses the turn as it always has.
+    async readBeforeEvidence({ caseId, runtimeTurn, userInput = {}, authContext }) {
+      if (await journalGateAllows(caseId, null, authContext)) await readTurn({ caseId, runtimeTurn, userInput, authContext, reuse: true });
+    },
+
+    // Why this turn gets no journal, or null: its message isn't read, or its conversation has been read as one about wanting to die (or
+    // of someone who has acted or is about to) by any reader or checker, this turn's own reading included. No search is made for it
+    // then, the message's own or the repair's.
+    async journalWithheld({ caseId, runtimeTurn, authContext }) {
+      const record = await load(caseId, authContext);
+      const reading = record.runtime_turns.find((turn) => turn.id === runtimeTurn.id)?.runner_reading;
+      const crisis = reading?.readers?.crisis;
+      if (!crisis || crisis.unread === true) return JOURNAL_WITHHELD;
+      return isCrisisConversation(conversationReadings(record, reading.conversation_id)) ? JOURNAL_WITHHELD : null;
+    },
+
+    // `turnRead`: the controller had the turn read before its evidence was frozen (readBeforeEvidence).
+    async produceCandidate({ caseId, runtimeTurn, userInput = {}, journalEvidence = null, responseEvidence = null, turnRead = false, authContext }) {
       const inclusion = evidenceInclusion(responseEvidence);
       await assertJournalGate(caseId, responseEvidence, authContext);
-      const record = await load(caseId, authContext);
-      const conversationId = conversationIdFor(record, runtimeTurn, userInput);
-      const view = conversationView(record, conversationId, runtimeTurn);
-      const earlierReadings = conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id);
-      const priorCrisisConversation = isCrisisConversation(earlierReadings);
-      const numberShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
-      const levelsNow = provisionalLevelsNow(earlierReadings);
-      emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
-      const [crisis, boxes, protection] = await Promise.all([
-        runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, levelsNow, numberShown, authContext }),
-        runBoxPicker({ caseId, runtimeTurn, view, authContext }),
-        runProtectionReader({ caseId, runtimeTurn, view, record, authContext })
-      ]);
-      const resume = keptPlanEnabled ? resumeReadingFor(record, runtimeTurn, conversationId, userInput) : null;
-      const stored = await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { boxes, protection, ...(resume ? { resume } : {}) } }], authContext);
-      const readers = stored.readers;
+      const { readers, conversationId, view } = await (turnRead ? readingsReadBefore : readTurn)({ caseId, runtimeTurn, userInput, authContext });
       // The person asked in this message to delete the kept plan: it is deleted before the writer starts, so its packet holds none.
       if (keptPlanEnabled && readers.crisis?.unread !== true && readers.crisis?.asks_to_delete_plan === true) {
         await source("deleteRunnerKeptPlans", [caseId, { reason: "asked_in_conversation", runtimeTurnId: runtimeTurn.id }], authContext);

@@ -26,9 +26,10 @@ const closed = (availability, reason) => ({
 // (tests/runtime-service-liveness.test.mjs): so it is loaded when a client's journal is first read, never at the start. One that
 // can't be loaded is a failed retrieval like any other (the turn controller's journalPart): the reply is made from the conversation
 // alone.
+// It gives each quotation its note (when it was written, its wording cues, its lifecycle): no other build opens the trial's vault.
 async function sessionUseReader(options) {
   const { createSessionUseJournalEvidenceProvider } = await import("../journal-import/response-evidence-journal.mjs");
-  return createSessionUseJournalEvidenceProvider(options);
+  return createSessionUseJournalEvidenceProvider({ ...options, journalNotes: true });
 }
 
 export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor = null, clientsFor = () => readRunnerClients(trialDir) }) {
@@ -42,14 +43,14 @@ export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor
     catch { return undefined; }
   };
   return Object.freeze({
-    async freezeResponseEvidenceJournal({ caseId, query, maximumTokens = 8000, maximumBytes = 64000, authContext } = {}) {
+    async freezeResponseEvidenceJournal({ caseId, query, questions = null, addsTo = null, maximumTokens = 8000, maximumBytes = 64000, authContext } = {}) {
       const client = await clientFor(caseId);
       if (client === undefined) return closed("unavailable", "client_list_unreadable");
       if (!client || client.journal.corpus_id === null) return closed("not_configured", "no_journal_copy");
       if (!journalConsentCurrent(client)) return closed("not_authorized", "journal_consent_missing");
       const receipt = await readColdTestReceipt(trialDir, caseId);
       if (!receipt || receipt.corpus_id !== client.journal.corpus_id) return closed("unavailable", "cold_test_receipt_missing");
-      const result = await (await reader(client.journal.corpus_id)).freezeResponseEvidenceJournal({ caseId, query, maximumTokens, maximumBytes, authContext });
+      const result = await (await reader(client.journal.corpus_id)).freezeResponseEvidenceJournal({ caseId, query, questions, addsTo, maximumTokens, maximumBytes, authContext });
       if (result?.availability !== "available") return result;
       const read = result.receipts?.[0];
       if (!read || !coldTestReceiptMatches(receipt, { caseId, corpusId: read.corpus_id, generation: read.generation, manifestObjectId: read.manifest_object_id, visibilityEpoch: read.visibility_epoch })) {

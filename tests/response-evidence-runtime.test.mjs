@@ -565,3 +565,117 @@ test("origin/main reads a governed runtime delivery with a reviewed fallback", a
   assert.ok(record.runtime_turns[0].discriminator_review);
   assert.doesNotThrow(() => validateOld(structuredClone(record)));
 });
+
+// ---- The two optional hooks for a turn's journal (24 Nov 2026) ---------------------------------------------------------------------
+
+// The runtime's hooks and calls, the freeze and the journal search, in the order they happen.
+function hooked(env, { withheld = () => null, read = async () => {} } = {}) {
+  const happened = [], inputs = [];
+  env.runtime.readBeforeEvidence = async (input) => { happened.push("read"); inputs.push(input); return read(input); };
+  env.runtime.journalWithheld = async (input) => { happened.push("withheld?"); return withheld(input); };
+  for (const [method, name] of [["produceCandidate", "write"], ["repairCandidate", "repair"]]) {
+    const original = env.runtime[method];
+    env.runtime[method] = async (input) => { happened.push(Object.hasOwn(input, "turnRead") ? `${name}, read before` : name); return original(input); };
+  }
+  const source = { ...env.store, freezeResponseEvidence(...args) { happened.push("freeze"); return env.store.freezeResponseEvidence(...args); } };
+  const searches = [];
+  const journal = (part = { availability: "available", retrieval_status: "no_match" }) => ({ async freezeResponseEvidenceJournal(input) { happened.push("search"); searches.push(input); return typeof part === "function" ? part(input) : part; } });
+  return { happened, inputs, searches, journal, source, controller: (extra) => env.controller({ privateCaseSource: source, ...extra }) };
+}
+const withheldPart = (snapshot) => [snapshot.journal.availability, snapshot.journal.retrieval_status, snapshot.journal.omissions, snapshot.journal.receipts];
+
+test("a runtime that reads first is asked before anything is searched or frozen, and its writer is told", async (t) => {
+  const env = await setup(t), h = hooked(env);
+  await h.controller({ journalEvidenceProvider: h.journal() }).run({ ...request(), userInput: { newConversation: true } });
+  await assertDelivered(env.store);
+  assert.deepEqual(h.happened, ["read", "withheld?", "search", "freeze", "write, read before"]);
+  assert.deepEqual([h.inputs[0].caseId, h.inputs[0].runtimeTurn.id, h.inputs[0].userInput], [CASE, "runtime:one", { newConversation: true }]);
+  assert.deepEqual(Object.keys(h.searches[0]).sort(), ["authContext", "caseId", "maximumBytes", "maximumTokens", "query"], "the message's own search is asked for as before");
+});
+
+for (const [name, extra] of [
+  ["no journal provider", {}],
+  ["a provider of the older contract", { journalEvidenceProvider: { async freezeForTurn() { throw new Error("must not be called"); } } }]
+]) test(`with ${name} nothing is read first and nothing else changes`, async (t) => {
+  const env = await setup(t), h = hooked(env);
+  await h.controller(extra).run(request());
+  assert.deepEqual(h.happened, ["freeze", "write"]);
+  assert.equal((await assertDelivered(env.store)).response_evidence_snapshots.length, 1);
+});
+
+test("with response evidence off nothing is read first", async (t) => {
+  const env = await setup(t, { policy: "advisory" }), h = hooked(env);
+  await h.controller({ responseEvidence: { enforced: false } }).run(request());
+  assert.deepEqual(h.happened, ["write"]);
+});
+
+test("a turn that gets no journal makes no search, its own or the repair's, and each snapshot says why", async (t) => {
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => "crisis_turn" });
+  await h.controller({ journalEvidenceProvider: h.journal() }).run(request());
+  const record = await assertDelivered(env.store);
+  assert.deepEqual(record.response_evidence_snapshots.map((snapshot) => [snapshot.revision_reason, ...withheldPart(snapshot)]), [
+    ["initial", "unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }], []], ["evidence_expansion", "unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }], []]
+  ]);
+  assert.deepEqual(h.happened, ["read", "withheld?", "freeze", "write, read before", "withheld?", "freeze", "repair"]);
+});
+
+test("a decision that can't be made is a failed retrieval: no search, and the turn goes on without the journal", async (t) => {
+  const env = await setup(t), h = hooked(env, { withheld: () => { throw new Error("Synthetic store failure."); } });
+  await h.controller({ journalEvidenceProvider: h.journal() }).run(request());
+  const [snapshot] = (await assertDelivered(env.store)).response_evidence_snapshots;
+  assert.deepEqual([snapshot.journal.availability, snapshot.journal.retrieval_status], ["unavailable", "failed"]);
+  assert.deepEqual(h.happened, ["read", "withheld?", "freeze", "write, read before"]);
+});
+
+test("a restart reads first again while there is no candidate, and not once a writer has finished; the frozen evidence is kept", async (t) => {
+  const env = await setup(t), h = hooked(env);
+  const provider = h.journal();
+  const unfinished = { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } };
+  await assert.rejects(h.controller({ privateCaseSource: unfinished, journalEvidenceProvider: provider }).run(request()), /stop before the writer/u);
+  assert.deepEqual(h.happened.splice(0), ["read", "withheld?", "search", "freeze"]);
+  const uncommitted = { ...h.source, async commitPrivateRuntimeCandidate() { throw new Error("Synthetic stop after the writer."); } };
+  await assert.rejects(h.controller({ privateCaseSource: uncommitted, journalEvidenceProvider: provider }).run(request()), /stop after the writer/u);
+  assert.deepEqual(h.happened.splice(0), ["read", "write, read before"], "the snapshot it had, and no second search");
+  await h.controller({ journalEvidenceProvider: provider }).run(request());
+  assert.deepEqual(h.happened, [], "the finished writer's own evidence and words");
+  assert.equal((await assertDelivered(env.store)).response_evidence_snapshots.length, 1);
+});
+
+test("a reading that fails stops the turn before anything is searched or frozen, as a failed step does", async (t) => {
+  const env = await setup(t);
+  let failing = true;
+  const h = hooked(env, { read: async () => { if (failing) throw new Error("Synthetic reading failure."); } });
+  await assert.rejects(h.controller({ journalEvidenceProvider: h.journal() }).run(request()), /reading failure/u);
+  assert.deepEqual(h.happened.splice(0), ["read"]);
+  assert.deepEqual((await env.store.load(CASE)).response_evidence_snapshots, []);
+  failing = false;
+  await h.controller({ journalEvidenceProvider: h.journal() }).run(request());
+  await assertDelivered(env.store);
+});
+
+test("the expansion hands the reader each question and the part it adds to", async (t) => {
+  const questions = ["What was already tried?", "And what helped?"];
+  const review = (text) => ({ ...missing(text), missing_material_history: questions.map((question, index) => ({ ...missing(text).missing_material_history[0], id: `missing-${index}`, question })) });
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? review(text) : emptyReview() }), h = hooked(env);
+  await env.store.createJournalCorpus(CASE, { corpusId: "corpus:a", manifestObjectId: "manifest:a" });
+  await env.store.publishJournalGeneration(CASE, { corpusId: "corpus:a", generation: "generation:one", manifestObjectId: "manifest:a" });
+  const item = (number) => {
+    const exact_excerpt = `Exact synthetic journal quotation ${number}.`;
+    return { id: `src:journal:${number}`, kind: "journal_quotation", actor: "client", audience: "private_journal", time: { at: null, status: "unavailable" }, epistemic_status: "client_written_account",
+      exact_excerpt, excerpt_sha256: sha256Text(exact_excerpt), excerpt_bytes: Buffer.byteLength(exact_excerpt),
+      locator: { kind: "journal", corpus_id: "corpus:a", generation: "generation:one", visibility_epoch: 0, record_id: `record:${number}`, start_byte: 0, end_byte: Buffer.byteLength(exact_excerpt) } };
+  };
+  const found = (source_items) => ({ availability: "available", retrieval_status: "returned", source_items, coverage: "A synthetic search.", receipts: [{ operation_id: `retrieval:${source_items.length}`, corpus_id: "corpus:a",
+    generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:a", purpose: "session_use", query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: source_items.map((entry) => entry.id),
+    packet_sha256: sha256Json(source_items), more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }] });
+  await h.controller({ journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? [...addsTo.source_items, item(3)] : [item(1), item(2)])) }).run(request());
+  const record = await assertDelivered(env.store);
+  assert.equal(h.searches.length, 2);
+  assert.deepEqual([h.searches[1].query, h.searches[1].questions], [questions.join("\n"), questions]);
+  const { source_items: added, ...part } = h.searches[1].addsTo;
+  assert.deepEqual([added, part], [[item(1), item(2)], record.response_evidence_snapshots[0].journal]);
+  assert.deepEqual(record.response_evidence_snapshots.map((snapshot) => snapshot.source_items.filter((entry) => entry.kind === "journal_quotation").map((entry) => entry.id)),
+    [["src:journal:1", "src:journal:2"], ["src:journal:1", "src:journal:2", "src:journal:3"]]);
+  assert.deepEqual(env.calls.find((entry) => entry.stage === "repair").responseEvidence.view.source_items.filter((entry) => entry.kind === "journal_quotation").map((entry) => entry.exact_excerpt),
+    [1, 2, 3].map((number) => item(number).exact_excerpt), "the repair sees what the draft rested on, and what was added");
+});
