@@ -204,6 +204,8 @@ Preserve the controller's current upper bounds: at most 8,000 requested journal 
 
 Initial design default: one batched targeted retrieval before writing, and at most one bounded evidence expansion when an audit identifies a specific missing question. Count both against a per-turn budget; cache by case, purpose, generation, visibility epoch and query. These are conservative experimental defaults, not new clinical policy. Additional retrieval cannot reset the existing two-repair limit or become an unbounded loop.
 
+How that retrieval searches, and that the runner trial reads the message before it, is `2026-11-24-runner-journal-search-design.md` (24 Nov 2026).
+
 ## 7. Independent semantic audit, explicit coverage
 
 Extend the existing private audit output with `evidence_review`. The audit reads the exact final client-language text, its frozen evidence, and the current policy. It must not receive the producer's hidden reasoning or preferred verdict.

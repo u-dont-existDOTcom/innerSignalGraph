@@ -1,5 +1,13 @@
 # Inner Signal Codex current state
 
+## Runner trial: the replies' journal search — 24 November 2026 (branch `claude/runner-journal-search-20261124`, local commits, not pushed)
+
+- **Outcome / baseline:** a client's whole message finds what their journal tells, first words wait for no search, and a conversation about wanting to die gets no journal. Built from pull request 244's head `09f3de097` to the lane's final design of 24 Nov (after Fable's red team); the cold test is another task. No journal was copied or opened, no model called, nothing pushed.
+- **Built:** `findEvidenceQuotes` (`src/journal-import/retrieval.mjs`), a ranked search by a message's less common words, beside `findQuotes`, which is as it was; the session-use reader on it (six quotations, twelve in a snapshot the expansion adds to, each question searched on its own); a quotation's strict optional `journal_note`; the controller's optional hooks `readBeforeEvidence` and `journalWithheld`, which the runner's runtime implements; the models' notes, given with a quotation only. Spec: `docs/superpowers/specs/2026-11-24-runner-journal-search-design.md`.
+- **Verification (Node 24.18.0, one worker):** `tests/response-evidence*`, `runner-*`, `private-*`, `supervisor-*`, `journal-*` (node), `search-check`, `relational-sequence` and `runtime-service-liveness`: 1,910 tests, all passing; `npm run audit:repository` ok. Every rule of the design was taken out in turn and made a test fail. 18 scripted conversations without a journal reader (1,036 steps, 263 worker calls, every prompt and stored record) are byte-identical before and after. The whole gate was not run.
+- **Open for the lane:** the stop words, read as the word list reads words, also take out "care", "son", "shoulder" and others (the spec's Limits, measured); the spec's other limits. One existing test of the gate follows the new order.
+- **Next safe action:** the lane reviews the branch, decides the stop words, runs the whole gate, and stacks its pull request on 244. Pull request 245 merges it and adapts the cold test.
+
 ## Runner Details view — 23 November 2026 (local, uncommitted)
 
 - **Owner outcome / baseline:** a Details button for each finished Run log turn, reading that turn's words from the encrypted case on demand. Work is confined to `/mnt/hdd/storage/joel/development-worktrees/innerSignalGraph/runner-first-use-20261123`, branch `claude/runner-trial-first-use-20261123`, unchanged HEAD `c5a7878278ffda1fde8752c27a72ef5f9ece3c36`. No commit, push, release, installation, real model call, other-worktree change or interaction with the server on 8797 is authorized or performed.

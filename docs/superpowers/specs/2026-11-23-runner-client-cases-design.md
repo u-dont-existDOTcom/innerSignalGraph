@@ -25,6 +25,7 @@ appears here, in a test or in a log.
   `session_use` purpose, opens the corpus's active published generation, refuses one whose manifest doesn't permit `session_use`,
   makes one lexical search, checks each quote against the stored bytes and keeps its quotes to about 8,000 tokens (estimated) and
   64 KB per retrieval. It reads a local vault.
+  (Since 24 Nov 2026 the search is a ranked one for the message's less common words: `2026-11-24-runner-journal-search-design.md`.)
 - **The cold test isn't wired yet.** The journal import lists `cold-test` among its planned commands
   (`JOURNAL_IMPORT_PLANNED_COMMANDS` in `src/cli/journal-import.mjs`: question freezing, the separate consumer and scoring aren't
   joined yet, though pieces such as `src/journal-import/cold-profile-runner.mjs` exist), and no passing cold test of the imported
