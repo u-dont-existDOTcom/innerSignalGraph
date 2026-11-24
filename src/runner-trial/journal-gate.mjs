@@ -52,9 +52,23 @@ export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor
       if (!journalConsentCurrent(after) || after.journal.corpus_id !== client.journal.corpus_id) return closed("not_authorized", "journal_consent_missing");
       return result;
     },
-    // Whether the client's consent stands now (design, point 5a): read before every delivery of a reply resting on the journal.
-    async consentCurrent(caseId) {
-      return journalConsentCurrent(await clientFor(caseId));
+    // Whether the whole gate still holds now for the journal snapshots a turn read (their corpus, generation, manifest and epoch, from
+    // the reader's receipts): the owner's confirmation of the consent, the same journal copy on the client list, a cold-test receipt
+    // for exactly each of those snapshots, and the client's current grant with session_use. Asked before every model call that would
+    // carry the journal's words and before the delivery of a reply written with them in view (design, point 5): a withdrawal, a lost
+    // or replaced receipt, another copy or a grant without the purpose all close the gate, as at a retrieval.
+    async stillOpen({ caseId, bindings, authContext } = {}) {
+      if (!Array.isArray(bindings) || bindings.length === 0) return false;
+      const client = await clientFor(caseId);
+      if (!client || !journalConsentCurrent(client) || client.journal.corpus_id === null) return false;
+      const receipt = await readColdTestReceipt(trialDir, caseId);
+      for (const binding of bindings) {
+        if (binding?.corpus_id !== client.journal.corpus_id) return false;
+        if (!coldTestReceiptMatches(receipt, { caseId, corpusId: binding.corpus_id, generation: binding.generation, manifestObjectId: binding.manifest_object_id, visibilityEpoch: binding.visibility_epoch })) return false;
+      }
+      try { await caseAccessService.verifyCaseAccess(caseId, { requiredScope: "case:read", requiredPurpose: "session_use" }, authContext); }
+      catch { return false; }
+      return true;
     }
   });
 }

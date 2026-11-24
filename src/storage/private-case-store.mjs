@@ -826,15 +826,18 @@ export function createEncryptedPrivateCaseStore({
     return record;
   };
   // An approved runner trial turn is closed without a reply only as a failed check, and only when its reply may no longer be sent
-  // (the design for clients, point 6): response evidence no longer admits it at delivery, checked here again, or it was written with
-  // a client's journal in view (its snapshot holds journal quotations), which the trial holds back once that client's consent is
-  // withdrawn (the consent is the trial's own record, outside the case). Otherwise the reply stays to be delivered.
-  const approvedReplyMayNotBeSent = (record, runtimeTurn, reasonCode) => {
+  // (the design for clients, point 6): response evidence no longer admits it at delivery, checked here again; or the trial holds it
+  // back because the journal gate closed (`journalHold`), which is allowed only for a turn that read a client's journal (one of its
+  // evidence snapshots holds journal quotations). The gate itself (consent, receipt, grant) is the trial's own record outside the
+  // case, so the store can't check it; journal quotations alone, without the hold, never let an approved reply be closed (Codex's
+  // review 1, finding 4). Otherwise the reply stays to be delivered.
+  const approvedReplyMayNotBeSent = (record, runtimeTurn, reasonCode, journalHold) => {
     const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
     if (!candidate || reasonCode !== "checks_failed") return false;
-    const snapshotId = candidate.metadata?.response_evidence?.snapshot_id;
-    const snapshot = snapshotId ? (record.response_evidence_snapshots ?? []).find((entry) => entry.id === snapshotId) : null;
-    if (snapshot?.source_items?.some((item) => item.kind === "journal_quotation")) return true;
+    if (journalHold === true) {
+      return (record.response_evidence_snapshots ?? []).some((entry) => entry.owner?.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id
+        && entry.source_items.some((item) => item.kind === "journal_quotation"));
+    }
     return !assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point: "deliverPrivateRuntimeCandidate" }).admissible;
   };
   const requireResponseEvidence = (record, candidate, point) => {
@@ -1787,14 +1790,14 @@ export function createEncryptedPrivateCaseStore({
     },
     // Close a turn the runner trial can't answer, in one write: the person's turn if the transcript doesn't hold it yet, the case
     // state computed from the stored readings, the active draft superseded, and the fixed text as the exchange's assistant turn.
-    async closeRuntimeTurnUnanswered(caseId, runtimeTurnId, { kind, reasonCode, assistantTurnId, caseState = null, stateDiff = null, diffId = null, eventId }) {
+    async closeRuntimeTurnUnanswered(caseId, runtimeTurnId, { kind, reasonCode, assistantTurnId, caseState = null, stateDiff = null, diffId = null, eventId, journalHold = false }) {
       return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.state === "UNANSWERED") {
           if (runtimeTurn.closure.kind === kind && runtimeTurn.closure.assistant_turn_id === assistantTurnId) return null;
           throw new ValidationError("This turn is already closed differently.");
         }
-        if (runtimeTurn.state === "DELIVERED" || (runtimeTurn.state === "APPROVED" && !approvedReplyMayNotBeSent(record, runtimeTurn, reasonCode))) {
+        if (runtimeTurn.state === "DELIVERED" || (runtimeTurn.state === "APPROVED" && !approvedReplyMayNotBeSent(record, runtimeTurn, reasonCode, journalHold))) {
           throw new ValidationError("A delivered or approved turn is not closed without a reply.");
         }
         if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");

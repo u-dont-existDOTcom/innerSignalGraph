@@ -1286,6 +1286,7 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
   const calls = [];
   const posted = [];
   const asked = [];
+  const deletions = [];
   let answerConfirm = true;
   const context = vm.createContext({
     TextDecoder,
@@ -1293,10 +1294,15 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
     document,
     state: {},
     $: (selector) => document.querySelector(selector),
-    fetch: async (url) => {
+    fetch: async (url, init) => {
       calls.push(["fetch", url]);
+      // A deletion's answer is held until the test lets it go.
+      if (url === "/v1/case/delete") return new Promise((resolve) => { deletions.push({ caseId: JSON.parse(init.body).caseId, answer: () => resolve({ ok: true, json: async () => ({ deleted: true, handoffsKept: 0 }) }) }); });
       return { ok: true, json: async () => structuredClone(url === "/health" ? health : url === "/v1/runner/clients" ? view : {}) };
     },
+    prompt: () => "DELETE",
+    speechPlayback: { stop: () => {} },
+    syncSpeechPlaybackControls: () => {},
     applyRunnerTrial: (on) => { context.runnerTrial.on = on; document.querySelector("#runner-client-choice").hidden = !on; },
     applyRunnerKeptPlan: () => {},
     applyRunnerFeedbackLink: () => {},
@@ -1334,7 +1340,8 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
     between("function emptyPageState()", "function loadState()"),
     between("// One trial turn on the page", "async function postRunnerTurn"),
     between("// The menu of cases (design, point 3)", "for (const button of $$(\".tab\"))"),
-    between('$("#therapy-form").addEventListener("submit"', "let runnerLogRequest")
+    between('$("#therapy-form").addEventListener("submit"', "let runnerLogRequest"),
+    between("function clearDeletedCase()", '$("#clear-therapy").addEventListener')
   ].join("\n"), context);
   Object.assign(context.state, vm.runInContext("emptyPageState()", context), initial);
   await vm.runInContext("checkHealth()", context);
@@ -1344,7 +1351,7 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
   };
   return {
-    context, document, calls, posted, asked, send,
+    context, document, calls, posted, asked, send, deletions,
     choose: (caseId) => vm.runInContext(`chooseRunnerCase(${JSON.stringify(caseId)})`, context),
     setConfirm: (value) => { answerConfirm = value; },
     badge: () => document.querySelector("#runtime-status").textContent
@@ -1432,6 +1439,41 @@ test("with clients, the page chooses no case until the owner picks one, asks bef
   page.posted[1].resolve({ answer: "A synthetic second reply.", provisional: null, emergencyLineShown: false });
   for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
   assert.equal(JSON.parse(JSON.stringify(page.context.state.therapy)).at(-1).content, "A synthetic second reply.");
+});
+
+test("switching keeps what was typed with its case and empties the case's forms; a deletion's answer goes to the case it was asked for", async (t) => {
+  const page = await casePickingPage(t, { health: pickingHealth(), view: pickingView, initial: { caseId: SYNTHETIC_TRIAL_CASE } });
+  const { document } = page;
+  const message = document.querySelector("#therapy-message");
+  message.value = "Typed before any pick.";
+  await page.choose(PICKED_CLIENT_A);
+  assert.equal(message.value, "Typed before any pick.", "text typed before the first pick goes with the case picked");
+  message.value = "A synthetic draft for client A.";
+  document.querySelector("#journal-text").value = "A synthetic note for client A.";
+  await page.choose(PICKED_CLIENT_B);
+  assert.equal(message.value, "", "client B starts with nothing typed");
+  assert.equal(document.querySelector("#journal-text").value, "", "nor a note typed for client A");
+  message.value = "A synthetic draft for client B.";
+  await page.choose(PICKED_CLIENT_A);
+  assert.equal(message.value, "A synthetic draft for client A.", "client A's draft comes back");
+  await page.choose(PICKED_CLIENT_B);
+  assert.equal(message.value, "A synthetic draft for client B.");
+
+  // Delete client B's case, and switch to client A before the answer comes: A stays as it is, and B's bucket goes.
+  await page.choose(PICKED_CLIENT_A);
+  page.context.state.therapy.push({ role: "user", content: "A synthetic message of client A.", exchangeId: "exchange-a" });
+  await page.choose(PICKED_CLIENT_B);
+  page.context.state.therapy.push({ role: "user", content: "A synthetic message of client B.", exchangeId: "exchange-b" });
+  document.querySelector("#runner-delete-case").click();
+  for (let i = 0; i < 3; i += 1) await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(page.deletions.map((entry) => entry.caseId), [PICKED_CLIENT_B]);
+  await page.choose(PICKED_CLIENT_A);
+  page.deletions[0].answer();
+  for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(page.context.state.caseId, PICKED_CLIENT_A);
+  assert.deepEqual(JSON.parse(JSON.stringify(page.context.state.therapy)).map((entry) => entry.content), ["A synthetic message of client A."], "client A shows no deletion");
+  await page.choose(PICKED_CLIENT_B);
+  assert.deepEqual(JSON.parse(JSON.stringify(page.context.state.therapy)), [], "client B's deleted conversation is gone from the page too");
 });
 
 test("with the trial on, the page hides the usual app's pipeline sentences and its reasoning-depth menu, and keeps \"not emergency care\"", async (t) => {

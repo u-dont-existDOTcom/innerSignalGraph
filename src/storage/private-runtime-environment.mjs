@@ -5,6 +5,13 @@ import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } f
 import { acquirePrivateRootWriterLock } from "./shared-case-coordinator.mjs";
 import { RUNNER_TRIAL_CLIENT_TOKENS_SETTING, readRunnerTrialClientTokens } from "../runner-trial/switch.mjs";
 
+// The variables that hold case tokens: read once at start, then taken out of the environment so that no subprocess inherits them.
+export const PRIVATE_CASE_TOKEN_SETTINGS = Object.freeze(["INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN", RUNNER_TRIAL_CLIENT_TOKENS_SETTING]);
+export function scrubPrivateCaseTokens(environment = process.env) {
+  for (const name of PRIVATE_CASE_TOKEN_SETTINGS) delete environment[name];
+  return environment;
+}
+
 function optionalText(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }

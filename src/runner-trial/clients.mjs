@@ -141,6 +141,16 @@ export async function writeRunnerClients(trialDir, value) {
     await fs.rm(temporary, { force: true });
     throw error;
   }
+  await syncFolder(trialDir);
+}
+
+// A rename is durable only once its folder is synced (Codex's review 1, finding 8): without it, a power cut could keep a newer client
+// list beside older credentials. Best effort where the filesystem refuses a folder sync.
+export async function syncFolder(folder) {
+  let handle = null;
+  try { handle = await fs.open(folder, constants.O_RDONLY | constants.O_DIRECTORY); await handle.sync(); }
+  catch { /* best effort */ }
+  finally { try { await handle?.close(); } catch { /* best effort */ } }
 }
 
 export function clientJournalFolder(trialDir, caseId) {

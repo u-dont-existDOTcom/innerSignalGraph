@@ -433,7 +433,7 @@ const RUNNER_RECONCILE_LABEL = "Looking for a reply that finished while this pag
 const runnerCases = { choices: [], current: null, waiting: 0, buckets: new Map() };
 function runnerBucket(caseId) {
   if (!runnerCases.buckets.has(caseId)) {
-    runnerCases.buckets.set(caseId, { therapy: [], runnerShownThrough: null, newConversation: false, resumeShown: false, resumeAnswer: null, hasConversation: false, inFlight: new Set(), confirmed: false });
+    runnerCases.buckets.set(caseId, { therapy: [], runnerShownThrough: null, newConversation: false, resumeShown: false, resumeAnswer: null, hasConversation: false, inFlight: new Set(), confirmed: false, draft: "" });
   }
   return runnerCases.buckets.get(caseId);
 }
@@ -443,7 +443,8 @@ function keepRunnerBucket() {
   if (!runnerTrial.on || !runnerCases.current) return;
   Object.assign(runnerBucket(runnerCases.current), {
     therapy: state.therapy, runnerShownThrough: state.runnerShownThrough, newConversation: runnerTrial.newConversation,
-    resumeShown: runnerTrial.resumeShown, resumeAnswer: runnerTrial.resumeAnswer, hasConversation: runnerTrial.hasConversation, inFlight: runnerTrial.inFlight
+    resumeShown: runnerTrial.resumeShown, resumeAnswer: runnerTrial.resumeAnswer, hasConversation: runnerTrial.hasConversation, inFlight: runnerTrial.inFlight,
+    draft: globalThis.document?.querySelector("#therapy-message")?.value ?? ""
   });
 }
 let healthChecked = Promise.resolve();
@@ -1384,6 +1385,8 @@ async function loadRunnerCaseState(caseId) {
 // question before the first message is asked again after every pick.
 async function chooseRunnerCase(caseId) {
   if (!runnerTrial.on || caseId === runnerCases.current || !runnerChoiceFor(caseId)) return;
+  // Text typed before the first pick goes with the case picked (the question before the first message still asks).
+  const typedBeforePick = runnerCases.current === null ? $("#therapy-message").value : null;
   keepRunnerBucket();
   const bucket = runnerBucket(caseId);
   adoptRunnerCase(state, emptyPageState(), caseId);
@@ -1397,6 +1400,10 @@ async function chooseRunnerCase(caseId) {
   syncRunnerNewConversation();
   bucket.confirmed = false;
   runnerCases.current = caseId;
+  // What was typed for the case left stays with it, and the chosen case's comes back; the State & tracker forms are emptied, so
+  // nothing typed for one case can be saved under another (Codex's review 1, finding 6).
+  $("#therapy-message").value = typedBeforePick ?? bucket.draft;
+  for (const id of ["#tracker-form", "#journal-form"]) $(id)?.reset();
   setRunnerKeptPlanStatus("");
   supervisorPanel?.clear();
   hideRunnerDetails();
@@ -1408,6 +1415,8 @@ async function chooseRunnerCase(caseId) {
   showRunnerCaseChoice();
   saveState();
   renderTherapy();
+  renderCaseState();
+  renderHandoffStatus();
   await reconcileRunnerCase();
   await loadRunnerCaseState(caseId);
 }
@@ -1495,6 +1504,7 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   }
   // What this turn's answer belongs to: the case, transcript and bucket it was sent with, whatever the page shows when it comes.
   const turnCase = state.caseId;
+  if (runnerTrial.on) runnerBucket(turnCase).draft = "";
   const transcript = state.therapy;
   const turnBucket = runnerTrial.on ? runnerBucket(turnCase) : null;
   const shownNow = () => transcript === state.therapy && turnCase === state.caseId;
@@ -1646,14 +1656,15 @@ $("#runner-delete-kept-plan").addEventListener("click", async () => {
   const button = $("#runner-delete-kept-plan");
   setBusy(button, true, "Deleting…");
   try {
+    const deleting = state.caseId;
     const response = await fetch("/v1/runner/kept-plan/delete", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ caseId: state.caseId, confirmed: true })
+      body: JSON.stringify({ caseId: deleting, confirmed: true })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
-    setRunnerKeptPlanStatus(KEPT_PLAN_GONE_LINE);
+    if (deleting === state.caseId) setRunnerKeptPlanStatus(KEPT_PLAN_GONE_LINE);
   } catch (error) {
     alert(`The kept plan was not deleted: ${error.message}`);
   } finally {
@@ -1708,14 +1719,18 @@ $("#runner-delete-case").addEventListener("click", async () => {
   const button = $("#runner-delete-case");
   setBusy(button, true, "Deleting…");
   try {
+    // The answer belongs to the case it was asked for: when the owner switched meanwhile, that case's bucket goes, and the case on
+    // the page stays as it is (Codex's review 1, finding 5).
+    const deleting = state.caseId;
     const response = await fetch("/v1/case/delete", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ caseId: state.caseId, confirmation: "DELETE" })
+      body: JSON.stringify({ caseId: deleting, confirmation: "DELETE" })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
-    clearDeletedCase();
+    if (deleting === state.caseId) clearDeletedCase();
+    else runnerCases.buckets.delete(deleting);
     if (payload.handoffsKept) alert(`${payload.handoffsKept} handoff file(s) couldn't be confirmed as this case's and were kept.`);
   } catch (error) {
     alert(`The case was not deleted: ${error.message}`);
@@ -1854,12 +1869,16 @@ for (const id of ["#open-state-diff", "#show-state-diff"]) $(id)?.addEventListen
 $("#create-handoff")?.addEventListener("click", async (event) => {
   const button = event.currentTarget;
   setBusy(button, true, "Creating…");
+  // A handoff belongs to the case it was made for: shown only while that case is on the page.
+  const handoffCase = state.caseId;
   try {
-    const result = await postJson("/v1/case/handoff", { caseId: state.caseId });
+    const result = await postJson("/v1/case/handoff", { caseId: handoffCase });
+    if (handoffCase !== state.caseId) return;
     state.lastHandoffId = result.handoff_id;
     state.handoffStatus = result;
     renderHandoffStatus();
   } catch (error) {
+    if (handoffCase !== state.caseId) return;
     state.lastHandoffId = null;
     state.handoffStatus = null;
     renderHandoffStatus();
@@ -1896,17 +1915,20 @@ $("#tracker-form")?.addEventListener("submit", async (event) => {
     thc_used: thc === "" ? null : thc === "yes",
     stressors_events: note ? [note] : []
   };
-  state.trackerEntries.push(entry);
+  // Saved into the case it was written for, whatever the page shows when the answer comes.
+  const entryCase = state.caseId;
+  const entries = state.trackerEntries;
+  entries.push(entry);
   setBusy(button, true, "Saving…");
   try {
-    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/tracker", { caseId: state.caseId, entry });
+    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/tracker", { caseId: entryCase, entry });
     event.currentTarget.reset();
     renderDataSummary();
     $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
       ? "Trajectory entry saved in encrypted private storage. Tracking remains descriptive, not causal."
       : "Trajectory entry saved for this session only. Tracking remains descriptive, not causal.";
   } catch (error) {
-    state.trackerEntries = state.trackerEntries.filter((item) => item.id !== entry.id);
+    entries.splice(0, entries.length, ...entries.filter((item) => item.id !== entry.id));
     alert(`Could not save trajectory entry: ${error.message}`);
   } finally {
     setBusy(button, false);
@@ -1917,16 +1939,18 @@ $("#journal-form")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = $("#journal-save");
   const entry = { id: `journal-${crypto.randomUUID()}`, observed_at: new Date().toISOString(), kind: $("#journal-kind").value, text: $("#journal-text").value.trim() };
-  state.journalEntries.push(entry);
+  const entryCase = state.caseId;
+  const entries = state.journalEntries;
+  entries.push(entry);
   setBusy(button, true, "Saving…");
   try {
-    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/journal", { caseId: state.caseId, entry });
+    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/journal", { caseId: entryCase, entry });
     event.currentTarget.reset();
     $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
       ? "Private note saved in encrypted storage. Its contents are not displayed in the case-state view."
       : "Private note remains session-only and will be lost when this page closes.";
   } catch (error) {
-    state.journalEntries = state.journalEntries.filter((item) => item.id !== entry.id);
+    entries.splice(0, entries.length, ...entries.filter((item) => item.id !== entry.id));
     alert(`Could not save private note: ${error.message}`);
   } finally {
     setBusy(button, false);

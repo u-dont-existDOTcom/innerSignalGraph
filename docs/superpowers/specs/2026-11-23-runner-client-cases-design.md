@@ -165,6 +165,16 @@ commit message. Option a, the separate vault kept:
 - **Point 7**: `tests/runner-client-cases.test.mjs` and `tests/runner-client-journal.test.mjs`, with invented clients, the journal
   import's synthetic journal fixture and a planted receipt.
 
+Codex's first review of the build (24 Nov) found nine problems, all fixed: the gate is checked again right before every call that
+would carry the journal, retries included, for the whole turn once it has read the journal (a later snapshot without quotations
+doesn't hide a draft that quotes it), and fully (consent, the same copy, the receipt, the grant) before every delivery; the store
+closes an approved reply that read the journal only with the trial's explicit journal hold, never for its quotations alone; the
+page applies a deletion, a handoff or a saved entry to the case it was asked for, keeps what was typed with its case and empties
+the case's forms on a switch; a start, `--add-client` and `--journal-consent` change the trial folder one at a time, under a lock,
+with each rename synced to its folder; and the server takes the case tokens out of its environment once read, so no subprocess
+(a model CLI's capability check included) inherits them. What a withdrawal doesn't undo is in `docs/RUNNER-TRIAL.md`: replies
+already delivered stay in the conversation, which later turns' workers read.
+
 Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on
 the owner's go each time; the import into the client's runner case checked against the export; the adapter for the trial's
 development credentials), and **the journal's cold test**. Running the cold test on a client's journal comes back to the owner

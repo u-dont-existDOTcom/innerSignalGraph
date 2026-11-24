@@ -40,7 +40,8 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
   on the provider the choice gives it.
 
 The server is told your own case (`INNER_SIGNAL_RUNNER_TRIAL_CASE_ID`), and `/health` names it, and each client's token for that
-client's case alone (`INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS`). The page doesn't take its case from `/health`: it asks
+client's case alone (`INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS`). It takes the tokens out of its environment once it has read them, so
+no program it starts (a model CLI included) inherits one. The page doesn't take its case from `/health`: it asks
 `GET /v1/runner/clients` which cases it may use (below). With no clients it takes your own case when it loads; its settings stay,
 and the conversation comes back from the vault.
 
@@ -81,9 +82,9 @@ A client's journal can inform their replies only through the session-use journal
    ```
 
    It lists the clients by number (their labels are on the page) and asks which. `--journal-consent withdraw` records a
-   withdrawal, which holds at once, also while the trial runs: no retrieval uses the journal any more, and an approved reply
-   written with the journal in view isn't delivered (its turn closes as a failed check, also when a restart's reconcile finds
-   it). A consent gives the client's grant its `session_use` purpose from the next start; a withdrawal drops it at the next start.
+   withdrawal, which holds at once, also while the trial runs. A consent gives the client's grant its `session_use` purpose from
+   the next start; a withdrawal drops it at the next start. One of these commands, `--add-client` or a start changes the trial
+   folder at a time; another one meanwhile is refused with a message, and can simply be run again.
 2. **A published copy.** The client's journal copy in their runner case, with an active generation published for session use.
    The copy step (an export on the server, on your go each time, and an import into the client's runner case checked against the
    export) **isn't built yet**, so no client has a copy.
@@ -93,7 +94,14 @@ A client's journal can inform their replies only through the session-use journal
    `src/runner-trial/clients.mjs`.
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
-`cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone. With
+`cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.
+
+The whole gate is checked again right before every call of the writer, the checker and the repair in a turn that has read the
+journal (a retry included), and before its reply is delivered: a withdrawal, a lost or replaced receipt, another copy or a grant
+without the purpose closes it, as at a retrieval. Then no further call gets anything of that turn, its drafts included, and the
+turn closes as a failed check, also when a restart's reconcile finds it approved. What a withdrawal doesn't undo: replies already
+delivered stay in the conversation, and later turns' workers read the conversation as context; deleting the client's case removes
+them. With
 `--response-evidence`, every turn (your own included) is checked against the sources it rests on: the writer sees the turn's
 evidence, the whole checker returns the evidence review the program then checks word for word, a declared journal quote must be
 word for word in its source, and the store admits the reply only with its evidence. It needs the whole checker. A reply resting on

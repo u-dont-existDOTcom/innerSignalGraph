@@ -9,13 +9,14 @@ import { createProviders } from "../src/providers/factory.mjs";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { createInnerSignalServer } from "../src/server/create-server.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
-import { loadPrivateRuntimeAccessFromEnvironment } from "../src/storage/private-runtime-environment.mjs";
+import { loadPrivateRuntimeAccessFromEnvironment, scrubPrivateCaseTokens } from "../src/storage/private-runtime-environment.mjs";
+import { detectCodexCapabilities } from "../src/core/cli-capabilities.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { RUNNER_TRIAL_CLIENT_TOKENS_SETTING, readRunnerTrialClientTokens } from "../src/runner-trial/switch.mjs";
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readRunnerClients, runnerCasesView, validateClientLabel, validateRunnerClients } from "../src/runner-trial/clients.mjs";
-import { addClient, parseArguments, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
+import { addClient, parseArguments, prepareTrialFolder, setJournalConsent, withTrialFolderLock } from "../scripts/runner-trial-start.mjs";
 
 // The runner trial's clients (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md; the owner's answer 1a to question
 // i73, 24 Nov 2026): a case per client in the trial's own vault, each client's own grant, the case chosen per conversation, and
@@ -305,3 +306,43 @@ test("each client case has its own run log file, written and deleted with that c
   assert.equal((await s.service.loadPrivateRuntimeCase(clientB, s.caseAuthContexts.get(clientB))).raw_transcript.length, 2, "client B's case stays");
   assert.equal((await s.service.loadPrivateRuntimeCase(s.ownCase, s.ownAuth)).raw_transcript.length, 2, "and the owner's own");
 });
+
+test("one command at a time changes the trial folder: a start, an addition or a consent change refuses while another holds it, and a lock left by an ended process is taken over", async (t) => {
+  const { home } = await clientFolder(t, ["Synthetic client one"]);
+  let release = null;
+  const held = withTrialFolderLock(home, () => new Promise((resolve) => { release = resolve; }));
+  for (let i = 0; i < 200 && release === null; i += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(typeof release, "function", "the lock is taken");
+  const busy = /Another runner-trial command is changing the trial folder/u;
+  await assert.rejects(addClient({ home, label: "Synthetic client two" }), busy);
+  await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), busy, "a consent change can't be written over by an addition, nor the other way round");
+  await assert.rejects(prepareTrialFolder({ home, provider: "codex" }), busy);
+  release();
+  await held;
+  assert.equal((await readRunnerClients(home)).clients.length, 1, "nothing was written while the folder was held");
+  // A lock file being written (no process id yet) counts as held; one left by a process that ended is taken over.
+  await fs.writeFile(path.join(home, ".trial-folder.lock"), "", { mode: 0o600 });
+  await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), busy);
+  await fs.writeFile(path.join(home, ".trial-folder.lock"), "999999999\n", { mode: 0o600 });
+  assert.deepEqual(await setJournalConsent({ home, number: 1, action: "confirm" }), { changed: true, state: "confirmed" });
+  await assert.rejects(fs.stat(path.join(home, ".trial-folder.lock")), { code: "ENOENT" }, "and released after use");
+});
+
+test("no subprocess the server starts inherits a case token: the tokens leave its environment once read, a model CLI's capability check included", async () => {
+  const environment = { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: "synthetic-own", [RUNNER_TRIAL_CLIENT_TOKENS_SETTING]: "{}", PATH: "/synthetic/bin" };
+  assert.deepEqual(Object.keys(scrubPrivateCaseTokens(environment)), ["PATH"]);
+  const saved = Object.fromEntries(["INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN", RUNNER_TRIAL_CLIENT_TOKENS_SETTING].map((name) => [name, process.env[name]]));
+  process.env.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN = "synthetic-own-token-value";
+  process.env[RUNNER_TRIAL_CLIENT_TOKENS_SETTING] = JSON.stringify({ "case-66666666-6666-4666-8666-666666666666": "synthetic-client-token-value" });
+  try {
+    scrubPrivateCaseTokens(process.env);
+    const probe = await detectCodexCapabilities(process.execPath, ["-e", "process.stdout.write(JSON.stringify(process.env))"]);
+    for (const secret of ["synthetic-own-token-value", "synthetic-client-token-value", RUNNER_TRIAL_CLIENT_TOKENS_SETTING]) assert.equal(probe.helpText.includes(secret), false, secret);
+  } finally {
+    for (const [name, value] of Object.entries(saved)) { if (value === undefined) delete process.env[name]; else process.env[name] = value; }
+  }
+  const serve = await fs.readFile(new URL("../src/cli/serve.mjs", import.meta.url), "utf8");
+  assert.ok(serve.indexOf("scrubPrivateCaseTokens(process.env);") > serve.indexOf("await loadPrivateRuntimeAccessFromEnvironment("), "the server scrubs them right after reading them");
+  assert.ok(serve.indexOf("scrubPrivateCaseTokens(process.env);") < serve.indexOf("await listenInnerSignalLoopback("), "before anything that starts a worker is built");
+});
+

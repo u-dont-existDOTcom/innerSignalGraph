@@ -43,7 +43,7 @@ import { OWNER_FALLBACK_SETTING } from "../src/core/config.mjs";
 import { RESPONSE_EVIDENCE_SETTING } from "../src/core/on-off-setting.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
-import { MAX_RUNNER_CLIENTS, journalConsentCurrent, journalConsentState, readRunnerClients, validateClientLabel, writeRunnerClients } from "../src/runner-trial/clients.mjs";
+import { MAX_RUNNER_CLIENTS, journalConsentCurrent, journalConsentState, readRunnerClients, syncFolder, validateClientLabel, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import {
   RUNNER_RULES_ROOT,
   RUNNER_TRIAL_CLIENT_TOKENS_SETTING,
@@ -265,6 +265,43 @@ async function writePrivateFile(file, text) {
     await fsp.rm(temporary, { force: true });
     throw error;
   }
+  // Durable only once the folder is synced, so a power cut can't keep a newer client list beside older credentials.
+  await syncFolder(path.dirname(file));
+}
+
+// One command at a time changes the trial folder's credentials and client list (Codex's review 1, finding 7): a start, --add-client
+// and --journal-consent each read, change and write them under this lock, so none writes over another's change (an addition can't
+// bring back a consent just withdrawn). A lock whose process is gone is taken over. The running server holds it only while it starts.
+const LOCK_FILE = ".trial-folder.lock";
+export async function withTrialFolderLock(home, operation, { pid = process.pid } = {}) {
+  const lock = path.join(home, LOCK_FILE);
+  let handle = null;
+  for (let attempt = 0; attempt < 2 && handle === null; attempt += 1) {
+    try { handle = await fsp.open(lock, "wx", 0o600); }
+    catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      const holder = Number((await fsp.readFile(lock, "utf8").catch(() => "")).trim());
+      let alive;
+      if (Number.isSafeInteger(holder) && holder > 0) {
+        alive = true;
+        try { process.kill(holder, 0); } catch (probe) { alive = probe?.code === "EPERM"; }
+      } else {
+        // A lock file whose process id isn't written yet is being taken right now: held, unless it has stayed empty for long.
+        const info = await fsp.lstat(lock).catch(() => null);
+        alive = info !== null && Date.now() - info.mtimeMs < 10_000;
+      }
+      if (alive || attempt > 0) throw new StartError("Another runner-trial command is changing the trial folder (a start, --add-client or --journal-consent). Try again when it has finished.");
+      await fsp.rm(lock, { force: true });
+    }
+  }
+  try {
+    await handle.writeFile(`${pid}\n`, "utf8");
+    await handle.sync();
+    return await operation();
+  } finally {
+    await handle.close().catch(() => {});
+    await fsp.rm(lock, { force: true });
+  }
 }
 
 const newCaseKeys = () => ({ routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") });
@@ -352,11 +389,13 @@ export async function prepareTrialFolder({ home, provider }) {
   const vault = path.join(resolved, "vault");
   await privateFolder(vault, "The trial's vault");
   const credentialsPath = path.join(resolved, "credentials.json");
-  const { clients } = await readClientList(resolved);
-  const { token, caseId, clientTokens } = await prepareCredentials(credentialsPath, vault, clients);
-  const settingsPath = path.join(resolved, `settings-${provider}.json`);
-  await writePrivateFile(settingsPath, `${JSON.stringify(trialSettings(provider), null, 2)}\n`);
-  return { home: resolved, vault, credentialsPath, settingsPath, token, caseId, clientTokens, clientCount: clients.length };
+  return withTrialFolderLock(resolved, async () => {
+    const { clients } = await readClientList(resolved);
+    const { token, caseId, clientTokens } = await prepareCredentials(credentialsPath, vault, clients);
+    const settingsPath = path.join(resolved, `settings-${provider}.json`);
+    await writePrivateFile(settingsPath, `${JSON.stringify(trialSettings(provider), null, 2)}\n`);
+    return { home: resolved, vault, credentialsPath, settingsPath, token, caseId, clientTokens, clientCount: clients.length };
+  });
 }
 
 // --add-client (design, point 1): a case for a new client, with keys of its own made from random bytes and never changed, and the
@@ -364,6 +403,11 @@ export async function prepareTrialFolder({ home, provider }) {
 // are compared without regard to case, so two clients can't be told apart only by capitals. Returns the new client's number.
 export async function addClient({ home, label, now = () => new Date() }) {
   const resolved = checkTrialHome(home);
+  try { await fsp.access(path.join(resolved, "credentials.json")); } catch { throw new StartError(`The trial folder ${resolved} isn't ready: start the trial once (or use --prepare-only) before adding a client.`); }
+  return withTrialFolderLock(resolved, () => addClientLocked({ resolved, label, now }));
+}
+
+async function addClientLocked({ resolved, label, now }) {
   const vault = path.join(resolved, "vault");
   const credentialsPath = path.join(resolved, "credentials.json");
   const credentials = await readCredentialsFile(credentialsPath, vault);
@@ -392,6 +436,10 @@ export async function addClient({ home, label, now = () => new Date() }) {
 export async function setJournalConsent({ home, number, action, now = () => new Date() }) {
   const resolved = checkTrialHome(home);
   if (!["confirm", "withdraw"].includes(action)) throw new StartError("--journal-consent must be confirm or withdraw.");
+  return withTrialFolderLock(resolved, () => setJournalConsentLocked({ resolved, number, action, now }));
+}
+
+async function setJournalConsentLocked({ resolved, number, action, now }) {
   const list = await readClientList(resolved);
   const client = Number.isSafeInteger(number) && number >= 1 ? list.clients[number - 1] : null;
   if (!client) throw new StartError("There's no client with that number.");
