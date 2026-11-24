@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
+import { readResponseEvidenceSetting } from "../core/on-off-setting.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
@@ -207,7 +208,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // here as well as in doctor, so a run started directly can't stage into or publish to another.
     invariant(!providers || vaultRootMatchesConfig(config, providers.rootDir), "JOURNAL_PRIVATE_ROOT_MISMATCH");
     await removeLegacyPageRenders(root);
-    const service = suppliedService ?? createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider });
+    const service = suppliedService ?? createPrivateCaseAccessService({
+      rootDir: providers.rootDir,
+      authorizationProvider: providers.authorizationProvider,
+      keyProvider: providers.keyProvider,
+      responseEvidencePolicy: readResponseEvidenceSetting(environment) ? "enforced" : "advisory"
+    });
     const caseId = config.target_profile.case_id;
     const auth = { bearerToken: environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN };
     const verifyAccess = async () => {

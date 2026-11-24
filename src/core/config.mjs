@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
-import { readOnOffSetting } from "./on-off-setting.mjs";
+import { readOnOffSetting, readResponseEvidenceSetting } from "./on-off-setting.mjs";
 import { RUNNER_RULES_ROOT, RUNNER_TRIAL_DIR, RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_NUMBER_NOW_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerFixedMessageOnAnyFailureSwitch, readRunnerFixedMessageOnFailureSwitch, readRunnerKeptPlanSwitch, readRunnerNumberNowSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -107,6 +107,7 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     runnerTrialDir: nonBlankEnv(RUNNER_TRIAL_DIR, null),
     runnerTrialSettingsPath: nonBlankEnv(RUNNER_TRIAL_SETTINGS_FILE, null),
     runnerClaudeConfigDir: nonBlankEnv(RUNNER_CLAUDE_CONFIG_DIR, null),
+    responseEvidenceEnforced: readResponseEvidenceSetting(),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),
     guidePacketHeartbeatMs: integerEnv("GUIDE_PACKET_HEARTBEAT_MS", 5000, { min: 250, max: 60000 }),
     guidePacketStaleMs: integerEnv("GUIDE_PACKET_STALE_MS", 30000, { min: 1000, max: 3600000 }),
@@ -157,6 +158,7 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     config.guidePacketRoot = path.join(config.autopilotStateDir, "guide-packets");
   }
 
+  if (typeof config.responseEvidenceEnforced !== "boolean") throw new RuntimeError("INNER_SIGNAL_RESPONSE_EVIDENCE must be true or false.", { code: "BAD_CONFIG" });
   if (config.therapyProcessingMode === "adversarial") config.therapyProcessingMode = "deep";
   if (config.guidePacketStaleMs <= config.guidePacketHeartbeatMs) {
     throw new RuntimeError("GUIDE_PACKET_STALE_MS must be greater than GUIDE_PACKET_HEARTBEAT_MS.", { code: "BAD_CONFIG" });

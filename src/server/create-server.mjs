@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { responseEvidenceReadback } from "../core/on-off-setting.mjs";
 import { buildContext, buildHypnosisContext } from "../orchestrator/context-builder.mjs";
 import { runTieredTherapyPipeline } from "../orchestrator/run-tiered-pipeline.mjs";
 import { runCaseFormulation } from "../case-formulation/run.mjs";
@@ -392,6 +393,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
     ? createPrivateTherapyTurnController({
         privateCaseSource,
         modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
+        responseEvidence: { enforced: config.responseEvidenceEnforced === true },
         maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
       })
     : null);
@@ -469,6 +471,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           privateCaseStorage: { available: Boolean(privateCaseSource), plaintextFallback: false, automaticOrchestration: Boolean(automaticPrivateTherapy) },
           // Whether this runtime writes the fixed fallback message (INNER_SIGNAL_OWNER_FALLBACK). It names the state and never a setting's value,
           // so a deploy can check it before and after the owner turns it on. Reading a saved fallback does not depend on it.
+          responseEvidence: responseEvidenceReadback(config.responseEvidenceEnforced === true),
           ownerFallback: config.ownerFallbackEnabled === true ? "on" : "off",
           // Whether therapy turns run through the runner trial. It is on exactly when INNER_SIGNAL_RUNNER_TRIAL is on: with the switch
           // on, a server that can't build the trial doesn't start. The page shows the trial's banner, line and stream from it.

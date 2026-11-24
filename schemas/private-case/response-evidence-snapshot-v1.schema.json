@@ -1,0 +1,947 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inner-signal.local/schemas/private-case/response-evidence-snapshot-v1.schema.json",
+  "title": "Frozen response evidence snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "policy_version": {
+      "const": "response-evidence-v1"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "runtime_turn"
+            },
+            "runtime_turn_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          },
+          "required": [
+            "kind",
+            "runtime_turn_id"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "supervisor_draft"
+            },
+            "operation_key": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          "required": [
+            "kind",
+            "operation_key"
+          ]
+        }
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "parent_snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "revision_reason": {
+      "enum": [
+        "initial",
+        "dependency_refresh",
+        "evidence_expansion"
+      ]
+    },
+    "candidate_origin": {
+      "enum": [
+        "backend_produced",
+        "external_draft"
+      ]
+    },
+    "original_writer_source_inclusion": {
+      "enum": [
+        "verified",
+        "not_attested"
+      ]
+    },
+    "inbound": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "turn_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "exact_text_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "audience": {
+          "const": "client"
+        },
+        "source_kind": {
+          "const": "exact_client_turn"
+        }
+      },
+      "required": [
+        "turn_id",
+        "exact_text_sha256",
+        "audience",
+        "source_kind"
+      ]
+    },
+    "dependency_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transcript_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "amendments_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "communication_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "communication_event_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "established_context_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "supervisor_inputs_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "compatibility_state_binding": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "journal_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "corpus_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "generation": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "visibility_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "manifest_object_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "corpus_id",
+              "generation",
+              "visibility_epoch"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 20000
+        }
+      },
+      "required": [
+        "transcript_digest",
+        "amendments_digest",
+        "communication_digest",
+        "established_context_digest",
+        "supervisor_inputs_digest",
+        "compatibility_state_binding",
+        "journal_bindings"
+      ]
+    },
+    "source_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 340
+          },
+          "kind": {
+            "enum": [
+              "exact_client_turn",
+              "app_committed_client_outbound",
+              "owner_reported_client_outbound",
+              "agent_relayed_report",
+              "unsent_draft",
+              "unattributed_assistant_turn",
+              "relayed_client_message",
+              "supervisor_instruction",
+              "journal_retrieval_record",
+              "journal_quotation"
+            ]
+          },
+          "actor": {
+            "enum": [
+              "client",
+              "assistant",
+              "supervisor",
+              "owner",
+              "unknown"
+            ]
+          },
+          "audience": {
+            "enum": [
+              "client",
+              "supervisor",
+              "private_journal",
+              "unknown"
+            ]
+          },
+          "time": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "enum": [
+                  "known",
+                  "unavailable"
+                ]
+              }
+            },
+            "required": [
+              "at",
+              "status"
+            ]
+          },
+          "epistemic_status": {
+            "enum": [
+              "exact_client_words",
+              "app_committed_text",
+              "owner_reported",
+              "agent_relayed_report",
+              "client_written_account",
+              "unsent_draft",
+              "unknown_delivery"
+            ]
+          },
+          "excerpt_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "excerpt_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "exact_excerpt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locator": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "journal_record"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "transcript_turn"
+                  },
+                  "turn_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  }
+                },
+                "required": [
+                  "kind",
+                  "turn_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "candidate"
+                  },
+                  "candidate_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "candidate_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "kind",
+                  "candidate_id",
+                  "candidate_version"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "supervisor_input"
+                  },
+                  "entry_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  }
+                },
+                "required": [
+                  "kind",
+                  "entry_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "journal"
+                  },
+                  "corpus_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "generation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "visibility_epoch": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "record_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "start_byte": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "end_byte": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "kind",
+                  "corpus_id",
+                  "generation",
+                  "visibility_epoch",
+                  "record_id",
+                  "start_byte",
+                  "end_byte"
+                ]
+              }
+            ]
+          },
+          "supplied_by": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "channel": {
+                "enum": [
+                  "owner_ui",
+                  "authenticated_agent"
+                ]
+              },
+              "actor_resolution": {
+                "enum": [
+                  "owner_verified",
+                  "unresolved"
+                ]
+              }
+            },
+            "required": [
+              "channel",
+              "actor_resolution"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "actor",
+          "audience",
+          "time",
+          "epistemic_status",
+          "excerpt_sha256",
+          "excerpt_bytes",
+          "exact_excerpt",
+          "locator"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 200
+    },
+    "communication_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "confirmed_or_reported_client_outbound": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 25
+        },
+        "supervisor_only_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 25
+        },
+        "unresolved_delivery": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 25
+        },
+        "omitted": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "confirmed_or_reported_client_outbound": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "supervisor_only_artifacts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unresolved_delivery": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "source_items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "reason",
+                  "count"
+                ]
+              },
+              "minItems": 0,
+              "maxItems": 200
+            }
+          },
+          "required": [
+            "confirmed_or_reported_client_outbound",
+            "supervisor_only_artifacts",
+            "unresolved_delivery",
+            "source_items"
+          ]
+        }
+      },
+      "required": [
+        "confirmed_or_reported_client_outbound",
+        "supervisor_only_artifacts",
+        "unresolved_delivery",
+        "omitted"
+      ]
+    },
+    "history_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "topic": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "why_material": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 340
+            },
+            "minItems": 0,
+            "maxItems": 200
+          },
+          "disposition": {
+            "enum": [
+              "answered_by_sources",
+              "retrieval_requested",
+              "unavailable",
+              "open"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "topic",
+          "why_material",
+          "source_ids",
+          "disposition"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 20
+    },
+    "journal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "availability": {
+          "enum": [
+            "not_configured",
+            "not_authorized",
+            "unavailable",
+            "available"
+          ]
+        },
+        "retrieval_status": {
+          "enum": [
+            "not_attempted",
+            "returned",
+            "no_match",
+            "partial",
+            "failed",
+            "budget_exhausted"
+          ]
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "corpus_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "generation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "visibility_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "manifest_object_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "purpose": {
+                "const": "session_use"
+              },
+              "query_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "filters_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "returned_source_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 340
+                },
+                "minItems": 0,
+                "maxItems": 200
+              },
+              "packet_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "more_available": {
+                "type": "boolean"
+              },
+              "omitted_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "budget_used_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "budget_used_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "operation_id",
+              "corpus_id",
+              "generation",
+              "visibility_epoch",
+              "manifest_object_id",
+              "purpose",
+              "query_sha256",
+              "filters_sha256",
+              "returned_source_ids",
+              "packet_sha256",
+              "more_available",
+              "omitted_count",
+              "budget_used_tokens",
+              "budget_used_bytes"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "more_available": {
+          "type": "boolean"
+        },
+        "omissions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "reason",
+              "count"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 200
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_tokens": {
+              "const": 8000
+            },
+            "max_bytes": {
+              "const": 64000
+            },
+            "used_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8000
+            },
+            "used_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 64000
+            }
+          },
+          "required": [
+            "max_tokens",
+            "max_bytes",
+            "used_tokens",
+            "used_bytes"
+          ]
+        }
+      },
+      "required": [
+        "availability",
+        "retrieval_status",
+        "receipts",
+        "coverage",
+        "more_available",
+        "omissions",
+        "budget"
+      ]
+    },
+    "snapshot_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "policy_version",
+    "case_id",
+    "created_at",
+    "owner",
+    "revision",
+    "parent_snapshot_id",
+    "revision_reason",
+    "candidate_origin",
+    "original_writer_source_inclusion",
+    "inbound",
+    "dependency_binding",
+    "source_items",
+    "communication_projection",
+    "history_requirements",
+    "journal",
+    "snapshot_sha256"
+  ],
+  "description": "A response evidence snapshot: at most 192,000 serialized UTF-8 bytes, 120 transcript items, 10 foreign-lineage drafts and 24,000 draft excerpt bytes, 20 supervisor inputs and 16,000 input excerpt bytes, 20 reports, and 20 history requirements. Whole-item omissions are recorded.",
+  "allOf": [
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "pattern": "^src:turn:",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 120,
+          "type": "array"
+        }
+      }
+    },
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "unsent_draft",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 10,
+          "type": "array"
+        }
+      }
+    },
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "relayed_client_message",
+                  "supervisor_instruction"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 20,
+          "type": "array"
+        }
+      }
+    },
+    {
+      "properties": {
+        "source_items": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "pattern": "^src:report:",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 20,
+          "type": "array"
+        }
+      }
+    }
+  ]
+}

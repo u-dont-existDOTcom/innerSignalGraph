@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readResponseEvidenceSetting, responseEvidenceReadback } from "../core/on-off-setting.mjs";
 import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { listenPrivateCaseMcp } from "../server/private-case-mcp.mjs";
@@ -30,6 +31,7 @@ const providers = hosted
   ? loadHostedPrivateCaseProvidersFromEnvironment()
   : await loadDevelopmentPrivateCaseProviders(path.resolve(credentials));
 const service = createPrivateCaseAccessService({
+  responseEvidencePolicy: readResponseEvidenceSetting(process.env) ? "enforced" : "advisory",
   rootDir: providers.rootDir,
   authorizationProvider: providers.authorizationProvider,
   keyProvider: providers.keyProvider,
@@ -120,6 +122,7 @@ const listener = await listenPrivateCaseMcp({
 });
 const ready = {
   ready: true,
+  responseEvidence: responseEvidenceReadback(readResponseEvidenceSetting()),
   mcpUrl: hosted ? new URL("/mcp", `${resource}/`).toString() : listener.url,
   provider: providers.kind,
   productionReady: providers.productionReady,

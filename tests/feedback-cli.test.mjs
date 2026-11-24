@@ -78,7 +78,7 @@ test("off: the ready line and /feedback are as before; on: the page answers and 
   const environment = await setup(t);
   const off = await start(t, environment);
   assert.ok(off.ready, off.stderr?.());
-  assert.deepEqual(Object.keys(off.ready), ["ready", "mcpUrl", "provider", "productionReady", "journalEnabled", "journalWork"]);
+  assert.deepEqual(Object.keys(off.ready), ["ready", "responseEvidence", "mcpUrl", "provider", "productionReady", "journalEnabled", "journalWork"]);
   const offOrigin = off.ready.mcpUrl.replace(/\/mcp$/u, "");
   const offPage = await fetch(`${offOrigin}/feedback`);
   if (NAMED) {
