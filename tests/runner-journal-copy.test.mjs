@@ -1808,6 +1808,47 @@ test("the consent is read under the trial folder's lock right before each packet
   assert.equal((await coldTest(using())).passed, true, "and the new copy has its own test");
 });
 
+test("a Delete, also one that can't change the client list, and another publication stop a running cold test before its next packet: the copy is looked for in the vault itself, as it was when the test started", async (t) => {
+  const changed = /consent or copy changed during the cold test: it stopped, and gave no receipt/u;
+  // Made during a call: the consumer's (the judge's packet is next), the judge's (its planted answer's is next, or its second for a wrong).
+  const meanwhile = async (act, at, options = {}) => {
+    const trial = await copiedClient(t);
+    const workers = standIns({ ...options, reply: async (count, request, usual) => { if (count === at) await act(trial); return usual(); } });
+    await assert.rejects(trial.coldTest(using(workers)), changed, `call ${at}`);
+    assert.equal(workers.sent.length, at, `call ${at}: no packet after it`);
+    await absent(trial.receiptPath);
+  };
+  const deleteLeaving = (left) => async (trial) => {
+    const { home, cases: [clientOne], imported } = trial;
+    const list = path.join(home, RUNNER_CLIENTS_FILE), rename = fs.rename;
+    const failing = t.mock.method(fs, "rename", async (from, to) => { if (to === list && left.length) throw Object.assign(new Error("Synthetic words."), { code: "EIO" }); return rename.call(fs, from, to); });
+    try { assert.deepEqual((await deleting(trial)(clientOne)).cleanup_left ?? [], left); } finally { failing.mock.restore(); }
+    await assert.rejects(trial.copier(clientOne).loadPrivateRuntimeCase(clientOne, { bearerToken: "synthetic" }), { code: "PRIVATE_CASE_NOT_FOUND" });
+    // The list as the Delete left it: naming the copy, its consent confirmed, where it couldn't be written.
+    const { corpus_id: listed, consent } = (await readRunnerClients(home)).clients[0].journal;
+    assert.deepEqual([listed, consent.withdrawn_at], [left.length ? imported.corpus_id : null, null]);
+  };
+  for (const left of [[], ["JOURNAL_LIST"]]) {
+    await meanwhile(deleteLeaving(left), 1);
+    await meanwhile(deleteLeaving(left), 2);
+    await meanwhile(deleteLeaving(left), 2, { verdict: () => "wrong" });
+  }
+  // The copy published anew (here a raised epoch, as a revoked passage raises it), with the list and the consent as they were.
+  const raise = async ({ copier, cases: [clientOne], imported }) => {
+    const { reference } = await copier(clientOne).inspectJournalCorpus(clientOne, imported.corpus_id, { requiredScope: "case:read", requiredPurpose: "session_use" }, { bearerToken: "synthetic" });
+    await copier(clientOne).incrementJournalVisibilityEpoch(clientOne, { corpusId: imported.corpus_id, expectedEpoch: reference.visibility_epoch }, { bearerToken: "synthetic" });
+  };
+  await meanwhile(raise, 1);
+  await meanwhile(raise, 2);
+  // A vault that can't be read then: the packet doesn't leave either.
+  const trial = await copiedClient(t);
+  const vaultFile = path.join(trial.home, "vault", `${trial.cases[0]}.vault.json`);
+  const workers = standIns({ reply: async (count, request, usual) => { if (count === 1) await fs.writeFile(vaultFile, "not a vault", { mode: 0o600 }); return usual(); } });
+  await assert.rejects(trial.coldTest(using(workers)));
+  assert.equal(workers.sent.length, 1);
+  await absent(trial.receiptPath);
+});
+
 test("the commands print numbers and fixed texts only: no label, question id or journal text, and nothing that a file or an error holds", async (t) => {
   const { home, questionsPath, sealedPath, server, imported, cases: [clientOne] } = await copiedClient(t, { clients: 2 });
   const printed = async (argv, options = {}) => {

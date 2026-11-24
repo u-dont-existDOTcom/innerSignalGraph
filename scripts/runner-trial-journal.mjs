@@ -341,7 +341,8 @@ function coldTestWorkers(settings, environment) {
 // --cold-test: the copy's cold test (src/runner-trial/journal-cold-test.mjs). A test that starts removes the copy's receipt; only a pass
 // gives a new one: an error, a withdrawal, a wrong or malformed answer, a file too small to pass leaves none. The client's consent and copy
 // are read again before every packet leaves (the judge's too) and before the receipt is written, so a withdrawal, a new copy or a deleted
-// case stops it.
+// case stops it. The copy is looked for in the vault itself too, published as it was when the test started: a Delete takes the case there
+// first, and may not get to the list.
 //
 // Of tests that overlap, the one started last decides. Each marks its start, where it removes the receipt, with an attempt of its own. A
 // pass is recorded, and a receipt taken away by a test that doesn't pass, only while the marker still names that test's attempt. So once a
@@ -378,13 +379,6 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
     await writePrivateFile(path.join(folder, COLD_TEST_ATTEMPT_FILE), `${JSON.stringify({ schema_version: 1, attempt, started_at: now().toISOString(), corpus_id: client.journal.corpus_id, run: started }, null, 2)}\n`);
     return { caseId: client.case_id, corpusId: client.journal.corpus_id, run: started };
   });
-  const stillSo = async () => {
-    const current = (await clientList(resolved)).clients.find((entry) => entry.case_id === caseId);
-    if (!current || journalConsentState(current) !== "confirmed" || current.journal?.corpus_id !== corpusId) {
-      throw new StartError("The client's consent or copy changed during the cold test: it stopped, and gave no receipt.");
-    }
-  };
-  const port = createSealedColdTestPort({ consumer, judge, beforeSend: () => underLock(stillSo) });
   // A test that doesn't pass leaves no receipt, unless a newer one has started: that one decides. Returns whether one has.
   const leaveNone = () => underLock(async () => {
     const marked = await readColdTestAttempt(resolved, caseId);
@@ -397,20 +391,39 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
     try {
       const grant = oneTimeGrant(caseId, { scopes: [PRIVATE_CASE_SCOPES.READ], purposes: [PRIVATE_JOURNAL_PURPOSES.SESSION_USE] });
       const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: grant.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
+      // What the vault publishes of the copy, or null when the case, or the copy in it, is gone.
+      const published = async () => {
+        try {
+          return (await service.inspectJournalCorpus(caseId, corpusId, { requiredScope: PRIVATE_CASE_SCOPES.READ, requiredPurpose: PRIVATE_JOURNAL_PURPOSES.SESSION_USE }, grant.authContext)).reference;
+        } catch (error) {
+          if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null;
+          throw error;
+        }
+      };
+      const tested = await published();
+      const stillSo = async () => {
+        const listed = (await clientList(resolved)).clients.find((entry) => entry.case_id === caseId);
+        const consented = journalConsentState(listed) === "confirmed" && listed.journal.corpus_id === corpusId;
+        const there = consented ? await published() : null;
+        if (!there || ["active_generation", "manifest_object_id", "visibility_epoch"].some((name) => there[name] !== tested?.[name])) {
+          throw new StartError("The client's consent or copy changed during the cold test: it stopped, and gave no receipt.");
+        }
+      };
+      const port = createSealedColdTestPort({ consumer, judge, beforeSend: () => underLock(stillSo) });
       result = await runJournalColdTest({ service, auth: grant.authContext, caseId, corpusId, questions, port, run, now });
+      if (result.passed) {
+        await underLock(async () => {
+          await stillSo();
+          const marked = await readColdTestAttempt(resolved, caseId);
+          if (marked !== attempt) {
+            throw new StartError(marked === null ? "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again."
+              : "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again.");
+          }
+          await writePrivateFile(path.join(clientJournalFolder(resolved, caseId), COLD_TEST_RECEIPT_FILE), `${JSON.stringify(result.receipt, null, 2)}\n`);
+        });
+      }
     } finally {
       providers.close();
-    }
-    if (result.passed) {
-      await underLock(async () => {
-        await stillSo();
-        const marked = await readColdTestAttempt(resolved, caseId);
-        if (marked !== attempt) {
-          throw new StartError(marked === null ? "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again."
-            : "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again.");
-        }
-        await writePrivateFile(path.join(clientJournalFolder(resolved, caseId), COLD_TEST_RECEIPT_FILE), `${JSON.stringify(result.receipt, null, 2)}\n`);
-      });
     }
   } catch (error) {
     // What stopped the test is what's told.

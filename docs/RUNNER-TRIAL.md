@@ -163,8 +163,9 @@ A client's journal can inform their replies only through the session-use journal
    calls say so, and as disputed when one does. A planted wrong answer goes to the judge in the same packet as a real one and through the
    same calls. That is two calls a question, and two more for a planted answer: for the smallest file that can pass about 160 calls, one at a
    time, and one or two more for each other answer the judge finds wrong. A call that fails for its form is made again, at most twice and six
-   times in a test; a plan limit stops it. A refusal by Claude, known by its own stop reason, leaves the question out. One by GPT can't be
-   told, as Codex gives no sign of one: it would most likely come as a malformed answer, be asked twice more and then stop the test.
+   times in a test; a plan limit stops it. A refusal by Claude, known by its own stop reason, leaves the question out (and a planted answer
+   Claude refuses isn't caught). One by GPT can't be told, as Codex gives no sign of one: it would most likely come as a malformed answer, be
+   asked twice more and then stop the test.
 
    The copy passes when the file is large enough; the judge caught at least four in five of the planted answers, and half of each kind; at
    most one answer is wrong (judged so, a passage cited that it wasn't given, or an answer said to be supported that cites none), to any
@@ -187,13 +188,15 @@ A client's journal can inform their replies only through the session-use journal
 
    The test sends excerpts of the client's journal to the companies that run its two workers: with `mixed`, Anthropic and OpenAI; with
    `claude`, Anthropic; with `codex`, OpenAI. So it needs the client's confirmed consent, read again under the trial folder's lock right
-   before each packet is handed to a worker's process, and before the receipt is written. A withdrawal recorded before that reading stops
-   the packet; one after the hand-over is honoured at the next packet, or before the receipt is written.
+   before each packet is handed to a worker's process, and before the receipt is written, with the copy: that the list names it and that the
+   vault has it as it was published when the test started (a Delete takes the case from the vault first, and may not get to the list). A
+   withdrawal, a Delete or another publication before that reading stops the packet; one after the hand-over is honoured at the next packet,
+   or before the receipt is written.
 
    What it prints is numbers: how many questions of each kind, how many had their passages found and how many were answered right (each
    for the questions the rule counts and for the others), what was wrong (and the answers that share is of), disputed, incomplete or left
-   out, how many planted answers of each kind were caught, calls made again, the slowest search, the points of the rule that aren't met, each
-   question's place in the file with its scores, and an opaque name for the snapshot tested. No
+   out, how many planted answers of each kind were caught and how many were refused, calls made again, the slowest search, the points of the
+   rule that aren't met, each question's place in the file with its scores, and an opaque name for the snapshot tested. No
    command here prints a label, a question's id, an answer, journal text or the judge's reason (which isn't kept), nor an unexpected
    error's own words, which can quote a file: its code only.
 

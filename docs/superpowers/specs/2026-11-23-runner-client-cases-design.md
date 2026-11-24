@@ -306,7 +306,7 @@ judge for every question, the printed numbers) holds in it.
     answer of one kind be missed (four of twenty): a judge that sees nothing of one kind, and catches the others at 90% a call, would pass
     by it in 16% of runs, and one that always catches the others in all of them. Half of each kind costs a good judge little (one that
     catches 90% a call passes both in 93% of runs, the first alone in 94%), while four in five of each, of so few, would fail it in nine runs
-    of ten by chance.
+    of ten by chance. A planted answer the judge refuses is one it didn't catch, in both shares, and isn't one of those a file needs.
   - **A call that fails for its form** (an answer outside its schema or for another question, a timeout, an incomplete receipt: a reply's own
     reasons, `RETRYABLE_WORKER_FAILURES`) is made again with the same packet, at most twice and six times in a test, counted by role, and
     then stops the test with no verdict. Any other failure (a plan limit, a lapsed sign-in) stops it at once. A refusal that its worker
@@ -368,9 +368,11 @@ judge for every question, the printed numbers) holds in it.
   test sends excerpts of the journal to the companies that run them (with `mixed`, Anthropic and OpenAI: the usage and the refusal
   without consent name them). It needs the client's confirmed consent, read again under the trial folder's lock (which
   `--journal-consent` takes) right before each packet is handed to a worker's process (the judge's further calls and calls made again too), the lock
-  being released before that hand-over, and again under it before the receipt is written. **The boundary:** a withdrawal lands wholly
-  before that reading, and the packet doesn't leave, or after it; one that lands after the hand-over is honoured at the next packet and
-  before the receipt is written.
+  being released before that hand-over, and again under it before the receipt is written. With it the copy is looked for: on the list, and in
+  the vault itself, published exactly as it was when the test started, since a Delete (made under the same lock) takes the case from the
+  vault first and may not get to the list. **The boundary:** a withdrawal, a Delete or another publication lands wholly before that reading,
+  and the packet doesn't leave, or after it; one that lands after the hand-over is honoured at the next packet and before the receipt is
+  written.
 - **What the commands print:** numbers, scores, an opaque name for the snapshot tested (a digest's first 16 characters) and fixed
   texts. An unexpected error prints its code, never its own text, which can quote what a file holds.
 - The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report, which the
@@ -395,7 +397,8 @@ judge for every question, the printed numbers) holds in it.
   same packet; each verdict, the further calls and a dispute; each score and each point of the rule, at its number and one beside it; slow
   searches, refusals, calls made again; a publication that changes; answers outside their schemas; the
   receipt and the gate's refusals; its command, with each provider choice's workers, stopped by an error at each kind of call; tests that
-  overlap, the newer one passing, failing, still running or killed; a consent withdrawn before each kind of packet, during a call and
+  overlap, the newer one passing, failing, still running or killed; a Delete, also one that can't change the list, and another publication
+  during a call; a consent withdrawn before each kind of packet, during a call and
   before the receipt; what each command prints, with malformed files; the private files' reader with links, loose modes, folders, pipes
   and sockets; and the receipt opening the gate under the client's own grant. Nothing here was run against a model or a real journal.
 
@@ -416,3 +419,8 @@ What its third (24 Nov) changed: the receipt goes before an import writes anythi
 standing for the copy made again (1, blocking); a deletion the vault reports as failed is done when the case is gone, since the vault's
 own last steps can fail after that (2); the sync after the journal folder's removal, since a power cut could bring the key back (3);
 and only a lock that's gone is let go in silence, since a lock that couldn't be looked at stayed behind untold (4).
+
+What its review of the cold test's second design (24 Nov) changed: a planted answer the judge refuses counts as one it didn't catch, since
+it had dropped out of the share, so that a judge that refused ten of thirty and caught the rest passed (1, blocking); and the vault itself
+is asked for the copy before each packet, since a Delete that couldn't change the list left one that still named a copy the vault no longer
+had, and the next packet would have sent its passages (2, blocking).
