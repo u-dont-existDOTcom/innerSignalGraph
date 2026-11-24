@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { RUNNER_TRIAL_CASE_ID_PATTERN } from "./switch.mjs";
 
 // The runner trial's clients (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, the owner's answer 1a to question
@@ -70,8 +71,9 @@ export function validateRunnerClients(value) {
     if (labels.has(folded)) invalid(`${name}'s label is another client's too.`);
     labels.add(folded);
     timestamp(client.added_at, `${name}.added_at`);
-    // `source_sha256`: a digest of the server case the copy came from (scripts/runner-trial-journal.mjs, --import), so one
-    // journal can't be copied for two clients; absent on lists written before the copy step.
+    // `source_sha256`: a digest of the server case the client's copies come from (scripts/runner-trial-journal.mjs, --import), written
+    // before the first import touches the vault and kept until their Delete: no other server case can be imported for them, and this
+    // one for no other client. Absent before a first import.
     exactKeys(client.journal, Object.hasOwn(client.journal ?? {}, "source_sha256") ? ["corpus_id", "consent", "source_sha256"] : ["corpus_id", "consent"], `${name}.journal`);
     if (Object.hasOwn(client.journal, "source_sha256") && !/^[0-9a-f]{64}$/u.test(client.journal.source_sha256 ?? "")) invalid(`${name}'s journal source is invalid.`);
     if (client.journal.corpus_id !== null && (typeof client.journal.corpus_id !== "string" || !CORPUS_ID.test(client.journal.corpus_id))) invalid(`${name}'s journal corpus id is invalid.`);
@@ -95,22 +97,23 @@ export function journalConsentState(client) {
   return consent.withdrawn_at === null ? "confirmed" : "withdrawn";
 }
 
-async function lstatOrNull(file) {
-  try { return await fs.lstat(file); } catch (error) {
+// How an open refuses what is no regular file: a link, a socket, or (checked on the opened handle) a folder or a named pipe.
+const NOT_A_FILE = new Set(["ELOOP", "ENXIO", "ERR_NOT_REGULAR_FILE"]);
+
+// A private file of the trial folder: a regular file only you can read (mode 0600), never a link. Its text, or null when missing. It is
+// opened once, without following a link or waiting on a pipe, and checked and read through that one handle.
+async function readPrivateFile(file, name) {
+  try {
+    return await withOpenedRegularFile(file, async (handle, info) => {
+      if ((info.mode & 0o077) !== 0) invalid(`${name} can be read by others (it must be mode 0600).`);
+      if (typeof process.getuid === "function" && info.uid !== process.getuid()) invalid(`${name} belongs to another user.`);
+      return handle.readFile("utf8");
+    });
+  } catch (error) {
     if (error?.code === "ENOENT") return null;
+    if (NOT_A_FILE.has(error?.code)) invalid(`${name} must be a file, not a link or a folder.`);
     throw error;
   }
-}
-
-// A private file of the trial folder: a regular file only you can read (mode 0600), never a link. Its text, or null when missing.
-async function readPrivateFile(file, name) {
-  const info = await lstatOrNull(file);
-  if (info === null) return null;
-  if (!info.isFile()) invalid(`${name} must be a file, not a link or a folder.`);
-  if ((info.mode & 0o077) !== 0) invalid(`${name} can be read by others (it must be mode 0600).`);
-  if (typeof process.getuid === "function" && info.uid !== process.getuid()) invalid(`${name} belongs to another user.`);
-  const handle = await fs.open(file, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try { return await handle.readFile("utf8"); } finally { await handle.close(); }
 }
 
 export const runnerClientsPath = (trialDir) => path.join(trialDir, RUNNER_CLIENTS_FILE);
@@ -145,6 +148,16 @@ export async function writeRunnerClients(trialDir, value) {
     throw error;
   }
   await syncFolder(trialDir);
+}
+
+// After "Delete this case" of a client has removed their copies from the vault: the list names no copy of theirs and no server case they
+// came from, so a copy from another one can be imported for them. Their consent stays as recorded. The caller holds the folder's lock.
+export async function forgetClientCopy(trialDir, caseId) {
+  const list = await readRunnerClients(trialDir);
+  const client = list.clients.find((entry) => entry.case_id === caseId);
+  if (!client || (client.journal.corpus_id === null && !Object.hasOwn(client.journal, "source_sha256"))) return;
+  client.journal = { corpus_id: null, consent: client.journal.consent };
+  await writeRunnerClients(trialDir, list);
 }
 
 // A rename is durable only once its folder is synced (Codex's reviews 1 and 2): without it, a power cut could keep a newer client

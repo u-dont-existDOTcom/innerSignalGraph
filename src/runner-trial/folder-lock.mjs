@@ -4,10 +4,12 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError } from "../core/errors.mjs";
 
 // The runner trial folder's one lock (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, "As built"; Codex's reviews 1
-// to 4). Held by a start (from making its tokens until its server answers), by --add-client and --journal-consent while they change
-// the credentials or the client list, and by the trial's server for each output to the person (a provisional reply, a delivery) in a
-// case that has read its client's journal, from its gate check to the output. So no command writes over another's change, and a
-// withdrawal of a journal consent lands wholly before such an output (which is then not made) or wholly after it.
+// to 4). Held by a start (from making its tokens until its server answers), by --add-client, --journal-consent and the journal commands
+// (scripts/runner-trial-journal.mjs) while they change the credentials, the client list or a client's journal folder, by the cold test
+// for each reading of the consent before a packet, and by the trial's server for each output to the person (a provisional reply, a
+// delivery) in a case that has read its client's journal, from its gate check to the output, and for a client's deletion. So no command
+// writes over another's change, and a withdrawal of a journal consent lands wholly before such an output or reading (which then stops)
+// or wholly after it.
 //
 // The lock is never taken over: one left by a process that ended without finishing is reported, for the owner to remove by hand once
 // no runner-trial command runs, so two waiters can't both decide to take it over. Its holder removes only its own lock. A waiter

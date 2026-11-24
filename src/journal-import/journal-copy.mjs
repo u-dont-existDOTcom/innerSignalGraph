@@ -1,5 +1,7 @@
-import { createCipheriv, createDecipheriv, createHash, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes, randomUUID } from "node:crypto";
+import { constants } from "node:fs";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import { validateJournalGraph } from "./contracts.mjs";
 import { buildGraphIndexes, persistGraphGeneration, readGenerationDirectory } from "./graph.mjs";
@@ -115,22 +117,47 @@ export function validateJournalCopyBundle(bundle) {
   return bundle;
 }
 
-// The sealed copy on disk: written whole to a new file only its owner can read (mode 0600), never over another file.
-export async function writeSealedJournalCopy(file, sealed) {
-  let handle;
-  try { handle = await fs.open(file, "wx", 0o600); } catch (error) {
-    if (error?.code === "EEXIST") invalid("JOURNAL_COPY_FILE_EXISTS", "A file is already there; nothing was written over it.");
-    throw error;
-  }
+// A new file only its owner can read (mode 0600), written whole and synced; on a failure it is removed again.
+async function writeNewFile(file, text, fileSystem) {
+  const handle = await fileSystem.open(file, "wx", 0o600);
   try {
-    await handle.writeFile(`${JSON.stringify(sealed)}\n`, "utf8");
+    await handle.writeFile(text, "utf8");
     await handle.sync();
   } catch (error) {
     await handle.close().catch(() => {});
-    await fs.rm(file, { force: true });
+    await fileSystem.rm(file, { force: true }).catch(() => {});
     throw error;
   }
   await handle.close();
+}
+
+// What a filesystem without hard links answers to one.
+const NO_HARD_LINKS = new Set(["EPERM", "ENOTSUP", "EOPNOTSUPP"]);
+
+// The sealed copy on disk, whole or not at all, never over another file: a private temporary file beside it, synced, then given the final
+// name by a hard link, which fails when a file is already there; then the temporary name goes and the folder is synced. So a process
+// killed or a power cut part-way leaves nothing at the final name (at most the temporary file, sealed like the copy), and the export can
+// be run again. On a filesystem without hard links the final name is created exclusively and written in place: still never over another
+// file, but stopped part-way it can leave a partial one. `fileSystem` is for tests.
+export async function writeSealedJournalCopy(file, sealed, { fileSystem = fs } = {}) {
+  const text = `${JSON.stringify(sealed)}\n`;
+  const temporary = `${file}.${randomUUID()}.tmp`;
+  await writeNewFile(temporary, text, fileSystem);
+  try {
+    try { await fileSystem.link(temporary, file); } catch (error) {
+      if (!NO_HARD_LINKS.has(error?.code)) throw error;
+      await writeNewFile(file, text, fileSystem);
+    }
+  } catch (error) {
+    await fileSystem.rm(temporary, { force: true }).catch(() => {});
+    if (error?.code === "EEXIST") invalid("JOURNAL_COPY_FILE_EXISTS", "A file is already there; nothing was written over it.");
+    throw error;
+  }
+  await fileSystem.rm(temporary, { force: true });
+  const folder = await fileSystem.open(path.dirname(file), constants.O_RDONLY | constants.O_DIRECTORY);
+  try { await folder.sync(); }
+  catch (error) { if (!["EINVAL", "ENOTSUP", "EOPNOTSUPP"].includes(error?.code)) throw error; }
+  finally { await folder.close(); }
 }
 
 // `file`: a path, or a handle the caller opened and checked.
@@ -151,6 +178,27 @@ async function readWholeIndex(corpusStore, descriptors) {
   return index;
 }
 
+// The generation's source texts, by representation id.
+async function readRepresentations(corpusStore, manifest) {
+  const directory = await readGenerationDirectory(manifest, corpusStore);
+  const texts = new Map();
+  for (const [id, descriptor] of Object.entries(directory.objects)) {
+    if (Array.isArray(descriptor.chunks)) {
+      const bytes = await corpusStore.reassembleOriginal(descriptor);
+      try {
+        const digest = directory.digests[id];
+        if (!digest || bytes.length !== digest.utf8_byte_length || sha256(bytes) !== digest.sha256) invalid("JOURNAL_COPY_SOURCE_MISMATCH");
+        texts.set(id, bytes.toString("utf8"));
+      } finally { bytes.fill(0); }
+    } else {
+      const representation = await corpusStore.readJsonObject({ objectId: descriptor.object_id });
+      if (representation.representation_id !== id) invalid("JOURNAL_COPY_SOURCE_MISMATCH");
+      texts.set(id, representation.text);
+    }
+  }
+  return texts;
+}
+
 async function readRecords(corpusStore, manifest) {
   const records = [];
   for (const shard of manifest.record_shards) records.push(...(await corpusStore.readJsonObject({ objectId: shard.object_id })).records);
@@ -158,6 +206,8 @@ async function readRecords(corpusStore, manifest) {
 }
 
 const isEdge = (record) => typeof record.relation === "string" && "from" in record && "to" in record;
+// The reader's own rule (retrieval.mjs): a deleted or revoked record stays in its generation, and is never usable evidence.
+const isActive = (record) => !["deleted", "revoked"].includes(record.lifecycle);
 
 // The export half, where the client's journal lives: the active generation, published for session use, read whole and sealed. It
 // asks the vault's `export` purpose (the journal leaves the vault), with the scope the reader's grant holds (the import's operator may
@@ -189,22 +239,7 @@ export async function exportJournalCopy({ caseAccessService, caseId, corpusId, a
     const sources = nodes.filter((node) => node.kind === "source").sort((left, right) => placeOf(left) - placeOf(right) || left.id.localeCompare(right.id));
     const graph = { schema_version: "1.0", case_id: caseId, corpus_id: corpusId, generation: reference.active_generation,
       nodes: [...sources, ...nodes.filter((node) => node.kind !== "source")], edges };
-    const directory = await readGenerationDirectory(manifest, corpusStore);
-    const representations = {};
-    for (const [id, descriptor] of Object.entries(directory.objects)) {
-      if (Array.isArray(descriptor.chunks)) {
-        const bytes = await corpusStore.reassembleOriginal(descriptor);
-        try {
-          const digest = directory.digests[id];
-          if (!digest || bytes.length !== digest.utf8_byte_length || sha256(bytes) !== digest.sha256) invalid("JOURNAL_COPY_SOURCE_MISMATCH");
-          representations[id] = bytes.toString("utf8");
-        } finally { bytes.fill(0); }
-      } else {
-        const representation = await corpusStore.readJsonObject({ objectId: descriptor.object_id });
-        if (representation.representation_id !== id) invalid("JOURNAL_COPY_SOURCE_MISMATCH");
-        representations[id] = representation.text;
-      }
-    }
+    const representations = Object.fromEntries(await readRepresentations(corpusStore, manifest));
     // The indexes the generation's builder added beyond the ones every generation gets from its records.
     const builtIn = new Set([...Object.keys(buildGraphIndexes({ nodes: [], edges: [] })), "record_lookup", "representation_objects"]);
     const extraIndexes = {};
@@ -244,11 +279,11 @@ const keepsNothing = Object.freeze({
 
 // The import half, on the laptop, into the client's runner case: the bundle checked whole before anything is written (its graph, and
 // its generation built once into a store that keeps nothing), the graph rebuilt under that case and the copy's own corpus with the
-// generation's own indexes, published for session use, then every passage's quotation checked against the stored bytes by the
-// session-use reader, and every stored record compared with the export's. The caller holds the vault (the runner stopped) and a
-// one-time grant with write and the archive, organize_search and session_use purposes the store asks, for that case alone. A copy
-// already imported (the same corpus, published with the same generation) is checked again rather than written twice; one an earlier
-// import left unpublished is refused.
+// generation's own indexes, published for session use, then every usable passage's quotation checked against the stored bytes by the
+// session-use reader (which resolves no deleted or revoked one), and every stored record (those included), source text and index of its
+// builder compared with the export's. The caller holds the vault (the runner stopped) and a one-time grant with write and the archive,
+// organize_search and session_use purposes the store asks, for that case alone. A copy already imported (the same corpus, published with
+// the same generation) is checked again rather than written twice; one an earlier import left unpublished is refused.
 export async function importJournalCopy({ caseAccessService, caseId, corpusId, authContext, bundle }) {
   validateJournalCopyBundle(bundle);
   if (!ID.test(corpusId)) invalid("JOURNAL_COPY_INVALID");
@@ -278,7 +313,7 @@ export async function importJournalCopy({ caseAccessService, caseId, corpusId, a
     }, authContext);
     await caseAccessService.publishJournalGeneration(caseId, { corpusId, generation: graph.generation, manifestObjectId: persisted.manifest_object_id }, authContext);
   }
-  const passageIds = graph.nodes.filter((node) => node.kind === "passage").map((node) => node.id);
+  const passageIds = graph.nodes.filter((node) => node.kind === "passage" && isActive(node)).map((node) => node.id);
   const expected = new Map([...graph.nodes, ...graph.edges].map((record) => [record.id, JSON.stringify(record)]));
   return caseAccessService.withJournalCorpus(caseId, corpusId, readAccess, async ({ corpusStore, cursorSecret, reference }) => {
     const reader = await openPrivateJournalGraph({ corpusStore, cursorSecret, caseId, corpusId, generation: reference.active_generation,
@@ -289,6 +324,9 @@ export async function importJournalCopy({ caseAccessService, caseId, corpusId, a
     const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
     const stored = await readRecords(corpusStore, manifest);
     if (stored.length !== expected.size || stored.some((record) => expected.get(record.id) !== JSON.stringify(record))) invalid("JOURNAL_COPY_RECORDS_MISMATCH", "The stored copy differs from the export.");
+    const texts = await readRepresentations(corpusStore, manifest);
+    const exported = new Map(Object.entries(bundle.source_representations));
+    if (texts.size !== exported.size || [...texts].some(([id, text]) => exported.get(id) !== text)) invalid("JOURNAL_COPY_SOURCE_MISMATCH", "The stored copy differs from the export.");
     const byKey = (left, right) => (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0);
     for (const [name, entries] of Object.entries(bundle.extra_indexes)) {
       const kept = [...(await readWholeIndex(corpusStore, manifest.indexes?.[name]))];

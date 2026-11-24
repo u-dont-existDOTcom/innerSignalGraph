@@ -2,7 +2,8 @@ import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { loadRunnerRules, runnerTrialDirectory } from "./released-rules.mjs";
 import fs from "node:fs/promises";
 import { RUNNER_LOG_FILE, createRunnerLogWriter, runnerClientLogFile, runnerLogFromRecord } from "./run-log.mjs";
-import { clientJournalFolder } from "./clients.mjs";
+import { clientJournalFolder, forgetClientCopy } from "./clients.mjs";
+import { withTrialFolderLock } from "./folder-lock.mjs";
 import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
@@ -28,6 +29,9 @@ export function runnerEventLine(event) {
   for (const field of EVENT_FIELDS[event.type]) if (typeof event[field] === "string") line[field] = event[field];
   return line;
 }
+
+// How long a client's deletion waits for the trial folder's lock, as the commands do.
+const DELETE_LOCK_WAIT_MS = 10_000;
 
 // Keyed by case id and runtime turn id together: the page chooses its turn id, so two cases may use the same one, and a case's
 // events must never reach another case's stream. Nothing is kept: an event with no listener is dropped, and a listener that
@@ -116,8 +120,22 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
     onEvent: hub.publish,
     now
   });
+  // "Delete this case" of a client, once it's its turn in the case's queue: under the trial folder's lock, which every command takes, the
+  // case and its journal copies go from the vault; then the client list names neither the copy nor the server case it came from, so a
+  // cold test still running stops and another server case can be theirs; then their journal folder goes (their key for journal copies
+  // and their copy's cold-test receipt). Without the lock nothing is deleted. A failure after the vault's part is told, and deleting
+  // again finishes it.
+  const deletingSource = clientCases.size === 0 || !trialDirectory ? privateCaseSource : Object.create(privateCaseSource, { deletePrivateCase: { value: async (caseId, ...rest) => {
+    if (!clientCases.has(caseId)) return privateCaseSource.deletePrivateCase(caseId, ...rest);
+    return withTrialFolderLock(trialDirectory, async () => {
+      const deleted = await privateCaseSource.deletePrivateCase(caseId, ...rest);
+      try { await forgetClientCopy(trialDirectory, caseId); }
+      finally { await fs.rm(clientJournalFolder(trialDirectory, caseId), { recursive: true, force: true }); }
+      return deleted;
+    }, { waitMs: DELETE_LOCK_WAIT_MS });
+  } } });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
-  const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
+  const controller = createPrivateTherapyTurnController({ privateCaseSource: deletingSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
     ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: 4000 } } : {}), ...(evidenceOn && journalGate ? { journalEvidenceProvider: journalGate } : {}) });
   const loadExisting = async (caseId, authContext) => {
     try {
@@ -141,13 +159,11 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
       try { return await controller.reconcile(input); }
       finally { logWriterFor(input.caseId).schedule(input.caseId, input.authContext); }
     },
-    // The case's own run log goes with it, and a client's journal folder too (their key for journal copies and their copy's cold-test
-    // receipt); the vault's deletion removes the case's journal copies.
+    // The case's own run log goes with it (a client's journal folder goes in deletingSource above).
     async deleteCase(input) {
       const result = await controller.deleteCase(input);
       runtime.forgetCase(input.caseId);
       await logWriterFor(input.caseId).remove();
-      if (clientCases.has(input.caseId) && trialDirectory) await fs.rm(clientJournalFolder(trialDirectory, input.caseId), { recursive: true, force: true });
       return result;
     },
     async runLog({ caseId, authContext }) { return runnerLogFromRecord(await loadExisting(caseId, authContext)); },
