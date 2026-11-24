@@ -215,9 +215,9 @@ export function createPrivateTherapyTurnController({
         : { availability: "unavailable", retrieval_status: "failed" };
     } finally { clearTimeout(timer); }
   };
-  // A journal query is bounded text (the session-use adapter refuses more than 4,000 characters); a longer message is cut for the
-  // query only, never for what the models see.
-  const JOURNAL_QUERY_CHARACTERS = 4000;
+  // A journal query is bounded text (the session-use adapter refuses more than 40,000 characters: a whole message, so that its point
+  // counts wherever it stands); a longer message is cut for the query only, never for what the models see.
+  const JOURNAL_QUERY_CHARACTERS = 40_000;
   const freezeSnapshot = async ({ caseId, runtimeTurn, operationKey, record, reason = "initial", query = runtimeTurn.inbound.exact_text.slice(0, JOURNAL_QUERY_CHARACTERS), questions = null, authContext }) => {
     const previous = snapshotsFor(record, runtimeTurn).at(-1);
     const revision = (previous?.revision ?? 0) + 1;

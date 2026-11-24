@@ -46,7 +46,7 @@ const counts = (entries) => entries.map(({ term, quotes, reason }) => [term, quo
 
 test("the numbers of the search, in one place with their version: a change of one is a change of the version", () => {
   assert.deepEqual(EVIDENCE_QUOTE_SEARCH, { version: "evidence-quotes-v1", common: { share: 0.05, quotes: 20 }, termsMax: 24, rare: { share: 0.01, quotes: 10 },
-    matched: { terms: 2, share: 0.5 }, candidatesMax: 40 });
+    matched: { terms: 2, share: 0.5 }, candidatesMax: 40, queryCharacters: 40_000 });
   assert.deepEqual(QUOTE_BM25, { k1: 1.2, b: 0.75 }, "the constants of the version 3 ranking");
 });
 
@@ -65,6 +65,68 @@ for (const index of ALL) test(`words are read as the generation reads them, with
   assert.ok(result.terms.dropped.every(({ quotes, reason }) => quotes === 0 && reason === "in_no_quote"));
   assert.equal(result.terms.quotes, 13);
   assert.deepEqual(result.quotes.map(({ text, matched_terms: matched }) => [text, matched]), [[quote, result.terms.chosen.map(({ term }) => term)]]);
+});
+
+// What a message is searched by, for its words, on a journal whose other quotes hold none of them.
+const searchedBy = (result) => [...result.terms.chosen, ...result.terms.dropped].map(({ term }) => term).sort();
+
+for (const index of ALL) test(`a stop word is left out as the message writes it, never a word that only reads like one (${index})`, async (t) => {
+  // Every word here reads, in the word list, as a stop word does: "shoulder" as "should", "care" as the French "car", "toy" as "toi",
+  // "coming" as "comme", "sure" as "sur", "offer" as "off", "mois" as "moi". Thirty quotes hold those stop words.
+  const told = ["My left shoulder aches again.", "She took care of me in the hospital.", "The toy horse is in the attic.", "I was sure of it.", "He made an offer for the land.", "Trois mois sans nouvelles.", "Her shoulders were cold."];
+  const { find, texts } = await journal(t, { paragraphs: [...countedParagraphs(200, { should1x: 1 }), ...Array.from({ length: 30 }, (_, place) => `own${place}z should and car and toi and comme and sur and off and moi and both.`), ...told], index });
+  const found = async (query) => (await texts(query)).filter((text) => told.includes(text)).sort();
+  assert.deepEqual(await found("It's my shoulder, I think you should know."), index === "quote-index-v4" ? [told[6], told[0]] : [told[0]], "with its plural, where the list reads word forms");
+  assert.deepEqual(await found("My shoulders."), index === "quote-index-v4" ? [told[6], told[0]] : [told[6]]);
+  for (const [query, at] of [["Who takes care of me now?", 1], ["Whatever happened to that toy?", 2], ["I'm sure that I was there.", 3], ["What about his offer?", 4], ["Cela fait un mois.", 5]]) assert.deepEqual(await found(query), [told[at]], query);
+  // None of the thirty is found by the stop words themselves, and a word and its plural are one word, not two.
+  for (const query of ["you should come over, both of us, off and on", "car toi et moi, comme sur la photo"]) assert.deepEqual(searchedBy(await find(query)).filter((term) => ["should", "both", "car", "toi", "moi", "comme", "off", "sur"].includes(term)), [], query);
+  const twice = await find("my shoulder and both shoulders");
+  assert.deepEqual(counts(twice.terms.chosen), index === "quote-index-v4" ? [["shoulder", 2]] : [["shoulder", 1], ["shoulders", 1]]);
+  assert.deepEqual(twice.quotes.map(({ matched_terms: matched }) => matched), index === "quote-index-v4" ? [["shoulder"], ["shoulder"]] : twice.quotes.map(({ text }) => [text.includes("shoulders") ? "shoulders" : "shoulder"]));
+});
+
+test("a word looked up as written counts as one use in a quote of mean length", async (t) => {
+  // Every quote has four words, so a word the word list holds and one looked up as written weigh the same when three quotes hold each.
+  const held = Array.from({ length: 6 }, (_, place) => `${place % 2 ? "shoulder" : "harbour1"} four${place}b four${place}c four${place}d.`);
+  const { texts, passageOf } = await journal(t, { paragraphs: [...Array.from({ length: 80 }, (_, place) => `own${place}a own${place}b own${place}c own${place}d.`), ...held] });
+  const byId = [...held].sort((left, right) => passageOf(left).localeCompare(passageOf(right)));
+  assert.notDeepEqual(byId.map((text) => text.startsWith("shoulder")), [false, false, false, true, true, true], "the ids don't sort the two words apart by themselves");
+  assert.deepEqual(await texts("shoulder harbour1"), byId);
+});
+
+for (const index of ALL) test(`a stop word of one language that is a word of the other is left out only in a message written in its own (${index})`, async (t) => {
+  const told = ["My son drove the old car into the pond.", "Mon ours en peluche avait un seul œil.", "Son père tenait le but du terrain vague.", "The aura before a migraine is green."];
+  const { texts, find } = await journal(t, { paragraphs: [...countedParagraphs(60), ...told], index });
+  assert.equal((await texts("I had a fight with my son about the car"))[0], told[0], "a word that both hold finds the other language's too, after it");
+  assert.deepEqual((await texts("son")).sort(), [told[0], told[2]], "a message of that word alone is searched by it");
+  assert.deepEqual(await texts("Is that aura back?"), [told[3]]);
+  assert.deepEqual((await texts("Je cherche mon ours dans le grenier"))[0], told[1]);
+  assert.deepEqual((await texts("Quel est le but de tout cela pour moi ?"))[0], told[2]);
+  // In a message of their own language they are what they are there: nothing to search by.
+  for (const query of ["Je ne sais pas, car il y aura son frère et ma mère pour elle", "It was neither theirs nor ours but hers, or an attempt"]) {
+    const words = searchedBy(await find(query));
+    for (const word of ["car", "aura", "son", "ma", "pour", "elle", "ours", "but", "or", "an"]) assert.equal(words.includes(word), false, `${word} in: ${query}`);
+  }
+  // Typed without its accents a French stop word is one; with one it doesn't have, it isn't.
+  assert.deepEqual(searchedBy(await find("meme apres etre avant")), []);
+  assert.deepEqual(searchedBy(await find("je suis sûr")), ["sûr"]);
+});
+
+test("an English negation is left out whole, however its apostrophe is written", async (t) => {
+  const { find, texts } = await journal(t, { paragraphs: [...countedParagraphs(60), "couldn and wouldn and don are no words.", "I slept in the greenhouse."] });
+  for (const query of ["I couldn't and wouldn't, I don't", "I couldn’t and WOULDN’T, I don’t", "couldn't", "she isn't"]) assert.deepEqual(searchedBy(await find(query)), [], query);
+  assert.deepEqual(await texts("I couldn't sleep in the greenhouse"), ["I slept in the greenhouse."]);
+  // A name with an apostrophe, and a "t" that isn't a negation's, stay words.
+  assert.deepEqual(searchedBy(await find("O'Tooles greenhouse't")), ["greenhou", "tool"]);
+});
+
+test("a whole message is searched, so its point counts past its first 4,000 characters", async (t) => {
+  const everyday = inventedParagraphs({ size: 400, seed: 5 }).filter((_, place) => place % 3 !== 2).join(" ").slice(0, 30_000);
+  assert.ok(everyday.length > 29_000, String(everyday.length));
+  const quote = "The weathercock1 squeaked above the cowshed2 and the scythe3 shone.";
+  const { texts } = await journal(t, { paragraphs: [...inventedParagraphs(), quote] });
+  assert.equal((await texts(`${everyday} And what I came to say is about the weathercock1, the cowshed2 and the scythe3.`))[0], quote);
 });
 
 for (const index of ALL) test(`a word over 5% of the quotes hold, and over 20, isn't ranked by; nothing is found without another, whatever the message (${index})`, async (t) => {
@@ -313,5 +375,5 @@ test("a snapshot that isn't current is refused before the search and after it", 
     assert.equal(asked, currentFor + 1);
   }
   const reader = await open();
-  try { for (const query of [null, 7, "x".repeat(4_001)]) await assert.rejects(reader.findEvidenceQuotes({ query, limit: 6 }), { code: "QUOTE_QUERY_INVALID" }); } finally { reader.close(); }
+  try { for (const query of [null, 7, "x".repeat(40_001)]) await assert.rejects(reader.findEvidenceQuotes({ query, limit: 6 }), { code: "QUOTE_QUERY_INVALID" }); } finally { reader.close(); }
 });

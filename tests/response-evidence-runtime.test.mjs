@@ -593,6 +593,15 @@ test("a runtime that reads first is asked before anything is searched or frozen,
   assert.deepEqual(Object.keys(h.searches[0]).sort(), ["authContext", "caseId", "maximumBytes", "maximumTokens", "query"], "the message's own search is asked for as before");
 });
 
+test("the journal is searched for the whole message, and for at most its first 40,000 characters", async (t) => {
+  for (const [length, searched] of [[9_000, 9_000], [50_000, 40_000]]) {
+    const env = await setup(t), h = hooked(env);
+    const userMessage = "What is happening for me now, after all of this? ".repeat(1_100).slice(0, length);
+    await h.controller({ journalEvidenceProvider: h.journal() }).run({ ...request(), userMessage });
+    assert.equal(h.searches[0].query, userMessage.slice(0, searched));
+  }
+});
+
 for (const [name, extra] of [
   ["no journal provider", {}],
   ["a provider of the older contract", { journalEvidenceProvider: { async freezeForTurn() { throw new Error("must not be called"); } } }]

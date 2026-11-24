@@ -443,7 +443,7 @@ test("an expansion adds to the part the turn has: its quotations keep their ids 
 
 test("the purpose is checked before the arguments are looked at, and arguments out of bounds are refused then", async (t) => {
   const env = await environment(t);
-  const bad = [{ query: "" }, { query: "  " }, { query: null }, { query: "x".repeat(4001) }, { questions: [] }, { questions: "help" }, { questions: ["help", ""] }, { questions: ["x".repeat(4001)] },
+  const bad = [{ query: "" }, { query: "  " }, { query: null }, { query: "x".repeat(40_001) }, { questions: [] }, { questions: "help" }, { questions: ["help", ""] }, { questions: ["x".repeat(40_001)] },
     { addsTo: { source_items: [], receipts: [], omissions: [] } }, { questions: ["help"], addsTo: "part" }, { questions: ["help"], addsTo: { source_items: [] } }, { maximumTokens: 8001 }, { maximumBytes: -1 }];
   for (const extra of bad) {
     const before = { ...env.counts };

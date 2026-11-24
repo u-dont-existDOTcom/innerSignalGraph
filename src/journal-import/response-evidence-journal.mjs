@@ -15,7 +15,7 @@ const empty = (availability, retrieval_status = "not_attempted") => ({
   budget: { max_tokens: 8000, max_bytes: 64000, used_tokens: 0, used_bytes: 0 }
 });
 const refused = new Set(["PRIVATE_CASE_ACCESS_DENIED", "GRANT_REVOKED", "GRAPH_MANIFEST_SCOPE_MISMATCH", "GRAPH_RECORD_SCOPE_MISMATCH"]);
-const searchable = (value) => typeof value === "string" && value.trim().length > 0 && value.length <= 4000;
+const searchable = (value) => typeof value === "string" && value.trim().length > 0 && value.length <= EVIDENCE_QUOTE_SEARCH.queryCharacters;
 
 // What was searched and what that can't show, for the models that read the quotations.
 function coverageOf({ questions, matched, returned }) {

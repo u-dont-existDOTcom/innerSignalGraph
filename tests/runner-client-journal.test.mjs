@@ -576,28 +576,27 @@ const journalPartOf = (record) => snapshotsOf(record).at(-1).journal;
 const WITHHELD = ["unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }]];
 const partSummary = (part) => [part.availability, part.retrieval_status, part.omissions];
 
-test("the readers read, and the first words are shown, before any journal search starts", async (t) => {
-  // The journal is held until the turn's provisional reply is out: searched first, as before, the search would run out of its time.
-  const bodySign = () => ({ ...quietReader(), reason: "a body sign after stopping daily drinking", number_now: true, provisional_reply: ACTED_PROVISIONAL });
-  const j = await journalTrial(t, { configured: { runnerNumberNowEnabled: true }, workers: script({ R1: bodySign,
-    W: (count, request) => ({ ...writer(count, request), reply: "Please call 112 now. What makes asking hard for you?", quotes: [] }) }) });
+test("the readers read before any journal search starts", async (t) => {
+  // The journal is held until the crisis reader has answered: searched first, as before, the search would run out of its time.
   let release;
-  const shown = new Promise((resolve) => { release = resolve; });
-  const { happened, run, trial } = j.turns({ onSearch: () => shown });
-  trial.events.subscribe(j.clientA, "runtime:exchange-first-words", (event) => { if (event.type === "provisional") release(); });
+  const read = new Promise((resolve) => { release = resolve; });
+  const j = await journalTrial(t, { workers: script({ R1: () => { release(); return quietReader(); } }) });
+  const { happened, run } = j.turns({ onSearch: () => read });
   const result = await run("exchange-first-words", MESSAGE);
   assert.equal(result.deliveryKind, "candidate");
   assert.equal(happened.filter((step) => step === "search").length, 1);
-  for (const earlier of ["reading", "R1", "R3", "provisional"]) assert.ok(happened.indexOf(earlier) >= 0 && happened.indexOf(earlier) < happened.indexOf("search"), `${earlier} comes before the search: ${happened}`);
+  for (const earlier of ["reading", "R1", "R3"]) assert.ok(happened.indexOf(earlier) >= 0 && happened.indexOf(earlier) < happened.indexOf("search"), `${earlier} comes before the search: ${happened}`);
   assert.deepEqual(happened.slice(happened.indexOf("search"), happened.indexOf("W") + 1), ["search", "freeze", "writing", "W"], "then the evidence is frozen and the writer writes");
   assert.equal(journalPartOf(await j.record(j.clientA)).availability, "available");
   assert.ok(journalItems(packetOf(lastRequest(j.calls, "W"))).length >= 1);
 });
 
-test("a message read as wanting to die or having acted, or not read at all, gets no journal and no search is made", async (t) => {
+test("a message read as wanting to die, having acted or needing the emergency number now, or not read at all, gets no journal and no search is made", async (t) => {
   const failing = () => { throw Object.assign(new Error("A synthetic reader failure."), { code: "PROVIDER_FAILED" }); };
-  for (const [name, R1] of [["wants to die", wantsToDieReading], ["acted", actedReading], ["unread", failing]]) {
-    const j = await journalTrial(t, { workers: script({ R1, W: () => ({ reply: "Please call 112 now. I'm here.", answered_level: "unclear", quotes: [] }) }) });
+  const bodySign = () => ({ ...quietReader(), reason: "a body sign after stopping daily drinking", number_now: true, provisional_reply: ACTED_PROVISIONAL });
+  const numberNow = { runnerNumberNowEnabled: true };
+  for (const [name, R1, configured] of [["wants to die", wantsToDieReading, {}], ["acted", actedReading, {}], ["number now", bodySign, numberNow], ["unread", failing, {}]]) {
+    const j = await journalTrial(t, { configured, workers: script({ R1, W: () => ({ reply: "Please call 112 now. I'm here.", answered_level: "unclear", quotes: [] }) }) });
     const { happened, run } = j.turns();
     const result = await run("exchange-crisis-1", MESSAGE);
     assert.equal(result.deliveryKind, "candidate", name);
@@ -610,8 +609,13 @@ test("a message read as wanting to die or having acted, or not read at all, gets
       assert.deepEqual(journalItems(packet), [], `${name}: no quotation for ${role}`);
       assert.deepEqual(partSummary(packet.response_evidence.journal), WITHHELD);
     }
-    assert.equal(record.runtime_turns[0].provisional?.exact_text ?? null, name === "acted" ? ACTED_PROVISIONAL : null, `${name}: the first words are what they were`);
+    assert.equal(record.runtime_turns[0].provisional?.exact_text ?? null, ["acted", "number now"].includes(name) ? ACTED_PROVISIONAL : null, `${name}: the first words are what they were`);
   }
+  // With the number now off nobody reads it, so it withholds nothing.
+  const off = await journalTrial(t, { workers: script({ R1: bodySign }) });
+  const offTurns = off.turns();
+  await offTurns.run("exchange-number-now-off", MESSAGE);
+  assert.equal(offTurns.happened.filter((step) => step === "search").length, 1);
   // Only those: a message read at any other level gets the journal, one that could mean either included.
   for (const level of ["thoughts_no_intent", "unclear"]) {
     const j = await journalTrial(t, { workers: script({ R1: () => ({ ...quietReader(), level }) }) });

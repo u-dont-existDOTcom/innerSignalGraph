@@ -739,14 +739,14 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       if (await journalGateAllows(caseId, null, authContext)) await readTurn({ caseId, runtimeTurn, userInput, authContext, reuse: true });
     },
 
-    // Why this turn gets no journal, or null: its message isn't read, or its conversation has been read as one about wanting to die (or
-    // of someone who has acted or is about to) by any reader or checker, this turn's own reading included. No search is made for it
-    // then, the message's own or the repair's.
+    // Why this turn gets no journal, or null: its message isn't read, or is read as needing the emergency number now (the number now on),
+    // or its conversation has been read as one about wanting to die (or of someone who has acted or is about to) by any reader or
+    // checker, this turn's own reading included. No search is made for it then, the message's own or the repair's.
     async journalWithheld({ caseId, runtimeTurn, authContext }) {
       const record = await load(caseId, authContext);
       const reading = record.runtime_turns.find((turn) => turn.id === runtimeTurn.id)?.runner_reading;
       const crisis = reading?.readers?.crisis;
-      if (!crisis || crisis.unread === true) return JOURNAL_WITHHELD;
+      if (!crisis || crisis.unread === true || numberNowRead(crisis)) return JOURNAL_WITHHELD;
       return isCrisisConversation(conversationReadings(record, reading.conversation_id)) ? JOURNAL_WITHHELD : null;
     },
 
