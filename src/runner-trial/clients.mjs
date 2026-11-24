@@ -153,11 +153,12 @@ export async function writeRunnerClients(trialDir, value) {
 }
 
 // After "Delete this case" of a client has removed their copies from the vault: the list names no copy of theirs and no server case they
-// came from, so a copy from another one can be imported for them. Their consent stays as recorded. The caller holds the folder's lock.
+// came from, so a copy from another one can be imported for them. Their consent stays as recorded. A list that names neither already is
+// made durable, since an earlier Delete may have changed it and not got that far. The caller holds the folder's lock.
 export async function forgetClientCopy(trialDir, caseId) {
   const list = await readRunnerClients(trialDir);
   const client = list.clients.find((entry) => entry.case_id === caseId);
-  if (!client || (client.journal.corpus_id === null && !Object.hasOwn(client.journal, "source_sha256"))) return;
+  if (!client || (client.journal.corpus_id === null && !Object.hasOwn(client.journal, "source_sha256"))) return syncFolder(trialDir);
   client.journal = { corpus_id: null, consent: client.journal.consent };
   await writeRunnerClients(trialDir, list);
 }
@@ -175,6 +176,16 @@ export async function syncFolder(folder) {
 export function clientJournalFolder(trialDir, caseId) {
   if (typeof caseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) invalid("A client's case id isn't of the start script's form.");
   return path.join(trialDir, RUNNER_JOURNAL_FOLDER, caseId);
+}
+
+// "Delete this case" of a client: their journal folder goes (their key for journal copies, their copy's cold-test receipt and its test's
+// marker), and that is made durable: until the folder it was in is synced, a power cut could bring the key back, and with it the means
+// to open a sealed copy. The sync is made also when the folder is gone already, since an earlier Delete may not have got that far; where
+// no client ever had such a folder there's nothing to sync. The caller holds the folder's lock.
+export async function removeClientJournalFolder(trialDir, caseId) {
+  const folder = clientJournalFolder(trialDir, caseId);
+  await fs.rm(folder, { recursive: true, force: true });
+  try { await syncFolder(path.dirname(folder)); } catch (error) { if (error?.code !== "ENOENT") throw error; }
 }
 
 // The cold test's receipt for a client's journal (design, point 5c): a passing test of exactly this case's corpus, at exactly one

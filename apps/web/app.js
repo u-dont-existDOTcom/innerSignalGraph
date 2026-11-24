@@ -234,6 +234,7 @@ function forgetDeletedCase(pageState, empty) {
 
 // What "Delete this case" couldn't clear on this computer once the case was gone from the vault, from the server's codes in fixed words.
 const RUNNER_LEFTOVERS = Object.freeze({
+  VAULT_CLEANUP: "some of the vault's own files for the case",
   JOURNAL_LIST: "their journal copy's place on the client list",
   JOURNAL_FOLDER: "their journal folder (their key for journal copies and the cold-test receipt)",
   FOLDER_LOCK: "the trial folder's lock (stop the trial and remove .trial-folder.lock by hand first)",

@@ -212,8 +212,8 @@ journal's cold test**. Both are on the next branch (below).
 
 The lane's instruction after pull request 244: the copy step and the cold test, built and tested on made-up journals only, with no
 server contact; each real copy runs only on the owner's say. An independent review (Claude) of the first three commits found nine
-problems, GPT's review of the branch with those fixed found ten more (two blocking), and its review of the branch with those fixed
-four; this is as built after all three, and what GPT's reviews changed is listed at the end.
+problems, GPT's review of the branch with those fixed found ten more (two blocking), its next one four, and the one after that four
+more (one blocking); this is as built after all four, and what GPT's reviews changed is listed at the end.
 
 - **The export** is the journal import's `export` command (no longer only planned), run where the journal lives. Its settings come
   from the import's private configuration (`runner_trial_export`: the corpus, one client's public key, a new file outside the
@@ -237,10 +237,18 @@ four; this is as built after all three, and what GPT's reviews changed is listed
   one person's, whatever its corpora), and keeps it when a later step fails. So every copy the vault may hold, an unfinished import's
   included, has its one client on the list, and neither another server case for that client nor that server case for another client
   is imported. The client's Delete, made under the trial folder's lock, removes the case with its copies, then their place on the list,
-  then their folder; without that lock nothing is deleted. Once the vault has deleted the case, each of the rest (those two, what the
-  runtime remembers, the run log) is tried whatever became of the others; what couldn't be cleared comes back as fixed codes
-  (`cleanup_left`), the page forgets the case all the same and names it, and Delete again clears it (the vault's deletion of a case
-  that's gone finds nothing and goes on).
+  then their folder; without that lock nothing is deleted. The list and the folder count as cleared once that is durable (for the folder,
+  once the one it was in is synced, so a power cut can't bring their key back). Once the case is gone from the vault, each of the rest
+  (those two, the lock, what the runtime remembers, the run log) is tried whatever became of the others; what couldn't be cleared comes
+  back as fixed codes (`cleanup_left`), the page forgets the case all the same and names it, and Delete again clears it (the vault's
+  deletion of a case that's gone finds nothing and goes on). The vault removes the case's file before its own last steps, so a deletion
+  it reports as failed may have removed the case: that is found by loading it (as the trial loads any case), and a case that's gone is
+  deleted, with the vault's own cleanup among the codes (`VAULT_CLEANUP`; the owner's own case too). With the case still there, or not
+  to be seen, or for a caller the vault refused, the vault's error stands and nothing else is touched.
+- **The trial folder's lock is let go by its holder alone**, known by the file's device and inode, looked at while the file is still
+  open. Only a lock file that's gone counts as let go. Any other failure to look at it or remove it is the release's error: Delete
+  names it (`FOLDER_LOCK`), a command that has done its work says that a lock was left and which file, and a start stops its server. It
+  never hides what stopped the taking of the lock, a command or a start.
 - **Under the trial folder's lock and the vault's writer lock** (so only while the trial is stopped), with a grant made in the process
   for that command and that case alone (write, and the archive, organize_search and session_use purposes the store asks), the import
   checks the whole bundle before anything is written to the vault (its digest, its graph, and its generation built once into a store
@@ -248,8 +256,15 @@ four; this is as built after all three, and what GPT's reviews changed is listed
   builder's own indexes, and publishes it for session use without archive. Then it checks what is stored against the export: every
   usable quotation against the stored bytes (200 at a time; a deleted or revoked passage is never resolved as evidence), every record
   (those included), every source text and every index of the builder; and the list names the corpus. The same file again is checked
-  again; a copy an earlier import left unpublished is refused. Every import, the same file again included, drops the copy's receipt and its test's marker; the
-  earlier copy stays in the case, unused, until the client's Delete (a limit).
+  again; a copy an earlier import left unpublished is refused. The earlier copy stays in the case, unused, until the client's Delete (a
+  limit).
+- **No receipt survives an import that starts.** Once it has the vault's writer lock, and before anything is written to the vault, the
+  import removes the client's cold-test receipt, whatever copy it names, and the marker of the test started last, and syncs their
+  folder (also when an earlier import had removed them but couldn't sync it). The same sealed file makes the very copy an earlier
+  receipt named, say after a Delete that couldn't clear the receipt, so one left for later would open the journal on an import that
+  failed, or was killed, half-way. With both gone first, the order of what follows doesn't matter. When the two can't be removed, the
+  import doesn't start; an import the running trial refuses (no writer lock) leaves them. Under the folder's lock, held throughout, no
+  test can give another receipt meanwhile.
 - **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`), on the journal import's cold-consumer runner: a
   fresh consumer gets the frozen questions and what the session-use reader retrieves, graph on and off, never the key; the
   controller scores what the consumer declares (its answerability, the passages it cites) exactly; and a judge checks what an answer
@@ -287,18 +302,20 @@ four; this is as built after all three, and what GPT's reviews changed is listed
   published reference isn't its manifest's, written whole or not at all (failures and kills part-way, no hard links, another file
   there); a copy refused for another key, after tampering or with a short tag; the import refused while the vault is held, for the
   wrong client, from inside the trial folder, for a link or another file, for a journal already copied for another client, or from
-  another server case than the client's own, an import that fails before and after the vault is written, and Delete in between; a
-  Delete whose later steps fail, each alone and all together, and through the server's route and the page's own code, pressed again
-  each time; a bundle whose graph or index doesn't hold refused with nothing written to the vault, and an unpublished earlier import
-  refused; a copy of 210 passages, one with a record larger than its usual shards, one with deleted and revoked passages, one with a
-  source text stored in chunks, and a quote generation as the journal import builds it; the source order and the builder's indexes
-  kept; the record-by-record and text-by-text check; the same file again; a cold test that passes, one that misses, claims a false
-  premise, cites part of the evidence, cites a passage it wasn't given or has no words, one the judge refuses (an invented answer
-  declared as none included), one with no judge, one stopped by an error at each kind of call, through the real port and a stand-in
-  worker; tests that overlap, the newer one passing, failing, still running or killed; a consent withdrawn before each kind of packet,
-  during a call and before the receipt; what each command prints, with malformed files; the private files' reader with links, loose
-  modes, folders, pipes and sockets; and the receipt opening the gate under the client's own grant. Nothing here was run against a
-  model or a real journal.
+  another server case than the client's own, an import that fails before and after the vault is written, and Delete in between; an
+  import stopped by an error or killed right after it published, with the receipt of that very copy there before, and one whose
+  removal of it fails at each step; a Delete whose later steps fail, each alone and all together, the vault's own among them, and
+  through the server's route and the page's own code, pressed again each time; the syncs after the list's and the folder's removals, and
+  their failures; a lock that can't be looked at or removed, by Delete, the commands and a start; a bundle whose graph or index doesn't
+  hold refused with nothing written to the vault, and an unpublished earlier import refused; a copy of 210 passages, one with a record
+  larger than its usual shards, one with deleted and revoked passages, one with a source text stored in chunks, and a quote generation
+  as the journal import builds it; the source order and the builder's indexes kept; the record-by-record and text-by-text check; the
+  same file again; a cold test that passes, one that misses, claims a false premise, cites part of the evidence, cites a passage it
+  wasn't given or has no words, one the judge refuses (an invented answer declared as none included), one with no judge, one stopped by
+  an error at each kind of call, through the real port and a stand-in worker; tests that overlap, the newer one passing, failing, still
+  running or killed; a consent withdrawn before each kind of packet, during a call and before the receipt; what each command prints,
+  with malformed files; the private files' reader with links, loose modes, folders, pipes and sockets; and the receipt opening the gate
+  under the client's own grant. Nothing here was run against a model or a real journal.
 
 What GPT's review of 24 Nov changed (its findings, in its order): a client's server case is fixed on the list before the vault is
 touched (1, blocking); the judge, and an answer needs words (2, blocking); a test that starts removes the receipt (3); the consent read
@@ -312,3 +329,8 @@ What GPT's second review of the branch (24 Nov) changed: the attempt marker, sin
 started and been killed (1); the judge for every question, since an invented answer declared as not found passed (2); a deletion done
 once the vault has done it, since a failure after that was told as "not deleted" and kept the page's and the runtime's state (3); and no
 export where hard links can't be made, since the fallback could leave a partial file at the final name (4).
+
+What its third (24 Nov) changed: the receipt goes before an import writes anything, since one that failed after publishing left it
+standing for the copy made again (1, blocking); a deletion the vault reports as failed is done when the case is gone, since the vault's
+own last steps can fail after that (2); the sync after the journal folder's removal, since a power cut could bring the key back (3);
+and only a lock that's gone is let go in silence, since a lock that couldn't be looked at stayed behind untold (4).

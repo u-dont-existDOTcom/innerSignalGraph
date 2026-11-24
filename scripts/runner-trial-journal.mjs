@@ -44,8 +44,9 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      quote by quote and record by record against the export. FILE must be outside the trial folder and stays where
                      it is: once imported it's no longer needed, and you may delete it. A copy sealed for another client's key is
                      refused, and so is one of a journal another client's copy came from. The first import ties the client's copies
-                     to that server case until their Delete, also when it fails: a copy from another one is refused. A new copy
-                     needs its own cold test.
+                     to that server case until their Delete, also when it fails: a copy from another one is refused. An import that
+                     starts first removes the client's cold-test receipt, whatever copy it names and also when the import then
+                     fails: the copy is tested again before any reply uses it.
   --cold-test FILE   the copy's cold test, with the questions and their key from FILE (mode 0600, outside the checkout): a fresh
                      consumer on the trial's signed-in worker answers from the copy alone (two calls a question), and a judge on
                      that worker (one more call a question) checks what the answer says: what the key quotes say, or, to a question
@@ -253,6 +254,13 @@ export async function importClientJournal({ home, number, sealedPath, lockWaitMs
 }
 
 // The vault's part of --import, once the client list names the server case the copy comes from.
+//
+// No receipt survives an import that starts. Once the vault's writer lock is had, and before anything is written to the vault, the client's
+// cold-test receipt goes, whatever copy it names, with the marker of the test started last (so that one still running gives none), and that
+// is made durable. The same sealed file makes the very copy an earlier receipt named (after a Delete that couldn't clear the receipt, say),
+// so one left for later would open the journal on an import that failed, or was killed, half-way. With both gone first, the order of what
+// follows doesn't matter. A removal that fails stops the import before it starts. All of it is under the folder's lock, which a cold test
+// takes to start and to give its receipt, so none comes back meanwhile.
 async function importOpenedCopy({ resolved, list, client, number, bundle }) {
   const providers = await trialProviders(resolved);
   let writerLock = null;
@@ -261,14 +269,17 @@ async function importOpenedCopy({ resolved, list, client, number, bundle }) {
       if (error?.code === "PRIVATE_ROOT_WRITER_ACTIVE") throw new StartError("The trial is running: stop it (Ctrl-C in its terminal), then import again. Nothing was imported.");
       throw error;
     }
+    try {
+      for (const name of [COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE]) await removeJournalFile(resolved, client.case_id, name);
+      // Also when an earlier import had removed them and couldn't make that durable.
+      await syncFolder(clientJournalFolder(resolved, client.case_id));
+    } catch (error) {
+      throw new StartError(`Client ${number}'s cold-test receipt couldn't be removed for good (${codeOf(error) ?? "failed"}); nothing was imported.`);
+    }
     const grant = oneTimeGrant(client.case_id, { scopes: [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE], purposes: IMPORT_PURPOSES });
     const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, heldRootDir: providers.rootDir, authorizationProvider: grant.authorizationProvider,
       keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
     const result = await importJournalCopy({ caseAccessService: service, caseId: client.case_id, corpusId: journalCopyCorpusId(bundle), authContext: grant.authContext, bundle });
-    // The copy's receipt first, with the marker of the test started last (so that one still running gives none), whether or not this is the
-    // copy the client had: an import is always tested again. Then the list: a failure at any point leaves the journal closed, never open
-    // on a copy no cold test passed.
-    for (const name of [COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE]) await removeJournalFile(resolved, client.case_id, name);
     client.journal = { ...client.journal, corpus_id: result.corpus_id };
     await writeClientList(resolved, list, "the copy is in the client's case, but nothing uses it.");
     return { number, corpus_id: result.corpus_id, passages_verified: result.passages_verified, records_verified: result.records_verified };

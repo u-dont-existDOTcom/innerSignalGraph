@@ -88,7 +88,9 @@ A client's journal can inform their replies only through the session-use journal
    the next start; a withdrawal drops it at the next start. One of these commands, `--add-client` or a start changes the trial
    folder at a time; another one meanwhile is refused with a message, and can simply be run again. A command that ended without
    finishing (a crash, say) leaves its lock behind: the next one names the file, to be removed by hand once no runner-trial
-   command is running. A start holds the lock until its server has read the credentials.
+   command is running. One that has done its work and can't look at its lock, or remove it, names the file itself; only a lock file
+   that's gone already is let go in silence. A start holds the lock until its server has read the credentials, and stops that server
+   when the lock can't be let go then.
 2. **A published copy.** The client's journal copy in their runner case, with an active generation published for session use.
    The copy step has two halves, each run only on your go:
    - **Where the journal lives**, the journal import's `export` (`npm run journal:import -- export --config ...`), with
@@ -123,8 +125,12 @@ A client's journal can inform their replies only through the session-use journal
      the export: every usable quotation against the stored bytes, and every record (deleted and revoked ones stay in a faithful
      copy, and no reader uses them), source text and index of its builder. The list then names the corpus. The same file can be
      imported again, after a failure or not: a copy already there is checked again, not written twice, and one an import left
-     unpublished is refused (export a new one). Every import, the same file again included, drops the copy's receipt and its test's marker,
-     so its cold test is run again; the earlier copy stays in the case, unused, until the client's Delete.
+     unpublished is refused (export a new one). **No receipt survives an import that starts:** once it holds the vault, and before it
+     writes anything there, it removes the client's cold-test receipt, whatever copy it names, and its test's marker, for good (their
+     folder synced). So an import that fails or is killed part-way leaves the journal closed, also where an earlier copy was in use:
+     the cold test is run again. When the two can't be removed for good, nothing is imported and the message gives the code (the
+     receipt may be gone by then, which only closes the journal); an import the running trial refuses leaves them. The earlier copy
+     stays in the case, unused, until the client's Delete.
 
      The sealed file stays where you put it: once imported it's no longer needed, and you may delete it. One that's left can't be
      opened any more once the client's Delete has removed their key.
@@ -195,15 +201,18 @@ journal's words. Confirming the consent again (with the copy's receipt in place)
 its copies, their journal folder (the key and the receipt) and everything drawn from it, and the list then names no copy and no
 server case of theirs (the consent stays as recorded), so the client starts afresh. The page says so under a client whose consent
 is withdrawn. A client's deletion is made under the trial folder's lock: while that can't be had, nothing is deleted and the page
-says why. Once the vault has deleted the case, it's deleted whatever becomes of the rest (the client's place on the list, their
-journal folder, what the running trial remembers, the case's run log): each is tried, the page forgets the case all the same and
-names what couldn't be cleared ("The case was deleted. Some leftovers on this computer remain: …; press Delete again to clear
-them."), and Delete again clears it. (The folder's lock, when it can't be let go, is named too: stop the trial and remove it by
-hand.) Cases that never read a journal, the owner's own included, are never stopped by the gate. With `--response-evidence`, every
-turn (your own included) is checked against the sources it rests on: the writer sees the turn's evidence, the whole checker returns
-the evidence review the program then checks word for word, a declared journal quote must be word for word in its source, and the
-store admits the reply only with its evidence. It needs the whole checker. A reply resting on the journal sends up to about 8,000
-more tokens of quotations to the writer and the checker, again at each repair.
+says why. Once the case is gone from the vault, it's deleted whatever becomes of the rest (the vault's own last steps, the client's
+place on the list, their journal folder, what the running trial remembers, the case's run log): each is tried, the page forgets the
+case all the same and names what couldn't be cleared ("The case was deleted. Some leftovers on this computer remain: …; press Delete
+again to clear them."), and Delete again clears it. A vault that fails with the case's file gone already (found by loading the case)
+leaves "some of the vault's own files for the case", also for your own case; one that fails with the case still there, or where that
+can't be seen, deletes nothing more, and the page says that Delete didn't finish. The journal folder counts as removed once the folder
+it was in is synced, so a power cut can't bring the key back. (The folder's lock, when it can't be looked at or removed, is named too:
+stop the trial and remove it by hand.) Cases that never read a journal, the owner's own included, are never stopped by the gate. With
+`--response-evidence`, every turn (your own included) is checked against the sources it rests on: the writer sees the turn's evidence,
+the whole checker returns the evidence review the program then checks word for word, a declared journal quote must be word for word in
+its source, and the store admits the reply only with its evidence. It needs the whole checker. A reply resting on the journal sends up
+to about 8,000 more tokens of quotations to the writer and the checker, again at each repair.
 
 ## Providers
 

@@ -1,8 +1,7 @@
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { loadRunnerRules, runnerTrialDirectory } from "./released-rules.mjs";
-import fs from "node:fs/promises";
 import { RUNNER_LOG_FILE, createRunnerLogWriter, runnerClientLogFile, runnerLogFromRecord } from "./run-log.mjs";
-import { clientJournalFolder, forgetClientCopy } from "./clients.mjs";
+import { forgetClientCopy, removeClientJournalFolder } from "./clients.mjs";
 import { acquireTrialFolderLock } from "./folder-lock.mjs";
 import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
@@ -127,34 +126,48 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
     onEvent: hub.publish,
     now
   });
+  const loadExisting = async (caseId, authContext) => {
+    try {
+      return await (typeof privateCaseSource.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource.load(caseId));
+    } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
+  };
+  // The vault removes a case's file before its own last steps (what else names the case, then the syncs), so its deletion can fail with the
+  // case gone already: that is found by loading the case, never by the error. A case that's gone is deleted, with the vault's own cleanup
+  // named among what's left (deleting again finishes it); how much the vault had removed by then isn't known. Short of that certainty
+  // (the case is still there, or can't be looked at), and for a caller the vault refused, whose request deleted nothing, the error stands.
+  const goneAllTheSame = async (error, caseId, authContext) => {
+    if (error?.code === "PRIVATE_CASE_ACCESS_DENIED") return false;
+    try { return await loadExisting(caseId, authContext) === null; } catch { return false; }
+  };
+  const deleteFromVault = async (caseId, ...rest) => {
+    try { return await privateCaseSource.deletePrivateCase(caseId, ...rest); } catch (error) {
+      if (!(await goneAllTheSame(error, caseId, ...rest))) throw error;
+      return withCleanupLeft({ case_id: caseId, case_file_removed: true }, ["VAULT_CLEANUP"]);
+    }
+  };
   // "Delete this case" of a client, once it's its turn in the case's queue: under the trial folder's lock, which every command takes, the
   // case and its journal copies go from the vault; then the client list names neither the copy nor the server case it came from, so a
   // cold test still running stops and another server case can be theirs; and their journal folder goes (their key for journal copies, their
-  // copy's cold-test receipt and its test's marker). Without the lock nothing is deleted. Once the vault's part is done the case is deleted,
-  // whatever becomes of the rest: what couldn't be cleared is named in the result, and deleting again clears it (the vault's deletion finds
-  // nothing of the case any more and goes on).
-  const deletingSource = clientCases.size === 0 || !trialDirectory ? privateCaseSource : Object.create(privateCaseSource, { deletePrivateCase: { value: async (caseId, ...rest) => {
-    if (!clientCases.has(caseId)) return privateCaseSource.deletePrivateCase(caseId, ...rest);
+  // copy's cold-test receipt and its test's marker). Without the lock nothing is deleted. Once the case is gone from the vault it is
+  // deleted, whatever becomes of the rest: what couldn't be cleared is named in the result, and deleting again clears it (the vault's
+  // deletion finds nothing of the case any more and goes on). The owner's own case has the vault's part alone.
+  const deletingSource = Object.create(privateCaseSource, { deletePrivateCase: { value: async (caseId, ...rest) => {
+    if (!clientCases.has(caseId) || !trialDirectory) return deleteFromVault(caseId, ...rest);
     const lock = await acquireTrialFolderLock(trialDirectory, { waitMs: DELETE_LOCK_WAIT_MS });
     let deleted;
-    try { deleted = await privateCaseSource.deletePrivateCase(caseId, ...rest); } catch (error) {
+    try { deleted = await deleteFromVault(caseId, ...rest); } catch (error) {
       await lock.release().catch(() => {});
       throw error;
     }
     const left = [];
     await clearOrName(left, "JOURNAL_LIST", () => forgetClientCopy(trialDirectory, caseId));
-    await clearOrName(left, "JOURNAL_FOLDER", () => fs.rm(clientJournalFolder(trialDirectory, caseId), { recursive: true, force: true }));
+    await clearOrName(left, "JOURNAL_FOLDER", () => removeClientJournalFolder(trialDirectory, caseId));
     await clearOrName(left, "FOLDER_LOCK", () => lock.release());
     return withCleanupLeft(deleted, left);
   } } });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
   const controller = createPrivateTherapyTurnController({ privateCaseSource: deletingSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
     ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: 4000 } } : {}), ...(evidenceOn && journalGate ? { journalEvidenceProvider: journalGate } : {}) });
-  const loadExisting = async (caseId, authContext) => {
-    try {
-      return await (typeof privateCaseSource.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource.load(caseId));
-    } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
-  };
   const logWriters = new Map();
   const logWriterFor = (caseId) => {
     const fileName = clientCases.has(caseId) ? runnerClientLogFile(caseId) : RUNNER_LOG_FILE;

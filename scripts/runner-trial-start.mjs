@@ -44,7 +44,7 @@ import { RESPONSE_EVIDENCE_SETTING } from "../src/core/on-off-setting.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { MAX_RUNNER_CLIENTS, journalConsentCurrent, journalConsentState, readRunnerClients, syncFolder, validateClientLabel, writeRunnerClients } from "../src/runner-trial/clients.mjs";
-import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock } from "../src/runner-trial/folder-lock.mjs";
+import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import {
   RUNNER_RULES_ROOT,
   RUNNER_TRIAL_CLIENT_TOKENS_SETTING,
@@ -280,8 +280,7 @@ export async function acquireTrialFolderLock(home, { pid = process.pid, waitMs =
   try { return await acquireFolderLock(home, { pid, waitMs }); } catch (error) { throw asStartError(error); }
 }
 export async function withTrialFolderLock(home, operation, { pid = process.pid, waitMs = COMMAND_LOCK_WAIT_MS } = {}) {
-  const held = await acquireTrialFolderLock(home, { pid, waitMs });
-  try { return await operation(); } finally { await held.release(); }
+  try { return await withFolderLock(home, operation, { pid, waitMs }); } catch (error) { throw asStartError(error); }
 }
 
 const newCaseKeys = () => ({ routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") });
@@ -604,11 +603,14 @@ async function main(argv) {
   const resolvedHome = checkTrialHome(home);
   await privateFolder(resolvedHome, "The trial folder");
   const startLock = await acquireTrialFolderLock(resolvedHome);
-  try {
-    return await startServer({ options, home: resolvedHome, commands, claudeConfigDir, startLock });
-  } finally {
-    await startLock.release();
+  let code;
+  try { code = await startServer({ options, home: resolvedHome, commands, claudeConfigDir, startLock }); } catch (error) {
+    // What stopped the start is what's told, whether or not the lock could be let go.
+    await startLock.release().catch(() => {});
+    throw error;
   }
+  await startLock.release();
+  return code;
 }
 
 async function startServer({ options, home, commands, claudeConfigDir, startLock }) {
@@ -651,8 +653,13 @@ async function startServer({ options, home, commands, claudeConfigDir, startLock
     });
   }
   const ready = await untilReady(options.port, exited, 120_000);
-  // The server has read its credentials once it answers (or it stopped): the folder is free again for other commands.
-  await startLock.release();
+  // The server has read its credentials once it answers (or it stopped): the folder is free again for other commands. A lock that can't
+  // be let go would keep them all out while the trial runs, a withdrawal of a journal consent included, so it isn't run like that.
+  try { await startLock.release(); } catch (error) {
+    if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
+    await exited;
+    throw error;
+  }
   if (ready.timedOut) {
     console.error(`The server didn't answer on port ${options.port} within two minutes; it was stopped.`);
     child.kill("SIGTERM");

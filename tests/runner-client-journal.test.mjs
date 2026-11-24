@@ -567,6 +567,63 @@ test("Delete with something it can't clear: the case is told as deleted, the run
   assert.deepEqual(page.said, []);
 });
 
+test("Delete when the vault fails: with the case gone by then it's told as deleted, the runtime, the list, the folder, the log and the page forget it, the page names the vault's own files, and Delete again clears them; with the case still there, nothing is forgotten and the page says what it said before", async (t) => {
+  const j = await journalTrial(t);
+  let vaultFails = null;
+  const { trial, base } = await j.serve({ ...j.service, deletePrivateCase: (...args) => (vaultFails ?? j.service.deletePrivateCase)(...args) });
+  assert.equal((await respond(base, j.clientA, "exchange-vault-1")).json.closing ?? null, null);
+  assert.ok(journalItems(packetOf(lastRequest(j.calls, "W"))).length >= 1);
+  await trial.flushLogs();
+  const folder = clientJournalFolder(j.home, j.clientA);
+  const log = path.join(j.home, `runner-log-${j.clientA}.jsonl`);
+  const locators = path.join(j.home, "vault", ".artifact-locators");
+  const journalOf = async () => (await readRunnerClients(j.home)).clients[0].journal;
+  const page = await deletingPage(t, base, { caseId: j.clientA, kind: "client", number: 1, label: "Synthetic client one" });
+
+  // The case still there: the page says why Delete didn't finish, and everything is as it was.
+  vaultFails = async () => { throw Object.assign(new Error("Synthetic words of the vault."), { code: "SYNTHETIC_VAULT_ERROR" }); };
+  await page.press();
+  vaultFails = null;
+  assert.deepEqual([page.answers.at(-1)[0], page.said.splice(0)], [500, ["Delete didn't finish: Synthetic words of the vault."]]);
+  assert.deepEqual(page.shown(), ["A synthetic message on the page."]);
+  assert.equal((await j.record(j.clientA)).runtime_turns.length, 1);
+  assert.equal((await journalOf()).corpus_id, CORPUS);
+  for (const kept of [path.join(folder, COLD_TEST_RECEIPT_FILE), log]) await fs.readFile(kept);
+
+  // The vault's own store fails at a file that names the case, with the case's file removed by then.
+  const named = (await fs.readdir(locators)).length;
+  assert.ok(named >= 1);
+  const { unlink } = fs;
+  const mocked = t.mock.method(fs, "unlink", async (file) => {
+    if (path.dirname(file) === locators) throw Object.assign(new Error("Synthetic words."), { code: "EIO" });
+    return unlink.call(fs, file);
+  });
+  await page.press();
+  mocked.mock.restore();
+  const [status, { deleted, caseFileRemoved, cleanupLeft }] = page.answers.at(-1);
+  assert.deepEqual([status, deleted, caseFileRemoved, cleanupLeft], [200, true, true, ["VAULT_CLEANUP"]]);
+  assert.deepEqual(page.said.splice(0), ["Conversation with 1. Synthetic client one. The case was deleted. Some leftovers on this computer remain: some of the vault's own files for the case; press Delete again to clear them."]);
+  assert.deepEqual(page.shown(), ["This case was deleted"]);
+  await assert.rejects(j.record(j.clientA), { code: "PRIVATE_CASE_NOT_FOUND" });
+  assert.equal((await fs.readdir(locators)).length, named, "what the vault couldn't remove");
+  assert.deepEqual(Object.keys(await journalOf()).sort(), ["consent", "corpus_id"]);
+  assert.equal((await journalOf()).corpus_id, null);
+  for (const gone of [folder, log]) await assert.rejects(fs.readFile(gone), { code: "ENOENT" });
+  // The runtime remembers nothing of the case's journal: a new message is answered, though the gate is closed.
+  const fresh = await respond(base, j.clientA, "exchange-vault-2", "A synthetic new message.");
+  assert.deepEqual([fresh.status, fresh.json.answer, fresh.json.closing ?? null], [200, "What makes asking hard for you?", null]);
+  await trial.flushLogs();
+
+  // Delete again clears what the vault had left too, and again, with nothing left, is as good: nothing more is said.
+  for (const removed of [true, false]) {
+    await page.press();
+    const [again, answer] = page.answers.at(-1);
+    assert.deepEqual([again, answer.deleted, answer.caseFileRemoved, Object.hasOwn(answer, "cleanupLeft")], [200, true, removed, false]);
+    assert.deepEqual(await fs.readdir(locators), []);
+  }
+  assert.deepEqual(page.said, []);
+});
+
 test("what the page says Delete left, from the server's codes alone, in fixed words", async (t) => {
   const j = await journalTrial(t, { receipt: "none" });
   const { base } = await j.serve();
@@ -574,6 +631,7 @@ test("what the page says Delete left, from the server's codes alone, in fixed wo
   const words = vm.runInNewContext(`${app.slice(app.indexOf("// runner-trial-page:start"), app.indexOf("// runner-trial-page:end"))}\n;runnerLeftoversText`, { TextDecoder });
   const saying = (left) => `The case was deleted. Some leftovers on this computer remain: ${left}; press Delete again to clear them.`;
   for (const [codes, left] of [
+    [["VAULT_CLEANUP"], "some of the vault's own files for the case"],
     [["JOURNAL_LIST"], "their journal copy's place on the client list"],
     [["JOURNAL_FOLDER"], "their journal folder (their key for journal copies and the cold-test receipt)"],
     [["FOLDER_LOCK"], "the trial folder's lock (stop the trial and remove .trial-folder.lock by hand first)"],
