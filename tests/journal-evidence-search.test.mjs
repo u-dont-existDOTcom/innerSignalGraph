@@ -117,6 +117,10 @@ for (const index of ALL) test(`a stop word of one language that is a word of the
 
 test("everyday words of both languages that aren't content are left out, and a summer isn't", async (t) => {
   const { find, texts } = await journal(t, { paragraphs: [...countedParagraphs(60), "Un bel été au bord de la mer.", "aujourd hui quelqu un", "not no nor cannot didnt"] });
+  // Typed without its apostrophe, such a word is one too, unless that makes another word of it.
+  assert.deepEqual(searchedBy(await find("im here, ive had it, youre what theyve got and thats all, whos there, hes off, shes out, itll do, we wouldve")), ["got"]);
+  assert.deepEqual(searchedBy(await find("jai vu quil y etait, cest tout, cetait aujourdhui, quelquun et quon")), ["vu"]);
+  assert.deepEqual(searchedBy(await find("she was ill in the shed, as well as wed")), ["ill", "shed", "wed", "well"].map(formsReadingTerm).sort());
   for (const query of ["not no nor cannot", "I didnt, we couldnt, it isnt, they dont", "aujourd'hui, quelqu'un", "jusqu'à présent quoiqu'il"]) {
     const words = searchedBy(await find(query));
     for (const word of ["not", "no", "nor", "cannot", "didnt", "couldnt", "isnt", "dont", "aujourd", "hui", "quelqu", "quoiqu", "didn", "couldn"]) assert.equal(words.includes(word), false, `${word} in: ${query}`);

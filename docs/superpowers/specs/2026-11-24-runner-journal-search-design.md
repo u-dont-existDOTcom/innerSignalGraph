@@ -37,8 +37,9 @@ stays as it is. A person's message is whole sentences, not chosen search words, 
 **Stop words** are left out as the message writes them (French also without its accents), never by how the word list reads them: it reads
 "shoulder" as *should*, "care" as the French *car*, "toy" as *toi* and "mois" as *moi*. A word it reads like a stop word's is looked up as
 written, with its plural or singular, since its quotes in the word list are mostly the stop word's. They are the quote search's English and
-French ones, with the English negations (written as one word or without their apostrophe) and what a French apostrophe leaves behind
-("aujourd", "hui"), and without "été", which is also summer. A stop word of one language that is an ordinary word of the other
+French ones, with the English negations, what is typed without its apostrophe where that isn't another word ("im", "dont", "jai", not "ill"
+or "shed"), and what a French apostrophe leaves behind ("aujourd", "hui"), and without "été", which is also summer. An English negation
+written as one word ("couldn't") is left out whole. A stop word of one language that is an ordinary word of the other
 (`ALSO_ENGLISH`: "son", "car", "aura", "pendant" and others; `ALSO_FRENCH`: "but", "an", "or", "ours") is left out only in a message clearly
 written in its own language (at least two other words of its list, and more than of the other list): "my son" is searched, the "son" of "il a
 pris son vélo et le mien" isn't.

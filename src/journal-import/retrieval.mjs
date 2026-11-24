@@ -91,11 +91,12 @@ function inTimeWindow(intervals, { from, to, include_unknown: includeUnknown }) 
 
 // The stop words of an evidence search are left out as the message writes them, never by how the word list reads them: it reads "shoulder"
 // as it reads "should", and "care" as it reads the French "car". They are the quote search's English and French ones, with the English
-// negations (also typed without their apostrophe) and what a French apostrophe leaves behind, and without "été", which is also summer.
-// French is also typed without its accents, so its words count without them too; a word that has an accent counts only as it is ("même" is
-// one, "sûr" isn't for "sur").
-const ENGLISH_STOPWORDS = new Set([...QUOTE_STOPWORDS, ..."not no nor cannot aint arent cant couldnt didnt doesnt dont hadnt hasnt havent isnt mustnt neednt shouldnt wasnt werent wont wouldnt".split(" ")]);
-const FRENCH_STOPWORDS_TYPED = new Set([...FRENCH_STOPWORDS, ..."aujourd hui presqu quelqu quoiqu".split(" ")]
+// negations, what is typed without its apostrophe where that isn't another word ("im" and "jai", not "ill" or "shed"), and what a French
+// apostrophe leaves behind, and without "été", which is also summer. French is also typed without its accents, so its words count without
+// them too; a word that has an accent counts only as it is ("même" is one, "sûr" isn't for "sur").
+const ENGLISH_STOPWORDS = new Set([...QUOTE_STOPWORDS, ...("not no nor cannot aint arent cant couldnt didnt doesnt dont hadnt hasnt havent isnt mightnt mustnt neednt shouldnt wasnt werent wont wouldnt "
+  + "im ive youre youve youd youll hes shes itd itll weve theyre theyve theyd theyll thats thatll theres heres whats wheres whos hows couldve shouldve wouldve").split(" ")]);
+const FRENCH_STOPWORDS_TYPED = new Set([...FRENCH_STOPWORDS, ..."aujourd hui presqu quelqu quoiqu aujourdhui quelquun jai javais cest cétait quil quils quon".split(" ")]
   .filter((word) => word !== "été").flatMap((word) => [word, foldAccents(word)]));
 // Stop words of one language that are ordinary words of the other, which a message may be about: a son, a car or an aura in English; a
 // goal ("but"), a year or a bear ("ours") in French. Each is left out only in a message clearly written in its own language: at least two
