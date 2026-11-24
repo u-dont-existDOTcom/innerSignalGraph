@@ -119,8 +119,7 @@ const TIMED_OUT = Symbol("timed out");
 async function withinReplyWait(search, waitMs) {
   const started = performance.now();
   let timer;
-  // One that fails after it was left behind is nobody's to hear of.
-  search.catch(() => {});
+  // One that fails after it was left behind is nobody's to hear of: the race has heard it.
   try {
     const part = await Promise.race([search, new Promise((resolve) => { timer = setTimeout(resolve, waitMs, TIMED_OUT); })]);
     return { part, milliseconds: Math.round(performance.now() - started) };

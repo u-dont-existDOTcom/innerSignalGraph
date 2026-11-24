@@ -672,7 +672,8 @@ test("a question whose search takes longer than a reply waits, or that a model r
     const value = await usual();
     return request.stage === "cold_consumer" && numberOf(packet) === 2 ? { ...value, evidence_ids: ["src:journal:99"] } : value;
   } });
-  assert.deepEqual([entryOf(await run(citing, { questions: FEW }), 2).result], ["wrong"]);
+  const cited = await run(citing, { questions: FEW });
+  assert.deepEqual([entryOf(cited, 2).result, entryOf(cited, 2).left_out, cited.report.left_out, cited.report.wrong], ["wrong", null, { timed_out: 0, refused: 0 }, 1]);
   // Of the whole file: one in ten, of both kinds together.
   const refusedMany = (count) => run(refusing("cold_consumer", numbers(count)), slow([PLANTS + 20]));
   assert.deepEqual([(await refusedMany(7)).report.not_met, (await refusedMany(8)).report.not_met], [[], ["too_many_left_out"]]);
