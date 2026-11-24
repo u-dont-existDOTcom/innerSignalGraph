@@ -267,7 +267,7 @@ const makeItem = (id, kind, actor, audience, exactText, locator, at = null, supp
   excerpt_sha256: sha256Text(exactText), excerpt_bytes: Buffer.byteLength(exactText), exact_excerpt: locator.kind === "transcript_turn" ? null : exactText, locator,
   ...(suppliedBy ? { supplied_by: structuredClone(suppliedBy) } : {})
 });
-export function buildResponseEvidenceSourceItems(record, { journalItems = [], inbound = null, lineageRootId = null, journalAvailable = true } = {}) {
+export function buildResponseEvidenceSourceItems(record, { journalItems = [], inbound = null, lineageRootId = null } = {}) {
   const projection = projectCommunicationState(record);
   // The normal context projection lists 25 entries. Source classification must also resolve older referenced turns.
   const sourceProjection = projectCommunicationState(record, { listedItemsLimit: Math.max(25, record.raw_transcript.length
@@ -313,14 +313,14 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
   }
   const deliveredCandidates = new Set(sourceProjection.confirmed_or_reported_client_outbound.filter((entry) => entry.subject.kind === "candidate").map((entry) => entry.subject.candidate_id));
   const ownLineage = lineageIds(record, lineageRootId);
-  // A draft written with a journal quotation in view may hold its words, and so may every version of it. It is a source only where the
-  // journal is one: a snapshot without it (a turn that gets none, a retrieval that failed or was refused) leaves such a draft out.
+  // A draft written with a journal quotation in view may hold its words, and so may every version of it, so it is never a source: the
+  // journal's words are in a snapshot through its own retrieval, each with its place and receipt, or not at all.
   const withQuotation = new Set((record.response_evidence_snapshots ?? []).filter((entry) => entry.source_items.some((item) => item.kind === "journal_quotation")).map((entry) => entry.id));
   const journalRoots = new Set((record.candidate_responses ?? []).filter((entry) => withQuotation.has(entry.metadata?.response_evidence?.snapshot_id)).map((entry) => entry.root_candidate_id));
   for (const candidate of record.candidate_responses ?? []) {
     if (candidate.status === "sent" || deliveredCandidates.has(candidate.id)) continue;
     if (ownLineage.has(candidate.id)) { recordOmission(sourceOmissions, "reviewed_lineage_draft"); continue; }
-    if (!journalAvailable && journalRoots.has(candidate.root_candidate_id)) { recordOmission(sourceOmissions, "draft_written_with_the_journal"); continue; }
+    if (journalRoots.has(candidate.root_candidate_id)) { recordOmission(sourceOmissions, "draft_written_with_the_journal"); continue; }
     items.push(makeItem(`src:draft:${candidate.id}:v${candidate.version}`, "unsent_draft", "assistant", "supervisor", candidate.exact_text, { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version }, candidate.created_at));
   }
   for (const entry of record.supervisor_artifacts ?? []) {
@@ -407,8 +407,7 @@ export function buildResponseEvidenceSnapshot(record, input, { createdAt, priorJ
     normalized.journal.budget.used_bytes = costs.reduce((sum, cost) => sum + cost.bytes, 0);
     normalized.journal.budget.used_tokens = costs.reduce((sum, cost) => sum + cost.tokens, 0);
   }
-  const sources = buildResponseEvidenceSourceItems(record, { journalItems: normalized.source_items, inbound, lineageRootId: input.lineageRootId,
-    journalAvailable: normalized.journal.availability === "available" });
+  const sources = buildResponseEvidenceSourceItems(record, { journalItems: normalized.source_items, inbound, lineageRootId: input.lineageRootId });
   // Reserve one inventory slot for the trusted retrieval record; a caller can supply only quotations.
   if (sources.source_items.length >= 200) {
     sources.source_items.shift();

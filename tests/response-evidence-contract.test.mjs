@@ -465,7 +465,7 @@ test("a journal note is strict, and no other kind of source may hold one", () =>
   assert.deepEqual([...JOURNAL_NOTE_CUE_KINDS], [...QUOTE_CUE_KINDS]);
 });
 
-test("an unsent draft written with a journal quotation in view, and every version of it, is a source only where the journal is one", () => {
+test("an unsent draft written with a journal quotation in view, and every version of it, is never a source", () => {
   const { r, snapshot } = freezeJournal(journalNote());
   r.response_evidence_snapshots = [snapshot];
   const draft = (id, root, evidence = null) => ({ id, version: r.candidate_responses.length + 1, root_candidate_id: root, parent_candidate_id: id === root ? null : root, exact_text: `The draft ${id}.`, status: "superseded",
@@ -476,8 +476,8 @@ test("an unsent draft written with a journal quotation in view, and every versio
     const frozen = buildResponseEvidenceSnapshot(r, { ...input(), snapshotId: "snapshot:later", journal }, { createdAt: NOW });
     return [frozen.source_items.filter((item) => item.kind === "unsent_draft").map((item) => item.locator.candidate_id), frozen.communication_projection.omitted.source_items];
   };
-  assert.deepEqual(drafts({ availability: "available", retrieval_status: "no_match" }), [["with", "repaired", "apart", "older"], []]);
-  for (const journal of [{ availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: "journal_withheld", count: 1 }] }, { availability: "unavailable", retrieval_status: "failed" }, { availability: "not_authorized" }, null]) {
+  for (const journal of [{ availability: "available", retrieval_status: "no_match" }, { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: "journal_withheld", count: 1 }] },
+    { availability: "unavailable", retrieval_status: "failed" }, { availability: "not_authorized" }, null]) {
     assert.deepEqual(drafts(journal), [["apart", "older"], [{ reason: "draft_written_with_the_journal", count: 2 }]], JSON.stringify(journal));
   }
 });

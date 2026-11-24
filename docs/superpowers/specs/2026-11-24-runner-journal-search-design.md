@@ -100,8 +100,8 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   death, as unclear or not at all. A decision that can't be made is a failed retrieval. A journal read earlier in the case still needs the
   open gate.
 - **Earlier drafts.** An unsent draft of an earlier turn that was written with a quotation in view, or any version of it, may hold the
-  journal's words. It is a source only in a snapshot whose own journal part is available; every other one leaves it out
-  (`draft_written_with_the_journal`), whatever the reason it has no journal.
+  journal's words, so no snapshot has it as a source (`draft_written_with_the_journal`), whether its turn gets the journal or not: the
+  journal's words are in a snapshot through its own retrieval, or not at all.
 - **When only the checker reads it.** A draft written with quotations in view, before anyone had read the conversation as one about wanting to
   die, isn't sent once this turn's checker does: the program adds `PROGRAM_JOURNAL_IN_CRISIS` (high), and the repair goes on with a snapshot
   frozen again without its quotations; with no further snapshot left (three a turn), the turn ends without a checked reply, so its fixed

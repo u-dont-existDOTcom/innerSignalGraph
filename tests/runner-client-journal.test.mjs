@@ -735,10 +735,12 @@ test("a repair written from a draft that had the journal, while its own retrieva
   assert.match(drafts[1], /^Not shown: /u);
 });
 
-test("a turn that gets no journal isn't given an earlier turn's unsent draft that was written with one", async (t) => {
-  // The first turn's draft quotes the journal and is stopped; its repair, which quotes nothing, is sent. Then the person says they want to die.
-  const CW = (count, request) => ({ ...wholeChecker(count, request), findings: count === 1 ? [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }] : [], repair_induced_checks: count === 2 ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] });
-  for (const [name, second, shown] of [["wants to die", wantsToDieReading, false], ["quiet", quietReader, true]]) {
+test("no later turn is given an earlier turn's unsent draft that was written with the journal in view, a turn that gets none or one that has it", async (t) => {
+  // The first turn's draft quotes the journal and is stopped; its repair, which quotes nothing, is sent. Then the person says they want to
+  // die: to the reader, or only to the checker, after a search that found nothing.
+  for (const [name, second, level, message] of [["wants to die", wantsToDieReading, "none", MESSAGE], ["the checker alone reads it", quietReader, "wants_to_die", "I can't do this any more."], ["quiet", quietReader, "none", MESSAGE]]) {
+    const CW = (count, request) => ({ ...wholeChecker(count, request), level: count > 2 ? level : "none", findings: count === 1 ? [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }] : [],
+      repair_induced_checks: request.user.includes("previous_candidate") ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] });
     const j = await journalTrial(t, { workers: script({ CW, R1: (count) => (count === 1 ? quietReader() : second()), W: (count, request) => (count === 1 ? writer(count, request) : { reply: "I'm here with you.", answered_level: "unclear", quotes: [] }),
       "W-repair": () => ({ reply: "What makes asking hard for you?", answered_level: "none", quotes: [] }) }) });
     const { run } = j.turns();
@@ -746,12 +748,12 @@ test("a turn that gets no journal isn't given an earlier turn's unsent draft tha
     const [stopped] = (await j.record(j.clientA)).candidate_responses;
     const quoted = journalItems(packetOf(j.calls.find((call) => call.role === "W").request))[0].exact_excerpt;
     assert.ok(stopped.exact_text.includes(quoted) && stopped.status !== "sent");
-    assert.equal((await run("exchange-unsent-2", "I can't do this any more.")).deliveryKind, "candidate", name);
-    for (const role of ["W", "CW"]) {
-      const request = lastRequest(j.calls, role), packet = packetOf(request);
-      assert.equal(packet.response_evidence.source_items.some((item) => item.kind === "unsent_draft" && item.exact_excerpt === stopped.exact_text), shown, `${name}: ${role}`);
-      assert.deepEqual(packet.response_evidence.communication_projection.omitted.source_items, shown ? [] : [{ reason: "draft_written_with_the_journal", count: 1 }], `${name}: ${role}`);
-      if (!shown) assert.equal(holdsWords(request, quoted), false, `${name}: ${role} gets no words of the journal`);
+    const before = j.calls.length;
+    assert.deepEqual([(await run("exchange-unsent-2", message)).answer, j.calls.slice(before).map((call) => call.role).sort()], ["I'm here with you.", ["CW", "R1", "R3", "W"]], name);
+    for (const { request } of j.calls.slice(before).filter((call) => ["W", "CW"].includes(call.role))) {
+      const { response_evidence: evidence } = packetOf(request);
+      assert.deepEqual([evidence.source_items.some((item) => item.kind === "unsent_draft"), evidence.communication_projection.omitted.source_items], [false, [{ reason: "draft_written_with_the_journal", count: 1 }]], name);
+      assert.equal(holdsWords(request, quoted), journalItems({ response_evidence: evidence }).some((item) => item.exact_excerpt === quoted), `${name}: its words only where the journal gave them`);
     }
   }
 });
