@@ -228,6 +228,41 @@ test("once a case has read its journal, a closed gate stops the whole case: the 
   assert.equal(again.json.closing ?? null, null, "with the consent confirmed again, the case replies");
 });
 
+test("a provisional reply in a case that has read its journal goes out only while the gate is open: withdrawn during the crisis reader's call, the emergency line shows instead", async (t) => {
+  let home = null;
+  const PROVISIONAL = "I'm here with you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK.";
+  const crisis = async (count) => {
+    if (count === 1) return quietReader();
+    // The second turn's crisis reader reads someone who has acted, gives a provisional reply, and the consent is withdrawn meanwhile.
+    await setJournalConsent({ home, number: 1, action: "withdraw" });
+    return { ...quietReader(), level: "acted_or_about_to", reason: "says they took something", provisional_reply: PROVISIONAL };
+  };
+  const j = await journalTrial(t, { workers: script({ R1: crisis }) });
+  home = j.home;
+  const { base } = await j.serve();
+  assert.equal((await respond(base, j.clientA, "exchange-prov-1")).json.closing ?? null, null, "the first turn reads the journal and replies");
+  const second = await respond(base, j.clientA, "exchange-prov-2", "I took all my pills an hour ago.");
+  assert.deepEqual([second.status, second.json.closing?.reason_code], [200, "checks_failed"]);
+  const turn = (await j.record(j.clientA)).runtime_turns.at(-1);
+  assert.equal(turn.provisional ?? null, null, "no provisional reply was recorded as shown");
+  assert.ok(turn.emergency_line_shown_at, "the fixed emergency line was shown instead");
+  assert.equal(JSON.stringify(second.json).includes(PROVISIONAL), false);
+});
+
+test("the gate reads the consent again last: a withdrawal that completes while it checks the copy and the receipt is seen", async (t) => {
+  const j = await journalTrial(t);
+  let reads = 0;
+  // The client list as the gate reads it: the consent stands at the first read and is withdrawn by the last.
+  const gate = createRunnerJournalGate({ trialDir: j.home, caseAccessService: j.service, clientsFor: async () => {
+    reads += 1;
+    const list = await readRunnerClients(j.home);
+    if (reads > 1) list.clients[0].journal.consent = { ...list.clients[0].journal.consent, withdrawn_at: "2026-11-24T12:00:00.000Z" };
+    return list;
+  } });
+  assert.equal(await gate.openNow({ caseId: j.clientA, authContext: j.caseAuthContexts.get(j.clientA) }), false);
+  assert.equal(reads, 2, "read before the checks and again after them");
+});
+
 test("the worker asks the gate itself at its last moment, after its own preparation: a withdrawal meanwhile stops the packet from leaving", async (t) => {
   let home = null;
   const sent = [];

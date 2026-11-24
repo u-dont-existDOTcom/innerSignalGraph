@@ -186,6 +186,11 @@ review's other findings are fixed too: the store's journal hold needs a case tha
 trial's record, outside the case, so the store can't evaluate it; the hold only ever stops a reply); the folder lock is never
 taken over by a command; a failed folder sync stops a command; and a deletion invalidates what the page had asked of the case.
 
+Codex's third review (24 Nov) found the same stop needed for a provisional reply, and two timing gaps; all fixed: a provisional reply
+in such a case is shown only while the gate is open (the fixed emergency line otherwise), the gate reads the consent again last,
+after the copy and the receipt, and a start holds the folder's lock until its server has read the credentials. It found the store's
+journal hold sound under the trial's trust boundary, since it can only ever stop a reply.
+
 Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on
 the owner's go each time; the import into the client's runner case checked against the export; the adapter for the trial's
 development credentials), and **the journal's cold test**. Running the cold test on a client's journal comes back to the owner

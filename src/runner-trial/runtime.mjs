@@ -442,7 +442,11 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     if (allowsProvisional && !levelsNow.includes(firstWordsLevel)) return stored;
     if (allowsProvisional && typeof reading.provisional_reply === "string") {
       const problems = provisionalProblems(reading.provisional_reply, { level: firstWordsLevel });
-      if (problems.length === 0) {
+      // A provisional reply is shown to the person, so in a case that has read its journal it goes out only while the gate is open
+      // (Codex's review 3); otherwise the fixed emergency line is shown, as when a provisional reply can't be shown.
+      if (problems.length === 0 && !(await journalGateAllows(caseId, null, authContext))) {
+        if (firstWordsLevel === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
+      } else if (problems.length === 0) {
         const checks = [...(firstWordsLevel === "acted_or_about_to" ? ["a_number"] : []), "numbers_known", "shape", "links", "detox"];
         await source("recordRunnerProvisional", [caseId, runtimeTurn.id, { exactText: reading.provisional_reply.trim(), checks }], authContext);
         emit(caseId, runtimeTurn.id, { type: "provisional", text: reading.provisional_reply.trim() });
@@ -1003,12 +1007,15 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   // Whether a case has read its journal only ever turns true while the case exists, so it is remembered (forgotten when the case is
   // deleted; the set is made where the runtime starts) and the record is read for it only until then. Without a gate (a trial
   // without clients) no case can read a journal.
-  async function assertJournalGate(caseId, responseEvidence, authContext) {
+  async function journalGateAllows(caseId, responseEvidence, authContext) {
     let read = journalCases.has(caseId) || caseReadJournal(null, responseEvidence);
     if (!read && journalGate) read = caseReadJournal(await loadRecord(caseId, authContext));
-    if (!read) return;
+    if (!read) return true;
     journalCases.add(caseId);
-    if (journalGate && await journalGate.openNow({ caseId, authContext })) return;
+    return Boolean(journalGate && await journalGate.openNow({ caseId, authContext }));
+  }
+  async function assertJournalGate(caseId, responseEvidence, authContext) {
+    if (await journalGateAllows(caseId, responseEvidence, authContext)) return;
     throw new RuntimeError("This case has read its client's journal, and the journal gate is closed.", { code: "JOURNAL_GATE_CLOSED" });
   }
 

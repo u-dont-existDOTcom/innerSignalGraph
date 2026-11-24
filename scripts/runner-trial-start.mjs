@@ -276,6 +276,12 @@ async function writePrivateFile(file, text) {
 // removes only its own lock. The running server holds it only while it starts.
 const LOCK_FILE = ".trial-folder.lock";
 export async function withTrialFolderLock(home, operation, { pid = process.pid } = {}) {
+  const held = await acquireTrialFolderLock(home, { pid });
+  try { return await operation(); } finally { await held.release(); }
+}
+
+// The lock itself, for a caller that holds it across more than one step (a start, until its server has read its credentials).
+export async function acquireTrialFolderLock(home, { pid = process.pid } = {}) {
   const lock = path.join(home, LOCK_FILE);
   const token = randomUUID();
   let handle;
@@ -289,15 +295,20 @@ export async function withTrialFolderLock(home, operation, { pid = process.pid }
       ? `A runner-trial command ended without finishing and left its lock. If no other runner-trial command is running, remove ${lock} and try again.`
       : "Another runner-trial command is changing the trial folder (a start, --add-client or --journal-consent). Try again when it has finished.");
   }
-  try {
-    await handle.writeFile(`${pid} ${token}\n`, "utf8");
-    await handle.sync();
-    return await operation();
-  } finally {
+  const release = async () => {
     await handle.close().catch(() => {});
     const current = await fsp.readFile(lock, "utf8").catch(() => "");
     if (current.trim().split(/\s+/u)[1] === token) await fsp.rm(lock, { force: true });
+  };
+  try {
+    await handle.writeFile(`${pid} ${token}\n`, "utf8");
+    await handle.sync();
+  } catch (error) {
+    await release();
+    throw error;
   }
+  let released = false;
+  return Object.freeze({ async release() { if (released) return; released = true; await release(); } });
 }
 
 const newCaseKeys = () => ({ routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") });
@@ -379,13 +390,15 @@ async function readClientList(home) {
 }
 
 // The trial's folder, its vault, its credentials and its settings file. Returns the paths, this start's tokens and the owner's case.
-export async function prepareTrialFolder({ home, provider }) {
+// `locked`: the caller already holds the folder's lock (a start holds it until its server has read the credentials).
+export async function prepareTrialFolder({ home, provider, locked = false }) {
   const resolved = checkTrialHome(home);
   await privateFolder(resolved, "The trial folder");
   const vault = path.join(resolved, "vault");
   await privateFolder(vault, "The trial's vault");
   const credentialsPath = path.join(resolved, "credentials.json");
-  return withTrialFolderLock(resolved, async () => {
+  const underLock = locked ? (operation) => operation() : (operation) => withTrialFolderLock(resolved, operation);
+  return underLock(async () => {
     const { clients } = await readClientList(resolved);
     const { token, caseId, clientTokens } = await prepareCredentials(credentialsPath, vault, clients);
     const settingsPath = path.join(resolved, `settings-${provider}.json`);
@@ -613,7 +626,20 @@ async function main(argv) {
   ];
   const claudeConfigDir = usesClaude(options.provider) ? process.env[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir() : null;
   if (claudeConfigDir !== null && !path.isAbsolute(claudeConfigDir)) throw new StartError(`${RUNNER_CLAUDE_CONFIG_DIR} must be an absolute path.`);
-  const prepared = await prepareTrialFolder({ home, provider: options.provider });
+  // The folder's lock is held from making this start's tokens until the server has read them (Codex's review 3): no other start,
+  // addition or consent change can rotate the credentials in between, which would leave the server refusing every request.
+  const resolvedHome = checkTrialHome(home);
+  await privateFolder(resolvedHome, "The trial folder");
+  const startLock = await acquireTrialFolderLock(resolvedHome);
+  try {
+    return await startServer({ options, home: resolvedHome, commands, claudeConfigDir, startLock });
+  } finally {
+    await startLock.release();
+  }
+}
+
+async function startServer({ options, home, commands, claudeConfigDir, startLock }) {
+  const prepared = await prepareTrialFolder({ home, provider: options.provider, locked: true });
   if (options.prepareOnly) {
     console.log(`Runner trial folder ready, server not started: ${prepared.home}`);
     console.log(`  vault ${prepared.vault}, credentials.json and ${path.basename(prepared.settingsPath)} (only you can read them).`);
@@ -652,6 +678,8 @@ async function main(argv) {
     });
   }
   const ready = await untilReady(options.port, exited, 120_000);
+  // The server has read its credentials once it answers (or it stopped): the folder is free again for other commands.
+  await startLock.release();
   if (ready.timedOut) {
     console.error(`The server didn't answer on port ${options.port} within two minutes; it was stopped.`);
     child.kill("SIGTERM");

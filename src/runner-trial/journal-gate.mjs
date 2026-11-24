@@ -61,16 +61,19 @@ export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor
     // current publication (generation, manifest, epoch). A case that has read its journal makes no model call and delivers nothing
     // while this is false (the trial's runtime), so a withdrawal, a lost or replaced receipt, a new publication without its own
     // receipt or a grant without the purpose stops everything of that case at once.
+    // The consent is read again last, after the copy's publication and the receipt, so that a withdrawal that completes while those
+    // are read is seen (Codex's review 3): what the caller then does (a worker's send, a delivery) follows with no further wait.
     async openNow({ caseId, authContext } = {}) {
       const client = await clientFor(caseId);
       if (!client || !journalConsentCurrent(client) || client.journal.corpus_id === null) return false;
-      const receipt = await readColdTestReceipt(trialDir, caseId);
-      if (!receipt || receipt.corpus_id !== client.journal.corpus_id) return false;
       let reference = null;
       try { ({ reference } = await caseAccessService.inspectJournalCorpus(caseId, client.journal.corpus_id, { requiredScope: "case:read", requiredPurpose: "session_use" }, authContext)); }
       catch { return false; }
       if (!reference?.active_generation) return false;
-      return coldTestReceiptMatches(receipt, { caseId, corpusId: client.journal.corpus_id, generation: reference.active_generation, manifestObjectId: reference.manifest_object_id, visibilityEpoch: reference.visibility_epoch });
+      const receipt = await readColdTestReceipt(trialDir, caseId);
+      if (!coldTestReceiptMatches(receipt, { caseId, corpusId: client.journal.corpus_id, generation: reference.active_generation, manifestObjectId: reference.manifest_object_id, visibilityEpoch: reference.visibility_epoch })) return false;
+      const last = await clientFor(caseId);
+      return journalConsentCurrent(last) && last.journal.corpus_id === client.journal.corpus_id;
     }
   });
 }

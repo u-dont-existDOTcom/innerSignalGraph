@@ -86,7 +86,7 @@ A client's journal can inform their replies only through the session-use journal
    the next start; a withdrawal drops it at the next start. One of these commands, `--add-client` or a start changes the trial
    folder at a time; another one meanwhile is refused with a message, and can simply be run again. A command that ended without
    finishing (a crash, say) leaves its lock behind: the next one names the file, to be removed by hand once no runner-trial
-   command is running.
+   command is running. A start holds the lock until its server has read the credentials.
 2. **A published copy.** The client's journal copy in their runner case, with an active generation published for session use.
    The copy step (an export on the server, on your go each time, and an import into the client's runner case checked against the
    export) **isn't built yet**, so no client has a copy.
@@ -102,7 +102,9 @@ Short of any of them, the turn's evidence records why (`journal_consent_missing`
 confirmation of the consent stands, the client list names the copy, the client's current grant opens it for session use, and a
 passing cold-test receipt names exactly the copy's current publication. It is asked when a turn starts, before every call of a
 reader, the writer, a checker or the repair (each retry included), by the worker itself at the last moment before its packet
-leaves, and before a reply is delivered. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
+leaves, before a provisional reply is shown (the fixed emergency line shows instead) and before a reply is delivered. The consent
+is read last in each check, so a withdrawal holds for everything that starts after it; a packet already past its last check, in
+the instant before it leaves, still goes. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
 grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check, also
 an approved one a restart's reconcile finds, because the case's drafts, findings, evidence and delivered replies may hold the
 journal's words. Confirming the consent again (with the copy's receipt in place) opens it; deleting the case removes the case,

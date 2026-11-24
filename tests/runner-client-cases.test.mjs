@@ -16,7 +16,7 @@ import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { RUNNER_TRIAL_CLIENT_TOKENS_SETTING, readRunnerTrialClientTokens } from "../src/runner-trial/switch.mjs";
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readRunnerClients, runnerCasesView, validateClientLabel, validateRunnerClients } from "../src/runner-trial/clients.mjs";
-import { addClient, parseArguments, prepareTrialFolder, setJournalConsent, withTrialFolderLock } from "../scripts/runner-trial-start.mjs";
+import { acquireTrialFolderLock, addClient, parseArguments, prepareTrialFolder, setJournalConsent, withTrialFolderLock } from "../scripts/runner-trial-start.mjs";
 
 // The runner trial's clients (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md; the owner's answer 1a to question
 // i73, 24 Nov 2026): a case per client in the trial's own vault, each client's own grant, the case chosen per conversation, and
@@ -353,5 +353,29 @@ test("no subprocess the server starts inherits a case token: the tokens leave it
   const serve = await fs.readFile(new URL("../src/cli/serve.mjs", import.meta.url), "utf8");
   assert.ok(serve.indexOf("scrubPrivateCaseTokens(process.env);") > serve.indexOf("await loadPrivateRuntimeAccessFromEnvironment("), "the server scrubs them right after reading them");
   assert.ok(serve.indexOf("scrubPrivateCaseTokens(process.env);") < serve.indexOf("await listenInnerSignalLoopback("), "before anything that starts a worker is built");
+});
+
+test("a start holds the folder's lock from making its tokens until its server has read them, so nothing rotates the credentials in between", async (t) => {
+  const { home } = await clientFolder(t, ["Synthetic client one"]);
+  const held = await acquireTrialFolderLock(home);
+  try {
+    // While the start holds it, it makes its tokens under it, and every other command is refused.
+    const prepared = await prepareTrialFolder({ home, provider: "codex", locked: true });
+    assert.equal(Object.keys(prepared.clientTokens).length, 1);
+    await assert.rejects(prepareTrialFolder({ home, provider: "codex" }), /Another runner-trial command is changing the trial folder/u);
+    await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), /Another runner-trial command/u);
+  } finally {
+    await held.release();
+  }
+  await held.release();
+  assert.deepEqual(await setJournalConsent({ home, number: 1, action: "confirm" }), { changed: true, state: "confirmed" }, "released once, idempotently");
+  const script = await fs.readFile(new URL("../scripts/runner-trial-start.mjs", import.meta.url), "utf8");
+  const main = script.slice(script.indexOf("async function main("), script.indexOf("if (process.argv[1] && import.meta.url"));
+  const at = (text) => { const index = main.indexOf(text); assert.ok(index >= 0, text); return index; };
+  assert.ok(at("await acquireTrialFolderLock(resolvedHome)") < at("prepareTrialFolder({ home, provider: options.provider, locked: true })"));
+  assert.ok(at("prepareTrialFolder({ home, provider: options.provider, locked: true })") < at("const ready = await untilReady("));
+  const ready = at("const ready = await untilReady(");
+  assert.ok(main.indexOf("await startLock.release();", ready) > ready, "released once the server answers");
+  assert.equal(main.slice(at("async function startServer("), ready).includes("startLock.release()"), false, "and not before");
 });
 
