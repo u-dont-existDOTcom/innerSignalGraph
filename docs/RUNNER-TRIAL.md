@@ -173,7 +173,7 @@ A client's journal can inform their replies only through the session-use journal
    question in ten is left out (its search took over four seconds, after which a reply goes without the journal, or Claude refused it);
    and the copy's publication is the same before and after. A miss is safe in use: the reply is then made from the conversation alone.
    Questions worded without their passages' words, which a word search can't find, and those that find nothing, are counted and shown, and
-   not required; a wrong answer to one counts, and they loosen nothing. This rule is yours to decide (below).
+   not required; a wrong answer to one counts, and they don't raise how many may be wrong. This rule is yours to decide (below).
 
    A test that starts removes the copy's receipt; only a pass gives a new one. Too many wrong answers, a malformed one, a file too small, a
    failed call, a key quote that doesn't fit, a part of the journal the reader can't give, a withdrawn consent or a deleted case leaves

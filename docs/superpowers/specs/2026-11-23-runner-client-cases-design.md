@@ -326,8 +326,9 @@ judge for every question, the printed numbers) holds in it.
     thirty judged to the questions of those two sorts; at least two thirds of each sort are right; at most one question in ten is left
     out; another company's model than the judge's, or a person, wrote the file; and the publication is the same before and after. The other
     questions are counted and shown, and not required. A wrong answer counts whatever its question; the share is of the answers to the
-    questions counted, so others added to a file loosen nothing, nor does an answer no one judged (a refusal, no words). The report keeps
-    retrieval (`found`) apart from answers (`right`), and names the points of the rule that aren't met.
+    questions counted, so others added to a file don't raise how many may be wrong, nor does an answer no one judged (a refusal, no words).
+    The questions left out are one in ten of the whole file; those of the 40 among them count as not right. The report keeps retrieval
+    (`found`) apart from answers (`right`), and names the points of the rule that aren't met.
   - **Why one wrong in thirty.** With none allowed, a consumer that errs on 1 to 3% of sixty answers fails 47 to 82% of runs, so a good copy
     would be tested until it passed. With two of sixty, such a copy passes 76 to 97% of runs, one whose answers are wrong 10% of the time
     8%, and one wrong 15% of the time 1% (wrong being two of at most three calls, of a judge that says wrong, each time it's asked, of nine

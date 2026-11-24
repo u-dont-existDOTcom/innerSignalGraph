@@ -10,7 +10,7 @@
 //   the journal answers (it is told which it doesn't, so a plant there would test nothing), and at least `caught` of those are judged wrong,
 //   and `caught_of_each_kind` of each kind (a judge that sees nothing of one kind could pass by the others);
 // - no more than `wrong` of the answers are wrong. A wrong answer counts whatever its question; the share is of the answers the judge judged
-//   to the two kinds of questions above, so the others, and answers no one judged, loosen nothing;
+//   to the two kinds of questions above, so the others, and answers no one judged, don't raise how many may be;
 // - at least `right` of each of those two kinds of questions are right;
 // - no more than `left_out` of the questions are left out: searched for longer than a reply waits, or refused by a model;
 // - another company's model than the judge's wrote the file, or a person did (the file says who): a key built on a misreading, or errors
