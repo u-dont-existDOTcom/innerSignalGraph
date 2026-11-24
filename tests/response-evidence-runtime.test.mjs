@@ -710,26 +710,31 @@ test("a repair whose turn gets no journal any more goes on without: the snapshot
 });
 
 test("a refresh of a turn's evidence carries no quotation over into a turn that gets no journal any more", async (t) => {
-  // The case changes while the turn's evidence is frozen, so it is frozen again before the writer is called; by then the turn gets no journal.
-  let withhold = null;
-  const env = await setup(t), h = hooked(env, { withheld: () => withhold });
-  const { item, found } = await publishedCorpus(env);
-  let changed = false;
-  const source = { ...h.source, async freezeResponseEvidence(...args) {
-    const frozen = await h.source.freezeResponseEvidence(...args);
-    if (!changed) {
-      changed = true;
-      withhold = "crisis_turn";
-      const state = await env.store.getCaseState(CASE);
-      state.current_episode = { ...(state.current_episode ?? {}), target: "A synthetic changed target." };
-      await env.store.saveCaseState(CASE, state).catch(() => {});
-    }
-    return frozen;
-  } };
-  await h.controller({ privateCaseSource: source, journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request()).catch(() => {});
-  const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
-  assert.deepEqual(quotationIds(snapshots[0]), ["src:journal:1"]);
-  for (const snapshot of snapshots.slice(1)) assert.deepEqual(quotationIds(snapshot), [], snapshot.revision_reason);
+  // The case changes while the turn's evidence is frozen, so it is frozen again before the writer is called. By then the turn gets no
+  // journal, or (the control) still does, and the refresh carries its quotation over.
+  for (const later of ["crisis_turn", null]) {
+    let withhold = null;
+    const env = await setup(t), h = hooked(env, { withheld: () => withhold });
+    const { item, found } = await publishedCorpus(env);
+    let changed = false;
+    const source = { ...h.source, async freezeResponseEvidence(...args) {
+      const frozen = await h.source.freezeResponseEvidence(...args);
+      if (!changed) {
+        changed = true;
+        withhold = later;
+        const state = await env.store.getCaseState(CASE);
+        state.updated_at = "2026-11-23T14:00:00.000Z";
+        await env.store.saveCaseState(CASE, state);
+      }
+      return frozen;
+    } };
+    await h.controller({ privateCaseSource: source, journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    const { response_evidence_snapshots: snapshots } = await assertDelivered(env.store);
+    assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), [["initial", ["src:journal:1"]], ["dependency_refresh", later ? [] : ["src:journal:1"]]], String(later));
+    const [writing] = env.calls;
+    assert.deepEqual([writing.stage, quotationIds(writing.responseEvidence.view).length], ["candidate", later ? 0 : 1], "the writer gets what the second one holds");
+    assert.equal(h.searches.length, 1);
+  }
 });
 
 test("a repair that may have no journal and no further snapshot isn't made: the turn ends as one without a checked reply", async (t) => {

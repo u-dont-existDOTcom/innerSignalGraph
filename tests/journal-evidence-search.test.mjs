@@ -108,6 +108,8 @@ for (const index of ALL) test(`a stop word of one language that is a word of the
     const words = searchedBy(await find(query));
     for (const word of ["car", "aura", "son", "ma", "pour", "elle", "ours", "but", "or", "an"]) assert.equal(words.includes(word), false, `${word} in: ${query}`);
   }
+  // One other word of a language doesn't say that a message is written in it.
+  for (const [query, word] of [["le son", "son"], ["the ours", "ours"]]) assert.ok(searchedBy(await find(query)).includes(word), query);
   // Typed without its accents a French stop word is one; with one it doesn't have, it isn't.
   assert.deepEqual(searchedBy(await find("meme apres etre avant")), []);
   assert.deepEqual(searchedBy(await find("je suis sûr")), ["sûr"]);
@@ -120,6 +122,7 @@ test("everyday words of both languages that aren't content are left out, and a s
     for (const word of ["not", "no", "nor", "cannot", "didnt", "couldnt", "isnt", "dont", "aujourd", "hui", "quelqu", "quoiqu", "didn", "couldn"]) assert.equal(words.includes(word), false, `${word} in: ${query}`);
   }
   assert.deepEqual(await texts("Je pense à cet été, au bord de la mer"), ["Un bel été au bord de la mer."]);
+  assert.deepEqual(await texts("C'était un été."), ["Un bel été au bord de la mer."], "searched by that word itself");
 });
 
 test("an English negation is left out whole, however its apostrophe is written", async (t) => {
