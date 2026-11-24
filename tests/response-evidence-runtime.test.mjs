@@ -593,12 +593,12 @@ test("a runtime that reads first is asked before anything is searched or frozen,
   assert.deepEqual(Object.keys(h.searches[0]).sort(), ["authContext", "caseId", "maximumBytes", "maximumTokens", "query"], "the message's own search is asked for as before");
 });
 
-test("the journal is searched for the whole message, and for at most its first 40,000 characters", async (t) => {
-  for (const [length, searched] of [[9_000, 9_000], [50_000, 40_000]]) {
+test("the journal is searched for the whole message, as long as one may be", async (t) => {
+  for (const length of [9_000, 40_000]) {
     const env = await setup(t), h = hooked(env);
     const userMessage = "What is happening for me now, after all of this? ".repeat(1_100).slice(0, length);
     await h.controller({ journalEvidenceProvider: h.journal() }).run({ ...request(), userMessage });
-    assert.equal(h.searches[0].query, userMessage.slice(0, searched));
+    assert.deepEqual([h.searches[0].query.length, h.searches[0].query === userMessage], [length, true]);
   }
 });
 
@@ -662,10 +662,8 @@ test("a reading that fails stops the turn before anything is searched or frozen,
   await assertDelivered(env.store);
 });
 
-test("the expansion hands the reader each question and the part it adds to", async (t) => {
-  const questions = ["What was already tried?", "And what helped?"];
-  const review = (text) => ({ ...missing(text), missing_material_history: questions.map((question, index) => ({ ...missing(text).missing_material_history[0], id: `missing-${index}`, question })) });
-  const env = await setup(t, { auditReview: (text, n) => n === 0 ? review(text) : emptyReview() }), h = hooked(env);
+// A published synthetic corpus, its quotations, and the part a reader returns with some of them.
+async function publishedCorpus(env) {
   await env.store.createJournalCorpus(CASE, { corpusId: "corpus:a", manifestObjectId: "manifest:a" });
   await env.store.publishJournalGeneration(CASE, { corpusId: "corpus:a", generation: "generation:one", manifestObjectId: "manifest:a" });
   const item = (number) => {
@@ -677,6 +675,15 @@ test("the expansion hands the reader each question and the part it adds to", asy
   const found = (source_items) => ({ availability: "available", retrieval_status: "returned", source_items, coverage: "A synthetic search.", receipts: [{ operation_id: `retrieval:${source_items.length}`, corpus_id: "corpus:a",
     generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:a", purpose: "session_use", query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: source_items.map((entry) => entry.id),
     packet_sha256: sha256Json(source_items), more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }] });
+  return { item, found };
+}
+const quotationIds = (snapshot) => snapshot.source_items.filter((entry) => entry.kind === "journal_quotation").map((entry) => entry.id);
+
+test("the expansion hands the reader each question and the part it adds to", async (t) => {
+  const questions = ["What was already tried?", "And what helped?"];
+  const review = (text) => ({ ...missing(text), missing_material_history: questions.map((question, index) => ({ ...missing(text).missing_material_history[0], id: `missing-${index}`, question })) });
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? review(text) : emptyReview() }), h = hooked(env);
+  const { item, found } = await publishedCorpus(env);
   await h.controller({ journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? [...addsTo.source_items, item(3)] : [item(1), item(2)])) }).run(request());
   const record = await assertDelivered(env.store);
   assert.equal(h.searches.length, 2);
@@ -687,4 +694,64 @@ test("the expansion hands the reader each question and the part it adds to", asy
     [["src:journal:1", "src:journal:2"], ["src:journal:1", "src:journal:2", "src:journal:3"]]);
   assert.deepEqual(env.calls.find((entry) => entry.stage === "repair").responseEvidence.view.source_items.filter((entry) => entry.kind === "journal_quotation").map((entry) => entry.exact_excerpt),
     [1, 2, 3].map((number) => item(number).exact_excerpt), "the repair sees what the draft rested on, and what was added");
+});
+
+test("a repair whose turn gets no journal any more goes on without: the snapshot it would use is frozen again without its quotations", async (t) => {
+  let withhold = null;
+  const env = await setup(t, { alwaysFail: true, onAudit: async () => { withhold = "crisis_turn"; } }), h = hooked(env, { withheld: () => withhold });
+  const { item, found } = await publishedCorpus(env);
+  await h.controller({ journalEvidenceProvider: h.journal(() => found([item(1), item(2)])) }).run(request());
+  const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
+  assert.ok(env.calls.some((entry) => entry.stage === "repair"));
+  assert.deepEqual(snapshots.slice(0, 2).map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), [["initial", ["src:journal:1", "src:journal:2"]], ["dependency_refresh", []]]);
+  assert.deepEqual(withheldPart(snapshots[1]).slice(0, 3), ["unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }]]);
+  assert.equal(h.searches.length, 1);
+  for (const repair of env.calls.filter((entry) => entry.stage === "repair")) assert.equal(JSON.stringify(repair.responseEvidence.view).includes("Exact synthetic journal quotation"), false);
+});
+
+test("a refresh of a turn's evidence carries no quotation over into a turn that gets no journal any more", async (t) => {
+  // The case changes while the turn's evidence is frozen, so it is frozen again before the writer is called; by then the turn gets no journal.
+  let withhold = null;
+  const env = await setup(t), h = hooked(env, { withheld: () => withhold });
+  const { item, found } = await publishedCorpus(env);
+  let changed = false;
+  const source = { ...h.source, async freezeResponseEvidence(...args) {
+    const frozen = await h.source.freezeResponseEvidence(...args);
+    if (!changed) {
+      changed = true;
+      withhold = "crisis_turn";
+      const state = await env.store.getCaseState(CASE);
+      state.current_episode = { ...(state.current_episode ?? {}), target: "A synthetic changed target." };
+      await env.store.saveCaseState(CASE, state).catch(() => {});
+    }
+    return frozen;
+  } };
+  await h.controller({ privateCaseSource: source, journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request()).catch(() => {});
+  const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
+  assert.deepEqual(quotationIds(snapshots[0]), ["src:journal:1"]);
+  for (const snapshot of snapshots.slice(1)) assert.deepEqual(quotationIds(snapshot), [], snapshot.revision_reason);
+});
+
+test("a repair that may have no journal and no further snapshot isn't made: the turn ends as one without a checked reply", async (t) => {
+  let withhold = null;
+  const env = await setup(t, { alwaysFail: true, auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => withhold });
+  const { item, found } = await publishedCorpus(env);
+  // A third snapshot before the second repair: the case changes right after the expansion is frozen.
+  const source = { ...h.source, async freezeResponseEvidence(...args) {
+    const frozen = await h.source.freezeResponseEvidence(...args);
+    if (frozen.revision_reason === "evidence_expansion") {
+      const state = await env.store.getCaseState(CASE);
+      await env.store.saveCaseState(CASE, { ...state, current_episode: { ...state.current_episode, target: "A synthetic changed target." } });
+    }
+    return frozen;
+  } };
+  env.runtime.auditCandidate = ((original) => async (input) => {
+    if ((await env.store.load(CASE)).response_evidence_snapshots.length === 3) withhold = "crisis_turn";
+    return original(input);
+  })(env.runtime.auditCandidate);
+  const run = h.controller({ privateCaseSource: source, journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? [...addsTo.source_items, item(3)] : [item(1), item(2)])) }).run(request());
+  await assert.rejects(run, (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
+  const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
+  assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot).length > 0]), [["initial", true], ["evidence_expansion", true], ["dependency_refresh", true]]);
+  assert.equal(env.calls.filter((entry) => entry.stage === "repair").length, 1, "the second repair, which could only have had the quotations, isn't made");
 });

@@ -115,7 +115,7 @@ export class RunnerDeadlineError extends RuntimeError {
 // How long a journal output waits for the trial folder lock before it counts as refused (publishGated).
 const OUTPUT_LOCK_WAIT_MS = 5_000;
 
-// Why a turn about wanting to die gets no journal, as its evidence says it (journalWithheld).
+// Why a turn that could be about wanting to die gets no journal, as its evidence says it (journalWithheld).
 const JOURNAL_WITHHELD = "crisis_turn";
 
 function validLevel(value) { return LEVELS.includes(value) ? value : "unclear"; }
@@ -739,14 +739,15 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       if (await journalGateAllows(caseId, null, authContext)) await readTurn({ caseId, runtimeTurn, userInput, authContext, reuse: true });
     },
 
-    // Why this turn gets no journal, or null: its message isn't read, or is read as needing the emergency number now (the number now on),
-    // or its conversation has been read as one about wanting to die (or of someone who has acted or is about to) by any reader or
-    // checker, this turn's own reading included. No search is made for it then, the message's own or the repair's.
+    // Why this turn gets no journal, or null: its message isn't read, or is read as anything but none (thoughts of death with no wish to
+    // act, or something that could mean either, included) or as needing the emergency number now (the number now on), or its conversation
+    // has been read as one about wanting to die (or of someone who has acted or is about to) by any reader or checker, this turn's own
+    // check included. No search is made for it then, the message's own or the repair's, and no snapshot of it holds a quotation.
     async journalWithheld({ caseId, runtimeTurn, authContext }) {
       const record = await load(caseId, authContext);
       const reading = record.runtime_turns.find((turn) => turn.id === runtimeTurn.id)?.runner_reading;
       const crisis = reading?.readers?.crisis;
-      if (!crisis || crisis.unread === true || numberNowRead(crisis)) return JOURNAL_WITHHELD;
+      if (!crisis || crisis.unread === true || crisis.level !== "none" || numberNowRead(crisis)) return JOURNAL_WITHHELD;
       return isCrisisConversation(conversationReadings(record, reading.conversation_id)) ? JOURNAL_WITHHELD : null;
     },
 
@@ -914,6 +915,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
           firstActedTurn: checkerLevel === "acted_or_about_to" && !numberAlreadyShown,
           firstCrisisTurn: (isCrisisLevel(checkerLevel) || Boolean(provisional)) && !earlierCrisisTurn,
           crisisConversation: crisisSoFar || isCrisisLevel(checkerLevel),
+          journalInView: holdsQuotation(responseEvidence?.view?.source_items),
           provisional,
           quotes: written.quotes ?? [],
           quoteSources,

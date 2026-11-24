@@ -108,6 +108,13 @@ test("the exact checks read numbers in any script and decide only exact things",
   const findings = runProgramChecks({ reply: "Read https://detox.u-dont-exist.com and do a detox.", crisisConversation: true, checkerLevel: "wants_to_die" });
   assert.deepEqual(findings.map((finding) => finding.code).sort(), ["PROGRAM_DETOX_WORD", "PROGRAM_OWNER_LINK_NOT_ALLOWED"]);
   assert.deepEqual(runProgramChecks({ reply: "A health service: https://www.has-sante.fr", crisisConversation: true, checkerLevel: "wants_to_die" }), [], "other sites are the crisis checker's");
+  // A reply written with a client's journal in view isn't sent in a conversation about wanting to die (the runner's journal search, 24 Nov 2026).
+  for (const crisis of [{ crisisConversation: true }, { checkerLevel: "wants_to_die" }, { checkerLevel: "acted_or_about_to" }]) {
+    const inView = runProgramChecks({ reply: "What makes asking hard for you?", journalInView: true, ...crisis });
+    assert.deepEqual(inView.map((finding) => [finding.code, finding.severity, isSubstantiveAuditFinding(finding)]), [["PROGRAM_JOURNAL_IN_CRISIS", "high", true]]);
+    assert.deepEqual(runProgramChecks({ reply: "What makes asking hard for you?", ...crisis }), [], "without one in view there is nothing to stop");
+  }
+  for (const checkerLevel of ["none", "thoughts_no_intent", "unclear"]) assert.deepEqual(runProgramChecks({ reply: "What makes asking hard for you?", journalInView: true, checkerLevel }), [], checkerLevel);
   const overreaction = runProgramChecks({ reply: "If it gets worse, call 988.", checkerLevel: "thoughts_no_intent" });
   assert.equal(overreaction[0].code, "PROGRAM_NUMBER_WITHOUT_CRISIS");
   assert.equal(overreaction[0].severity, "medium", "over-reaction is recorded, never blocking");

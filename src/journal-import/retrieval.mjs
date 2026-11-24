@@ -28,10 +28,10 @@ const QUOTE_RANKING_V3 = "quotes-v3";
  * The numbers of the search a reply's evidence makes (`findEvidenceQuotes`), in one place. A person's message is whole sentences, not
  * chosen search words, so most of its words say nothing about which quote matters, and how many quotes hold a word is what tells:
  * - `common`: a word over 5% of the quotes hold (and over 20 of them, so that a small journal has words left to go by) isn't ranked by.
- * - `termsMax`: of the rest, the rarest 24, as many as the quote search ranks by; the rarest, so that a long message's point counts
- *   wherever it stands.
+ *   Every other word of the message is: cut to its rarest ones, a long message's subject, which many quotes hold, would lose to the
+ *   incidental words that few do.
  * - `rare`: a word at most 1% of the quotes hold (or at most 10, in a small journal) is enough by itself to keep a quote that holds it.
- * - `matched`: without such a word, a quote is kept for at least two of the chosen words that are at least half of them.
+ * - `matched`: without such a word, a quote is kept for at least two of the words ranked by that are at least half of them, or three.
  * - `candidatesMax`: how many of the kept quotes' records one search looks at, at most, however many of them may not be used.
  * - `queryCharacters`: how long a message it takes, at most: a whole one, so that its point counts wherever it stands.
  * They are reasoned, not measured: the 3,207 test questions about one real journal are on the server, so these numbers can't be tuned
@@ -41,9 +41,8 @@ const QUOTE_RANKING_V3 = "quotes-v3";
 export const EVIDENCE_QUOTE_SEARCH = Object.freeze({
   version: "evidence-quotes-v1",
   common: Object.freeze({ share: 0.05, quotes: 20 }),
-  termsMax: 24,
   rare: Object.freeze({ share: 0.01, quotes: 10 }),
-  matched: Object.freeze({ terms: 2, share: 0.5 }),
+  matched: Object.freeze({ terms: 2, share: 0.5, atMost: 3 }),
   candidatesMax: 40,
   queryCharacters: 40_000
 });
@@ -91,26 +90,31 @@ function inTimeWindow(intervals, { from, to, include_unknown: includeUnknown }) 
 }
 
 // The stop words of an evidence search are left out as the message writes them, never by how the word list reads them: it reads "shoulder"
-// as it reads "should", and "care" as it reads the French "car". French is also typed without its accents, so a list's words count without
-// them too; a word that has an accent counts only as it is ("même" is one, "sûr" isn't for "sur").
-const withoutAccents = (words) => new Set([...words].flatMap((word) => [word, foldAccents(word)]));
-const FRENCH_STOPWORDS_TYPED = withoutAccents(FRENCH_STOPWORDS);
+// as it reads "should", and "care" as it reads the French "car". They are the quote search's English and French ones, with the English
+// negations (also typed without their apostrophe) and what a French apostrophe leaves behind, and without "été", which is also summer.
+// French is also typed without its accents, so its words count without them too; a word that has an accent counts only as it is ("même" is
+// one, "sûr" isn't for "sur").
+const ENGLISH_STOPWORDS = new Set([...QUOTE_STOPWORDS, ..."not no nor cannot aint arent cant couldnt didnt doesnt dont hadnt hasnt havent isnt mustnt neednt shouldnt wasnt werent wont wouldnt".split(" ")]);
+const FRENCH_STOPWORDS_TYPED = new Set([...FRENCH_STOPWORDS, ..."aujourd hui presqu quelqu quoiqu".split(" ")]
+  .filter((word) => word !== "été").flatMap((word) => [word, foldAccents(word)]));
 // Stop words of one language that are ordinary words of the other, which a message may be about: a son, a car or an aura in English; a
-// goal ("but"), a year or a bear ("ours") in French. Each is left out only in a message that holds more of its own list's other words
-// than of the other list's; every other stop word always is. The two lists are fixed, so this is a fact about them, not a guess.
+// goal ("but"), a year or a bear ("ours") in French. Each is left out only in a message clearly written in its own language: at least two
+// other words of its list, and more of them than of the other list. Every other stop word always is. The two lists are fixed, so which
+// words are ordinary ones of the other language is a fact about them, not a guess.
 const ALSO_ENGLISH = new Set("ai aura car elle eu la ma par pendant plus pour sans sera son ton tout un".split(" "));
 const ALSO_FRENCH = new Set("an but or ours".split(" "));
 // An English negation written as one word would leave a word of its own behind when it's cut ("couldn" of "couldn't"): it's left out whole.
-const withoutNegations = (text) => text.replace(/[\p{L}\p{N}]+(?:['\u2019]t(?![\p{L}\p{N}]))?/giu, (word) => (/n['\u2019]t$/iu.test(word) ? " " : word));
+const withoutNegations = (text) => text.replace(/[\p{L}\p{N}]+(?:['\u2018\u2019`\u00b4]t(?![\p{L}\p{N}]))?/giu, (word) => (/n['\u2018\u2019`\u00b4\u02bc]t$/iu.test(word) ? " " : word));
 
 function withoutStopwords(words) {
   const votes = (list, ambiguous, other) => words.filter((word) => list.has(word) && !ambiguous.has(word) && !other.has(word)).length;
-  const english = votes(QUOTE_STOPWORDS, ALSO_FRENCH, FRENCH_STOPWORDS_TYPED);
-  const french = votes(FRENCH_STOPWORDS_TYPED, ALSO_ENGLISH, QUOTE_STOPWORDS);
+  const english = votes(ENGLISH_STOPWORDS, ALSO_FRENCH, FRENCH_STOPWORDS_TYPED);
+  const french = votes(FRENCH_STOPWORDS_TYPED, ALSO_ENGLISH, ENGLISH_STOPWORDS);
+  const written = (own, other) => own >= 2 && own > other;
   return words.filter((word) => {
-    if (ALSO_ENGLISH.has(word)) return french <= english;
-    if (ALSO_FRENCH.has(word)) return english <= french;
-    return !QUOTE_STOPWORDS.has(word) && !FRENCH_STOPWORDS_TYPED.has(word);
+    if (ALSO_ENGLISH.has(word)) return !written(french, english);
+    if (ALSO_FRENCH.has(word)) return !written(english, french);
+    return !ENGLISH_STOPWORDS.has(word) && !FRENCH_STOPWORDS_TYPED.has(word);
   });
 }
 
@@ -121,7 +125,7 @@ let stopwordReadings = null;
 function evidenceTerms(query, forms) {
   const words = withoutStopwords(lexicalTerms(withoutNegations(query)));
   if (!forms) return words.map((word) => ({ term: word, exact: [word] }));
-  stopwordReadings ??= new Set([...QUOTE_STOPWORDS, ...FRENCH_STOPWORDS_TYPED].map(formsReadingTerm));
+  stopwordReadings ??= new Set([...ENGLISH_STOPWORDS, ...FRENCH_STOPWORDS_TYPED].map(formsReadingTerm));
   const terms = new Map();
   for (const word of words) {
     const read = formsReadingTerm(word);
@@ -130,28 +134,27 @@ function evidenceTerms(query, forms) {
       continue;
     }
     const other = word.endsWith("s") ? word.slice(0, -1) : `${word}s`;
-    const exact = !other || QUOTE_STOPWORDS.has(other) || FRENCH_STOPWORDS_TYPED.has(other) ? [word] : [word, other];
+    const exact = !other || ENGLISH_STOPWORDS.has(other) || FRENCH_STOPWORDS_TYPED.has(other) ? [word] : [word, other];
     const key = `=${[...exact].sort().join(" ")}`;
     if (!terms.has(key)) terms.set(key, { term: word, exact });
   }
   return [...terms.values()];
 }
 
-// Which of those words are chosen, from how many quotes hold each (`counts`, in the words' order) and how many quotes there are: the
+// Which of those words are ranked by, from how many quotes hold each (`counts`, in the words' order) and how many quotes there are: the
 // places of the chosen ones, rarest first (equally rare ones as they stand in the message), and why each of the others is left out.
 function chooseEvidenceTerms(counts, population) {
-  const { common, termsMax } = EVIDENCE_QUOTE_SEARCH;
+  const { common } = EVIDENCE_QUOTE_SEARCH;
   const commonOver = Math.max(common.quotes, common.share * population);
   const dropped = new Map();
-  const ranked = [];
+  const chosen = [];
   counts.forEach((count, place) => {
     if (count === 0) dropped.set(place, "in_no_quote");
     else if (count > commonOver) dropped.set(place, "common");
-    else ranked.push(place);
+    else chosen.push(place);
   });
-  ranked.sort((left, right) => counts[left] - counts[right] || left - right);
-  for (const place of ranked.slice(termsMax)) dropped.set(place, "over_the_term_limit");
-  return { chosen: ranked.slice(0, termsMax), dropped };
+  chosen.sort((left, right) => counts[left] - counts[right] || left - right);
+  return { chosen, dropped };
 }
 
 function intersection(lists) {
@@ -983,8 +986,8 @@ export async function openPrivateJournalGraph({
   /**
    * The quotes a whole message may be about, ranked, for a reply's evidence (EVIDENCE_QUOTE_SEARCH says how the numbers were chosen).
    * The message's words are read as the generation's word list reads them, or exactly where it has none, without the English and
-   * French stop words (`evidenceTerms`). Of the words some quotes hold, the common ones are left out and the rarest chosen; with none
-   * left there is no result, never a search by stop words. The order is Okapi BM25 over the chosen words, then the id: unlike `findQuotes`, no quote
+   * French stop words (`evidenceTerms`). Of the words some quotes hold, the common ones are left out; with none left there is no result,
+   * never a search by stop words. The order is Okapi BM25 over the chosen words, then the id: unlike `findQuotes`, no quote
    * goes first for holding more of them, since in a long message many weak words would beat the one that matters. A quote is kept for
    * a rare word, or for enough of the chosen ones. Of the kept quotes, in order, the first `limit` that may be used come back: each is
    * checked on its record (`evidenceCandidate`), and one that may not be used is counted in `omitted` with its reason and never fails
@@ -992,11 +995,11 @@ export async function openPrivateJournalGraph({
    *
    * Each quote has its record id, exact words and span, its lifecycle, when it was written as the quote index dates it (null without a
    * date or a quote index; an interval has `between`, open at an end where a bound is null), its wording cues (`quoteCues`) and the
-   * chosen words it holds. `terms` says which words were chosen and which left out and why, with how many quotes hold each; `kept`,
-   * `examined` and `returned` count the kept quotes, those looked at and those returned.
+   * chosen words it holds. `terms` says which words were chosen and which left out and why, with how many quotes hold each; `shared`
+   * counts the quotes that hold a chosen word at all, `kept`, `examined` and `returned` the kept quotes, those looked at and those returned.
    *
-   * The result cache holds, for these words in this snapshot, how many quotes there are, how many hold each word (by its place, never
-   * the word) and the kept quotes' ids in order; each record is read and checked again on every call.
+   * The result cache holds, for these words in this snapshot, how many quotes there are, how many hold a chosen word and how many each
+   * word (by its place, never the word), and the kept quotes' ids in order; each record is read and checked again on every call.
    */
   const findEvidenceQuotes = async ({ query, limit } = {}) => {
     await assertCurrent();
@@ -1005,7 +1008,7 @@ export async function openPrivateJournalGraph({
     const wordList = Array.isArray(manifest.indexes.quote_terms);
     const terms = evidenceTerms(query, wordList);
     const key = cacheKey("evidence-quotes", EVIDENCE_QUOTE_SEARCH.version, sha256(Buffer.from(JSON.stringify(terms), "utf8")));
-    let entry = terms.length ? resultCache?.get(key) ?? null : [0];
+    let entry = terms.length ? resultCache?.get(key) ?? null : [0, 0];
     if (!entry) {
       const { population, meanLength, holders } = await evidencePostings(terms, wordList);
       const { rare, matched } = EVIDENCE_QUOTE_SEARCH;
@@ -1022,15 +1025,15 @@ export async function openPrivateJournalGraph({
           if (list.length <= rareUpTo) holdsRare.add(id);
         }
       }
-      const enough = Math.max(matched.terms, matched.share * chosen.length);
+      const enough = Math.max(matched.terms, Math.min(matched.atMost, matched.share * chosen.length));
       const kept = [...scores.keys()].filter((id) => holdsRare.has(id) || held.get(id) >= enough)
         .sort((left, right) => scores.get(right) - scores.get(left) || left.localeCompare(right));
-      entry = [String(population), ...holders.map((list) => String(list.length)), ...kept];
+      entry = [String(population), String(scores.size), ...holders.map((list) => String(list.length)), ...kept];
       resultCache?.set(key, entry);
     }
-    const population = Number(entry[0]);
-    const counts = entry.slice(1, 1 + terms.length).map(Number);
-    const kept = entry.slice(1 + terms.length);
+    const [population, shared] = entry.slice(0, 2).map(Number);
+    const counts = entry.slice(2, 2 + terms.length).map(Number);
+    const kept = entry.slice(2 + terms.length);
     const { chosen, dropped } = chooseEvidenceTerms(counts, population);
     const quoteIndex = Array.isArray(manifest.indexes.quote_meta);
     const quotes = [], omitted = new Map();
@@ -1059,6 +1062,7 @@ export async function openPrivateJournalGraph({
     }
     const result = Object.freeze({
       quotes: Object.freeze(quotes),
+      shared,
       kept: kept.length,
       examined,
       returned: quotes.length,
@@ -1074,11 +1078,22 @@ export async function openPrivateJournalGraph({
     return result;
   };
 
+  /** Each of these quotes as `findEvidenceQuotes` checks one: its exact words, or null when it may not be used. */
+  const checkEvidenceQuotes = async (ids) => {
+    await assertCurrent();
+    invariant(Array.isArray(ids) && ids.length <= EVIDENCE_QUOTE_SEARCH.candidatesMax && ids.every((id) => typeof id === "string" && id.length > 0), "EVIDENCE_IDS_INVALID");
+    const texts = [];
+    for (const id of ids) texts.push((await evidenceCandidate(id)).record?.data.quote ?? null);
+    await assertCurrent();
+    return Object.freeze(texts);
+  };
+
   return Object.freeze({
     manifest: structuredClone(manifest),
     search,
     findQuotes,
     findEvidenceQuotes,
+    checkEvidenceQuotes,
     findEntities,
     timeline,
     evidenceGroup,

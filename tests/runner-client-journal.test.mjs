@@ -616,13 +616,20 @@ test("a message read as wanting to die, having acted or needing the emergency nu
   const offTurns = off.turns();
   await offTurns.run("exchange-number-now-off", MESSAGE);
   assert.equal(offTurns.happened.filter((step) => step === "search").length, 1);
-  // Only those: a message read at any other level gets the journal, one that could mean either included.
+  // Nor does a message read as thoughts of death with no wish to act, or as one that could mean either: only one read as none does.
   for (const level of ["thoughts_no_intent", "unclear"]) {
     const j = await journalTrial(t, { workers: script({ R1: () => ({ ...quietReader(), level }) }) });
     const { happened, run } = j.turns();
     await run("exchange-other-level", MESSAGE);
-    assert.equal(happened.filter((step) => step === "search").length, 1, level);
-    assert.equal(journalPartOf(await j.record(j.clientA)).availability, "available");
+    assert.equal(happened.includes("search"), false, level);
+    assert.deepEqual(partSummary(journalPartOf(await j.record(j.clientA))), WITHHELD, level);
+    // It doesn't make the conversation one about wanting to die: the next message, read as none, gets it again.
+    const next = await journalTrial(t, { workers: script({ R1: (count) => (count === 1 ? { ...quietReader(), level } : quietReader()) }) });
+    const turns = next.turns();
+    await turns.run("exchange-level-1", MESSAGE);
+    await turns.run("exchange-level-2", MESSAGE);
+    assert.equal(turns.happened.filter((step) => step === "search").length, 1, level);
+    assert.equal(journalPartOf(await next.record(next.clientA)).availability, "available", level);
   }
 });
 
@@ -647,6 +654,31 @@ test("a later message of a conversation about wanting to die gets no journal eit
   await second.run("exchange-checker-2", MESSAGE);
   assert.equal(second.happened.filter((step) => step === "search").length, 1);
   assert.deepEqual(partSummary(journalPartOf(await byChecker.record(byChecker.clientA))), WITHHELD);
+});
+
+test("a reply written with the journal in view isn't sent once this turn's checker alone has read someone who wants to die: its repair gets none", async (t) => {
+  for (const level of ["wants_to_die", "acted_or_about_to"]) {
+    const draft = "You wrote about asking for help before. Please call 112 now. What makes asking hard for you?";
+    const j = await journalTrial(t, { workers: script({ CW: (count, request) => ({ ...wholeChecker(count, request), level, repair_induced_checks: count > 1 ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] }),
+      W: () => ({ reply: draft, answered_level: "none", quotes: [] }), "W-repair": () => ({ reply: "Please call 112 now. I'm here with you. What makes asking hard for you?", answered_level: level, quotes: [] }) }) });
+    const { run } = j.turns();
+    const result = await run("exchange-checker-alone", MESSAGE);
+    assert.equal(result.deliveryKind, "candidate", level);
+    assert.notEqual(result.answer, draft);
+    const record = await j.record(j.clientA);
+    const [first, second] = record.candidate_responses;
+    assert.deepEqual(first.audit_history.at(-1).findings.filter((finding) => finding.code === "PROGRAM_JOURNAL_IN_CRISIS").map((finding) => finding.severity), ["high"], level);
+    assert.equal(second.audit_history.at(-1).findings.some((finding) => finding.code === "PROGRAM_JOURNAL_IN_CRISIS"), false, "the repair was written without it");
+    assert.deepEqual(snapshotsOf(record).map((snapshot) => [snapshot.revision_reason, snapshot.source_items.some((item) => item.kind === "journal_quotation")]), [["initial", true], ["dependency_refresh", false]]);
+    const repair = packetOf(lastRequest(j.calls, "W-repair"));
+    assert.deepEqual(journalItems(repair), []);
+    assert.ok(repair.findings.some((finding) => finding.code === "PROGRAM_JOURNAL_IN_CRISIS"), "the repair is told why");
+    assert.deepEqual(journalItems(packetOf(lastRequest(j.calls, "CW"))), [], "and is checked without it");
+  }
+  // A checker that reads thoughts of death with no wish to act, or can't tell, stops nothing.
+  const other = await journalTrial(t, { workers: script({ CW: (count, request) => ({ ...wholeChecker(count, request), level: "thoughts_no_intent" }) }) });
+  await other.turns().run("exchange-checker-other", MESSAGE);
+  assert.deepEqual((await other.record(other.clientA)).candidate_responses.map((candidate) => candidate.status), ["sent"]);
 });
 
 test("a repair gets no journal, and no search is made for it, once this turn's checker has read someone who wants to die", async (t) => {
@@ -782,7 +814,7 @@ test("each quotation comes to the writer, the checker and the repair with its no
   }
   for (const note of [WRITER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE]) {
     for (const said of [/shared words/u, /nothing to do with this message/u, /only when it helps with what the person says now/u, /when the entry says it was written, never when something happened/u, /interval or (?:an )?inferred year is not a day/u, /dream, plan, wish or denial stays one/u,
-      /"superseded" means a later entry corrected it/u, /never a reason for crisis text/u, /never raises or lowers the level/u]) assert.match(note, said);
+      /never a reason for crisis text/u, /never raises or lowers the level/u]) assert.match(note, said);
   }
   const without = await journalTrial(t, { workers: repairs });
   await without.turns().run("exchange-notes-2", "A synthetic message for client two.", { caseId: without.clientB });
