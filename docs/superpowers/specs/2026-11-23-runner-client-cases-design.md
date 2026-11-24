@@ -215,7 +215,9 @@ journal's cold test**. Both are on the next branch (below).
 The lane's instruction after pull request 244: the copy step and the cold test, built and tested on made-up journals only, with no
 server contact; each real copy runs only on the owner's say. An independent review (Claude) of the first three commits found nine
 problems, GPT's review of the branch with those fixed found ten more (two blocking), its next one four, and the one after that four
-more (one blocking); this is as built after all four, and what GPT's reviews changed is listed at the end.
+more (one blocking); this is as built after all four, and what GPT's reviews changed is listed at the end. The cold test here is its
+second design, built after them; what they fixed in the first (the receipt's removal, the marker, the consent before each packet, a
+judge for every question, the printed numbers) holds in it.
 
 - **The export** is the journal import's `export` command (no longer only planned), run where the journal lives. Its settings come
   from the import's private configuration (`runner_trial_export`: the corpus, one client's public key, a new file outside the
@@ -273,8 +275,8 @@ more (one blocking); this is as built after all four, and what GPT's reviews cha
   holds, and whether what is made of it is true. Its first design gave the consumer what the journal's map and raw search retrieve, not
   what the replies' reader returns, so a search that found nothing for a reply (the fault found on 24 Nov) passed it; its judge was the
   consumer's own worker and saw the key quotes alone, so a true detail from another passage read as an invention; and a dozen questions
-  can't tell a search that finds half from one that finds three quarters. This second design answers Fable's red team of 24 Nov (its B1
-  to B5):
+  can't tell a search that finds half from one that finds three quarters. This second design takes up Fable's red team of 24 Nov (its B1
+  to B5, but for one of B1's two new kinds of question: see the limits):
   - **What the consumer is given** for a question is exactly what a reply to it as the message would get: what the replies' reader returns
     for the message's own search, at most six passages with their notes, and the search's coverage. One function builds and asks that
     reader for the gate and for the test (`openSessionUseReader` in `src/runner-trial/journal-gate.mjs`). It's asked directly, not through
@@ -315,8 +317,10 @@ more (one blocking); this is as built after all four, and what GPT's reviews cha
     late, when a journal is first read or its receipt first checked.
   - **Limits.** The test makes no reading of the message and knows no time limit, where a reply gets no journal in a conversation about
     wanting to die, or when the search takes over four seconds. The consumer has the cold test's instruction, not the writer's, so it
-    tests the search and what the model makes of its passages, not the whole reply. With `--provider claude` or `codex` the consumer and the
-    judge are one company's models. A judge can still err: its wrong counts only twice, its right is never asked again.
+    tests the search and what the model makes of its passages, not the whole reply: whether a reply leaves alone quotations that have
+    nothing to do with its message (Fable's B1, messages unrelated to the journal, run through the writer's own prompt and the evidence
+    check) isn't tested here. With `--provider claude` or `codex` the consumer and the judge are one company's models. A judge can still
+    err: its wrong counts only twice, its right is never asked again.
 - **A test that starts removes the copy's receipt; only a pass gives a new one.** So a wrong or malformed answer, a file too small, a
   judge's no, a failed call, a key quote that doesn't fit, a withdrawal or a deleted case leaves none, and a wrong answer followed by an
   error can't leave an earlier pass standing. **Of tests that overlap, the one started last decides:** each writes a marker when it

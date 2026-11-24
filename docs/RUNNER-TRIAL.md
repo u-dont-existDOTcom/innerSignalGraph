@@ -151,11 +151,11 @@ A client's journal can inform their replies only through the session-use journal
 
    For each question, the test gives a fresh call of the trial's writer's worker (with `--provider mixed`, GPT) exactly what a reply to
    that question as the message would get from the copy: the replies' reader's own search, at most six passages, each with when it was
-   written, its wording cues and whether a later entry corrected it, and what was searched. It never gets the key. It answers from those
-   passages alone, says whether they answer the question, and cites every passage it uses. A judge, a fresh call of the trial's checker's
-   worker (with `mixed`, Claude), then gets the question, whether the journal answers it, its key quotes (none when it doesn't), the same
-   passages and the answer, and says whether it is right, incomplete or wrong. A wrong is asked once more: an answer counts as wrong only
-   when both say so, and as disputed otherwise. That is two calls a question, three when the judge finds something wrong, one at a time.
+   written, its wording cues and its lifecycle, and what was searched. It never gets the key. It answers from those passages alone, says
+   whether they answer the question, and cites every passage it uses. A judge, a fresh call of the trial's checker's worker (with `mixed`,
+   Claude), then gets the question, whether the journal answers it, its key quotes (none when it doesn't), the same passages and the
+   answer, and says whether it is right, incomplete or wrong. A wrong is asked once more: an answer counts as wrong only when both say so,
+   and as disputed otherwise. That is two calls a question, three when the judge finds something wrong, one at a time.
 
    The copy passes when nothing is wrong (judged wrong twice, a passage cited that it wasn't given, or an answer said to be supported that
    cites none), at least two thirds of the answerable questions that share a search word with their key quotes are right (their passages
@@ -185,10 +185,11 @@ A client's journal can inform their replies only through the session-use journal
    Limits: all but the judge's part are exact checks. With `claude` or `codex` the judge is the consumer's own company's model. The test
    makes no reading of the message and has no time limit, where a conversation about wanting to die gets no journal and a search that
    takes over four seconds gives a reply none; and it shows what a model makes of the passages with an instruction of its own, not the
-   writer's whole prompt. A change of the reader (an update of the trial that searches another way) closes every client's journal until
-   its copy has passed again, and a receipt of the test's first design, which names no reader, opens nothing. Nothing here has been run
-   against a model or a real journal. Method choices for you: the pass rule, and who writes the questions (proposed: an AI, from the
-   journal's own quotes, part of them worded without the quotes' words; that tool isn't built).
+   writer's whole prompt, so not whether a reply leaves alone quotations that have nothing to do with its message. A change of the reader
+   (an update of the trial that searches another way) closes every client's journal until its copy has passed again, and a receipt of
+   the test's first design, which names no reader, opens nothing. Nothing here has been run against a model or a real journal. Method
+   choices for you: the pass rule, and who writes the questions (proposed: an AI, from the journal's own quotes, part of them worded
+   without the quotes' words; that tool isn't built).
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.
