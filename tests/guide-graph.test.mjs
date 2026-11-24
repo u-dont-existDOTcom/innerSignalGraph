@@ -13,7 +13,7 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.stats.graphCount, 3);
   assert.equal(bundle.stats.nodeCount, 87);
   assert.equal(bundle.stats.edgeCount, 126);
-  assert.equal(bundle.stats.ownerAmendmentCount, 95);
+  assert.equal(bundle.stats.ownerAmendmentCount, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "altered-states-map-source"));
@@ -29,7 +29,7 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 119);
+  assert.equal(result.count, 120); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one (G20261019C)
 });
 
 test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {

@@ -2,6 +2,7 @@ import { ValidationError } from "../core/errors.mjs";
 import { createJournalPrivateApi } from "../journal-import/http.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, PrivateCaseAccessDeniedError } from "../storage/private-case-access.mjs";
 import { candidateDeliveryGate } from "./private-candidate-lifecycle.mjs";
+import { normalizeRecordOnlyFinding } from "./response-evidence-contract.mjs";
 import { persistPrivateCandidateAuditResult, reconstructPrivateCandidate } from "./private-candidate-audit.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
@@ -55,8 +56,7 @@ function commonRequest(request) {
   return request;
 }
 
-function publicCandidateReceipt(caseId, candidate, { reused = false, handoffId = null } = {}) {
-  const gate = candidateDeliveryGate(candidate);
+function publicCandidateReceipt(caseId, candidate, { reused = false, handoffId = null, gate = candidateDeliveryGate(candidate) } = {}) {
   return Object.freeze({
     schema_version: 1,
     operation_succeeded: true,
@@ -98,6 +98,17 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
     async execute(request, authContext) {
       commonRequest(request);
       const caseId = request.case_id;
+      const candidateReceipt = async (candidate, options = {}) => {
+        let gate = candidateDeliveryGate(candidate);
+        if (["DELIVER", "APPROVE_FOR_DELIVERY"].includes(gate.action)
+            && (candidate.metadata.response_evidence || caseAccessService.responseEvidencePolicy === "enforced")) {
+          if (typeof caseAccessService.getCandidateLifecycle !== "function") throw new ValidationError("Live candidate admission readback is required.");
+          const lifecycle = await caseAccessService.getCandidateLifecycle(caseId, authContext);
+          gate = lifecycle.current_candidate_id === candidate.id && lifecycle.current_candidate_version === candidate.version
+            ? lifecycle.delivery_gate : { action: "BLOCK", delivery_allowed: false };
+        }
+        return publicCandidateReceipt(caseId, candidate, { ...options, gate });
+      };
 
       if (request.operation === "probe_journal_write") {
         if (typeof caseAccessService.verifyCaseAccess !== "function") throw new ValidationError("caseAccessService must support non-mutating authorization probes.");
@@ -259,10 +270,10 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
         if (existing) {
           assertReplayEqual(
             [existing.auditor_kind, existing.auditor_context_id, existing.auditor_context_id_status ?? "known", existing.completed_at, existing.completed_at_status ?? "known", existing.recorded_at ?? existing.completed_at, existing.independent_auditor_available, existing.external_provenance ?? null, existing.findings, existing.repair_induced_checks],
-            [request.auditor_context.kind, auditorContextIdStatus === "known" ? request.auditor_context.context_id : null, auditorContextIdStatus, completedAtStatus === "known" ? request.completed_at : null, completedAtStatus, recordedAt, request.independent_auditor_available !== false, request.external_provenance ?? null, request.result.findings.map((finding) => ({ unresolved: true, ...finding })), request.result.repair_induced_checks ?? []],
+            [request.auditor_context.kind, auditorContextIdStatus === "known" ? request.auditor_context.context_id : null, auditorContextIdStatus, completedAtStatus === "known" ? request.completed_at : null, completedAtStatus, recordedAt, request.independent_auditor_available !== false, request.external_provenance ?? null, request.result.findings.map((finding) => normalizeRecordOnlyFinding({ unresolved: true, ...finding })), request.result.repair_induced_checks ?? []],
             `Candidate audit ${request.audit_id}`
           );
-          return publicCandidateReceipt(caseId, candidate, { reused: true });
+          return candidateReceipt(candidate, { reused: true });
         }
         const persisted = await persistPrivateCandidateAuditResult({
           caseAccessService,
@@ -278,7 +289,7 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           externalProvenance: request.external_provenance,
           result: request.result
         });
-        return publicCandidateReceipt(caseId, await currentCandidate(caseAccessService, caseId, persisted.candidate_id, authContext));
+        return candidateReceipt(await currentCandidate(caseAccessService, caseId, persisted.candidate_id, authContext));
       }
 
       if (request.operation === "reconstruct_candidate_and_create_handoff") {
@@ -319,7 +330,7 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
             auditVersion: requiredText(request.audit_version, "audit_version", 160)
           }, authContext);
         }
-        return publicCandidateReceipt(caseId, candidate, { reused, handoffId: request.handoff_id });
+        return candidateReceipt(candidate, { reused, handoffId: request.handoff_id });
       }
 
       if (request.operation === "create_handoff") {
@@ -332,7 +343,7 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           auditVersion: requiredText(request.audit_version, "audit_version", 160)
         }, authContext);
         const candidate = await currentCandidate(caseAccessService, caseId, "current_pending", authContext);
-        return publicCandidateReceipt(caseId, candidate, { reused: Boolean(existing), handoffId: request.handoff_id });
+        return candidateReceipt(candidate, { reused: Boolean(existing), handoffId: request.handoff_id });
       }
 
       if (request.operation === "approve_candidate_for_delivery") {
@@ -344,7 +355,7 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           await caseAccessService.approveCandidateForDelivery(caseId, request.candidate_id, request.audit_id, authContext);
           candidate = await currentCandidate(caseAccessService, caseId, request.candidate_id, authContext);
         }
-        return publicCandidateReceipt(caseId, candidate, { reused });
+        return candidateReceipt(candidate, { reused });
       }
 
       if (request.operation === "deliver_candidate_and_create_handoff") {
@@ -370,7 +381,7 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
             || handoff.delivery_completion?.assistant_turn_id !== request.assistant_turn_id) {
           throw new ValidationError(`Handoff ${request.handoff_id} conflicts with the exact persisted delivery.`);
         }
-        return publicCandidateReceipt(caseId, candidate, { reused: reusedDelivery && Boolean(existing), handoffId: request.handoff_id });
+        return candidateReceipt(candidate, { reused: reusedDelivery && Boolean(existing), handoffId: request.handoff_id });
       }
 
       requiredId(request.candidate_id, "candidate_id");
@@ -380,7 +391,7 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
         await caseAccessService.markCandidateSent(caseId, request.candidate_id, authContext);
         candidate = await currentCandidate(caseAccessService, caseId, request.candidate_id, authContext);
       }
-      return publicCandidateReceipt(caseId, candidate, { reused });
+      return candidateReceipt(candidate, { reused });
     }
   });
 }

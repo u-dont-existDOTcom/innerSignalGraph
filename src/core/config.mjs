@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
-import { readOnOffSetting } from "./on-off-setting.mjs";
+import { readOnOffSetting, readResponseEvidenceSetting } from "./on-off-setting.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -80,6 +80,7 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     requestTimeoutMs: integerEnv("REQUEST_TIMEOUT_MS", 900000, { min: 1000, max: 3600000 }),
     privateRuntimeInvocationAttempts: integerEnv("PRIVATE_RUNTIME_INVOCATION_ATTEMPTS", 2, { min: 1, max: 3 }),
     ownerFallbackEnabled: ownerFallbackEnabled(),
+    responseEvidenceEnforced: readResponseEvidenceSetting(),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),
     guidePacketHeartbeatMs: integerEnv("GUIDE_PACKET_HEARTBEAT_MS", 5000, { min: 250, max: 60000 }),
     guidePacketStaleMs: integerEnv("GUIDE_PACKET_STALE_MS", 30000, { min: 1000, max: 3600000 }),
@@ -130,6 +131,7 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     config.guidePacketRoot = path.join(config.autopilotStateDir, "guide-packets");
   }
 
+  if (typeof config.responseEvidenceEnforced !== "boolean") throw new RuntimeError("INNER_SIGNAL_RESPONSE_EVIDENCE must be true or false.", { code: "BAD_CONFIG" });
   if (config.therapyProcessingMode === "adversarial") config.therapyProcessingMode = "deep";
   if (config.guidePacketStaleMs <= config.guidePacketHeartbeatMs) {
     throw new RuntimeError("GUIDE_PACKET_STALE_MS must be greater than GUIDE_PACKET_HEARTBEAT_MS.", { code: "BAD_CONFIG" });

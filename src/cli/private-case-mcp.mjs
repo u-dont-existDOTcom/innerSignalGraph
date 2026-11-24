@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readResponseEvidenceSetting, responseEvidenceReadback } from "../core/on-off-setting.mjs";
 import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { listenPrivateCaseMcp } from "../server/private-case-mcp.mjs";
@@ -9,6 +10,7 @@ import { assertJournalWorkExchangeRoot, createJournalWorkExchange, journalWorkEx
 import { createJournalPrivateApi } from "../journal-import/http.mjs";
 import { createJournalWorkTools } from "../server/journal-work-tools.mjs";
 import { createSupervisorReplyConnector } from "../server/supervisor-reply-setup.mjs";
+import { readFeedbackSettings } from "../feedback/settings.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -29,6 +31,7 @@ const providers = hosted
   ? loadHostedPrivateCaseProvidersFromEnvironment()
   : await loadDevelopmentPrivateCaseProviders(path.resolve(credentials));
 const service = createPrivateCaseAccessService({
+  responseEvidencePolicy: readResponseEvidenceSetting(process.env) ? "enforced" : "advisory",
   rootDir: providers.rootDir,
   authorizationProvider: providers.authorizationProvider,
   keyProvider: providers.keyProvider,
@@ -90,6 +93,12 @@ const callLog = (event) => { process.stderr.write(`${JSON.stringify(event)}\n`);
 // Optional reply-draft tools (off unless INNER_SIGNAL_MCP_SUPERVISOR_DRAFTS is true; see src/server/supervisor-reply-setup.mjs).
 const supervisorReply = await createSupervisorReplyConnector({ access: service, log: callLog });
 
+// Optional feedback place (off unless INNER_SIGNAL_FEEDBACK is on; its chat tool needs INNER_SIGNAL_FEEDBACK_TOOL too; see
+// src/feedback/setup.mjs and docs/FEEDBACK.md). Its modules are loaded only when it is on.
+const feedback = readFeedbackSettings()
+  ? await (await import("../feedback/setup.mjs")).createFeedbackFromEnvironment({ repositoryRoot, log: callLog })
+  : null;
+
 const listener = await listenPrivateCaseMcp({
   caseAccessService: service,
   callLog,
@@ -99,6 +108,7 @@ const listener = await listenPrivateCaseMcp({
   productionAuthReady: providers.productionReady,
   journalWork,
   supervisorReply,
+  feedback,
   oauth: hosted ? {
     resource,
     authorizationServers: [providers.oauth.issuer],
@@ -112,6 +122,7 @@ const listener = await listenPrivateCaseMcp({
 });
 const ready = {
   ready: true,
+  responseEvidence: responseEvidenceReadback(readResponseEvidenceSetting()),
   mcpUrl: hosted ? new URL("/mcp", `${resource}/`).toString() : listener.url,
   provider: providers.kind,
   productionReady: providers.productionReady,
@@ -123,7 +134,9 @@ const ready = {
     supervisorDrafts: true,
     supervisorReview: supervisorReply.reviewAvailable ? "available" : "unavailable",
     supervisorBackendDrafts: supervisorReply.backendDraftsAvailable ? "available" : "unavailable"
-  } : {})
+  } : {}),
+  // Present only when the feedback place is on, for the same reason.
+  ...(feedback ? { feedback: feedback.health } : {})
 };
 const readyFile = valueAfter("--ready-file");
 if (readyFile) {
@@ -141,6 +154,7 @@ if (readyFile) {
 console.log(JSON.stringify(ready));
 
 async function shutdown() {
+  feedback?.close();
   await listener.close();
   providers.close();
 }

@@ -75,7 +75,7 @@ const CONTRIBUTION_CONTRACT = {
 const PUBLIC_POSTURE_SHA256 = {
   "README.md": "1e6e8f8911d9e6c9d4f625e69595470b7b0cadf9b7f8c3568b6c6c029dbc3868",
   "AGENTS.md": "71124d35705ee8dbb892c1fdc3b97d6fb6f49974042609459953dbfd1af445db",
-  "docs/INDEX.md": "b9c5a418131a1388be4d2fc328c4be5e42ead47e826a5c7077b265401d3b260f",
+  "docs/INDEX.md": "62f7922a371c648eccd64b4969b42a5e350f121a6c40bf46c2e01485d68d5689",
   "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
   "CONTRIBUTING.md": "3e36a03597382a82cb628f0daa1c9595ad86b57ffa339873dcf18be1efdd40c4"
 };
@@ -263,7 +263,7 @@ const REQUIRED_OWNER_PATHS = [
   "/docs/RELEASE-EVIDENCE.md"
 ];
 const CODEQL_WORKFLOW_PATH = ".github/workflows/codeql.yml";
-const CODEQL_ACTION_SHA = "2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2";
+const CODEQL_ACTION_SHA = "9b3254085494b55a0f7c4c2b3d2d52cc712ce370";
 const EXPECTED_CODEQL_WORKFLOW = {
   name: "CodeQL",
   on: {
@@ -922,7 +922,7 @@ function auditOwnershipAndCi(root, findings) {
       [/branches:\s*\[main, stable\]/, "main and stable triggers are required"],
       [/node-version-file:\s*\.nvmrc/, "CI must use .nvmrc"],
       [/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/, "checkout revision is not the reviewed SHA"],
-      [/actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/, "setup-node revision is not the reviewed SHA"]
+      [/actions\/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1/, "setup-node revision is not the reviewed SHA"]
     ]) {
       requireMatch(workflow, pattern, "ci-contract", relative, message, findings);
     }

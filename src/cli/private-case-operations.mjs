@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readResponseEvidenceSetting } from "../core/on-off-setting.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
@@ -40,6 +41,7 @@ const providers = hostedOperator
     ? loadHostedPrivateCaseProvidersFromEnvironment()
   : await loadDevelopmentPrivateCaseProviders(path.resolve(credentials));
 const service = createPrivateCaseAccessService({
+  responseEvidencePolicy: readResponseEvidenceSetting(process.env) ? "enforced" : "advisory",
   rootDir: providers.rootDir,
   authorizationProvider: providers.authorizationProvider,
   keyProvider: providers.keyProvider,

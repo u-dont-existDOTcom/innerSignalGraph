@@ -376,15 +376,15 @@ test("IC.SHAME_APPRAISAL already separates real responsibility from global self-
   const compiled = await compileGuideGraphs({ write: false });
   assert.equal(compiled.stats.nodeCount, 87);
   assert.equal(compiled.stats.edgeCount, 126);
-  assert.equal(compiled.stats.sourceSectionCount, 175); // the point-16 amendment of 20 Nov 2026 adds one
-  assert.equal(compiled.stats.ownerAmendmentCount, 95);
+  assert.equal(compiled.stats.sourceSectionCount, 176); // the point-16 amendment of 20 Nov 2026 adds one; IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(compiled.stats.ownerAmendmentCount, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
   const ids = candidateGraph.nodes.map((node) => node.id);
   assert.deepEqual(ids.filter((id) => /CRITIC/u.test(id)), [KERNEL]);
   assert.deepEqual(ids.filter((id) => /INNER_BRAT|SPIRITUAL_CHILD|DRAWING|SCRIBBL/u.test(id)), []);
   assert.equal(new Set(ids).size, ids.length);
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-11-20-r23");
-  assert.equal(amendments.items.length, 95);
+  assert.equal(amendments.version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(amendments.items.length, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
   assert.equal(amendments.items.some((item) => item.id !== "AMEND.IC.GUARDS_USUALLY_A_MIX_20261120" && /reject the insult|critical voice|self-critical strategy/iu.test(item.text)), false, "the guide text carries the behavior, so no amendment was added (the owner's later answer on guards, point 16 of 20 Nov 2026, is its own amendment)");
   const overlay = json("../authoring/overlays/inner-child.overlay.json");
   assert.ok(JSON.stringify(overlay).includes("OVERLAY.IC.DYNAMIC_PARTS_MODEL"), "the parts-flexibility overlay is still there");

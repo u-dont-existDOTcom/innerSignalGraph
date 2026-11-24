@@ -344,7 +344,9 @@ Each box lists: Do (its advice), Keep in mind (distinctions to keep), Avoid and 
 - Do: Treat softening as an opening for love or presence, not an order to enter memories.
 - Do: Breathing can stay continuous and unforced: no holding or straining.
 - Keep in mind: Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict.
+- Keep in mind: Emotional regulation and medical care may proceed together; the symptom is real, but its origin is not established by its emotional associations alone.
 - Avoid: Do not force breath, chase intensity, or assume tension proves a hidden memory.
+- Avoid: Do not interpret pain, illness or body tension as proof of suppressed emotion, childhood trauma, or an inner child's communication; do not displace indicated medical care.
 - Never claim: Do not claim that energy has definitively moved or trauma has been released.
 - Leads to: enables IC.BORROW_LOVE
 

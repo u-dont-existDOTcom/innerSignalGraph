@@ -7,9 +7,9 @@
     {
       "path": "suggested-fixes/innerSignalGraph/2026-09-30-claim-integrity-checks.md",
       "disposition": "DEFERRED",
-      "destination": "OWNER-QUESTIONS.md: owner question 9 option C; proposal PR #96",
+      "destination": "OWNER-QUESTIONS.md: owner question 9 option C; proposal PR #96, closed on 21 Nov 2026 under the owner's 6 Nov rule with its branch kept (claude/claim-integrity-checks-20260927)",
       "implementation": "OWNER_DEFERRED",
-      "nextCondition": "Explicit renewed owner decision"
+      "nextCondition": "Explicit renewed owner decision (the polish-and-ship phase): then reopen #96, fit the approved wording to that day's protocol and test it again"
     },
     {
       "path": "suggested-fixes/innerSignalGraph/2026-10-09-teaching-points-for-map-changes.md",
@@ -80,6 +80,13 @@
       "destination": "authoring/PENDING-PUBLIC-GUIDE-CHANGES.md reset to its EMPTY sentinel (queue version 2026-11-04-r21) after all 52 entries of 2026-10-31-r20 were consumed against the owner's humanized guide, and authoring/public-guide-sync.json (inner-child: humanizedDraft, queueConsumption with every entry's fate) updated, on branch task/clear-humanization-queue-20261104 (UDA PR #467, open, owner request)",
       "implementation": "PROPOSED_ON_TASK_BRANCH",
       "nextCondition": "Review and merge the pull request from task/clear-humanization-queue-20261104 to main; publishing the humanized guide stays behind the publication gate"
+    },
+    {
+      "path": "suggested-fixes/innerSignalGraph/2026-11-06-open-pull-request-outcomes.md",
+      "disposition": "ADOPTED",
+      "destination": "docs/suggested-fixes-ledger.md, entry of 2026-11-21: all 23 open pull requests got an outcome (9 merged, 13 closed with a reason and their branches kept, #232 left open as the owner parked it); each turn's mailbox check gives every open pull request an outcome",
+      "implementation": "ADOPTED_AND_RECORDED",
+      "nextCondition": "Every turn's mailbox check: list the open pull requests with state and age and give each an outcome"
     }
   ]
 }

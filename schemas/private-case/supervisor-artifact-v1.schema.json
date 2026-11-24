@@ -93,7 +93,7 @@
         "candidate_version": { "type": "integer", "minimum": 1 },
         "audit_id": { "$ref": "#/$defs/refId" },
         "disclosure_manifest": {
-          "description": "What the independent audit run reported it was shown. Booleans only: no text and no content.",
+          "description": "What the independent audit run reported it was shown. Boolean flags only; never case text.",
           "type": "object", "maxProperties": 24,
           "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$" },
           "additionalProperties": { "type": "boolean" }

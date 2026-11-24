@@ -11,6 +11,7 @@
 - `RELEASE-EVIDENCE.md`: stable-promotion evidence contract
 - `PRIVATE-CASE-CONTINUITY.md`: encrypted case APIs, fresh-session acceptance gate, repository MCP bridge, private handoff format, and blocking production/ChatGPT boundary
 - `CLAUDE-CONNECTOR.md`: InnerSignal in Claude as one MCP connector; the therapy protocol served from the deployed build, how map fixes go live, and one-time Claude OAuth setup
+- `FEEDBACK.md`: the private feedback place (owner answer i63b): the page, the chat tool behind its own switch, the sealed store, the owner's script and Inbox view, the settings, privacy as it holds, release and rollback (off unless switched on; not released)
 - `SELF-DIRECTED-RISK-SAFEGUARDS.md`: what the reply check does when a person speaks about ending their life over a long conversation, how it was tested, the results and the limits, and what is live and what is not
 - `INSTRUCTION-CONSUMER-MAP.md`: instruction source, consumer, destination, and enforcement boundaries across developer, application, and private-inference roles
 
@@ -39,6 +40,8 @@ The transition report names the fully gated private candidate, the public visibi
 
 ## Plans and specifications
 
+- `superpowers/specs/2026-10-26-response-evidence-enforcement.md`: shared evidence/approval architecture for actual delivery, relevant history, fallback checks and controlled supervisor draft export (reviewed 28 Oct on #196; slices 1 and 5 merged as #203, #210 and #211; the other slices are not built)
+- `superpowers/plans/2026-10-26-response-evidence-enforcement.md`: source-mapped implementation slices, paired acceptance cases, semantic evaluation and release boundaries for enforcement issue #195
 - `superpowers/plans/`: implementation plans
 - `superpowers/plans/2026-10-01-journal-codex-lane.md`: request-pinned Codex exec exchange, staged-answer admission, and synthetic worker regressions
 - `superpowers/plans/2026-10-01-journal-claude-lane-and-supervision.md`: implemented Claude hardest lane on the Codex exchange; supervisor tier and command remain deferred
@@ -53,6 +56,7 @@ The transition report names the fully gated private candidate, the public visibi
 - `superpowers/plans/2026-10-17-case-plan-and-known-vs-new.md`: issue #172: the served known-versus-new and reparenting rules with every opened case (change A), the plan in each case's record (change B), and a test of whether a model applies the rules (change C)
 - `PROTOCOL-APPLICATION-EVAL.md`: the protocol application test, run by hand: synthetic complex cases through a real connector, graded by a model of the other family that is first checked on known replies
 - `superpowers/specs/`: accepted design specifications
+- `superpowers/specs/2026-11-22-feedback-place-design.md`: the feedback place's design (owner answer i63b), with Fable's red team of draft 1 (3 blocking, 12 should-fix, 8 minor) answered finding by finding
 
 ## Obsidian graph authoring
 

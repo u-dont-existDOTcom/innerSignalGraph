@@ -28,9 +28,10 @@ regression_refs:
   - G001
   - G012
   - G047
+  - G20261019C
 base_record_sha256: e35e162f9d0e40b6bff1d061648ce46facf8b643fd80ab430c16023421becbc4
-base_graph_sha256: 19a76e2339061c73ca5df82a1c43959a88e5887d5c6a4a5aae0a4478f6deb2f5
-projection_input_sha256: fbe2b994e7af17ae9395f3c916d8ca41cf133ab7702b7490e0917a793e6ed853
+base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
+projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
 ---
 
 # Repair credibility through non-defensive follow-through

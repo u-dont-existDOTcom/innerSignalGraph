@@ -414,7 +414,8 @@ function reportedItem(event, subject, extra = {}) {
 // application committed or the owner reported sending; `supervisor_only_artifacts` holds drafts, exposures and exports that
 // no evidence says reached the client; `unresolved_delivery` holds what the record cannot place. A raw `sent` status, an
 // ambiguous report, and assistant turns nothing vouches for are `unknown`, never promoted.
-export function projectCommunicationState(record) {
+export function projectCommunicationState(record, { listedItemsLimit = COMMUNICATION_LIMITS.listed_items } = {}) {
+  if (!Number.isSafeInteger(listedItemsLimit) || listedItemsLimit < 1) throw new ValidationError("Communication projection limit is invalid.");
   const all = events(record);
   const retracted = retractedIds(all);
   const active = all.filter((event) => event.kind !== "retraction" && !retracted.has(event.id));
@@ -540,7 +541,7 @@ export function projectCommunicationState(record) {
 
   const ordered = [...candidateItems, ...pairItems, ...companionItems, ...unresolvedItems];
   const take = (list) => ordered.filter((entry) => entry.list === list).map((entry) => entry.value);
-  const bounded = (values) => ({ listed: values.slice(-COMMUNICATION_LIMITS.listed_items), omitted: Math.max(0, values.length - COMMUNICATION_LIMITS.listed_items) });
+  const bounded = (values) => ({ listed: values.slice(-listedItemsLimit), omitted: Math.max(0, values.length - listedItemsLimit) });
   const confirmed = bounded(take("confirmed"));
   const supervisorOnly = bounded(take("supervisor"));
   const unresolved = bounded(take("unresolved"));

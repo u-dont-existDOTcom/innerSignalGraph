@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
+import { RESPONSE_EVIDENCE_POLICY_VERSION, normalizeRecordOnlyFinding, normalizeEvidenceReview, deriveEvidenceFindings, validateResponseEvidenceAudit } from "./response-evidence-contract.mjs";
 import { SELF_DIRECTED_RISK_AUDIT_CODES } from "../prompts/self-directed-risk-audit.mjs";
 
 export const PRIVATE_CANDIDATE_STATUSES = Object.freeze([
@@ -47,7 +48,6 @@ const BLOCKING_SEVERITIES = new Set(["substantive", "high"]);
 const FINDING_SEVERITIES = new Set(["low", "medium", ...BLOCKING_SEVERITIES]);
 // Findings under these codes are recorded in the audit history and never block delivery or start a repair.
 export const RECORD_ONLY_AUDIT_CODES = SELF_DIRECTED_RISK_AUDIT_CODES;
-const RECORD_ONLY_CODE_SET = new Set(RECORD_ONLY_AUDIT_CODES);
 const AVAILABILITY_STATUSES = new Set(["known", "unavailable"]);
 const sha256Hex = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -73,14 +73,6 @@ export function isSubstantiveAuditFinding(finding) {
 // stored severity is capped at medium. Doing it where the evidence is created, rather than in isSubstantiveAuditFinding, keeps
 // every stored record consistent for any reader, including an earlier build that loads this case: it sees a medium finding, an
 // empty list of unresolved substantive findings and a pass, exactly as the stored evidence says.
-function normalizeRecordOnlyFinding(finding) {
-  if (!RECORD_ONLY_CODE_SET.has(finding?.code)) return finding;
-  return {
-    ...finding,
-    record_only: true,
-    ...(BLOCKING_SEVERITIES.has(finding.severity) ? { severity: "medium", reported_severity: finding.severity } : {})
-  };
-}
 
 export function validateCandidateAuditFinding(value, index = 0) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`audit findings[${index}] must be an object.`);
@@ -169,6 +161,7 @@ export function validateCandidateAuditEvidence(value, candidate) {
       }
     }
   }
+  if (value.response_evidence != null) validateResponseEvidenceAudit(value, candidate);
   return value;
 }
 
@@ -183,7 +176,8 @@ export function createCandidateAuditEvidence({
   completedAt,
   completedAtStatus,
   recordedAt = completedAt ?? new Date().toISOString(),
-  externalProvenance = null
+  externalProvenance = null,
+  responseEvidence = null
 } = {}) {
   if (!candidate || !AUDITABLE_STATUSES.has(candidate.status)) throw new ValidationError("Only the current pending candidate version can be audited.");
   if (!auditorContext || typeof auditorContext !== "object" || Array.isArray(auditorContext)) throw new ValidationError("auditorContext is required.");
@@ -192,6 +186,11 @@ export function createCandidateAuditEvidence({
   const resolvedCompletedAtStatus = completedAtStatus ?? (completedAt == null && isExternallySupplied ? "unavailable" : "known");
   const resolvedCompletedAt = resolvedCompletedAtStatus === "known" ? (completedAt ?? recordedAt) : null;
   const normalizedFindings = structuredClone(findings).map((finding) => normalizeRecordOnlyFinding({ unresolved: true, ...finding }));
+  let evidenceReview = null;
+  if (responseEvidence != null) {
+    evidenceReview = normalizeEvidenceReview(responseEvidence.review, { candidateText: candidate.exact_text, snapshot: responseEvidence.snapshot });
+    normalizedFindings.push(...deriveEvidenceFindings(evidenceReview));
+  }
   const independent = auditorContext.kind === "independent";
   const hasBlockingFinding = normalizedFindings.some(isSubstantiveAuditFinding);
   const evidence = {
@@ -200,7 +199,7 @@ export function createCandidateAuditEvidence({
     candidate_id: candidate.id,
     candidate_version: candidate.version,
     candidate_sha256: sha256Hex(candidate.exact_text),
-    audit_version: auditVersion,
+    audit_version: responseEvidence == null ? auditVersion : "private-candidate-audit-v5",
     completed_at: resolvedCompletedAt,
     completed_at_status: resolvedCompletedAtStatus,
     recorded_at: recordedAt,
@@ -214,6 +213,12 @@ export function createCandidateAuditEvidence({
     verdict: hasBlockingFinding ? "fail" : "pass",
     sufficient_for_approval: independent && independentAuditorAvailable === true && !hasBlockingFinding && auditorContextIdStatus === "known" && resolvedCompletedAtStatus === "known",
     repair_induced_checks: candidate.parent_candidate_id == null ? [] : [...repairInducedChecks],
+    ...(responseEvidence == null ? {} : { response_evidence: {
+      schema_version: 1, policy_version: RESPONSE_EVIDENCE_POLICY_VERSION,
+      snapshot_id: responseEvidence.snapshotId, snapshot_sha256: responseEvidence.snapshotSha256,
+      auditor_inclusion_sha256: responseEvidence.auditorInclusionSha256, review: evidenceReview,
+      derived_finding_ids: deriveEvidenceFindings(evidenceReview).map((entry) => entry.id)
+    } }),
     ...(externalProvenance == null ? {} : { external_provenance: structuredClone(externalProvenance) })
   };
   return Object.freeze(validateCandidateAuditEvidence(evidence, candidate));

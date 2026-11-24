@@ -12,7 +12,7 @@
     "private-case:mcp": "node src/cli/private-case-mcp.mjs",
     "private-case:mcp:hosted": "node src/cli/private-case-mcp.mjs --hosted-env",
     "private-case:operations": "node src/cli/private-case-operations.mjs",
-    "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs tests/private-case-operator-cli.test.mjs tests/private-case-orchestration.test.mjs tests/private-therapy-runtime.test.mjs tests/private-runtime-environment.test.mjs tests/private-therapy-model-runtime.test.mjs tests/private-supervisor-draft.test.mjs tests/private-supervisor-export-route.test.mjs tests/private-supervisor-connector-denial.test.mjs tests/supervisor-review-runner.test.mjs tests/supervisor-reply-connector.test.mjs tests/supervisor-reply-denials.test.mjs tests/supervisor-reply-async.test.mjs tests/supervisor-reply-deployment.test.mjs tests/supervisor-reply-providers.test.mjs tests/therapy-ledger-privacy.test.mjs",
+    "private-case:acceptance": "node --test tests/response-evidence-supervisor.test.mjs tests/response-evidence-journal.test.mjs tests/response-evidence-runtime.test.mjs tests/response-evidence-contract.test.mjs tests/response-evidence-store.test.mjs tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs tests/private-case-operator-cli.test.mjs tests/private-case-orchestration.test.mjs tests/private-therapy-runtime.test.mjs tests/private-runtime-environment.test.mjs tests/private-therapy-model-runtime.test.mjs tests/private-supervisor-draft.test.mjs tests/private-supervisor-export-route.test.mjs tests/private-supervisor-connector-denial.test.mjs tests/supervisor-review-runner.test.mjs tests/supervisor-reply-connector.test.mjs tests/supervisor-reply-denials.test.mjs tests/supervisor-reply-async.test.mjs tests/supervisor-reply-deployment.test.mjs tests/supervisor-reply-providers.test.mjs tests/therapy-ledger-privacy.test.mjs",
     "journal:import": "node src/cli/journal-import.mjs",
     "journal:work:mcp": "node src/cli/journal-work-mcp.mjs",
     "journal:work:codex": "node src/cli/journal-codex-worker.mjs",
@@ -61,6 +61,7 @@
     "benchmark:therapy-latency": "node scripts/benchmark-therapy-latency.mjs",
     "eval:protocol-application": "node src/cli/eval-protocol-application.mjs",
     "eval:longitudinal-risk": "node tasks/longitudinal-risk-eval-20261101/cli.mjs",
+    "eval:response-evidence": "node tasks/response-evidence-eval-20261123/cli.mjs",
     "verify:local-release": "node scripts/verify-local-release.mjs",
     "graph:compile": "node src/cli/compile-guide-graphs.mjs",
     "graph:test": "node src/cli/run-graph-regressions.mjs",
@@ -81,7 +82,7 @@
     "pdfjs-dist": "6.3.289",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@testing-library/react": "16.3.3",
@@ -92,7 +93,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "jsdom": "30.1.1",
     "typescript": "7.0.2",
-    "vite": "8.3.0",
-    "vitest": "5.0.1"
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
   }
 }
