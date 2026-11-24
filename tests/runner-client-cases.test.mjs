@@ -330,7 +330,7 @@ test("one command at a time changes the trial folder: a start, an addition or a 
   assert.equal(await fs.readFile(lock, "utf8"), "999999999 synthetic-token\n", "left as it is");
   await fs.unlink(lock);
   assert.deepEqual(await setJournalConsent({ home, number: 1, action: "confirm" }), { changed: true, state: "confirmed" });
-  await assert.rejects(fs.stat(lock), { code: "ENOENT" }, "and released after use");
+  await assert.rejects(fs.readFile(lock), { code: "ENOENT" }, "and released after use");
   // A command removes only its own lock: one that someone else holds by then stays.
   await withTrialFolderLock(home, async () => { await fs.unlink(lock); await fs.writeFile(lock, "1 another-command\n", { mode: 0o600 }); });
   assert.equal(await fs.readFile(lock, "utf8"), "1 another-command\n");

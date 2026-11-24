@@ -41,6 +41,7 @@ import {
   validateRunnerTrialSettings
 } from "../src/runner-trial/settings.mjs";
 import { createRunnerEventHub, createRunnerTrialController, runnerEventLine } from "../src/runner-trial/trial-controller.mjs";
+import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
 // The runner trial wired into the local app (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 8, 10 and 11):
 // the switch, the settings file and the worker factory, /health, the NDJSON stream of /v1/therapy/respond and the page's fixed
@@ -309,6 +310,21 @@ test("the settings file must be named by an absolute path outside the repository
   const broken = path.join(dir, "broken.json");
   await fs.writeFile(broken, "{ not json");
   assert.throws(() => loadRunnerTrialSettings({ settingsPath: broken }), refusedWith("The runner trial settings file isn't valid JSON."));
+  // Anything but a small regular file is refused, a named pipe without waiting for its other end; a link to one outside is followed.
+  assert.throws(() => loadRunnerTrialSettings({ settingsPath: dir }), /must name a readable JSON file/u);
+  const large = path.join(dir, "large.json");
+  await fs.writeFile(large, `{}${" ".repeat(64 * 1024)}`);
+  assert.throws(() => loadRunnerTrialSettings({ settingsPath: large }), /must name a readable JSON file/u);
+  const pipe = path.join(dir, "pipe.json");
+  makeNamedPipe(pipe);
+  assert.match(printedApart(`
+    import { loadRunnerTrialSettings } from ${JSON.stringify(new URL("../src/runner-trial/settings.mjs", import.meta.url).href)};
+    try { loadRunnerTrialSettings({ settingsPath: process.argv[1] }); console.log("loaded"); } catch (error) { console.log(error.message); }`, [pipe]), /must name a readable JSON file/u);
+  const kept = path.join(dir, "kept.json");
+  await fs.writeFile(kept, JSON.stringify({ writerMode: "whole" }));
+  const toKept = path.join(dir, "to-kept.json");
+  await fs.symlink(kept, toKept);
+  assert.equal(loadRunnerTrialSettings({ settingsPath: toKept }).runtime.writerMode, "whole");
 });
 
 test("every field is checked strictly, and an error names the field in fixed words, never the value it was given", () => {

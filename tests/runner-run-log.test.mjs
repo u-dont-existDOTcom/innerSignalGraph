@@ -28,6 +28,7 @@ const CASE = "case-00000000-0000-4000-8000-000000000000";
 const MARKERS = ["Privatepersonmarker", "Privatereplymarker", "Privateprovisionalmarker", "Privatefindingmarker", "Privatequotemarker", "Privateplanmarker", "Privatejournalmarker"];
 const at = Date.parse("2026-11-23T12:00:00.000Z");
 async function directory(t) { const dir = await fs.mkdtemp(path.join(os.tmpdir(), "runner-log-test-")); t.after(() => fs.rm(dir, { recursive: true, force: true })); return dir; }
+async function openedMode(file) { const handle = await fs.open(file, "r"); try { return (await handle.stat()).mode; } finally { await handle.close(); } }
 const configFor = (dir, extra = {}) => loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialDir: dir, runnerTrialSettingsPath: null, runnerRulesRoot: null, runnerTrialCaseId: CASE, ...extra });
 async function fixture(t, { failure = false, dir = null, keptPlan = false, checkerFailure = false, retryWriter = false, retryChecker = false, unchangedRepair = false, incompleteChecklist = false } = {}) {
   dir ??= await directory(t);
@@ -121,7 +122,7 @@ test("a stand-in repair run has exact totals, one receipt per call, fixed findin
   assert.deepEqual(turn.rules, lines[0].runnerRules);
   assert.deepEqual(turn.arrangement, lines[0].arrangement);
   assert.deepEqual(lines[1], turn);
-  assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
+  assert.equal(await openedMode(file) & 0o777, 0o600);
   const p = await page(t);
   p.context.root = p.document.querySelector("#runner-log-panel"); p.context.log = api;
   vm.runInContext("renderRunnerLog(root, log)", p.context);
@@ -642,14 +643,14 @@ test("a destination symlink is replaced without reading or changing its target",
   const target = path.join(await directory(t), "target");
   const original = '{"incomplete":';
   await fs.writeFile(target, original, { mode: 0o640 });
-  const mode = (await fs.stat(target)).mode;
+  const mode = await openedMode(target);
   const file = path.join(dir, "runner-log.jsonl");
   await fs.symlink(target, file);
   const options = logOptions(dir, { runtime_turns: [logTurn(0)] });
   await syncLog(createRunnerLogWriter(options));
   assert.equal(await fs.readFile(target, "utf8"), original);
-  assert.equal((await fs.stat(target)).mode, mode);
-  assert.equal((await fs.lstat(file)).isSymbolicLink(), false);
+  assert.equal(await openedMode(target), mode);
+  await assert.rejects(fs.readlink(file), { code: "EINVAL" }, "a regular file, no longer a link");
   assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, await options.loadRecord()));
 });
 
@@ -822,7 +823,7 @@ test("a deletion is synced to its folder, and a case that no longer exists leave
   const file = path.join(dir, "runner-log.jsonl");
   const options = logOptions(dir, { runtime_turns: [logTurn(0)] });
   await syncLog(createRunnerLogWriter(options));
-  assert.ok((await fs.stat(file)).isFile());
+  assert.equal(await fs.readFile(file, "utf8"), expectedJsonl(options, await options.loadRecord()));
   const open = fs.open.bind(fs);
   const synced = [];
   t.mock.method(fs, "open", async (filename, flags, mode) => {
@@ -830,11 +831,11 @@ test("a deletion is synced to its folder, and a case that no longer exists leave
     return open(filename, flags, mode);
   });
   await createRunnerLogWriter(options).remove();
-  await assert.rejects(fs.stat(file), { code: "ENOENT" });
+  await assert.rejects(fs.readFile(file), { code: "ENOENT" });
   assert.deepEqual(synced, [dir]);
   // A log a power cut brought back is removed at the next start when the case is gone.
   await fs.writeFile(file, '{"stale":true}\n', { mode: 0o600 });
   await syncLog(createRunnerLogWriter({ ...options, loadRecord: async () => null }));
-  await assert.rejects(fs.stat(file), { code: "ENOENT" });
+  await assert.rejects(fs.readFile(file), { code: "ENOENT" });
   assert.deepEqual(synced, [dir, dir]);
 });

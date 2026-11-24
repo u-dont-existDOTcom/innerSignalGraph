@@ -311,7 +311,7 @@ test("a real start serves the trial page on loopback in its own vault, names its
   assert.deepEqual(health.runnerArrangement, { writerMode: "whole", checkerMode: "whole", readers: ["claude"], writer: ["codex"], checkers: ["claude"] });
   assert.equal(stderr.includes("No Claude sign-in folder"), false, stderr);
   const post = (body) => fetch(`${base}/v1/runner/reconcile`, { method: "POST", headers: { "content-type": "application/json", origin: base }, body: JSON.stringify(body) });
-  const own = await post({ caseId: credentials.grants[0].case_ids[0], conversation: "current" });
+  const own = await post({ caseId: health.runnerCaseId, conversation: "current" });
   assert.equal(own.status, 200);
   assert.deepEqual((await own.json()).turns, []);
   const refused = await post({ caseId: "case-synthetic-not-granted", conversation: "current" });

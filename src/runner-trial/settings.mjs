@@ -144,9 +144,15 @@ export function loadRunnerTrialSettings({ settingsPath = null, claudeConfigDir =
     const file = outsidePath(settingsPath, RUNNER_TRIAL_SETTINGS_FILE, root);
     let text;
     try {
-      const info = fs.statSync(file);
-      if (!info.isFile() || info.size > MAX_FILE_BYTES) throw new Error("not a small regular file");
-      text = fs.readFileSync(file, "utf8");
+      // Checked and read through one open file, so both see the same one (opened without waiting: a named pipe is refused, not waited on).
+      const descriptor = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+      try {
+        const info = fs.fstatSync(descriptor);
+        if (!info.isFile() || info.size > MAX_FILE_BYTES) throw new Error("not a small regular file");
+        text = fs.readFileSync(descriptor, "utf8");
+      } finally {
+        fs.closeSync(descriptor);
+      }
     } catch {
       throw invalid(`${RUNNER_TRIAL_SETTINGS_FILE} must name a readable JSON file of at most ${MAX_FILE_BYTES} bytes.`);
     }
