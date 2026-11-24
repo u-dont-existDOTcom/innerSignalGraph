@@ -3,7 +3,7 @@ import { loadRunnerRules, runnerTrialDirectory } from "./released-rules.mjs";
 import fs from "node:fs/promises";
 import { RUNNER_LOG_FILE, createRunnerLogWriter, runnerClientLogFile, runnerLogFromRecord } from "./run-log.mjs";
 import { clientJournalFolder, forgetClientCopy } from "./clients.mjs";
-import { withTrialFolderLock } from "./folder-lock.mjs";
+import { acquireTrialFolderLock } from "./folder-lock.mjs";
 import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
@@ -32,6 +32,13 @@ export function runnerEventLine(event) {
 
 // How long a client's deletion waits for the trial folder's lock, as the commands do.
 const DELETE_LOCK_WAIT_MS = 10_000;
+
+// A deletion's steps after the vault's, whose case is gone by then: each is tried whatever became of the others, and one that fails is
+// named by its code, never raised. The result carries the codes (`cleanup_left`) when there are any.
+async function clearOrName(left, code, step) {
+  try { await step(); } catch { left.push(code); }
+}
+const withCleanupLeft = (deleted, left) => (left.length ? Object.freeze({ ...deleted, cleanup_left: Object.freeze([...(deleted?.cleanup_left ?? []), ...left]) }) : deleted);
 
 // Keyed by case id and runtime turn id together: the page chooses its turn id, so two cases may use the same one, and a case's
 // events must never reach another case's stream. Nothing is kept: an event with no listener is dropped, and a listener that
@@ -122,17 +129,23 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   });
   // "Delete this case" of a client, once it's its turn in the case's queue: under the trial folder's lock, which every command takes, the
   // case and its journal copies go from the vault; then the client list names neither the copy nor the server case it came from, so a
-  // cold test still running stops and another server case can be theirs; then their journal folder goes (their key for journal copies
-  // and their copy's cold-test receipt). Without the lock nothing is deleted. A failure after the vault's part is told, and deleting
-  // again finishes it.
+  // cold test still running stops and another server case can be theirs; and their journal folder goes (their key for journal copies, their
+  // copy's cold-test receipt and its test's marker). Without the lock nothing is deleted. Once the vault's part is done the case is deleted,
+  // whatever becomes of the rest: what couldn't be cleared is named in the result, and deleting again clears it (the vault's deletion finds
+  // nothing of the case any more and goes on).
   const deletingSource = clientCases.size === 0 || !trialDirectory ? privateCaseSource : Object.create(privateCaseSource, { deletePrivateCase: { value: async (caseId, ...rest) => {
     if (!clientCases.has(caseId)) return privateCaseSource.deletePrivateCase(caseId, ...rest);
-    return withTrialFolderLock(trialDirectory, async () => {
-      const deleted = await privateCaseSource.deletePrivateCase(caseId, ...rest);
-      try { await forgetClientCopy(trialDirectory, caseId); }
-      finally { await fs.rm(clientJournalFolder(trialDirectory, caseId), { recursive: true, force: true }); }
-      return deleted;
-    }, { waitMs: DELETE_LOCK_WAIT_MS });
+    const lock = await acquireTrialFolderLock(trialDirectory, { waitMs: DELETE_LOCK_WAIT_MS });
+    let deleted;
+    try { deleted = await privateCaseSource.deletePrivateCase(caseId, ...rest); } catch (error) {
+      await lock.release().catch(() => {});
+      throw error;
+    }
+    const left = [];
+    await clearOrName(left, "JOURNAL_LIST", () => forgetClientCopy(trialDirectory, caseId));
+    await clearOrName(left, "JOURNAL_FOLDER", () => fs.rm(clientJournalFolder(trialDirectory, caseId), { recursive: true, force: true }));
+    await clearOrName(left, "FOLDER_LOCK", () => lock.release());
+    return withCleanupLeft(deleted, left);
   } } });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
   const controller = createPrivateTherapyTurnController({ privateCaseSource: deletingSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
@@ -159,12 +172,14 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
       try { return await controller.reconcile(input); }
       finally { logWriterFor(input.caseId).schedule(input.caseId, input.authContext); }
     },
-    // The case's own run log goes with it (a client's journal folder goes in deletingSource above).
+    // What the runtime remembers of the case and its own run log go with it (a client's place on the list and journal folder go in
+    // deletingSource above).
     async deleteCase(input) {
-      const result = await controller.deleteCase(input);
-      runtime.forgetCase(input.caseId);
-      await logWriterFor(input.caseId).remove();
-      return result;
+      const deleted = await controller.deleteCase(input);
+      const left = [];
+      await clearOrName(left, "RUNTIME_STATE", () => runtime.forgetCase(input.caseId));
+      await clearOrName(left, "RUN_LOG", () => logWriterFor(input.caseId).remove());
+      return withCleanupLeft(deleted, left);
     },
     async runLog({ caseId, authContext }) { return runnerLogFromRecord(await loadExisting(caseId, authContext)); },
     async turnDetails({ caseId, turn, authContext }) { return runnerTurnDetailsFromRecord(await loadExisting(caseId, authContext), turn); },

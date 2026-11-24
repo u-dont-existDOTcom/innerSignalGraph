@@ -693,6 +693,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         }
         if (input.confirmation !== "DELETE") return send(res, 400, { error: "Type DELETE to delete this case.", code: "VALIDATION_ERROR" });
         const deleted = await automaticPrivateTherapy.deleteCase({ caseId, authContext });
+        // The case is gone from the vault; what couldn't be cleared besides is named by fixed codes, and deleting again clears it.
+        const cleanupLeft = Array.isArray(deleted.cleanup_left) ? deleted.cleanup_left.filter((code) => /^[A-Z_]{1,40}$/u.test(code)) : [];
         return send(res, 200, {
           caseId,
           deleted: true,
@@ -700,7 +702,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           handoffsRemoved: deleted.handoffs_removed ?? 0,
           journalCorporaRemoved: deleted.journal_corpora_removed ?? 0,
           locatorFilesRemoved: (deleted.locator_files_removed ?? 0) + (deleted.alias_locator_files_removed ?? 0),
-          handoffsKept: Array.isArray(deleted.handoffs_kept) ? deleted.handoffs_kept.length : 0
+          handoffsKept: Array.isArray(deleted.handoffs_kept) ? deleted.handoffs_kept.length : 0,
+          ...(cleanupLeft.length ? { cleanupLeft } : {})
         });
       }
       if (req.method === "GET" && url.pathname === "/v1/case/state") {

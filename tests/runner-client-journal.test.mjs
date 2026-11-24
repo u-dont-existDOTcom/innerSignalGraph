@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import vm from "node:vm";
+import { JSDOM } from "jsdom";
 import { loadConfig } from "../src/core/config.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
@@ -21,9 +23,10 @@ import { addClient, prepareTrialFolder, setJournalConsent } from "../scripts/run
 
 // A client's journal in the runner trial (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, points 4 to 7): the
 // journal gate (consent, a published session_use copy in the client's runner case, a cold-test receipt for exactly that copy) and
-// pull request 241's response evidence wired into the trial's writer, checker, repair and delivery. Every journal here is the
-// journal import's synthetic fixture, every client and message is invented, the cold-test receipt is planted by the test (the cold
-// test isn't built), and every worker is a stand-in: no model is called and no real record or journal is read.
+// pull request 241's response evidence wired into the trial's writer, checker, repair and delivery; and "Delete this case" of a case
+// that has read its journal, through the server's route and the page's own code. Every journal here is the journal import's synthetic
+// fixture, every client and message is invented, the cold-test receipt is planted by the test (the cold test has its own tests), and
+// every worker is a stand-in: no model is called and no real record or journal is read.
 
 const parts = cutRuleParts(loadTherapyProtocol({ boxGuidance: true }));
 const CORPUS = "corpus:synthetic-copy";
@@ -459,6 +462,135 @@ test("an approved reply is closed without a reply only when it may no longer be 
   const reconciled = await fetch(`${base}/v1/runner/reconcile`, { method: "POST", headers: { "content-type": "application/json", origin: base }, body: JSON.stringify({ caseId: j.clientB, conversation: "current" }) });
   assert.equal(reconciled.status, 200);
   assert.equal((await j.record(j.clientB)).runtime_turns.at(-1).state, "DELIVERED");
+});
+
+// The page's own "Delete this case" (its runner-trial block, its empty state, and what runs from clearDeletedCase to the button), in the
+// page's markup, with the rest of the page stood in for and its requests going to the trial's server (`lost`: no answer ever comes): what it
+// says, and what it still holds.
+async function deletingPage(t, base, choice, { lost = false } = {}) {
+  const [html, app] = await Promise.all(["index.html", "app.js"].map((name) => fs.readFile(new URL(`../apps/web/${name}`, import.meta.url), "utf8")));
+  const dom = new JSDOM(html, { url: `${base}/` });
+  t.after(() => dom.window.close());
+  const between = (from, to) => {
+    const start = app.indexOf(from);
+    const end = app.indexOf(to, start);
+    assert.ok(start > 0 && end > start, `the page has ${from}`);
+    return app.slice(start, end);
+  };
+  const said = [], answers = [];
+  let pressed = null;
+  const nothing = () => {};
+  const state = { therapy: [{ role: "user", exchangeId: "exchange-delete-1", content: "A synthetic message on the page." }], caseId: choice.caseId, settings: { synthetic: "kept" },
+    trackerEntries: [{ id: "synthetic-tracker" }], runnerShownThrough: "exchange-delete-1" };
+  const context = vm.createContext({
+    TextDecoder, crypto: globalThis.crypto, state, document: dom.window.document, runnerTrial: { on: true, newConversation: false }, currentPlan: null, selectedRouteText: "",
+    speechPlayback: { stop: nothing }, supervisorPanel: { clear: nothing }, runnerCases: { buckets: new Map(), epochs: new Map() }, runnerEpoch: () => 0, runnerChoiceFor: () => choice,
+    $: (selector) => (selector === "#runner-delete-case" ? { addEventListener: (_type, listener) => { pressed = listener; } } : dom.window.document.querySelector(selector)),
+    prompt: () => "DELETE", alert: (words) => { said.push(words); },
+    fetch: async (url, init) => {
+      if (lost) throw new TypeError("Failed to fetch");
+      const response = await fetch(`${base}${url}`, { ...init, headers: { ...init.headers, origin: base } });
+      answers.push([response.status, await response.clone().json()]);
+      return response;
+    },
+    ...Object.fromEntries(["setBusy", "keepRunnerBucket", "syncRunnerNewConversation", "showRunnerResume", "setRunnerKeptPlanStatus", "syncSpeechPlaybackControls", "saveState", "renderTherapy",
+      "renderCaseState", "renderHandoffStatus"].map((name) => [name, nothing]))
+  });
+  vm.runInContext([between("// runner-trial-page:start", "// runner-trial-page:end"), between("function emptyPageState()", "function loadState()"), between("function clearDeletedCase()", '$("#clear-therapy").addEventListener')].join("\n"), context);
+  return { state, said, answers, press: () => pressed(), shown: () => JSON.parse(JSON.stringify(state.therapy)).map((entry) => entry.content) };
+}
+
+test("Delete with something it can't clear: the case is told as deleted, the runtime and the page forget it, the page names what's left and never says the case wasn't deleted, and Delete again clears it", async (t) => {
+  const j = await journalTrial(t);
+  const { trial, base } = await j.serve();
+  // The case has read its journal, so the runtime asks the gate before every call of it.
+  assert.equal((await respond(base, j.clientA, "exchange-delete-1")).json.closing ?? null, null);
+  assert.ok(journalItems(packetOf(lastRequest(j.calls, "W"))).length >= 1);
+  await trial.flushLogs();
+  const folder = clientJournalFolder(j.home, j.clientA);
+  const log = path.join(j.home, `runner-log-${j.clientA}.jsonl`);
+  const lock = path.join(j.home, ".trial-folder.lock");
+  const list = path.join(j.home, "clients.json");
+  const gone = () => assert.rejects(j.record(j.clientA), { code: "PRIVATE_CASE_NOT_FOUND" });
+  const journalOf = async () => (await readRunnerClients(j.home)).clients[0].journal;
+  const page = await deletingPage(t, base, { caseId: j.clientA, kind: "client", number: 1, label: "Synthetic client one" });
+  const held = async (during) => {
+    await fs.writeFile(lock, "999999999 synthetic-token\n", { mode: 0o600 });
+    try { await during(); } finally { await fs.unlink(lock); }
+  };
+  const refusal = `Delete didn't finish: A runner-trial command ended without finishing and left its lock. If no other runner-trial command is running, remove ${lock} and try again.`;
+
+  // Refused before anything is deleted: the case, the list and the page stay as they are.
+  await held(page.press);
+  assert.deepEqual([page.answers.at(-1)[0], page.said.splice(0)], [500, [refusal]]);
+  assert.equal((await j.record(j.clientA)).runtime_turns.length, 1);
+  assert.equal((await journalOf()).corpus_id, CORPUS);
+  assert.deepEqual(page.shown(), ["A synthetic message on the page."]);
+
+  // Deleted, with the list, the folder and the log each failing.
+  const { rename, rm } = fs;
+  const refuse = () => { throw Object.assign(new Error("Synthetic words."), { code: "EACCES" }); };
+  const mocked = [t.mock.method(fs, "rename", async (from, to) => (to === list ? refuse() : rename.call(fs, from, to))), t.mock.method(fs, "rm", async (where, options) => ([folder, log].includes(where) ? refuse() : rm.call(fs, where, options)))];
+  await page.press();
+  for (const each of mocked) each.mock.restore();
+  const [status, { caseFileRemoved, journalCorporaRemoved, deleted, cleanupLeft }] = page.answers.at(-1);
+  assert.deepEqual([status, deleted, caseFileRemoved, journalCorporaRemoved, cleanupLeft], [200, true, true, 1, ["JOURNAL_LIST", "JOURNAL_FOLDER", "RUN_LOG"]]);
+  await gone();
+  assert.deepEqual(page.said.splice(0), ["Conversation with 1. Synthetic client one. The case was deleted. Some leftovers on this computer remain: their journal copy's place on the client list, their journal folder (their key for journal copies and the cold-test receipt), the case's run log file; press Delete again to clear them."]);
+  // Nothing of the case is left on the page.
+  assert.deepEqual(page.shown(), ["This case was deleted"]);
+  assert.deepEqual([JSON.parse(JSON.stringify(page.state.trackerEntries)), page.state.runnerShownThrough, page.state.caseId, page.state.settings.synthetic], [[], null, j.clientA, "kept"]);
+  assert.equal((await journalOf()).corpus_id, CORPUS);
+  await fs.readFile(path.join(folder, COLD_TEST_RECEIPT_FILE));
+  await fs.readFile(log);
+
+  // Delete again, refused: the case is gone already, and nothing says it wasn't deleted.
+  await held(page.press);
+  assert.deepEqual(page.said.splice(0), [refusal]);
+  await gone();
+
+  // The runtime remembers nothing of the case's journal: its gate is closed (the copy is gone), and a new message is answered all the same.
+  const fresh = await respond(base, j.clientA, "exchange-delete-2", "A synthetic new message.");
+  assert.deepEqual([fresh.status, fresh.json.answer, fresh.json.closing ?? null], [200, "What makes asking hard for you?", null]);
+  assert.equal(journalItems(packetOf(lastRequest(j.calls, "W"))).length, 0);
+  await trial.flushLogs();
+
+  // Delete again clears what was left, and again, with nothing left, is as good: nothing more is said.
+  for (const [removed, corpora] of [[true, 0], [false, 0]]) {
+    await page.press();
+    const [again, answer] = page.answers.at(-1);
+    assert.deepEqual([again, answer.deleted, answer.caseFileRemoved, answer.journalCorporaRemoved, Object.hasOwn(answer, "cleanupLeft")], [200, true, removed, corpora, false]);
+    await gone();
+    assert.equal((await journalOf()).corpus_id, null);
+    for (const place of [folder, log]) await assert.rejects(fs.readFile(place), { code: "ENOENT" });
+  }
+  assert.deepEqual(page.said, []);
+});
+
+test("what the page says Delete left, from the server's codes alone, in fixed words", async (t) => {
+  const j = await journalTrial(t, { receipt: "none" });
+  const { base } = await j.serve();
+  const app = await fs.readFile(new URL("../apps/web/app.js", import.meta.url), "utf8");
+  const words = vm.runInNewContext(`${app.slice(app.indexOf("// runner-trial-page:start"), app.indexOf("// runner-trial-page:end"))}\n;runnerLeftoversText`, { TextDecoder });
+  const saying = (left) => `The case was deleted. Some leftovers on this computer remain: ${left}; press Delete again to clear them.`;
+  for (const [codes, left] of [
+    [["JOURNAL_LIST"], "their journal copy's place on the client list"],
+    [["JOURNAL_FOLDER"], "their journal folder (their key for journal copies and the cold-test receipt)"],
+    [["FOLDER_LOCK"], "the trial folder's lock (stop the trial and remove .trial-folder.lock by hand first)"],
+    [["RUNTIME_STATE"], "what the running trial remembers of the case"],
+    [["RUN_LOG"], "the case's run log file"],
+    [["RUN_LOG", "A_CODE_ADDED_LATER"], "the case's run log file, something else"],
+    [["constructor", "__proto__", "<b>Synthetic</b>", null, 42], Array(5).fill("something else").join(", ")]
+  ]) assert.equal(words(codes), saying(left));
+  for (const none of [undefined, null, [], {}, "RUN_LOG"]) assert.equal(words(none), "");
+  // The owner's own case, with nothing left: nothing is said.
+  const own = await deletingPage(t, base, { caseId: j.ownCase, kind: "own", number: null, label: null });
+  await own.press();
+  assert.deepEqual([own.answers.at(-1)[0], own.said, own.shown()], [200, [], ["This case was deleted"]]);
+  // An answer that never comes: the page doesn't know, and doesn't say the case wasn't deleted.
+  const lost = await deletingPage(t, base, { caseId: j.ownCase, kind: "own", number: null, label: null }, { lost: true });
+  await lost.press();
+  assert.deepEqual([lost.said, lost.shown()], [["Delete didn't finish: Failed to fetch"], ["A synthetic message on the page."]]);
 });
 
 test("a receipt for another generation keeps the journal out of the turn; with response evidence off no reader is attached and every packet is as before", async (t) => {

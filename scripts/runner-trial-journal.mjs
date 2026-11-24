@@ -12,12 +12,12 @@
 
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { withOpenedRegularFile } from "../src/core/opened-regular-file.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { createJournalCopyKeyPair, importJournalCopy, journalCopyCorpusId, journalCopyRecipientDigest, journalCopySourceDigest, openJournalCopy, readSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
-import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, journalConsentState, readColdTestReceipt, readRunnerClients, syncFolder, writeRunnerClients } from "../src/runner-trial/clients.mjs";
+import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, clientJournalFolder, journalConsentState, readColdTestAttempt, readRunnerClients, syncFolder, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { createSealedColdConsumerPort, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { createRunnerWorkerFactory } from "../src/runner-trial/settings.mjs";
 import { RUNNER_CLAUDE_CONFIG_DIR } from "../src/runner-trial/switch.mjs";
@@ -48,8 +48,10 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      needs its own cold test.
   --cold-test FILE   the copy's cold test, with the questions and their key from FILE (mode 0600, outside the checkout): a fresh
                      consumer on the trial's signed-in worker answers from the copy alone (two calls a question), and a judge on
-                     that worker (one more call per answerable question) checks that the answer says what the key quotes say.
+                     that worker (one more call a question) checks what the answer says: what the key quotes say, or, to a question
+                     the journal doesn't answer, that it doesn't, with nothing told as the journal's.
                      A test that starts removes the copy's receipt; only a pass gives a new one, which the journal gate asks for.
+                     Of two tests that overlap, the one started last decides, also when it never ends.
                      It sends excerpts of the client's journal to the company running that worker, so it needs the client's
                      confirmed journal consent.
   --provider claude|codex  the cold test's worker: claude (\`claude -p\`, signed in at ${RUNNER_CLAUDE_CONFIG_DIR}) or codex
@@ -185,10 +187,11 @@ export function oneTimeGrant(caseId, { scopes, purposes }) {
 
 export const IMPORT_PURPOSES = Object.freeze([PRIVATE_JOURNAL_PURPOSES.ARCHIVE, PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH, PRIVATE_JOURNAL_PURPOSES.SESSION_USE]);
 
-// The client's cold-test receipt removed, whatever copy it names, and that made durable.
-async function removeReceipt(resolved, caseId) {
+// A file of the client's journal folder removed (their cold-test receipt, whatever copy it names, or the marker of the cold test started
+// last), and that made durable.
+async function removeJournalFile(resolved, caseId, name) {
   const folder = clientJournalFolder(resolved, caseId);
-  try { await fsp.unlink(path.join(folder, COLD_TEST_RECEIPT_FILE)); } catch (error) {
+  try { await fsp.unlink(path.join(folder, name)); } catch (error) {
     if (error?.code === "ENOENT") return;
     throw error;
   }
@@ -262,9 +265,11 @@ async function importOpenedCopy({ resolved, list, client, number, bundle }) {
     const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, heldRootDir: providers.rootDir, authorizationProvider: grant.authorizationProvider,
       keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
     const result = await importJournalCopy({ caseAccessService: service, caseId: client.case_id, corpusId: journalCopyCorpusId(bundle), authContext: grant.authContext, bundle });
-    // A new copy's earlier receipt first, then the list: a failure at any point leaves the journal closed, never open on a copy no
-    // cold test passed.
-    if (client.journal.corpus_id !== result.corpus_id) await removeReceipt(resolved, client.case_id);
+    // A new copy's earlier receipt first, with the marker of the test started last, so that one still running gives none; then the list: a
+    // failure at any point leaves the journal closed, never open on a copy no cold test passed.
+    if (client.journal.corpus_id !== result.corpus_id) {
+      for (const name of [COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE]) await removeJournalFile(resolved, client.case_id, name);
+    }
     client.journal = { ...client.journal, corpus_id: result.corpus_id };
     await writeClientList(resolved, list, "the copy is in the client's case, but nothing uses it.");
     return { number, corpus_id: result.corpus_id, passages_verified: result.passages_verified, records_verified: result.records_verified };
@@ -301,6 +306,11 @@ function coldWorker(provider, environment) {
 // gives a new one: an error, a withdrawal, a wrong or malformed answer leaves none. The client's consent and copy are read again before
 // every packet leaves (the judge's too) and before the receipt is written, so a withdrawal, a new copy or a deleted case stops it.
 //
+// Of tests that overlap, the one started last decides. Each marks its start, where it removes the receipt, with an attempt of its own. A
+// pass is recorded, and a receipt taken away by a test that doesn't pass, only while the marker still names that test's attempt. So once a
+// newer test has started, also one that never ends, an earlier one gives no receipt and takes away none. All of it under the trial
+// folder's lock.
+//
 // The boundary: the consent is read under the trial folder's lock, the one --journal-consent takes, right before each packet is handed to
 // the worker's process, and the lock is released before that hand-over (a call can take minutes). So a withdrawal lands wholly before
 // that reading, and the packet doesn't leave, or after it; one that lands after the hand-over is honoured at the next packet and before
@@ -310,6 +320,7 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
   await requireReady(resolved);
   const questions = await readQuestionsFile(questionsPath);
   const sender = port ? null : worker ?? coldWorker(provider, environment);
+  const attempt = randomUUID();
   const underLock = (operation) => withTrialFolderLock(resolved, operation, { waitMs: lockWaitMs });
   const { caseId, corpusId } = await underLock(async () => {
     const { client } = await clientByNumber(resolved, number);
@@ -317,19 +328,25 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
       throw new StartError(`Client ${number} has no confirmed journal consent. The cold test sends excerpts of their journal to the company running its worker, so it runs only with their consent (runner-trial-start.mjs --journal-consent confirm).`);
     }
     if (!client.journal.corpus_id) throw new StartError(`Client ${number} has no journal copy here yet: import it with --import.`);
-    await removeReceipt(resolved, client.case_id);
+    const folder = clientJournalFolder(resolved, client.case_id);
+    await privateFolder(folder, "The client's journal folder");
+    // The receipt goes first: whatever stops the start between the two, a receipt that's there is the one the marked test gave.
+    await removeJournalFile(resolved, client.case_id, COLD_TEST_RECEIPT_FILE);
+    await writePrivateFile(path.join(folder, COLD_TEST_ATTEMPT_FILE), `${JSON.stringify({ schema_version: 1, attempt, started_at: now().toISOString() }, null, 2)}\n`);
     return { caseId: client.case_id, corpusId: client.journal.corpus_id };
   });
   const stillSo = async () => {
     const current = (await clientList(resolved)).clients.find((entry) => entry.case_id === caseId);
     if (!current || journalConsentState(current) !== "confirmed" || current.journal?.corpus_id !== corpusId) {
-      throw new StartError("The client's consent or copy changed during the cold test: it stopped, and the copy has no receipt.");
+      throw new StartError("The client's consent or copy changed during the cold test: it stopped, and gave no receipt.");
     }
   };
   const consumer = port ?? createSealedColdConsumerPort({ worker: sender, beforeSend: () => underLock(stillSo) });
-  // Whatever ends the test but a pass: no receipt of this copy stays, one that another test gave it meanwhile included.
+  // A test that doesn't pass leaves no receipt, unless a newer one has started: that one decides. Returns whether one has.
   const leaveNone = () => underLock(async () => {
-    if ((await readColdTestReceipt(resolved, caseId))?.corpus_id === corpusId) await removeReceipt(resolved, caseId);
+    const marked = await readColdTestAttempt(resolved, caseId);
+    if (marked === attempt) await removeJournalFile(resolved, caseId, COLD_TEST_RECEIPT_FILE);
+    return marked !== null && marked !== attempt;
   });
   let result;
   try {
@@ -344,9 +361,12 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
     if (result.passed) {
       await underLock(async () => {
         await stillSo();
-        const folder = clientJournalFolder(resolved, caseId);
-        await privateFolder(folder, "The client's journal folder");
-        await writePrivateFile(path.join(folder, COLD_TEST_RECEIPT_FILE), `${JSON.stringify(result.receipt, null, 2)}\n`);
+        const marked = await readColdTestAttempt(resolved, caseId);
+        if (marked !== attempt) {
+          throw new StartError(marked === null ? "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again."
+            : "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again.");
+        }
+        await writePrivateFile(path.join(clientJournalFolder(resolved, caseId), COLD_TEST_RECEIPT_FILE), `${JSON.stringify(result.receipt, null, 2)}\n`);
       });
     }
   } catch (error) {
@@ -354,8 +374,8 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
     await leaveNone().catch(() => {});
     throw error;
   }
-  if (!result.passed) await leaveNone();
-  return { passed: result.passed, report: result.report };
+  const newerStarted = result.passed ? false : await leaveNone();
+  return { passed: result.passed, newerStarted, report: result.report };
 }
 
 async function askClientNumber(resolved, command, { log, askQuestion }) {
@@ -390,7 +410,9 @@ async function main(argv, { log, askQuestion, worker }) {
   log(JSON.stringify(result.report, null, 2));
   log(result.passed
     ? `Passed: client ${number}'s copy has its cold-test receipt, so their sessions can use their journal while their consent holds (a consent confirmed after the trial started holds from its next start).`
-    : `Not passed: client ${number}'s copy has no cold-test receipt, so their journal stays out of their sessions.`);
+    : result.newerStarted
+      ? `Not passed. A newer cold test of client ${number}'s copy has started, and that one decides whether the copy has a receipt.`
+      : `Not passed: client ${number}'s copy has no cold-test receipt, so their journal stays out of their sessions.`);
   return result.passed ? 0 : 1;
 }
 

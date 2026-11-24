@@ -13,16 +13,18 @@ import { RUNNER_TRIAL_CASE_ID_PATTERN } from "./switch.mjs";
 // or a report. Nothing here reads the vault.
 
 export const RUNNER_CLIENTS_FILE = "clients.json";
-// Each client's journal folder in the trial folder: their key for journal copies and their copy's cold-test receipt
-// (scripts/runner-trial-journal.mjs). "Delete this case" removes it with the case.
+// Each client's journal folder in the trial folder: their key for journal copies, their copy's cold-test receipt and the marker of the
+// cold test started last (scripts/runner-trial-journal.mjs). "Delete this case" removes it with the case.
 export const RUNNER_JOURNAL_FOLDER = "journal";
 export const COLD_TEST_RECEIPT_FILE = "cold-test-receipt.json";
+export const COLD_TEST_ATTEMPT_FILE = "cold-test-attempt.json";
 export const MAX_RUNNER_CLIENTS = 50;
 export const CLIENT_LABEL_MAX = 80;
 
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/u;
 const CORPUS_ID = /^[A-Za-z0-9:_-]{1,160}$/u;
 const ID = /^[A-Za-z0-9:._-]{1,160}$/u;
+const ATTEMPT = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 const invalid = (message) => { throw new ValidationError(message, { code: "RUNNER_CLIENTS_INVALID" }); };
 const plainObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -195,6 +197,21 @@ export async function readColdTestReceipt(trialDir, caseId) {
     if (text === null) return null;
     const receipt = validateColdTestReceipt(JSON.parse(text));
     return receipt.case_id === caseId ? receipt : null;
+  } catch {
+    return null;
+  }
+}
+
+// The attempt of the cold test started last for a client, from the marker every test writes when it starts: only the test it names may give
+// a receipt or take one away (scripts/runner-trial-journal.mjs). Null when it's missing or malformed, so that no test may.
+export async function readColdTestAttempt(trialDir, caseId) {
+  try {
+    const text = await readPrivateFile(path.join(clientJournalFolder(trialDir, caseId), COLD_TEST_ATTEMPT_FILE), COLD_TEST_ATTEMPT_FILE);
+    if (text === null) return null;
+    const marker = JSON.parse(text);
+    exactKeys(marker, ["schema_version", "attempt", "started_at"], "The cold test's marker");
+    timestamp(marker.started_at, "The cold test's started_at");
+    return marker.schema_version === 1 && typeof marker.attempt === "string" && ATTEMPT.test(marker.attempt) ? marker.attempt : null;
   } catch {
     return null;
   }

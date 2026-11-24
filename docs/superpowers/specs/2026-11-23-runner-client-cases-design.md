@@ -212,8 +212,8 @@ journal's cold test**. Both are on the next branch (below).
 
 The lane's instruction after pull request 244: the copy step and the cold test, built and tested on made-up journals only, with no
 server contact; each real copy runs only on the owner's say. An independent review (Claude) of the first three commits found nine
-problems, and GPT's review of the branch with those fixed found ten more (two blocking); this is as built after both, and what
-GPT's review changed is listed at the end.
+problems, GPT's review of the branch with those fixed found ten more (two blocking), and its review of the branch with those fixed
+four; this is as built after all three, and what GPT's reviews changed is listed at the end.
 
 - **The export** is the journal import's `export` command (no longer only planned), run where the journal lives. Its settings come
   from the import's private configuration (`runner_trial_export`: the corpus, one client's public key, a new file outside the
@@ -223,8 +223,8 @@ GPT's review changed is listed at the end.
   quote index's `quote_meta`, `quote_terms` and the like), and the order of its sources. The bundle is sealed for that one key
   (X25519, HKDF-SHA-256, AES-256-GCM with a 16-byte tag); a change to the file fails the seal. It is written to a private temporary
   file (mode 0600), synced, and given its name by a hard link, never over another file, so an export killed part-way leaves nothing at
-  that name and can be run again (a filesystem without hard links gets the name created exclusively and written in place). The seal
-  keeps the copy confidential; it doesn't prove the sender, so only a file the owner carried from the export is imported. Code:
+  that name and can be run again; on a filesystem without hard links it publishes nothing and fails. The seal keeps the copy
+  confidential; it doesn't prove the sender, so only a file the owner carried from the export is imported. Code:
   `src/journal-import/journal-copy.mjs`, `src/cli/journal-import.mjs`.
 - **Each client has a key of their own** (`journal/<case id>/copy-key.json`, mode 0600; `--copy-key`), so a copy sealed for
   another client can't be opened, and the client's Delete, which removes their folder, also removes the means to open any copy
@@ -237,7 +237,10 @@ GPT's review changed is listed at the end.
   one person's, whatever its corpora), and keeps it when a later step fails. So every copy the vault may hold, an unfinished import's
   included, has its one client on the list, and neither another server case for that client nor that server case for another client
   is imported. The client's Delete, made under the trial folder's lock, removes the case with its copies, then their place on the list,
-  then their folder; without that lock nothing is deleted.
+  then their folder; without that lock nothing is deleted. Once the vault has deleted the case, each of the rest (those two, what the
+  runtime remembers, the run log) is tried whatever became of the others; what couldn't be cleared comes back as fixed codes
+  (`cleanup_left`), the page forgets the case all the same and names it, and Delete again clears it (the vault's deletion of a case
+  that's gone finds nothing and goes on).
 - **Under the trial folder's lock and the vault's writer lock** (so only while the trial is stopped), with a grant made in the process
   for that command and that case alone (write, and the archive, organize_search and session_use purposes the store asks), the import
   checks the whole bundle before anything is written to the vault (its digest, its graph, and its generation built once into a store
@@ -245,26 +248,33 @@ GPT's review changed is listed at the end.
   builder's own indexes, and publishes it for session use without archive. Then it checks what is stored against the export: every
   usable quotation against the stored bytes (200 at a time; a deleted or revoked passage is never resolved as evidence), every record
   (those included), every source text and every index of the builder; and the list names the corpus. The same file again is checked
-  again; a copy an earlier import left unpublished is refused. A new copy drops the earlier copy's receipt; the earlier copy stays in
-  the case, unused, until the client's Delete (a limit).
+  again; a copy an earlier import left unpublished is refused. A new copy drops the earlier copy's receipt and its test's marker; the
+  earlier copy stays in the case, unused, until the client's Delete (a limit).
 - **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`), on the journal import's cold-consumer runner: a
   fresh consumer gets the frozen questions and what the session-use reader retrieves, graph on and off, never the key; the
   controller scores what the consumer declares (its answerability, the passages it cites) exactly; and a judge checks what an answer
   says. The key names evidence by exact words of the journal, each found in one to three usable passages, so whoever writes the
   questions needs no internal ids; a right answer has words and cites a passage for each. The file's own question ids go nowhere: the
   consumer, the judge, the report and the errors name a question by its place in the file.
-- **The judge** is one more fresh call of the same worker for each answerable question whose graph-on answer passed the exact checks,
-  with the question, its key quotes and that answer, and nothing else. It says whether the answer says what the quotes say about the
-  question and contradicts nothing in them; a pass needs its yes for every answerable question, and an answer of its own outside its
-  strict schema stops the test. Its reason isn't kept. Limits: it is the consumer's own worker, not another company's model, and it
-  knows only the key quotes, so it can't tell whether a detail they don't mention is in the journal.
+- **The judge** is one more fresh call of the same worker for each question whose graph-on answer passed the exact checks, with the
+  question, whether the journal answers it, its key quotes (none when it doesn't) and that answer, and nothing else. For a question the
+  journal answers it says whether the answer says what the quotes say about it and contradicts nothing in them; for one it doesn't
+  (absent, false premise), whether the answer says so, or that the premise is wrong, and tells nothing as the journal's. A pass needs
+  its yes for every question, and an answer of its own outside its strict schema stops the test. Its reason isn't kept. Limits: it is
+  the consumer's own worker, not another company's model, and it knows only the key quotes, so it can't tell whether a detail they
+  don't mention is in the journal; and a true correction of a false premise, which the consumer's own instruction asks for with
+  evidence, is a no when it tells what the journal does say, so a faithful copy can fail on it.
 - **A test that starts removes the copy's receipt; only a pass gives a new one.** So a wrong or malformed answer, a judge's no, a
   failed call, a key quote that doesn't fit, a withdrawal or a deleted case leaves none, and a wrong answer followed by an error can't
-  leave an earlier pass standing. The worker is the trial's whole-reply checker, signed in (`claude -p` or `codex exec`), no API. It needs the client's
-  confirmed consent, read again under the trial folder's lock (which `--journal-consent` takes) right before each packet is handed to
-  the worker's process, the lock being released before that hand-over, and again under it before the receipt is written. **The
-  boundary:** a withdrawal lands wholly before that reading, and the packet doesn't leave, or after it; one that lands after the
-  hand-over is honoured at the next packet and before the receipt is written.
+  leave an earlier pass standing. **Of tests that overlap, the one started last decides:** each writes a marker when it starts, next to
+  removing the receipt (`cold-test-attempt.json` in the client's journal folder: a random id and the time), and a pass is recorded, or a
+  receipt taken away by a test that doesn't pass, only while the marker, read again under the folder's lock, still names that test. So
+  an earlier test gives no receipt once a newer one has started, also one that failed or was killed, and takes none of its away. The
+  gate reads the receipt alone, as before. The worker is the trial's whole-reply checker, signed in (`claude -p` or `codex exec`), no
+  API. It needs the client's confirmed consent, read again under the trial folder's lock (which `--journal-consent` takes) right before
+  each packet is handed to the worker's process, the lock being released before that hand-over, and again under it before the receipt
+  is written. **The boundary:** a withdrawal lands wholly before that reading, and the packet doesn't leave, or after it; one that lands
+  after the hand-over is honoured at the next packet and before the receipt is written.
 - **What the commands print:** numbers, scores, an opaque name for the snapshot tested (a digest's first 16 characters) and fixed
   texts. An unexpected error prints its code, never its own text, which can quote what a file holds.
 - The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report, which the
@@ -278,15 +288,17 @@ GPT's review changed is listed at the end.
   there); a copy refused for another key, after tampering or with a short tag; the import refused while the vault is held, for the
   wrong client, from inside the trial folder, for a link or another file, for a journal already copied for another client, or from
   another server case than the client's own, an import that fails before and after the vault is written, and Delete in between; a
-  bundle whose graph or index doesn't hold refused with nothing written to the vault, and an unpublished earlier import refused; a copy
-  of 210 passages, one with a record larger than its usual shards, one with deleted and revoked passages, one with a source text
-  stored in chunks, and a quote generation as the journal import builds it; the source order and the builder's indexes kept; the
-  record-by-record and text-by-text check; the same file again; a cold test that passes, one that misses, claims a false premise,
-  cites part of the evidence, cites a passage it wasn't given or has no words, one the judge refuses, one with no judge, one stopped by
-  an error at each kind of call, through the real port and a stand-in worker; a consent withdrawn before each kind of packet, during a
-  call and before the receipt; what each command prints, with malformed files; the private files' reader with links, loose modes,
-  folders, pipes and sockets; and the receipt opening the gate under the client's own grant. Nothing here was run against a model or a
-  real journal.
+  Delete whose later steps fail, each alone and all together, and through the server's route and the page's own code, pressed again
+  each time; a bundle whose graph or index doesn't hold refused with nothing written to the vault, and an unpublished earlier import
+  refused; a copy of 210 passages, one with a record larger than its usual shards, one with deleted and revoked passages, one with a
+  source text stored in chunks, and a quote generation as the journal import builds it; the source order and the builder's indexes
+  kept; the record-by-record and text-by-text check; the same file again; a cold test that passes, one that misses, claims a false
+  premise, cites part of the evidence, cites a passage it wasn't given or has no words, one the judge refuses (an invented answer
+  declared as none included), one with no judge, one stopped by an error at each kind of call, through the real port and a stand-in
+  worker; tests that overlap, the newer one passing, failing, still running or killed; a consent withdrawn before each kind of packet,
+  during a call and before the receipt; what each command prints, with malformed files; the private files' reader with links, loose
+  modes, folders, pipes and sockets; and the receipt opening the gate under the client's own grant. Nothing here was run against a
+  model or a real journal.
 
 What GPT's review of 24 Nov changed (its findings, in its order): a client's server case is fixed on the list before the vault is
 touched (1, blocking); the judge, and an answer needs words (2, blocking); a test that starts removes the receipt (3); the consent read
@@ -295,3 +307,8 @@ unexpected error's text printed (6); deleted and revoked passages copied and com
 it is (8); the client list and the receipt read through one opened handle (9); the export published by a link (10). Found on the way:
 Delete left a client's copy on the list, so "until their Delete" (1) and a cold test that stops for a deleted case wouldn't have been
 true. It now takes both off the list, under the folder's lock.
+
+What GPT's second review of the branch (24 Nov) changed: the attempt marker, since an older test could pass after a newer one had
+started and been killed (1); the judge for every question, since an invented answer declared as not found passed (2); a deletion done
+once the vault has done it, since a failure after that was told as "not deleted" and kept the page's and the runtime's state (3); and no
+export where hard links can't be made, since the fallback could leave a partial file at the final name (4).

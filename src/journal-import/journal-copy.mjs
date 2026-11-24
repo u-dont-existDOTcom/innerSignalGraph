@@ -137,20 +137,16 @@ const NO_HARD_LINKS = new Set(["EPERM", "ENOTSUP", "EOPNOTSUPP"]);
 // The sealed copy on disk, whole or not at all, never over another file: a private temporary file beside it, synced, then given the final
 // name by a hard link, which fails when a file is already there; then the temporary name goes and the folder is synced. So a process
 // killed or a power cut part-way leaves nothing at the final name (at most the temporary file, sealed like the copy), and the export can
-// be run again. On a filesystem without hard links the final name is created exclusively and written in place: still never over another
-// file, but stopped part-way it can leave a partial one. `fileSystem` is for tests.
+// be run again. On a filesystem without hard links nothing is published: the owner can choose another output path, on one that has them.
+// `fileSystem` is for tests.
 export async function writeSealedJournalCopy(file, sealed, { fileSystem = fs } = {}) {
   const text = `${JSON.stringify(sealed)}\n`;
   const temporary = `${file}.${randomUUID()}.tmp`;
   await writeNewFile(temporary, text, fileSystem);
-  try {
-    try { await fileSystem.link(temporary, file); } catch (error) {
-      if (!NO_HARD_LINKS.has(error?.code)) throw error;
-      await writeNewFile(file, text, fileSystem);
-    }
-  } catch (error) {
+  try { await fileSystem.link(temporary, file); } catch (error) {
     await fileSystem.rm(temporary, { force: true }).catch(() => {});
     if (error?.code === "EEXIST") invalid("JOURNAL_COPY_FILE_EXISTS", "A file is already there; nothing was written over it.");
+    if (NO_HARD_LINKS.has(error?.code)) invalid("JOURNAL_COPY_PUBLISH_UNSUPPORTED", "The copy can't be published whole or not at all there (no hard links), so it wasn't; choose another output path.");
     throw error;
   }
   await fileSystem.rm(temporary, { force: true });

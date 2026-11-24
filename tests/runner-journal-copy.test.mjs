@@ -17,7 +17,7 @@ import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { journalRoleInstruction } from "../src/journal-import/provider-port.mjs";
 import { createJournalCopyKeyPair, exportJournalCopy, importJournalCopy, journalCopyCorpusId, openJournalCopy, sealJournalCopy, writeSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
 import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
-import { COLD_TEST_RECEIPT_FILE, RUNNER_CLIENTS_FILE, clientJournalFolder, readColdTestReceipt, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
+import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, RUNNER_CLIENTS_FILE, clientJournalFolder, readColdTestAttempt, readColdTestReceipt, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { COLD_JUDGE_INSTRUCTION, COLD_JUDGE_SCHEMA, createSealedColdConsumerPort, runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
@@ -351,11 +351,12 @@ test("a quote generation, as the journal import builds and publishes it, finds t
 
 // A scripted stand-in for the fresh consumer and the judge. The consumer sees only the packet (the frozen question and what the session-use
 // reader retrieved). It answers "supported" citing the passages it retrieved, or "not found" when it retrieved none, except for the
-// questions `script` answers otherwise, by their words (a model judges a false premise itself). `miss` makes it answer every question as
-// not found; `overclaim` makes it ignore the script; `citeFirst` makes it cite only the first passage it retrieved; `invent` makes it
-// cite a passage it wasn't given; `blank` makes it answer with no words. The judge finds what `judge` says, and what it was asked is kept.
+// questions `script` answers otherwise, by their words (a model judges a false premise itself); `words` gives the answer to a question, by
+// its words. `miss` makes it answer every question as not found; `overclaim` makes it ignore the script; `citeFirst` makes it cite only the
+// first passage it retrieved; `invent` makes it cite a passage it wasn't given; `blank` makes it answer with no words. The judge finds what
+// `judge` says (of each question, when it's a function), and what it was asked is kept.
 const PREMISE = "When did the colleague refuse to help?";
-const consumer = ({ miss = false, overclaim = false, citeFirst = false, invent = false, blank = false, judge = true, script = { [PREMISE]: "false_premise" } } = {}) => {
+const consumer = ({ miss = false, overclaim = false, citeFirst = false, invent = false, blank = false, judge = true, script = { [PREMISE]: "false_premise" }, words = {} } = {}) => {
   const asked = [], judged = [];
   return {
     asked, judged,
@@ -364,14 +365,14 @@ const consumer = ({ miss = false, overclaim = false, citeFirst = false, invent =
       const passages = (packet.retrieved_evidence?.records ?? []).filter((record) => record.kind === "passage").map((record) => record.id);
       const scripted = overclaim ? undefined : script[packet.frozen_question.question];
       const answerability = miss ? "not_found" : scripted ?? (passages.length ? "supported" : "not_found");
-      const output = { schema_version: "1.0", question_id: packet.frozen_question.id, answer: blank ? "  \n" : "A synthetic answer.",
+      const output = { schema_version: "1.0", question_id: packet.frozen_question.id, answer: blank ? "  \n" : words[packet.frozen_question.question] ?? "A synthetic answer.",
         answerability, evidence_ids: invent ? ["passage-never-given"] : answerability === "not_found" ? [] : citeFirst ? passages.slice(0, 1) : passages,
         qualifier_ids: [], snapshot_generation: packet.expected_generation, coverage_note: "Synthetic.", more_available: false };
       return { output, receipt: { provider: "stand-in", model: "stand-in" } };
     },
     async judge(question) {
       judged.push(question);
-      return judge;
+      return typeof judge === "function" ? judge(question) : judge;
     }
   };
 };
@@ -411,7 +412,7 @@ async function coldTestOn(t) {
   const server = await serverJournal(t);
   const run = (port, questions = QUESTIONS) => runJournalColdTest({ service: server.service, auth: server.auth, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, questions, port, now: () => new Date("2026-11-24T09:00:00.000Z") });
   const { reference } = await server.service.inspectJournalCorpus(SERVER_CASE, SERVER_CORPUS, { requiredScope: "case:read", requiredPurpose: "session_use" }, server.auth);
-  return { run, reference };
+  return { run, reference, sources: server.sources };
 }
 
 test("the cold test: a fresh consumer answers frozen questions from the copy alone; a strict pass gives the receipt for exactly that snapshot, anything less gives none", async (t) => {
@@ -424,8 +425,8 @@ test("the cold test: a fresh consumer answers frozen questions from the copy alo
   const right = { retrieved_all: true, right: true }, rightNone = { retrieved_all: null, right: true };
   assert.deepEqual(passed.report, { snapshot: snapshotOf(reference), questions: 3, graph_right: 3, raw_right: 3, same_snapshot: true, by_question: [
     { n: 1, answerable: true, graph: right, raw: right, judged: true },
-    { n: 2, answerable: false, graph: rightNone, raw: rightNone, judged: null },
-    { n: 3, answerable: false, graph: rightNone, raw: rightNone, judged: null }
+    { n: 2, answerable: false, graph: rightNone, raw: rightNone, judged: true },
+    { n: 3, answerable: false, graph: rightNone, raw: rightNone, judged: true }
   ], passed: true });
   for (const hidden of ["colleague", "zebra", "q-colleague", "q-premise", "q-absent", reference.active_generation, reference.manifest_object_id]) {
     assert.equal(JSON.stringify(passed.report).includes(hidden), false, hidden);
@@ -437,9 +438,9 @@ test("the cold test: a fresh consumer answers frozen questions from the copy alo
     assert.equal(failed.passed, false);
     assert.equal(failed.receipt, null);
     assert.deepEqual(failed.report.by_question.filter((entry) => !entry.graph.right).map((entry) => entry.n), [wrong]);
-    // The judge is asked only about an answer that passed the exact checks.
-    assert.equal(failing.judged.length, wrong === 1 ? 0 : 1);
-    assert.equal(failed.report.by_question[0].judged, wrong === 1 ? null : true);
+    // The judge is asked about every answer that passed the exact checks, and about no other.
+    assert.deepEqual(failing.judged.map((question) => question.question_id), [1, 2, 3].filter((n) => n !== wrong).map((n) => `question-${n}`));
+    assert.deepEqual(failed.report.by_question.map((entry) => entry.judged), [1, 2, 3].map((n) => (n === wrong ? null : true)));
   }
   // An answer outside the answer's rules (a passage it wasn't given) is a test not passed, never one that stopped on an error.
   const broken = await run(consumer({ invent: true }));
@@ -454,36 +455,67 @@ test("the cold test: a fresh consumer answers frozen questions from the copy alo
   await assert.rejects(run(consumer(), withQuestions([QUESTIONS.questions[1], { ...QUESTIONS.questions[0], evidence_quotes: [] }])), numbered("COLD_QUESTIONS_INVALID", 2));
 });
 
-test("the cold test's judge: an answer that passes the exact checks must also say what its key quotes say; without a judge there is no test", async (t) => {
+// What the judge is asked of the three questions: the first has key quotes, the others (a false premise, an absent thing) have none.
+const JUDGED = Object.freeze([
+  { question_id: "question-1", question: "colleague", answerable: true, key_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"], answer: "A synthetic answer." },
+  { question_id: "question-2", question: PREMISE, answerable: false, key_quotes: [], answer: "A synthetic answer." },
+  { question_id: "question-3", question: "zebra", answerable: false, key_quotes: [], answer: "A synthetic answer." }
+]);
+
+test("the cold test's judge: an answer that passes the exact checks must also say what its key quotes say, or, to a question the journal doesn't answer, that it doesn't; without a judge there is no test", async (t) => {
   const { run } = await coldTestOn(t);
-  // The judge sees the question, its key quotes as the file has them and the answer, and nothing else.
+  // The judge sees the question, whether the journal answers it, its key quotes as the file has them and the answer, and nothing else.
   const passing = consumer();
   assert.equal((await run(passing)).passed, true);
-  assert.deepEqual(passing.judged, [{ question_id: "question-1", question: "colleague", key_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"], answer: "A synthetic answer." }]);
+  assert.deepEqual(passing.judged, JUDGED);
   const refusing = consumer({ judge: false });
   const failed = await run(refusing);
   assert.equal(failed.passed, false);
   assert.equal(failed.receipt, null);
-  assert.equal(refusing.judged.length, 1);
+  assert.equal(refusing.judged.length, 3);
   assert.deepEqual([failed.report.by_question[0].graph, failed.report.by_question[0].judged], [{ retrieved_all: true, right: true }, false]);
   assert.deepEqual(failed.report.by_question.map((entry) => entry.graph.right), [true, true, true], "only the judge held it back");
-  // Anything a judge returns but true holds it back.
-  for (const unclear of [null, "supported", 1, { verdict: "supported" }]) assert.equal((await run(consumer({ judge: unclear }))).passed, false);
+  // A no to any one of them holds it back, the questions the journal doesn't answer included: here an invented answer, declared as one the
+  // journal doesn't give.
+  for (const n of [1, 2, 3]) {
+    const one = await run(consumer({ judge: (question) => question.question_id !== `question-${n}` }));
+    assert.deepEqual([one.passed, one.receipt, one.report.graph_right], [false, null, 3], `question ${n}`);
+    assert.deepEqual(one.report.by_question.map((entry) => entry.judged), [1, 2, 3].map((other) => other !== n), `question ${n}`);
+  }
+  for (const [question, answer, declared] of [
+    [PREMISE, "The colleague refused on 3 March.", "false_premise"], ["zebra", "The zebra was seen on a Sunday, and it was a relief.", "not_found"], ["zebra", "It was a synthetic zebra.", "insufficient_context"]
+  ]) {
+    const inventing = consumer({ words: { [question]: answer }, script: { [PREMISE]: "false_premise", [question]: declared }, judge: (asked) => asked.answerable || asked.answer !== answer });
+    const invented = await run(inventing);
+    assert.deepEqual([invented.passed, invented.receipt, invented.report.graph_right], [false, null, 3], answer);
+    assert.deepEqual(inventing.judged.find((asked) => asked.question === question), { ...JUDGED.find((asked) => asked.question === question), answer });
+    assert.deepEqual(invented.report.by_question.filter((entry) => entry.judged !== true).map((entry) => [entry.n, entry.judged]), [[question === PREMISE ? 2 : 3, false]]);
+    assert.equal(JSON.stringify(invented).includes(answer), false);
+  }
+  // Anything a judge returns but true holds it back, of either kind of question.
+  for (const unclear of [null, "supported", 1, { verdict: "supported" }]) {
+    for (const answerable of [true, false]) assert.equal((await run(consumer({ judge: (question) => (question.answerable === answerable ? unclear : true) }))).passed, false);
+  }
   const unjudged = consumer();
   await assert.rejects(run({ invoke: unjudged.invoke }), { code: "COLD_JUDGE_UNAVAILABLE" });
   assert.equal(unjudged.asked.length, 0, "refused before anything is asked");
+  // What the judge is told of each kind.
+  for (const words of ["When answerable is true, judge by the key quotes alone.", "When answerable is false, verdict is \"supported\" only when the answer says that the journal doesn't answer the question",
+    "or that the question's premise is wrong, and states nothing as if the journal said it", "an event, a date, a name, a feeling or any other detail", "When you can't tell, the verdict is \"not_supported\"."]) {
+    assert.ok(COLD_JUDGE_INSTRUCTION.includes(words), words);
+  }
 });
 
 test("the cold test through the real port: what leaves for the consumer and the judge, and what comes back", async (t) => {
-  const { run } = await coldTestOn(t);
+  const { run, sources } = await coldTestOn(t);
   const through = (worker, beforeSend = null) => createSealedColdConsumerPort({ worker, beforeSend, timeoutMs: 1234 });
   const worker = fakeWorker();
   let checks = 0;
   const beforeSend = async () => { checks += 1; };
   assert.equal((await run(through(worker, beforeSend))).passed, true);
-  // The graph on and off for each question, then one judge call for the one answerable question; each asked right before it left.
-  assert.deepEqual(worker.sent.map((request) => request.stage), [...Array(6).fill("cold_consumer"), "cold_judge"]);
-  assert.equal(checks, 7);
+  // The graph on and off for each question, then one judge call for each; each asked right before it left.
+  assert.deepEqual(worker.sent.map((request) => request.stage), [...Array(6).fill("cold_consumer"), ...Array(3).fill("cold_judge")]);
+  assert.equal(checks, 9);
   assert.ok(worker.sent.every((request) => request.beforeSend === beforeSend && request.timeoutMs === 1234));
   for (const request of worker.sent.slice(0, 6)) {
     assert.equal(request.system, journalRoleInstruction("cold_consumer"));
@@ -494,24 +526,35 @@ test("the cold test through the real port: what leaves for the consumer and the 
   }
   // The key and the file's own question ids stay with the controller: the key goes to the judge alone, the ids to nobody.
   for (const request of worker.sent) for (const { id } of QUESTIONS.questions) assert.equal(request.user.includes(id), false, id);
-  const judge = worker.sent.at(-1);
-  assert.equal(judge.system, COLD_JUDGE_INSTRUCTION);
-  assert.equal(judge.user, JSON.stringify({ question_id: "question-1", question: "colleague", key_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"], answer: "A synthetic answer." }));
-  assert.deepEqual(judge.schema, { type: "object", additionalProperties: false, required: ["question_id", "verdict", "reason"],
-    properties: { question_id: { type: "string" }, verdict: { type: "string", enum: ["supported", "not_supported"] }, reason: { type: "string", maxLength: 500 } } });
-  assert.deepEqual(judge.schema, COLD_JUDGE_SCHEMA);
+  const judges = worker.sent.slice(6);
+  assert.deepEqual(judges.map((request) => request.user), JUDGED.map((question) => JSON.stringify(question)));
+  for (const judge of judges) {
+    assert.equal(judge.system, COLD_JUDGE_INSTRUCTION);
+    assert.deepEqual(judge.schema, { type: "object", additionalProperties: false, required: ["question_id", "verdict", "reason"],
+      properties: { question_id: { type: "string" }, verdict: { type: "string", enum: ["supported", "not_supported"] }, reason: { type: "string", maxLength: 500 } } });
+    assert.deepEqual(judge.schema, COLD_JUDGE_SCHEMA);
+  }
+  // Of the journal, the judge gets the key quotes alone: nothing of it for a question it doesn't answer.
+  for (const { user } of judges) for (const line of sources.repr.split("\n").filter((text) => text.length > 8)) assert.equal(user.includes(line), false, line);
+  assert.equal(judges.slice(1).some(({ user }) => user.includes("ask a colleague for help")), false);
   // Of the judge's answer only the verdict counts: its reason is in nothing that comes back.
   const judging = (value) => fakeWorker({ reply: async (count, request, usual) => (request.stage === "cold_judge" ? value(await usual()) : usual()) });
   const unsupported = await run(through(judging((usual) => ({ ...usual, verdict: "not_supported" }))));
-  assert.deepEqual([unsupported.passed, unsupported.receipt, unsupported.report.by_question[0].judged], [false, null, false]);
+  assert.deepEqual([unsupported.passed, unsupported.receipt, unsupported.report.by_question.map((entry) => entry.judged)], [false, null, [false, false, false]]);
   assert.equal(JSON.stringify(unsupported).includes(JUDGE_REASON), false);
-  assert.equal(await through(judging((usual) => usual)).judge({ question_id: "question-1", question: "colleague", key_quotes: ["colleague"], answer: "A synthetic answer." }), true);
+  // Its no to a question the journal doesn't answer is enough.
+  const invented = await run(through(judging((usual) => ({ ...usual, verdict: usual.question_id === "question-2" ? "not_supported" : "supported" }))));
+  assert.deepEqual([invented.passed, invented.receipt, invented.report.by_question.map((entry) => entry.judged)], [false, null, [true, false, true]]);
+  assert.equal(await through(judging((usual) => usual)).judge(JUDGED[2]), true);
   // An answer of the judge outside its schema stops the test, repeating nothing of it.
   for (const malformed of [
     (usual) => ({ ...usual, reason: "x".repeat(501) }), (usual) => ({ ...usual, verdict: "maybe" }), (usual) => ({ ...usual, extra: "more" }), (usual) => ({ ...usual, question_id: "question-2" }),
     ({ question_id, verdict }) => ({ question_id, verdict }), () => "supported", () => null
   ]) {
     await assert.rejects(run(through(judging(malformed))), (error) => error.code === "COLD_JUDGE_ANSWER_INVALID" && !JSON.stringify({ message: error.message, details: error.details ?? null }).includes("x".repeat(20)));
+    // Of a question the journal doesn't answer too (the last one's here).
+    const atLast = fakeWorker({ reply: async (count, request, usual) => (count === 9 ? malformed(await usual()) : usual()) });
+    await assert.rejects(run(through(atLast)), { code: "COLD_JUDGE_ANSWER_INVALID" });
   }
   assert.equal((await run(through(judging((usual) => ({ ...usual, reason: "x".repeat(500) }))))).passed, true, "a reason of 500 characters is within it");
   // A consumer's answer outside the answer schema is a test not passed; a call that failed stops it.
@@ -546,6 +589,14 @@ test("the journal import's export writes the sealed copy whole to a new private 
   assert.ok(openJournalCopy(JSON.parse(await fs.readFile(output, "utf8")), keyPair).graph.nodes.length > 0);
   // Never over another file.
   assert.deepEqual(JSON.parse((await cli(["export"])).stderr), { error: "JOURNAL_COPY_FILE_EXISTS" });
+  // Where hard links can't be made, nothing is published or left behind, and the code says so.
+  await fs.unlink(output);
+  const beside = (await fs.readdir(dir)).sort();
+  const links = t.mock.method(fs, "link", async () => { throw Object.assign(new Error("Synthetic words."), { code: "EPERM" }); });
+  const unsupported = await cli(["export"]);
+  links.mock.restore();
+  assert.deepEqual([unsupported.code, unsupported.stdout, JSON.parse(unsupported.stderr)], [1, "", { error: "JOURNAL_COPY_PUBLISH_UNSUPPORTED" }]);
+  assert.deepEqual((await fs.readdir(dir)).sort(), beside);
   // Without its settings, it stops before any env file is read (this one doesn't exist).
   const bare = path.join(dir, "bare.json");
   await fs.writeFile(bare, JSON.stringify({ ...config, runner_trial_export: undefined }), { mode: 0o600 });
@@ -622,13 +673,19 @@ test("the sealed copy is written whole or not at all, never over another file, a
   await assert.rejects(writeSealedJournalCopy(file, sealed), { code: "JOURNAL_COPY_FILE_EXISTS" });
   assert.equal(await fs.readFile(file, "utf8"), "another file");
   assert.deepEqual(await fs.readdir(dir), ["copy.sealed.json"]);
-  // A filesystem without hard links: the final name is created exclusively, so still never over another file.
+  // A filesystem without hard links: nothing is published (nothing is ever opened at the final name), and nothing is left beside it, whether
+  // or not another file is there. On one that has them, the same export then publishes.
   for (const code of ["EPERM", "ENOTSUP", "EOPNOTSUPP"]) {
-    const fileSystem = { ...fs, link: failing(code) };
-    await assert.rejects(writeSealedJournalCopy(file, sealed, { fileSystem }), { code: "JOURNAL_COPY_FILE_EXISTS" });
+    const opened = [];
+    const fileSystem = { ...fs, link: failing(code), open: async (where, ...args) => { opened.push(named(where)); return fs.open(where, ...args); } };
+    await assert.rejects(writeSealedJournalCopy(file, sealed, { fileSystem }), { code: "JOURNAL_COPY_PUBLISH_UNSUPPORTED" });
     assert.equal(await fs.readFile(file, "utf8"), "another file");
+    assert.deepEqual(await fs.readdir(dir), ["copy.sealed.json"], code);
     await fs.unlink(file);
-    await writeSealedJournalCopy(file, sealed, { fileSystem });
+    await assert.rejects(writeSealedJournalCopy(file, sealed, { fileSystem }), { code: "JOURNAL_COPY_PUBLISH_UNSUPPORTED" });
+    assert.deepEqual(await fs.readdir(dir), [], code);
+    assert.deepEqual(opened, ["temporary", "temporary"], code);
+    await writeSealedJournalCopy(file, sealed);
     await whole();
     await fs.writeFile(file, "another file");
   }
@@ -736,13 +793,16 @@ test("the laptop commands: each client's key, an import that leaves every file w
     await setJournalConsent({ home, number: 1, action: "withdraw" });
     return consumer().invoke(input);
   } };
-  await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: withdrawing }), /consent or copy changed during the cold test: it stopped, and the copy has no receipt/u);
+  await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: withdrawing }), /consent or copy changed during the cold test: it stopped, and gave no receipt/u);
   await absent(receiptPath);
   await setJournalConsent({ home, number: 1, action: "confirm" });
   // A pass, which the same sealed file imported again doesn't take away (the copy is the same), nor a test that's refused before it starts.
   assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer() })).passed, true);
   const receiptText = await fs.readFile(receiptPath, "utf8");
+  const attempt = await readColdTestAttempt(home, clientOne);
+  assert.match(attempt, /^[0-9a-f-]{36}$/u);
   assert.deepEqual(await importClientJournal({ home, number: 1, sealedPath: sealedOne }), imported);
+  assert.equal(await readColdTestAttempt(home, clientOne), attempt);
   assert.equal(await fs.readFile(sealedOne, "utf8"), sealedOneText);
   await fs.chmod(questionsPath, 0o644);
   await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: consumer() }), /readable by you alone/u);
@@ -761,6 +821,7 @@ test("the laptop commands: each client's key, an import that leaves every file w
   const again = await importClientJournal({ home, number: 1, sealedPath: await exportFor(keyOne.publicKey, "one-again.sealed.json", "2026-11-24T08:02:00.000Z") });
   assert.notEqual(again.corpus_id, imported.corpus_id);
   await absent(receiptPath);
+  await absent(path.join(clientJournalFolder(home, clientOne), COLD_TEST_ATTEMPT_FILE));
   assert.notEqual((await read()).availability, "available");
   clients = (await readRunnerClients(home)).clients;
   assert.equal(clients[0].journal.corpus_id, again.corpus_id);
@@ -783,13 +844,15 @@ async function copiedClient(t, { clients = 1, server = null } = {}) {
   return { ...trial, server: from, outside, sealedPath, imported, questionsPath, receiptPath, coldTest };
 }
 
-// The trial's controller on a trial folder, with stand-in workers that are never called: for "Delete this case".
-function deleting(trial, prepared = trial.prepared) {
-  const privateCaseSource = createPrivateCaseAccessService({ rootDir: trial.providers.rootDir, authorizationProvider: trial.providers.authorizationProvider, keyProvider: trial.providers.keyProvider, allowDevelopmentFileProvider: true });
+// The trial's controller on a trial folder, with stand-in workers that are never called: for "Delete this case" of a client, or of the
+// owner's own case. `change` gives the vault another deletion.
+function deleting(trial, change = (source) => source) {
+  const { prepared } = trial;
+  const privateCaseSource = change(createPrivateCaseAccessService({ rootDir: trial.providers.rootDir, authorizationProvider: trial.providers.authorizationProvider, keyProvider: trial.providers.keyProvider, allowDevelopmentFileProvider: true }));
   const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialCaseId: prepared.caseId, runnerTrialDir: trial.home, runnerTrialSettingsPath: null, runnerClaudeConfigDir: null, runnerRulesRoot: null, responseEvidenceEnforced: false });
   const { controller } = createRunnerTrialController({ privateCaseSource, config, clientCaseIds: Object.keys(prepared.clientTokens), settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode: "whole" }),
     parts: cutRuleParts(loadTherapyProtocol({ boxGuidance: true })), workerFor: () => ({ async call() { throw new Error("no worker is called"); } }) });
-  return (caseId) => controller.deleteCase({ caseId, authContext: { bearerToken: prepared.clientTokens[caseId] } });
+  return (caseId) => controller.deleteCase({ caseId, authContext: { bearerToken: prepared.clientTokens[caseId] ?? prepared.token } });
 }
 
 test("a client's copies come from one server case: named on the list before the vault is touched, kept when an import fails, and no other accepted until their Delete", async (t) => {
@@ -923,23 +986,123 @@ test("Delete this case of a client takes their copies, their key and their place
   await assert.rejects(deleteCase(clientTwo), (error) => error.code === "RUNNER_FOLDER_LOCK_LEFT" && error.message.includes(lock));
   assert.deepEqual(await tree(home), before);
   await fs.unlink(lock);
-  await deleteCase(clientTwo);
+  assert.equal((await deleteCase(clientTwo)).cleanup_left, undefined);
   assert.deepEqual((await readRunnerClients(home)).clients[1].journal, { corpus_id: null, consent: null });
   await absent(path.join(clientJournalFolder(home, clientTwo), CLIENT_COPY_KEY_FILE));
-  // A list that can't be written is told; the key is gone all the same, the list keeps the server case (nothing else is imported against
-  // it), and deleting again finishes it.
+  // A list that can't be written is told, and the case is deleted all the same: the key is gone, the list keeps the server case (nothing
+  // else is imported against it), and deleting again finishes it.
   const list = path.join(home, RUNNER_CLIENTS_FILE);
   const rename = fs.rename;
   const mocked = t.mock.method(fs, "rename", async (from, to) => {
     if (to === list) throw Object.assign(new Error("Synthetic words."), { code: "EIO" });
     return rename.call(fs, from, to);
   });
-  await assert.rejects(deleteCase(clientOne), { code: "EIO" });
+  const deleted = await deleteCase(clientOne);
   mocked.mock.restore();
+  assert.deepEqual([deleted.case_file_removed, deleted.journal_corpora_removed, deleted.cleanup_left], [true, 1, ["JOURNAL_LIST"]]);
   await absent(path.join(clientJournalFolder(home, clientOne), CLIENT_COPY_KEY_FILE));
   assert.equal((await readRunnerClients(home)).clients[0].journal.source_sha256, one.source_sha256);
-  await deleteCase(clientOne);
+  await assert.rejects(importClientJournal({ home, number: 2, sealedPath: await sealedFor(second, 2, "second-for-two.sealed.json") }), /already copied for client 1/u);
+  const again = await deleteCase(clientOne);
+  assert.deepEqual([again.case_file_removed, again.journal_corpora_removed, again.cleanup_left], [false, 0, undefined]);
   assert.deepEqual((await readRunnerClients(home)).clients[0].journal, { corpus_id: null, consent });
+  await importClientJournal({ home, number: 2, sealedPath: path.join(outside, "second-for-two.sealed.json") });
+});
+
+test("once the vault has deleted a client's case, Delete is done: what can't be cleared besides is named, everything else goes, and deleting again clears it", async (t) => {
+  const trial = await copiedClient(t);
+  const { home, cases: [clientOne], prepared } = trial;
+  const deleteCase = deleting(trial);
+  const folder = clientJournalFolder(home, clientOne);
+  const list = path.join(home, RUNNER_CLIENTS_FILE);
+  const lock = path.join(home, ".trial-folder.lock");
+  const logOf = (caseId) => path.join(home, caseId === clientOne ? `runner-log-${clientOne}.jsonl` : "runner-log.jsonl");
+  const { consent } = (await readRunnerClients(home)).clients[0].journal;
+  const journalOf = async () => (await readRunnerClients(home)).clients[0].journal;
+  const caseGone = (caseId = clientOne) => assert.rejects(trial.copier(caseId).loadPrivateRuntimeCase(caseId, { bearerToken: "synthetic" }), { code: "PRIVATE_CASE_NOT_FOUND" });
+  // A client's case with everything Delete takes: the copy in the vault, its place on the list, the journal folder (the key, the receipt and
+  // the marker of the test that gave it) and the run log.
+  let copies = 0;
+  const filled = async () => {
+    const sealedPath = path.join(trial.outside, `filled-${copies += 1}.sealed.json`);
+    await writeSealedJournalCopy(sealedPath, await trial.server.exportFor((await ensureJournalCopyKey({ home, number: 1 })).publicKey, `2026-11-24T10:${String(copies).padStart(2, "0")}:00.000Z`));
+    await importClientJournal({ home, number: 1, sealedPath });
+    assert.equal((await trial.coldTest({ port: consumer() })).passed, true);
+    await fs.writeFile(logOf(clientOne), "{}\n", { mode: 0o600 });
+    assert.deepEqual((await fs.readdir(folder)).sort(), [COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, CLIENT_COPY_KEY_FILE].sort());
+    const listed = await journalOf();
+    assert.deepEqual(Object.keys(listed).sort(), ["consent", "corpus_id", "source_sha256"]);
+    return listed;
+  };
+  // Each step that fails, by its code: the list that can't be written, the folder, the log and the lock that can't be removed, and what the
+  // runtime remembers.
+  const refuse = (code) => Object.assign(new Error("Synthetic words."), { code });
+  const failing = (codes) => {
+    const { rename, rm } = fs;
+    const forget = Set.prototype.delete;
+    const places = [[folder, "JOURNAL_FOLDER"], [logOf(clientOne), "RUN_LOG"], [logOf(null), "RUN_LOG"], [lock, "FOLDER_LOCK"]];
+    const mocked = [
+      t.mock.method(fs, "rename", async (from, to) => { if (to === list && codes.includes("JOURNAL_LIST")) throw refuse("EIO"); return rename.call(fs, from, to); }),
+      t.mock.method(fs, "rm", async (where, options) => { if (places.some(([place, code]) => place === where && codes.includes(code))) throw refuse("EACCES"); return rm.call(fs, where, options); }),
+      t.mock.method(Set.prototype, "delete", function forgetting(value) { if (value === clientOne && codes.includes("RUNTIME_STATE")) throw refuse("SYNTHETIC"); return forget.call(this, value); })
+    ];
+    return () => { for (const each of mocked) each.mock.restore(); };
+  };
+  const deletingWith = async (codes, caseId = clientOne) => {
+    const restore = failing(codes);
+    try { return await deleteCase(caseId); } finally { restore(); }
+  };
+  const ALL = ["JOURNAL_LIST", "JOURNAL_FOLDER", "FOLDER_LOCK", "RUNTIME_STATE", "RUN_LOG"];
+  await deleteCase(clientOne);
+  for (const codes of [...ALL.map((code) => [code]), ALL]) {
+    const listed = await filled();
+    const deleted = await deletingWith(codes);
+    assert.deepEqual([deleted.case_file_removed, deleted.journal_corpora_removed, deleted.cleanup_left], [true, 1, codes]);
+    // The case is gone, and everything but what's named.
+    await caseGone();
+    assert.deepEqual(await journalOf(), codes.includes("JOURNAL_LIST") ? listed : { corpus_id: null, consent }, codes.join());
+    const inFolder = [CLIENT_COPY_KEY_FILE, COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE].map((name) => [path.join(folder, name), "JOURNAL_FOLDER"]);
+    for (const [place, code] of [...inFolder, [logOf(clientOne), "RUN_LOG"], [lock, "FOLDER_LOCK"]]) {
+      if (codes.includes(code)) assert.ok((await fs.readFile(place)).length > 0, `${code} remains`);
+      else await absent(place, `${codes.join()}: ${place}`);
+    }
+    // Deleting again clears what remained (the lock only by hand), and again with nothing left is as good.
+    if (codes.includes("FOLDER_LOCK")) await fs.unlink(lock);
+    for (let time = 0; time < 2; time += 1) {
+      const again = await deleteCase(clientOne);
+      assert.deepEqual([again.case_file_removed, again.journal_corpora_removed, Object.hasOwn(again, "cleanup_left")], [false, 0, false], codes.join());
+      assert.deepEqual(await journalOf(), { corpus_id: null, consent });
+      for (const place of [folder, logOf(clientOne), lock]) await absent(place);
+    }
+  }
+  // A cold test in its last call meanwhile, with a list that can't be written: it gives no receipt and makes no folder again.
+  await filled();
+  const worker = fakeWorker({ reply: async (count, request, usual) => {
+    if (count === 9) assert.deepEqual((await deletingWith(["JOURNAL_LIST"])).cleanup_left, ["JOURNAL_LIST"]);
+    return usual();
+  } });
+  await assert.rejects(trial.coldTest({ worker }), { code: "PRIVATE_CASE_NOT_FOUND" });
+  assert.equal(worker.sent.length, 9);
+  await absent(folder);
+  assert.equal(Object.hasOwn(await deleteCase(clientOne), "cleanup_left"), false);
+  // The owner's own case: its run log alone.
+  await fs.writeFile(logOf(null), "{}\n", { mode: 0o600 });
+  assert.deepEqual((await deletingWith(["RUN_LOG"], prepared.caseId)).cleanup_left, ["RUN_LOG"]);
+  assert.equal(Object.hasOwn(await deleteCase(prepared.caseId), "cleanup_left"), false);
+  await absent(logOf(null));
+
+  // A vault that doesn't delete is told as it is: nothing else is touched, and the lock is let go (or, when it can't be, the vault's own
+  // error is still what's told).
+  await filled();
+  const before = await tree(home);
+  const notDeleting = deleting(trial, (source) => ({ ...source, deletePrivateCase: async () => { throw refuse("SYNTHETIC_VAULT_ERROR"); } }));
+  await assert.rejects(notDeleting(clientOne), { code: "SYNTHETIC_VAULT_ERROR" });
+  assert.deepEqual(await tree(home), before);
+  const restoreLock = failing(["FOLDER_LOCK"]);
+  await assert.rejects(notDeleting(clientOne), { code: "SYNTHETIC_VAULT_ERROR" });
+  restoreLock();
+  await fs.unlink(lock);
+  assert.deepEqual(await tree(home), before);
 });
 
 test("a cold test that starts removes the copy's receipt and only a pass gives a new one: an error, a wrong or malformed answer, a judge's no, a failed judge leave none", async (t) => {
@@ -948,7 +1111,7 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
     assert.equal((await coldTest({ worker: fakeWorker() })).passed, true);
     assert.equal((await readColdTestReceipt(home, clientOne)).corpus_id, imported.corpus_id);
   };
-  // Through the real port and a stand-in worker (six consumer calls, then the judge's), or a stand-in consumer.
+  // Through the real port and a stand-in worker (six consumer calls, then the judge's three), or a stand-in consumer.
   const replying = (reply) => ({ worker: fakeWorker({ reply }) });
   const failingAt = (at, error) => replying(async (count, request, usual) => { if (count === at) throw error; return usual(); });
   const answeringAt = (at, change) => replying(async (count, request, usual) => (count === at ? change(await usual()) : usual()));
@@ -960,6 +1123,7 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
     ["a wrong first answer, then a call that timed out", replying(async (count, request, usual) => { if (count > 1) throw timedOut(); return wrong(await usual()); }), "TIMEOUT"],
     ["a malformed answer, as the worker reports it", failingAt(2, new ProviderError("A synthetic malformed answer.", { code: "PROVIDER_MALFORMED" })), "PROVIDER_MALFORMED"],
     ["a judge's call that timed out", failingAt(7, timedOut()), "TIMEOUT"],
+    ["a judge's call that timed out, of a question the journal doesn't answer", failingAt(9, timedOut()), "TIMEOUT"],
     ["a judge's answer outside its schema", answeringAt(7, (usual) => ({ ...usual, verdict: "maybe" })), "COLD_JUDGE_ANSWER_INVALID"],
     ["a stand-in consumer whose second call fails", portThat((usual) => { let count = 0; return { async invoke(input) { count += 1; if (count === 2) throw timedOut(); return usual.invoke(input); } }; }), "TIMEOUT"],
     ["a stand-in judge that fails", portThat(() => ({ async judge() { throw timedOut(); } })), "TIMEOUT"],
@@ -972,7 +1136,9 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   for (const [what, options] of [
     ["a wrong answer", answeringAt(1, wrong)],
     ["an answer outside the answer schema", answeringAt(5, () => ({ answer: "A synthetic answer." }))],
-    ["a judge that finds the answer unsupported", answeringAt(7, (usual) => ({ ...usual, verdict: "not_supported" }))]
+    ["a judge that finds the answer unsupported", answeringAt(7, (usual) => ({ ...usual, verdict: "not_supported" }))],
+    ["a judge that finds an answer invented, to a false premise", answeringAt(8, (usual) => ({ ...usual, verdict: "not_supported" }))],
+    ["a judge that finds an answer invented, about an absent thing", answeringAt(9, (usual) => ({ ...usual, verdict: "not_supported" }))]
   ]) {
     await pass();
     assert.equal((await coldTest(options)).passed, false, what);
@@ -982,17 +1148,22 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   await pass();
   let checked = 0;
   assert.equal((await coldTest({ worker: fakeWorker({ prepare: async () => { checked += 1; await absent(receiptPath, "before any packet leaves"); } }) })).passed, true);
-  assert.equal(checked, 7);
+  assert.equal(checked, 9);
   await fs.writeFile(receiptPath, JSON.stringify({ ...(await readColdTestReceipt(home, clientOne)), corpus_id: "another-copy" }), { mode: 0o600 });
   await assert.rejects(coldTest(failingAt(1, timedOut())), { code: "TIMEOUT" });
   await absent(receiptPath, "a receipt of another copy too");
-  // One that another test of this copy gave meanwhile goes as well, when this one stops on an error or doesn't pass.
-  for (const options of [
-    { worker: fakeWorker({ reply: async (count, request, usual) => { if (count !== 3) return usual(); await pass(); throw timedOut(); } }) },
-    { worker: fakeWorker({ reply: async (count, request, usual) => { if (count === 3) await pass(); return count === 1 ? wrong(await usual()) : usual(); } }) }
-  ]) {
-    await coldTest(options).then((result) => assert.equal(result.passed, false), (error) => assert.equal(error.code, "TIMEOUT"));
-    await absent(receiptPath, "a receipt given meanwhile");
+  // One that's there all the same when the test started last doesn't pass (put there here) goes as well, whatever copy it names.
+  await pass();
+  const earlier = JSON.parse(await fs.readFile(receiptPath, "utf8"));
+  for (const planted of [earlier, { ...earlier, corpus_id: "another-copy" }]) {
+    const plant = () => fs.writeFile(receiptPath, JSON.stringify(planted), { mode: 0o600 });
+    for (const options of [
+      { worker: fakeWorker({ reply: async (count, request, usual) => { if (count !== 3) return usual(); await plant(); throw timedOut(); } }) },
+      { worker: fakeWorker({ reply: async (count, request, usual) => { if (count === 3) await plant(); return count === 1 ? wrong(await usual()) : usual(); } }) }
+    ]) {
+      await coldTest(options).then((result) => assert.deepEqual([result.passed, result.newerStarted], [false, false]), (error) => assert.equal(error.code, "TIMEOUT"));
+      await absent(receiptPath, "a receipt put there meanwhile");
+    }
   }
   // A test refused before it starts (no consent) leaves the receipt as it is: the gate is closed by the withdrawal itself.
   await pass();
@@ -1006,13 +1177,158 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   assert.match(USAGE, /A test that starts removes the copy's receipt; only a pass gives a new one/u);
 });
 
+test("of cold tests of one copy that overlap, the one started last decides: an earlier one gives no receipt and takes none away, also when the newer one never ends", async (t) => {
+  const { home, cases: [clientOne], receiptPath, coldTest, questionsPath, outside, server, sealedPath } = await copiedClient(t);
+  const markerPath = path.join(clientJournalFolder(home, clientOne), COLD_TEST_ATTEMPT_FILE);
+  const attempt = () => readColdTestAttempt(home, clientOne);
+  const receipt = () => fs.readFile(receiptPath, "utf8");
+  const pass = async () => {
+    assert.equal((await coldTest({ worker: fakeWorker() })).passed, true);
+    return receipt();
+  };
+  const newer = { message: "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again." };
+  const changed = { message: "The client's consent or copy changed during the cold test: it stopped, and gave no receipt." };
+  const unmarked = { message: "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again." };
+  // A test whose third call waits until `during` is done; it passes unless `answer` changes an answer of the worker's, by its count.
+  const meanwhile = (during, answer = (usual) => usual) => ({ worker: fakeWorker({ reply: async (count, request, usual) => {
+    if (count === 3) await during();
+    return answer(await usual(), count, request);
+  } }) });
+  const wrong = (usual) => ({ ...usual, answerability: "not_found", evidence_ids: [] });
+
+  // One after the other: each marks its own start, and the second gives a receipt as the first did.
+  await pass();
+  const first = await attempt();
+  await pass();
+  assert.notEqual(await attempt(), first);
+  assert.equal(await modeOf(markerPath), 0o600);
+
+  // A starts (which removes the receipt), B starts while A runs, and A passes while B is still running: no receipt. B then passes, and has
+  // its receipt.
+  const bStarted = Promise.withResolvers(), bGoesOn = Promise.withResolvers();
+  let b = null, marked = null;
+  const a = coldTest(meanwhile(async () => {
+    await absent(receiptPath, "A's start removed it");
+    b = coldTest({ worker: fakeWorker({ prepare: async (count) => { if (count === 1) { bStarted.resolve(); await bGoesOn.promise; } } }) });
+    await bStarted.promise;
+    marked = await attempt();
+  }));
+  await assert.rejects(a, newer);
+  await absent(receiptPath, "A passed, and gave none");
+  assert.equal(await attempt(), marked, "the marker is B's still");
+  bGoesOn.resolve();
+  assert.equal((await b).passed, true);
+  assert.equal((await readColdTestReceipt(home, clientOne)).result, "pass");
+  assert.equal(await attempt(), marked);
+
+  // B passes while A runs: however A then ends, B's receipt stays as it is.
+  for (const [what, answer, ended] of [
+    ["a pass", (usual) => usual, newer],
+    ["a call that timed out", (usual, count) => { if (count === 4) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
+    ["a judge's call that timed out", (usual, count) => { if (count === 9) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
+    ["a wrong answer", (usual, count) => (count === 1 ? wrong(usual) : usual), null],
+    ["an answer outside the answer schema", (usual, count) => (count === 5 ? { answer: "A synthetic answer." } : usual), null],
+    ["a judge's no", (usual, count, request) => (request.stage === "cold_judge" ? { ...usual, verdict: "not_supported" } : usual), null]
+  ]) {
+    let given = null;
+    const ending = coldTest(meanwhile(async () => { given = await pass(); }, answer));
+    if (ended) await assert.rejects(ending, ended, what);
+    else {
+      const result = await ending;
+      assert.deepEqual([result.passed, result.newerStarted], [false, true], what);
+    }
+    assert.equal(await receipt(), given, what);
+  }
+  // A withdrawal, which stops A at its next packet, too: the gate is closed by the withdrawal itself.
+  let given = null;
+  await assert.rejects(coldTest(meanwhile(async () => { given = await pass(); await setJournalConsent({ home, number: 1, action: "withdraw" }); })), changed);
+  assert.equal(await receipt(), given);
+  await setJournalConsent({ home, number: 1, action: "confirm" });
+
+  // B starts and fails, or is killed, while A runs: A passes and gives none, though B never will.
+  await assert.rejects(coldTest(meanwhile(() => assert.rejects(coldTest({ worker: fakeWorker({ reply: async () => { throw timedOut(); } }) }), { code: "TIMEOUT" }))), newer);
+  await absent(receiptPath);
+  const killed = () => {
+    const { signal, stdout, stderr } = spawnSync(process.execPath, ["--input-type=module", "--eval", `
+      import { runClientColdTest } from ${JSON.stringify(new URL("../scripts/runner-trial-journal.mjs", import.meta.url).href)};
+      const [home, questionsPath] = process.argv.slice(1);
+      await runClientColdTest({ home, number: 1, questionsPath, worker: { async call(request) {
+        await request.beforeSend();
+        process.stdout.write("started");
+        process.kill(process.pid, "SIGKILL");
+        await new Promise(() => {});
+      } } });`, home, questionsPath], { encoding: "utf8", timeout: 60_000, killSignal: "SIGKILL" });
+    assert.deepEqual([signal, stdout], ["SIGKILL", "started"], stderr);
+  };
+  await pass();
+  const before = await attempt();
+  killed();
+  await absent(receiptPath, "killed after its start, with the receipt gone");
+  assert.notEqual(await attempt(), before);
+  await assert.rejects(coldTest(meanwhile(async () => { killed(); })), newer);
+  await absent(receiptPath, "and it stays gone");
+  await pass();
+
+  // A test refused before it starts hasn't started: the running one's pass counts.
+  const loose = path.join(outside, "loose-questions.json");
+  await fs.writeFile(loose, JSON.stringify(QUESTIONS), { mode: 0o644 });
+  assert.equal((await coldTest(meanwhile(() => assert.rejects(coldTest({ questionsPath: loose, worker: fakeWorker() }), /readable by you alone/u)))).passed, true);
+  await receipt();
+  // Nor has one whose start can't be marked: it sends nothing. The receipt is gone by then.
+  const rename = fs.rename;
+  const unwritable = t.mock.method(fs, "rename", async (from, to) => {
+    if (to === markerPath) throw Object.assign(new Error("Synthetic words."), { code: "EIO" });
+    return rename.call(fs, from, to);
+  });
+  const unsent = fakeWorker();
+  await assert.rejects(coldTest({ worker: unsent }), { code: "EIO" });
+  unwritable.mock.restore();
+  assert.equal(unsent.sent.length, 0);
+  await absent(receiptPath);
+
+  // The marker is read for a pass under the folder's lock, which a start takes too: none can come between that reading and the receipt.
+  const probe = await fs.open(questionsPath, "r");
+  const handles = Object.getPrototypeOf(probe);
+  await probe.close();
+  const readFile = handles.readFile;
+  let armed = false, between = null;
+  const reading = t.mock.method(handles, "readFile", async function read(...args) {
+    const text = await readFile.apply(this, args);
+    if (armed && typeof text === "string" && text.includes('"attempt"')) {
+      armed = false;
+      between = await coldTest({ worker: fakeWorker(), lockWaitMs: 0 }).then(() => "started", (error) => error.message);
+    }
+    return text;
+  });
+  assert.equal((await coldTest({ worker: fakeWorker({ reply: async (count, request, usual) => { armed = count === 9; return usual(); } }) })).passed, true);
+  reading.mock.restore();
+  assert.match(between, /Another runner-trial command is changing the trial folder/u);
+  await receipt();
+
+  // A marker that's gone or isn't a private file of its form when a test passes: no receipt.
+  for (const change of [() => fs.unlink(markerPath), () => fs.chmod(markerPath, 0o644), () => fs.writeFile(markerPath, "not JSON")]) {
+    await assert.rejects(coldTest(meanwhile(change)), unmarked);
+    await absent(receiptPath);
+  }
+  // Another copy imported, and the first one again: a test that ran all along has lost its marker with them.
+  const other = path.join(outside, "other.sealed.json");
+  await writeSealedJournalCopy(other, await server.exportFor((await ensureJournalCopyKey({ home, number: 1 })).publicKey, "2026-11-24T08:30:00.000Z"));
+  await assert.rejects(coldTest(meanwhile(async () => {
+    await importClientJournal({ home, number: 1, sealedPath: other });
+    await absent(markerPath);
+    await importClientJournal({ home, number: 1, sealedPath });
+  })), unmarked);
+  await absent(receiptPath);
+  await pass();
+});
+
 test("the consent is read under the trial folder's lock right before each packet is handed over: a withdrawal before it stops the test before that packet, one after it at the next", async (t) => {
   const { home, receiptPath, coldTest, server, outside } = await copiedClient(t);
   const withdraw = (options = {}) => setJournalConsent({ home, number: 1, action: "withdraw", ...options });
   const confirm = () => setJournalConsent({ home, number: 1, action: "confirm" });
-  const changed = /consent or copy changed during the cold test: it stopped, and the copy has no receipt/u;
-  // Withdrawn while a packet is prepared, the first, a later one and the judge's: that packet doesn't leave.
-  for (const at of [1, 4, 7]) {
+  const changed = /consent or copy changed during the cold test: it stopped, and gave no receipt/u;
+  // Withdrawn while a packet is prepared, the first, a later one and the judge's (the first and the last): that packet doesn't leave.
+  for (const at of [1, 4, 7, 9]) {
     const worker = fakeWorker({ prepare: async (count) => { if (count === at) await withdraw(); } });
     await assert.rejects(coldTest({ worker }), changed, `packet ${at}`);
     assert.equal(worker.sent.length, at - 1, `packet ${at}`);
@@ -1055,7 +1371,7 @@ test("the consent is read under the trial folder's lock right before each packet
   await confirm();
   // The lock isn't held during a call: a withdrawal while one runs is recorded at once, and stops the test at the next packet, or, during
   // the last call (the judge's), before the receipt is written.
-  for (const [at, sent] of [[2, 2], [7, 7]]) {
+  for (const [at, sent] of [[2, 2], [9, 9]]) {
     const worker = fakeWorker({ reply: async (count, request, usual) => {
       if (count === at) assert.deepEqual(await withdraw({ lockWaitMs: 0 }), { changed: true, state: "withdrawn" });
       return usual();
@@ -1095,12 +1411,21 @@ test("the commands print numbers and fixed texts only: no label, question id or 
   assert.equal(passed.code, 0, passed.text);
   const report = JSON.parse(passed.text.slice(passed.text.indexOf("{"), passed.text.lastIndexOf("}") + 1));
   assert.equal(report.snapshot, snapshotOf(reference));
-  assert.deepEqual(report.by_question.map(({ n, judged }) => [n, judged]), [[1, true], [2, null], [3, null]]);
+  assert.deepEqual(report.by_question.map(({ n, judged }) => [n, judged]), [[1, true], [2, true], [3, true]]);
   const failed = await coldTest({ worker: fakeWorker({ reply: async (count, request, usual) => (request.stage === "cold_judge" ? { ...(await usual()), verdict: "not_supported" } : usual()) }) });
   assert.equal(failed.code, 1);
   assert.match(failed.text, /Not passed: client 1's copy has no cold-test receipt/u);
   const broken = await coldTest({ worker: fakeWorker({ reply: async () => ({ answer: "A synthetic answer." }) }) });
   assert.equal(broken.code, 1);
+  // A newer test started meanwhile, which passed here: the earlier one, passed or not, says that the newer one decides, and nothing more.
+  const newerMeanwhile = (change) => fakeWorker({ reply: async (count, request, usual) => {
+    if (count === 2) assert.equal((await coldTest({ worker: fakeWorker() })).code, 0);
+    return change(await usual(), request);
+  } });
+  const outdone = await coldTest({ worker: newerMeanwhile((usual) => usual) });
+  assert.deepEqual([outdone.code, outdone.text.split("\n").at(-1)], [1, "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again."]);
+  const outdoneFailing = await coldTest({ worker: newerMeanwhile((usual, request) => (request.stage === "cold_judge" ? { ...usual, verdict: "not_supported" } : usual)) });
+  assert.deepEqual([outdoneFailing.code, outdoneFailing.text.split("\n").at(-1)], [1, "Not passed. A newer cold test of client 1's copy has started, and that one decides whether the copy has a receipt."]);
   // An unexpected error: its code when it has one of that form, never its own text.
   const throwing = (error) => coldTest({ worker: fakeWorker({ reply: async () => { throw error; } }) });
   const unexpected = await throwing(new Error("Synthetic words the colleague wrote."));
@@ -1116,7 +1441,7 @@ test("the commands print numbers and fixed texts only: no label, question id or 
   await fs.writeFile(questionsPath, JSON.stringify(withQuestions([{ ...named.questions[0], extra: "Synthetic-Alba" }, named.questions[1]])), { mode: 0o600 });
   const notValid = await coldTest({ worker: fakeWorker() });
   assert.equal(notValid.text.split("\n").at(-1), "The questions file isn't valid (COLD_QUESTIONS_INVALID).");
-  for (const { text } of [passed, failed, broken, unexpected, coded, odd, unfit, notValid]) for (const words of hidden) assert.equal(text.includes(words), false, `${words} in ${text}`);
+  for (const { text } of [passed, failed, broken, outdone, outdoneFailing, unexpected, coded, odd, unfit, notValid]) for (const words of hidden) assert.equal(text.includes(words), false, `${words} in ${text}`);
 
   // The import says what it checked and that the file may go, and leaves it.
   const sealedText = await fs.readFile(sealedPath, "utf8");
@@ -1175,13 +1500,27 @@ async function trialReference(home, caseId, corpusId) {
   } finally { providers.close(); }
 }
 
-test("the client list and the cold-test receipt are each opened once and checked as opened: a link, loose mode, a folder, a pipe or a socket is refused, a missing one is none", async (t) => {
+test("the client list, the cold-test receipt and its test's marker are each opened once and checked as opened: a link, loose mode, a folder, a pipe or a socket is refused, a missing one is none", async (t) => {
   const { home, cases: [clientOne], receiptPath, coldTest } = await copiedClient(t);
-  assert.equal((await coldTest({ port: consumer() })).passed, true);
+  assert.equal((await coldTest({ port: consumer(), now: () => new Date("2026-11-24T09:30:00.000Z") })).passed, true);
   const clients = path.join(home, RUNNER_CLIENTS_FILE);
   const list = await readRunnerClients(home);
   const receipt = await readColdTestReceipt(home, clientOne);
   assert.equal(receipt.result, "pass");
+  const markerPath = path.join(clientJournalFolder(home, clientOne), COLD_TEST_ATTEMPT_FILE);
+  const marker = JSON.parse(await fs.readFile(markerPath, "utf8"));
+  const attempt = await readColdTestAttempt(home, clientOne);
+  assert.deepEqual(marker, { schema_version: 1, attempt, started_at: "2026-11-24T09:30:00.000Z" });
+  assert.match(attempt, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
+  assert.equal(await modeOf(markerPath), 0o600);
+  // A marker of another form names no test.
+  const changes = [{ schema_version: 2 }, { attempt: "synthetic" }, { attempt: null }, { attempt: `${attempt}0` }, { started_at: "yesterday" }, { extra: true }];
+  for (const malformed of ["", "not JSON", "null", "[]", JSON.stringify(attempt), JSON.stringify({ schema_version: 1, attempt }), ...changes.map((change) => JSON.stringify({ ...marker, ...change }))]) {
+    await fs.writeFile(markerPath, malformed);
+    assert.equal(await readColdTestAttempt(home, clientOne), null, malformed);
+  }
+  await fs.writeFile(markerPath, JSON.stringify(marker));
+  assert.equal(await readColdTestAttempt(home, clientOne), attempt);
   const refusedWith = (message) => ({ name: "ValidationError", code: "RUNNER_CLIENTS_INVALID", message });
   const notAFile = refusedWith("clients.json must be a file, not a link or a folder.");
   // Each in the place of the file, which is whole beside it (a link to it would be read if it were followed).
@@ -1202,6 +1541,7 @@ test("the client list and the cold-test receipt are each opened once and checked
   for (const [what, put] of [["a link", (file, kept) => fs.symlink(kept, file)], ["a folder", (file) => fs.mkdir(file, { mode: 0o700 })], ["a socket", socket]]) {
     await inPlaceOf(clients, put, () => assert.rejects(readRunnerClients(home), notAFile, what));
     await inPlaceOf(receiptPath, put, async () => assert.equal(await readColdTestReceipt(home, clientOne), null, what));
+    await inPlaceOf(markerPath, put, async () => assert.equal(await readColdTestAttempt(home, clientOne), null, what));
   }
   // A mode others can read.
   for (const mode of [0o640, 0o604, 0o644]) {
@@ -1211,6 +1551,9 @@ test("the client list and the cold-test receipt are each opened once and checked
     await fs.chmod(receiptPath, mode);
     assert.equal(await readColdTestReceipt(home, clientOne), null);
     await fs.chmod(receiptPath, 0o600);
+    await fs.chmod(markerPath, mode);
+    assert.equal(await readColdTestAttempt(home, clientOne), null);
+    await fs.chmod(markerPath, 0o600);
   }
   // What is checked is what is opened: a path that looked like a private file a moment before opens nothing that isn't one.
   const looks = async () => ({ isFile: () => true, isSymbolicLink: () => false, mode: 0o100600, uid: process.getuid() });
@@ -1219,23 +1562,28 @@ test("the client list and the cold-test receipt are each opened once and checked
   await fs.chmod(clients, 0o644);
   await assert.rejects(readRunnerClients(home), refusedWith("clients.json can be read by others (it must be mode 0600)."));
   await fs.chmod(clients, 0o600);
-  await fs.chmod(receiptPath, 0o644);
-  assert.equal(await readColdTestReceipt(home, clientOne), null);
-  await fs.chmod(receiptPath, 0o600);
+  for (const [file, read] of [[receiptPath, readColdTestReceipt], [markerPath, readColdTestAttempt]]) {
+    await fs.chmod(file, 0o644);
+    assert.equal(await read(home, clientOne), null);
+    await fs.chmod(file, 0o600);
+  }
   for (const mocked of looking) mocked.mock.restore();
-  // Missing: no clients, no receipt.
+  // Missing: no clients, no receipt, no marker.
   await inPlaceOf(clients, async () => {}, async () => assert.deepEqual(await readRunnerClients(home), { schema_version: 1, clients: [] }));
   await inPlaceOf(receiptPath, async () => {}, async () => assert.equal(await readColdTestReceipt(home, clientOne), null));
+  await inPlaceOf(markerPath, async () => {}, async () => assert.equal(await readColdTestAttempt(home, clientOne), null));
   // A pipe nothing writes to: refused at once, never waited on (in a process of its own).
   const pipe = async (file) => makeNamedPipe(file);
   const apart = (code) => printedApart(`
-    import { readColdTestReceipt, readRunnerClients } from ${JSON.stringify(new URL("../src/runner-trial/clients.mjs", import.meta.url).href)};
+    import { readColdTestAttempt, readColdTestReceipt, readRunnerClients } from ${JSON.stringify(new URL("../src/runner-trial/clients.mjs", import.meta.url).href)};
     const [home, caseId] = process.argv.slice(1);
     ${code}`, [home, clientOne]);
   await inPlaceOf(clients, pipe, async () => assert.equal(apart("try { await readRunnerClients(home); console.log('read'); } catch (error) { console.log(error.code, error.message); }"),
     "RUNNER_CLIENTS_INVALID clients.json must be a file, not a link or a folder.\n"));
   await inPlaceOf(receiptPath, pipe, async () => assert.equal(apart("console.log(await readColdTestReceipt(home, caseId));"), "null\n"));
-  // Back as they were, both are read.
+  await inPlaceOf(markerPath, pipe, async () => assert.equal(apart("console.log(await readColdTestAttempt(home, caseId));"), "null\n"));
+  // Back as they were, all are read.
   assert.deepEqual(await readRunnerClients(home), list);
   assert.deepEqual(await readColdTestReceipt(home, clientOne), receipt);
+  assert.equal(await readColdTestAttempt(home, clientOne), attempt);
 });
