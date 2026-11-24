@@ -16,6 +16,21 @@ function callsFrom(receipts, legacyParts = []) {
   }));
 }
 
+// The view shows what is stored for a turn, each stored thing once, bound by the identities the store binds it with. Hiding or
+// mis-binding by inference recurred four times (GPT's reviews 5 and 6, and two reviews of their fixes), so nothing is placed by
+// position or count where an identity is stored, and nothing is left out because of the turn's state, how it closed or its
+// stored configuration:
+// - a draft is bound to its writer's sealed call by the call's context (the draft's producer_context_id is the completion's
+//   details.actual_context_id, as the store checks it), or, in a record without contexts, by being the one draft of that stage
+//   with exactly the call's words; its number is its own repair cycle's;
+// - a committed audit is bound to its check's sealed call by the auditor's context (audit.auditor_context_id is the completion's
+//   details.actual_context_id, as the store checks it), and through it to its draft; it is shown as committed, with every finding
+//   (the commit can add findings, change a finding's severity and fail the audit);
+// - a checker reading is bound to its draft by its candidate id.
+// Only a call that left no stored result naming its draft (a failed or interrupted call, a check with no committed audit) is
+// placed by position, with the draft the last bound call was about. A draft is shown before anything bound to it; whatever no
+// call shows (a draft, a committed audit, a reading) gets a step of its own after the events, with its draft. The box reader's
+// section is left out only for the runtime's exact placeholder.
 export function runnerTurnDetailsFromRecord(record, turnNumber) {
   if (!Number.isSafeInteger(turnNumber) || turnNumber < 1) return null;
   const turn = record?.runtime_turns?.[turnNumber - 1];
@@ -29,16 +44,13 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   add("reader", "Crisis reader", null, without(readers?.crisis, ["receipts"]), callsFrom(readers?.crisis?.receipts), { role: "R1", timing: "Completion time not stored; before the provisional reply if shown." });
   if (readers?.provisional_refused) add("provisional_refused", "Provisional reply refused", null, readers.provisional_refused);
   if (turn.provisional) add("provisional", "Provisional reply shown", turn.provisional.shown_at, turn.provisional, callsFrom(readers?.crisis?.receipts));
-  // The remaining readers run concurrently. Their individual completion order is not recorded.
-  // The view shows what is stored. Whether something was stored is never inferred from the turn's state, how it closed or its
-  // stored configuration (the InnerSignal lane, after GPT's reviews 5 and 6). The one section left out is the box reader's
-  // placeholder, known by its stored shape alone: when the writer isn't focused the runtime stores `{ boxes: [], receipts: [] }`
-  // (runtime.mjs, runBoxPicker), so no receipts and every other field an empty array. A turn made with the whole writer and
-  // retried after a restart with the focused one keeps its first arrangement while its box reader ran, and a failed box reader
-  // stores `boxes: null`: both stay shown.
+  // The remaining readers run concurrently. Their individual completion order is not recorded. When the writer isn't focused the
+  // runtime stores the box reader's placeholder, exactly `{ boxes: [], receipts: [] }` (runtime.mjs, runBoxPicker): that alone
+  // gets no section. Anything else is shown, a failed box reader's `boxes: null` and a real result after a restart from the whole
+  // writer to the focused one included.
   const boxPlaceholder = (value) => value != null && typeof value === "object" && !Array.isArray(value)
-    && Array.isArray(value.receipts) && value.receipts.length === 0 && Array.isArray(value.boxes)
-    && Object.entries(without(value, ["receipts"])).every(([, item]) => Array.isArray(item) && item.length === 0);
+    && Object.keys(value).sort().join(",") === "boxes,receipts"
+    && Array.isArray(value.boxes) && value.boxes.length === 0 && Array.isArray(value.receipts) && value.receipts.length === 0;
   for (const [key, role, label] of [["boxes", "R2", "Rule box reader"], ["protection", "R3", "Protection reader"]]) {
     if (readers?.[key] == null || (key === "boxes" && boxPlaceholder(readers[key]))) continue;
     add("reader", label, null, without(readers[key], ["receipts"]), callsFrom(readers[key].receipts), { role, timing: "Individual completion time and order not stored." });
@@ -46,135 +58,140 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   const otherReadings = without(readers, ["crisis", "boxes", "protection", "provisional_refused"]);
   if (otherReadings && Object.keys(otherReadings).length) add("reading", "Other stored readings", null, otherReadings);
 
-  // Every stored checker reading appears exactly once: with the finished or failed check of its own draft that covers it, else
-  // in a step of its own after the events, bound to its candidate's draft (the InnerSignal lane, after GPT's reviews 5 and 6).
-  // A turn the reload closes as interrupted has no failure event, so its readings land there.
+  const candidates = list(record.candidate_responses).filter((candidate) => candidate.metadata?.runtime_turn_id === turn.id);
+  const candidateById = (id) => (id == null ? null : candidates.find((candidate) => candidate.id === id) ?? null);
+  const draftOf = (candidate) => (Number.isSafeInteger(candidate?.repair_cycle) ? candidate.repair_cycle + 1 : null);
+  const draftName = (number) => (number ? `draft ${number}` : "a draft not in this turn's record");
+  const draftExtra = (number) => (number ? { draft: number } : {});
   const storedReadings = list(turn.runner_reading?.checker_levels);
-  const shownReadings = new Set();
+  const shown = new Set();
   const takeReadings = (belongs) => {
-    const taken = storedReadings.filter((entry) => !shownReadings.has(entry) && belongs(entry));
-    for (const entry of taken) shownReadings.add(entry);
+    const taken = storedReadings.filter((entry) => !shown.has(entry) && belongs(entry));
+    for (const entry of taken) shown.add(entry);
     return taken;
   };
   const storedBy = (entry, at) => !at || !entry.recorded_at || entry.recorded_at <= at;
-  // The same for this turn's drafts and their committed audits (GPT's review of the first fix): a committed audit appears with the
-  // check whose sealed call produced it (the store binds the two by the call's context), else in a step of its own after the events.
-  // The store can add a finding when it commits an audit (response evidence that changed, say) and fail it, so a committed audit is
-  // shown whether or not a repair started.
-  const turnCandidates = list(record.candidate_responses).filter((candidate) => candidate.metadata?.runtime_turn_id === turn.id);
-  const draftOfCandidate = (candidate) => (Number.isSafeInteger(candidate?.repair_cycle) ? candidate.repair_cycle + 1 : null);
-  const shownCandidates = new Set();
-  const shownAudits = new Set();
-  // A committed audit as stored, without the identifiers of the calls behind it. Where the check's own result is shown, only the
-  // findings the commit added are repeated.
-  const committedAudit = (audit, checkFindings) => {
-    const known = checkFindings ? new Set(checkFindings.map((finding) => finding.id)) : null;
-    return {
-      verdict: stored(audit.verdict), sufficient_for_approval: stored(audit.sufficient_for_approval),
-      unresolved_substantive_finding_ids: list(audit.unresolved_substantive_finding_ids),
-      ...(known ? { findings_added_on_commit: list(audit.findings).filter((finding) => !known.has(finding.id)) } : { findings: list(audit.findings) }),
-      ...(audit.response_evidence ? { response_evidence_review: stored(audit.response_evidence.review) } : {}),
-      completed_at: stored(audit.completed_at), recorded_at: stored(audit.recorded_at)
-    };
+  const committedAudits = candidates.flatMap((candidate) => list(candidate.audit_history).map((audit) => ({ candidate, audit })));
+  const writerOf = (event) => {
+    const contextId = event.details?.actual_context_id;
+    if (contextId != null) {
+      const bound = candidates.find((candidate) => candidate.producer_context_id === contextId);
+      if (bound) return bound;
+    }
+    const text = event.details?.output?.exactText;
+    const sameText = candidates.filter((candidate) => typeof text === "string" && candidate.exact_text === text
+      && (event.stage === "repair") === (candidate.parent_candidate_id != null) && (contextId == null || candidate.producer_context_id == null));
+    return sameText.length === 1 ? sameText[0] : null;
   };
-  let draft = 0;
+  // A committed audit as stored, without the identifiers of the calls behind it, every finding included.
+  const committedContent = (audit) => ({
+    verdict: stored(audit.verdict), sufficient_for_approval: stored(audit.sufficient_for_approval),
+    unresolved_substantive_finding_ids: list(audit.unresolved_substantive_finding_ids), findings: list(audit.findings),
+    ...(audit.response_evidence ? { response_evidence_review: stored(audit.response_evidence.review) } : {}),
+    completed_at: stored(audit.completed_at), recorded_at: stored(audit.recorded_at)
+  });
+  const storedDraft = (candidate) => {
+    if (!candidate || shown.has(candidate)) return;
+    shown.add(candidate);
+    const number = draftOf(candidate);
+    add("stored_draft", `Stored ${draftName(number)}, with no stored record of its writer's call`, stored(candidate.created_at), { exact_text: stored(candidate.exact_text) }, [], draftExtra(number));
+  };
+
   let previousAudit = null;
-  let currentCandidate = null;
+  let current = null;
   for (const event of list(turn.events)) {
     if (event.event_type === "STATE_TRANSITION" && event.to_state === "RECONSTRUCTING") {
       // The runtime rebuilds the prompt on every attempt; its assembled words are not retained. The blocking findings it
       // supplies come from the exact parent candidate's stored audit, which can differ from the raw invocation result.
-      const parent = list(record.candidate_responses).find((candidate) => candidate.id === event.details?.parent_candidate_id);
+      const parent = candidateById(event.details?.parent_candidate_id);
       const audit = parent?.audit_history?.at(-1) ?? previousAudit;
+      const base = parent ?? current;
       add("repair_request", "Repair asked", event.at, {
         findings: audit ? list(audit.findings).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding)) : null,
         prompt: "not stored"
-      }, [], { draft: draft + 1 });
+      }, [], draftExtra(draftOf(base) ? draftOf(base) + 1 : null));
     }
     if (event.event_type === "INVOCATION_COMPLETED") {
       const output = event.details?.output;
       if (["candidate", "repair"].includes(event.stage)) {
-        draft += 1;
         const result = output?.result;
         const workers = callsFrom(list(result?.receipts).filter((receipt) => !String(receipt.role).startsWith("R")), event.stage === "candidate" ? result?.rules?.parts : []);
-        currentCandidate = turnCandidates.find((candidate) => candidate.repair_cycle === draft - 1);
-        if (currentCandidate) shownCandidates.add(currentCandidate);
-        add("draft", `${workerName(workers, "Writer")}'s draft ${draft}`, event.at, {
-          exact_text: stored(output?.exactText ?? currentCandidate?.exact_text),
+        const candidate = writerOf(event);
+        if (candidate) { shown.add(candidate); current = candidate; }
+        const number = draftOf(candidate);
+        add("draft", candidate ? `${workerName(workers, "Writer")}'s draft ${number}` : `${workerName(workers, "Writer")}'s words, bound to no stored draft`, event.at, {
+          exact_text: stored(output?.exactText ?? candidate?.exact_text),
           ...without(result, ["receipts", "rules", "compatibilityBinding", "mode", "processingTier", "routingReason"])
-        }, workers, { draft });
+        }, workers, draftExtra(number));
       } else if (event.stage === "audit") {
         const value = output?.value;
         previousAudit = value;
+        const contextId = event.details?.actual_context_id;
+        const committed = contextId == null ? [] : committedAudits.filter(({ audit }) => !shown.has(audit) && audit.auditor_context_id === contextId);
+        const candidate = committed[0]?.candidate ?? current;
+        if (committed.length) { storedDraft(candidate); current = candidate; }
+        const number = draftOf(candidate);
         const workers = callsFrom(output?.providerReceipt?.receipts);
         const roles = [...new Set(workers.map((call) => call.role))];
         const findingsFor = (role) => list(value?.findings).filter((finding) => finding.checker === role || String(finding.id).startsWith(`${role}:`));
         for (const role of roles) {
           const ownCalls = workers.filter((call) => call.role === role);
-          const readings = takeReadings((entry) => currentCandidate != null && entry.checker === role && entry.candidate_id === currentCandidate.id && storedBy(entry, event.at));
-          add("checker", `${workerName(ownCalls, "Checker")}'s check of draft ${draft} (${role})`, event.at, {
+          const readings = takeReadings((entry) => candidate != null && entry.checker === role && entry.candidate_id === candidate.id && storedBy(entry, event.at));
+          add("checker", `${workerName(ownCalls, "Checker")}'s check of ${draftName(number)} (${role})`, event.at, {
             findings: findingsFor(role),
             ...(readings.length ? { readings } : {}),
             ...(["CW", "C1"].includes(role) ? { checker_level: stored(value?.checker_level) } : {}),
             ...(["CW", "C5"].includes(role) ? { repair_induced_checks: stored(value?.repair_induced_checks) } : {})
-          }, ownCalls, { draft, missing: findingsFor(role).some((finding) => !["quote", "quoted_span", "quoted_spans"].some((key) => finding[key] != null)) ? ["Separate quoted spans not retained in a finding: not stored."] : [] });
+          }, ownCalls, { ...draftExtra(number), missing: findingsFor(role).some((finding) => !["quote", "quoted_span", "quoted_spans"].some((key) => finding[key] != null)) ? ["Separate quoted spans not retained in a finding: not stored."] : [] });
         }
         const unbound = list(value?.findings).filter((finding) => !roles.some((role) => findingsFor(role).includes(finding)));
         const isProgram = (finding) => finding.checker === "program" || /^(?:P|program):/u.test(String(finding.id));
-        if (unbound.some((finding) => !isProgram(finding))) add("findings", `Findings without a stored checker binding for draft ${draft}`, event.at, { findings: unbound.filter((finding) => !isProgram(finding)) }, [], { draft });
-        add("program_checks", `Program's exact checks of draft ${draft}`, event.at, {
+        if (unbound.some((finding) => !isProgram(finding))) add("findings", `Findings without a stored checker binding for ${draftName(number)}`, event.at, { findings: unbound.filter((finding) => !isProgram(finding)) }, [], draftExtra(number));
+        add("program_checks", `Program's exact checks of ${draftName(number)}`, event.at, {
           ...without(value, ["findings"]),
           findings: unbound.filter(isProgram)
-        }, [], { draft, timing: "Checker completion order not stored; these results belong to the same draft." });
-        const contextId = event.details?.actual_context_id;
-        for (const audit of list(currentCandidate?.audit_history)) {
-          if (shownAudits.has(audit) || contextId == null || audit.auditor_context_id !== contextId) continue;
-          shownAudits.add(audit);
-          add("committed_check", `Stored result of the check of draft ${draft}`, audit.recorded_at ?? event.at, committedAudit(audit, list(value?.findings)), [], { draft });
+        }, [], { ...draftExtra(number), timing: "Checker completion order not stored; these results belong to the same draft." });
+        for (const { candidate: owner, audit } of committed) {
+          shown.add(audit);
+          const ownerNumber = draftOf(owner);
+          add("committed_check", `Stored result of the check of ${draftName(ownerNumber)}`, audit.recorded_at ?? event.at, committedContent(audit), [], draftExtra(ownerNumber));
         }
       }
     } else if (["INVOCATION_FAILED", "INVOCATION_ABANDONED"].includes(event.event_type)) {
-      // A check that failed part-way still keeps the readings its finished checkers stored (a crisis level, say) before the
-      // failure, bound to the draft being checked (Codex's review 5): show them instead of hiding them behind "not stored".
-      const readings = event.stage === "audit"
-        ? takeReadings((entry) => currentCandidate != null && entry.candidate_id === currentCandidate.id && storedBy(entry, event.at))
-        : [];
+      // A call that failed or was abandoned stored no result naming its draft, so it is placed with the draft the last bound call
+      // was about. A check that failed part-way still keeps the readings its finished checkers stored before the failure
+      // (Codex's review 5): show them instead of hiding them behind "not stored".
+      const readings = event.stage === "audit" ? takeReadings((entry) => current != null && entry.candidate_id === current.id && storedBy(entry, event.at)) : [];
+      const number = draftOf(current);
       add("failure", `${event.stage} ${event.event_type === "INVOCATION_FAILED" ? "failed" : "interrupted"}`, event.at, {
         error_code: stored(event.details?.error_code), result: "not stored",
         ...(readings.length ? { readings } : {})
-      }, callsFrom(event.details?.raw_private_evidence?.receipts), event.stage === "audit" && draft ? { draft } : {});
+      }, callsFrom(event.details?.raw_private_evidence?.receipts), event.stage === "audit" ? draftExtra(number) : {});
     }
   }
-  // Drafts and committed audits no event showed, by draft.
-  for (const candidate of turnCandidates) {
-    const candidateDraft = draftOfCandidate(candidate);
-    if (!shownCandidates.has(candidate)) {
-      shownCandidates.add(candidate);
-      add("stored_draft", candidateDraft ? `Stored draft ${candidateDraft}, with no stored record of its writer's call` : "Stored draft, with no stored record of its writer's call",
-        stored(candidate.created_at), { exact_text: stored(candidate.exact_text) }, [], candidateDraft ? { draft: candidateDraft } : {});
-    }
+  // Whatever no call showed, by draft: a draft stored with no record of its writer's call, a committed audit whose check left no
+  // stored record of its call, readings no finished or failed check showed (an audit the process stopped in, GPT's review 6).
+  for (const candidate of candidates) {
+    storedDraft(candidate);
+    const number = draftOf(candidate);
     for (const audit of list(candidate.audit_history)) {
-      if (shownAudits.has(audit)) continue;
-      shownAudits.add(audit);
-      add("committed_check", candidateDraft ? `Stored result of a check of draft ${candidateDraft}, with no stored record of its call` : "Stored result of a check, with no stored record of its call",
-        stored(audit.recorded_at), committedAudit(audit, null), [], candidateDraft ? { draft: candidateDraft } : {});
+      if (shown.has(audit)) continue;
+      shown.add(audit);
+      add("committed_check", `Stored result of a check of ${draftName(number)}, with no stored record of its call`, stored(audit.recorded_at), committedContent(audit), [], draftExtra(number));
     }
   }
-  // The readings no finished or failed check showed: an audit the process stopped in (GPT's review 6), a checker whose call left
-  // no receipt, a draft this turn's record doesn't hold. One step per candidate, in stored order.
-  const draftOf = (candidateId) => draftOfCandidate(turnCandidates.find((entry) => entry.id === candidateId));
   const unshown = new Map();
   for (const entry of storedReadings) {
-    if (shownReadings.has(entry)) continue;
+    if (shown.has(entry)) continue;
     const key = entry.candidate_id ?? null;
     if (!unshown.has(key)) unshown.set(key, []);
     unshown.get(key).push(entry);
   }
   for (const [candidateId, readings] of unshown) {
-    const readingDraft = draftOf(candidateId);
-    for (const entry of readings) shownReadings.add(entry);
-    add("readings", readingDraft ? `Stored readings for draft ${readingDraft}, with no stored result of its check` : "Stored readings for a draft not in this turn's record",
-      readings.map((entry) => entry.recorded_at).filter(Boolean).sort().at(-1) ?? null, { readings, result: "not stored" }, [], readingDraft ? { draft: readingDraft } : {});
+    const number = draftOf(candidateById(candidateId));
+    for (const entry of readings) shown.add(entry);
+    add("readings", `Stored readings for ${draftName(number)}, with no stored result of its check`,
+      readings.map((entry) => entry.recorded_at).filter(Boolean).sort().at(-1) ?? null, { readings, result: "not stored" }, [], draftExtra(number));
   }
   if (turn.emergency_line_shown_at) {
     // Only the fact/reason are retained. Do not substitute today's constant for unrecorded historical words.
@@ -187,7 +204,7 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   return {
     schema_version: 1, turn: turnNumber, runtime_turn_id: turn.id, state: turn.state,
     runner_config: stored(turn.runner_config),
-    chronology_note: "Drafts, checks and repairs follow the stored event order. Individual reader and checker completion order is not stored. The emergency line is placed by its stored time; order within a tied timestamp is not stored. Failed worker attempts retain receipts, but their output text is not stored.",
+    chronology_note: "Drafts, checks and repairs follow the stored event order. Individual reader and checker completion order is not stored. The emergency line is placed by its stored time; order within a tied timestamp is not stored. Failed worker attempts retain receipts, but their output text is not stored. A draft, a committed check or a reading no stored call shows follows the events.",
     steps
   };
 }
