@@ -16,7 +16,7 @@ import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
-import { CHECKER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE } from "../src/runner-trial/worker-prompts.mjs";
+import { CHECKER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE_NO_QUOTATION, WRITER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE_NO_QUOTATION } from "../src/runner-trial/worker-prompts.mjs";
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { RESPONSE_EVIDENCE_DIMENSIONS } from "../src/supervisor/response-evidence-contract.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
@@ -761,4 +761,29 @@ test("a trial without clients has no journal reader: its turns' evidence is froz
   assert.equal((await run("exchange-own-order", "A synthetic message of the owner's own.", { caseId: j.ownCase })).deliveryKind, "candidate");
   assert.deepEqual(happened.filter((step) => ["freeze", "reading", "R1", "R3", "writing", "W", "search"].includes(step)), ["freeze", "reading", "R1", "R3", "writing", "W"]);
   assert.equal(journalPartOf(await j.record(j.ownCase)).availability, "not_configured");
+});
+
+test("each quotation comes to the writer, the checker and the repair with its note, and they are told what a quotation is and isn't; with none, they get what they always got", async (t) => {
+  const failsOnce = (count, request) => ({ ...wholeChecker(count, request), findings: count === 1 ? [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }] : [],
+    repair_induced_checks: count > 1 ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] });
+  const repairs = script({ CW: failsOnce, "W-repair": (count, request) => ({ ...writer(count, request), reply: `${writer(count, request).reply} Shorter.` }) });
+  const withJournal = await journalTrial(t, { workers: repairs });
+  await withJournal.turns().run("exchange-notes-1", MESSAGE);
+  for (const [role, note] of [["W", WRITER_EVIDENCE_NOTE], ["CW", CHECKER_EVIDENCE_NOTE], ["W-repair", WRITER_EVIDENCE_NOTE]]) {
+    const request = lastRequest(withJournal.calls, role);
+    const items = journalItems(packetOf(request));
+    assert.ok(items.length >= 1, role);
+    for (const item of items) assert.deepEqual(Object.keys(item.journal_note).sort(), ["cues", "lifecycle", "written"]);
+    assert.ok(request.system.includes(note), role);
+  }
+  for (const note of [WRITER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE]) {
+    for (const said of [/shared words/u, /nothing to do with this message/u, /only when it helps with what the person says now/u, /when the entry says it was written, never when something happened/u, /interval or (?:an )?inferred year is not a day/u, /dream, plan, wish or denial stays one/u,
+      /"superseded" means a later entry corrected it/u, /never a reason for crisis text/u, /never raises or lowers the level/u]) assert.match(note, said);
+  }
+  const without = await journalTrial(t, { workers: repairs });
+  await without.turns().run("exchange-notes-2", "A synthetic message for client two.", { caseId: without.clientB });
+  for (const [role, note] of [["W", WRITER_EVIDENCE_NOTE_NO_QUOTATION], ["CW", CHECKER_EVIDENCE_NOTE_NO_QUOTATION], ["W-repair", WRITER_EVIDENCE_NOTE_NO_QUOTATION]]) {
+    const request = lastRequest(without.calls, role);
+    assert.ok(request.system.includes(note) && !request.system.includes("shared words"), role);
+  }
 });

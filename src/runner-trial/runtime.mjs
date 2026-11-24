@@ -34,6 +34,7 @@ import {
   BOX_PICKER_SCHEMA,
   CHECKERS,
   CHECKER_EVIDENCE_NOTE,
+  CHECKER_EVIDENCE_NOTE_NO_QUOTATION,
   CHECKER_SCHEMA,
   LEVEL_CHECKER_KEPT_PLAN_SCHEMA,
   PROTECTION_READER_SCHEMA,
@@ -50,6 +51,7 @@ import {
   levelCheckerKeptPlanNote,
   protectionReaderPrompt,
   WRITER_EVIDENCE_NOTE,
+  WRITER_EVIDENCE_NOTE_NO_QUOTATION,
   withEvidenceReview,
   withNoteBeforeAnswerLine,
   writerKeptPlanNote,
@@ -139,7 +141,12 @@ function evidenceInclusion(responseEvidence) {
 const evidencePacket = (responseEvidence, journalEvidence) => (responseEvidence
   ? { response_evidence: structuredClone(responseEvidence.view) }
   : journalEvidence ? { journal_evidence: journalEvidence.packet } : {});
-const withEvidenceNote = (prompt, responseEvidence, note) => (responseEvidence ? { ...prompt, system: withNoteBeforeAnswerLine(prompt.system, note) } : prompt);
+const holdsQuotation = (items) => (items ?? []).some((item) => item.kind === "journal_quotation");
+// The notes about the evidence, with what a journal quotation is only when the evidence holds one.
+const evidenceNote = (responseEvidence, note, noteWithoutQuotation) => (holdsQuotation(responseEvidence.view.source_items) ? note : noteWithoutQuotation);
+const withWriterEvidenceNote = (prompt, responseEvidence) => (responseEvidence
+  ? { ...prompt, system: withNoteBeforeAnswerLine(prompt.system, evidenceNote(responseEvidence, WRITER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE_NO_QUOTATION)) }
+  : prompt);
 // What the failed check's evidence review found, for the repair, as the app's own runtime gives it.
 function evidenceFailures(audit) {
   const review = audit?.response_evidence?.review;
@@ -165,8 +172,7 @@ function evidenceQuoteSources(responseEvidence) {
 // whole case, not one turn or one artifact, is used only while the journal gate is open (Codex's reviews 1 and 2: guarding one path
 // at a time kept leaving another).
 function caseReadJournal(record, responseEvidence = null) {
-  const holds = (items) => (items ?? []).some((item) => item.kind === "journal_quotation");
-  return holds(responseEvidence?.view?.source_items) || (record?.response_evidence_snapshots ?? []).some((entry) => holds(entry.source_items));
+  return holdsQuotation(responseEvidence?.view?.source_items) || (record?.response_evidence_snapshots ?? []).some((entry) => holdsQuotation(entry.source_items));
 }
 
 // A checker's findings as the runtime stores them (exported for the measurement harness, so its catch rate reads them the same way).
@@ -768,7 +774,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const rules = writerRules(readers.boxes?.boxes ?? null);
       const writerRequest = () => {
         const current = keptPlanAsOfNow(keptPlan);
-        return withEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional, keptPlan: current }) }), current), responseEvidence, WRITER_EVIDENCE_NOTE);
+        return withWriterEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional, keptPlan: current }) }), current), responseEvidence);
       };
       const written = await callWorker("W", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: writerRequest, validate: (value) => validateWriter(value, keptPlan), guard: () => assertJournalGate(caseId, responseEvidence, authContext) });
       // The person asked to keep the plan: kept now, unless the reply before offered it, when the crisis checker confirms the yes first.
@@ -875,7 +881,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "", schema = CHECKER_SCHEMA, keptPlanPart = null, evidence = false }) => {
         const requestFor = () => {
           const kept = keptPlanPart ? keptPlanPart() : { packet: {}, extra: "" };
-          return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}${evidence ? `\n${CHECKER_EVIDENCE_NOTE}` : ""}` }), schema: evidence ? withEvidenceReview(schema) : schema };
+          return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}${evidence ? `\n${evidenceNote(responseEvidence, CHECKER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE_NO_QUOTATION)}` : ""}` }), schema: evidence ? withEvidenceReview(schema) : schema };
         };
         const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, ruleParts: rules.parts, requestFor, ...(evidence ? { validate: reviewed } : {}), guard: () => assertJournalGate(caseId, responseEvidence, authContext) })) };
         try { return LEVEL_READERS.includes(checker.id) ? await actOnLevel(result) : result; }
@@ -967,7 +973,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         const current = keptPlanAsOfNow(keptPlan);
         const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }), previous_candidate: candidate.exact_text, findings: blocking,
           ...(responseEvidence ? { response_evidence_failures: evidenceFailures(failedAudit) } : {}) };
-        return withEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current), responseEvidence, WRITER_EVIDENCE_NOTE);
+        return withWriterEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current), responseEvidence);
       };
       const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: repairRequest, validate: (value) => validateWriter(value, keptPlan), guard: () => assertJournalGate(caseId, responseEvidence, authContext) });
       // A repair that changes nothing can't fix what the checks found: the turn ends as a failed check (the store would refuse
