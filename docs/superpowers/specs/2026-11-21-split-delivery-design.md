@@ -147,7 +147,10 @@ once; ChatGPT makes them one after another. Each later box costs one call of 1,0
 groups did not in two chats of three: ChatGPT made the five calls in one step and showed itself the first and last 10,000
 tokens of their combined output, then went on without loading them again. The note had said that the calls may run at the
 same time. With the sentence above in the question, in the third chat, everything arrived whole, in seven steps. The test
-chats of 21 and 24 Nov went through Codex on the laptop, which makes each call a step of its own, so they didn't show it.
+chats of 21 and 24 Nov through Codex showed the same in their call logs, read again after that: in every ordinary one GPT
+loaded the five groups at once and then loaded them again by themselves (all five, or four); their reports had counted the
+groups as loaded. With this note the same four chats (Codex, 24 Nov, 17:02 to 17:04 UTC, on `089bb81d4`) loaded each group
+once, one by one, and then the boxes; both crisis messages were answered at once from the first answer alone.
 
 **Fable's red team of `7c46bf780`** (nine findings; it also fuzzed 4,000 requests and found none over the cap):
 1. A crisis reply waited behind five calls: the loading note now has the crisis exception.
