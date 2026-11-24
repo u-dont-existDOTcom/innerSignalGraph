@@ -1,6 +1,7 @@
 # Runner trial: a case per client, and a client's journal
 
-Written 23 Nov 2026; revised the same day after two read-only Codex reviews (appendix). A proposal, not built. It extends the
+Written 23 Nov 2026; revised the same day after two read-only Codex reviews (appendix). The owner chose option a on 24 Nov 2026
+("i73 1a"); what is built is in "As built" at the end. It extends the
 runner trial (`docs/superpowers/specs/2026-11-21-runner-trial-design.md`, "the trial design" below) so that the trial can serve
 the people a practitioner works with ("clients"), with the client chosen for each conversation, and so that a client's imported
 journal can inform that client's replies through the session-use journal reader of
@@ -143,3 +144,28 @@ now stands.
 | 12 section 1 overstated | Section 1: "no other vault is known", from the import's scripts and notes; the cold test "isn't wired", no pass on record |
 | 13 the 8,000 tokens | Sections 1 and 4: quotes per retrieval, sent again at each repair; section 3: option a's further costs |
 | New: a reading-first import needn't be all model | Section 1: the model reader or authorized page reviews |
+
+## As built (24 Nov 2026, branch `claude/runner-client-cases-20261123`)
+
+Built on the runner branch at `df4322317` with `main` at `343bec014` (pull request 241) merged in; the merge's resolutions are in its
+commit message. Option a, the separate vault kept:
+
+- **Points 1 to 3** as proposed. `--add-client` takes the label at a hidden prompt, so it never goes on the command line or the
+  screen; `--journal-consent confirm|withdraw` asks for the client's number, which the page shows beside the label. The terminal
+  never prints a label. Client tokens reach the server only through `INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS`, read beside the
+  owner's token, never into the config. `/health` still names the owner's own case, but the page takes its cases from
+  `GET /v1/runner/clients`.
+- **Point 5** as proposed, with the cold-test receipt's shape fixed here (`validateColdTestReceipt` in
+  `src/runner-trial/clients.mjs`), since the cold test that will write it isn't built. The gate re-reads the consent after each
+  read, and the delivery of an approved reply written with a journal in view reads it again.
+- **Point 6** as proposed, with one change: an approved reply that may no longer be sent (response evidence no longer admits it, or
+  the journal consent it was written with is withdrawn) closes as a failed check (`checks_failed`, "No reply passed its checks."),
+  not under a new closing reason, so the trial's closing reasons, the owner's fixed message and its switches stay exactly as he
+  decided them. The store checks the refusal again before it closes an approved turn, and refuses any other closing of one.
+- **Point 7**: `tests/runner-client-cases.test.mjs` and `tests/runner-client-journal.test.mjs`, with invented clients, the journal
+  import's synthetic journal fixture and a planted receipt.
+
+Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on
+the owner's go each time; the import into the client's runner case checked against the export; the adapter for the trial's
+development credentials), and **the journal's cold test**. Running the cold test on a client's journal comes back to the owner
+first.

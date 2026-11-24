@@ -825,6 +825,18 @@ export function createEncryptedPrivateCaseStore({
     if (!record) throw new ValidationError(`Private case ${caseId} was not found.`, { code: "PRIVATE_CASE_NOT_FOUND" });
     return record;
   };
+  // An approved runner trial turn is closed without a reply only as a failed check, and only when its reply may no longer be sent
+  // (the design for clients, point 6): response evidence no longer admits it at delivery, checked here again, or it was written with
+  // a client's journal in view (its snapshot holds journal quotations), which the trial holds back once that client's consent is
+  // withdrawn (the consent is the trial's own record, outside the case). Otherwise the reply stays to be delivered.
+  const approvedReplyMayNotBeSent = (record, runtimeTurn, reasonCode) => {
+    const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
+    if (!candidate || reasonCode !== "checks_failed") return false;
+    const snapshotId = candidate.metadata?.response_evidence?.snapshot_id;
+    const snapshot = snapshotId ? (record.response_evidence_snapshots ?? []).find((entry) => entry.id === snapshotId) : null;
+    if (snapshot?.source_items?.some((item) => item.kind === "journal_quotation")) return true;
+    return !assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point: "deliverPrivateRuntimeCandidate" }).admissible;
+  };
   const requireResponseEvidence = (record, candidate, point) => {
     const assessment = assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point });
     if (!assessment.admissible) throw new ValidationError("Response evidence admission refused.", { code: assessment.code, details: { reasons: assessment.reasons } });
@@ -1782,7 +1794,9 @@ export function createEncryptedPrivateCaseStore({
           if (runtimeTurn.closure.kind === kind && runtimeTurn.closure.assistant_turn_id === assistantTurnId) return null;
           throw new ValidationError("This turn is already closed differently.");
         }
-        if (["DELIVERED", "APPROVED"].includes(runtimeTurn.state)) throw new ValidationError("A delivered or approved turn is not closed without a reply.");
+        if (runtimeTurn.state === "DELIVERED" || (runtimeTurn.state === "APPROVED" && !approvedReplyMayNotBeSent(record, runtimeTurn, reasonCode))) {
+          throw new ValidationError("A delivered or approved turn is not closed without a reply.");
+        }
         if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
         const timestamp = now();
         if (caseState != null) {

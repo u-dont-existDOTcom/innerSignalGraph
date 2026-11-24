@@ -35,9 +35,12 @@ const baseScript = (overrides = {}) => ({
   ...overrides
 });
 
+// The trials a test started, whose run log writes its folder's removal waits for.
+const trialsOf = new WeakMap();
 async function tempDir(t, label) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), `inner-signal-${label}-`));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  trialsOf.set(t, trialsOf.get(t) ?? []);
+  t.after(async () => { await Promise.all(trialsOf.get(t).map((trial) => trial.flushLogs())); await fs.rm(dir, { recursive: true, force: true }); });
   return dir;
 }
 
@@ -94,7 +97,7 @@ async function clientServer(t, { labels = ["Synthetic client one", "Synthetic cl
   const trial = createRunnerTrialController({ privateCaseSource: service, config, clientCaseIds: [...caseAuthContexts.keys()], settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode: "whole" }), parts, workerFor: workers.workerFor });
   const server = createInnerSignalServer({ config, providers: createProviders(config), privateCaseAccessService: service, privateAuthContext: ownAuth, privateCaseAuthContexts: caseAuthContexts, privateTherapyController: trial.controller, runnerTrialEvents: trial.events });
   const base = await listen(t, server);
-  t.after(() => trial.logWriter.flush());
+  trialsOf.set(t, [...(trialsOf.get(t) ?? []), trial]);
   return { ...made, service, base, trial, calls: workers.calls, ownAuth, caseAuthContexts, ownCase: prepared.caseId, clientCases: Object.keys(prepared.clientTokens) };
 }
 

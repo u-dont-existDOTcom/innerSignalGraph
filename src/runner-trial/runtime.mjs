@@ -15,6 +15,7 @@ import { selfDirectedRiskAuditRules } from "../prompts/self-directed-risk-audit.
 import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
 import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
 import { FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
+import { normalizeEvidenceReview, sha256Json } from "../supervisor/response-evidence-contract.mjs";
 import {
   KEPT_PLAN_LIMITS,
   crisisReadingOf,
@@ -31,6 +32,7 @@ import {
 import {
   BOX_PICKER_SCHEMA,
   CHECKERS,
+  CHECKER_EVIDENCE_NOTE,
   CHECKER_SCHEMA,
   LEVEL_CHECKER_KEPT_PLAN_SCHEMA,
   PROTECTION_READER_SCHEMA,
@@ -46,6 +48,8 @@ import {
   crisisReaderWantsToDieNote,
   levelCheckerKeptPlanNote,
   protectionReaderPrompt,
+  WRITER_EVIDENCE_NOTE,
+  withEvidenceReview,
   withNoteBeforeAnswerLine,
   writerKeptPlanNote,
   writerPrompt
@@ -107,6 +111,56 @@ export class RunnerDeadlineError extends RuntimeError {
 
 function validLevel(value) { return LEVELS.includes(value) ? value : "unclear"; }
 
+// The refusals for which an approved reply is closed instead of delivered (the design for clients, point 6): response evidence no
+// longer admits it, because what it rested on changed after its check or its evidence doesn't hold. Such a turn closes as a failed
+// check (checks_failed, "No reply passed its checks."), and so does one held for a withdrawn journal consent: the trial's closing
+// reasons and the fixed message's switches stay as they are. The store checks again before it closes an approved turn.
+const EVIDENCE_REFUSALS = new Set(["RESPONSE_EVIDENCE_STALE", "RESPONSE_EVIDENCE_UNSUPPORTED", "RESPONSE_EVIDENCE_INVALID", "RESPONSE_EVIDENCE_REQUIRED"]);
+
+// Pull request 241's evidence snapshot, when the controller supplies one (INNER_SIGNAL_RESPONSE_EVIDENCE on for the trial): its view is
+// what the writer, the checker and the repair see, and each call reports the view it saw, which the store checks before it admits
+// the reply. With the setting off the controller supplies none, and every packet, prompt and schema is exactly what it was.
+function evidenceInclusion(responseEvidence) {
+  if (!responseEvidence) return {};
+  if (sha256Json(responseEvidence.view) !== responseEvidence.viewSha256
+      || responseEvidence.view.snapshot_id !== responseEvidence.snapshot.id
+      || responseEvidence.view.snapshot_sha256 !== responseEvidence.snapshot.snapshot_sha256) {
+    throw new ValidationError("Response evidence inclusion invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
+  }
+  return { responseEvidenceInclusion: { snapshot_id: responseEvidence.snapshot.id, snapshot_sha256: responseEvidence.snapshot.snapshot_sha256, view_sha256: responseEvidence.viewSha256 } };
+}
+const evidencePacket = (responseEvidence, journalEvidence) => (responseEvidence
+  ? { response_evidence: structuredClone(responseEvidence.view) }
+  : journalEvidence ? { journal_evidence: journalEvidence.packet } : {});
+const withEvidenceNote = (prompt, responseEvidence, note) => (responseEvidence ? { ...prompt, system: withNoteBeforeAnswerLine(prompt.system, note) } : prompt);
+// What the failed check's evidence review found, for the repair, as the app's own runtime gives it.
+function evidenceFailures(audit) {
+  const review = audit?.response_evidence?.review;
+  if (!review) return [];
+  return [
+    ...review.items.filter((item) => item.source_incompatible || ["unsupported", "contradicted"].includes(item.assessment))
+      .map((item) => ({ dimension: item.dimension, candidate_quote: item.candidate_quote, assessment: item.assessment, reason: item.reason, source_ids: item.source_ids })),
+    ...review.missing_material_history.map((item) => structuredClone(item))
+  ];
+}
+// The sources a declared quote may come from besides the conversation's turns: the person's turns under their source ids, and each
+// journal quotation the reader verified, under its source id (src:journal:...), so a true journal quote passes the exact-quote check.
+function evidenceQuoteSources(responseEvidence) {
+  const sources = new Map();
+  for (const item of responseEvidence?.view?.source_items ?? []) {
+    if (typeof item.exact_excerpt !== "string") continue;
+    if (item.kind === "journal_quotation" || (item.kind === "exact_client_turn" && item.locator?.kind === "transcript_turn")) sources.set(item.id, item.exact_excerpt);
+  }
+  return sources;
+}
+// Whether the reply of an approved turn was written with a client's journal in view: its snapshot holds journal quotations.
+function restsOnJournal(record, turn) {
+  const candidate = record.candidate_responses.find((entry) => entry.id === turn?.current_candidate_id);
+  const snapshotId = candidate?.metadata?.response_evidence?.snapshot_id;
+  const snapshot = snapshotId ? (record.response_evidence_snapshots ?? []).find((entry) => entry.id === snapshotId) : null;
+  return Boolean(snapshot?.source_items?.some((item) => item.kind === "journal_quotation"));
+}
+
 // A checker's findings as the runtime stores them (exported for the measurement harness, so its catch rate reads them the same way).
 export function normalizeFindings(checkerId, findings) {
   if (!Array.isArray(findings)) throw new ValidationError(`${checkerId} returned no findings list.`, { code: "PROVIDER_MALFORMED" });
@@ -129,7 +183,9 @@ export function normalizeFindings(checkerId, findings) {
 // (design, section 7), on only when exactly true: it changes nothing but which closings show the owner's fixed message, and only
 // while `ownerFallbackEnabled` is on too. `fixedMessageOnAnyFailureEnabled` is INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE (the
 // same section), on only when exactly true, and only on top of both: then every closing reason shows his message in such a conversation.
-export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, workerSettings = {}, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, fixedMessageOnAnyFailureEnabled = false, onEvent = () => {}, now = () => Date.now() } = {}) {
+// `journalGate` (src/runner-trial/journal-gate.mjs), only with response evidence on: before an approved reply written with a client's
+// journal in view is delivered, it asks whether that client's consent still stands (the design for clients, point 5a).
+export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, workerSettings = {}, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, fixedMessageOnAnyFailureEnabled = false, journalGate = null, onEvent = () => {}, now = () => Date.now() } = {}) {
   if (!privateCaseSource || !parts || typeof workerFor !== "function") throw new ValidationError("The runner trial needs its case source, rule parts and workers.");
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
@@ -452,7 +508,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     return focusedRules(parts, [...new Set([...picks, ...extraBoxes])]);
   }
 
-  function writerPacket({ record, runtimeTurn, view, readers, journalEvidence, provisional, keptPlan = null }) {
+  function writerPacket({ record, runtimeTurn, view, readers, journalEvidence, responseEvidence = null, provisional, keptPlan = null }) {
     const gate = record.case_state?.protective_compatibility?.current ?? null;
     return {
       conversation: view.turns,
@@ -461,7 +517,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       ...(provisional ? { provisional_reply_shown: provisional } : {}),
       crisis_reading: readers.crisis?.unread ? null : { level: readers.crisis?.level ?? "unclear", reason: readers.crisis?.reason ?? "" },
       ...(gate && gate.gate !== "NOT_BLOCKED" ? { child_contact_gate: { gate: gate.gate, route: gate.route ?? null } } : {}),
-      ...(journalEvidence ? { journal_evidence: journalEvidence.packet } : {}),
+      ...evidencePacket(responseEvidence, journalEvidence),
       ...writerKeptPlanPacket(keptPlan)
     };
   }
@@ -601,7 +657,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   return Object.freeze({
     settings: Object.freeze(structuredClone(config)),
 
-    async produceCandidate({ caseId, runtimeTurn, userInput = {}, journalEvidence = null, authContext }) {
+    async produceCandidate({ caseId, runtimeTurn, userInput = {}, journalEvidence = null, responseEvidence = null, authContext }) {
+      const inclusion = evidenceInclusion(responseEvidence);
+      await assertJournalConsent(caseId, responseEvidence);
       const record = await load(caseId, authContext);
       const conversationId = conversationIdFor(record, runtimeTurn, userInput);
       const view = conversationView(record, conversationId, runtimeTurn);
@@ -637,12 +695,13 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const rules = writerRules(readers.boxes?.boxes ?? null);
       const writerRequest = () => {
         const current = keptPlanAsOfNow(keptPlan);
-        return keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, provisional, keptPlan: current }) }), current);
+        return withEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional, keptPlan: current }) }), current), responseEvidence, WRITER_EVIDENCE_NOTE);
       };
       const written = await callWorker("W", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: writerRequest, validate: (value) => validateWriter(value, keptPlan) });
       // The person asked to keep the plan: kept now, unless the reply before offered it, when the crisis checker confirms the yes first.
       if (keptPlan?.keepAsked && !keptPlan.previousOffered) await tryKeepPlan(caseId, runtimeTurn.id, written.value.keptPlan.lines, authContext);
       return {
+        ...inclusion,
         exactText: written.value.reply,
         contextId: contextIdOf(written.receipts.filter((receipt) => receipt.session_id)),
         caseState,
@@ -661,7 +720,10 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       };
     },
 
-    async auditCandidate({ caseId, candidate, journalEvidence = null, authContext }) {
+    async auditCandidate({ caseId, candidate, journalEvidence = null, responseEvidence = null, authContext }) {
+      const inclusion = evidenceInclusion(responseEvidence);
+      if (responseEvidence && config.checkerMode !== "whole") throw new ValidationError("Response evidence in the runner trial needs the whole checker.", { code: "RUNNER_SETTINGS_INVALID" });
+      await assertJournalConsent(caseId, responseEvidence);
       const record = await load(caseId, authContext);
       const runtimeTurn = record.runtime_turns.find((turn) => turn.current_candidate_id === candidate.id);
       if (!runtimeTurn?.runner_reading) throw new ValidationError("The runner trial audits only its own turns.");
@@ -694,7 +756,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         earlier_conversations: view.earlier,
         candidate_reply: candidate.exact_text,
         ...(provisional ? { provisional_reply_shown: provisional } : {}),
-        ...(journalEvidence ? { journal_evidence: journalEvidence.packet } : {})
+        ...evidencePacket(responseEvidence, journalEvidence)
       };
       const repairPart = repaired ? { previous_candidate: parent?.exact_text ?? null, findings_that_caused_the_repair: previousFindings, repair_induced_error_checks: [...REPAIR_INDUCED_ERROR_CHECKS] } : {};
       const weigh = [readers.crisis?.level, written.answeredLevel].includes("acted_or_about_to") ? { readings_to_weigh: { crisis_reader: readers.crisis?.level ?? "unclear", writer: written.answeredLevel ?? "unclear" } } : {};
@@ -723,7 +785,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       };
       const plan = [];
       if (config.checkerMode === "whole") {
-        plan.push({ checker: CHECKERS.whole, rules: wholeRules(parts), packet: { ...base, ...repairPart, ...weigh, stored_risk_record: risk, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []), child_contact_gate: gateView, child_contact_pattern_hits: patternHits }, extra: selfDirectedRiskAuditRules, ...levelReaderKeptPlan });
+        plan.push({ checker: CHECKERS.whole, rules: wholeRules(parts), packet: { ...base, ...repairPart, ...weigh, stored_risk_record: risk, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []), child_contact_gate: gateView, child_contact_pattern_hits: patternHits }, extra: selfDirectedRiskAuditRules, ...levelReaderKeptPlan, evidence: Boolean(responseEvidence) });
       } else {
         plan.push({ checker: CHECKERS.crisis, rules: rulesFrom([parts.crisis], ["the crisis, chronic pain and harm-reduction sections of SKILL.md"]), packet: { ...base, ...weigh, stored_risk_record: risk }, extra: selfDirectedRiskAuditRules, ...levelReaderKeptPlan });
         plan.push({ checker: CHECKERS.skill, rules: rulesFrom([parts.skill, parts.references["RESPONSE-FIDELITY"], parts.references["FOCUS-DISCIPLINE"], parts.references["LONGITUDINAL-SYNTHESIS"], parts.references["GUIDE-REFERRALS"]], ["SKILL.md", "RESPONSE-FIDELITY", "FOCUS-DISCIPLINE", "LONGITUDINAL-SYNTHESIS", "GUIDE-REFERRALS"]), packet: { ...base, undeclared_quoted_spans: undeclaredQuotedSpans(candidate.exact_text, written.quotes ?? []) } });
@@ -735,12 +797,15 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // Every checker runs to its end: one that gives no reading can't take away another's (design, section 4).
       // Each checker's request is built for every attempt: the level reader's kept-plan part (with the kept plan on) is what holds
       // when that attempt starts; every other part is the same each time.
-      const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "", schema = CHECKER_SCHEMA, keptPlanPart = null }) => {
+      // With response evidence, the whole checker also returns the evidence review, which the program checks word for word against
+      // the candidate and the snapshot's sources (an answer that doesn't hold is retried like any malformed answer).
+      const reviewed = (value) => ({ ...value, evidence_review: normalizeEvidenceReview(value?.evidence_review, { candidateText: candidate.exact_text, snapshot: responseEvidence.snapshot }) });
+      const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "", schema = CHECKER_SCHEMA, keptPlanPart = null, evidence = false }) => {
         const requestFor = () => {
           const kept = keptPlanPart ? keptPlanPart() : { packet: {}, extra: "" };
-          return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}` }), schema };
+          return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}${evidence ? `\n${CHECKER_EVIDENCE_NOTE}` : ""}` }), schema: evidence ? withEvidenceReview(schema) : schema };
         };
-        const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, ruleParts: rules.parts, requestFor })) };
+        const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, ruleParts: rules.parts, requestFor, ...(evidence ? { validate: reviewed } : {}) })) };
         try { return LEVEL_READERS.includes(checker.id) ? await actOnLevel(result) : result; }
         catch (error) {
           error.details = { ...error.details, receipts: result.receipts };
@@ -764,7 +829,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         // 371a8f6f2), not only on the first turn read acted.
         const numberAlreadyShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
         const earlierCrisisTurn = readings.some((entry) => entry.turnId !== runtimeTurn.id && (entry.checkerLevels.some(isCrisisLevel) || entry.provisional));
-        const quoteSources = new Map(view.turns.filter((turn) => turn.turn_id).map((turn) => [turn.turn_id, turn.text]));
+        const quoteSources = new Map([...view.turns.filter((turn) => turn.turn_id).map((turn) => [turn.turn_id, turn.text]), ...evidenceQuoteSources(responseEvidence)]);
         const program = runProgramChecks({
           reply: candidate.exact_text,
           checkerLevel,
@@ -797,12 +862,14 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
           if (fresh && !isFinishedRuntimeTurn(fresh) && !showsNumber(fresh)) await showEmergencyLine(caseId, fresh, "reply_without_number", authContext);
         }
         return {
+          ...inclusion,
           value: {
             findings: findings.map(({ checker, ...finding }) => finding),
             repair_induced_checks: repairInducedChecks,
             checker_level: checkerLevel,
             missed_boxes: [...new Set(results.flatMap((result) => (result.value.missed_boxes ?? []).filter((id) => parts.boxes[id])))].slice(0, config.maxBoxes),
-            findings_by_checker: Object.fromEntries(results.map((result) => [result.checker.id, (result.value.findings ?? []).length]).concat([["program", program.length]]))
+            findings_by_checker: Object.fromEntries(results.map((result) => [result.checker.id, (result.value.findings ?? []).length]).concat([["program", program.length]])),
+            ...(responseEvidence ? { evidence_review: results.find((result) => result.checker.id === CHECKERS.whole.id).value.evidence_review } : {})
           },
           contextId: contextIdOf(receipts.filter((receipt) => receipt.session_id)),
           providerReceipt: { provider: "runner-trial-checkers", receipts }
@@ -813,7 +880,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       }
     },
 
-    async repairCandidate({ caseId, candidate, journalEvidence = null, authContext }) {
+    async repairCandidate({ caseId, candidate, journalEvidence = null, responseEvidence = null, authContext }) {
+      const inclusion = evidenceInclusion(responseEvidence);
+      await assertJournalConsent(caseId, responseEvidence);
       const record = await load(caseId, authContext);
       const runtimeTurn = record.runtime_turns.find((turn) => turn.current_candidate_id === candidate.id);
       emit(caseId, runtimeTurn.id, { type: "status", step: "repairing" });
@@ -825,8 +894,9 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const keptPlan = keptPlanEnabled ? keptPlanContextOf(record, runtimeTurn, runtimeTurn.runner_reading.conversation_id) : null;
       const repairRequest = () => {
         const current = keptPlanAsOfNow(keptPlan);
-        const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }), previous_candidate: candidate.exact_text, findings: blocking };
-        return keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current);
+        const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }), previous_candidate: candidate.exact_text, findings: blocking,
+          ...(responseEvidence ? { response_evidence_failures: evidenceFailures(failedAudit) } : {}) };
+        return withEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current), responseEvidence, WRITER_EVIDENCE_NOTE);
       };
       const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: repairRequest, validate: (value) => validateWriter(value, keptPlan) });
       // A repair that changes nothing can't fix what the checks found: the turn ends as a failed check (the store would refuse
@@ -836,6 +906,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // offer, only once the crisis checker has confirmed the yes on an earlier check of this turn).
       if (keptPlan?.keepAsked && (!keptPlan.previousOffered || keepPlanYesConfirmed(runtimeTurn))) await tryKeepPlan(caseId, runtimeTurn.id, written.value.keptPlan.lines, authContext);
       return {
+        ...inclusion,
         exactText: written.value.reply,
         contextId: contextIdOf(written.receipts.filter((receipt) => receipt.session_id)),
         providerReceipt: { provider: "runner-trial-writer", receipts: written.receipts },
@@ -852,9 +923,13 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     },
 
     closingReason(error) {
+      if (error?.details?.response_evidence_revisions_exhausted === true) return "checks_failed";
       const code = error?.details?.last_error_code ?? error?.code;
+      if (EVIDENCE_REFUSALS.has(code) || code === "JOURNAL_CONSENT_WITHDRAWN") return "checks_failed";
       return { PLAN_LIMIT: "plan_limit", SIGN_IN_NEEDED: "sign_in_needed", TIMEOUT: "timeout", REFUSED: "refused", REPAIR_UNCHANGED: "checks_failed" }[code] ?? "provider_failed";
     },
+
+    deliverApproved,
 
     closeTurn,
 
@@ -907,13 +982,41 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         if (turn.id === keepRuntimeTurnId || isFinishedRuntimeTurn(turn)) continue;
         const assistantTurnId = `${turn.exchange_id}-assistant`;
         if (turn.state === "APPROVED") {
-          await source("deliverPrivateRuntimeCandidate", [caseId, turn.id, { candidateId: turn.current_candidate_id, assistantTurnId, eventId: `runtime-event:${sha256(turn.id).slice(0, 24)}:candidate:delivered-after-interruption` }], authContext);
+          await deliverApproved({ caseId, runtimeTurn: turn, assistantTurnId, eventId: `runtime-event:${sha256(turn.id).slice(0, 24)}:candidate:delivered-after-interruption`, closeEventId: `runtime-event:${sha256(turn.id).slice(0, 24)}:closed-after-interruption`, authContext });
           continue;
         }
         await closeTurn({ caseId, runtimeTurn: turn, reasonCode: "interrupted", assistantTurnId, eventId: `runtime-event:${sha256(turn.id).slice(0, 24)}:closed-after-interruption`, authContext });
       }
     }
   });
+
+  // A turn whose evidence holds a client's journal quotations sends them to a model only while that client's consent stands (the
+  // design for clients, point 5a): after a withdrawal no writer, checker or repair gets them again, even ones read before it, and the
+  // turn closes as a failed check.
+  async function assertJournalConsent(caseId, responseEvidence) {
+    if (!responseEvidence?.view?.source_items?.some((item) => item.kind === "journal_quotation")) return;
+    if (journalGate && await journalGate.consentCurrent(caseId)) return;
+    throw new RuntimeError("The journal consent this turn's evidence rests on was withdrawn.", { code: "JOURNAL_CONSENT_WITHDRAWN" });
+  }
+
+  // An approved reply on the trial's path (the design for clients, points 5a and 6): one written with a client's journal in view goes
+  // out only while that client's consent stands, and one that response evidence no longer admits is closed instead of being retried
+  // at every message; everything else is delivered as before. Also at a restart's reconcile.
+  async function deliverApproved({ caseId, runtimeTurn, assistantTurnId, eventId, closeEventId, authContext }) {
+    const record = await load(caseId, authContext);
+    const turn = record.runtime_turns.find((entry) => entry.id === runtimeTurn.id);
+    if (!turn || isFinishedRuntimeTurn(turn)) return;
+    if (restsOnJournal(record, turn) && !(journalGate && await journalGate.consentCurrent(caseId))) {
+      await closeTurn({ caseId, runtimeTurn: turn, reasonCode: "checks_failed", assistantTurnId, eventId: closeEventId, authContext });
+      return;
+    }
+    try {
+      await source("deliverPrivateRuntimeCandidate", [caseId, turn.id, { candidateId: turn.current_candidate_id, assistantTurnId, eventId }], authContext);
+    } catch (error) {
+      if (!EVIDENCE_REFUSALS.has(error?.code)) throw error;
+      await closeTurn({ caseId, runtimeTurn: turn, reasonCode: "checks_failed", assistantTurnId, eventId: closeEventId, authContext });
+    }
+  }
 
   async function closeTurn({ caseId, runtimeTurn, reasonCode, assistantTurnId, eventId, authContext }) {
       const record = await load(caseId, authContext);

@@ -41,7 +41,10 @@ const TRANSITIONS = Object.freeze({
   RECEIVED: new Set(["CANDIDATE_PENDING_AUDIT", "UNANSWERED"]),
   CANDIDATE_PENDING_AUDIT: new Set(["AUDITING", "UNANSWERED"]),
   AUDITING: new Set(["APPROVED", "REPAIR_REQUIRED", "DISCRIMINATING_QUESTION_REQUIRED", "UNANSWERED"]),
-  APPROVED: new Set(["DELIVERED"]),
+  // The runner trial closes an approved turn whose reply may no longer be sent, as a failed check (its response evidence no longer
+  // admits it, or the client withdrew the journal consent it was written with); the store allows it only then
+  // (closeRuntimeTurnUnanswered).
+  APPROVED: new Set(["DELIVERED", "UNANSWERED"]),
   DELIVERED: new Set(),
   REPAIR_REQUIRED: new Set(["RECONSTRUCTING", "UNANSWERED"]),
   RECONSTRUCTING: new Set(["CANDIDATE_PENDING_AUDIT", "UNANSWERED"]),

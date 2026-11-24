@@ -519,6 +519,12 @@ export function createPrivateTherapyTurnController({
       }
 
       if (runtimeTurn.state === "APPROVED") {
+        // The runner trial delivers an approved reply itself: one written with a client's journal in view only while that client's
+        // consent stands, and one that response evidence no longer admits is closed instead (the design for clients, point 6).
+        if (closesTurns && typeof modelRuntime.deliverApproved === "function") {
+          await modelRuntime.deliverApproved({ caseId, runtimeTurn, assistantTurnId, eventId: `runtime-event:${operationKey}:candidate:delivered`, closeEventId: `runtime-event:${operationKey}:closed`, authContext });
+          return;
+        }
         await call("deliverPrivateRuntimeCandidate", [caseId, runtimeTurnId, {
           candidateId: runtimeTurn.current_candidate_id,
           assistantTurnId,

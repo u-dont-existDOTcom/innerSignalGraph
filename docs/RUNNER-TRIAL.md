@@ -23,21 +23,81 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
 - `vault/`: the trial's encrypted vault. The app's usual vault is never touched: a build without the trial can't read the trial's
   records (design, section 11).
 - `credentials.json` (mode 0600): the vault's development credentials, in the shape `docs/PRIVATE-CASE-CONTINUITY.md` gives: one
-  grant (read, write and audit) for one case, whose keys are made once from random bytes and never changed. A new token is made at
-  every start; only its SHA-256 is written, and the token goes to the server through its environment, nowhere else. Nothing prints
-  a key or the token. This is the development file provider, not OS-backed security: whoever can read your files can open the vault.
-  If the file goes missing while the vault holds files, the command stops instead of making new keys, which couldn't open them.
+  grant (read, write and audit) per case, your own case first and then each client's (below), each case's keys made once from random
+  bytes and never changed. A new token is made for every grant at every start; only its SHA-256 is written, and the tokens go to the
+  server through its environment, nowhere else. Nothing prints a key or a token. This is the development file provider, not
+  OS-backed security: whoever can read your files can open the vault. If the file goes missing while the vault or the client list
+  holds anything, the command stops instead of making new keys, which couldn't open them.
+- `clients.json` (mode 0600), once you add a client: each client's label, case and journal consent (below).
 - `released-rules/`: a private (0700) snapshot of `origin/stable`'s `plugins/inner-signal-therapy`, extracted with `git archive`.
   Before starting the server the command quietly tries `git fetch origin stable`; if that fails it uses the local ref. A complete
   snapshot is published through an atomically replaced commit link, never an in-progress extraction.
-- `runner-log.jsonl` (mode 0600): the word-free run log described below.
+- `runner-log.jsonl` (mode 0600): the word-free run log described below, for your own case; each client's case has its own,
+  `runner-log-<case id>.jsonl`.
+- `journal/<case id>/`: a client's journal folder, with the cold-test receipt for their journal copy (below).
 - `settings-<provider>.json` (mode 0600, `INNER_SIGNAL_RUNNER_TRIAL_SETTINGS`), written at every start: the arrangement that
   measured best, the whole writer with one whole checker, readers and checkers at low effort and the writer at medium, each worker
   on the provider the choice gives it.
 
-The server is told the case the credentials grant (`INNER_SIGNAL_RUNNER_TRIAL_CASE_ID`), and `/health` names it. A page that holds
-another case, as a fresh browser does, takes this one when it loads: its settings stay, and the conversation comes back from the
-vault.
+The server is told your own case (`INNER_SIGNAL_RUNNER_TRIAL_CASE_ID`), and `/health` names it, and each client's token for that
+client's case alone (`INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS`). The page doesn't take its case from `/health`: it asks
+`GET /v1/runner/clients` which cases it may use (below). With no clients it takes your own case when it loads; its settings stay,
+and the conversation comes back from the vault.
+
+## Clients
+
+The trial can hold a case for each person you work with, in its own vault (the owner's answer 1a to question i73, 24 Nov 2026;
+design: `docs/superpowers/specs/2026-11-23-runner-client-cases-design.md`). Your clients' real InnerSignal records on the server
+are never opened or changed.
+
+```bash
+node scripts/runner-trial-start.mjs --add-client
+```
+
+asks for the label you'll know the client by, at a hidden prompt (it isn't shown as you type, and it never goes on the command line,
+so it stays out of the shell's history and off the screen). Initials or a code word are enough. It makes the client's case with keys
+of its own and stops; the next start gives the case its grant. Labels are shown only by the trial's page on this computer, beside
+each client's number. They go into no Git file, log, run log, worker packet or report.
+
+On the page, **Who is this conversation with?** lists your own case and each client's, as `number. label`. With clients, no case is
+chosen until you pick one, Send waits for the pick, and after each pick the page asks once more before the first message: a message
+can't be moved to another case afterwards, short of deleting that case. The line at the top says whose case the conversation is in.
+Each case keeps its own conversation, risk record, kept plan, run log and Delete; switching keeps each case's page state apart, and
+a reply that finishes while another case is on the page shows when you switch back. Every message in a client's case is read as the
+client's own words, so your own notes don't belong there. The server refuses a case that isn't on its list (`RUNNER_CASE_UNKNOWN`),
+and each client's token opens only that client's case. A client added while the trial runs is counted on the page until the next
+start.
+
+## A client's journal
+
+A client's journal can inform their replies only through the session-use journal reader (pull request 241), with
+`--response-evidence` on, and only when all three hold for that client at that moment:
+
+1. **Consent.** You confirm that the client agreed to their journal being used in these sessions, and to their words and journal
+   excerpts going to the companies that run the trial's workers (with `--provider mixed`, Anthropic and OpenAI):
+
+   ```bash
+   node scripts/runner-trial-start.mjs --journal-consent confirm
+   ```
+
+   It lists the clients by number (their labels are on the page) and asks which. `--journal-consent withdraw` records a
+   withdrawal, which holds at once, also while the trial runs: no retrieval uses the journal any more, and an approved reply
+   written with the journal in view isn't delivered (its turn closes as a failed check, also when a restart's reconcile finds
+   it). A consent gives the client's grant its `session_use` purpose from the next start; a withdrawal drops it at the next start.
+2. **A published copy.** The client's journal copy in their runner case, with an active generation published for session use.
+   The copy step (an export on the server, on your go each time, and an import into the client's runner case checked against the
+   export) **isn't built yet**, so no client has a copy.
+3. **A passing cold test of exactly that copy.** A receipt at `journal/<case id>/cold-test-receipt.json` (mode 0600) naming the
+   case, corpus, generation, manifest and visibility epoch the reader opens; a pass on another generation doesn't carry over. The
+   cold test that writes it **isn't built yet** either; the receipt's shape is `validateColdTestReceipt` in
+   `src/runner-trial/clients.mjs`.
+
+Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
+`cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone. With
+`--response-evidence`, every turn (your own included) is checked against the sources it rests on: the writer sees the turn's
+evidence, the whole checker returns the evidence review the program then checks word for word, a declared journal quote must be
+word for word in its source, and the store admits the reply only with its evidence. It needs the whole checker. A reply resting on
+the journal sends up to about 8,000 more tokens of quotations to the writer and the checker, again at each repair.
 
 ## Providers
 
@@ -52,7 +112,8 @@ the company that runs it (design, section 6).
 
 ## Switches
 
-Off unless a flag turns them on: `--kept-plan` (`INNER_SIGNAL_RUNNER_KEPT_PLAN`), `--number-now`
+Off unless a flag turns them on: `--response-evidence` (`INNER_SIGNAL_RESPONSE_EVIDENCE`, for the trial only; above),
+`--kept-plan` (`INNER_SIGNAL_RUNNER_KEPT_PLAN`), `--number-now`
 (`INNER_SIGNAL_RUNNER_NUMBER_NOW`, off until the owner says; design, section 9b), `--feedback-link`
 (`INNER_SIGNAL_RUNNER_FEEDBACK_LINK`), `--owner-fallback` (`INNER_SIGNAL_OWNER_FALLBACK`), `--fixed-message-on-failure`
 (`INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE`, only with `--owner-fallback`: the owner's fixed message also when the plan's
@@ -113,7 +174,7 @@ protocol/program code list become `UNSPECIFIED_FINDING`; unknown failure codes b
 counts, durations, efforts and rule parts stay unknown rather than being guessed. Earlier failures whose receipts were never stored
 cannot be reconstructed; new failed calls retain their receipts too.
 
-The server rewrites `<trial dir>/runner-log.jsonl` (0600) in full from stored finished turns after each turn, after reconciliation,
+The server rewrites `<trial dir>/runner-log.jsonl` (0600; a client's case, `runner-log-<case id>.jsonl`) in full from stored finished turns after each turn, after reconciliation,
 and at server start, whether or not a file already exists. The first line is one header naming this server's rules and arrangement.
 Every turn row has a `schema_version` and its own `rules` and `arrangement`, saved with the turn when it was created; both are `null`
 for turns that ran before this was recorded. Old rows keep their own configuration after a restart with different settings. Provider
@@ -122,7 +183,7 @@ stored values project as `null`.
 Each rewrite uses a new, exclusively created temporary file in the same folder (0600, no symlink followed), syncs it, then atomically
 renames it over the log. An interrupted rewrite leaves the previous complete log intact; a leftover temporary file is never read.
 An unfinished turn appears after reconciliation closes it. Writes run after the response, and logging errors are caught and dropped;
-they never fail a turn. **Delete this case deletes the JSONL file too**, and clears the page's log panel. No log route, file writing or
+they never fail a turn. **Delete this case deletes that case's JSONL file too** (and a client's journal folder), and clears the page's log panel. No log route, file writing or
 Run log button is active when the trial is off.
 
 ## Details view

@@ -256,3 +256,27 @@ const NUMBER_NOW_AFTER_NUMBER_SHOWN = "With a number already shown, the same hol
 export function crisisReaderNumberNowNote({ numberShown = false } = {}) {
   return [NUMBER_NOW_FIELD, NUMBER_NOW_PROVISIONAL, ...(numberShown ? [NUMBER_NOW_AFTER_NUMBER_SHOWN] : [])].join("\n");
 }
+
+// ---- Response evidence (pull request 241; the design for clients, point 6) -----------------------------------------------------
+// Used only while INNER_SIGNAL_RESPONSE_EVIDENCE is on for the trial (--response-evidence). With it off, every worker gets exactly the
+// prompt and the schema above. The writer sees the turn's evidence snapshot (response_evidence: the person's own messages and, for a
+// client who passed the journal gate, exact quotations from their journal); the whole checker reviews the candidate against it in
+// the shared review's shape, which the program then checks word for word (normalizeEvidenceReview) before it counts.
+
+const DIMENSIONS = ["prior_delivery", "personal_history", "history_dependent_advice", "source_consultation_claims", "coverage_scope_and_conflicts"];
+const ASSESSMENTS = ["supported", "contradicted", "unsupported", "uncertain_but_worded_accurately"];
+const integer = { type: "integer" };
+export const EVIDENCE_REVIEW_SCHEMA = Object.freeze(object({
+  coverage: { type: "array", items: object({ dimension: { type: "string", enum: DIMENSIONS }, status: { type: "string", enum: ["assessed", "no_applicable_items"] }, reason: string }) },
+  items: { type: "array", items: object({ id: string, dimension: { type: "string", enum: DIMENSIONS }, kind: { type: "string", enum: ["claim", "recommendation", "question_presupposition"] }, candidate_quote: string, quote_occurrence: integer, source_ids: strings, assessment: { type: "string", enum: ASSESSMENTS }, reason: string }) },
+  missing_material_history: { type: "array", items: object({ id: string, question: string, why_material: string, candidate_quote: string, quote_occurrence: integer }) }
+}));
+
+// A checker schema with the evidence review added (the whole checker's, with or without the kept plan's fields).
+export function withEvidenceReview(schema) {
+  return Object.freeze(object({ ...schema.properties, evidence_review: EVIDENCE_REVIEW_SCHEMA }));
+}
+
+export const WRITER_EVIDENCE_NOTE = "- response_evidence lists what this reply may rest on: the person's own messages and, when present, exact quotations from their journal (journal_quotation: what they wrote, not a verified account of events; its coverage says how much was searched). Say something about their history, or advise from it, only when a listed source supports it, and keep its limits. A journal quotation goes in the reply only word for word, declared in quotes with its source id (src:journal:...).";
+
+export const CHECKER_EVIDENCE_NOTE = "evidence_review: review candidate_reply against response_evidence in the packet, following its instructions. coverage: each of the five dimensions once. items: every claim about the person's history, every recommendation that depends on it and every question that presupposes it, each with the reply's exact words (candidate_quote, and quote_occurrence 1 unless the same words appear earlier in the reply), the source ids it rests on and your assessment. missing_material_history: every piece of history the reply needed that the sources don't hold. A journal quotation is the person's written account, never proof of what happened; the program checks every quote and source id you give.";

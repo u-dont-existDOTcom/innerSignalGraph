@@ -6,7 +6,8 @@ import { clientJournalFolder } from "./clients.mjs";
 import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
-import { createRunnerTrialRuntime } from "./runtime.mjs";
+import { DEFAULT_RUNNER_SETTINGS, createRunnerTrialRuntime } from "./runtime.mjs";
+import { createRunnerJournalGate } from "./journal-gate.mjs";
 import { RUNNER_TRIAL_SETTING, createRunnerWorkerFactory, loadRunnerTrialSettings, runnerArrangement } from "./settings.mjs";
 
 // What the server builds when INNER_SIGNAL_RUNNER_TRIAL is on (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections
@@ -85,6 +86,18 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   const trialSettings = settings ?? loadRunnerTrialSettings({ settingsPath: config.runnerTrialSettingsPath ?? null, claudeConfigDir: config.runnerClaudeConfigDir ?? null });
   const rules = loadRunnerRules(config);
   const runnerConfig = { rules: rules.runnerRules, arrangement: runnerArrangement(trialSettings) };
+  // Response evidence for the trial (INNER_SIGNAL_RESPONSE_EVIDENCE, --response-evidence; pull request 241 and the design for clients,
+  // point 6): every turn is checked against the sources it rests on, by the whole checker. With clients, their journals reach a turn
+  // only through the journal gate (consent, a published session_use copy, a matching cold-test receipt). Off, nothing changes.
+  const evidenceOn = config.responseEvidenceEnforced === true;
+  if (evidenceOn && (trialSettings.runtime?.checkerMode ?? DEFAULT_RUNNER_SETTINGS.checkerMode) !== "whole") {
+    throw new RuntimeError("Response evidence in the runner trial needs the whole checker (checkerMode whole), which reviews each reply against its sources.", { code: "BAD_CONFIG" });
+  }
+  const trialDirectory = runnerTrialDirectory(config);
+  const clientCases = new Set(clientCaseIds);
+  const journalGate = evidenceOn && clientCases.size > 0 && trialDirectory && typeof privateCaseSource.verifyCaseAccess === "function"
+    ? createRunnerJournalGate({ trialDir: trialDirectory, caseAccessService: privateCaseSource })
+    : null;
   const runtime = createRunnerTrialRuntime({
     privateCaseSource,
     parts: parts ?? cutRuleParts(rules.protocol),
@@ -96,18 +109,18 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
     numberNowEnabled: config.runnerNumberNowEnabled === true,
     fixedMessageOnFailureEnabled: config.runnerFixedMessageOnFailureEnabled === true,
     fixedMessageOnAnyFailureEnabled: config.runnerFixedMessageOnAnyFailureEnabled === true,
+    journalGate,
     onEvent: hub.publish,
     now
   });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
-  const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1 });
+  const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
+    ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: 4000 } } : {}), ...(journalGate ? { journalEvidenceProvider: journalGate } : {}) });
   const loadExisting = async (caseId, authContext) => {
     try {
       return await (typeof privateCaseSource.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource.load(caseId));
     } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
   };
-  const trialDirectory = runnerTrialDirectory(config);
-  const clientCases = new Set(clientCaseIds);
   const logWriters = new Map();
   const logWriterFor = (caseId) => {
     const fileName = clientCases.has(caseId) ? runnerClientLogFile(caseId) : RUNNER_LOG_FILE;
@@ -141,5 +154,8 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
       for (const [caseId, context] of caseAuthContexts) if (clientCases.has(caseId)) logWriterFor(caseId).schedule(caseId, context);
     }
   });
-  return Object.freeze({ controller: loggedController, events: hub, runtime, settings: trialSettings, runnerRules: rules.runnerRules, logWriter });
+  // Every case's log writes queued so far, the owner's and each client's (for a caller that must wait for them, such as a test that
+  // then removes the trial folder).
+  const flushLogs = async () => { await Promise.all([...logWriters.values()].map((writer) => writer.flush())); };
+  return Object.freeze({ controller: loggedController, events: hub, runtime, settings: trialSettings, runnerRules: rules.runnerRules, logWriter, flushLogs });
 }
