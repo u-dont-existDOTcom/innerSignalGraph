@@ -480,6 +480,17 @@ test("an unsent draft written with a journal quotation in view, and every versio
     { availability: "unavailable", retrieval_status: "failed" }, { availability: "not_authorized" }, null]) {
     assert.deepEqual(drafts(journal), [["apart", "older"], [{ reason: "draft_written_with_the_journal", count: 2 }]], JSON.stringify(journal));
   }
+  // Nor is one that only an agent's report says was sent; one the owner reports was sent is, as what the client was sent.
+  const reports = (origin) => {
+    const reported = structuredClone(r);
+    reported.communication_events = ["with", "apart"].map((id) => ({ schema_version: 1, id: `event:${id}`, kind: "reported_sent", audience: "client", reply_turn_relation: null, retracts_event_id: null, sent_at: null, recorded_at: NOW,
+      subject: { kind: "candidate", candidate_id: id, candidate_version: r.candidate_responses.find((entry) => entry.id === id).version, text_sha256: sha256Text(`The draft ${id}.`) },
+      provenance: { origin, actor_resolution: origin === "owner_action" ? "owner_verified" : "unresolved", source_ref: null, quote: null } }));
+    const frozen = buildResponseEvidenceSnapshot(reported, { ...input(), snapshotId: "snapshot:later", journal: null }, { createdAt: NOW });
+    return frozen.source_items.filter((item) => item.id.startsWith("src:report:")).map((item) => [item.kind, item.locator.candidate_id]);
+  };
+  assert.deepEqual(reports("agent_relayed"), [["agent_relayed_report", "apart"]]);
+  assert.deepEqual(reports("owner_action"), [["owner_reported_client_outbound", "with"], ["owner_reported_client_outbound", "apart"]]);
 });
 
 test("the public schema takes a snapshot with a journal note, and refuses one the contract refuses", async () => {

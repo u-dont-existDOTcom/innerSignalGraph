@@ -292,6 +292,16 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
     return makeItem(`src:turn:${turn.id}`, kind, client ? "client" : "assistant", client || appCommitted ? "client" : "unknown",
       turn.text, { kind: "transcript_turn", turn_id: turn.id }, turn.at);
   });
+  // A draft written with a journal quotation in view may hold its words, and so may every version of it, so it is never a source, unsent or
+  // only said to be sent by a report no one vouches for: the journal's words are in a snapshot through its own retrieval, each with its place
+  // and receipt, or not at all. What the client was sent is a source, as before.
+  const withQuotation = new Set((record.response_evidence_snapshots ?? []).filter((entry) => entry.source_items.some((item) => item.kind === "journal_quotation")).map((entry) => entry.id));
+  const journalRoots = new Set((record.candidate_responses ?? []).filter((entry) => withQuotation.has(entry.metadata?.response_evidence?.snapshot_id)).map((entry) => entry.root_candidate_id));
+  const leavesOut = (candidate) => {
+    if (!journalRoots.has(candidate?.root_candidate_id)) return false;
+    recordOmission(sourceOmissions, "draft_written_with_the_journal");
+    return true;
+  };
   const retracted = new Set((record.communication_events ?? []).filter((event) => event.kind === "retraction").map((event) => event.retracts_event_id));
   // The v1 locator union has no unresolved communication-event locator. Keep those reports in the projection, with an explicit
   // source omission, rather than mislabel a report as a supervisor input or as exact candidate bytes.
@@ -307,20 +317,17 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
       continue;
     }
     const kind = (candidate || turn) && event.provenance.origin === "owner_action" ? "owner_reported_client_outbound" : "agent_relayed_report";
+    if (kind === "agent_relayed_report" && leavesOut(candidate)) continue;
     const locator = candidate ? { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version }
       : { kind: "transcript_turn", turn_id: turn.id };
     items.push(makeItem(`src:report:${event.id}`, kind, kind === "agent_relayed_report" ? "unknown" : "owner", "client", exactText, locator, event.sent_at));
   }
   const deliveredCandidates = new Set(sourceProjection.confirmed_or_reported_client_outbound.filter((entry) => entry.subject.kind === "candidate").map((entry) => entry.subject.candidate_id));
   const ownLineage = lineageIds(record, lineageRootId);
-  // A draft written with a journal quotation in view may hold its words, and so may every version of it, so it is never a source: the
-  // journal's words are in a snapshot through its own retrieval, each with its place and receipt, or not at all.
-  const withQuotation = new Set((record.response_evidence_snapshots ?? []).filter((entry) => entry.source_items.some((item) => item.kind === "journal_quotation")).map((entry) => entry.id));
-  const journalRoots = new Set((record.candidate_responses ?? []).filter((entry) => withQuotation.has(entry.metadata?.response_evidence?.snapshot_id)).map((entry) => entry.root_candidate_id));
   for (const candidate of record.candidate_responses ?? []) {
     if (candidate.status === "sent" || deliveredCandidates.has(candidate.id)) continue;
     if (ownLineage.has(candidate.id)) { recordOmission(sourceOmissions, "reviewed_lineage_draft"); continue; }
-    if (journalRoots.has(candidate.root_candidate_id)) { recordOmission(sourceOmissions, "draft_written_with_the_journal"); continue; }
+    if (leavesOut(candidate)) continue;
     items.push(makeItem(`src:draft:${candidate.id}:v${candidate.version}`, "unsent_draft", "assistant", "supervisor", candidate.exact_text, { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version }, candidate.created_at));
   }
   for (const entry of record.supervisor_artifacts ?? []) {

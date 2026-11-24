@@ -101,9 +101,9 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   quotation, whatever froze it and whatever was read since: a call that writes gets one frozen again without its quotations (three snapshots a
   turn; with none left, the turn ends), and a check, which is bound to its draft's snapshot, isn't made and the turn ends. A decision that
   can't be made is a failed retrieval, and stops no check. A journal read earlier in the case still needs the open gate.
-- **Earlier drafts.** An unsent draft of an earlier turn that was written with a quotation in view, or any version of it, may hold the
-  journal's words, so no snapshot has it as a source (`draft_written_with_the_journal`), whether its turn gets the journal or not: the
-  journal's words are in a snapshot through its own retrieval, or not at all.
+- **Earlier drafts.** A draft of an earlier turn that was written with a quotation in view, or any version of it, may hold the journal's
+  words, so no snapshot has it as a source (`draft_written_with_the_journal`), unsent or only said to be sent by a report no one vouches for,
+  whether its turn gets the journal or not: the journal's words are in a snapshot through its own retrieval, or not at all.
 - **When only the checker reads it.** A draft written with quotations in view, before anyone had read the conversation as one about wanting to
   die, isn't sent once this turn's checker does: the program adds `PROGRAM_JOURNAL_IN_CRISIS` (high), and the repair goes on with a snapshot
   frozen again without its quotations; where the turn ends instead, its fixed message or notice shows. The repair isn't shown the draft
@@ -111,6 +111,14 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   and neither is the check of the repaired reply: a reply written anew, from the conversation alone. The repair's stored result
   says so (`draftHidden`), so the reply doesn't count as one written from that draft. One that was written from such a draft, its own
   evidence holding no quotation (its expansion's search failed), counts as written with the journal in view.
+- **Where each way is closed.** Journal words could reach a call or a reply of such a turn in these ways, each closed in one place (a new way
+  is closed in its place, not by one more check): a search, for the message or a check's questions (`freezeSnapshot`); a snapshot frozen
+  earlier that a call would go out with (`prepareCall`); earlier turns' drafts as sources (`buildResponseEvidenceSourceItems`); this turn's
+  draft, what its check found and its evidence review (`ofDraft`, for the repair and its check alike); a declared quote's source
+  (`evidenceQuoteSources`, the call's own evidence); the reply (`PROGRAM_JOURNAL_IN_CRISIS`, by `mayHoldJournal`); the conversation and the
+  earlier ones (`conversationView`, what the person was sent or shown and nothing else); the readers and so the provisional reply
+  (`readersPacket`, the conversation alone); the case's state (`stateAfterReadings`, the readings alone); the run log (`runnerLogFromRecord`,
+  fixed codes and numbers).
 - With response evidence off, or with no journal reader (a trial without clients), nothing is read first and every packet, prompt, order
   of calls and stored record is as it was.
 
@@ -129,8 +137,9 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   words are English and French; in any other language only the common-words rule leaves everyday words out, and words that are spelled alike
   in two languages find each other ("pain").
 - A new conversation gets the journal again, also right after one about wanting to die, when its message is read as none.
-- What the person has been sent stays in the conversation the models read, a reply that quoted the journal included. The check that is the
-  first to read someone who wants to die has the quotations in view, since nobody had read the message as one when it was searched for.
+- What the person has been sent stays what it is, a reply that quoted the journal included: in the conversation the models read, and among
+  what was sent. The check that is the first to read someone who wants to die has the quotations in view, since nobody had read the message as
+  one when it was searched for.
 - A repair written anew has the rules, the conversation, what was found by its codes and the level the check read, not what the checker wrote
   of the draft.
 - On an invented journal of 6,000 entries in the encrypted store a search takes about 0.4 s on the laptop, also for a message of 40,000

@@ -119,8 +119,7 @@ const OUTPUT_LOCK_WAIT_MS = 5_000;
 // Why a turn that could be about wanting to die gets no journal, as its evidence says it (journalWithheld). The models read it, so it says
 // nothing of the level: it also stands for a message read as thoughts of death with no wish to act, as unclear, or not read at all.
 const JOURNAL_WITHHELD = "journal_withheld";
-// What a repair, and the check of it, get in place of the draft it replaces when that draft may hold the journal's words (mayHoldJournal)
-// and the turn gets no journal.
+// What a repair, and the check of it, get in place of the draft it replaces when that one isn't shown (ofDraft).
 const DRAFT_NOT_SHOWN = "Not shown: it may hold words of the person's journal, and this turn may have none.";
 const DRAFT_NOT_SHOWN_TO_WRITER = `${DRAFT_NOT_SHOWN} Write the reply anew, from the conversation alone.`;
 const DRAFT_NOT_SHOWN_TO_CHECKER = `${DRAFT_NOT_SHOWN} This reply was written anew, from the conversation alone: check every item of repair_induced_error_checks on it by itself.`;
@@ -744,9 +743,16 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     }
     return false;
   };
-  // A draft that may hold the journal's words isn't shown to its repair, or to the check of that, nor what was said of its words, once its
-  // turn gets no journal.
-  const hidesDraft = (record, runtimeTurn, candidate) => mayHoldJournal(record, runtimeTurn, candidate) && withheldFrom(record, runtimeTurn.id) !== null;
+  // What goes on of a draft, to its repair and to the check of that, in this one place: its text, what its check found and its evidence
+  // review's failures. Once its turn gets no journal, a draft that may hold the journal's words isn't shown (`notShown` stands for it), and
+  // of what was said of it only what can't hold them.
+  const ofDraft = (record, runtimeTurn, draft, notShown) => {
+    const audit = draft.audit_history.at(-1);
+    const findings = (audit?.findings ?? []).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding));
+    return mayHoldJournal(record, runtimeTurn, draft) && withheldFrom(record, runtimeTurn.id) !== null
+      ? { hidden: true, text: notShown, findings: findingsWithoutWords(findings), failures: [] }
+      : { hidden: false, text: draft.exact_text, findings, failures: evidenceFailures(audit) };
+  };
 
   async function loadRiskContext(caseId, authContext) {
     const options = { candidateId: "current_pending", forReplyCheck: true, requireAuditScope: true, requireContinuationSafe: false };
@@ -842,7 +848,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const provisional = runtimeTurn.provisional?.exact_text ?? null;
       const repaired = candidate.parent_candidate_id != null;
       const parent = repaired ? record.candidate_responses.find((entry) => entry.id === candidate.parent_candidate_id) : null;
-      const previousFindings = repaired ? (parent?.audit_history.at(-1)?.findings ?? []).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding)) : [];
+      const previous = parent ? ofDraft(record, runtimeTurn, parent, DRAFT_NOT_SHOWN_TO_CHECKER) : null;
       const missedBoxes = missedBoxesOf(runtimeTurn);
       // The box advice the checkers read is the advice the writer had (design, section 3): in the focused arm with picks, the
       // picked boxes and any a checker said were missed (the repair writer gets those); every box when the writer had the whole
@@ -865,9 +871,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         ...(provisional ? { provisional_reply_shown: provisional } : {}),
         ...evidencePacket(responseEvidence, journalEvidence)
       };
-      const draftHidden = repaired && hidesDraft(record, runtimeTurn, parent);
-      const repairPart = repaired ? { previous_candidate: draftHidden ? DRAFT_NOT_SHOWN_TO_CHECKER : parent?.exact_text ?? null,
-        findings_that_caused_the_repair: draftHidden ? findingsWithoutWords(previousFindings) : previousFindings, repair_induced_error_checks: [...REPAIR_INDUCED_ERROR_CHECKS] } : {};
+      const repairPart = repaired ? { previous_candidate: previous?.text ?? null, findings_that_caused_the_repair: previous?.findings ?? [], repair_induced_error_checks: [...REPAIR_INDUCED_ERROR_CHECKS] } : {};
       const weigh = [readers.crisis?.level, written.answeredLevel].includes("acted_or_about_to") ? { readings_to_weigh: { crisis_reader: readers.crisis?.level ?? "unclear", writer: written.answeredLevel ?? "unclear" } } : {};
       const risk = await loadRiskContext(caseId, authContext);
       // With the kept plan on, the level reader also gets this conversation's kept plan (when the person chose Yes) with the
@@ -997,16 +1001,13 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       emit(caseId, runtimeTurn.id, { type: "status", step: "repairing" });
       const readers = runtimeTurn.runner_reading?.readers ?? {};
       const view = conversationView(record, runtimeTurn.runner_reading.conversation_id, runtimeTurn);
-      const failedAudit = candidate.audit_history.at(-1);
-      const blocking = (failedAudit?.findings ?? []).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding));
+      const draft = ofDraft(record, runtimeTurn, candidate, DRAFT_NOT_SHOWN_TO_WRITER);
       const rules = writerRules(readers.boxes?.boxes ?? null, missedBoxesOf(runtimeTurn));
       const keptPlan = keptPlanEnabled ? keptPlanContextOf(record, runtimeTurn, runtimeTurn.runner_reading.conversation_id) : null;
-      const draftHidden = hidesDraft(record, runtimeTurn, candidate);
       const repairRequest = () => {
         const current = keptPlanAsOfNow(keptPlan);
-        const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }),
-          previous_candidate: draftHidden ? DRAFT_NOT_SHOWN_TO_WRITER : candidate.exact_text, findings: draftHidden ? findingsWithoutWords(blocking) : blocking,
-          ...(responseEvidence ? { response_evidence_failures: draftHidden ? [] : evidenceFailures(failedAudit) } : {}) };
+        const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }), previous_candidate: draft.text, findings: draft.findings,
+          ...(responseEvidence ? { response_evidence_failures: draft.failures } : {}) };
         return withWriterEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current), responseEvidence);
       };
       const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: repairRequest, validate: (value) => validateWriter(value, keptPlan), guard: () => assertJournalGate(caseId, responseEvidence, authContext) });
@@ -1021,7 +1022,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         exactText: written.value.reply,
         contextId: contextIdOf(written.receipts.filter((receipt) => receipt.session_id)),
         providerReceipt: { provider: "runner-trial-writer", receipts: written.receipts },
-        result: { answeredLevel: written.value.answered_level, quotes: written.value.quotes, receipts: written.receipts, ...(draftHidden ? { draftHidden } : {}), ...(keptPlan ? { keptPlan: written.value.keptPlan } : {}) }
+        result: { answeredLevel: written.value.answered_level, quotes: written.value.quotes, receipts: written.receipts, ...(draft.hidden ? { draftHidden: true } : {}), ...(keptPlan ? { keptPlan: written.value.keptPlan } : {}) }
       };
     },
 
