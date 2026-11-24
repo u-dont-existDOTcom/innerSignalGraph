@@ -320,10 +320,11 @@ judge for every question, the printed numbers) holds in it.
     40 and of the 20 are right; at most one question in ten is left out; another company's model than the judge's, or a person, wrote the
     file; and the publication is the same before and after. The other questions are counted and shown, and not required. The report keeps
     retrieval (`found`) apart from answers (`right`), and names the points of the rule that aren't met.
-  - **Why one wrong in thirty.** With none allowed, a consumer that errs on 1 to 3% of sixty answers fails 38 to 77% of runs, so a good copy
-    would be tested until it passed. With two of sixty, such a copy passes 82 to 99% of runs, and one whose answers are wrong 10% of the
-    time about 13%. A judge that catches 90% of the planted answers' calls passes that point 94% of the time, one that catches 60%, 0.5%. These
-    odds are computed for independent calls, not measured.
+  - **Why one wrong in thirty.** With none allowed, a consumer that errs on 1 to 3% of sixty answers fails 47 to 82% of runs, so a good copy
+    would be tested until it passed. With two of sixty, such a copy passes 76 to 97% of runs, and one whose answers are wrong 10% of the
+    time about 8% (for a judge that says wrong, each time it's asked, of nine wrong answers in ten and of three right ones in a hundred). A
+    judge that catches 90% of the planted answers' calls passes that point 94% of the time, one that catches 60%, under 1%. These odds are
+    computed for independent calls, not measured.
   - **The questions file** says who wrote it (`author`: `anthropic`, `openai` or `person`) and has up to 100 questions, each asked once (whatever
     its case, spacing or Unicode form). The key names evidence by exact words of the journal, each found in one to three usable passages, so
     whoever writes the questions needs no internal ids; a passage is the evidence of at most two questions. The file's own question ids go

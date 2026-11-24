@@ -224,7 +224,7 @@ turn. The reply is made from the conversation alone; a new conversation gets the
 
 **Once a client's case has read its journal, the case is used only while the gate is open.** The gate is open when the owner's
 confirmation of the consent stands, the client list names the copy, the client's current grant opens it for session use, and a
-passing cold-test receipt names exactly the copy's current publication and the reader in use. It is asked when a turn starts, before
+passing cold-test receipt names exactly the copy's current publication, the reader in use and the pass rule. It is asked when a turn starts, before
 every call of a reader, the writer, a checker or the repair (each retry included), by the worker itself at the last moment before its
 packet leaves, before a provisional reply is shown (the fixed emergency line shows instead) and before a reply is delivered. The consent
 is read last in each check, so a withdrawal holds for everything that starts after it; a packet already past its last check, in
@@ -232,11 +232,11 @@ the instant before it leaves, still goes. Each output to the person (a provision
 checked and made under the trial folder's lock, which `--journal-consent` takes too, so a withdrawal lands wholly before it (and
 nothing is shown) or wholly after it; a command waits up to ten seconds for that lock. The output is made when it is recorded in
 the case as shown or delivered: a withdrawal after that moment doesn't recall it, so its answer to the page, and the page showing
-the conversation again later, still carry it. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication or
-reader, a grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check,
+the conversation again later, still carry it. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, reader
+or rule, a grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check,
 also an approved one a restart's reconcile finds, because the case's drafts, findings, evidence and delivered replies may hold the
 journal's words. Confirming the consent again (with the copy's receipt in place) opens it, and so does a passing cold test where only
-the receipt was missing or of another reader; deleting the case removes the case, its copies, their journal folder (the key and the
+the receipt was missing, or of another reader or rule; deleting the case removes the case, its copies, their journal folder (the key and the
 receipt) and everything drawn from it, and the list then names no copy and no server case of theirs (the consent stays as recorded),
 so the client starts afresh. The page says so under a client whose consent
 is withdrawn. A client's deletion is made under the trial folder's lock: while that can't be had, nothing is deleted and the page
