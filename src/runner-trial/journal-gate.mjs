@@ -1,4 +1,3 @@
-import { createSessionUseJournalEvidenceProvider } from "../journal-import/response-evidence-journal.mjs";
 import { coldTestReceiptMatches, journalConsentCurrent, readColdTestReceipt, readRunnerClients } from "./clients.mjs";
 
 // The runner trial's journal gate (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 5; the owner's answer 1a
@@ -23,10 +22,19 @@ const closed = (availability, reason) => ({
   budget: { max_tokens: 8000, max_bytes: 64000, used_tokens: 0, used_bytes: 0 }
 });
 
+// The reader needs an installed package (the journal contracts' ajv), and the app's server starts without any
+// (tests/runtime-service-liveness.test.mjs): so it is loaded when a client's journal is first read, never at the start. One that
+// can't be loaded is a failed retrieval like any other (the turn controller's journalPart): the reply is made from the conversation
+// alone.
+async function sessionUseReader(options) {
+  const { createSessionUseJournalEvidenceProvider } = await import("../journal-import/response-evidence-journal.mjs");
+  return createSessionUseJournalEvidenceProvider(options);
+}
+
 export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor = null, clientsFor = () => readRunnerClients(trialDir) }) {
   const readers = new Map();
-  const reader = (corpusId) => {
-    if (!readers.has(corpusId)) readers.set(corpusId, readerFor ? readerFor(corpusId) : createSessionUseJournalEvidenceProvider({ caseAccessService, corpusId }));
+  const reader = async (corpusId) => {
+    if (!readers.has(corpusId)) readers.set(corpusId, readerFor ? readerFor(corpusId) : await sessionUseReader({ caseAccessService, corpusId }));
     return readers.get(corpusId);
   };
   const clientFor = async (caseId) => {
@@ -41,7 +49,7 @@ export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor
       if (!journalConsentCurrent(client)) return closed("not_authorized", "journal_consent_missing");
       const receipt = await readColdTestReceipt(trialDir, caseId);
       if (!receipt || receipt.corpus_id !== client.journal.corpus_id) return closed("unavailable", "cold_test_receipt_missing");
-      const result = await reader(client.journal.corpus_id).freezeResponseEvidenceJournal({ caseId, query, maximumTokens, maximumBytes, authContext });
+      const result = await (await reader(client.journal.corpus_id)).freezeResponseEvidenceJournal({ caseId, query, maximumTokens, maximumBytes, authContext });
       if (result?.availability !== "available") return result;
       const read = result.receipts?.[0];
       if (!read || !coldTestReceiptMatches(receipt, { caseId, corpusId: read.corpus_id, generation: read.generation, manifestObjectId: read.manifest_object_id, visibilityEpoch: read.visibility_epoch })) {

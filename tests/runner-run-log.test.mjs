@@ -15,8 +15,11 @@ import { createProviders } from "../src/providers/factory.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { createPrivateCaseAccessService } from "../src/storage/private-case-access.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
+import { deriveEvidenceFindings } from "../src/supervisor/response-evidence-contract.mjs";
+import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { createRunnerLogWriter, runnerLogFromRecord } from "../src/runner-trial/run-log.mjs";
+import { CHECKERS } from "../src/runner-trial/worker-prompts.mjs";
 import { loadRunnerRules } from "../src/runner-trial/released-rules.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createPrivateRuntimeTurn, validatePrivateRuntimeTurn } from "../src/supervisor/private-runtime-turn-lifecycle.mjs";
@@ -269,6 +272,29 @@ test("statistics use ordinary median and nearest-rank p90 and never export inven
   assert.equal(log.summary.repairs_per_turn, 1.5);
   assert.deepEqual(log.summary.finding_codes, [{ code: "UNSPECIFIED_FINDING", count: 4 }]);
   assert.equal(JSON.stringify(log).includes("PRIVATEMARKER"), false);
+});
+
+test("every code the rules, the trial's checkers, its program checks and the evidence review can give is logged as itself; any other is counted, never copied", async () => {
+  const logged = (codes) => runnerLogFromRecord({ runtime_turns: [{ ...logTurn(0), events: [
+    { event_type: "INVOCATION_COMPLETED", stage: "audit", details: { output: { value: { findings: codes.map((code) => ({ code, severity: "low" })) } } } }
+  ] }] }).summary.finding_codes;
+  const programChecks = await fs.readFile(new URL("../src/runner-trial/program-checks.mjs", import.meta.url), "utf8");
+  const item = (changes) => ({ id: "item", dimension: "dimension", candidate_quote: "words", reason: "why", why_material: "why", source_ids: [], ...changes });
+  const given = {
+    // Each rule's own failure code, as the served rules list it.
+    rules: loadTherapyProtocol({ boxGuidance: true }).files.flatMap((file) => Array.from(file.content.matchAll(/^- ([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+): /gmu), ([, code]) => code)),
+    checkers: Object.values(CHECKERS).flatMap(({ focus }) => focus.match(/\b[A-Z]+(?:_[A-Z]+)+\b/gu) ?? []),
+    program: Array.from(programChecks.matchAll(/"(PROGRAM_[A-Z_]+)"/gu), ([, code]) => code),
+    evidence: deriveEvidenceFindings({
+      items: [item({ source_incompatible: true }), item({ assessment: "unsupported" }), item({ assessment: "contradicted" })],
+      missing_material_history: [item({})]
+    }).map(({ code }) => code)
+  };
+  for (const [source, codes] of Object.entries(given)) {
+    assert.ok(codes.length >= 4, `${source} names its codes`);
+    assert.deepEqual(logged([...new Set(codes)]).map(({ code }) => code).sort(), [...new Set(codes)].sort(), source);
+  }
+  assert.deepEqual(logged(["INVENTED_BREACH", MARKERS[3], null, "IC.AGE_RESPONSIBILITY_CLARIFICATION"]), [{ code: "UNSPECIFIED_FINDING", count: 4 }]);
 });
 
 function logTurn(index) {
