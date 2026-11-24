@@ -248,7 +248,7 @@ four; this is as built after all three, and what GPT's reviews changed is listed
   builder's own indexes, and publishes it for session use without archive. Then it checks what is stored against the export: every
   usable quotation against the stored bytes (200 at a time; a deleted or revoked passage is never resolved as evidence), every record
   (those included), every source text and every index of the builder; and the list names the corpus. The same file again is checked
-  again; a copy an earlier import left unpublished is refused. A new copy drops the earlier copy's receipt and its test's marker; the
+  again; a copy an earlier import left unpublished is refused. Every import, the same file again included, drops the copy's receipt and its test's marker; the
   earlier copy stays in the case, unused, until the client's Delete (a limit).
 - **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`), on the journal import's cold-consumer runner: a
   fresh consumer gets the frozen questions and what the session-use reader retrieves, graph on and off, never the key; the

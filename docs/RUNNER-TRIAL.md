@@ -123,8 +123,8 @@ A client's journal can inform their replies only through the session-use journal
      the export: every usable quotation against the stored bytes, and every record (deleted and revoked ones stay in a faithful
      copy, and no reader uses them), source text and index of its builder. The list then names the corpus. The same file can be
      imported again, after a failure or not: a copy already there is checked again, not written twice, and one an import left
-     unpublished is refused (export a new one). A new copy drops the earlier copy's receipt and its test's marker, so it needs its
-     own cold test; the earlier copy stays in the case, unused, until the client's Delete.
+     unpublished is refused (export a new one). Every import, the same file again included, drops the copy's receipt and its test's marker,
+     so its cold test is run again; the earlier copy stays in the case, unused, until the client's Delete.
 
      The sealed file stays where you put it: once imported it's no longer needed, and you may delete it. One that's left can't be
      opened any more once the client's Delete has removed their key.
@@ -156,7 +156,8 @@ A client's journal can inform their replies only through the session-use journal
    started last decides. Each marks its start in the client's journal folder (`cold-test-attempt.json`, mode 0600: an id of its own
    and the time). A pass gives a receipt, and a test that doesn't pass takes one away, only while the marker still names that test.
    So once a newer test has started, an earlier one that passes gives no receipt, also when the newer one failed or was killed (it
-   says that the newer one decides), and an earlier one that doesn't pass leaves the receipt the newer one gave.
+   says that the newer one decides), and an earlier one that doesn't pass leaves the receipt the newer one gave. An earlier test runs on to its end,
+   its packets included.
 
    The test sends excerpts of the client's journal to that worker's company, so it needs the client's confirmed consent, read again
    under the trial folder's lock right before each packet is handed to the worker's process, and before the receipt is written. A

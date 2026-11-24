@@ -796,14 +796,18 @@ test("the laptop commands: each client's key, an import that leaves every file w
   await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: withdrawing }), /consent or copy changed during the cold test: it stopped, and gave no receipt/u);
   await absent(receiptPath);
   await setJournalConsent({ home, number: 1, action: "confirm" });
-  // A pass, which the same sealed file imported again doesn't take away (the copy is the same), nor a test that's refused before it starts.
+  // Every import, the same sealed file again included, drops the copy's receipt and its test's marker, so the cold test is run again; a test
+  // that's refused before it starts changes nothing.
+  assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer() })).passed, true);
+  assert.match(await fs.readFile(receiptPath, "utf8"), /"result": "pass"/u);
+  assert.deepEqual(await importClientJournal({ home, number: 1, sealedPath: sealedOne }), imported);
+  await absent(receiptPath);
+  assert.equal(await readColdTestAttempt(home, clientOne), null);
+  assert.equal(await fs.readFile(sealedOne, "utf8"), sealedOneText);
   assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer() })).passed, true);
   const receiptText = await fs.readFile(receiptPath, "utf8");
   const attempt = await readColdTestAttempt(home, clientOne);
   assert.match(attempt, /^[0-9a-f-]{36}$/u);
-  assert.deepEqual(await importClientJournal({ home, number: 1, sealedPath: sealedOne }), imported);
-  assert.equal(await readColdTestAttempt(home, clientOne), attempt);
-  assert.equal(await fs.readFile(sealedOne, "utf8"), sealedOneText);
   await fs.chmod(questionsPath, 0o644);
   await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: consumer() }), /readable by you alone/u);
   assert.equal(await fs.readFile(receiptPath, "utf8"), receiptText);

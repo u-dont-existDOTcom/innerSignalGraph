@@ -265,11 +265,10 @@ async function importOpenedCopy({ resolved, list, client, number, bundle }) {
     const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, heldRootDir: providers.rootDir, authorizationProvider: grant.authorizationProvider,
       keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
     const result = await importJournalCopy({ caseAccessService: service, caseId: client.case_id, corpusId: journalCopyCorpusId(bundle), authContext: grant.authContext, bundle });
-    // A new copy's earlier receipt first, with the marker of the test started last, so that one still running gives none; then the list: a
-    // failure at any point leaves the journal closed, never open on a copy no cold test passed.
-    if (client.journal.corpus_id !== result.corpus_id) {
-      for (const name of [COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE]) await removeJournalFile(resolved, client.case_id, name);
-    }
+    // The copy's receipt first, with the marker of the test started last (so that one still running gives none), whether or not this is the
+    // copy the client had: an import is always tested again. Then the list: a failure at any point leaves the journal closed, never open
+    // on a copy no cold test passed.
+    for (const name of [COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE]) await removeJournalFile(resolved, client.case_id, name);
     client.journal = { ...client.journal, corpus_id: result.corpus_id };
     await writeClientList(resolved, list, "the copy is in the client's case, but nothing uses it.");
     return { number, corpus_id: result.corpus_id, passages_verified: result.passages_verified, records_verified: result.records_verified };
