@@ -274,7 +274,7 @@ function runnerVersionText(health) {
 }
 
 // Only operational metadata reaches this renderer; every text node is made through textContent.
-function renderRunnerLog(root, log) {
+function renderRunnerLog(root, log, openDetails = () => {}) {
   root.replaceChildren();
   const add = (parent, tag, words) => { const node = root.ownerDocument.createElement(tag); node.textContent = words; parent.append(node); return node; };
   const seconds = (ms) => typeof ms === "number" ? (ms / 1000).toFixed(2) : "—";
@@ -289,6 +289,12 @@ function renderRunnerLog(root, log) {
     const row = add(root, "details", "");
     const outcome = turn.outcome.status === "delivered" ? "delivered" : `closed: ${turn.outcome.kind} / ${turn.outcome.reason_code}`;
     add(row, "summary", `${turn.turn}. ${turn.started_at ?? "unknown time"} · total ${seconds(turn.duration_ms)} s · first words ${seconds(turn.first_words_ms)} s · ${turn.workers.length} workers · ${turn.repair_rounds} repairs · tokens: ${tokens(turn.tokens)} · ${outcome}`);
+    const detailsButton = add(row, "button", "Details");
+    detailsButton.type = "button";
+    detailsButton.setAttribute("aria-label", `Details for turn ${turn.turn}`);
+    detailsButton.setAttribute("aria-controls", "runner-details-panel");
+    detailsButton.setAttribute("aria-expanded", "false");
+    detailsButton.addEventListener("click", () => openDetails(detailsButton, turn.turn));
     add(row, "p", `Ended ${turn.ended_at ?? "unknown time"} · crisis reading ${turn.crisis_level ?? "unavailable"}`);
     for (const call of turn.workers) add(row, "pre", `${roleNames[call.role] ?? "Worker"} (${call.role}) · attempt ${call.attempt ?? "—"} · ${call.provider ?? "unknown provider"} / ${call.model ?? "unknown model"} · effort ${call.effort ?? "unreported"} · ${seconds(call.duration_ms)} s
 Tokens: ${tokens(call)}
@@ -296,6 +302,86 @@ Failure: ${call.failure_code ?? "none"}
 Rule parts: ${call.rule_parts.map((part) => `${part.name} (${part.bytes ?? "unknown"} bytes)`).join(", ") || "unreported"}`);
     add(row, "p", `Findings: ${turn.findings.map((item) => `${item.code} (${item.severity})`).join(", ") || "none"}`);
   }
+}
+
+// Details stay in a separate panel so the Run log itself remains word-free. No model text is interpreted as markup or links.
+function renderRunnerTurnDetails(root, details, close) {
+  root.replaceChildren();
+  const add = (parent, tag, words) => { const node = root.ownerDocument.createElement(tag); node.textContent = words; parent.append(node); return node; };
+  add(root, "h3", `Details for turn ${details.turn}`);
+  const button = add(root, "button", "Close Details");
+  button.type = "button";
+  button.addEventListener("click", close);
+  add(root, "p", details.chronology_note);
+  const showStored = (parent, value, label = "") => {
+    if (label) add(parent, "p", label);
+    if (value != null && typeof value === "object") {
+      if (Array.isArray(value) && value.length === 0) add(parent, "pre", "[]");
+      else if (Object.keys(value).length === 0) add(parent, "pre", "{}");
+      else for (const [key, item] of Object.entries(value)) showStored(parent, item, key);
+    } else add(parent, "pre", value == null ? "not stored" : String(value));
+  };
+  for (const step of details.steps) {
+    const section = add(root, "section", "");
+    section.dataset.kind = step.kind;
+    if (step.draft) section.dataset.draft = step.draft;
+    add(section, "h4", step.label);
+    if (step.at) add(section, "p", step.at);
+    if (step.timing) add(section, "p", step.timing);
+    if (!step.workers.length && ["reader", "draft", "checker", "failure"].includes(step.kind)) add(section, "p", `${step.role ?? "Worker"} receipt: not stored.`);
+    for (const call of step.workers) add(section, "pre", `${call.role ?? "not stored"} · ${call.provider ?? "not stored"} / ${call.model ?? "not stored"} · attempt ${call.attempt ?? "not stored"} · duration ${call.duration_ms ?? "not stored"} ms · effort ${call.effort ?? "not stored"}
+Failure: ${call.failure_code ?? "none"}
+Rule parts: ${call.rule_parts.map((part) => `${part.name ?? "not stored"} (${part.bytes ?? "not stored"} bytes)`).join(", ") || "not stored"}`);
+    showStored(section, step.content);
+    for (const missing of step.missing ?? []) add(section, "p", missing);
+  }
+  add(root, "h4", "Rules for this turn");
+  showStored(root, details.runner_config);
+}
+
+function hideRunnerDetails() {
+  const panel = $("#runner-details-panel");
+  panel.hidden = true;
+  panel.replaceChildren();
+  for (const button of panel.ownerDocument.querySelectorAll('[aria-controls="runner-details-panel"]')) button.setAttribute("aria-expanded", "false");
+}
+
+function createRunnerDetailsView({ panel, fetchDetails, isCurrent }) {
+  let request = 0;
+  let trigger = null;
+  const close = (restoreFocus = true) => {
+    request += 1;
+    hideRunnerDetails();
+    if (restoreFocus && trigger?.isConnected) trigger.focus();
+    trigger = null;
+  };
+  panel.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); close(); } });
+  return {
+    close,
+    async open(button, turn) {
+      close(false);
+      const ownRequest = request;
+      trigger = button;
+      button.setAttribute("aria-expanded", "true");
+      panel.hidden = false;
+      // Close stays available while loading and on failure, including to keyboard users.
+      const closeButton = panel.ownerDocument.createElement("button");
+      closeButton.type = "button";
+      closeButton.textContent = "Close Details";
+      closeButton.addEventListener("click", () => close());
+      const status = panel.ownerDocument.createElement("p");
+      status.textContent = "Loading Details…";
+      panel.append(closeButton, status);
+      panel.focus();
+      try {
+        const details = await fetchDetails(turn);
+        if (ownRequest !== request || panel.hidden || !isCurrent()) return;
+        renderRunnerTurnDetails(panel, details, () => close());
+      } catch {
+        if (ownRequest === request && !panel.hidden && isCurrent()) status.textContent = "Details are unavailable right now.";
+      }
+    }
+  };
 }
 
 // runner-trial-page:end
@@ -323,6 +409,7 @@ function applyRunnerTrial(on) {
   $("#runner-delete-case").hidden = !on;
   $("#runner-run-log").hidden = !on;
   if (!on) {
+    hideRunnerDetails();
     $("#runner-log-panel").hidden = true;
     $("#runner-log-panel").replaceChildren();
     $("#runner-run-log").setAttribute("aria-expanded", "false");
@@ -1303,11 +1390,24 @@ $("#therapy-form").addEventListener("submit", async (event) => {
 });
 
 let runnerLogRequest = 0;
+const runnerDetailsView = createRunnerDetailsView({
+  panel: $("#runner-details-panel"),
+  isCurrent: () => runnerTrial.on && !$("#runner-log-panel").hidden,
+  fetchDetails: async (turn) => {
+    const caseId = state.caseId;
+    const response = await fetch(`/v1/runner/turn-details?caseId=${encodeURIComponent(caseId)}&turn=${turn}`, { headers: { accept: "application/json" }, referrerPolicy: "same-origin", cache: "no-store" });
+    if (!response.ok) throw new Error("unavailable");
+    const details = await response.json();
+    if (caseId !== state.caseId) throw new Error("unavailable");
+    return details;
+  }
+});
 $("#runner-run-log").addEventListener("click", async () => {
   if (!runnerTrial.on) return;
   const panel = $("#runner-log-panel");
   const button = $("#runner-run-log");
   const request = ++runnerLogRequest;
+  runnerDetailsView.close(false);
   if (!panel.hidden) { panel.hidden = true; button.setAttribute("aria-expanded", "false"); return; }
   panel.hidden = false;
   button.setAttribute("aria-expanded", "true");
@@ -1317,7 +1417,7 @@ $("#runner-run-log").addEventListener("click", async () => {
     const response = await fetch(`/v1/runner/log?caseId=${encodeURIComponent(caseId)}`, { headers: { accept: "application/json" }, referrerPolicy: "same-origin" });
     if (!response.ok) throw new Error("unavailable");
     const log = await response.json();
-    if (request === runnerLogRequest && caseId === state.caseId && !panel.hidden) renderRunnerLog(panel, log);
+    if (request === runnerLogRequest && caseId === state.caseId && !panel.hidden) renderRunnerLog(panel, log, (button, turn) => runnerDetailsView.open(button, turn));
   } catch {
     if (request === runnerLogRequest && caseId === state.caseId && !panel.hidden) panel.textContent = "The run log is unavailable right now.";
   }
@@ -1388,6 +1488,7 @@ function clearDeletedCase() {
   syncRunnerNewConversation();
   // The deleted case's kept plan went with it: no question about an earlier conversation, and no line about a plan.
   $("#runner-log-panel").replaceChildren();
+  hideRunnerDetails();
   $("#runner-log-panel").hidden = true;
   $("#runner-run-log").setAttribute("aria-expanded", "false");
   runnerTrial.hasConversation = false;

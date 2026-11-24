@@ -1,6 +1,7 @@
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { loadRunnerRules, runnerTrialDirectory } from "./released-rules.mjs";
 import { createRunnerLogWriter, runnerLogFromRecord } from "./run-log.mjs";
+import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
 import { createRunnerTrialRuntime } from "./runtime.mjs";
@@ -118,6 +119,7 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, se
       return result;
     },
     async runLog({ caseId, authContext }) { return runnerLogFromRecord(await loadExisting(caseId, authContext)); },
+    async turnDetails({ caseId, turn, authContext }) { return runnerTurnDetailsFromRecord(await loadExisting(caseId, authContext), turn); },
     startRunLog(authContext) { if (config.runnerTrialCaseId) logWriter.schedule(config.runnerTrialCaseId, authContext); }
   });
   return Object.freeze({ controller: loggedController, events: hub, runtime, settings: trialSettings, runnerRules: rules.runnerRules, logWriter });

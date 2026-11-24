@@ -124,3 +124,18 @@ renames it over the log. An interrupted rewrite leaves the previous complete log
 An unfinished turn appears after reconciliation closes it. Writes run after the response, and logging errors are caught and dropped;
 they never fail a turn. **Delete this case deletes the JSONL file too**, and clears the page's log panel. No log route, file writing or
 Run log button is active when the trial is off.
+
+## Details view
+
+Each Run log row's **Details** button opens that turn's words on the owner's local page only. `GET
+/v1/runner/turn-details?caseId=…&turn=…` uses the Run log's turn number (a positive decimal integer, without leading zeroes),
+the same local-owner, matching-origin and case-read checks, and `Cache-Control: no-store`. Unknown, unfinished or malformed turn
+numbers return the fixed `RUNNER_TURN_NOT_FOUND` error without details.
+
+It reads the encrypted case on request and writes nothing. It shows the person's message, stored reader results, refused
+provisional problems, any provisional reply, drafts in order, each checker's full stored findings, program-check problems,
+the stored findings supplied for repair, the delivered reply or closing, and that turn's rules and worker receipts' rule-part
+names and sizes. Missing outputs, separate quoted spans, exact repair prompts and individual concurrent-worker completion order
+are marked **not stored**. The highlighted emergency line's stored reason is shown; its historical exact wording is not stored.
+One Details panel opens at a time; Close Details or Escape closes it. All content is literal, wrapping text, with no active links.
+The **Run log still holds no words**, in its route, panel and JSONL file. With the trial off neither view is available.
