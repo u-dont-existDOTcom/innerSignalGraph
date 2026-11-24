@@ -141,8 +141,8 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
       try { return await controller.reconcile(input); }
       finally { logWriterFor(input.caseId).schedule(input.caseId, input.authContext); }
     },
-    // The case's own run log goes with it, and a client's journal folder too (its cold-test receipt now, and the copy's bundle and
-    // staging once the copy step is built); the vault's deletion removes the case's journal copies.
+    // The case's own run log goes with it, and a client's journal folder too (their key for journal copies and their copy's cold-test
+    // receipt); the vault's deletion removes the case's journal copies.
     async deleteCase(input) {
       const result = await controller.deleteCase(input);
       runtime.forgetCase(input.caseId);

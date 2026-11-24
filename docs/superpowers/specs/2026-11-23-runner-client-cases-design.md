@@ -210,31 +210,52 @@ journal's cold test**. Both are on the next branch (below).
 ## As built, part 2 (24 Nov 2026, branch `claude/runner-journal-copy-20261124`, stacked on the first)
 
 The lane's instruction after pull request 244: the copy step and the cold test, built and tested on made-up journals only, with no
-server contact; each real copy runs only on the owner's say.
+server contact; each real copy runs only on the owner's say. An independent review (Claude) of the first three commits found nine
+problems; this is as built after the fixes.
 
 - **The export** is the journal import's `export` command (no longer only planned), run where the journal lives. Its settings come
-  from the import's private configuration (`runner_trial_export`: the corpus, the trial folder's public key, a new file outside the
-  checkout, the scope the operator's grant holds), checked before any env file is read or any sign-in is attempted. It reads the
-  corpus's active generation published for session use, seals it for that one key (X25519, HKDF-SHA-256, AES-256-GCM: only that
-  trial folder can open it; tampering fails the bundle's digests) and writes it whole, mode 0600, never over another file. The
-  code is `src/journal-import/journal-copy.mjs`.
-- **The import** is `scripts/runner-trial-journal.mjs --import`, the adapter for the trial's development credentials: under the
-  trial folder's lock and the vault's writer lock (so only while the trial is stopped), with a grant made in the process for that
-  command and that case alone, it rebuilds the graph under the client's runner case and a new corpus, publishes it for session
-  use, checks every quotation against the stored bytes and every passage against the export, then names the corpus on the client
-  list. The sealed file waits in the client's folder (removed by their Delete) and is removed once the copy is published. A new
-  copy drops the earlier receipt; the earlier copy stays in the case, unused, until the client's Delete (a limit).
+  from the import's private configuration (`runner_trial_export`: the corpus, one client's public key, a new file outside the
+  checkout, the scope the operator's grant holds), checked before any env file is read or any sign-in is attempted. It asks the
+  vault's `export` purpose (the journal leaves the vault), opens the active generation, published for session use, through the
+  session-use reader's own snapshot checks, and reads it whole: the records, the source texts, the indexes its builder added (the
+  quote index's `quote_meta`, `quote_terms` and the like), and the order of its sources. The bundle is sealed for that one key
+  (X25519, HKDF-SHA-256, AES-256-GCM with a 16-byte tag); a change to the file fails the seal. It is written whole, mode 0600, never
+  over another file. The seal keeps the copy confidential; it doesn't prove the sender, so only a file the owner carried from the
+  export is imported. Code: `src/journal-import/journal-copy.mjs`, `src/cli/journal-import.mjs`.
+- **Each client has a key of their own** (`journal/<case id>/copy-key.json`, mode 0600; `--copy-key`), so a copy sealed for
+  another client can't be opened, and the client's Delete, which removes their folder, also removes the means to open any copy
+  sealed for them.
+- **The import** is `scripts/runner-trial-journal.mjs --import`, the adapter for the trial's development credentials. It takes a file
+  outside the trial folder, reads it through one opened handle and leaves it where it is until the copy is imported, refuses a copy
+  of a journal already copied for another client, and under the trial folder's lock and the vault's writer lock (so only while the
+  trial is stopped), with a grant made in the process for that command and that case alone (write, and the archive, organize_search
+  and session_use purposes the store asks), checks the whole bundle before anything is written (its digest, its graph, and its
+  generation built once into a store that keeps nothing), rebuilds the graph under the client's runner case and a corpus the copy
+  names, keeps the source order and the builder's own indexes, publishes it for session use without archive, checks every quotation
+  against the stored bytes (200 at a time) and every stored record against the export, then names the corpus and a digest of its
+  source on the client list and removes the file. The same file again is checked again; a copy an earlier import left unpublished is
+  refused. A new copy drops the earlier copy's receipt; the earlier copy stays in the case, unused, until the client's Delete (a
+  limit).
 - **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`), on the journal import's cold-consumer runner: a
   fresh consumer gets the frozen questions and what the session-use reader retrieves, graph on and off, never the key; the
-  controller scores retrieval and answers apart and writes the receipt only on a pass. The key names evidence by exact words of
-  the journal, so whoever writes the questions needs no internal ids. The consumer is the trial's whole-reply checker worker,
-  signed in (`claude -p` or `codex exec`), no API. It needs the client's confirmed consent, read again before each packet leaves.
-  The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report,
-  which the copy doesn't carry, so the questions come from a file.
+  controller scores what the consumer declares (its answerability, the passages it cites) exactly, and the latest test that ends
+  decides: a pass writes the receipt, anything less removes it, an answer outside the answer's rules included (a passage it wasn't
+  given, say). A test stopped by an error (a failed call, a key quote that doesn't fit, a withdrawn consent) decides nothing. The key
+  names evidence by exact words of the journal, each found in one to three passages, so whoever writes the questions needs no
+  internal ids; a right answer cites a passage for each. The consumer is the trial's whole-reply checker worker, signed in
+  (`claude -p` or `codex exec`), no API. It needs the client's confirmed consent, read again before each packet leaves and before the
+  receipt is written. Whether the answer's words say what its passages say isn't judged (that would take a judge model, not built).
+  The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report, which the
+  copy doesn't carry, so the questions come from a file.
 - **Method choices left to the owner:** who writes each client's questions (the owner, or a separate question writer reading the
-  journal, never the consumer), how many and of which kinds, and the strict pass rule (every question right with the graph,
-  every key quote retrieved, the graph at least as good as without it).
-- **Tested** with the journal import's synthetic fixture only: the sealed export, a copy refused for another key or after
-  tampering, the import refused while the vault is held, the quote check, a cold test that passes, one that misses and one that
-  claims a false premise, the receipt opening the gate under the client's own grant, and a new copy closing it again. Nothing
-  here was run against a model or a real journal.
+  journal, never the consumer), how many and of which kinds, whether to add a judge of the answers' words, and the strict pass rule
+  (every question right with the graph, evidence retrieved and cited for each key quote, the graph at least as good as without it).
+- **Tested** with made-up journals only: the sealed export, refused without the export purpose or when the published reference isn't
+  its manifest's; a copy refused for another key, after tampering or with a short tag; the import refused while the vault is held, for
+  the wrong client, from inside the trial folder, for a link or another file, or for a journal already copied for another client; a
+  bundle whose graph or index doesn't hold refused with nothing written, and an unpublished earlier import refused; a copy of 210
+  passages and one with a record larger than its usual shards; the source order and the builder's indexes kept; the record-by-record
+  check; the same file again; a cold test that passes, one that misses, one that claims a false premise, one that cites part of the
+  evidence, one that cites a passage it wasn't given, one stopped by an error, one with the consent withdrawn meanwhile; a failed
+  re-test that removes the receipt; and the receipt opening the gate under the client's own grant. Nothing here was run against a model
+  or a real journal.

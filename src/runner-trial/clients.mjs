@@ -12,8 +12,8 @@ import { RUNNER_TRIAL_CASE_ID_PATTERN } from "./switch.mjs";
 // or a report. Nothing here reads the vault.
 
 export const RUNNER_CLIENTS_FILE = "clients.json";
-// Each client's journal folder in the trial folder: the cold-test receipt now; the copy's bundle and staging when the copy step is
-// built (design, point 4). "Delete this case" removes it with the case.
+// Each client's journal folder in the trial folder: their key for journal copies and their copy's cold-test receipt
+// (scripts/runner-trial-journal.mjs). "Delete this case" removes it with the case.
 export const RUNNER_JOURNAL_FOLDER = "journal";
 export const COLD_TEST_RECEIPT_FILE = "cold-test-receipt.json";
 export const MAX_RUNNER_CLIENTS = 50;
@@ -70,7 +70,10 @@ export function validateRunnerClients(value) {
     if (labels.has(folded)) invalid(`${name}'s label is another client's too.`);
     labels.add(folded);
     timestamp(client.added_at, `${name}.added_at`);
-    exactKeys(client.journal, ["corpus_id", "consent"], `${name}.journal`);
+    // `source_sha256`: a digest of the server case and corpus the copy came from (scripts/runner-trial-journal.mjs, --import), so one
+    // journal can't be copied for two clients; absent on lists written before the copy step.
+    exactKeys(client.journal, Object.hasOwn(client.journal ?? {}, "source_sha256") ? ["corpus_id", "consent", "source_sha256"] : ["corpus_id", "consent"], `${name}.journal`);
+    if (Object.hasOwn(client.journal, "source_sha256") && !/^[0-9a-f]{64}$/u.test(client.journal.source_sha256 ?? "")) invalid(`${name}'s journal source is invalid.`);
     if (client.journal.corpus_id !== null && (typeof client.journal.corpus_id !== "string" || !CORPUS_ID.test(client.journal.corpus_id))) invalid(`${name}'s journal corpus id is invalid.`);
     validateConsent(client.journal.consent, `${name}'s journal consent`);
   });
@@ -160,8 +163,8 @@ export function clientJournalFolder(trialDir, caseId) {
 }
 
 // The cold test's receipt for a client's journal (design, point 5c): a passing test of exactly this case's corpus, at exactly one
-// published generation, manifest and visibility epoch. The cold test that writes it isn't built yet; this is the shape it must
-// write. A receipt that is missing, malformed or not a pass counts as none, like a withdrawal: no journal is used.
+// published generation, manifest and visibility epoch, written by the cold test (scripts/runner-trial-journal.mjs, --cold-test). A
+// receipt that is missing, malformed or not a pass counts as none, like a withdrawal: no journal is used.
 export function validateColdTestReceipt(value) {
   exactKeys(value, ["schema_version", "kind", "result", "case_id", "corpus_id", "generation", "manifest_object_id", "visibility_epoch", "tested_at"], "The cold-test receipt");
   if (value.schema_version !== 1 || value.kind !== "journal_cold_test" || value.result !== "pass") invalid("The cold-test receipt isn't a passing journal cold test.");

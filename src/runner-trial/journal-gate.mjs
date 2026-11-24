@@ -12,8 +12,8 @@ import { coldTestReceiptMatches, journalConsentCurrent, readColdTestReceipt, rea
 //       visibility epoch (a pass on another generation, the server's included, doesn't carry over).
 // Short of any of them, the turn's snapshot records a journal part with no quotations and the reason, and the reply is made from
 // the conversation alone, as without a journal. Only quotations the reader verified against the stored bytes are ever returned.
-// Nothing here copies a journal: the copy step (an export on the server, on the owner's go, and an import into the client's runner
-// case) isn't built yet, and neither is the cold test, so for now no client's journal passes this gate.
+// Nothing here copies or tests a journal: the copy step (an export where the journal lives, on the owner's go, and an import into the
+// client's runner case) and the cold test are their own commands (src/cli/journal-import.mjs, scripts/runner-trial-journal.mjs).
 
 const closed = (availability, reason) => ({
   availability,

@@ -34,9 +34,8 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
   snapshot is published through an atomically replaced commit link, never an in-progress extraction.
 - `runner-log.jsonl` (mode 0600): the word-free run log described below, for your own case; each client's case has its own,
   `runner-log-<case id>.jsonl`.
-- `journal/<case id>/`: a client's journal folder, with the cold-test receipt for their journal copy (below), and a sealed copy
-  while it waits to be imported.
-- `journal-copy-key.json` (mode 0600), once you make it with `--copy-key`: the trial folder's key for journal copies (below).
+- `journal/<case id>/`: a client's journal folder, with their key for journal copies (`copy-key.json`, mode 0600, made by
+  `--copy-key`) and the cold-test receipt for their journal copy (below). Their Delete removes it.
 - `settings-<provider>.json` (mode 0600, `INNER_SIGNAL_RUNNER_TRIAL_SETTINGS`), written at every start: the arrangement that
   measured best, the whole writer with one whole checker, readers and checkers at low effort and the writer at medium, each worker
   on the provider the choice gives it.
@@ -93,10 +92,12 @@ A client's journal can inform their replies only through the session-use journal
    The copy step has two halves, each run only on your go:
    - **Where the journal lives**, the journal import's `export` (`npm run journal:import -- export --config ...`), with
      `runner_trial_export` in the import's private configuration: `corpus_id` (the client's published corpus there),
-     `recipient_public_key` (what `--copy-key` prints), `output_path` (a new file outside the checkout) and, when the import's
-     operator grant holds write only, `"scope": "case:write"`. It reads the active generation published for session use, seals it
-     for this trial folder's key alone (X25519, HKDF-SHA-256, AES-256-GCM) and writes it whole to a new file (mode 0600), never
-     over another. Carrying the file to this laptop is your step.
+     `recipient_public_key` (what `--copy-key` prints for that client), `output_path` (a new file outside the checkout) and, when
+     the import's operator grant holds write only, `"scope": "case:write"`. The grant needs the vault's `export` purpose. It opens
+     the active generation, published for session use, through the session-use reader's own checks, reads it whole (the records,
+     the source texts, the indexes its builder added, the source order), seals it for that key alone (X25519, HKDF-SHA-256,
+     AES-256-GCM) and writes it whole to a new file (mode 0600), never over another. The seal keeps the copy confidential; it
+     doesn't prove who made it, so import only a file you carried from the export yourself. Carrying it here is your step.
    - **On this laptop**, with the trial stopped:
 
      ```bash
@@ -104,13 +105,17 @@ A client's journal can inform their replies only through the session-use journal
      node scripts/runner-trial-journal.mjs --import /absolute/path/copy.sealed.json
      ```
 
-     `--copy-key` makes the key once (its private half stays in the trial folder) and prints its public half. `--import` asks
-     the client's number, moves the sealed file into `journal/<case id>/`, opens it with the key and, under a grant made for that
-     command and that case alone, imports it into a new corpus of the client's runner case: rebuilt under that case, published
-     for session use, every quotation checked against the stored bytes and against the export. The client list then names that
-     corpus and the sealed file is removed. While the trial runs (it holds the vault) the import is refused and the file waits in
-     the client's folder for `--import` without a file. A new copy drops the earlier copy's receipt, so it needs its own cold
-     test; the earlier copy stays in the case, unused, until the client's Delete.
+     Both ask the client's number (the one `--journal-consent` shows). `--copy-key` makes that client's key once and prints its
+     public half; the private half stays in their journal folder, which their Delete removes, and with it the means to open any
+     copy sealed for them. `--import` takes a file outside the trial folder and opens it with that client's key: a copy sealed for
+     another key is refused, and so is a copy of a journal already copied for another client. Under a grant made for that command
+     and that case alone (write, and the archive, organize_search and session_use purposes the store asks) it checks the whole copy
+     before writing (its digest, its graph, and that the store can take it), imports it into a corpus the copy itself names,
+     publishes it for session use without archive, and checks every quotation against the stored bytes and every stored record
+     against the export. Then the list names the corpus and a digest of its source, and the file is removed. A refused or failed
+     import leaves the file where it was; the same file again is checked again, and a copy an import left unpublished is refused
+     (export a new one). While the trial runs (it holds the vault) the import is refused. A new copy drops the earlier copy's
+     receipt, so it needs its own cold test; the earlier copy stays in the case, unused, until the client's Delete.
 3. **A passing cold test of exactly that copy.** A receipt at `journal/<case id>/cold-test-receipt.json` (mode 0600) naming the
    case, corpus, generation, manifest and visibility epoch the reader opens; a pass on another generation doesn't carry over.
 
@@ -120,15 +125,19 @@ A client's journal can inform their replies only through the session-use journal
 
    The questions file (mode 0600, outside the checkout) is `{"schema_version": 1, "kind": "journal_cold_questions",
    "questions": [...]}`, each question `{"id", "question", "answerable", "evidence_quotes"}`: an answerable one names its
-   evidence by exact words of the journal (found in the copy's passages exactly, after Unicode normalization and with runs of
-   white space as one), an unanswerable one (absent, a false premise) names none, and the file has at least one of each. A fresh
-   consumer, the trial's whole-reply checker worker (`claude -p` or `codex exec`, signed in and sealed: no tools, nothing kept),
-   gets each question with what the session-use reader finds in the copy, graph on and off, and never the key. The copy passes
-   only if, with the graph, every answerable question retrieved a passage for each key quote and was answered "supported"
-   citing one, every unanswerable one was answered not found, false premise or too little context, and the graph did at least
-   as well as without it. Only a pass writes the receipt. The test sends excerpts of the client's journal to that worker's
-   company, so it needs the client's confirmed consent, read again before each question leaves and before the receipt is
-   written. It prints ids and scores only. Who writes the questions, and this pass rule, are method choices for you.
+   evidence by exact words of the journal, each found in one to three passages of the copy (exactly, after Unicode normalization
+   and with runs of white space as one); an unanswerable one (absent, a false premise) names none; the file has at least one of
+   each. A fresh consumer, the trial's whole-reply checker worker (`claude -p` or `codex exec`, signed in and sealed: no tools,
+   nothing kept), gets each question with what the session-use reader finds in the copy, graph on and off, and never the key. The
+   copy passes only if, with the graph, every answerable question retrieved a passage for each key quote and was answered
+   "supported" citing one for each, every unanswerable one was answered not found, false premise or too little context, and the
+   graph did at least as well as without it. The latest test that ends decides: a pass writes the receipt, anything less removes it,
+   an answer outside the answer's rules included (it cites a passage it wasn't given, say). A test stopped by an error (a failed
+   call, a key quote that doesn't fit, a withdrawn consent) decides nothing: no receipt is written, and one from an earlier pass
+   stays. The test sends excerpts of the client's journal to that worker's company, so it needs the client's confirmed consent, read
+   again before each question leaves and before the receipt is written. It prints ids and scores only. These are exact checks of
+   what the consumer declares (its answerability and the passages it cites); whether its words say what those passages say isn't
+   judged (that would take a judge model, not built). Who writes the questions, and this pass rule, are method choices for you.
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.

@@ -314,9 +314,10 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
 
 // `export`: the runner trial's copy of the case's journal (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md,
 // point 4), a server step run only on the owner's go for each copy. The corpus's active generation, published for session use, is
-// read with the operator's grant, sealed for one trial folder's public key (src/journal-import/journal-copy.mjs) and written whole to
-// a new file. Which corpus, that key, the file and the scope the operator's grant holds come from the private configuration's
-// `runner_trial_export`, never the command line; the file goes outside the public checkout and never over another file.
+// read with the operator's grant (which must hold the vault's `export` purpose), sealed for one client's public key
+// (src/journal-import/journal-copy.mjs) and written whole to a new file. Which corpus, that key, the file and the scope the operator's
+// grant holds come from the private configuration's `runner_trial_export`, never the command line; the file goes outside the public
+// checkout and never over another file.
 export function runnerTrialExportSettings(config) {
   const settings = config?.runner_trial_export;
   if (!settings || typeof settings !== "object" || Array.isArray(settings)

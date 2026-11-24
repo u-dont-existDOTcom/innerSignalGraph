@@ -12,16 +12,23 @@ import { validateColdTestReceipt } from "./clients.mjs";
 //
 // The questions and their key come from a file (`journal_cold_questions`): each question says whether the journal answers it, and
 // an answerable one names its evidence by exact words from the journal, which the controller finds in the copy's passages (an exact
-// match, after Unicode normalization and with runs of white space as one space). A key quote found in no passage stops the test.
+// match, after Unicode normalization and with runs of white space as one space). A key quote must name its evidence: one found in
+// no passage, or in more than three, stops the test.
 //
 // The pass rule is strict by default (a method choice for the owner, adjustable): for every question the key marks answerable, the
-// graph-on consumer retrieved a passage for each key quote and answered "supported" citing one of the key passages; for every
+// graph-on consumer retrieved a passage for each key quote and answered "supported" citing a passage for each key quote; for every
 // question the key marks unanswerable (absent, false premise), it answered not found, false premise or too little context; and
-// graph-on got at least as many questions right as graph-off.
+// graph-on got at least as many questions right as graph-off. These are exact checks of what the consumer declares (its
+// answerability and the passages it cites). Whether its answer's words say what those passages say is a judgment of meaning, which
+// this test doesn't make: that would take a judge model, a choice for the owner.
 
 const invalid = (code, details) => { throw new ValidationError("The journal cold test is invalid.", { code, ...(details ? { details } : {}) }); };
 const UNANSWERABLE = new Set(["not_found", "false_premise", "insufficient_context"]);
 const QUESTION_KEYS = new Set(["id", "question", "answerable", "evidence_quotes"]);
+export const MAX_KEY_QUOTE_PASSAGES = 3;
+// How the consumer runner refuses an answer outside the answer's rules (it answers another question or snapshot, cites what it wasn't
+// given, says "supported" with no evidence, isn't in the answer's form). Such an answer is a test not passed, never one that stopped.
+const BROKEN_ANSWERS = new Set(["COLD_ANSWER_BINDING_MISMATCH", "COLD_ANSWER_UNRETRIEVED_EVIDENCE", "COLD_ANSWER_UNSUPPORTED", "JOURNAL_SCHEMA_INVALID"]);
 export const MAX_COLD_QUESTIONS = 64;
 
 export function validateColdQuestionsFile(value) {
@@ -53,6 +60,7 @@ export function resolveColdKey(questions, passages) {
       const wanted = normal(quote);
       const ids = texts.filter((passage) => passage.text.includes(wanted)).map((passage) => passage.id);
       if (!ids.length) invalid("COLD_KEY_QUOTE_NOT_IN_JOURNAL", { question_id: entry.id });
+      if (ids.length > MAX_KEY_QUOTE_PASSAGES) invalid("COLD_KEY_QUOTE_NOT_SPECIFIC", { question_id: entry.id });
       return ids;
     }) }
   }));
@@ -62,10 +70,10 @@ function scoreVariant(entry, variant) {
   const retrieved = new Set((variant.retrieval?.records ?? []).map((record) => record.id));
   const output = variant.result?.output ?? {};
   if (!entry.key.answerable) return { retrieved_all: null, right: UNANSWERABLE.has(output.answerability) };
-  const keyIds = new Set(entry.key.evidence_groups.flat());
+  const cited = new Set(output.evidence_ids ?? []);
   return {
     retrieved_all: entry.key.evidence_groups.every((ids) => ids.some((id) => retrieved.has(id))),
-    right: output.answerability === "supported" && (output.evidence_ids ?? []).some((id) => keyIds.has(id))
+    right: output.answerability === "supported" && entry.key.evidence_groups.every((ids) => ids.some((id) => cited.has(id)))
   };
 }
 
@@ -91,13 +99,19 @@ export async function runJournalColdTest({ service, auth, caseId, corpusId, ques
   if (!before?.active_generation) invalid("COLD_TEST_NOT_PUBLISHED");
   const frozen = resolveColdKey(questions, await copyPassages({ service, auth, caseId, corpusId, access, before }));
   const saved = new Map();
-  const results = await runSavedProfileColdConsumer({
-    service, auth, caseId, corpusId, expectedGeneration: before.active_generation, requiredScope,
-    questions: frozen.map(({ id, question }) => ({ id, question })), port,
-    grant: { purpose: "session_use", allowed_roles: ["cold_consumer"] },
-    readIfPresent: async (key) => saved.get(key) ?? null,
-    writeOnce: async (key, value) => { if (!saved.has(key)) saved.set(key, value); return saved.get(key); }
-  });
+  let results;
+  try {
+    results = await runSavedProfileColdConsumer({
+      service, auth, caseId, corpusId, expectedGeneration: before.active_generation, requiredScope,
+      questions: frozen.map(({ id, question }) => ({ id, question })), port,
+      grant: { purpose: "session_use", allowed_roles: ["cold_consumer"] },
+      readIfPresent: async (key) => saved.get(key) ?? null,
+      writeOnce: async (key, value) => { if (!saved.has(key)) saved.set(key, value); return saved.get(key); }
+    });
+  } catch (error) {
+    if (!BROKEN_ANSWERS.has(error?.code)) throw error;
+    return { passed: false, report: { generation: before.active_generation, questions: frozen.length, broken_answer: error.code, passed: false }, receipt: null };
+  }
   const byQuestion = frozen.map((entry) => {
     const found = results.find((result) => result.question_id === entry.id);
     const variant = (name) => found?.variants.find((item) => item.variant === name);
