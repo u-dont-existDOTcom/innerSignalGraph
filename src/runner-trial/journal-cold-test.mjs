@@ -17,9 +17,9 @@ import { openSessionUseReader } from "./journal-gate.mjs";
 //
 // The questions and their key come from a file (`journal_cold_questions`): each question says whether the journal answers it, and
 // an answerable one names its evidence by exact words from the journal, which the program finds in the copy's usable passages (an
-// exact match, after Unicode normalization and with runs of white space as one space; a passage no reader of this kind returns, deleted,
-// revoked or restricted, is none). A key quote must name its evidence: one found in no passage, or in more than three, stops the test. The
-// file's own question ids stay here: the consumer, the judge, the report and the errors name a question by its place in the file.
+// exact match, after Unicode normalization and with runs of white space as one space; a deleted or revoked passage, which no reader
+// returns, is none). A key quote must name its evidence: one found in no passage, or in more than three, stops the test. The file's own
+// question ids stay here: the consumer, the judge, the report and the errors name a question by its place in the file.
 //
 // What an answer's words mean is the judge's alone. It gets the question, whether the journal answers it, the key quotes (none when it
 // doesn't), every passage the consumer was given and the answer. One that finds something wrong is asked again, afresh: an answer is wrong
@@ -84,9 +84,9 @@ export function resolveColdKey(questions, passages) {
   });
 }
 
-// The copy's usable passages (those the replies' reader may return: neither deleted nor revoked, and not restricted), read once by the
-// program (never by the consumer), from the snapshot the test runs on; and whether its generation has a word list, which decides how the
-// search reads words.
+// The copy's usable passages (the reader's rule: neither deleted nor revoked; a restricted one holds no words), read once by the program
+// (never by the consumer), from the snapshot the test runs on; and whether its generation has a word list, which decides how the search
+// reads words.
 async function readCopy({ service, auth, caseId, corpusId, before }) {
   return service.withJournalCorpus(caseId, corpusId, ACCESS, async ({ corpusStore, reference }) => {
     if (reference?.active_generation !== before.active_generation || reference.manifest_object_id !== before.manifest_object_id) invalid("COLD_TEST_SNAPSHOT_CHANGED");
@@ -94,9 +94,7 @@ async function readCopy({ service, auth, caseId, corpusId, before }) {
     const passages = [];
     for (const shard of manifest.record_shards) {
       for (const record of (await corpusStore.readJsonObject({ objectId: shard.object_id })).records) {
-        if (record.kind === "passage" && !["deleted", "revoked"].includes(record.lifecycle) && record.data?.disclosure !== "restricted" && typeof record.data?.quote === "string") {
-          passages.push({ id: record.id, quote: record.data.quote });
-        }
+        if (record.kind === "passage" && !["deleted", "revoked"].includes(record.lifecycle) && typeof record.data?.quote === "string") passages.push({ id: record.id, quote: record.data.quote });
       }
     }
     return { passages, wordList: Array.isArray(manifest.indexes?.quote_terms) };
