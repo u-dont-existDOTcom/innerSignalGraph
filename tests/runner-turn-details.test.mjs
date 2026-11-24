@@ -595,3 +595,21 @@ test("a turn that deleted an older plan and saved a new one, a reused producer c
   const interruptedAudit = readingsTurn("UNANSWERED", [], [writerDone("candidate", 1), audit], interruptedEnd);
   assert.equal(JSON.stringify(step(runnerTurnDetailsFromRecord(interruptedAudit, 1), "checker").content).includes(M.finding), true);
 });
+
+test("a later transition that names an audit again (a delivery) doesn't take the audit's commit place (GPT's sixth review)", () => {
+  // The repair draft was committed with no record of its writer's call (its check was recorded), its audit's context is reused by a
+  // later completion after approval, and the delivery names the audit again.
+  const audit1 = committedAudit(TWO_DRAFTS[0], "audit-1", "ctx-a1", [], 3);
+  const audit2 = committedAudit(TWO_DRAFTS[1], "audit-2", "ctx-a2", [], 8);
+  const commit = (id, candidateId, to, second) => moved("AUDITING", to, second, { audit_id: id, candidate_id: candidateId, verdict: "pass" });
+  const record = readingsTurn("DELIVERED", [], [
+    writerDone("candidate", 1), auditDone(3, ["CW"], [], "ctx-a1"), commit("audit-1", "cand-1", "REPAIR_REQUIRED", 3), moved("REPAIR_REQUIRED", "RECONSTRUCTING", 4, { parent_candidate_id: "cand-1" }),
+    auditDone(8, ["CW"], [], "ctx-a2"), commit("audit-2", "cand-2", "APPROVED", 8), auditDone(9, ["CW"], [], "ctx-a2"),
+    moved("APPROVED", "DELIVERED", 10, { audit_id: "audit-2", candidate_id: "cand-2" })
+  ], deliveredEnd, withAudits({ "cand-1": [audit1], "cand-2": [audit2] }));
+  const details = runnerTurnDetailsFromRecord(record, 1);
+  assert.deepEqual(draftSteps(details), [["draft", 1], ["committed_check", 1], ["repair_request", 2], ["stored_draft", 2], ["committed_check", 2]]);
+  // The check at t8 is draft 2's, at the moment its audit was committed (t8); the completion at t9 reusing its context stays draft
+  // 2's too, and neither is labelled draft 1's.
+  assert.deepEqual(details.steps.filter((entry) => entry.kind === "checker").map((entry) => entry.draft), [1, 2, 2]);
+});

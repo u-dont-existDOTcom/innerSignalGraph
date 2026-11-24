@@ -76,9 +76,10 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   const events = list(turn.events);
   const ended = new Set(events.filter((event) => ["INVOCATION_COMPLETED", "INVOCATION_FAILED", "INVOCATION_ABANDONED"].includes(event.event_type)).map((event) => event.context_id).filter(Boolean));
   // The index of the transition that committed each audit, by its draft and the audit's id (an id is unique within a draft only).
+  // Only a transition out of AUDITING commits one; a later transition (a delivery) can name the audit again.
   const commitKey = (candidateId, auditId) => `${candidateId ?? ""}\0${auditId}`;
   const commits = new Map();
-  events.forEach((event, index) => { if (event.event_type === "STATE_TRANSITION" && event.details?.audit_id != null) commits.set(commitKey(event.details.candidate_id, event.details.audit_id), index); });
+  events.forEach((event, index) => { if (event.event_type === "STATE_TRANSITION" && event.from_state === "AUDITING" && event.details?.audit_id != null) commits.set(commitKey(event.details.candidate_id, event.details.audit_id), index); });
   const committedAt = (entry) => commits.get(commitKey(entry.candidate.id, entry.audit.id));
   const committedAudits = candidates.flatMap((candidate) => list(candidate.audit_history).map((audit) => ({ candidate, audit })));
   // Which check call a committed audit came from (its event's index), or -1 when that can't be known.
