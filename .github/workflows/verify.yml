@@ -43,7 +43,7 @@ jobs:
             local expected="$1" path="$2"
             test "$(git hash-object "$path")" = "$expected"
           }
-          check_blob 5c6e7b1b59e5b9245f939b4ccb1a9684eb20df08 plugins/inner-signal-therapy/.codex-plugin/plugin.json
+          check_blob a339fbfe124977d2e0867275e28a70569854925a plugins/inner-signal-therapy/.codex-plugin/plugin.json
           check_blob e0cb90e69a157d2a6cd10484ff103abbae4381ad plugins/inner-signal-therapy/skills/inner-signal-private-continuity/SKILL.md
           check_blob 89e52f59452dacf743570bbd34b5253643128615 plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md
           check_blob f0b0ebe379f4f9aa2358ec1733011c40b744b121 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/FOCUS-DISCIPLINE.md
@@ -59,6 +59,6 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const m = JSON.parse(fs.readFileSync('plugins/inner-signal-therapy/.codex-plugin/plugin.json', 'utf8'));
-          if (m.version !== '0.2.7' || m.interface?.displayName !== 'InnerSignal') throw new Error('Wrong InnerSignal release manifest.');
+          if (m.version !== '0.2.8' || m.interface?.displayName !== 'InnerSignal') throw new Error('Wrong InnerSignal release manifest.');
           if (!m.interface?.capabilities?.includes('Advisory') || !m.interface?.capabilities?.includes('Read')) throw new Error('Unified capabilities missing.');
           NODE
