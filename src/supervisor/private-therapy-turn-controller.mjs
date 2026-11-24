@@ -86,6 +86,9 @@ export function createPrivateTherapyTurnController({
   // and says whether a repair still fits in the turn's time; every other runtime leaves this path exactly as it was.
   const closesTurns = typeof modelRuntime.closeTurn === "function";
   if (closesTurns) for (const method of ["repairFits", "closingReason", "closeUnfinishedTurns", "currentConversationTurnIds"]) requiredFunction(modelRuntime[method], `modelRuntime.${method}`);
+  // Two optional hooks of the same runtime for a turn's journal (docs/superpowers/specs/2026-11-24-runner-journal-search-design.md), used
+  // only with a session-use journal reader attached: `readBeforeEvidence` reads the message, and shows its first words, before any
+  // journal search; `journalWithheld` says why a turn gets no journal, or null. A runtime without them is called exactly as before.
   const evidenceEnforced = responseEvidence.enforced === true;
   const journalTimeoutMs = responseEvidence.journalTimeoutMs ?? 4000;
   if (!Number.isSafeInteger(journalTimeoutMs) || journalTimeoutMs < 1) throw new ValidationError("Response evidence timeout invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
@@ -192,13 +195,18 @@ export function createPrivateTherapyTurnController({
     ?.details?.output?.journalEvidence ?? null;
 
   const snapshotsFor = (record, runtimeTurn) => (record.response_evidence_snapshots ?? []).filter((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id);
-  const journalPart = async ({ caseId, query, authContext }) => {
+  const searchesJournal = typeof journalEvidenceProvider?.freezeResponseEvidenceJournal === "function";
+  // Every journal search of a turn is made here, the message's own and the repair's expansion, so a turn that gets no journal makes none.
+  // `expansion`, for the repair's: each missing-history question, and the journal part of the snapshot it adds to.
+  const journalPart = async ({ caseId, runtimeTurn, query, expansion = null, authContext }) => {
     if (!journalEvidenceProvider) return { availability: "not_configured" };
-    if (typeof journalEvidenceProvider.freezeResponseEvidenceJournal !== "function") return { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: "legacy_provider_contract", count: 1 }] };
+    if (!searchesJournal) return { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: "legacy_provider_contract", count: 1 }] };
     let timer;
     try {
+      const withheld = typeof modelRuntime.journalWithheld === "function" ? await modelRuntime.journalWithheld({ caseId, runtimeTurn, authContext }) : null;
+      if (withheld) return { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: withheld, count: 1 }] };
       return await Promise.race([
-        Promise.resolve().then(() => journalEvidenceProvider.freezeResponseEvidenceJournal({ caseId, query, maximumTokens: 8000, maximumBytes: 64000, authContext })),
+        Promise.resolve().then(() => journalEvidenceProvider.freezeResponseEvidenceJournal({ caseId, query, ...(expansion ?? {}), maximumTokens: 8000, maximumBytes: 64000, authContext })),
         new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Journal retrieval timed out.")), journalTimeoutMs); })
       ]);
     } catch (error) {
@@ -207,13 +215,14 @@ export function createPrivateTherapyTurnController({
         : { availability: "unavailable", retrieval_status: "failed" };
     } finally { clearTimeout(timer); }
   };
-  // A journal query is bounded text (the session-use adapter refuses more than 4,000 characters); a longer message is cut for the
-  // query only, never for what the models see.
-  const JOURNAL_QUERY_CHARACTERS = 4000;
-  const freezeSnapshot = async ({ caseId, runtimeTurn, operationKey, record, reason = "initial", query = runtimeTurn.inbound.exact_text.slice(0, JOURNAL_QUERY_CHARACTERS), authContext }) => {
+  // A journal query is bounded text (the session-use adapter refuses more than 40,000 characters: a whole message, so that its point
+  // counts wherever it stands); a longer message is cut for the query only, never for what the models see.
+  const JOURNAL_QUERY_CHARACTERS = 40_000;
+  const freezeSnapshot = async ({ caseId, runtimeTurn, operationKey, record, reason = "initial", query = runtimeTurn.inbound.exact_text.slice(0, JOURNAL_QUERY_CHARACTERS), questions = null, authContext }) => {
     const previous = snapshotsFor(record, runtimeTurn).at(-1);
     const revision = (previous?.revision ?? 0) + 1;
-    const journal = reason === "dependency_refresh" ? responseEvidenceRefreshJournal(record, previous) : await journalPart({ caseId, query, authContext });
+    const expansion = questions ? { questions, addsTo: responseEvidenceRefreshJournal(record, previous) } : null;
+    const journal = reason === "dependency_refresh" ? responseEvidenceRefreshJournal(record, previous) : await journalPart({ caseId, runtimeTurn, query, expansion, authContext });
     return call("freezeResponseEvidence", [caseId, {
       snapshotId: `snapshot:runtime:${operationKey}:r${revision}`, owner: { kind: "runtime_turn", runtime_turn_id: runtimeTurn.id },
       revision, parentSnapshotId: previous?.id ?? null, revisionReason: reason, candidateOrigin: "backend_produced",
@@ -357,6 +366,11 @@ export function createPrivateTherapyTurnController({
           return event.input_sha256 === jsonHash(candidateInputIdentity(runtimeTurn, output?.journalEvidence, snapshot));
         });
         const completedOutput = candidateCompleted?.details?.output;
+        // The runner trial reads the message, and shows its first words, before anything is searched for it: an urgent message waits
+        // for no journal, and a conversation about wanting to die gets none. What is read is stored once, so a turn that goes on after
+        // a restart, and the writer below, go by the same readings. Without a journal reader to search, nothing is read here.
+        const readFirst = governed && !candidateCompleted && searchesJournal && typeof modelRuntime.readBeforeEvidence === "function";
+        if (readFirst) await modelRuntime.readBeforeEvidence({ caseId, runtimeTurn, userInput, authContext });
         let snapshot = governed ? (candidateCompleted
           ? owned.find((entry) => entry.id === completedOutput?.responseEvidenceInclusion?.snapshot_id)
           : owned.at(-1) ?? await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext })) : null;
@@ -376,7 +390,7 @@ export function createPrivateTherapyTurnController({
           inputIdentity: candidateInputIdentity(runtimeTurn, journalEvidence, snapshot),
           authContext,
           execute: async (attemptContextId) => ({
-            ...(await modelRuntime.produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence, ...(evidence ? { responseEvidence: evidence } : {}), authContext, attemptContextId })),
+            ...(await modelRuntime.produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence, ...(evidence ? { responseEvidence: evidence } : {}), ...(readFirst ? { turnRead: true } : {}), authContext, attemptContextId })),
             journalEvidence
           })
         });
@@ -484,8 +498,11 @@ export function createPrivateTherapyTurnController({
         if (repairCompleted) snapshot = owned.find((entry) => entry.id === repairCompleted.details.output.responseEvidenceInclusion.snapshot_id);
         else if (snapshot && owned.length < 3) {
           const missing = sourceAudit?.response_evidence?.review?.missing_material_history ?? [];
-          const expand = missing.length > 0 && typeof journalEvidenceProvider?.freezeResponseEvidenceJournal === "function" && !owned.some((entry) => entry.revision_reason === "evidence_expansion");
-          if (expand) snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: "evidence_expansion", query: missing.map((entry) => entry.question).join("\n").slice(0, JOURNAL_QUERY_CHARACTERS) });
+          const expand = missing.length > 0 && searchesJournal && !owned.some((entry) => entry.revision_reason === "evidence_expansion");
+          if (expand) {
+            const questions = missing.map((entry) => entry.question);
+            snapshot = await freezeSnapshot({ caseId, runtimeTurn, operationKey, record, authContext, reason: "evidence_expansion", query: questions.join("\n").slice(0, JOURNAL_QUERY_CHARACTERS), questions });
+          }
         }
         const prepared = snapshot ? await prepareCall({ caseId, runtimeTurn, operationKey, record: await loadCase(caseId, authContext), snapshot,
           rootCandidate: exactCandidate(record, parent.root_candidate_id), completed: repairCompleted, authContext }) : null;

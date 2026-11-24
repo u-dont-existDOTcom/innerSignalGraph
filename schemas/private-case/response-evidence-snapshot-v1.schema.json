@@ -476,6 +476,115 @@
               "channel",
               "actor_resolution"
             ]
+          },
+          "journal_note": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "written": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "from": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[0-9]{4}(?:-[0-9]{2}){0,2}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "to": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[0-9]{4}(?:-[0-9]{2}){0,2}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "precision": {
+                        "enum": [
+                          "day",
+                          "month",
+                          "year",
+                          "interval"
+                        ]
+                      },
+                      "between": {
+                        "type": "boolean"
+                      },
+                      "ambiguous": {
+                        "type": "boolean"
+                      },
+                      "year_inferred": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "to",
+                      "precision",
+                      "between",
+                      "ambiguous",
+                      "year_inferred"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "dream",
+                        "wish",
+                        "plan",
+                        "hypothetical",
+                        "negation",
+                        "hedge",
+                        "reported_speech"
+                      ]
+                    },
+                    "words": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "words"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 200
+              },
+              "lifecycle": {
+                "enum": [
+                  "active",
+                  "candidate",
+                  "superseded"
+                ]
+              }
+            },
+            "required": [
+              "written",
+              "cues",
+              "lifecycle"
+            ]
           }
         },
         "required": [

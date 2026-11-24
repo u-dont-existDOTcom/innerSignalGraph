@@ -34,6 +34,7 @@ import {
   BOX_PICKER_SCHEMA,
   CHECKERS,
   CHECKER_EVIDENCE_NOTE,
+  CHECKER_EVIDENCE_NOTE_NO_QUOTATION,
   CHECKER_SCHEMA,
   LEVEL_CHECKER_KEPT_PLAN_SCHEMA,
   PROTECTION_READER_SCHEMA,
@@ -50,6 +51,7 @@ import {
   levelCheckerKeptPlanNote,
   protectionReaderPrompt,
   WRITER_EVIDENCE_NOTE,
+  WRITER_EVIDENCE_NOTE_NO_QUOTATION,
   withEvidenceReview,
   withNoteBeforeAnswerLine,
   writerKeptPlanNote,
@@ -113,6 +115,9 @@ export class RunnerDeadlineError extends RuntimeError {
 // How long a journal output waits for the trial folder lock before it counts as refused (publishGated).
 const OUTPUT_LOCK_WAIT_MS = 5_000;
 
+// Why a turn about wanting to die gets no journal, as its evidence says it (journalWithheld).
+const JOURNAL_WITHHELD = "crisis_turn";
+
 function validLevel(value) { return LEVELS.includes(value) ? value : "unclear"; }
 
 // The refusals for which an approved reply is closed instead of delivered (the design for clients, point 6): response evidence no
@@ -136,7 +141,12 @@ function evidenceInclusion(responseEvidence) {
 const evidencePacket = (responseEvidence, journalEvidence) => (responseEvidence
   ? { response_evidence: structuredClone(responseEvidence.view) }
   : journalEvidence ? { journal_evidence: journalEvidence.packet } : {});
-const withEvidenceNote = (prompt, responseEvidence, note) => (responseEvidence ? { ...prompt, system: withNoteBeforeAnswerLine(prompt.system, note) } : prompt);
+const holdsQuotation = (items) => (items ?? []).some((item) => item.kind === "journal_quotation");
+// The notes about the evidence, with what a journal quotation is only when the evidence holds one.
+const evidenceNote = (responseEvidence, note, noteWithoutQuotation) => (holdsQuotation(responseEvidence.view.source_items) ? note : noteWithoutQuotation);
+const withWriterEvidenceNote = (prompt, responseEvidence) => (responseEvidence
+  ? { ...prompt, system: withNoteBeforeAnswerLine(prompt.system, evidenceNote(responseEvidence, WRITER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE_NO_QUOTATION)) }
+  : prompt);
 // What the failed check's evidence review found, for the repair, as the app's own runtime gives it.
 function evidenceFailures(audit) {
   const review = audit?.response_evidence?.review;
@@ -162,8 +172,7 @@ function evidenceQuoteSources(responseEvidence) {
 // whole case, not one turn or one artifact, is used only while the journal gate is open (Codex's reviews 1 and 2: guarding one path
 // at a time kept leaving another).
 function caseReadJournal(record, responseEvidence = null) {
-  const holds = (items) => (items ?? []).some((item) => item.kind === "journal_quotation");
-  return holds(responseEvidence?.view?.source_items) || (record?.response_evidence_snapshots ?? []).some((entry) => holds(entry.source_items));
+  return holdsQuotation(responseEvidence?.view?.source_items) || (record?.response_evidence_snapshots ?? []).some((entry) => holdsQuotation(entry.source_items));
 }
 
 // A checker's findings as the runtime stores them (exported for the measurement harness, so its catch rate reads them the same way).
@@ -437,6 +446,12 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     }
     const stored = { ...(reading ?? { level: "unclear", unread: true }), receipts };
     await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { crisis: stored } }], authContext);
+    await showFirstWords({ caseId, runtimeTurn, conversationId, priorCrisisConversation, levelsNow, numberShown, reading, authContext });
+    return stored;
+  }
+
+  // What the crisis reading (null when the reader gave none) calls for at once: the provisional reply, or the emergency line.
+  async function showFirstWords({ caseId, runtimeTurn, conversationId, priorCrisisConversation, levelsNow, numberShown, reading, authContext }) {
     // The level the first words go by: the reading's own, or, for a turn read number_now (switch on), acted or about to.
     const firstWordsLevel = numberNowRead(reading) ? "acted_or_about_to" : reading?.level;
     const allowsProvisional = Boolean(reading) && config.provisionalLevels.includes(firstWordsLevel);
@@ -444,7 +459,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     // level): nothing is shown or recorded as a provisional, whatever the reader returned, and the skip puts no emergency line into
     // the conversation (the line's other triggers are unchanged). A provisional reply for someone who has acted or is about to is
     // shown on a later turn too when the reader gives one and it passes its exact checks, a number included, as on a first turn.
-    if (allowsProvisional && !levelsNow.includes(firstWordsLevel)) return stored;
+    if (allowsProvisional && !levelsNow.includes(firstWordsLevel)) return;
     if (allowsProvisional && typeof reading.provisional_reply === "string") {
       const problems = provisionalProblems(reading.provisional_reply, { level: firstWordsLevel });
       // A provisional reply is shown to the person, so in a case that has read its journal it goes out only through the gated output
@@ -473,7 +488,6 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     // Read acted (or number_now) with nothing shown this turn (with provisionalTurns "first", a later turn whose message answers
     // what was said before): the highlighted line if the turn has no reply 30 s after the message arrived.
     if (firstWordsLevel === "acted_or_about_to") await armFallbackLine(caseId, runtimeTurn, authContext);
-    return stored;
   }
 
   async function runBoxPicker({ caseId, runtimeTurn, view, authContext }) {
@@ -501,6 +515,46 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       // No reading keeps the stored gate (a prior restriction survives).
       return { assessment: null, unread: true, receipts: error.receipts ?? [] };
     }
+  }
+
+  // A turn's readings: the three readers at once, and the first words the crisis reading calls for. `reuse` (a turn read before its
+  // evidence is frozen, readBeforeEvidence below) takes a reading the turn has stored instead of calling its reader again, and completes
+  // the first words of one a restart interrupted; a stored provisional reply or line is never shown twice.
+  async function readTurn({ caseId, runtimeTurn, userInput, authContext, reuse = false }) {
+    const record = await load(caseId, authContext);
+    const turn = record.runtime_turns.find((entry) => entry.id === runtimeTurn.id);
+    const stored = reuse ? turn?.runner_reading?.readers ?? {} : {};
+    const conversationId = conversationIdFor(record, reuse && turn ? turn : runtimeTurn, userInput);
+    const view = conversationView(record, conversationId, runtimeTurn);
+    const earlierReadings = conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id);
+    const priorCrisisConversation = isCrisisConversation(earlierReadings);
+    const numberShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
+    const levelsNow = provisionalLevelsNow(earlierReadings);
+    if (!(reuse && readingsOf(turn))) emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
+    const firstWords = { caseId, runtimeTurn, conversationId, priorCrisisConversation, levelsNow, numberShown, authContext };
+    const [, boxes, protection] = await Promise.all([
+      !stored.crisis ? runCrisisReader({ ...firstWords, view })
+        : turn.provisional ? null : showFirstWords({ ...firstWords, reading: stored.crisis.unread === true ? null : stored.crisis }),
+      stored.boxes ?? runBoxPicker({ caseId, runtimeTurn, view, authContext }),
+      stored.protection ?? runProtectionReader({ caseId, runtimeTurn, view, record, authContext })
+    ]);
+    const resume = keptPlanEnabled ? resumeReadingFor(record, runtimeTurn, conversationId, userInput) : null;
+    const { readers } = await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { boxes, protection, ...(resume ? { resume } : {}) } }], authContext);
+    return { readers, conversationId, view };
+  }
+  // A turn's stored readings once all three readers' are there, else null.
+  const readingsOf = (turn) => {
+    const readers = turn?.runner_reading?.readers;
+    return readers?.crisis && readers.boxes && readers.protection ? readers : null;
+  };
+  // The readings of a turn the hook read, as stored; a turn it couldn't read (its case's journal gate was closed) is read here.
+  async function readingsReadBefore({ caseId, runtimeTurn, userInput, authContext }) {
+    const record = await load(caseId, authContext);
+    const turn = record.runtime_turns.find((entry) => entry.id === runtimeTurn.id);
+    const readers = readingsOf(turn);
+    if (!readers) return readTurn({ caseId, runtimeTurn, userInput, authContext, reuse: true });
+    const conversationId = turn.runner_reading.conversation_id;
+    return { readers, conversationId, view: conversationView(record, conversationId, runtimeTurn) };
   }
 
   // The case state after this turn's readings: the risk record from the crisis reading, the compatibility record from the
@@ -677,25 +731,30 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   return Object.freeze({
     settings: Object.freeze(structuredClone(config)),
 
-    async produceCandidate({ caseId, runtimeTurn, userInput = {}, journalEvidence = null, responseEvidence = null, authContext }) {
+    // Optional, called by the turn controller before it freezes the evidence of a turn that has no candidate yet, when a journal reader
+    // is attached: the readers read the message and its first words go out before any journal search (the design of 24 Nov 2026,
+    // point 4). What a reader's failure, its time or a plan limit does is what it does in produceCandidate. A case that has read its
+    // journal is read here only while its gate is open; produceCandidate then refuses the turn as it always has.
+    async readBeforeEvidence({ caseId, runtimeTurn, userInput = {}, authContext }) {
+      if (await journalGateAllows(caseId, null, authContext)) await readTurn({ caseId, runtimeTurn, userInput, authContext, reuse: true });
+    },
+
+    // Why this turn gets no journal, or null: its message isn't read, or is read as needing the emergency number now (the number now on),
+    // or its conversation has been read as one about wanting to die (or of someone who has acted or is about to) by any reader or
+    // checker, this turn's own reading included. No search is made for it then, the message's own or the repair's.
+    async journalWithheld({ caseId, runtimeTurn, authContext }) {
+      const record = await load(caseId, authContext);
+      const reading = record.runtime_turns.find((turn) => turn.id === runtimeTurn.id)?.runner_reading;
+      const crisis = reading?.readers?.crisis;
+      if (!crisis || crisis.unread === true || numberNowRead(crisis)) return JOURNAL_WITHHELD;
+      return isCrisisConversation(conversationReadings(record, reading.conversation_id)) ? JOURNAL_WITHHELD : null;
+    },
+
+    // `turnRead`: the controller had the turn read before its evidence was frozen (readBeforeEvidence).
+    async produceCandidate({ caseId, runtimeTurn, userInput = {}, journalEvidence = null, responseEvidence = null, turnRead = false, authContext }) {
       const inclusion = evidenceInclusion(responseEvidence);
       await assertJournalGate(caseId, responseEvidence, authContext);
-      const record = await load(caseId, authContext);
-      const conversationId = conversationIdFor(record, runtimeTurn, userInput);
-      const view = conversationView(record, conversationId, runtimeTurn);
-      const earlierReadings = conversationReadings(record, conversationId).filter((entry) => entry.turnId !== runtimeTurn.id);
-      const priorCrisisConversation = isCrisisConversation(earlierReadings);
-      const numberShown = numberShownEarlier(record, conversationId, runtimeTurn.id);
-      const levelsNow = provisionalLevelsNow(earlierReadings);
-      emit(caseId, runtimeTurn.id, { type: "status", step: "reading" });
-      const [crisis, boxes, protection] = await Promise.all([
-        runCrisisReader({ caseId, runtimeTurn, view, conversationId, priorCrisisConversation, levelsNow, numberShown, authContext }),
-        runBoxPicker({ caseId, runtimeTurn, view, authContext }),
-        runProtectionReader({ caseId, runtimeTurn, view, record, authContext })
-      ]);
-      const resume = keptPlanEnabled ? resumeReadingFor(record, runtimeTurn, conversationId, userInput) : null;
-      const stored = await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { boxes, protection, ...(resume ? { resume } : {}) } }], authContext);
-      const readers = stored.readers;
+      const { readers, conversationId, view } = await (turnRead ? readingsReadBefore : readTurn)({ caseId, runtimeTurn, userInput, authContext });
       // The person asked in this message to delete the kept plan: it is deleted before the writer starts, so its packet holds none.
       if (keptPlanEnabled && readers.crisis?.unread !== true && readers.crisis?.asks_to_delete_plan === true) {
         await source("deleteRunnerKeptPlans", [caseId, { reason: "asked_in_conversation", runtimeTurnId: runtimeTurn.id }], authContext);
@@ -715,7 +774,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const rules = writerRules(readers.boxes?.boxes ?? null);
       const writerRequest = () => {
         const current = keptPlanAsOfNow(keptPlan);
-        return withEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional, keptPlan: current }) }), current), responseEvidence, WRITER_EVIDENCE_NOTE);
+        return withWriterEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet: writerPacket({ record: { case_state: caseState }, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional, keptPlan: current }) }), current), responseEvidence);
       };
       const written = await callWorker("W", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: writerRequest, validate: (value) => validateWriter(value, keptPlan), guard: () => assertJournalGate(caseId, responseEvidence, authContext) });
       // The person asked to keep the plan: kept now, unless the reply before offered it, when the crisis checker confirms the yes first.
@@ -822,7 +881,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const settled = await Promise.allSettled(plan.map(async ({ checker, rules, packet, extra = "", schema = CHECKER_SCHEMA, keptPlanPart = null, evidence = false }) => {
         const requestFor = () => {
           const kept = keptPlanPart ? keptPlanPart() : { packet: {}, extra: "" };
-          return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}${evidence ? `\n${CHECKER_EVIDENCE_NOTE}` : ""}` }), schema: evidence ? withEvidenceReview(schema) : schema };
+          return { ...checkerPrompt({ checker, rules, packet: { ...packet, ...kept.packet }, extraRules: `${extra}${kept.extra}${evidence ? `\n${evidenceNote(responseEvidence, CHECKER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE_NO_QUOTATION)}` : ""}` }), schema: evidence ? withEvidenceReview(schema) : schema };
         };
         const result = { checker, ...(await callWorker(checker.id, { kind: "checker", runtimeTurn, ruleParts: rules.parts, requestFor, ...(evidence ? { validate: reviewed } : {}), guard: () => assertJournalGate(caseId, responseEvidence, authContext) })) };
         try { return LEVEL_READERS.includes(checker.id) ? await actOnLevel(result) : result; }
@@ -914,7 +973,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         const current = keptPlanAsOfNow(keptPlan);
         const packet = { ...writerPacket({ record, runtimeTurn, view, readers, journalEvidence, responseEvidence, provisional: runtimeTurn.provisional?.exact_text ?? null, keptPlan: current }), previous_candidate: candidate.exact_text, findings: blocking,
           ...(responseEvidence ? { response_evidence_failures: evidenceFailures(failedAudit) } : {}) };
-        return withEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current), responseEvidence, WRITER_EVIDENCE_NOTE);
+        return withWriterEvidenceNote(keptPlanWriterPrompt(writerPrompt({ rules, packet, repair: true }), current), responseEvidence);
       };
       const written = await callWorker("W-repair", { kind: "writer", runtimeTurn, ruleParts: rules.parts, requestFor: repairRequest, validate: (value) => validateWriter(value, keptPlan), guard: () => assertJournalGate(caseId, responseEvidence, authContext) });
       // A repair that changes nothing can't fix what the checks found: the turn ends as a failed check (the store would refuse

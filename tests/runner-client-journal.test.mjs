@@ -18,9 +18,10 @@ import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
-import { CHECKER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE } from "../src/runner-trial/worker-prompts.mjs";
+import { CHECKER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE_NO_QUOTATION, WRITER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE_NO_QUOTATION } from "../src/runner-trial/worker-prompts.mjs";
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { RESPONSE_EVIDENCE_DIMENSIONS } from "../src/supervisor/response-evidence-contract.mjs";
+import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
 
 // A client's journal in the runner trial (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, points 4 to 7): the
@@ -102,7 +103,8 @@ async function syntheticJournal(caseId) {
 // copy step will, which isn't built), and, unless told otherwise, the owner's confirmation of their consent and a planted cold-test
 // receipt for exactly that copy. The server runs on the folder's real development credentials, with response evidence on unless
 // told otherwise.
-async function journalTrial(t, { evidence = true, consent = true, receipt = "match", workers = script(), checkerMode = "whole" } = {}) {
+// `configured` adds to the trial's config (a switch of its own).
+async function journalTrial(t, { evidence = true, consent = true, receipt = "match", workers = script(), checkerMode = "whole", configured = {} } = {}) {
   const home = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-runner-journal-"));
   // Each case's run log is written after its turn; the folder goes only once every trial's writes are done.
   const trials = [];
@@ -143,11 +145,44 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
   const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true, responseEvidencePolicy: evidence ? "enforced" : "advisory" });
   const caseAuthContexts = new Map(Object.entries(prepared.clientTokens).map(([caseId, token]) => [caseId, Object.freeze({ bearerToken: token })]));
   const ownAuth = Object.freeze({ bearerToken: prepared.token });
-  const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialCaseId: prepared.caseId, runnerTrialDir: home, runnerTrialSettingsPath: null, runnerClaudeConfigDir: null, runnerRulesRoot: null, responseEvidenceEnforced: evidence });
+  const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialCaseId: prepared.caseId, runnerTrialDir: home, runnerTrialSettingsPath: null, runnerClaudeConfigDir: null, runnerRulesRoot: null, responseEvidenceEnforced: evidence, ...configured });
   const fake = fakeWorkers(workers);
   const makeTrial = (source = service) => createRunnerTrialController({ privateCaseSource: source, config, clientCaseIds: [...caseAuthContexts.keys()], settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode }), parts, workerFor: fake.workerFor });
   return {
     home, prepared, service, copier, copyAuth, ownAuth, caseAuthContexts, clientA, clientB, ownCase: prepared.caseId, calls: fake.calls, reference, sources, plantReceipt, makeTrial,
+    // Turns on the trial's controller itself, client one's unless told otherwise, with everything that happens kept in one order: each
+    // event the turn's page would get, each journal search as it starts (`search`; the one place the copy is opened), each evidence
+    // snapshot as it is frozen (`freeze`) and each worker's call as it starts (its role). `onSearch`, when given, is awaited as a search
+    // starts; `stopAt` names a store call at which the process stops for good (`stopped` resolves then); `withClients: false` is a
+    // trial without clients, which has no journal reader.
+    turns({ onSearch = null, stopAt = null, withClients = true } = {}) {
+      const happened = [];
+      let reached;
+      const stopped = new Promise((resolve) => { reached = resolve; });
+      const source = {
+        ...service,
+        async withJournalCorpus(...args) {
+          happened.push("search");
+          if (onSearch) await onSearch(happened);
+          return service.withJournalCorpus(...args);
+        },
+        async freezeResponseEvidence(...args) { happened.push("freeze"); return service.freezeResponseEvidence(...args); }
+      };
+      if (stopAt) source[stopAt] = () => { reached(); return new Promise(() => {}); };
+      const trial = createRunnerTrialController({ privateCaseSource: source, config, clientCaseIds: withClients ? [...caseAuthContexts.keys()] : [], settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode }), parts,
+        workerFor: (role) => ({ call: (request) => { happened.push(role); return fake.workerFor(role).call(request); } }) });
+      trials.push(trial);
+      return {
+        trial, happened, stopped,
+        async run(exchange, userMessage, { userInput = {}, caseId = clientA } = {}) {
+          const unsubscribe = trial.events.subscribe(caseId, `runtime:${exchange}`, (event) => happened.push(event.type === "status" ? event.step : event.type));
+          try {
+            return await trial.controller.run({ caseId, runtimeTurnId: `runtime:${exchange}`, exchangeId: exchange, userTurnId: `${exchange}-user`, assistantTurnId: `${exchange}-assistant`, userMessage, userInput,
+              authContext: caseId === prepared.caseId ? ownAuth : caseAuthContexts.get(caseId) });
+          } finally { unsubscribe(); }
+        }
+      };
+    },
     async serve(source = service) {
       const trial = makeTrial(source);
       trials.push(trial);
@@ -386,12 +421,41 @@ test("a withdrawal during the writer's call keeps the journal from every later c
 
 test("the gate is asked again right before every call: a withdrawal while the readers read keeps the journal from the writer, and a retry is checked again", async (t) => {
   let home = null;
+  // A case's first turn: its readers read before its journal is searched, so a withdrawal meanwhile means the journal is never read,
+  // and the reply is made from the conversation alone.
   const duringReaders = await journalTrial(t, { workers: script({ R1: async () => { await setJournalConsent({ home, number: 1, action: "withdraw" }); return quietReader(); } }) });
   home = duringReaders.home;
   const first = await duringReaders.serve();
-  const closed = await respond(first.base, duringReaders.clientA, "exchange-readers-1");
+  const answered = await respond(first.base, duringReaders.clientA, "exchange-readers-1");
+  assert.deepEqual([answered.status, answered.json.closing ?? null, answered.json.answer], [200, null, "What makes asking hard for you?"]);
+  const packet = packetOf(lastRequest(duringReaders.calls, "W"));
+  assert.deepEqual([packet.response_evidence.journal.availability, packet.response_evidence.journal.omissions[0].reason, journalItems(packet)], ["not_authorized", "journal_consent_missing", []], "no writer or checker got the journal");
+  assert.deepEqual(journalItems(packetOf(lastRequest(duringReaders.calls, "CW"))), []);
+
+  // A case that has read its journal: a withdrawal while a later turn's readers read stops that turn before its writer.
+  let homeLater = null;
+  const laterTurn = await journalTrial(t, { workers: script({ R1: async (count) => { if (count === 2) await setJournalConsent({ home: homeLater, number: 1, action: "withdraw" }); return quietReader(); } }) });
+  homeLater = laterTurn.home;
+  const served = await laterTurn.serve();
+  assert.equal((await respond(served.base, laterTurn.clientA, "exchange-readers-2")).json.closing ?? null, null);
+  const before = laterTurn.calls.filter((call) => ["W", "CW"].includes(call.role)).length;
+  const closed = await respond(served.base, laterTurn.clientA, "exchange-readers-3");
   assert.deepEqual([closed.status, closed.json.closing], [200, { kind: "runner_unavailable", reason_code: "checks_failed" }]);
-  assert.equal(duringReaders.calls.some((call) => ["W", "CW"].includes(call.role)), false, "no writer or checker got the journal");
+  assert.equal(laterTurn.calls.filter((call) => ["W", "CW"].includes(call.role)).length, before, "no writer or checker got the journal");
+
+  // Withdrawn between the search, which read the journal, and the writer's call: the writer doesn't get it either.
+  let homeFrozen = null;
+  const afterFreeze = await journalTrial(t);
+  homeFrozen = afterFreeze.home;
+  const frozen = await afterFreeze.serve({ ...afterFreeze.service, async freezeResponseEvidence(...args) {
+    const snapshot = await afterFreeze.service.freezeResponseEvidence(...args);
+    assert.ok(snapshot.source_items.some((item) => item.kind === "journal_quotation"));
+    await setJournalConsent({ home: homeFrozen, number: 1, action: "withdraw" });
+    return snapshot;
+  } });
+  const held = await respond(frozen.base, afterFreeze.clientA, "exchange-readers-4");
+  assert.deepEqual([held.status, held.json.closing], [200, { kind: "runner_unavailable", reason_code: "checks_failed" }]);
+  assert.equal(afterFreeze.calls.some((call) => ["W", "CW"].includes(call.role)), false, "no writer or checker got the journal");
 
   let homeTwo = null;
   // The writer's first answer has the wrong shape, and the consent is withdrawn meanwhile: its retry would carry the journal again.
@@ -691,4 +755,229 @@ test("a receipt for another generation keeps the journal out of the turn; with r
   // Response evidence needs the whole checker: split checkers with it on stop the trial's start.
   const split = await journalTrial(t, { checkerMode: "split" });
   assert.throws(() => split.makeTrial(), { code: "BAD_CONFIG" });
+});
+
+// ---- A conversation about wanting to die gets no journal, and first words wait for no search (24 Nov 2026) ------------------------
+
+const ACTED_PROVISIONAL = "I'm here with you. Please call your local emergency number now: 112 in the EU, 911 in the US, 999 in the UK.";
+const wantsToDieReading = () => ({ ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die" });
+const actedReading = () => ({ ...quietReader(), level: "acted_or_about_to", reason: "says they took something", provisional_reply: ACTED_PROVISIONAL });
+const journalPartOf = (record) => snapshotsOf(record).at(-1).journal;
+const WITHHELD = ["unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }]];
+const partSummary = (part) => [part.availability, part.retrieval_status, part.omissions];
+
+test("the readers read before any journal search starts", async (t) => {
+  // The journal is held until the crisis reader has answered: searched first, as before, the search would run out of its time.
+  let release;
+  const read = new Promise((resolve) => { release = resolve; });
+  const j = await journalTrial(t, { workers: script({ R1: () => { release(); return quietReader(); } }) });
+  const { happened, run } = j.turns({ onSearch: () => read });
+  const result = await run("exchange-first-words", MESSAGE);
+  assert.equal(result.deliveryKind, "candidate");
+  assert.equal(happened.filter((step) => step === "search").length, 1);
+  for (const earlier of ["reading", "R1", "R3"]) assert.ok(happened.indexOf(earlier) >= 0 && happened.indexOf(earlier) < happened.indexOf("search"), `${earlier} comes before the search: ${happened}`);
+  assert.deepEqual(happened.slice(happened.indexOf("search"), happened.indexOf("W") + 1), ["search", "freeze", "writing", "W"], "then the evidence is frozen and the writer writes");
+  assert.equal(journalPartOf(await j.record(j.clientA)).availability, "available");
+  assert.ok(journalItems(packetOf(lastRequest(j.calls, "W"))).length >= 1);
+});
+
+test("a message read as wanting to die, having acted or needing the emergency number now, or not read at all, gets no journal and no search is made", async (t) => {
+  const failing = () => { throw Object.assign(new Error("A synthetic reader failure."), { code: "PROVIDER_FAILED" }); };
+  const bodySign = () => ({ ...quietReader(), reason: "a body sign after stopping daily drinking", number_now: true, provisional_reply: ACTED_PROVISIONAL });
+  const numberNow = { runnerNumberNowEnabled: true };
+  for (const [name, R1, configured] of [["wants to die", wantsToDieReading, {}], ["acted", actedReading, {}], ["number now", bodySign, numberNow], ["unread", failing, {}]]) {
+    const j = await journalTrial(t, { configured, workers: script({ R1, W: () => ({ reply: "Please call 112 now. I'm here.", answered_level: "unclear", quotes: [] }) }) });
+    const { happened, run } = j.turns();
+    const result = await run("exchange-crisis-1", MESSAGE);
+    assert.equal(result.deliveryKind, "candidate", name);
+    assert.equal(happened.includes("search"), false, `${name}: no search`);
+    const record = await j.record(j.clientA);
+    assert.deepEqual(partSummary(journalPartOf(record)), WITHHELD, name);
+    assert.equal(snapshotsOf(record).length, 1);
+    for (const role of ["W", "CW"]) {
+      const packet = packetOf(lastRequest(j.calls, role));
+      assert.deepEqual(journalItems(packet), [], `${name}: no quotation for ${role}`);
+      assert.deepEqual(partSummary(packet.response_evidence.journal), WITHHELD);
+    }
+    assert.equal(record.runtime_turns[0].provisional?.exact_text ?? null, ["acted", "number now"].includes(name) ? ACTED_PROVISIONAL : null, `${name}: the first words are what they were`);
+  }
+  // With the number now off nobody reads it, so it withholds nothing.
+  const off = await journalTrial(t, { workers: script({ R1: bodySign }) });
+  const offTurns = off.turns();
+  await offTurns.run("exchange-number-now-off", MESSAGE);
+  assert.equal(offTurns.happened.filter((step) => step === "search").length, 1);
+  // Only those: a message read at any other level gets the journal, one that could mean either included.
+  for (const level of ["thoughts_no_intent", "unclear"]) {
+    const j = await journalTrial(t, { workers: script({ R1: () => ({ ...quietReader(), level }) }) });
+    const { happened, run } = j.turns();
+    await run("exchange-other-level", MESSAGE);
+    assert.equal(happened.filter((step) => step === "search").length, 1, level);
+    assert.equal(journalPartOf(await j.record(j.clientA)).availability, "available");
+  }
+});
+
+test("a later message of a conversation about wanting to die gets no journal either, whoever read it as one; a new conversation gets it again", async (t) => {
+  const byReader = await journalTrial(t, { workers: script({ R1: (count) => (count === 1 ? wantsToDieReading() : quietReader()) }) });
+  const first = byReader.turns();
+  for (const [exchange, options] of [["exchange-later-1", {}], ["exchange-later-2", {}]]) {
+    await first.run(exchange, MESSAGE, options);
+    assert.deepEqual(partSummary(journalPartOf(await byReader.record(byReader.clientA))), WITHHELD, exchange);
+  }
+  assert.equal(first.happened.includes("search"), false);
+  await first.run("exchange-later-3", MESSAGE, { userInput: { newConversation: true } });
+  assert.equal(journalPartOf(await byReader.record(byReader.clientA)).availability, "available", "another conversation");
+  assert.equal(first.happened.filter((step) => step === "search").length, 1);
+
+  // The crisis checker's own reading of the first turn counts as the reader's does.
+  const byChecker = await journalTrial(t, { workers: script({ CW: (count, request) => ({ ...wholeChecker(count, request), level: count === 1 ? "wants_to_die" : "none" }),
+    W: () => ({ reply: "What makes asking hard for you?", answered_level: "none", quotes: [] }) }) });
+  const second = byChecker.turns();
+  await second.run("exchange-checker-1", MESSAGE);
+  assert.equal(second.happened.filter((step) => step === "search").length, 1, "nobody had read the first message as one when it was searched for");
+  await second.run("exchange-checker-2", MESSAGE);
+  assert.equal(second.happened.filter((step) => step === "search").length, 1);
+  assert.deepEqual(partSummary(journalPartOf(await byChecker.record(byChecker.clientA))), WITHHELD);
+});
+
+test("a repair gets no journal, and no search is made for it, once this turn's checker has read someone who wants to die", async (t) => {
+  const asksForHistory = (count, request) => {
+    const value = wholeChecker(count, request);
+    if (count > 1) return { ...value, level: "wants_to_die" };
+    return { ...value, level: "wants_to_die", evidence_review: { ...value.evidence_review, missing_material_history: [{ id: "missing-1", question: "When did asking for help start to feel hard?", why_material: "Synthetic.", candidate_quote: "What was different that day?", quote_occurrence: 1 }] } };
+  };
+  const j = await journalTrial(t, { workers: script({ CW: (count, request) => ({ ...asksForHistory(count, request), repair_induced_checks: count > 1 ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] }),
+    "W-repair": () => ({ reply: "What makes asking hard for you?", answered_level: "wants_to_die", quotes: [] }) }) });
+  const { happened, run } = j.turns();
+  const result = await run("exchange-repair-1", MESSAGE);
+  assert.equal(result.deliveryKind, "candidate");
+  assert.equal(happened.filter((step) => step === "search").length, 1, "the message's own, before anyone had read it as one");
+  const snapshots = snapshotsOf(await j.record(j.clientA));
+  assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, snapshot.source_items.some((item) => item.kind === "journal_quotation")]), [["initial", true], ["evidence_expansion", false]]);
+  assert.deepEqual(partSummary(snapshots[1].journal), WITHHELD);
+  assert.deepEqual(journalItems(packetOf(lastRequest(j.calls, "W-repair"))), []);
+});
+
+test("without one, the repair's expansion searches each question and adds to the quotations the draft rests on, under the ids it quoted them by", async (t) => {
+  const asksForHistory = (count, request) => {
+    const value = wholeChecker(count, request);
+    if (count > 1) return { ...value, repair_induced_checks: [...REPAIR_INDUCED_ERROR_CHECKS] };
+    return { ...value, evidence_review: { ...value.evidence_review, missing_material_history: ["And the missed appointment?", "And the discomfort in the arm?"].map((question, index) => ({ id: `missing-${index}`, question, why_material: "Synthetic.", candidate_quote: "What was different that day?", quote_occurrence: 1 })) } };
+  };
+  const j = await journalTrial(t, { workers: script({ CW: asksForHistory, "W-repair": (count, request) => ({ ...writer(count, request), reply: `${writer(count, request).reply} And the appointment?` }) }) });
+  const { happened, run } = j.turns();
+  const result = await run("exchange-expansion-1", MESSAGE);
+  assert.equal(result.deliveryKind, "candidate");
+  assert.equal(happened.filter((step) => step === "search").length, 2);
+  const [initial, expanded] = snapshotsOf(await j.record(j.clientA)).map((snapshot) => snapshot.source_items.filter((item) => item.kind === "journal_quotation"));
+  assert.ok(initial.length >= 1);
+  assert.deepEqual(expanded.slice(0, initial.length), initial, "the same quotations under the same ids");
+  assert.deepEqual(expanded.slice(initial.length).map((item) => item.exact_excerpt.trim()), ["I dreamed I had missed the appointment.", "I felt calmer afterward, but the discomfort in my arm continued."], "the best of each question");
+  assert.deepEqual(journalItems(packetOf(lastRequest(j.calls, "W-repair"))).map((item) => item.id), expanded.map((item) => item.id));
+});
+
+test("a turn that goes on after a restart calls no reader whose reading it stored, shows its first words once, and goes by that reading", async (t) => {
+  const quietAfter = () => ({ reply: "Please call 112 now. What makes asking hard for you?", answered_level: "acted_or_about_to", quotes: [] });
+  // Stopped once the readings were stored and the first words shown, before the evidence was frozen.
+  const read = await journalTrial(t, { workers: script({ R1: actedReading, W: quietAfter }) });
+  const before = read.turns({ stopAt: "freezeResponseEvidence" });
+  before.run("exchange-restart-1", MESSAGE);
+  await before.stopped;
+  assert.deepEqual(before.happened.filter((step) => ["R1", "R3", "provisional", "search"].includes(step)).sort(), ["R1", "R3", "provisional"]);
+  const after = read.turns();
+  assert.equal((await after.run("exchange-restart-1", MESSAGE)).deliveryKind, "candidate");
+  assert.deepEqual(after.happened.filter((step) => ["reading", "R1", "R2", "R3", "provisional", "emergency_line", "search"].includes(step)), [], "nothing is read, shown or searched again");
+  assert.deepEqual(partSummary(journalPartOf(await read.record(read.clientA))), WITHHELD);
+  assert.equal((await read.record(read.clientA)).runtime_turns[0].provisional.exact_text, ACTED_PROVISIONAL);
+
+  // Stopped between the stored reading and its first words: they go out now, from that reading, and only what isn't stored is read.
+  const unsaid = await journalTrial(t, { workers: script({ R1: actedReading, W: quietAfter }) });
+  const stopped = unsaid.turns({ stopAt: "recordRunnerProvisional" });
+  stopped.run("exchange-restart-2", MESSAGE);
+  await stopped.stopped;
+  const resumed = unsaid.turns();
+  assert.equal((await resumed.run("exchange-restart-2", MESSAGE)).deliveryKind, "candidate");
+  assert.deepEqual(resumed.happened.filter((step) => ["R1", "provisional", "search"].includes(step)), ["provisional"]);
+  assert.ok(resumed.happened.indexOf("provisional") < resumed.happened.indexOf("freeze"));
+  assert.equal(unsaid.calls.filter((call) => call.role === "R1").length, 1);
+
+  // A quiet message: its search is made once, after the restart, by the reading it stored.
+  const quiet = await journalTrial(t);
+  const first = quiet.turns({ stopAt: "freezeResponseEvidence" });
+  first.run("exchange-restart-3", MESSAGE);
+  await first.stopped;
+  const second = quiet.turns();
+  assert.equal((await second.run("exchange-restart-3", MESSAGE)).deliveryKind, "candidate");
+  assert.deepEqual(second.happened.filter((step) => ["R1", "R3", "search", "freeze"].includes(step)), ["search", "freeze"]);
+  assert.equal(journalPartOf(await quiet.record(quiet.clientA)).availability, "available");
+});
+
+test("a reader's failure, its time running out and the plan's limit end a turn as they always have", async (t) => {
+  const failing = (code) => () => { throw Object.assign(new Error("A synthetic worker failure."), { code }); };
+  // The crisis reader alone fails: the turn goes on as unread, and a conversation that was a crisis one before shows the line at once.
+  const unread = await journalTrial(t, { workers: script({ R1: (count) => (count === 1 ? wantsToDieReading() : failing("TIMEOUT")()) }) });
+  const alone = unread.turns();
+  assert.equal((await alone.run("exchange-failed-1", MESSAGE)).deliveryKind, "candidate");
+  assert.equal((await alone.run("exchange-failed-2", MESSAGE)).deliveryKind, "candidate");
+  const [, second] = (await unread.record(unread.clientA)).runtime_turns;
+  assert.deepEqual([second.runner_reading.readers.crisis.unread, second.emergency_line_reason], [true, "no_reading_in_crisis_conversation"]);
+  assert.equal(unread.calls.filter((call) => call.role === "R1").length, 2, "one attempt each, as before");
+  // The plan's limit, or the time, for every worker: the closing says so, with the emergency line, and the writer was asked as before.
+  for (const [code, reason] of [["PLAN_LIMIT", "plan_limit"], ["TIMEOUT", "timeout"], ["SIGN_IN_NEEDED", "sign_in_needed"]]) {
+    const down = await journalTrial(t, { workers: script({ R1: failing(code), R3: failing(code), W: failing(code) }) });
+    const result = await down.turns().run("exchange-down-1", MESSAGE);
+    assert.deepEqual(result.closing, { kind: "runner_unavailable", reason_code: reason });
+    const [turn] = (await down.record(down.clientA)).runtime_turns;
+    assert.equal(turn.emergency_line_reason, "turn_closed_without_reply");
+    assert.equal(down.calls.some((call) => call.role === "W"), true, code);
+    assert.deepEqual(turn.events.filter((event) => event.stage === "candidate").map((event) => event.event_type), ["INVOCATION_STARTED", "INVOCATION_FAILED"]);
+  }
+});
+
+test("a turn of a case that has read its journal, while its gate is closed, is read by no one and closes as it always has", async (t) => {
+  const j = await journalTrial(t);
+  const { happened, run } = j.turns();
+  await run("exchange-gate-1", MESSAGE);
+  await setJournalConsent({ home: j.home, number: 1, action: "withdraw" });
+  happened.splice(0);
+  const result = await run("exchange-gate-2", MESSAGE);
+  assert.deepEqual(result.closing, { kind: "runner_unavailable", reason_code: "checks_failed" });
+  assert.deepEqual(happened.filter((step) => ["reading", "R1", "R3", "W", "search"].includes(step)), []);
+  const record = await j.record(j.clientA);
+  assert.deepEqual(partSummary(journalPartOf(record)), WITHHELD, "an unread message's journal isn't searched for");
+  const turn = record.runtime_turns.at(-1);
+  assert.deepEqual([turn.runner_reading ?? null, turn.emergency_line_reason], [null, "turn_closed_without_reply"]);
+  assert.deepEqual(turn.events.filter((event) => event.stage === "candidate").map((event) => [event.event_type, event.details?.error_code ?? null]), [["INVOCATION_STARTED", null], ["INVOCATION_FAILED", "JOURNAL_GATE_CLOSED"]]);
+});
+
+test("a trial without clients has no journal reader: its turns' evidence is frozen before anyone reads, exactly as before", async (t) => {
+  const j = await journalTrial(t);
+  const { happened, run } = j.turns({ withClients: false });
+  assert.equal((await run("exchange-own-order", "A synthetic message of the owner's own.", { caseId: j.ownCase })).deliveryKind, "candidate");
+  assert.deepEqual(happened.filter((step) => ["freeze", "reading", "R1", "R3", "writing", "W", "search"].includes(step)), ["freeze", "reading", "R1", "R3", "writing", "W"]);
+  assert.equal(journalPartOf(await j.record(j.ownCase)).availability, "not_configured");
+});
+
+test("each quotation comes to the writer, the checker and the repair with its note, and they are told what a quotation is and isn't; with none, they get what they always got", async (t) => {
+  const failsOnce = (count, request) => ({ ...wholeChecker(count, request), findings: count === 1 ? [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }] : [],
+    repair_induced_checks: count > 1 ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] });
+  const repairs = script({ CW: failsOnce, "W-repair": (count, request) => ({ ...writer(count, request), reply: `${writer(count, request).reply} Shorter.` }) });
+  const withJournal = await journalTrial(t, { workers: repairs });
+  await withJournal.turns().run("exchange-notes-1", MESSAGE);
+  for (const [role, note] of [["W", WRITER_EVIDENCE_NOTE], ["CW", CHECKER_EVIDENCE_NOTE], ["W-repair", WRITER_EVIDENCE_NOTE]]) {
+    const request = lastRequest(withJournal.calls, role);
+    const items = journalItems(packetOf(request));
+    assert.ok(items.length >= 1, role);
+    for (const item of items) assert.deepEqual(Object.keys(item.journal_note).sort(), ["cues", "lifecycle", "written"]);
+    assert.ok(request.system.includes(note), role);
+  }
+  for (const note of [WRITER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE]) {
+    for (const said of [/shared words/u, /nothing to do with this message/u, /only when it helps with what the person says now/u, /when the entry says it was written, never when something happened/u, /interval or (?:an )?inferred year is not a day/u, /dream, plan, wish or denial stays one/u,
+      /"superseded" means a later entry corrected it/u, /never a reason for crisis text/u, /never raises or lowers the level/u]) assert.match(note, said);
+  }
+  const without = await journalTrial(t, { workers: repairs });
+  await without.turns().run("exchange-notes-2", "A synthetic message for client two.", { caseId: without.clientB });
+  for (const [role, note] of [["W", WRITER_EVIDENCE_NOTE_NO_QUOTATION], ["CW", CHECKER_EVIDENCE_NOTE_NO_QUOTATION], ["W-repair", WRITER_EVIDENCE_NOTE_NO_QUOTATION]]) {
+    const request = lastRequest(without.calls, role);
+    assert.ok(request.system.includes(note) && !request.system.includes("shared words"), role);
+  }
 });

@@ -51,13 +51,25 @@ const locatorSchema = { anyOf: [
   shape({ kind: { const: "supervisor_input" }, entry_id: id }),
   shape({ kind: { const: "journal" }, corpus_id: id, generation: id, visibility_epoch: integer(), record_id: id, start_byte: integer(), end_byte: integer(1) })
 ] };
+// A journal quotation's note, beside its words: when the entry says it was written (never when something happened; a range's open end is
+// null), the wording cues found in the words, and the lifecycle ("superseded": a later entry corrected it). A builder may leave it out;
+// no other kind of source holds one. The cue kinds are quote-index.mjs's, named here because that module needs an installed package.
+export const JOURNAL_NOTE_CUE_KINDS = Object.freeze(["dream", "wish", "plan", "hypothetical", "negation", "hedge", "reported_speech"]);
+const flag = { type: "boolean" };
+const writtenBound = nullable({ type: "string", pattern: "^[0-9]{4}(?:-[0-9]{2}){0,2}$" });
+const journalNoteSchema = shape({
+  written: nullable(shape({ from: writtenBound, to: writtenBound, precision: enumeration(["day", "month", "year", "interval"]), between: flag, ambiguous: flag, year_inferred: flag })),
+  cues: array(shape({ kind: enumeration(JOURNAL_NOTE_CUE_KINDS), words: text(80) })),
+  lifecycle: enumeration(["active", "candidate", "superseded"])
+});
 export const responseEvidenceSourceItemSchema = shape({
   id: text(340), kind: enumeration(RESPONSE_EVIDENCE_SOURCE_KINDS), actor: enumeration(["client", "assistant", "supervisor", "owner", "unknown"]),
   audience: enumeration(["client", "supervisor", "private_journal", "unknown"]), time: timeSchema,
   epistemic_status: enumeration(["exact_client_words", "app_committed_text", "owner_reported", "agent_relayed_report", "client_written_account", "unsent_draft", "unknown_delivery"]),
   excerpt_sha256: sha, excerpt_bytes: integer(), exact_excerpt: nullable({ type: "string", minLength: 1 }), locator: locatorSchema,
-  supplied_by: shape({ channel: enumeration(["owner_ui", "authenticated_agent"]), actor_resolution: enumeration(["owner_verified", "unresolved"]) })
-}, ["supplied_by"]);
+  supplied_by: shape({ channel: enumeration(["owner_ui", "authenticated_agent"]), actor_resolution: enumeration(["owner_verified", "unresolved"]) }),
+  journal_note: journalNoteSchema
+}, ["supplied_by", "journal_note"]);
 const omissionSchema = shape({ reason: text(80), count: integer(1) });
 const receiptSchema = shape({
   operation_id: id, corpus_id: id, generation: id, visibility_epoch: integer(), manifest_object_id: id,
@@ -218,6 +230,7 @@ function checkSourceItem(item) {
   else if (typeof item.exact_excerpt !== "string" || item.excerpt_sha256 !== sha256Text(item.exact_excerpt) || item.excerpt_bytes !== Buffer.byteLength(item.exact_excerpt)) invalid("excerpt_mismatch");
   if ((item.kind === "journal_retrieval_record") !== (item.locator.kind === "journal_record")) invalid("source_provenance");
   if ((item.kind === "journal_quotation") !== (item.locator.kind === "journal")) invalid();
+  if (Object.hasOwn(item, "journal_note") && item.kind !== "journal_quotation") invalid("source_provenance");
   if (item.locator.kind === "journal" && item.locator.end_byte - item.locator.start_byte !== item.excerpt_bytes) invalid("excerpt_mismatch");
 }
 export function validateResponseEvidenceSnapshot(snapshot) {
