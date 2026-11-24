@@ -610,11 +610,11 @@ test("the laptop commands: each client's key, an import that leaves every file w
   const missed = await coldTest(misses);
   assert.deepEqual([missed.passed, missed.report.not_met, missed.report.found.same_words], [false, ["too_few_right"], { found: 40, of: 40 }], "found, and answered as if it weren't");
   await absent(receiptPath);
-  // One answer in thirty may be wrong, so two of these sixty-one: an answer that cites what it wasn't given is one.
+  // Not one answer may be wrong: one that cites what it wasn't given is.
   const inventing = (questions) => standIns({ reply: async (count, request, usual) => { const value = await usual(); return !isJudge(request) && questions.includes(value.question_id) ? { ...value, evidence_ids: [...value.evidence_ids, "src:journal:9"] } : value; } });
-  for (const [questions, passes] of [[["question-1", "question-2"], true], [["question-1", "question-2", "question-3"], false]]) {
+  for (const questions of [["question-1"], ["question-1", "question-2", "question-3"]]) {
     const result = await coldTest(inventing(questions));
-    assert.deepEqual([result.passed, result.report.wrong, result.report.not_met], [passes, questions.length, passes ? [] : ["wrong_answers"]]);
+    assert.deepEqual([result.passed, result.report.wrong, result.report.not_met], [false, questions.length, ["wrong_answers"]]);
   }
   const overclaims = standIns({ script: {}, verdict: (packet) => (packet.question.includes(PREMISE) ? "wrong" : "right") });
   for (const failing of [overclaims, standIns({ reply: judged("wrong") }), standIns({ planted: () => "right" })]) {
@@ -1470,16 +1470,16 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   }
   const small = path.join(outside, "small-questions.json");
   await fs.writeFile(small, JSON.stringify(withQuestions(QUESTIONS.questions.slice(1))), { mode: 0o600 });
-  // Three wrong answers are more than one in thirty of the sixty that count.
+  // One wrong answer is one too many.
   const numbered = (packet) => Number(packet.question_id.slice("question-".length));
-  const consuming = (change) => replying(async (count, request, usual) => { const value = await usual(); return !isJudge(request) && numbered(value) <= 3 ? change(value) : value; });
+  const consuming = (change) => replying(async (count, request, usual) => { const value = await usual(); return !isJudge(request) && numbered(value) === 1 ? change(value) : value; });
   const judging = (wrong) => using(standIns({ verdict: (packet) => (wrong(numbered(packet)) ? "wrong" : "right") }));
   for (const [what, options, notMet] of [
     ["answers that cite what they weren't given", consuming((usual) => ({ ...usual, evidence_ids: ["src:journal:9"] })), ["wrong_answers"]],
     ["answers declared supported that cite nothing", consuming((usual) => ({ ...usual, evidence_ids: [] })), ["wrong_answers"]],
-    ["a judge that finds answers wrong", judging((n) => n <= 3), ["wrong_answers"]],
-    ["a judge that finds answers invented, to false premises", judging((n) => n >= 41 && n <= 43), ["wrong_answers"]],
-    ["a judge that finds an answer invented, about an absent thing too", judging((n) => n >= 59), ["wrong_answers"]],
+    ["a judge that finds an answer wrong", judging((n) => n === 1), ["wrong_answers"]],
+    ["a judge that finds an answer invented, to a false premise", judging((n) => n === 41), ["wrong_answers"]],
+    ["a judge that finds an answer invented, about an absent thing", judging((n) => n === 61), ["wrong_answers"]],
     ["a judge that misses planted wrong answers", using(standIns({ planted: (packet) => (numbered(packet) <= 5 ? "right" : "wrong") })), ["judge_missed"]],
     ["too few right", using(standIns({ verdict: (packet) => (numbered(packet) <= 14 ? "incomplete" : "right") })), ["too_few_right"]],
     ["a file too small to pass, every answer right", { ...using(), questionsPath: small }, ["too_few_questions", "too_few_planted"]]
@@ -1523,7 +1523,7 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   assert.match(USAGE, /--cold-test FILE --provider mixed\|claude\|codex/u);
   assert.match(USAGE, /excerpts of the client's journal to the companies running those workers \(with --provider mixed,\s+Anthropic and OpenAI; claude, Anthropic; codex, OpenAI\)/u);
   for (const said of [/at least 40 questions the journal answers \(in words of its passages\), 20 it doesn't \(and the\s+search returns something for\) and 20 planted wrong answers/u, /the judge catches at least 4 of every 5 of those,\s+and 1 of every 2 of each kind;/u,
-    /at most 1 answer is wrong, to any question, for every 30 judged to questions of\s+those two sorts; at least 2 of every 3 of each sort are right; at most 1 question in 10 is left out \(a search\s+slower than a reply waits, a refusal by Claude; one by GPT would most likely come as a malformed answer, be\s+asked twice more and then stop the test\);/u,
+    /not one answer is wrong, to any question;\s+at least 2 of every 3 of each sort are right; at most 1 question in 10 is left out \(a search\s+slower than a reply waits, a refusal by Claude; one by GPT would most likely come as a malformed answer, be\s+asked twice more and then stop the test\);/u,
     /The file says who wrote it \(anthropic, openai or person\): not the company whose model judges\./u]) assert.match(USAGE, said);
   // Questions by the company whose model judges are refused before anything: no call, and the receipt stays as it is.
   await setJournalConsent({ home, number: 1, action: "confirm" });

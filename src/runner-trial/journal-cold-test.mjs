@@ -224,7 +224,7 @@ function tally(byQuestion, { author, judgeProvider, sameSnapshot }) {
   const judged = planted.filter((plant) => plant.verdict !== null);
   const caught = (plants) => ({ caught: count(plants, (plant) => plant.verdict === "wrong"), of: plants.length });
   const ofKind = (plants, kind) => plants.filter((plant) => plant.kind === kind);
-  // What the share of wrong answers is of: the answers judged, to the questions the rule counts.
+  // What the number of wrong answers is read against: the answers judged, to the questions the rule counts.
   const answers = count([...worded, ...tempted], (entry) => entry.verdict !== null);
   const leftOut = (why) => count(byQuestion, (entry) => entry.left_out === why);
   const scores = {
@@ -248,7 +248,7 @@ function tally(byQuestion, { author, judgeProvider, sameSnapshot }) {
     ...(worded.length < rule.answerable || tempted.length < rule.unanswerable ? ["too_few_questions"] : []),
     ...(judged.length < rule.planted || PLANTED_KINDS.some((kind) => ofKind(judged, kind).length < rule.planted_of_each_kind) ? ["too_few_planted"] : []),
     ...(enoughCaught ? [] : ["judge_missed"]),
-    ...(atMost(rule.wrong, scores.wrong, answers) ? [] : ["wrong_answers"]),
+    ...(scores.wrong <= rule.wrong ? [] : ["wrong_answers"]),
     ...(enoughRight(worded) && enoughRight(tempted) ? [] : ["too_few_right"]),
     ...(atMost(rule.left_out, scores.left_out.timed_out + scores.left_out.refused, byQuestion.length) ? [] : ["too_many_left_out"]),
     ...(author !== "person" && author === judgeProvider ? ["author_is_judge"] : []),

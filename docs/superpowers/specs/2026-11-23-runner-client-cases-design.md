@@ -185,7 +185,7 @@ journal gate is open now** (consent, the same copy, the grant with session_use, 
 asked when a turn starts, before every worker call, by the worker at its last moment, and before delivery. While it is closed the
 case makes no model call and delivers nothing; confirming the consent again or deleting the case are the ways on. The cost, a
 tradeoff for the owner: after a withdrawal, a case that has used its journal gives no replies until one of the two (the owner's i75 2a, 24 Nov 2026, was worded for
-the conversation that used it; this stops the client's whole case, and that scope goes back to the owner). The same
+the conversation that used it; this stops the client's whole case, and the owner chose that scope in i77 4a the same day). The same
 review's other findings are fixed too: the store's journal hold needs a case that has read its journal (the gate itself stays the
 trial's record, outside the case, so the store can't evaluate it; the hold only ever stops a reply); the folder lock is never
 taken over by a command; a failed folder sync stops a command; and a deletion invalidates what the page had asked of the case.
@@ -322,16 +322,18 @@ judge for every question, the printed numbers) holds in it.
   - **The pass rule** is one constant with a version (`COLD_TEST_RULE` in `src/runner-trial/cold-test-rule.mjs`; the owner decides it). The file
     holds at least 40 answerable questions with `same_words`, 20 unanswerable ones for which the search returns a passage (one that finds
     nothing is answered "not found" by anything), and 20 planted wrong answers, three of each kind (a smaller file runs and reports, and
-    can't pass); at least four in five of the planted answers are caught, and half of each kind; at most one answer is wrong for every
-    thirty judged to the questions of those two sorts; at least two thirds of each sort are right; at most one question in ten is left
+    can't pass); at least four in five of the planted answers are caught, and half of each kind; not one answer is wrong, to any
+    question; at least two thirds of each sort are right; at most one question in ten is left
     out; another company's model than the judge's, or a person, wrote the file; and the publication is the same before and after. The other
-    questions are counted and shown, and not required. A wrong answer counts whatever its question; the share is of the answers to the
-    questions counted, so others added to a file don't raise how many may be wrong, nor does an answer no one judged (a refusal, no words).
+    questions are counted and shown, and not required. A wrong answer counts whatever its question.
     The questions left out are one in ten of the whole file; those of the 40 among them count as not right. The report keeps retrieval
     (`found`) apart from answers (`right`), and names the points of the rule that aren't met.
-  - **Why one wrong in thirty.** With none allowed, a consumer that errs on 1 to 3% of sixty answers fails 47 to 82% of runs, so a good copy
-    would be tested until it passed. With two of sixty, such a copy passes 76 to 97% of runs, one whose answers are wrong 10% of the time
-    8%, and one wrong 15% of the time 1% (wrong being two of at most three calls, of a judge that says wrong, each time it's asked, of nine
+  - **Not one wrong answer** (the owner's i77 2b, 24 Nov 2026; the build's proposal, rule version 3, allowed one in thirty). With none allowed,
+    a copy whose answers are wrong 1 to 3% of the time fails 47 to 82% of its runs of sixty answers, so a good copy will often be tested
+    again, and one that is run until it passes shows less by its pass (the runs on a copy are counted and shown); one whose answers are
+    wrong 10% of the time passes one run in 300. A pass says that the true share is probably below one in twenty (none wrong of sixty: 95%
+    below 4.9% with a judge that never errs), not that it is none. With two of sixty (version 3) a copy wrong 1 to 3% of the time would pass
+    76 to 97% of runs, one wrong 10% of the time 8%, and one wrong 15% of the time 1% (wrong being two of at most three calls, of a judge that says wrong, each time it's asked, of nine
     wrong answers in ten and of three right ones in a hundred). A judge that catches 90% of the planted answers' calls meets the first share
     of those 94% of the time, one that catches 60%, under 1%. These odds are computed for independent calls, not measured.
   - **The questions file** says who wrote it (`author`: `anthropic`, `openai` or `person`) and has up to 100 questions, each asked once (whatever
@@ -377,9 +379,9 @@ judge for every question, the printed numbers) holds in it.
   texts. An unexpected error prints its code, never its own text, which can quote what a file holds.
 - The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report, which the
   copy doesn't carry, so the questions come from a file.
-- **Method choices left to the owner:** the pass rule (`COLD_TEST_RULE`), and who writes each client's questions and planted wrong answers (an
-  AI from the journal's own quotes, as the journal import's question writer did, of another company than the judge's, part of the questions
-  worded without the quote's words, is the lane's proposal; the tool for it isn't built).
+- **The owner's method choices (i77, 24 Nov 2026):** the pass rule as `COLD_TEST_RULE` has it (2b: not one wrong answer), and GPT writes each
+  client's questions and planted wrong answers from the journal's own quotes, part of the questions worded without the quotes' words
+  (3a; another company than the judge's; the tool for it isn't built).
 - **Tested** with made-up journals and stand-in workers only: the sealed export, refused without the export purpose or when the
   published reference isn't its manifest's, written whole or not at all (failures and kills part-way, no hard links, another file
   there); a copy refused for another key, after tampering or with a short tag; the import refused while the vault is held, for the

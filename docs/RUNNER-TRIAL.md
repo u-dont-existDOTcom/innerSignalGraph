@@ -167,18 +167,19 @@ A client's journal can inform their replies only through the session-use journal
    Claude refuses isn't caught). One by GPT can't be told, as Codex gives no sign of one: it would most likely come as a malformed answer, be
    asked twice more and then stop the test.
 
-   The copy passes when the file is large enough; the judge caught at least four in five of the planted answers, and half of each kind; at
-   most one answer is wrong (judged so, a passage cited that it wasn't given, or an answer said to be supported that cites none), to any
-   question, for every thirty answers judged to the questions of those two sorts (the 40's and the 20's); at least two thirds of the
-   questions of the first sort are right (their passages found and cited, supported in words, judged right) and of the second; at most one
+   The copy passes when the file is large enough; the judge caught at least four in five of the planted answers, and half of each kind; not
+   one answer is wrong (judged so, a passage cited that it wasn't given, or an answer said to be supported that cites none), to any
+   question (your i77 2b, 24 Nov 2026); at least two thirds of the questions of the first sort (the 40's) are right (their passages found
+   and cited, supported in words, judged right) and of the second (the 20's); at most one
    question in ten is left out (its search took over four seconds, after which a reply goes without the journal, or Claude refused it);
    and the copy's publication is the same before and after. A miss is safe in use: the reply is then made from the conversation alone.
    Questions worded without their passages' words, which a word search can't find, and those that find nothing, are counted and shown, and
-   not required; a wrong answer to one counts, and they don't raise how many may be wrong. This rule is yours to decide (below).
+   not required; a wrong answer to one counts all the same.
 
    A test that starts removes the copy's receipt; only a pass gives a new one. Too many wrong answers, a malformed one, a file too small, a
    failed call, a key quote that doesn't fit, a part of the journal the reader can't give, a withdrawn consent or a deleted case leaves
-   none. The rule is made so that a good copy should usually pass the first time (computed, not measured), and the report, the receipt and
+   none. With not one wrong answer allowed, a good copy may well fail a test by chance: one whose answers are wrong 1 to 3% of the
+   time passes 18 to 53% of its runs (computed, not measured; the judge's own mistakes are in it). So the report, the receipt and
    the last line say how many tests were started on this copy (an import begins a new count): a copy that passes only after several tests
    may have passed by chance. Of tests of one copy that overlap, the one started last decides. Each marks its start in the client's journal
    folder (`cold-test-attempt.json`, mode 0600: an id of its own, the time, the copy and that count). A pass gives a receipt, and a test that doesn't pass takes one
@@ -194,7 +195,7 @@ A client's journal can inform their replies only through the session-use journal
    or before the receipt is written.
 
    What it prints is numbers: how many questions of each kind, how many had their passages found and how many were answered right (each
-   for the questions the rule counts and for the others), what was wrong (and the answers that share is of), disputed, incomplete or left
+   for the questions the rule counts and for the others), what was wrong (and how many answers were judged), disputed, incomplete or left
    out, how many planted answers of each kind were caught and how many were refused, calls made again, the slowest search, the points of the
    rule that aren't met, each question's place in the file with its scores, and an opaque name for the snapshot tested. No
    command here prints a label, a question's id, an answer, journal text or the judge's reason (which isn't kept), nor an unexpected
@@ -206,9 +207,9 @@ A client's journal can inform their replies only through the session-use journal
    the passages with an instruction of its own, not the writer's whole prompt, so not whether a reply leaves alone quotations that have
    nothing to do with its message. A change of the reader (an update of the trial that searches another way) or of the pass rule closes
    every client's journal until its copy has passed again, and a receipt of the test's first design, which names no reader, opens nothing.
-   Nothing here has been run against a model or a real journal. Method choices for you: the pass rule, and who writes the questions and the
-   planted answers (proposed: an AI of another company than the judge's, from the journal's own quotes, part of the questions worded
-   without the quotes' words; that tool isn't built).
+   Nothing here has been run against a model or a real journal. The method is as you decided in i77 (24 Nov 2026): this pass
+   rule (2b), and GPT writes the questions and the planted answers from the journal's own quotes, part of the questions worded without the
+   quotes' words (3a; that tool isn't built).
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.

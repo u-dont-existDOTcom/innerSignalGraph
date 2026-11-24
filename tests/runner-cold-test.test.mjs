@@ -521,8 +521,8 @@ test("same words: the question shares a word the search goes by with a passage o
 // ---- The rule --------------------------------------------------------------------------------------------------------------------
 
 test("the rule's numbers, in one place with their version: a change of one is a change of the version", () => {
-  assert.deepEqual(COLD_TEST_RULE, { version: "journal-cold-test-rule-v3", answerable: 40, unanswerable: 20, planted: 20, planted_of_each_kind: 3,
-    caught: { at_least: 4, of: 5 }, caught_of_each_kind: { at_least: 1, of: 2 }, wrong: { at_most: 1, of: 30 }, right: { at_least: 2, of: 3 }, left_out: { at_most: 1, of: 10 } });
+  assert.deepEqual(COLD_TEST_RULE, { version: "journal-cold-test-rule-v4", answerable: 40, unanswerable: 20, planted: 20, planted_of_each_kind: 3,
+    caught: { at_least: 4, of: 5 }, caught_of_each_kind: { at_least: 1, of: 2 }, wrong: 0, right: { at_least: 2, of: 3 }, left_out: { at_most: 1, of: 10 } });
   assert.ok([COLD_TEST_RULE, ...Object.values(COLD_TEST_RULE).filter((value) => typeof value === "object")].every(Object.isFrozen));
   assert.deepEqual(PLANTED_KINDS, ["negation", "person", "time", "happened", "certainty"]);
   assert.deepEqual(COLD_QUESTION_AUTHORS, ["anthropic", "openai", "person"]);
@@ -593,35 +593,38 @@ test("the judge is tested in every run: at least twenty planted wrong answers, t
   }
 });
 
-test("more than one wrong answer, to any question, in thirty answers judged to those the rule counts, and the copy doesn't pass; misses, incomplete and disputed answers don't hold it back by themselves", async (t) => {
+test("one wrong answer, to any question, and the copy doesn't pass; misses, incomplete and disputed answers don't hold it back by themselves", async (t) => {
   const { run } = await copyOf(t);
-  // Whatever its question: one the rule counts, one worded otherwise, one for which nothing is found.
-  for (const [numbers, passes] of [[[1], true], [[1, 2], true], [[1, 2, 3], false], [[ANSWERABLE + 1, ANSWERABLE + 2], true], [[WORDED_ALIKE, ANSWERABLE + 1, ANSWERABLE + 12], false], [[WORDED_ALIKE + 1, ANSWERABLE, ANSWERABLE + 1], false]]) {
+  // Whatever its question: one the rule counts (the first, the last), one worded otherwise, one for which nothing is found, a false premise.
+  for (const numbers of [[], [1], [WORDED_ALIKE], [WORDED_ALIKE + 1], [ANSWERABLE], [ANSWERABLE + 1], [ANSWERABLE + 11], [QUESTIONS.length], [1, 2, 3]]) {
     const { passed, receipt, report } = await run(findingWrong(...numbers));
+    const passes = numbers.length === 0;
     assert.deepEqual([passed, receipt !== null, report.wrong, report.answers, report.not_met], [passes, passes, numbers.length, 60, passes ? [] : ["wrong_answers"]], numbers.join());
   }
-  // Questions that show nothing loosen nothing: ten more of them make ninety answers, and three wrong are still more than one in thirty. Thirty
-  // more that find a passage make ninety that count, and three wrong are no more than that; four are.
+  // More questions allow no more of them: thirty more that find a passage make ninety answers that count, and one wrong is one too many; so it
+  // is of ten more that show nothing.
   const padded = [...QUESTIONS, ...ABSENT.map((thing) => ({ id: `file-more-${thing}`, question: `When did I sell a ${thing}?`, answerable: false }))];
-  const some = await run(findingWrong(1, 2, 3), { questions: padded });
-  assert.deepEqual([some.report.by_question.length, some.report.questions.unanswerable_without_passages, some.report.answers, some.report.wrong, some.report.not_met], [90, 20, 60, 3, ["wrong_answers"]]);
+  const some = await run(findingWrong(1), { questions: padded });
+  assert.deepEqual([some.report.by_question.length, some.report.questions.unanswerable_without_passages, some.report.answers, some.report.wrong, some.report.not_met], [90, 20, 60, 1, ["wrong_answers"]]);
   const more = Array.from({ length: 30 }, (_, place) => ({ id: `file-more-${place}`, question: premise(PREMISES + place), answerable: false }));
   const counting = [...QUESTIONS.filter(({ question }) => !question.startsWith("Number ") && !question.startsWith("When ")), ...more];
   const script = Object.fromEntries(counting.filter(({ answerable }) => !answerable).map(({ question }) => [question, "false_premise"]));
-  for (const [wrong, notMet] of [[3, []], [4, ["wrong_answers"]]]) {
+  for (const [wrong, notMet] of [[0, []], [1, ["wrong_answers"]]]) {
     const { report } = await run(standIns({ script, verdict: (packet) => (numberOf(packet) <= wrong ? "wrong" : usualVerdict(packet)) }), { questions: counting });
     assert.deepEqual([report.questions.unanswerable, report.answers, report.wrong, report.not_met], [50, 90, wrong, notMet]);
   }
-  // One in thirty of those: of exactly sixty, two; of fifty-nine, one, where a model refuses one, or an answer has no words for the judge.
+  // The smallest file that can pass: none wrong, or one. An answer no one judged (a model refuses it, or it has no words) is none of the judged.
   const sixty = QUESTIONS.filter(({ question }) => !question.startsWith("Number ") && !question.startsWith("When "));
   assert.equal(sixty.length, 60);
-  assert.deepEqual([(await run(findingWrong(1, 2), { questions: sixty })).passed, (await run(findingWrong(1, 2, 3), { questions: sixty })).report.not_met], [true, ["wrong_answers"]]);
-  const unjudged = (stage, number, instead) => standIns({ verdict: (packet) => ([1, 2].includes(numberOf(packet)) ? "wrong" : usualVerdict(packet)),
+  assert.deepEqual([(await run(findingWrong(), { questions: sixty })).passed, (await run(findingWrong(1), { questions: sixty })).report.not_met], [true, ["wrong_answers"]]);
+  const unjudged = (wrong, stage, number, instead) => standIns({ verdict: (packet) => (numberOf(packet) <= wrong ? "wrong" : usualVerdict(packet)),
     reply: async (count, request, usual) => (request.stage === stage && numberOf(JSON.parse(request.user)) === number ? instead(await usual()) : usual()) });
   const refusal = () => { throw new ProviderError("A synthetic refusal.", { code: "REFUSED" }); };
   for (const [stage, number, instead] of [["cold_consumer", 60, refusal], ["cold_judge", 60, refusal], ["cold_judge", 40, refusal], ["cold_consumer", 60, (usual) => ({ ...usual, answer: " " })]]) {
-    const fiftyNine = await run(unjudged(stage, number, instead), { questions: sixty });
-    assert.deepEqual([fiftyNine.report.answers, fiftyNine.report.wrong, fiftyNine.report.not_met], [59, 2, ["wrong_answers"]], `${stage} ${number}`);
+    for (const wrong of [0, 1]) {
+      const fiftyNine = await run(unjudged(wrong, stage, number, instead), { questions: sixty });
+      assert.deepEqual([fiftyNine.report.answers, fiftyNine.report.wrong, fiftyNine.report.not_met], [59, wrong, wrong === 0 ? [] : ["wrong_answers"]], `${stage} ${number} ${wrong}`);
+    }
   }
   // A third of the forty the rule asks for incomplete or disputed, and six of the twenty unanswerable: nothing is wrong, and two thirds are right.
   let calls = 0;

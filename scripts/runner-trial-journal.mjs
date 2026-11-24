@@ -56,8 +56,8 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      wrong), and the file's planted wrong answers too: about three calls a question, one at a time. The copy passes
                      when the file has at least ${COLD_TEST_RULE.answerable} questions the journal answers (in words of its passages), ${COLD_TEST_RULE.unanswerable} it doesn't (and the
                      search returns something for) and ${COLD_TEST_RULE.planted} planted wrong answers; the judge catches at least ${COLD_TEST_RULE.caught.at_least} of every ${COLD_TEST_RULE.caught.of} of those,
-                     and ${COLD_TEST_RULE.caught_of_each_kind.at_least} of every ${COLD_TEST_RULE.caught_of_each_kind.of} of each kind; at most ${COLD_TEST_RULE.wrong.at_most} answer is wrong, to any question, for every ${COLD_TEST_RULE.wrong.of} judged to questions of
-                     those two sorts; at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} of each sort are right; at most ${COLD_TEST_RULE.left_out.at_most} question in ${COLD_TEST_RULE.left_out.of} is left out (a search
+                     and ${COLD_TEST_RULE.caught_of_each_kind.at_least} of every ${COLD_TEST_RULE.caught_of_each_kind.of} of each kind; ${COLD_TEST_RULE.wrong === 0 ? "not one answer is" : `at most ${COLD_TEST_RULE.wrong} answers are`} wrong, to any question;
+                     at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} of each sort are right; at most ${COLD_TEST_RULE.left_out.at_most} question in ${COLD_TEST_RULE.left_out.of} is left out (a search
                      slower than a reply waits, a refusal by Claude; one by GPT would most likely come as a malformed answer, be
                      asked twice more and then stop the test); and the copy's publication didn't change.
                      The file says who wrote it (anthropic, openai or person): not the company whose model judges.
@@ -469,7 +469,7 @@ async function main(argv, { log, askQuestion, workerFor }) {
     : result.newerStarted
       ? `Not passed. A newer cold test of client ${number}'s copy has started, and that one decides whether the copy has a receipt.`
       : `Not passed: client ${number}'s copy has no cold-test receipt, so their journal stays out of their sessions.`);
-  // A copy that passes only after several tests may have passed by chance.
+  // With not one wrong answer allowed a good copy may well fail a test, and one that passes only after several may have passed by chance.
   log(`Tests started on this copy so far: ${result.report.run}.`);
   return result.passed ? 0 : 1;
 }
