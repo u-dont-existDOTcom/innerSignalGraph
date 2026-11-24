@@ -135,38 +135,50 @@ A client's journal can inform their replies only through the session-use journal
      The sealed file stays where you put it: once imported it's no longer needed, and you may delete it. One that's left can't be
      opened any more once the client's Delete has removed their key.
 3. **A passing cold test of exactly that copy.** A receipt at `journal/<case id>/cold-test-receipt.json` (mode 0600) naming the
-   case, corpus, generation, manifest and visibility epoch the reader opens, and the version of the reader that was tested; a pass on
-   another generation, or of another reader, doesn't carry over.
+   case, corpus, generation, manifest and visibility epoch the reader opens, the version of the reader that was tested and the pass
+   rule's; a pass on another generation, of another reader or by another rule doesn't carry over.
 
    ```bash
    node scripts/runner-trial-journal.mjs --cold-test /absolute/path/questions.json --provider mixed
    ```
 
-   The questions file (mode 0600, outside the checkout) is `{"schema_version": 1, "kind": "journal_cold_questions",
-   "questions": [...]}`, with up to 100 questions, each `{"id", "question", "answerable", "evidence_quotes"}`: the id is your own name
-   for it and isn't used outside the file (everywhere else a question is named by its place in it); an answerable one names its
-   evidence by exact words of the journal, each found in one to three usable passages of the copy (exactly, after Unicode
-   normalization and with runs of white space as one); an unanswerable one (absent, a false premise) names none; the file has at least
-   one of each, and needs 40 answerable and 20 unanswerable ones for a pass.
+   The questions file (mode 0600, outside the checkout) is `{"schema_version": 1, "kind": "journal_cold_questions", "author": ...,
+   "questions": [...]}`. `author` is who wrote it: `anthropic`, `openai` or `person`; not the company whose model judges (with `mixed`,
+   Anthropic), or the command refuses it. Up to 100 questions, each `{"id", "question", "answerable", "evidence_quotes", "planted"}`: the id
+   is your own name for it and isn't used outside the file (everywhere else a question is named by its place in it); an answerable one
+   names its evidence by exact words of the journal, each found in one to three usable passages of the copy (exactly, after Unicode
+   normalization and with runs of white space as one), and no passage is the evidence of more than two questions; an unanswerable one
+   (absent, a false premise) names none; no question is asked twice. `planted`, on answerable ones only, is a wrong answer the judge must
+   catch: `{"kind": "negation" | "person" | "time" | "happened" | "certainty", "answer": "..."}` (a "not" dropped or added, another person,
+   another time, something planned, wished or dreamed told as done or the other way round, something uncertain told as certain). For a pass
+   the file needs 40 answerable questions that share a search word with the passages of all their evidence, 20 unanswerable ones for which
+   the search returns something all the same, and 20 planted answers, three of each kind.
 
    For each question, the test gives a fresh call of the trial's writer's worker (with `--provider mixed`, GPT) exactly what a reply to
    that question as the message would get from the copy: the replies' reader's own search, at most six passages, each with when it was
    written, its wording cues and its lifecycle, and what was searched. It never gets the key. It answers from those passages alone, says
    whether they answer the question, and cites every passage it uses. A judge, a fresh call of the trial's checker's worker (with `mixed`,
    Claude), then gets the question, whether the journal answers it, its key quotes (none when it doesn't), the same passages and the
-   answer, and says whether it is right, incomplete or wrong. A wrong is asked once more: an answer counts as wrong only when both say so,
-   and as disputed otherwise. That is two calls a question, three when the judge finds something wrong, one at a time.
+   answer, and says whether it is right, incomplete or wrong. A wrong is asked again: an answer counts as wrong when two of at most three
+   calls say so, and as disputed when one does. A planted wrong answer goes to the judge in the same packet as a real one and through the
+   same calls. That is two calls a question, and two more for a planted answer: for the smallest file that can pass about 160 calls, one at a
+   time, and three for each further wrong. A call that fails for its form is made again, at most twice and six times in a test; a plan
+   limit stops it.
 
-   The copy passes when nothing is wrong (judged wrong twice, a passage cited that it wasn't given, or an answer said to be supported that
-   cites none), at least two thirds of the answerable questions that share a search word with their key quotes are right (their passages
-   found and cited, supported in words, judged right), the file is large enough, and the copy's publication is the same before and after.
-   A miss is safe in use: the reply is then made from the conversation alone. Questions worded without their passage's words, which a
-   word search can't find, are counted and shown, and not required. This rule is yours to decide (below).
+   The copy passes when the file is large enough; the judge caught at least four in five of the planted answers; at most one answer in
+   thirty is wrong (judged so, a passage cited that it wasn't given, or an answer said to be supported that cites none); at least two
+   thirds of those 40 questions are right (their passages found and cited, supported in words, judged right) and of those 20; at most one
+   question in ten is left out (its search took over four seconds, after which a reply goes without the journal, or a model refused it);
+   and the copy's publication is the same before and after. A miss is safe in use: the reply is then made from the conversation alone.
+   Questions worded without their passages' words, which a word search can't find, are counted and shown, and not required. This rule is
+   yours to decide (below).
 
-   A test that starts removes the copy's receipt; only a pass gives a new one. A wrong or malformed answer, a file too small, a failed
-   call, a key quote that doesn't fit, a part of the journal the reader can't give, a withdrawn consent or a deleted case leaves none. Of
-   tests of one copy that overlap, the one started last decides. Each marks its start in the client's journal folder
-   (`cold-test-attempt.json`, mode 0600: an id of its own and the time). A pass gives a receipt, and a test that doesn't pass takes one
+   A test that starts removes the copy's receipt; only a pass gives a new one. Too many wrong answers, a malformed one, a file too small, a
+   failed call, a key quote that doesn't fit, a part of the journal the reader can't give, a withdrawn consent or a deleted case leaves
+   none. The rule is made so that a good copy should usually pass the first time (computed, not measured), and the report, the receipt and
+   the last line say how many tests were started on this copy (an import begins a new count): a copy that passes only after several tests
+   may have passed by chance. Of tests of one copy that overlap, the one started last decides. Each marks its start in the client's journal
+   folder (`cold-test-attempt.json`, mode 0600: an id of its own, the time, the copy and that count). A pass gives a receipt, and a test that doesn't pass takes one
    away, only while the marker still names that test. So once a newer test has started, an earlier one that passes gives no receipt, also
    when the newer one failed or was killed (it says that the newer one decides), and an earlier one that doesn't pass leaves the receipt
    the newer one gave. An earlier test runs on to its end, its packets included.
@@ -177,18 +189,20 @@ A client's journal can inform their replies only through the session-use journal
    the packet; one after the hand-over is honoured at the next packet, or before the receipt is written.
 
    What it prints is numbers: how many questions of each kind, how many had their passages found and how many were answered right (each
-   for the questions that share a search word with their key quotes and for the others), what was wrong, disputed or incomplete, the
-   points of the rule that aren't met, each question's place in the file with its scores, and an opaque name for the snapshot tested. No
+   for the questions the rule counts and for the others), what was wrong, disputed, incomplete or left out, how many planted answers of each
+   kind were caught, calls made again, the slowest search, the points of the rule that aren't met, each question's place in the file with
+   its scores, and an opaque name for the snapshot tested. No
    command here prints a label, a question's id, an answer, journal text or the judge's reason (which isn't kept), nor an unexpected
    error's own words, which can quote a file: its code only.
 
    Limits: all but the judge's part are exact checks. With `claude` or `codex` the judge is the consumer's own company's model. The test
-   makes no reading of the message and has no time limit, where a conversation about wanting to die gets no journal and a search that
-   takes over four seconds gives a reply none; and it shows what a model makes of the passages with an instruction of its own, not the
-   writer's whole prompt, so not whether a reply leaves alone quotations that have nothing to do with its message. A change of the reader
-   (an update of the trial that searches another way) closes every client's journal until its copy has passed again, and a receipt of
-   the test's first design, which names no reader, opens nothing. Nothing here has been run against a model or a real journal. Method
-   choices for you: the pass rule, and who writes the questions (proposed: an AI, from the journal's own quotes, part of them worded
+   makes no reading of the message, where a conversation that could be about wanting to die gets no journal. It asks one short question at a
+   time on a quiet computer, where real messages are paragraphs and are searched while other work runs. And it shows what a model makes of
+   the passages with an instruction of its own, not the writer's whole prompt, so not whether a reply leaves alone quotations that have
+   nothing to do with its message. A change of the reader (an update of the trial that searches another way) or of the pass rule closes
+   every client's journal until its copy has passed again, and a receipt of the test's first design, which names no reader, opens nothing.
+   Nothing here has been run against a model or a real journal. Method choices for you: the pass rule, and who writes the questions and the
+   planted answers (proposed: an AI of another company than the judge's, from the journal's own quotes, part of the questions worded
    without the quotes' words; that tool isn't built).
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,

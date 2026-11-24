@@ -276,12 +276,15 @@ judge for every question, the printed numbers) holds in it.
   what the replies' reader returns, so a search that found nothing for a reply (the fault found on 24 Nov) passed it; its judge was the
   consumer's own worker and saw the key quotes alone, so a true detail from another passage read as an invention; and a dozen questions
   can't tell a search that finds half from one that finds three quarters. This second design takes up Fable's red team of 24 Nov (its B1
-  to B5, but for one of B1's two new kinds of question: see the limits):
+  to B5, but for one of B1's two new kinds of question: see the limits), and its rule a second red team by Fable the same day, which
+  found that the rule failed a good copy so often by chance that it would be passed by trying again, that a wrong answer planted on a
+  question the judge is told is unanswerable tests nothing, and that the judge's own model may have written the file:
   - **What the consumer is given** for a question is exactly what a reply to it as the message would get: what the replies' reader returns
     for the message's own search, at most six passages with their notes, and the search's coverage. One function builds and asks that
     reader for the gate and for the test (`openSessionUseReader` in `src/runner-trial/journal-gate.mjs`). It's asked directly, not through
     the gate, which wants the receipt this test gives. A part that isn't available stops the test; a search that finds nothing is a
-    result. Each read is of the publication found at the start, or the test stops.
+    result; one that takes longer than a reply waits (four seconds, `JOURNAL_SEARCH_TIMEOUT_MS`, the controller's own limit) leaves its
+    question out, and nothing is asked about it. Each read is of the publication found at the start, or the test stops.
   - **The consumer** is a fresh call of the trial's writer's worker (role `W`: GPT with `--provider mixed`) for each question, with an
     instruction and a strict schema of its own. Its packet is the question, by its place in the file, the passages (`id`, `words`,
     `written`, `cues`, `lifecycle`) and the coverage, and nothing else: never the key, the file's own ids or another question. It answers
@@ -292,45 +295,64 @@ judge for every question, the printed numbers) holds in it.
     when it doesn't), every passage the consumer was given with its notes, and the answer, and says one of three: `right` (what the key
     quotes say, or, to a question the journal doesn't answer, that it doesn't or that its premise is wrong, with nothing told as the
     journal's that neither the quotes nor the passages say; a true correction from the passages is right), `incomplete` (nothing wrong,
-    but it doesn't answer, or leaves out what the key quotes say) or `wrong`. A `wrong` gets a second fresh call with the same packet:
-    both wrong is wrong, anything else is disputed. Its reason isn't kept.
-  - An answer of the consumer's or the judge's outside its schema, or for another question, stops the test with no verdict.
+    but it doesn't answer, or leaves out what the key quotes say) or `wrong`. A `wrong` is asked again, afresh, with the same packet: wrong
+    again is wrong; otherwise a third call decides (two of three). One of three is disputed. Its reason isn't kept.
+  - **The judge is tested in every run.** An answerable question may hold a planted wrong answer, by whoever wrote the file: a "not" dropped
+    or added, another person, another time, something planned, wished or dreamed told as done (or the other way round), something uncertain
+    told as certain (`PLANTED_KINDS`). It goes to the judge in the very packet a real answer does and through the same calls, with nothing
+    that says it's planted. It is refused on a question the journal doesn't answer: the judge is told which those are.
+  - **A call that fails for its form** (an answer outside its schema or for another question, a timeout, an incomplete receipt: a reply's own
+    reasons, `RETRYABLE_WORKER_FAILURES`) is made again with the same packet, at most twice and six times in a test, counted by role, and
+    then stops the test with no verdict. Any other failure (a plan limit, a lapsed sign-in) stops it at once. A refusal, by either model,
+    is never asked again: it leaves the question out, and is counted.
   - **The program scores** by exact checks only: `found` (a passage of every key quote is among those returned, by record), `cited` (among
     those it cites), what the consumer declares, the judge's verdict, and `same_words` (the question shares a word the search goes by
-    with one of its key quotes, by the search's own rule: `evidenceWordsShared` in `src/journal-import/retrieval.mjs`). An answerable
-    question is right when found, supported in words, cited and judged right; an unanswerable one when declared one of the three others
-    and judged right. Wrong is: judged wrong twice, a cited passage it wasn't given, or `supported` with none cited. Anything else is
+    with a passage of every key quote's group, by the search's own rule: `evidenceWordsShared` in `src/journal-import/retrieval.mjs`; no
+    search by words can find all of the evidence without). An answerable question is right when found, supported in words, cited and judged
+    right; an unanswerable one when declared one of the three others and judged right. Wrong is: judged wrong, a cited passage it wasn't
+    given, or `supported` with none cited. Left out is a search slower than a reply waits, or a refusal, unless it's wrong. Anything else is
     neither (a miss, incomplete, disputed).
-  - **The pass rule** is one constant with a version (`COLD_TEST_RULE`; the owner decides it): at least 40 questions the journal answers and
-    20 it doesn't (a smaller file runs and reports, and can't pass); nothing wrong; at least two thirds of the answerable questions with
-    `same_words` right, with at least one such question (the others, which a word search can't find, are counted and shown); and the
-    same publication before and after. The report keeps retrieval (`found`) apart from answers (`right`), each with and without
-    `same_words`, and names the points of the rule that aren't met.
-  - **The questions file** has up to 100 questions. The key names evidence by exact words of the journal, each found in one to three usable
-    passages, so whoever writes the questions needs no internal ids. The file's own question ids go nowhere: the consumer, the judge, the
-    report and the errors name a question by its place in the file.
+  - **The pass rule** is one constant with a version (`COLD_TEST_RULE` in `src/runner-trial/cold-test-rule.mjs`; the owner decides it). The file
+    holds at least 40 answerable questions with `same_words`, 20 unanswerable ones for which the search returns a passage (one that finds
+    nothing is answered "not found" by anything), and 20 planted wrong answers, three of each kind (a smaller file runs and reports, and
+    can't pass); at least four in five of the planted answers are caught; at most one answer in thirty is wrong; at least two thirds of the
+    40 and of the 20 are right; at most one question in ten is left out; another company's model than the judge's, or a person, wrote the
+    file; and the publication is the same before and after. The other questions are counted and shown, and not required. The report keeps
+    retrieval (`found`) apart from answers (`right`), and names the points of the rule that aren't met.
+  - **Why one wrong in thirty.** With none allowed, a consumer that errs on 1 to 3% of sixty answers fails 38 to 77% of runs, so a good copy
+    would be tested until it passed. With two of sixty, such a copy passes 82 to 99% of runs, and one whose answers are wrong 10% of the
+    time about 13%. A judge that catches 90% of the planted answers' calls passes that point 94% of the time, one that catches 60%, 0.5%. These
+    odds are computed for independent calls, not measured.
+  - **The questions file** says who wrote it (`author`: `anthropic`, `openai` or `person`) and has up to 100 questions, each asked once (whatever
+    its case, spacing or Unicode form). The key names evidence by exact words of the journal, each found in one to three usable passages, so
+    whoever writes the questions needs no internal ids; a passage is the evidence of at most two questions. The file's own question ids go
+    nowhere: the consumer, the judge, the report and the errors name a question by its place in the file. A command refuses, before any
+    call, a file by the company whose model would judge.
   - **The receipt** (schema version 2) names the case, the copy's corpus, generation, manifest and epoch, the reader that was tested
-    (`SESSION_USE_READER_VERSION`) and the rule's version; and, for the record, how many questions of each kind and the consumer's and the
-    judge's provider and model. The gate refuses a receipt that names no reader (the first design's) or another than the one it would
-    read with (`cold_test_receipt_mismatch`), before anything of the journal is read, and so does its own check of an open case
-    (`openNow`). So a change of the reader closes every client's journal until its copy has passed again. The gate still loads the reader
-    late, when a journal is first read or its receipt first checked.
-  - **Limits.** The test makes no reading of the message and knows no time limit, where a reply gets no journal in a conversation about
-    wanting to die, or when the search takes over four seconds. The consumer has the cold test's instruction, not the writer's, so it
-    tests the search and what the model makes of its passages, not the whole reply: whether a reply leaves alone quotations that have
-    nothing to do with its message (Fable's B1, messages unrelated to the journal, run through the writer's own prompt and the evidence
-    check) isn't tested here. With `--provider claude` or `codex` the consumer and the judge are one company's models. A judge can still
-    err: its wrong counts only twice, its right is never asked again.
+    (`SESSION_USE_READER_VERSION`) and the rule's version; and, for the record, how many questions the rule counted and who wrote them, the
+    consumer's and the judge's provider and model, and which of the tests started on this copy it was (`run`: an import begins a new count;
+    the report and the command say it too). The gate refuses a receipt that names no reader (the first design's), another than the one it
+    would read with, or another rule than the present one (`cold_test_receipt_mismatch`), before anything of the journal is read, and so does
+    its own check of an open case (`openNow`). So a change of the reader or of the rule closes every client's journal until its copy has
+    passed again. The gate still loads the reader late, when a journal is first read or its receipt first checked.
+  - **Limits.** The test makes no reading of the message, where a reply gets no journal in a conversation that could be about wanting to die.
+    It asks one short question at a time on a quiet computer: real messages are paragraphs, which can draw in a passage by a stray word, and
+    are searched while other work runs. The consumer has the cold test's instruction, not the writer's, so it tests the search and what the
+    model makes of its passages, not the whole reply: whether a reply leaves alone quotations that have nothing to do with its message
+    (Fable's B1, messages unrelated to the journal, run through the writer's own prompt and the evidence check) isn't tested here. With
+    `--provider claude` or `codex` the consumer and the judge are one company's models. The judge can still err: the planted answers show how
+    often it misses, and they are as subtle as their author makes them. Who wrote the file is what the file says.
 - **A test that starts removes the copy's receipt; only a pass gives a new one.** So a wrong or malformed answer, a file too small, a
   judge's no, a failed call, a key quote that doesn't fit, a withdrawal or a deleted case leaves none, and a wrong answer followed by an
   error can't leave an earlier pass standing. **Of tests that overlap, the one started last decides:** each writes a marker when it
-  starts, next to removing the receipt (`cold-test-attempt.json` in the client's journal folder: a random id and the time), and a pass is
+  starts, next to removing the receipt (`cold-test-attempt.json` in the client's journal folder: a random id, the time, the copy and how many
+  tests were started on it), and a pass is
   recorded, or a receipt taken away by a test that doesn't pass, only while the marker, read again under the folder's lock, still names
   that test. So an earlier test gives no receipt once a newer one has started, also one that failed or was killed, and takes none of its
   away. The gate reads the receipt alone, as before. The workers are the trial's own, signed in (`claude -p` or `codex exec`), no API. The
   test sends excerpts of the journal to the companies that run them (with `mixed`, Anthropic and OpenAI: the usage and the refusal
   without consent name them). It needs the client's confirmed consent, read again under the trial folder's lock (which
-  `--journal-consent` takes) right before each packet is handed to a worker's process (the judge's second call for a wrong too), the lock
+  `--journal-consent` takes) right before each packet is handed to a worker's process (the judge's further calls and calls made again too), the lock
   being released before that hand-over, and again under it before the receipt is written. **The boundary:** a withdrawal lands wholly
   before that reading, and the packet doesn't leave, or after it; one that lands after the hand-over is honoured at the next packet and
   before the receipt is written.
@@ -338,9 +360,9 @@ judge for every question, the printed numbers) holds in it.
   texts. An unexpected error prints its code, never its own text, which can quote what a file holds.
 - The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report, which the
   copy doesn't carry, so the questions come from a file.
-- **Method choices left to the owner:** the pass rule (`COLD_TEST_RULE`), and who writes each client's questions (an AI from the
-  journal's own quotes, as the journal import's question writer did, part of them worded without the quote's words, is the lane's
-  proposal; the tool for it isn't built).
+- **Method choices left to the owner:** the pass rule (`COLD_TEST_RULE`), and who writes each client's questions and planted wrong answers (an
+  AI from the journal's own quotes, as the journal import's question writer did, of another company than the judge's, part of the questions
+  worded without the quote's words, is the lane's proposal; the tool for it isn't built).
 - **Tested** with made-up journals and stand-in workers only: the sealed export, refused without the export purpose or when the
   published reference isn't its manifest's, written whole or not at all (failures and kills part-way, no hard links, another file
   there); a copy refused for another key, after tampering or with a short tag; the import refused while the vault is held, for the
@@ -354,8 +376,9 @@ judge for every question, the printed numbers) holds in it.
   larger than its usual shards, one with deleted and revoked passages, one with a source text stored in chunks, and a quote generation
   as the journal import builds it; the source order and the builder's indexes kept; the record-by-record and text-by-text check; the
   same file again; the cold test (`tests/runner-cold-test.test.mjs`): a reader that finds nothing for whole messages, which doesn't pass,
-  and the real one, which does; that the consumer gets exactly what the gate gives a reply, and the judge all of it; each verdict, the
-  second call and a dispute; each score and each point of the rule; a publication that changes; answers outside their schemas; the
+  and the real one, which does; that the consumer gets exactly what the gate gives a reply, and the judge all of it, a planted answer in the
+  same packet; each verdict, the further calls and a dispute; each score and each point of the rule, at its number and one beside it; slow
+  searches, refusals, calls made again; a publication that changes; answers outside their schemas; the
   receipt and the gate's refusals; its command, with each provider choice's workers, stopped by an error at each kind of call; tests that
   overlap, the newer one passing, failing, still running or killed; a consent withdrawn before each kind of packet, during a call and
   before the receipt; what each command prints, with malformed files; the private files' reader with links, loose modes, folders, pipes
