@@ -82,10 +82,9 @@ export async function listPrivateArtifactLocatorsForCase({ rootDir, caseId }) {
   for (const name of names.sort()) {
     if (!/^(?:handoff|candidate)-[a-f0-9]{64}\.json$/u.test(name)) continue;
     const file = path.join(directory, name);
-    const info = await fs.lstat(file).catch(() => null);
-    if (!info?.isFile()) continue;
+    // Opened without following a link and checked as a regular file through the same handle it's read from.
     let value;
-    try { value = JSON.parse(await fs.readFile(file, "utf8")); } catch { continue; }
+    try { value = JSON.parse(await withOpenedRegularFile(file, (handle) => handle.readFile("utf8"))); } catch { continue; }
     const kind = KINDS.find((entry) => value?.kind === `inner-signal-private-${entry}-locator`);
     if (!kind || value.schema_version !== 1 || value.case_id !== caseId || typeof value.artifact_id !== "string" || !ARTIFACT_ID.test(value.artifact_id)) continue;
     if (locatorPath(rootDir, kind, value.artifact_id) !== file) continue;

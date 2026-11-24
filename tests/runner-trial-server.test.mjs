@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
@@ -309,6 +309,19 @@ test("the settings file must be named by an absolute path outside the repository
   const broken = path.join(dir, "broken.json");
   await fs.writeFile(broken, "{ not json");
   assert.throws(() => loadRunnerTrialSettings({ settingsPath: broken }), refusedWith("The runner trial settings file isn't valid JSON."));
+  // Anything but a small regular file is refused, a named pipe without waiting for its other end; a link to one outside is followed.
+  assert.throws(() => loadRunnerTrialSettings({ settingsPath: dir }), /must name a readable JSON file/u);
+  const large = path.join(dir, "large.json");
+  await fs.writeFile(large, `{}${" ".repeat(64 * 1024)}`);
+  assert.throws(() => loadRunnerTrialSettings({ settingsPath: large }), /must name a readable JSON file/u);
+  const pipe = path.join(dir, "pipe.json");
+  execFileSync("mkfifo", [pipe]);
+  assert.throws(() => loadRunnerTrialSettings({ settingsPath: pipe }), /must name a readable JSON file/u);
+  const kept = path.join(dir, "kept.json");
+  await fs.writeFile(kept, JSON.stringify({ writerMode: "whole" }));
+  const toKept = path.join(dir, "to-kept.json");
+  await fs.symlink(kept, toKept);
+  assert.equal(loadRunnerTrialSettings({ settingsPath: toKept }).runtime.writerMode, "whole");
 });
 
 test("every field is checked strictly, and an error names the field in fixed words, never the value it was given", () => {

@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
-import { listPrivateArtifactLocatorsForCase } from "../src/storage/private-artifact-locator.mjs";
+import { listPrivateArtifactLocatorsForCase, writePrivateArtifactLocator } from "../src/storage/private-artifact-locator.mjs";
 import { listPrivateCaseAliasLocatorsForCase, writePrivateCaseAliasLocator } from "../src/storage/private-case-alias-locator.mjs";
 import { privateJournalCorpusDirectory } from "../src/storage/private-journal-corpus.mjs";
 import { createCaseMutationCoordinator } from "../src/storage/shared-case-coordinator.mjs";
@@ -1205,6 +1205,25 @@ test("deleting a case removes its file, handoffs, journal folders and the files 
   const again = await store.deletePrivateCase(a);
   assert.deepEqual([again.case_file_removed, again.handoffs_removed, again.locator_files_removed], [false, 0, 0]);
   assert.equal((await store.loadOrCreate(a)).runtime_turns.length, 0);
+});
+
+test("a link or a folder at a locator's own path is never listed as the case's, so a deletion leaves it alone", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "runner-locators-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const caseId = "synthetic-locators";
+  const candidate = await writePrivateArtifactLocator({ rootDir: root, kind: "candidate", artifactId: "candidate:1", caseId });
+  const handoff = await writePrivateArtifactLocator({ rootDir: root, kind: "handoff", artifactId: "handoff:1", caseId });
+  const alias = await writePrivateCaseAliasLocator({ rootDir: root, alias: "synthetic alias", caseId });
+  const listed = async () => [
+    (await listPrivateArtifactLocatorsForCase({ rootDir: root, caseId })).map((entry) => entry.file).sort(),
+    (await listPrivateCaseAliasLocatorsForCase({ rootDir: root, caseId })).map((entry) => entry.file)
+  ];
+  assert.deepEqual(await listed(), [[candidate, handoff].sort(), [alias]]);
+  // Each path now holds a link to the same bytes: the link isn't the locator.
+  for (const file of [candidate, alias]) { await fs.rename(file, `${file}.moved`); await fs.symlink(`${file}.moved`, file); }
+  assert.deepEqual(await listed(), [[handoff], []]);
+  await fs.unlink(handoff); await fs.mkdir(handoff);
+  assert.deepEqual(await listed(), [[], []]);
 });
 
 // The store's per-case queue, watched: each run says whether its operation has started and finished.

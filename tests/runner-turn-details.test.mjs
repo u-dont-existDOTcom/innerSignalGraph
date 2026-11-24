@@ -613,3 +613,92 @@ test("a later transition that names an audit again (a delivery) doesn't take the
   // 2's too, and neither is labelled draft 1's.
   assert.deepEqual(details.steps.filter((entry) => entry.kind === "checker").map((entry) => entry.draft), [1, 2, 2]);
 });
+
+// Seeded random stored turns in the runtime's own order: writers and checks that fail, are abandoned or never end, checks stored with
+// no commit, repairs, closings at any point. `damaged` also loses or reuses identities: calls with no stored record, missing or shared
+// contexts, an audit id reused by two drafts, words that differ from the draft's. Each stored thing carries a word of its own, so what
+// the view hides or shows twice is seen whatever the turn's shape (the scenarios above were found one review at a time).
+function randomTurn(next, damaged) {
+  const chance = (p) => next() < p;
+  const pick = (values) => values[Math.floor(next() * values.length)];
+  let count = 0, second = 0, context = 0, attempt = 0, state = null;
+  const words = [];
+  const word = (name) => { const value = `${name}Word${(count += 1)}Z`; words.push(value); return value; };
+  const forget = (value) => { words.splice(words.indexOf(value), 1); };
+  const now = () => new Date(Date.parse("2026-11-24T00:00:00.000Z") + (second += 1) * 1_000).toISOString();
+  const newContext = () => `ctx-${(context += 1)}`;
+  const sharedContext = newContext();
+  const events = [], candidates = [], levels = [], truth = { drafts: [], readings: [], audits: [], checks: [] };
+  const move = (to, details = {}) => { events.push({ event_type: "STATE_TRANSITION", from_state: state, to_state: to, at: now(), details }); state = to; };
+  const call = (type, stage, id, details = {}) => { events.push({ event_type: type, stage, context_id: id, attempt: 1, at: now(), details }); return events.at(-1); };
+  const failed = (stage, id, name) => call(pick(["INVOCATION_FAILED", "INVOCATION_ABANDONED"]), stage, id, { error_code: word(name), raw_private_evidence: { receipts: [] } });
+  const identity = () => (damaged && chance(0.15) ? pick([null, sharedContext]) : newContext());
+  move("RECEIVED");
+  const readers = { crisis: { reason: word("crisis"), receipts: [] }, protection: { compatibility_assessment: { issue: word("protection") }, receipts: [] } };
+  const boxes = pick(["placeholder", "real", "failed", "empty"]);
+  readers.boxes = boxes === "placeholder" ? { boxes: [], receipts: [] } : boxes === "real" ? { boxes: [word("box")], receipts: [] } : { boxes: boxes === "failed" ? null : [], receipts: [{ role: "R2", failed: word("boxFailed") }] };
+  if (chance(0.2)) readers.other = { note: word("other") };
+  let parent = null, reply = null;
+  const drafts = pick([0, 1, 1, 2, 2, 3]);
+  for (let cycle = 0; cycle < drafts; cycle += 1) {
+    const stage = cycle === 0 ? "candidate" : "repair", last = cycle === drafts - 1;
+    if (chance(0.2)) { const id = newContext(); call("INVOCATION_STARTED", stage, id); failed(stage, id, "writerFailed"); }
+    if (chance(0.05)) { call("INVOCATION_STARTED", stage, newContext()); break; }
+    const producer = identity(), lost = damaged && chance(0.15), text = word("draft"), said = !lost && damaged && chance(0.1) ? word("said") : text, id = newContext();
+    call("INVOCATION_STARTED", stage, id);
+    if (!lost) call("INVOCATION_COMPLETED", stage, id, { ...(producer ? { actual_context_id: producer } : {}), output: { exactText: said, result: { note: word("writerNote"), receipts: [{ role: "W", provider: "openai" }] } } });
+    if (chance(0.03)) { if (lost || said !== text) forget(text); break; }
+    const candidate = { id: `cand-${cycle + 1}`, metadata: { runtime_turn_id: "t1" }, repair_cycle: cycle, parent_candidate_id: parent, ...(producer ? { producer_context_id: producer } : {}), exact_text: text, created_at: now(), audit_history: [] };
+    candidates.push(candidate); truth.drafts.push(candidate); reply = text;
+    move("CANDIDATE_PENDING_AUDIT"); move("AUDITING");
+    const checker = pick(["C1", "CW"]), roles = checker === "C1" ? ["C1", "C2", "C3", "C4", "C5"] : ["CW"];
+    const read = () => { const entry = { attempt: (attempt += 1), candidate_id: candidate.id, checker, level: "none", recorded_at: now(), note: word("reading") }; levels.push(entry); truth.readings.push([entry, cycle + 1]); };
+    if (chance(0.25)) { const failedId = newContext(); call("INVOCATION_STARTED", "audit", failedId); if (chance(0.6)) read(); failed("audit", failedId, "checkFailed"); }
+    if (chance(0.08)) { call("INVOCATION_STARTED", "audit", newContext()); if (chance(0.7)) read(); break; }
+    const auditor = identity(), checkId = newContext(), checkLost = damaged && chance(0.1), findings = [];
+    call("INVOCATION_STARTED", "audit", checkId);
+    if (chance(0.95)) read();
+    if (chance(0.6)) findings.push({ id: `${roles.at(-1)}:1`, checker: roles.at(-1), severity: "high", summary: word("finding") });
+    if (chance(0.3)) findings.push({ id: "P:1", checker: "program", severity: "high", summary: word("program") });
+    if (chance(0.2)) findings.push({ id: "X:1", severity: "low", summary: word("unbound") });
+    if (!checkLost) truth.checks.push([call("INVOCATION_COMPLETED", "audit", checkId, { ...(auditor ? { actual_context_id: auditor } : {}), output: { value: { findings, extra: word("checkExtra") }, providerReceipt: { receipts: (damaged && chance(0.1) ? [] : roles).map((role) => ({ role, provider: "anthropic" })) } } }), cycle + 1]);
+    if (chance(0.04)) { if (checkLost) for (const finding of findings) forget(finding.summary); break; }
+    const audit = { id: damaged && chance(0.1) ? "audit-same" : `audit-${cycle + 1}`, verdict: "fail", findings: [...findings, ...(chance(0.3) ? [{ id: "evidence:1", severity: "substantive", summary: word("evidence") }] : [])], ...(auditor ? { auditor_context_id: auditor } : {}), recorded_at: now() };
+    candidate.audit_history.push(audit); truth.audits.push([audit, cycle + 1]);
+    const to = last ? pick(["APPROVED", "UNANSWERED"]) : "REPAIR_REQUIRED";
+    move(to, damaged && chance(0.1) ? {} : { audit_id: audit.id, candidate_id: candidate.id });
+    if (to === "APPROVED" && chance(0.95)) move("DELIVERED", { audit_id: audit.id, candidate_id: candidate.id });
+    if (last || chance(0.05)) break;
+    move("RECONSTRUCTING", { parent_candidate_id: candidate.id }); parent = candidate.id;
+  }
+  if (!["DELIVERED", "UNANSWERED"].includes(state)) move("UNANSWERED");
+  const turn = { id: "t1", state, inbound: { exact_text: word("person") }, runner_reading: { readers, checker_levels: levels }, events,
+    ...(state === "DELIVERED" ? { delivery: { exact_text: reply, delivered_at: now() } } : { closure: { reason_code: word("closing"), exact_text: word("notice"), closed_at: now() } }) };
+  return { record: { candidate_responses: candidates, runtime_turns: [turn] }, words, truth };
+}
+
+for (const [name, damaged] of [["the runtime's own order and identities", false], ["lost, missing or reused identities", true]]) {
+  test(`in 3,000 seeded turns with ${name}, every stored word is shown, and each reading, draft and committed audit once, with its own draft`, () => {
+    let seed = damaged ? 11 : 7;
+    const next = () => { seed = (seed * 1_664_525 + 1_013_904_223) >>> 0; return seed / 2 ** 32; };
+    for (let index = 0; index < 3_000; index += 1) {
+      const { record, words, truth } = randomTurn(next, damaged);
+      const before = JSON.stringify(record);
+      const details = runnerTurnDetailsFromRecord(record, 1);
+      assert.equal(JSON.stringify(record), before, "the record is only read");
+      const text = JSON.stringify(details.steps);
+      for (const value of words) assert.ok(text.includes(value), `turn ${index}: ${value} is shown\n${before}`);
+      const readings = details.steps.flatMap((entry) => (entry.content?.readings ?? []).map((item) => [item.note, entry.draft ?? null]));
+      assert.deepEqual(readings.sort(), truth.readings.map(([entry, draft]) => [entry.note, draft]).sort(), `turn ${index}: readings\n${before}`);
+      const drafts = details.steps.filter((entry) => ["draft", "stored_draft"].includes(entry.kind) && entry.draft != null).map((entry) => [entry.draft, entry.content.exact_text]);
+      assert.deepEqual(drafts.sort(), truth.drafts.map((candidate) => [candidate.repair_cycle + 1, candidate.exact_text]).sort(), `turn ${index}: drafts\n${before}`);
+      const audits = details.steps.filter((entry) => entry.kind === "committed_check").map((entry) => [entry.draft ?? null, entry.content.recorded_at]);
+      assert.deepEqual(audits.sort(), truth.audits.map(([audit, draft]) => [draft, audit.recorded_at]).sort(), `turn ${index}: committed audits\n${before}`);
+      // A check with a stored identity of its own, or in the runtime's own order, is shown with its own draft. Any other can only be
+      // placed by position.
+      const contextOf = (event) => event.details.actual_context_id ?? null;
+      const identified = (event) => contextOf(event) !== null && truth.checks.filter(([other]) => contextOf(other) === contextOf(event)).length === 1 && truth.audits.some(([audit]) => audit.auditor_context_id === contextOf(event));
+      for (const [event, draft] of truth.checks) if (!damaged || identified(event)) assert.equal(details.steps.find((entry) => entry.kind === "program_checks" && entry.at === event.at)?.draft, draft, `turn ${index}: a check's draft\n${before}`);
+    }
+  });
+}

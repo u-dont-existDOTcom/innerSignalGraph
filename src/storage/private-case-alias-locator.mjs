@@ -98,10 +98,9 @@ export async function listPrivateCaseAliasLocatorsForCase({ rootDir, caseId }) {
     const match = /^case-([a-f0-9]{64})\.json$/u.exec(name);
     if (!match) continue;
     const file = path.join(directory, name);
-    const info = await fs.lstat(file).catch(() => null);
-    if (!info?.isFile()) continue;
+    // Opened without following a link and checked as a regular file through the same handle it's read from.
     let value;
-    try { value = JSON.parse(await fs.readFile(file, "utf8")); } catch { continue; }
+    try { value = JSON.parse(await withOpenedRegularFile(file, (handle) => handle.readFile("utf8"))); } catch { continue; }
     if (value?.schema_version !== 1 || value.kind !== KIND || value.case_id !== caseId || value.alias_sha256 !== match[1]) continue;
     found.push(Object.freeze({ file }));
   }
